@@ -17,6 +17,7 @@ public static class DependencyInjection
         
         services.AddSingleton<IDialogProcessor, TelegramDialogProcessor>();
         services.AddSingleton<IBotCommand, StartCommand>();
+        services.AddSingleton<IBotCommand, TranslateCommand>();
         return services;
     }
 }
