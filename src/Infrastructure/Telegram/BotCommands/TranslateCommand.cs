@@ -15,15 +15,14 @@ public class TranslateCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken cancellationToken)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Start));
+        return Task.FromResult(!commandPayload.Contains("/"));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Привет, {request.UserName}! Меня зовут Trale. От английского translate and learn. Остроумно, да? 🙂" +
-            $"\r\nЯ помогаю учить английский. Напиши мне незнакомое слово, а я найду его перевод. В конце недели я проведу для тебя квиз из всех присланных тобой слов😎",
+            $"Тут будет функция перевода на русский",
             cancellationToken: token);
     }
 }
