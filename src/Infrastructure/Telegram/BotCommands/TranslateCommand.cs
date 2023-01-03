@@ -7,13 +7,11 @@ namespace Infrastructure.Telegram.BotCommands;
 
 public class TranslateCommand : IBotCommand
 {
-    private readonly HttpClient _httpClient;
     private readonly TelegramBotClient _client;
 
-    public TranslateCommand(TelegramBotClient client, IHttpClientFactory httpClientFactory)
+    public TranslateCommand(TelegramBotClient client)
     {
         _client = client;
-        _httpClient = httpClientFactory.CreateClient("translationapi");
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken cancellationToken)
@@ -24,9 +22,15 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        // Launch a new browser instance and navigate to the webpage
         var fetcher = new BrowserFetcher();
-        await fetcher.DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
+        var revisionInfo = await fetcher.GetRevisionInfoAsync();
+        var isAvailable = revisionInfo.Local;
+        if (!isAvailable)
+        {
+            await fetcher.DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
+        }
+
+        // Launch a new browser instance and navigate to the webpage
         var browser = await Puppeteer.LaunchAsync(new LaunchOptions
         {
             Headless = true
