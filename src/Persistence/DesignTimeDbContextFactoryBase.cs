@@ -7,12 +7,12 @@ namespace Persistence;
 public abstract class DesignTimeDbContextFactoryBase<TContext> :
     IDesignTimeDbContextFactory<TContext> where TContext : DbContext
 {
-    private const string ConnectionStringName = "TralkeBotDb";
+    private const string ConnectionStringName = "TraleBotDb";
     private const string AspNetCoreEnvironment = "ASPNETCORE_ENVIRONMENT";
 
     public TContext CreateDbContext(string[] args)
     {
-        var basePath = Directory.GetCurrentDirectory() + string.Format("{0}..{0}TraleBot", Path.DirectorySeparatorChar);
+        var basePath = Directory.GetCurrentDirectory() + string.Format("{0}..{0}Trale", Path.DirectorySeparatorChar);
         return Create(basePath, Environment.GetEnvironmentVariable(AspNetCoreEnvironment));
     }
     
