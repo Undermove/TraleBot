@@ -1,6 +1,6 @@
-using System.Text;
+using System.Net.Http.Headers;
 using Infrastructure.Telegram.Models;
-using Newtonsoft.Json;
+using PuppeteerSharp;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
@@ -24,25 +24,23 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        // Replace YOUR_API_KEY with your actual API key
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer YOUR_API_KEY");
-        _httpClient.DefaultRequestHeaders.Add("Content-Type", "application/json; charset=utf-8");
-
-        // Replace en with the desired target language code
-        var uri = "https://translation.googleapis.com/v3/projects/project-id/locations/global/translateText";
-
-        var body = new
+        // Launch a new browser instance and navigate to the webpage
+        var fetcher = new BrowserFetcher();
+        await fetcher.DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
+        var browser = await Puppeteer.LaunchAsync(new LaunchOptions
         {
-            sourceLanguageCode = "auto",
-            targetLanguageCode = "en",
-            contents = new[] { request.Text }
-        };
+            Headless = true
+        });
+        var page = await browser.NewPageAsync();
+        await page.GoToAsync($"https://translate.google.com/?sl=en&tl=ru&text={request.Text}%0A&op=translate");
 
-        var content = new StringContent(JsonConvert.SerializeObject(body), Encoding.UTF8, "application/json");
+        // Extract the text content of the elements
+        var translatedText = await page.QuerySelectorAsync(".ryNqvb");
+        var result = await (await translatedText.GetPropertyAsync("innerText")).JsonValueAsync<string>();
 
-        var response = await _httpClient.PostAsync(uri, content, token);
-        var result = await response.Content.ReadAsStringAsync(token);
-        
+        // Close the browser
+        await browser.CloseAsync();
+
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             result,
