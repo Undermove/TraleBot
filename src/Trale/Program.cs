@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,14 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var host = CreateHostBuilder(args).Build();
+        string AspNetCoreEnvironment = "ASPNETCORE_ENVIRONMENT";
+        string environmentName = Environment.GetEnvironmentVariable(AspNetCoreEnvironment);
+        var host = CreateHostBuilder(args)
+            .ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddJsonFile("appsettings.json")
+                    .AddJsonFile($"appsettings.{environmentName}.json", optional: true);
+            }).Build();
         
         using (var scope = host.Services.CreateScope())
         {
