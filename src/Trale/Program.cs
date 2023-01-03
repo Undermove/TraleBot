@@ -47,7 +47,7 @@ public class Program
             .ConfigureWebHostDefaults(webBuilder =>
             {
                 webBuilder
-                    .UseUrls("http://localhost:1402/", "http://localhost:1403/")
+                    .UseUrls("http://localhost:1402/", "https://localhost:1403/")
                     .UseStartup<Startup>();
             });
 }
