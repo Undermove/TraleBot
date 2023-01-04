@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using Infrastructure.Telegram.Models;
 using PuppeteerSharp;
 using Telegram.Bot;
@@ -39,8 +38,20 @@ public class TranslateCommand : IBotCommand
         await page.GoToAsync($"https://translate.google.com/?sl=en&tl=ru&text={request.Text}%0A&op=translate");
 
         // Extract the text content of the elements
+        await page.WaitForXPathAsync("//*[contains(@class, 'ryNqvb')]");
         var translatedText = await page.QuerySelectorAsync(".ryNqvb");
-        var result = await (await translatedText.GetPropertyAsync("innerText")).JsonValueAsync<string>();
+        if (translatedText == null)
+        {
+            await page.ScreenshotAsync("emergency_screenshot.jpg");
+            return;
+        }
+        
+        var propertyAsync = await translatedText.GetPropertyAsync("innerText");
+        if (propertyAsync == null)
+        {
+            return;
+        }
+        var result = await propertyAsync.JsonValueAsync<string>();
 
         // Close the browser
         await browser.CloseAsync();
