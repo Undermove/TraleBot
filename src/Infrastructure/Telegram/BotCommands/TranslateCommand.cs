@@ -1,5 +1,5 @@
+using Application.Common.Interfaces;
 using Infrastructure.Telegram.Models;
-using PuppeteerSharp;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
@@ -7,10 +7,14 @@ namespace Infrastructure.Telegram.BotCommands;
 public class TranslateCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
+    private readonly ITranslationService _translationService;
 
-    public TranslateCommand(TelegramBotClient client)
+    public TranslateCommand(
+        TelegramBotClient client, 
+        ITranslationService translationService)
     {
         _client = client;
+        _translationService = translationService;
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken cancellationToken)
@@ -21,41 +25,7 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var fetcher = new BrowserFetcher();
-        var revisionInfo = await fetcher.GetRevisionInfoAsync();
-        var isAvailable = revisionInfo.Local;
-        if (!isAvailable)
-        {
-            await fetcher.DownloadAsync(BrowserFetcher.DefaultChromiumRevision);
-        }
-
-        // Launch a new browser instance and navigate to the webpage
-        var browser = await Puppeteer.LaunchAsync(new LaunchOptions
-        {
-            Headless = true
-        });
-        var page = await browser.NewPageAsync();
-        await page.GoToAsync($"https://translate.google.com/?sl=en&tl=ru&text={request.Text}%0A&op=translate");
-
-        // Extract the text content of the elements
-        await page.WaitForXPathAsync("//*[contains(@class, 'ryNqvb')]");
-        var translatedText = await page.QuerySelectorAsync(".ryNqvb");
-        if (translatedText == null)
-        {
-            await page.ScreenshotAsync("emergency_screenshot.jpg");
-            return;
-        }
-        
-        var propertyAsync = await translatedText.GetPropertyAsync("innerText");
-        if (propertyAsync == null)
-        {
-            return;
-        }
-        var result = await propertyAsync.JsonValueAsync<string>();
-
-        // Close the browser
-        await browser.CloseAsync();
-
+        var result = await _translationService.TranslateAsync(request.Text, token); 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             result,
