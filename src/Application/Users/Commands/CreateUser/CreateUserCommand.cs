@@ -31,7 +31,7 @@ public class CreateUserCommand : IRequest<UserCreatedResultType>, ITransactional
 
             user = new User
             {
-                UserId = Guid.NewGuid().ToString(),
+                Id = Guid.NewGuid(),
                 TelegramId = request.TelegramId,
             };
             _dbContext.Users.Add(user);

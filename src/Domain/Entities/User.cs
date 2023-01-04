@@ -5,6 +5,7 @@ namespace Domain.Entities;
 
 public class User
 {
-    public string UserId { get; set; } = null!;
+    public Guid Id { get; set; }
     public long TelegramId { get; set; }
+    public ICollection<VocabularyEntry> VocabularyEntries { get; set; }
 }

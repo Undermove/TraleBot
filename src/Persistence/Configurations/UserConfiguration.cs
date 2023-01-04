@@ -8,8 +8,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
-        builder.Property(e => e.UserId)
-            .IsRequired()
-            .HasColumnName("UserID");
+        builder.HasKey(u => u.Id);
+        builder.Property(u => u.TelegramId).IsRequired();
     }
 }
