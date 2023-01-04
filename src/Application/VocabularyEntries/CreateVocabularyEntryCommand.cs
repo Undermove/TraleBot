@@ -30,7 +30,8 @@ public class CreateVocabularyEntryCommand : IRequest<string>
                 Id = Guid.NewGuid(),
                 Word = request.Word,
                 Definition = definition,
-                UserId = request.UserId
+                UserId = request.UserId,
+                DateAdded = DateTime.UtcNow
             }, ct);
             
             await _context.SaveChangesAsync(ct);
