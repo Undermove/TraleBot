@@ -40,8 +40,6 @@ public class CreateUserCommand : IRequest<UserCreatedResultType>, ITransactional
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            await _mediator.Publish(new UserCreated { UserId = user.UserId }, cancellationToken);
-
             return UserCreatedResultType.Success;
         }
     }

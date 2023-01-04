@@ -4,5 +4,4 @@ public enum UserCreatedResultType
 {
     Success,
     UserAlreadyExists,
-    IncorrectEmailFormat
 }
