@@ -33,6 +33,8 @@ public class CreateVocabularyEntryCommand : IRequest<string>
                 UserId = request.UserId
             }, ct);
             
+            await _context.SaveChangesAsync(ct);
+            
             return definition;
         }
     }
