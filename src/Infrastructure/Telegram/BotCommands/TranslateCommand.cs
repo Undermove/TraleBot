@@ -26,10 +26,10 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new CreateVocabularyEntryCommand()
+        var result = await _mediator.Send(new CreateVocabularyEntryCommand
         {
             Word = request.Text,
-            UserId = request.UserId ?? throw new ApplicationException("User not registred"),
+            UserId = request.UserId ?? throw new ApplicationException("User not registered"),
         }, token);
         
         await _client.SendTextMessageAsync(

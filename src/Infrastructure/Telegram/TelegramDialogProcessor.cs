@@ -64,7 +64,8 @@ public class TelegramDialogProcessor: IDialogProcessor
             throw new ArgumentException("Can't cast message to Telegram request");
         }
 
-        var user = await _mediator.Send(new GetUserByTelegramId {TelegramId = casted.Id}, ct);
+        var userTelegramId = casted.Message?.From?.Id ?? casted.CallbackQuery?.From.Id ?? throw new ArgumentException();
+        var user = await _mediator.Send(new GetUserByTelegramId {TelegramId = userTelegramId}, ct);
 
         var telegramRequest = new TelegramRequest(casted, user?.Id);
         return telegramRequest;
