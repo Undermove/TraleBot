@@ -1,5 +1,6 @@
-using Application.Common.Interfaces;
+using Application.VocabularyEntries;
 using Infrastructure.Telegram.Models;
+using MediatR;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
@@ -7,14 +8,14 @@ namespace Infrastructure.Telegram.BotCommands;
 public class TranslateCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
-    private readonly ITranslationService _translationService;
+    private readonly IMediator _mediator;
 
     public TranslateCommand(
         TelegramBotClient client, 
-        ITranslationService translationService)
+        IMediator mediator)
     {
         _client = client;
-        _translationService = translationService;
+        _mediator = mediator;
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken cancellationToken)
@@ -25,7 +26,12 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _translationService.TranslateAsync(request.Text, token); 
+        var result = await _mediator.Send(new CreateVocabularyEntryCommand()
+        {
+            Word = request.Text,
+            UserId = request.UserId ?? throw new ApplicationException("User not registred"),
+        }, token);
+        
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             result,

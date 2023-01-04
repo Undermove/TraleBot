@@ -1,5 +1,7 @@
 using Application.Common.Interfaces;
+using Application.Users.Queries;
 using Infrastructure.Telegram.Models;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -11,20 +13,22 @@ public class TelegramDialogProcessor: IDialogProcessor
     private readonly List<IBotCommand> _commands;
     private readonly ILogger _logger;
     private readonly TelegramBotClient _telegramBotClient;
+    private IMediator _mediator;
 
     public TelegramDialogProcessor(
         IEnumerable<IBotCommand> processorsList, 
         ILoggerFactory logger, 
-        TelegramBotClient telegramBotClient)
+        TelegramBotClient telegramBotClient, IMediator mediator)
     {
         _telegramBotClient = telegramBotClient;
+        _mediator = mediator;
         _commands = processorsList.ToList();
         _logger = logger.CreateLogger(typeof(TelegramDialogProcessor));
     }
     
     public async Task ProcessCommand<T>(T request, CancellationToken token)
     {
-        var telegramRequest = MapToTelegramRequest(request);
+        var telegramRequest = await MapToTelegramRequest(request, token);
 
         try
         {
@@ -53,14 +57,16 @@ public class TelegramDialogProcessor: IDialogProcessor
             telegramRequest.UserTelegramId, telegramRequest.Text);
     }
 
-    private TelegramRequest MapToTelegramRequest<T>(T request)
+    private async Task<TelegramRequest> MapToTelegramRequest<T>(T request, CancellationToken ct)
     {
         if (request is not Update casted)
         {
             throw new ArgumentException("Can't cast message to Telegram request");
         }
 
-        var telegramRequest = new TelegramRequest(casted);
+        var user = await _mediator.Send(new GetUserByTelegramId {TelegramId = casted.Id}, ct);
+
+        var telegramRequest = new TelegramRequest(casted, user?.Id);
         return telegramRequest;
     }
 }

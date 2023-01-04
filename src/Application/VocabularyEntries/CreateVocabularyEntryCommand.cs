@@ -5,12 +5,12 @@ using MediatR;
 
 namespace Application.VocabularyEntries;
 
-public class CreateVocabularyEntryCommand : IRequest
+public class CreateVocabularyEntryCommand : IRequest<string>
 {
     public Guid UserId { get; set; }
     public string Word { get; set; }
     
-    public class Handler : IRequestHandler<CreateVocabularyEntryCommand>
+    public class Handler : IRequestHandler<CreateVocabularyEntryCommand, string>
     {
         private readonly ITranslationService _translationService;
         private readonly ITraleDbContext _context;
@@ -21,11 +21,11 @@ public class CreateVocabularyEntryCommand : IRequest
             _context = context;
         }
 
-        public async Task<Unit> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
+        public async Task<string> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
         {
             var definition = await _translationService.TranslateAsync(request.Word, ct);
             
-            await _context.VocabularyEntries.AddAsync(new VocabularyEntry()
+            await _context.VocabularyEntries.AddAsync(new VocabularyEntry
             {
                 Id = Guid.NewGuid(),
                 Word = request.Word,
@@ -33,7 +33,7 @@ public class CreateVocabularyEntryCommand : IRequest
                 UserId = request.UserId
             }, ct);
             
-            return Unit.Value;
+            return definition;
         }
     }
 }
