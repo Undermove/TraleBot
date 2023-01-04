@@ -20,7 +20,8 @@ public class Program
             .ConfigureAppConfiguration((_, config) =>
             {
                 config.AddJsonFile("appsettings.json")
-                    .AddJsonFile($"appsettings.{environmentName}.json", optional: true);
+                    .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
+                    .AddEnvironmentVariables();
             }).Build();
         
         using (var scope = host.Services.CreateScope())
