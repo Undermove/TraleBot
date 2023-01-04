@@ -13,12 +13,10 @@ public class CreateUserCommand : IRequest<UserCreatedResultType>, ITransactional
     public class Handler : IRequestHandler<CreateUserCommand, UserCreatedResultType>
     {
         private readonly ITraleDbContext _dbContext;
-        private readonly IMediator _mediator;
 
-        public Handler(ITraleDbContext dbContext, IMediator mediator)
+        public Handler(ITraleDbContext dbContext)
         {
             _dbContext = dbContext;
-            _mediator = mediator;
         }
 
         public async Task<UserCreatedResultType> Handle(CreateUserCommand request, CancellationToken cancellationToken)
