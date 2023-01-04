@@ -1,0 +1,39 @@
+using Application.Common;
+using Application.Common.Interfaces;
+using Domain.Entities;
+using MediatR;
+
+namespace Application.VocabularyEntries;
+
+public class CreateVocabularyEntryCommand : IRequest
+{
+    public Guid UserId { get; set; }
+    public string Word { get; set; }
+    
+    public class Handler : IRequestHandler<CreateVocabularyEntryCommand>
+    {
+        private readonly ITranslationService _translationService;
+        private readonly ITraleDbContext _context;
+
+        public Handler(ITranslationService translationService, ITraleDbContext context)
+        {
+            _translationService = translationService;
+            _context = context;
+        }
+
+        public async Task<Unit> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
+        {
+            var definition = await _translationService.TranslateAsync(request.Word, ct);
+            
+            await _context.VocabularyEntries.AddAsync(new VocabularyEntry()
+            {
+                Id = Guid.NewGuid(),
+                Word = request.Word,
+                Definition = definition,
+                UserId = request.UserId
+            }, ct);
+            
+            return Unit.Value;
+        }
+    }
+}
