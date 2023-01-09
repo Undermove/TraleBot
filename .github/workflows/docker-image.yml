@@ -37,5 +37,7 @@ jobs:
           password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
           port: ${{ secrets.TRALEBOT_SERVER_PORT }}
           script: |
-           whoami
-           ls -al
+           cd ../../usr/local/tralebot/
+           docker-compose down
+           sleep 5
+           docker-compose up
