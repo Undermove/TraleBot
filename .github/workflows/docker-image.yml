@@ -27,3 +27,15 @@ jobs:
         with:
           push: true
           tags: undermove/tralebot:latest
+      
+      - 
+        name: Connect to server and restart TraleBot
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+          password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
+          port: ${{ secrets.TRALEBOT_SERVER_PORT }}
+          script: |
+           whoami
+           ls -al
