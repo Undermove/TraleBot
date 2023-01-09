@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
       <PackageReference Include="MediatR" Version="10.0.1" />
       <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.6" />

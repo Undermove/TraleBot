@@ -15,7 +15,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
-        services.AddSingleton<ITranslationService, GoogleTranslationService>();
+        services.AddSingleton<ITranslationService, GoogleParsingTranslationService>();
         
         services.AddSingleton<IDialogProcessor, TelegramDialogProcessor>();
         services.AddSingleton<IBotCommand, StartCommand>();

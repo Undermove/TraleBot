@@ -17,6 +17,7 @@ public class GoogleTranslationService : ITranslationService
         var browser = await Puppeteer.LaunchAsync(new LaunchOptions
         {
             Headless = true,
+            //ExecutablePath = "http://localhost:9222" 
         });
         var page = await browser.NewPageAsync();
         await page.GoToAsync($"https://translate.google.com/?sl=en&tl=ru&text={requestWord}%0A&op=translate");
