@@ -10,7 +10,7 @@ public class HealthzController : Controller
 
     public HealthzController(IConfiguration config)
     {
-        _myValue = config.GetValue<string>("MyConfig__SomeValue");
+        _myValue = config.GetConnectionString("Test");
     }
     
     [HttpGet]
