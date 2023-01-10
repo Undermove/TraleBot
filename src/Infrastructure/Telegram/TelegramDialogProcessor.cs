@@ -13,7 +13,7 @@ public class TelegramDialogProcessor: IDialogProcessor
     private readonly List<IBotCommand> _commands;
     private readonly ILogger _logger;
     private readonly TelegramBotClient _telegramBotClient;
-    private IMediator _mediator;
+    private readonly IMediator _mediator;
 
     public TelegramDialogProcessor(
         IEnumerable<IBotCommand> processorsList, 
