@@ -14,5 +14,7 @@ public class QuizConfiguration : IEntityTypeConfiguration<Quiz>
         builder.HasMany(q => q.VocabularyEntries)
             .WithOne()
             .OnDelete(DeleteBehavior.NoAction);
+        builder.Property(ve => ve.DateStarted).IsRequired().ValueGeneratedOnAdd();
+        builder.Property(ve => ve.IsCompleted).HasDefaultValue(false);
     }
 }

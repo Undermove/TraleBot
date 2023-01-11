@@ -13,6 +13,6 @@ public class VocabularyEntryConfiguration : IEntityTypeConfiguration<VocabularyE
         builder.Property(ve => ve.Definition).IsRequired();
         builder.HasOne(ve => ve.User).WithMany(u => u.VocabularyEntries).HasForeignKey(ve => ve.UserId);
         builder.Property(ve => ve.DateAdded).IsRequired().ValueGeneratedOnAdd();
-        builder.HasIndex(ve => ve.DateAdded).IsUnique();
+        builder.HasIndex(ve => ve.DateAdded);
     }
 }
