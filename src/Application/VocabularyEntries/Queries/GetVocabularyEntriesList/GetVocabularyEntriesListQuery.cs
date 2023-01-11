@@ -35,6 +35,7 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
             }
 
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            
             var vocabularyEntries = user
                 .VocabularyEntries
                 .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))

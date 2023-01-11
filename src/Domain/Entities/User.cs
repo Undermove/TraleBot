@@ -8,4 +8,5 @@ public class User
     public Guid Id { get; set; }
     public long TelegramId { get; set; }
     public ICollection<VocabularyEntry> VocabularyEntries { get; set; }
+    public ICollection<Quiz> Quizzes { get; set; }
 }

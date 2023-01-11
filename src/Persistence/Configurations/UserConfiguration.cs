@@ -10,5 +10,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.HasKey(u => u.Id);
         builder.Property(u => u.TelegramId).IsRequired();
+        builder.HasMany(u => u.VocabularyEntries)
+            .WithOne(ve => ve.User)
+            .HasForeignKey(ve => ve.UserId);
     }
 }
