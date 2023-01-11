@@ -27,14 +27,15 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
 
             object?[] keyValues = { request.UserId };
             var user = await _dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
-            if (user?.VocabularyEntries == null)
+            if (user == null)
             {
                 return new VocabularyEntriesListVm
                 {
                     VocabularyEntries = new List<VocabularyEntry>()
                 };
             }
-            
+
+            await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             var vocabularyEntries = user
                 .VocabularyEntries
                 .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
