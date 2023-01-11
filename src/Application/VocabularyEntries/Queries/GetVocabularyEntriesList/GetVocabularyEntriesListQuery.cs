@@ -1,7 +1,6 @@
 using Application.Common;
 using Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.VocabularyEntries.Queries.GetVocabularyEntriesList;
 
