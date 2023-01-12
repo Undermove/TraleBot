@@ -24,7 +24,7 @@ public class WooordHuntParsingTranslationService : ITranslationService
         htmlDoc.LoadHtml(responseContent);
         
         // Find the element with the class "t_inline_en"
-        var element = htmlDoc.DocumentNode.SelectSingleNode("//*[@class='t_inline_en']");
+        var element = htmlDoc.DocumentNode.SelectSingleNode("(//*[starts-with(@class, 't_inline')])[1]");
         if (element == null)
         {
             throw new Exception();

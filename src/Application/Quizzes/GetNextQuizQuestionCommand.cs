@@ -21,7 +21,7 @@ public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
         public async Task<VocabularyEntry?> Handle(GetNextQuizQuestionQuery request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
-                .SingleAsync(quiz => 
+                .LastAsync(quiz => 
                     quiz.UserId == request.UserId && 
                     quiz.IsCompleted == false, cancellationToken: ct);
             
