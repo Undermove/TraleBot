@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistence;
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    partial class TraleDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230111114915_FixRelationsOnQuiz3")]
+    partial class FixRelationsOnQuiz3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,13 +32,10 @@ namespace Persistence.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("DateStarted")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsCompleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -45,21 +45,6 @@ namespace Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Quizzes");
-                });
-
-            modelBuilder.Entity("Domain.Entities.QuizVocabularyEntry", b =>
-                {
-                    b.Property<Guid>("QuizId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("VocabularyEntryId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("QuizId", "VocabularyEntryId");
-
-                    b.HasIndex("VocabularyEntryId");
-
-                    b.ToTable("QuizVocabularyEntry");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -90,6 +75,9 @@ namespace Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("QuizId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
@@ -100,6 +88,8 @@ namespace Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DateAdded");
+
+                    b.HasIndex("QuizId");
 
                     b.HasIndex("UserId");
 
@@ -117,27 +107,12 @@ namespace Persistence.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domain.Entities.QuizVocabularyEntry", b =>
-                {
-                    b.HasOne("Domain.Entities.Quiz", "Quiz")
-                        .WithMany("QuizVocabularyEntries")
-                        .HasForeignKey("QuizId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.VocabularyEntry", "VocabularyEntry")
-                        .WithMany("QuizVocabularyEntries")
-                        .HasForeignKey("VocabularyEntryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Quiz");
-
-                    b.Navigation("VocabularyEntry");
-                });
-
             modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>
                 {
+                    b.HasOne("Domain.Entities.Quiz", null)
+                        .WithMany("VocabularyEntries")
+                        .HasForeignKey("QuizId");
+
                     b.HasOne("Domain.Entities.User", "User")
                         .WithMany("VocabularyEntries")
                         .HasForeignKey("UserId")
@@ -149,7 +124,7 @@ namespace Persistence.Migrations
 
             modelBuilder.Entity("Domain.Entities.Quiz", b =>
                 {
-                    b.Navigation("QuizVocabularyEntries");
+                    b.Navigation("VocabularyEntries");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -157,11 +132,6 @@ namespace Persistence.Migrations
                     b.Navigation("Quizzes");
 
                     b.Navigation("VocabularyEntries");
-                });
-
-            modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>
-                {
-                    b.Navigation("QuizVocabularyEntries");
                 });
 #pragma warning restore 612, 618
         }

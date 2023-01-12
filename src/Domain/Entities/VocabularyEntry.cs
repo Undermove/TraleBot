@@ -9,4 +9,6 @@ public class VocabularyEntry
     public DateTime DateAdded { get; set; } 
     public Guid UserId { get; set; }
     public User User { get; set; }
+    
+    public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; }
 }

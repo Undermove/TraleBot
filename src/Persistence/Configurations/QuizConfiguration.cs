@@ -11,9 +11,6 @@ public class QuizConfiguration : IEntityTypeConfiguration<Quiz>
         builder.HasKey(quiz => quiz.Id);
         builder.HasOne(quiz => quiz.User)
             .WithMany(u => u.Quizzes).HasForeignKey(quiz => quiz.UserId);
-        builder.HasMany(q => q.VocabularyEntries)
-            .WithOne()
-            .OnDelete(DeleteBehavior.NoAction);
         builder.Property(ve => ve.DateStarted).IsRequired().ValueGeneratedOnAdd();
         builder.Property(ve => ve.IsCompleted).HasDefaultValue(false);
     }

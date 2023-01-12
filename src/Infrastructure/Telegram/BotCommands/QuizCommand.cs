@@ -1,4 +1,4 @@
-using Application.VocabularyEntries.Queries.GetVocabularyEntriesList;
+using Application.Quizzes;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -24,10 +24,10 @@ public class QuizCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new GetVocabularyEntriesListQuery {UserId = request.UserId}, token);
+        var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Начнем квиз. На этой неделе ты выучил {result.VocabularyEntries.Count} новых слов. Это потрясающе!",
+            $"Начнем квиз. На этой неделе ты выучил {result} новых слов. Это потрясающе!",
             cancellationToken: token);
     }
 }

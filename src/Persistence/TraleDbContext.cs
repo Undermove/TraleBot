@@ -23,5 +23,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new VocabularyEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new QuizConfiguration());
+        modelBuilder.ApplyConfiguration(new QuizVocabularyEntryConfiguration());
     }
 }
