@@ -29,5 +29,20 @@ public class QuizCommand : IBotCommand
             request.UserTelegramId,
             $"Начнем квиз. На этой неделе ты выучил {result} новых слов. Это потрясающе!",
             cancellationToken: token);
+
+        var word = await _mediator.Send(new GetNextQuizQuestionQuery() {UserId = request.UserId}, token);
+        if (word == null)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                $"Кажется, что квиз закончен",
+                cancellationToken: token);
+            return;
+        }
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"Напиши, как на английском будет: {word.Word}",
+            cancellationToken: token);
     }
 }

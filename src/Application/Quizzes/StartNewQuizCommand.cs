@@ -23,6 +23,8 @@ public class StartNewQuizCommand : IRequest<string>
             {
                 throw new ArgumentException("User Id cannot be null");
             }
+            
+            // todo: check here if any quizzes already started
 
             object?[] keyValues = { request.UserId };
             var user = await _dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
