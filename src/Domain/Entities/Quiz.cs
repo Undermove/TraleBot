@@ -10,11 +10,3 @@ public class Quiz
     public User User { get; set; }
     public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; } = null!;
 }
-
-public class QuizVocabularyEntry
-{
-    public Guid QuizId { get; set; }
-    public Quiz Quiz { get; set; }
-    public Guid VocabularyEntryId { get; set; }
-    public VocabularyEntry VocabularyEntry { get; set; }
-}
