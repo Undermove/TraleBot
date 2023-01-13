@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
@@ -8,8 +9,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using Nest;
 using Persistence;
+using Serilog;
+using Serilog.Sinks.Elasticsearch;
 using Telegram.Bot;
 using Trale.Common;
 using Trale.HostedServices;
@@ -80,8 +85,17 @@ public class Startup
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
     {
+        var logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200")) {
+                AutoRegisterTemplate = true,
+                IndexFormat = "tralebot-logs-{0:yyyy.MM.dd}"
+            })
+            .CreateLogger();
+        loggerFactory.AddSerilog(logger);
+        
         app.UseMiddleware<ExceptionsMiddleware>();
         if (env.IsDevelopment())
         {
