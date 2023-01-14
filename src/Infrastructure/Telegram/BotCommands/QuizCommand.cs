@@ -30,7 +30,7 @@ public class QuizCommand : IBotCommand
             $"Начнем квиз. На этой неделе ты выучил {result} новых слов. Это потрясающе!",
             cancellationToken: token);
 
-        var word = await _mediator.Send(new GetNextQuizQuestionQuery() {UserId = request.UserId}, token);
+        var word = await _mediator.Send(new GetNextQuizQuestionQuery {UserId = request.UserId}, token);
         if (word == null)
         {
             await _client.SendTextMessageAsync(
