@@ -39,7 +39,7 @@ public class CheckQuizAnswerCommand: IRequest<bool>
                 .Last();
             await _dbContext.Entry(quizVocabularyEntry).Reference(nameof(quizVocabularyEntry.VocabularyEntry)).LoadAsync(ct);
             
-            if (quizVocabularyEntry.VocabularyEntry.Definition != request.Answer)
+            if (quizVocabularyEntry.VocabularyEntry.Definition != request.Answer.ToLowerInvariant())
             {
                 return false;
             }

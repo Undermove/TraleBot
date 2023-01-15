@@ -16,13 +16,13 @@ public class TelegramDialogProcessor: IDialogProcessor
     private readonly IMediator _mediator;
 
     public TelegramDialogProcessor(
-        IEnumerable<IBotCommand> processorsList, 
+        IEnumerable<IBotCommand> commands, 
         ILoggerFactory logger, 
         TelegramBotClient telegramBotClient, IMediator mediator)
     {
         _telegramBotClient = telegramBotClient;
         _mediator = mediator;
-        _commands = processorsList.ToList();
+        _commands = commands.ToList();
         _logger = logger.CreateLogger(typeof(TelegramDialogProcessor));
     }
     
@@ -63,8 +63,8 @@ public class TelegramDialogProcessor: IDialogProcessor
         {
             throw new ArgumentException("Can't cast message to Telegram request");
         }
-
-        var userTelegramId = casted.Message?.From?.Id ?? casted.CallbackQuery?.From.Id ?? throw new ArgumentException();
+        
+        var userTelegramId = casted.Message?.From?.Id ?? casted.CallbackQuery?.From.Id ?? casted.MyChatMember?.From.Id ?? throw new ArgumentException();
         var user = await _mediator.Send(new GetUserByTelegramId {TelegramId = userTelegramId}, ct);
 
         var telegramRequest = new TelegramRequest(casted, user?.Id);

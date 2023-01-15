@@ -28,8 +28,8 @@ public class CreateVocabularyEntryCommand : IRequest<string>
             await _context.VocabularyEntries.AddAsync(new VocabularyEntry
             {
                 Id = Guid.NewGuid(),
-                Word = request.Word,
-                Definition = definition,
+                Word = request.Word.ToLowerInvariant(),
+                Definition = definition.ToLowerInvariant(),
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
             }, ct);
