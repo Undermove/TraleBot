@@ -1,4 +1,5 @@
 using Application.Quizzes;
+using Application.Quizzes.Commands;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -42,7 +43,7 @@ public class QuizCommand : IBotCommand
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Напиши, как на английском будет: {word.Word}",
+            $"Переведи слово: {word.Word}",
             cancellationToken: token);
     }
 }

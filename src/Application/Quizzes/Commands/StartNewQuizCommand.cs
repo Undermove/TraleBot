@@ -2,7 +2,7 @@ using Application.Common;
 using Domain.Entities;
 using MediatR;
 
-namespace Application.Quizzes;
+namespace Application.Quizzes.Commands;
 
 public class StartNewQuizCommand : IRequest<string>
 {

@@ -1,7 +1,7 @@
 using Application.Common;
 using MediatR;
 
-namespace Application.Quizzes;
+namespace Application.Quizzes.Queries;
 
 public class CheckIsQuizStartedQuery : IRequest<bool>
 {

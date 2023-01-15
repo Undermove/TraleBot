@@ -3,7 +3,7 @@ using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Quizzes;
+namespace Application.Quizzes.Commands;
 
 public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
 {
@@ -30,12 +30,7 @@ public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
                 .Select(entry => entry.VocabularyEntry)
                 .ToList();
 
-            if (vocabularyEntries.Count == 0)
-            {
-                return null;
-            }
-            
-            return vocabularyEntries[0];
+            return vocabularyEntries.Count == 0 ? null : vocabularyEntries[0];
         }
     }
 }
