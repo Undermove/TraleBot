@@ -27,6 +27,7 @@ public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
             
             await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizVocabularyEntries)).LoadAsync(ct);
             var vocabularyEntries = currentQuiz.QuizVocabularyEntries
+                .OrderBy(entry => entry.VocabularyEntryId)
                 .Select(entry => entry.VocabularyEntry)
                 .ToList();
 

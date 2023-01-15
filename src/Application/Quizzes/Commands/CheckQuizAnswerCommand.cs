@@ -27,8 +27,12 @@ public class CheckQuizAnswerCommand: IRequest<bool>
                 quiz.IsCompleted == false, cancellationToken: ct);
 
             await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizVocabularyEntries)).LoadAsync(ct);
-            var quizVocabularyEntry = currentQuiz.QuizVocabularyEntries[0];
-
+            var quizVocabularyEntry = currentQuiz
+                .QuizVocabularyEntries
+                .OrderBy(entry => entry.VocabularyEntryId)
+                .Last();
+            await _dbContext.Entry(quizVocabularyEntry).Reference(nameof(quizVocabularyEntry.VocabularyEntry)).LoadAsync(ct);
+            
             if (quizVocabularyEntry.VocabularyEntry.Definition != request.Answer)
             {
                 return false;
