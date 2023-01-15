@@ -40,7 +40,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 await _mediator.Send(new GetNextQuizQuestionQuery {UserId = request.UserId}, ct);
                 await _client.SendTextMessageAsync(
                     request.UserTelegramId,
-                    $"Кажется, что квиз закончен",
+                    "Кажется, что квиз закончен",
                     cancellationToken: ct);
                 return;
             }
@@ -49,6 +49,8 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 request.UserTelegramId,
                 $"Переведи слово: {word.Word}",
                 cancellationToken: ct);
+            
+            return;
         }
 
         await _client.SendTextMessageAsync(
