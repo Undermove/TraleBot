@@ -53,7 +53,7 @@ public class TelegramDialogProcessor: IDialogProcessor
             telegramRequest.UserTelegramId,
             "Постой! Прости, кажется у меня что-то сломалось 😞 Попробуй еще раз через несколько минут.", 
             cancellationToken: token);
-        _logger.LogInformation(e, "Exception while processing request from user: {User} with command {Command}",
+        _logger.LogError(e, "Exception while processing request from user: {User} with command {Command}",
             telegramRequest.UserTelegramId, telegramRequest.Text);
     }
 

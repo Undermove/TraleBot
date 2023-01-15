@@ -20,7 +20,9 @@ public class CheckQuizAnswerCommand: IRequest<bool>
 
         public async Task<bool> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
         {
-            var currentQuiz = await _dbContext.Quizzes.LastAsync(quiz =>
+            var currentQuiz = await _dbContext.Quizzes
+                .OrderBy(quiz => quiz.DateStarted)
+                .LastAsync(quiz =>
                 quiz.UserId == request.UserId &&
                 quiz.IsCompleted == false, cancellationToken: ct);
 
