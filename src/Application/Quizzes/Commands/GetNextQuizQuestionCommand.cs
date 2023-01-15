@@ -26,10 +26,15 @@ public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
                     quiz.IsCompleted == false, cancellationToken: ct);
             
             await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizVocabularyEntries)).LoadAsync(ct);
+            if (currentQuiz.QuizVocabularyEntries.Count == 0)
+            {
+                return null;
+            } 
+
             var vocabularyEntryId = currentQuiz.QuizVocabularyEntries
                 .OrderBy(entry => entry.VocabularyEntryId)
                 .Select(entry => entry.VocabularyEntryId)
-                .Last();
+                .LastOrDefault();
             object?[] keyValues = { vocabularyEntryId };
             var vocabularyEntry = await _dbContext.VocabularyEntries.FindAsync(keyValues, ct);
             return vocabularyEntry;

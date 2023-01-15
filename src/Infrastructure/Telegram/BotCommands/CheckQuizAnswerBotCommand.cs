@@ -37,7 +37,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             var word = await _mediator.Send(new GetNextQuizQuestionQuery {UserId = request.UserId}, ct);
             if (word == null)
             {
-                await _mediator.Send(new GetNextQuizQuestionQuery {UserId = request.UserId}, ct);
+                await _mediator.Send(new CompleteQuizCommand() {UserId = request.UserId}, ct);
                 await _client.SendTextMessageAsync(
                     request.UserTelegramId,
                     "Кажется, что квиз закончен",
