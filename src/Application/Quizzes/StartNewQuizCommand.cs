@@ -33,7 +33,7 @@ public class StartNewQuizCommand : IRequest<string>
                 return "";
             }
             await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
-            var startedQuizzesCount = user.Quizzes.Count(q => q.IsCompleted != false);
+            var startedQuizzesCount = user.Quizzes.Count(q => q.IsCompleted == false);
             if (startedQuizzesCount > 0)
             {
                 return "";

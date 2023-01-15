@@ -1,3 +1,4 @@
+using Application.Quizzes;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -15,9 +16,12 @@ public class CheckQuizAnswerCommand: IBotCommand
         _mediator = mediator;
     }
 
-    public Task<bool> IsApplicable(TelegramRequest request, CancellationToken cancellationToken)
+    public async Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var isQuizStarted = await _mediator.Send(
+            new CheckIsQuizStartedQuery { UserId = request.UserId },
+            ct);
+        return isQuizStarted;
     }
 
     public Task Execute(TelegramRequest request, CancellationToken token)

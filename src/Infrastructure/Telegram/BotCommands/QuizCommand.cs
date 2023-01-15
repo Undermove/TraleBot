@@ -16,7 +16,7 @@ public class QuizCommand : IBotCommand
         _mediator = mediator;
     }
 
-    public Task<bool> IsApplicable(TelegramRequest request, CancellationToken cancellationToken)
+    public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
         return Task.FromResult(commandPayload.Contains(CommandNames.Quiz));
