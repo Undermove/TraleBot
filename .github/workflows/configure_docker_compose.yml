@@ -20,7 +20,7 @@ jobs:
         uses: garygrossgarten/github-action-scp@release
         with:
           local: test.txt
-          remote: ../../usr/local/tralebot/test.txt
+          remote: test.txt
           host: ${{ secrets.TRALEBOT_SERVER_HOST }}
           username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
           password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
