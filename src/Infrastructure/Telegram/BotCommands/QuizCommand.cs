@@ -1,4 +1,3 @@
-using Application.Quizzes;
 using Application.Quizzes.Commands;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -28,7 +27,9 @@ public class QuizCommand : IBotCommand
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Начнем квиз. На этой неделе ты выучил {result} новых слов. Это потрясающе!",
+            $"Начнем квиз! На этой неделе ты выучил {result} новых слов. " +
+            $"Ты вызываешь у меня восторг!" +
+            $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
         var word = await _mediator.Send(new GetNextQuizQuestionQuery {UserId = request.UserId}, token);
@@ -36,7 +37,8 @@ public class QuizCommand : IBotCommand
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                $"Кажется, что квиз закончен",
+                $"🏁Кажется, что квиз закончен!" +
+                $"\r\n🥳Приятно видеть, как ты стараешься – это вдохновляет!",
                 cancellationToken: token);
             return;
         }
