@@ -14,7 +14,8 @@ jobs:
         env:
           TRALEBOT_SERVER_HOST: ${{ secrets.TRALEBOT_SERVER_HOST }}
         run: |
-          echo "$TRALEBOT_SERVER_HOST" > test.txt
+          echo "BotConfiguration__HostAddress=$TRALEBOT_SERVER_HOST" > test.txt
+          echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" >> test.txt
         
       - name: Copy file to remote
         uses: garygrossgarten/github-action-scp@release
