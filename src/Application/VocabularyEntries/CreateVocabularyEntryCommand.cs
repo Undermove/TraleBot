@@ -23,6 +23,22 @@ public class CreateVocabularyEntryCommand : IRequest<string>
 
         public async Task<string> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
         {
+            object?[] keyValues = { request.UserId };
+            var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
+            if (user == null)
+            {
+                throw new ApplicationException($"User {request.UserId} not found");
+            }
+            
+            await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            
+            var duplicate = user.VocabularyEntries
+                .SingleOrDefault(entry => entry.Word.ToLowerInvariant() == request.Word.ToLowerInvariant());
+            if(duplicate != null)
+            {
+                return duplicate.Definition;
+            }
+            
             var definition = await _translationService.TranslateAsync(request.Word, ct);
             
             await _context.VocabularyEntries.AddAsync(new VocabularyEntry
