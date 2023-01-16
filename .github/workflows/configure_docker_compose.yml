@@ -1,0 +1,20 @@
+name: Configure docker-compose for app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    #  - uses: actions/checkout@v3
+      - name: Copy single file to remote
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          local: README.md
+          remote: ../../usr/local/tralebot/README.md
+          host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+          password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
