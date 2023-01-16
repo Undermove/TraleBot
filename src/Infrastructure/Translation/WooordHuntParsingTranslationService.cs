@@ -1,3 +1,4 @@
+using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using HtmlAgilityPack;
 
@@ -27,7 +28,7 @@ public class WooordHuntParsingTranslationService : ITranslationService
         var element = htmlDoc.DocumentNode.SelectSingleNode("(//*[starts-with(@class, 't_inline')])[1]");
         if (element == null)
         {
-            throw new Exception();
+            throw new UntranslatableWordException();
         }
         
         // Get the text content of the element
