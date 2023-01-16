@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
 using Infrastructure.Auth;
+using Infrastructure.Monitoring;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -95,6 +96,7 @@ public class Startup
             })
             .CreateLogger();
         loggerFactory.AddSerilog(logger);
+        PrometheusStartup.UsePrometheus(app);
         
         app.UseMiddleware<ExceptionsMiddleware>();
         if (env.IsDevelopment())
@@ -110,7 +112,6 @@ public class Startup
 
         app.UseAuthentication();  
         app.UseAuthorization();
-
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
 }

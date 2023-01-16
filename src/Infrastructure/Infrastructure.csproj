@@ -19,6 +19,9 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.0" />
+        <PackageReference Include="Prometheus.Client" Version="5.2.0" />
+        <PackageReference Include="Prometheus.Client.AspNetCore" Version="4.8.0" />
+        <PackageReference Include="Prometheus.Client.HttpRequestDurations" Version="3.6.0" />
         <PackageReference Include="PuppeteerSharp" Version="8.0.0" />
     </ItemGroup>
 
