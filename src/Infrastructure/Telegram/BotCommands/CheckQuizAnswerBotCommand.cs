@@ -37,14 +37,14 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "🎆Верно! Ты молодчина!",
+                "✅Верно! Ты молодчина!",
                 cancellationToken: ct);
         }
         else
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "😞Прости, но ответ неверный. " +
+                "❌😞Прости, но ответ неверный. " +
                 $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
                 "\r\nДавай попробуем со следующим словом!",
                 cancellationToken: ct);
@@ -75,7 +75,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "🏄‍Вот это квиз! Вне зависимости от результатов ты молодец, что стараешься." +
-            $"\r\nВот твоя статистика:" +
+            "\r\nВот твоя статистика:" +
             $"\r\n✅Правильные ответы:            {quizStats.CorrectAnswersCount}" +
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
             $"\r\n📏Процент корректных ответов: {correctnessPercent}",
