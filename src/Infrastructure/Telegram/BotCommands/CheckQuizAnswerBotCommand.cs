@@ -34,28 +34,44 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
         if (isAnswerCorrect)
         {
-            var word = await _mediator.Send(new GetNextQuizQuestionQuery {UserId = request.UserId}, ct);
-            if (word == null)
-            {
-                await _mediator.Send(new CompleteQuizCommand {UserId = request.UserId}, ct);
-                await _client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "Кажется, что квиз закончен",
-                    cancellationToken: ct);
-                return;
-            }
-        
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                $"Переведи слово: {word.Word}",
+                "🎆И это верный ответ!🎆",
                 cancellationToken: ct);
-            
+        }
+        else
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "😞Прости, но ответ неверный. Давай попробуем со следующим словом!",
+                cancellationToken: ct);
+        }
+        
+        await TrySendNextQuestion(request, ct);
+    }
+
+    private async Task TrySendNextQuestion(TelegramRequest request, CancellationToken ct)
+    {
+        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.UserId }, ct);
+        if (word == null)
+        {
+            await CompleteQuiz(request, ct);
             return;
         }
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "😞Прости, но ответ неверный. Попробуй еще раз.",
+            $"Переведи слово: {word.Word}",
             cancellationToken: ct);
+    }
+
+    private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)
+    {
+        await _mediator.Send(new CompleteQuizCommand { UserId = request.UserId }, ct);
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Кажется, что квиз закончен",
+            cancellationToken: ct);
+        return;
     }
 }

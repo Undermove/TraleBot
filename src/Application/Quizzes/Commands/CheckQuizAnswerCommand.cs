@@ -26,7 +26,10 @@ public class CheckQuizAnswerCommand: IRequest<bool>
                 quiz.UserId == request.UserId &&
                 quiz.IsCompleted == false, cancellationToken: ct);
 
-            await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizVocabularyEntries)).LoadAsync(ct);
+            await _dbContext
+                .Entry(currentQuiz)
+                .Collection(nameof(currentQuiz.QuizVocabularyEntries))
+                .LoadAsync(ct);
 
             if (currentQuiz.QuizVocabularyEntries.Count == 0)
             {
@@ -41,9 +44,13 @@ public class CheckQuizAnswerCommand: IRequest<bool>
             
             if (quizVocabularyEntry.VocabularyEntry.Definition != request.Answer.ToLowerInvariant())
             {
+                currentQuiz.IncorrectAnswersCount++;
+                currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
+                await _dbContext.SaveChangesAsync(ct);
                 return false;
             }
             
+            currentQuiz.CorrectAnswersCount++;
             currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
             await _dbContext.SaveChangesAsync(ct);
             return true;
