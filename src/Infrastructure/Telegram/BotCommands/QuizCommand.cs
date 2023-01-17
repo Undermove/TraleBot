@@ -1,4 +1,5 @@
 using Application.Quizzes.Commands;
+using Application.Quizzes.Commands.StartNewQuiz;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -25,10 +26,20 @@ public class QuizCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
+        if (result.IsQuizStartSuccessful)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "Кажется, что ты уже начал один квиз." +
+                $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
+                cancellationToken: token);    
+            return;
+        }
+        
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Начнем квиз! На этой неделе ты выучил {result} новых слов. " +
-            $"Ты вызываешь у меня восторг!" +
+            $"Начнем квиз! На этой неделе ты выучил {result.LastWeekVocabularyEntriesCount} новых слов. " +
+            "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
@@ -37,8 +48,8 @@ public class QuizCommand : IBotCommand
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                $"🏁Кажется, что квиз закончен!" +
-                $"\r\n🥳Приятно видеть, как ты стараешься – это вдохновляет!",
+                "🏁Кажется, что квиз закончен!" +
+                "\r\n🥳Приятно видеть, как ты стараешься – это вдохновляет!",
                 cancellationToken: token);
             return;
         }
