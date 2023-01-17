@@ -26,7 +26,7 @@ public class QuizCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
-        if (result.IsQuizStartSuccessful)
+        if (!result.IsQuizStartSuccessful)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
