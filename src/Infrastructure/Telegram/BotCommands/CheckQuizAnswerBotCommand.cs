@@ -1,5 +1,6 @@
-using Application.Quizzes;
 using Application.Quizzes.Commands;
+using Application.Quizzes.Commands.CheckQuizAnswer;
+using Application.Quizzes.Commands.CompleteQuiz;
 using Application.Quizzes.Queries;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -28,22 +29,23 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken ct)
     {
-        var isAnswerCorrect = await _mediator.Send(
+        var checkResult = await _mediator.Send(
             new CheckQuizAnswerCommand { UserId = request.UserId, Answer = request.Text },
             ct);
 
-        if (isAnswerCorrect)
+        if (checkResult.IsAnswerCorrect)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "🎆И это верный ответ!🎆",
+                "🎆Верно! Ты молодчина!",
                 cancellationToken: ct);
         }
         else
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "😞Прости, но ответ неверный. Давай попробуем со следующим словом!",
+                $"😞Прости, но ответ неверный. Правильный ответ: {checkResult.CorrectAnswer}" +
+                "\r\nДавай попробуем со следующим словом!",
                 cancellationToken: ct);
         }
         
@@ -67,11 +69,13 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
     private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)
     {
-        await _mediator.Send(new CompleteQuizCommand { UserId = request.UserId }, ct);
+        var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.UserId }, ct);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "Кажется, что квиз закончен",
+            "🏄‍Вот это квиз! Вне зависимости от результатов ты молодец, что стараешься." +
+            $"\r\nВот твоя статистика:" +
+            $"\r\n✅Правильные ответы:   {quizStats.CorrectAnswersCount}" +
+            $"\r\n❌Неправильные ответы: {quizStats.IncorrectAnswersCount}",
             cancellationToken: ct);
-        return;
     }
 }

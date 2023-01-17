@@ -2,14 +2,14 @@ using Application.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Quizzes.Commands;
+namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public class CheckQuizAnswerCommand: IRequest<bool>
+public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
 {
     public Guid? UserId { get; set; }
     public string Answer { get; set; }
 
-    public class Handler : IRequestHandler<CheckQuizAnswerCommand, bool>
+    public class Handler : IRequestHandler<CheckQuizAnswerCommand, CheckQuizAnswerResult>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -18,7 +18,7 @@ public class CheckQuizAnswerCommand: IRequest<bool>
             _dbContext = dbContext;
         }
 
-        public async Task<bool> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
+        public async Task<CheckQuizAnswerResult> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .OrderBy(quiz => quiz.DateStarted)
@@ -47,13 +47,13 @@ public class CheckQuizAnswerCommand: IRequest<bool>
                 currentQuiz.IncorrectAnswersCount++;
                 currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
                 await _dbContext.SaveChangesAsync(ct);
-                return false;
+                return new CheckQuizAnswerResult(false, quizVocabularyEntry.VocabularyEntry.Definition);
             }
             
             currentQuiz.CorrectAnswersCount++;
             currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
             await _dbContext.SaveChangesAsync(ct);
-            return true;
+            return new CheckQuizAnswerResult(true, quizVocabularyEntry.VocabularyEntry.Definition);;
         }
     }
 }

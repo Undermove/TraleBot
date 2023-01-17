@@ -1,15 +1,14 @@
 using Application.Common;
-using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Quizzes.Commands;
+namespace Application.Quizzes.Commands.CompleteQuiz;
 
-public class CompleteQuizCommand : IRequest
+public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
 {
     public Guid? UserId { get; set; }
 
-    public class Handler : IRequestHandler<CompleteQuizCommand>
+    public class Handler : IRequestHandler<CompleteQuizCommand, QuizCompletionStatistics>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -18,7 +17,7 @@ public class CompleteQuizCommand : IRequest
             _dbContext = dbContext;
         }
 
-        public async Task<Unit> Handle(CompleteQuizCommand request, CancellationToken ct)
+        public async Task<QuizCompletionStatistics> Handle(CompleteQuizCommand request, CancellationToken ct)
         {
             var quiz = await _dbContext.Quizzes
                 .FirstAsync(quiz => quiz.UserId == request.UserId &&
@@ -26,7 +25,7 @@ public class CompleteQuizCommand : IRequest
                     cancellationToken: ct);
             quiz.IsCompleted = true;
             await _dbContext.SaveChangesAsync(ct);
-            return Unit.Value;
+            return new QuizCompletionStatistics(quiz.CorrectAnswersCount, quiz.IncorrectAnswersCount);
         }
     }
 }
