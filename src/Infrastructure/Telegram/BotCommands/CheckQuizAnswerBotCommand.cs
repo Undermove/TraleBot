@@ -44,7 +44,8 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                $"😞Прости, но ответ неверный. Правильный ответ: {checkResult.CorrectAnswer}" +
+                "😞Прости, но ответ неверный. " +
+                $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
                 "\r\nДавай попробуем со следующим словом!",
                 cancellationToken: ct);
         }
@@ -70,12 +71,14 @@ public class CheckQuizAnswerBotCommand: IBotCommand
     private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)
     {
         var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.UserId }, ct);
+        double correctnessPercent = Math.Round(100 * (quizStats.CorrectAnswersCount / (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "🏄‍Вот это квиз! Вне зависимости от результатов ты молодец, что стараешься." +
             $"\r\nВот твоя статистика:" +
-            $"\r\n✅Правильные ответы:   {quizStats.CorrectAnswersCount}" +
-            $"\r\n❌Неправильные ответы: {quizStats.IncorrectAnswersCount}",
+            $"\r\n✅Правильные ответы:            {quizStats.CorrectAnswersCount}" +
+            $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
+            $"\r\n📏Процент корректных ответов: {correctnessPercent}",
             cancellationToken: ct);
     }
 }
