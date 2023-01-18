@@ -5,12 +5,12 @@ using MediatR;
 
 namespace Application.VocabularyEntries.Commands;
 
-public class CreateVocabularyEntryCommand : IRequest<string>
+public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult>
 {
     public Guid UserId { get; set; }
     public string Word { get; set; }
     
-    public class Handler : IRequestHandler<CreateVocabularyEntryCommand, string>
+    public class Handler : IRequestHandler<CreateVocabularyEntryCommand, CreateVocabularyEntryResult>
     {
         private readonly ITranslationService _translationService;
         private readonly ITraleDbContext _context;
@@ -21,7 +21,7 @@ public class CreateVocabularyEntryCommand : IRequest<string>
             _context = context;
         }
 
-        public async Task<string> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
+        public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
         {
             object?[] keyValues = { request.UserId };
             var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
@@ -36,14 +36,15 @@ public class CreateVocabularyEntryCommand : IRequest<string>
                 .SingleOrDefault(entry => entry.Word.ToLowerInvariant() == request.Word.ToLowerInvariant());
             if(duplicate != null)
             {
-                return duplicate.Definition;
+                return new CreateVocabularyEntryResult(duplicate.Definition, duplicate.Id);
             }
             
             var definition = await _translationService.TranslateAsync(request.Word, ct);
-            
+
+            var entryId = Guid.NewGuid();
             await _context.VocabularyEntries.AddAsync(new VocabularyEntry
             {
-                Id = Guid.NewGuid(),
+                Id = entryId,
                 Word = request.Word.ToLowerInvariant(),
                 Definition = definition.ToLowerInvariant(),
                 UserId = request.UserId,
@@ -52,7 +53,7 @@ public class CreateVocabularyEntryCommand : IRequest<string>
             
             await _context.SaveChangesAsync(ct);
             
-            return definition;
+            return new CreateVocabularyEntryResult(definition, entryId);
         }
     }
 }

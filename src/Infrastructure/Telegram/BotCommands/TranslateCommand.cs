@@ -36,12 +36,12 @@ public class TranslateCommand : IBotCommand
         
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            InlineKeyboardButton.WithCallbackData("❌ Не добавлять в словарь", $"{CommandNames.RemoveEntry}")
+            InlineKeyboardButton.WithCallbackData("❌ Не добавлять в словарь", $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")
         });
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            result,
+            result.Translation,
             replyMarkup:keyboard,
             cancellationToken: token);
     }
