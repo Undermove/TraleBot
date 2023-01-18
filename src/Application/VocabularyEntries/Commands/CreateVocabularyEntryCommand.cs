@@ -3,7 +3,7 @@ using Application.Common.Interfaces;
 using Domain.Entities;
 using MediatR;
 
-namespace Application.VocabularyEntries;
+namespace Application.VocabularyEntries.Commands;
 
 public class CreateVocabularyEntryCommand : IRequest<string>
 {

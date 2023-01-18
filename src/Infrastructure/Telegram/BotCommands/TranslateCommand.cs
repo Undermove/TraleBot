@@ -1,7 +1,9 @@
 using Application.VocabularyEntries;
+using Application.VocabularyEntries.Commands;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
@@ -32,9 +34,15 @@ public class TranslateCommand : IBotCommand
             UserId = request.UserId ?? throw new ApplicationException("User not registered"),
         }, token);
         
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+            InlineKeyboardButton.WithCallbackData("❌ Не добавлять в словарь", $"{CommandNames.RemoveEntry}")
+        });
+        
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             result,
+            replyMarkup:keyboard,
             cancellationToken: token);
     }
 }
