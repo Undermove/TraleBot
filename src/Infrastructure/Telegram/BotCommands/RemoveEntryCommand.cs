@@ -1,17 +1,31 @@
+using Application.VocabularyEntries.Commands;
 using Infrastructure.Telegram.Models;
+using MediatR;
+using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
 
 public class RemoveEntryCommand : IBotCommand
 {
+    private readonly IMediator _mediator;
+    private readonly TelegramBotClient _client;
+
+    public RemoveEntryCommand(IMediator mediator, TelegramBotClient client)
+    {
+        _mediator = mediator;
+        _client = client;
+    }
+
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Start));
+        return Task.FromResult(commandPayload.Contains(CommandNames.RemoveEntry));
     }
 
-    public Task Execute(TelegramRequest request, CancellationToken token)
+    public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        throw new NotImplementedException();
+        var callback = request.Text.Split(' ')[1];
+        await _mediator.Send(new RemoveVocabularyEntryCommand() {VocabularyEntryId = Guid.Parse(callback)}, token);
+        await _client.EditMessageTextAsync(request.UserTelegramId, request.MessageId, "🗑Удалил из словаря", cancellationToken: token);
     }
 }

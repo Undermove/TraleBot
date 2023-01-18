@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddSingleton<IBotCommand, StartCommand>();
         services.AddSingleton<IBotCommand, QuizCommand>();
         services.AddSingleton<IBotCommand, StopQuizBotCommand>();
+        services.AddSingleton<IBotCommand, RemoveEntryCommand>();
         services.AddSingleton<IBotCommand, CheckQuizAnswerBotCommand>();
         services.AddSingleton<IBotCommand, TranslateCommand>();
         return services;
