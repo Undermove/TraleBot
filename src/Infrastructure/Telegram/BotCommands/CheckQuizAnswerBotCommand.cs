@@ -78,7 +78,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             "\r\nВот твоя статистика:" +
             $"\r\n✅Правильные ответы:            {quizStats.CorrectAnswersCount}" +
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
-            $"\r\n📏Процент корректных ответов: {correctnessPercent}",
+            $"\r\n📏Корректных ответов:         {correctnessPercent}%",
             cancellationToken: ct);
     }
 }
