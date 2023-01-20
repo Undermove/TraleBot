@@ -37,32 +37,32 @@ public class Startup
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
             .AddNewtonsoftJson();
 
-        services.AddSwaggerGen(c =>  
-        {  
-            c.SwaggerDoc("v1", new OpenApiInfo { Title = "BasicAuth", Version = "v1" });  
-            c.AddSecurityDefinition("basic", new OpenApiSecurityScheme  
-            {  
-                Name = "Authorization",  
-                Type = SecuritySchemeType.Http,  
-                Scheme = "basic",  
-                In = ParameterLocation.Header,  
-                Description = "Basic Authorization header using the Bearer scheme."  
-            });  
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement  
-            {  
-                {  
-                    new OpenApiSecurityScheme  
-                    {  
-                        Reference = new OpenApiReference  
-                        {  
-                            Type = ReferenceType.SecurityScheme,  
-                            Id = "basic"  
-                        }  
-                    },  
-                    new string[] {}  
-                }  
-            });  
-        });
+        // services.AddSwaggerGen(c =>  
+        // {  
+        //     c.SwaggerDoc("v1", new OpenApiInfo { Title = "BasicAuth", Version = "v1" });  
+        //     c.AddSecurityDefinition("basic", new OpenApiSecurityScheme  
+        //     {  
+        //         Name = "Authorization",  
+        //         Type = SecuritySchemeType.Http,  
+        //         Scheme = "basic",  
+        //         In = ParameterLocation.Header,  
+        //         Description = "Basic Authorization header using the Bearer scheme."  
+        //     });  
+        //     c.AddSecurityRequirement(new OpenApiSecurityRequirement  
+        //     {  
+        //         {  
+        //             new OpenApiSecurityScheme  
+        //             {  
+        //                 Reference = new OpenApiReference  
+        //                 {  
+        //                     Type = ReferenceType.SecurityScheme,  
+        //                     Id = "basic"  
+        //                 }  
+        //             },  
+        //             new string[] {}  
+        //         }  
+        //     });  
+        // });
 
         var authConfig = Configuration.GetSection("AuthConfiguration").Get<AuthConfiguration>();
         services.AddSingleton(authConfig);
@@ -96,9 +96,9 @@ public class Startup
             app.UseDeveloperExceptionPage();
         }
 
-        app.UseDeveloperExceptionPage();
-        app.UseSwagger();
-        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Trale v1"));
+        // app.UseDeveloperExceptionPage();
+        // app.UseSwagger();
+        // app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Trale v1"));
 
         app.UseRouting();
 
