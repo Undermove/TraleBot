@@ -16,6 +16,7 @@ jobs:
         run: |
           echo "BotConfiguration__HostAddress=$TRALEBOT_SERVER_HOST" > test.txt
           echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" >> test.txt
+          echo "BotConfiguration__WebhookToken=$TRALEBOT_SERVER_HOST" >> test.txt
           echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_SERVER_HOST" >> test.txt
         
       - name: Copy file to remote
