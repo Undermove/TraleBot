@@ -45,8 +45,7 @@ public class PayCommand : IBotCommand
         }
         catch (Exception e)
         {
-            Console.WriteLine(e);
-            throw;
+            _logger.LogCritical("Payment problem:", e);
         }
         // Send the invoice to the specified chat
         _logger.LogInformation("Payment Finished");
