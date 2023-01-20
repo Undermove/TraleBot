@@ -15,7 +15,6 @@ using Microsoft.OpenApi.Models;
 using Persistence;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
-using Telegram.Bot;
 using Trale.Common;
 using Trale.HostedServices;
 
@@ -63,10 +62,7 @@ public class Startup
                     new string[] {}  
                 }  
             });  
-        });  
-
-        var botConfig = Configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
-        services.AddSingleton(botConfig);
+        });
 
         var authConfig = Configuration.GetSection("AuthConfiguration").Get<AuthConfiguration>();
         services.AddSingleton(authConfig);
@@ -74,9 +70,6 @@ public class Startup
             .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);  
   
         services.AddScoped<IUserService, UserService>();
-        services.AddScoped(_ => 
-            new TelegramBotClient(botConfig.Token)
-        );
         services.AddApplication();
         services.AddPersistence(Configuration);
         
