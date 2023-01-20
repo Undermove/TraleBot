@@ -30,16 +30,22 @@ public class TelegramDialogProcessor: IDialogProcessor
     {
         var telegramRequest = await MapToTelegramRequest(request, token);
 
+        _logger.LogInformation("Incoming request {TelegramRequestText}", telegramRequest.Text);
         try
         {
             foreach (var command in _commands)
             {
+                _logger.LogInformation("Try command {CommandName}", nameof(command.GetType));
                 if (await command.IsApplicable(telegramRequest, token))
                 {
+                    _logger.LogInformation("Applied command {CommandName}", nameof(command.GetType));
                     await command.Execute(telegramRequest, token);
+                    _logger.LogInformation("Command with text {RequestText} handled by {CommandName} ", telegramRequest.Text, nameof(command.GetType));
                     return;
                 }
             }
+            
+            _logger.LogInformation("Command {CommandName} have no handlers", nameof(telegramRequest.Text));
         }
         catch (Exception e)
         {
