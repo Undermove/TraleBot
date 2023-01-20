@@ -26,6 +26,14 @@ public class QuizCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
+        if (result.LastWeekVocabularyEntriesCount == 0)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "У тебя пока не было новых слов на этой неделе. Напиши в чатик слово cat и попробуй запустить эту команду еще раз.😉",
+                cancellationToken: token);    
+            return;
+        }
         if (!result.IsQuizStartSuccessful)
         {
             await _client.SendTextMessageAsync(

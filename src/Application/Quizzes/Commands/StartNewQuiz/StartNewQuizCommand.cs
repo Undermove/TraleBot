@@ -1,3 +1,4 @@
+using System.Security.Cryptography.X509Certificates;
 using Application.Common;
 using Application.Common.Exceptions;
 using Domain.Entities;
@@ -45,6 +46,11 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 .VocabularyEntries
                 .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
                 .ToList();
+
+            if (vocabularyEntries.Count == 0)
+            {
+                return new StartNewQuizResult(0, false);
+            }
 
             var quiz = new Quiz
             {
