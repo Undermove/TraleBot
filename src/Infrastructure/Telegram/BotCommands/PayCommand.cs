@@ -29,25 +29,19 @@ public class PayCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        _logger.LogInformation("Payment Started");
-        try
-        {
-            await _client.SendInvoiceAsync(
-                request.UserTelegramId,
-                "Payment",
-                "Extended TraleBot",
-                "somePayload",
-                _configuration.PaymentProviderToken,
-                "GEL",
-                new List<LabeledPrice> {new("Premium", 20*100)},
-                cancellationToken: token
-            );
-        }
-        catch (Exception e)
-        {
-            _logger.LogCritical("Payment with token {_configuration.PaymentProviderToken} problem: {e}", _configuration.PaymentProviderToken, e);
-        }
-        // Send the invoice to the specified chat
-        _logger.LogInformation("Payment Finished");
+        _logger.LogInformation("User with ID: {id} requested invoice", request.UserId);
+        
+        await _client.SendInvoiceAsync(
+            request.UserTelegramId,
+            "Payment",
+            "Extended TraleBot",
+            "somePayload",
+            _configuration.PaymentProviderToken,
+            "GEL",
+            new List<LabeledPrice> {new("Premium", 20*100)},
+            cancellationToken: token
+        );
+        
+        _logger.LogInformation("Invoice sent to user with ID: {id}", request.UserId);
     }
 }

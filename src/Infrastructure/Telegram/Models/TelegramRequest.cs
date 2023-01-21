@@ -1,5 +1,6 @@
 using Application.Common.Models;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace Infrastructure.Telegram.Models;
 
@@ -10,6 +11,7 @@ public class TelegramRequest: IMessengerRequest
     public Guid? UserId { get; }
     public string Text { get; }
     public string UserName { get; }
+    public UpdateType MessageType { get; set; }
     
     public TelegramRequest(Update request, Guid? userId)
     {
@@ -18,5 +20,6 @@ public class TelegramRequest: IMessengerRequest
         Text = request.Message?.Text ?? request.CallbackQuery?.Data ?? throw new ArgumentException();
         UserName = request.Message?.Chat.FirstName ?? request.CallbackQuery?.From.Username ?? throw new ArgumentException();
         UserId = userId;
+        MessageType = request.Type;
     }
 }
