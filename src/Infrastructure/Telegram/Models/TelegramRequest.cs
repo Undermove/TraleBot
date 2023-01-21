@@ -11,7 +11,7 @@ public class TelegramRequest: IMessengerRequest
     public Guid? UserId { get; }
     public string Text { get; }
     public string UserName { get; }
-    public UpdateType MessageType { get; set; }
+    public UpdateType MessageType { get; }
     
     public TelegramRequest(Update request, Guid? userId)
     {
