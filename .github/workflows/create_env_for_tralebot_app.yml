@@ -18,13 +18,13 @@ jobs:
           TRALEBOT_AUTOCONFIGURATION_PASSWORD: ${{ secrets.TRALEBOT_AUTOCONFIGURATION_PASSWORD }}
           TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.TRALEBOT_DB_CONNECTION_STRING }}
         run: |
-          echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" > .test_env
-          echo "BotConfiguration__HostAddress=$TRALEBOT_CONFIGURATION_TOKEN" >> .test_env
-          echo "BotConfiguration__WebhookToken=$TRALEBOT_WEBHOOK_TOKEN" >> .test_env
-          echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_PAYMENT_PROVIDER_TOKEN" >> .test_env
-          echo "AuthConfiguration__User=$TRALEBOT_AUTOCONFIGURATION_USER" >> .test_env
-          echo "AuthConfiguration__Password=$TRALEBOT_AUTOCONFIGURATION_PASSWORD" >> .test_env
-          echo "ConnectionStrings__TraleBotDb=$TRALEBOT_DB_CONNECTION_STRING" >> .test_env
+          echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" > .app_env
+          echo "BotConfiguration__HostAddress=$TRALEBOT_CONFIGURATION_TOKEN" >> .app_env
+          echo "BotConfiguration__WebhookToken=$TRALEBOT_WEBHOOK_TOKEN" >> .app_env
+          echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_PAYMENT_PROVIDER_TOKEN" >> .app_env
+          echo "AuthConfiguration__User=$TRALEBOT_AUTOCONFIGURATION_USER" >> .app_env
+          echo "AuthConfiguration__Password=$TRALEBOT_AUTOCONFIGURATION_PASSWORD" >> .app_env
+          echo "ConnectionStrings__TraleBotDb=$TRALEBOT_DB_CONNECTION_STRING" >> .app_env
         
       - name: Copy file to remote
         uses: garygrossgarten/github-action-scp@release
@@ -33,7 +33,7 @@ jobs:
 #         Before copy file to server you should execute this command on the server: 
 #         1) sudo chown username: myfolder (folder on server with docke-compose: tralebot)
 #         2) sudo chmod u+w myfolder
-          remote: ../../usr/local/tralebot/.test_env
+          remote: ../../usr/local/tralebot/.app_env
           host: ${{ secrets.TRALEBOT_SERVER_HOST }}
           username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
           password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
