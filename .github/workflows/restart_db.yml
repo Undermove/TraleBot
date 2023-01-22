@@ -1,0 +1,20 @@
+name: Restart Databse on server
+
+on:
+  workflow_dispatch:
+
+jobs:
+
+  db:
+    - name: Connect to server and restart Database
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+        username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+        password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
+        port: ${{ secrets.TRALEBOT_SERVER_PORT }}
+        script: |
+          cd ../../usr/local/tralebot/
+          docker-compose -f docker-compose-db.yml down
+          docker-compose -f docker-compose-db.yml pull
+          docker-compose -f docker-compose-db.yml up -d
