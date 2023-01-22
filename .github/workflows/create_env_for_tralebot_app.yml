@@ -1,0 +1,40 @@
+name: Create environment variables for TraleBot application
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - shell: bash
+        env:
+          TRALEBOT_CONFIGURATION_TOKEN: ${{ secrets.TRALEBOT_CONFIGURATION_TOKEN }}
+          TRALEBOT_SERVER_HOST: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          TRALEBOT_WEBHOOK_TOKEN: ${{ secrets.TRALEBOT_WEBHOOK_TOKEN }}
+          TRALEBOT_PAYMENT_PROVIDER_TOKEN: ${{ secrets.TRALEBOT_PAYMENT_PROVIDER_TOKEN }}
+          TRALEBOT_AUTOCONFIGURATION_USER: ${{ secrets.TRALEBOT_AUTOCONFIGURATION_USER }}
+          TRALEBOT_AUTOCONFIGURATION_PASSWORD: ${{ secrets.TRALEBOT_AUTOCONFIGURATION_PASSWORD }}
+          TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.TRALEBOT_DB_CONNECTION_STRING }}
+        run: |
+          echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" > .test_env
+          echo "BotConfiguration__HostAddress=$TRALEBOT_CONFIGURATION_TOKEN" >> .test_env
+          echo "BotConfiguration__WebhookToken=$TRALEBOT_WEBHOOK_TOKEN" >> .test_env
+          echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_PAYMENT_PROVIDER_TOKEN" >> .test_env
+          echo "AuthConfiguration__User=$TRALEBOT_AUTOCONFIGURATION_USER" >> .test_env
+          echo "AuthConfiguration__Password=$TRALEBOT_AUTOCONFIGURATION_PASSWORD" >> .test_env
+          echo "ConnectionStrings__TraleBotDb=$TRALEBOT_DB_CONNECTION_STRING" >> .test_env
+        
+      - name: Copy file to remote
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          local: .test_env
+#         Before copy file to server you should execute this command on the server: 
+#         1) sudo chown username: myfolder (folder on server with docke-compose: tralebot)
+#         2) sudo chmod u+w myfolder
+          remote: ../../usr/local/tralebot/.test_env
+          host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+          password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
+          dotfiles: true
