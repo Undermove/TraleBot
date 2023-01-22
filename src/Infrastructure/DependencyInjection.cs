@@ -33,10 +33,11 @@ public static class DependencyInjection
         
         services.AddSingleton<IDialogProcessor, TelegramDialogProcessor>();
         services.AddSingleton<IBotCommand, StartCommand>();
+        services.AddSingleton<IBotCommand, AcceptCheckoutCommand>();
+        services.AddSingleton<IBotCommand, PayCommand>();
         services.AddSingleton<IBotCommand, QuizCommand>();
         services.AddSingleton<IBotCommand, StopQuizBotCommand>();
         services.AddSingleton<IBotCommand, RemoveEntryCommand>();
-        services.AddSingleton<IBotCommand, PayCommand>();
         services.AddSingleton<IBotCommand, CheckQuizAnswerBotCommand>();
         services.AddSingleton<IBotCommand, TranslateCommand>();
         return services;

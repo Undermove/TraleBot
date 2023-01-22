@@ -10,6 +10,7 @@ public class TelegramRequest
     public Guid? UserId { get; }
     public string Text { get; }
     public string UserName { get; }
+    public UpdateType RequestType { get; }
     
     public TelegramRequest(Update request, Guid? userId)
     {
@@ -22,12 +23,14 @@ public class TelegramRequest
                                                                     ?? request.CallbackQuery?.Message?.MessageId
                                                                     ?? throw new ArgumentException();
         Text = request.Message?.Text
-               ?? request.CallbackQuery?.Data 
-               ?? "";
+               ?? request.CallbackQuery?.Data
+               ?? request.PreCheckoutQuery?.Id
+               ?? throw new ArgumentException();
         UserName = request.Message?.Chat.FirstName 
                    ?? request.CallbackQuery?.From.Username 
                    ?? request.PreCheckoutQuery?.From.Username 
                    ?? throw new ArgumentException();
         UserId = userId;
+        RequestType = request.Type;
     }
 }
