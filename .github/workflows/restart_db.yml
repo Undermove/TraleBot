@@ -5,7 +5,10 @@ on:
 
 jobs:
 
-  db:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
     - name: Connect to server and restart Database
       uses: appleboy/ssh-action@v0.1.7
       with:
