@@ -1,0 +1,32 @@
+name: Create environment variables for TraleBot application
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - shell: bash
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          echo "POSTGRES_DB=$POSTGRES_DB" > .db_env
+          echo "POSTGRES_USER=$POSTGRES_USER" >> .db_env
+          echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .db_env
+        
+      - name: Copy file to remote
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          local: .test_env
+#         Before copy file to server you should execute this command on the server: 
+#         1) sudo chown username: myfolder (folder on server with docke-compose: tralebot)
+#         2) sudo chmod u+w myfolder
+          remote: ../../usr/local/tralebot/.db_env
+          host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+          password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
+          dotfiles: true
