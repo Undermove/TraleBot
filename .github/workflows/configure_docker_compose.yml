@@ -14,19 +14,20 @@ jobs:
         env:
           TRALEBOT_SERVER_HOST: ${{ secrets.TRALEBOT_SERVER_HOST }}
         run: |
-          echo "BotConfiguration__HostAddress=$TRALEBOT_SERVER_HOST" > test.txt
-          echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" >> test.txt
-          echo "BotConfiguration__WebhookToken=$TRALEBOT_SERVER_HOST" >> test.txt
-          echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_SERVER_HOST" >> test.txt
+          echo "BotConfiguration__HostAddress=$TRALEBOT_SERVER_HOST" > .test_env
+          echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" >> .test_env
+          echo "BotConfiguration__WebhookToken=$TRALEBOT_SERVER_HOST" >> .test_env
+          echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_SERVER_HOST" >> .test_env
         
       - name: Copy file to remote
         uses: garygrossgarten/github-action-scp@release
         with:
-          local: test.txt
+          local: .test_env
 #         Before copy you write this command on server: 
 #         1) sudo chown username: myfolder (folder on server with docke-compose: tralebot)
 #         2) sudo chmod u+w myfolder
-          remote: ../../usr/local/tralebot/test.txt
+          remote: ../../usr/local/tralebot/.test_env
           host: ${{ secrets.TRALEBOT_SERVER_HOST }}
           username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
           password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
+          dotfiles: true
