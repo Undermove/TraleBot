@@ -29,6 +29,7 @@ public class AcceptCheckoutCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
+        await _client.AnswerPreCheckoutQueryAsync(request.Text, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "✅Платеж принят. Спасибо за поддержку нашего бота! Вам досутпны дополнительные фичи.",
