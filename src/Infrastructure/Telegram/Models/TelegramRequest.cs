@@ -1,10 +1,9 @@
-using Application.Common.Models;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
 namespace Infrastructure.Telegram.Models;
 
-public class TelegramRequest: IMessengerRequest
+public class TelegramRequest
 {
     public int MessageId { get; }
     public long UserTelegramId { get; }
