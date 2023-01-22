@@ -10,15 +10,24 @@ public class TelegramRequest
     public Guid? UserId { get; }
     public string Text { get; }
     public string UserName { get; }
-    public UpdateType MessageType { get; }
     
     public TelegramRequest(Update request, Guid? userId)
     {
-        UserTelegramId = request.Message?.From?.Id ?? request.CallbackQuery?.From.Id ?? throw new ArgumentException();
-        MessageId = request.Message?.MessageId ?? request.CallbackQuery?.Message?.MessageId ?? throw new ArgumentException();
-        Text = request.Message?.Text ?? request.CallbackQuery?.Data ?? throw new ArgumentException();
-        UserName = request.Message?.Chat.FirstName ?? request.CallbackQuery?.From.Username ?? throw new ArgumentException();
+        UserTelegramId = request.Message?.From?.Id 
+                         ?? request.CallbackQuery?.From.Id 
+                         ?? request.MyChatMember?.From.Id 
+                         ?? request.PreCheckoutQuery?.From.Id 
+                         ?? throw new ArgumentException();
+        MessageId = request.Type == UpdateType.PreCheckoutQuery ? 0 : request.Message?.MessageId 
+                                                                    ?? request.CallbackQuery?.Message?.MessageId
+                                                                    ?? throw new ArgumentException();
+        Text = request.Message?.Text
+               ?? request.CallbackQuery?.Data 
+               ?? "";
+        UserName = request.Message?.Chat.FirstName 
+                   ?? request.CallbackQuery?.From.Username 
+                   ?? request.PreCheckoutQuery?.From.Username 
+                   ?? throw new ArgumentException();
         UserId = userId;
-        MessageType = request.Type;
     }
 }

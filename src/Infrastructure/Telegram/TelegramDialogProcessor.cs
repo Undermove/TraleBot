@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 
 namespace Infrastructure.Telegram;
 
@@ -35,12 +36,12 @@ public class TelegramDialogProcessor: IDialogProcessor
         {
             foreach (var command in _commands)
             {
-                _logger.LogInformation("Try command {CommandName}", nameof(command.GetType));
+                _logger.LogInformation("Try command {CommandName}", nameof(command));
                 if (await command.IsApplicable(telegramRequest, token))
                 {
-                    _logger.LogInformation("Applied command {CommandName}", nameof(command.GetType));
+                    _logger.LogInformation("Applied command {CommandName}", nameof(command));
                     await command.Execute(telegramRequest, token);
-                    _logger.LogInformation("Command with text {RequestText} handled by {CommandName} ", telegramRequest.Text, nameof(command.GetType));
+                    _logger.LogInformation("Command with text {RequestText} handled by {CommandName} ", telegramRequest.Text, nameof(command));
                     return;
                 }
             }
@@ -70,9 +71,13 @@ public class TelegramDialogProcessor: IDialogProcessor
             throw new ArgumentException("Can't cast message to Telegram request");
         }
         
-        var userTelegramId = casted.Message?.From?.Id ?? casted.CallbackQuery?.From.Id ?? casted.MyChatMember?.From.Id ?? throw new ArgumentException();
+        var userTelegramId = casted.Message?.From?.Id 
+                             ?? casted.CallbackQuery?.From.Id 
+                             ?? casted.MyChatMember?.From.Id
+                             ?? casted.PreCheckoutQuery?.From.Id
+                             ?? throw new ArgumentException();
         var user = await _mediator.Send(new GetUserByTelegramId {TelegramId = userTelegramId}, ct);
-
+        
         var telegramRequest = new TelegramRequest(casted, user?.Id);
         return telegramRequest;
     }
