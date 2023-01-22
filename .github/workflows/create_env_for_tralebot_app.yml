@@ -14,16 +14,12 @@ jobs:
           TRALEBOT_SERVER_HOST: ${{ secrets.TRALEBOT_SERVER_HOST }}
           TRALEBOT_WEBHOOK_TOKEN: ${{ secrets.TRALEBOT_WEBHOOK_TOKEN }}
           TRALEBOT_PAYMENT_PROVIDER_TOKEN: ${{ secrets.TRALEBOT_PAYMENT_PROVIDER_TOKEN }}
-          TRALEBOT_AUTOCONFIGURATION_USER: ${{ secrets.TRALEBOT_AUTOCONFIGURATION_USER }}
-          TRALEBOT_AUTOCONFIGURATION_PASSWORD: ${{ secrets.TRALEBOT_AUTOCONFIGURATION_PASSWORD }}
           TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.TRALEBOT_DB_CONNECTION_STRING }}
         run: |
           echo "BotConfiguration__Token=$TRALEBOT_SERVER_HOST" > .app_env
           echo "BotConfiguration__HostAddress=$TRALEBOT_CONFIGURATION_TOKEN" >> .app_env
           echo "BotConfiguration__WebhookToken=$TRALEBOT_WEBHOOK_TOKEN" >> .app_env
           echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_PAYMENT_PROVIDER_TOKEN" >> .app_env
-          echo "AuthConfiguration__User=$TRALEBOT_AUTOCONFIGURATION_USER" >> .app_env
-          echo "AuthConfiguration__Password=$TRALEBOT_AUTOCONFIGURATION_PASSWORD" >> .app_env
           echo "ConnectionStrings__TraleBotDb=$TRALEBOT_DB_CONNECTION_STRING" >> .app_env
         
       - name: Copy file to remote
