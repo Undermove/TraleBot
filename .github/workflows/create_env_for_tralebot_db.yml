@@ -1,4 +1,4 @@
-name: Create environment variables for TraleBot application
+name: Create env for TraleBot Db
 
 on:
   workflow_dispatch:
