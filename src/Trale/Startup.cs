@@ -11,7 +11,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.OpenApi.Models;
 using Persistence;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
@@ -36,33 +35,6 @@ public class Startup
             .AddJsonOptions(options=>
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
             .AddNewtonsoftJson();
-
-        // services.AddSwaggerGen(c =>  
-        // {  
-        //     c.SwaggerDoc("v1", new OpenApiInfo { Title = "BasicAuth", Version = "v1" });  
-        //     c.AddSecurityDefinition("basic", new OpenApiSecurityScheme  
-        //     {  
-        //         Name = "Authorization",  
-        //         Type = SecuritySchemeType.Http,  
-        //         Scheme = "basic",  
-        //         In = ParameterLocation.Header,  
-        //         Description = "Basic Authorization header using the Bearer scheme."  
-        //     });  
-        //     c.AddSecurityRequirement(new OpenApiSecurityRequirement  
-        //     {  
-        //         {  
-        //             new OpenApiSecurityScheme  
-        //             {  
-        //                 Reference = new OpenApiReference  
-        //                 {  
-        //                     Type = ReferenceType.SecurityScheme,  
-        //                     Id = "basic"  
-        //                 }  
-        //             },  
-        //             new string[] {}  
-        //         }  
-        //     });  
-        // });
 
         var authConfig = Configuration.GetSection("AuthConfiguration").Get<AuthConfiguration>();
         services.AddSingleton(authConfig);
