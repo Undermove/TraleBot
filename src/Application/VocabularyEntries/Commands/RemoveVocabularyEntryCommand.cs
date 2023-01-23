@@ -22,8 +22,9 @@ public class RemoveVocabularyEntryCommand : IRequest
             if (entry != null)
             {
                 _dbContext.VocabularyEntries.Remove(entry);
+                await _dbContext.SaveChangesAsync(ct);
             }
-            await _dbContext.SaveChangesAsync(ct);
+            
             return Unit.Value;
         }
     }
