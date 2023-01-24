@@ -30,32 +30,27 @@ public class StartQuizBotCommand : IBotCommand
         var quizTypeString = request.Text.Split(' ')[1];
         Enum.TryParse<QuizTypes>(quizTypeString, true, out var quizType);
 
-        switch (quizType)
-        {
-            case QuizTypes.LastWeek:
-                var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
+        var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId, QuizType = quizType}, token);
 
-                if (await IsVocabularyEmpty(request, token, result) ||
-                    await IsQuizNotStarted(request, token, result))
-                {
-                    return;
-                }
-        
-                await StartNewQuiz(request, token, result);
-                break;
-            case QuizTypes.LastDay:
-            case QuizTypes.SeveralRandomWords:
-            case QuizTypes.MostFailed:
-            default:
-                await _client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "🔄Этот тип квиза пока в разработке",
-                    cancellationToken: token);
-                break;
+        if (quizType != QuizTypes.LastWeek)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "🔄Этот тип квиза пока в разработке",
+                cancellationToken: token);
+            return;
         }
+        
+        if (await IsVocabularyEmpty(request, token, result) ||
+            await IsQuizNotStarted(request, token, result))
+        {
+            return;
+        }
+        
+        await SendFirstQuestion(request, token, result);
     }
 
-    private async Task StartNewQuiz(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
+    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
     {
         await _client.EditMessageTextAsync(
             request.UserTelegramId,

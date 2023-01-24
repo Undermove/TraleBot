@@ -9,6 +9,7 @@ namespace Application.Quizzes.Commands.StartNewQuiz;
 public class StartNewQuizCommand : IRequest<StartNewQuizResult>
 {
     public Guid? UserId { get; set; }
+    public QuizTypes QuizType { get; set; }
     
     public class Handler: IRequestHandler<StartNewQuizCommand, StartNewQuizResult>
     {
@@ -42,10 +43,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             
-            var vocabularyEntries = user
-                .VocabularyEntries
-                .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
-                .ToList();
+            var vocabularyEntries = CreateQuizQuestions(user, request.QuizType);
 
             if (vocabularyEntries.Count == 0)
             {
@@ -66,6 +64,39 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             await _dbContext.SaveChangesAsync(ct);
 
             return new StartNewQuizResult(vocabularyEntries.Count, true);
+        }
+
+        private static List<VocabularyEntry> CreateQuizQuestions(User user, QuizTypes quizType)
+        {
+            Random rnd = new Random();
+            var vocabularyEntries = new List<VocabularyEntry>();
+            
+            switch (quizType)
+            {
+                case QuizTypes.LastWeek:
+                    vocabularyEntries = user
+                        .VocabularyEntries
+                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
+                        .ToList();
+                    break;
+                case QuizTypes.LastDay:
+                    vocabularyEntries = user
+                        .VocabularyEntries
+                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-1))
+                        .ToList();
+                    break;
+                case QuizTypes.SeveralRandomWords:
+                    vocabularyEntries = user
+                        .VocabularyEntries
+                        .OrderBy(_ => rnd.Next()).Take(10)
+                        .ToList();
+                    break;
+                case QuizTypes.MostFailed:
+                default:
+                    break;
+            }
+            
+            return vocabularyEntries;
         }
     }
 }
