@@ -44,7 +44,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "❌😞Прости, но ответ неверный. " +
+                "❌😞Прости, но ответ неверный." +
                 $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
                 "\r\nДавай попробуем со следующим словом!",
                 cancellationToken: ct);

@@ -32,7 +32,7 @@ public class StartQuizBotCommand : IBotCommand
 
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId, QuizType = quizType}, token);
 
-        if (quizType != QuizTypes.LastWeek)
+        if (quizType == QuizTypes.MostFailed)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
