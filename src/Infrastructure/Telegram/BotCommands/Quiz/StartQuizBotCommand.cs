@@ -29,7 +29,7 @@ public class StartQuizBotCommand : IBotCommand
     {
         var quizTypeString = request.Text.Split(' ')[1];
         Enum.TryParse<QuizTypes>(quizTypeString, true, out var quizType);
-     
+
         switch (quizType)
         {
             case QuizTypes.LastWeek:
@@ -57,8 +57,9 @@ public class StartQuizBotCommand : IBotCommand
 
     private async Task StartNewQuiz(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
     {
-        await _client.SendTextMessageAsync(
+        await _client.EditMessageTextAsync(
             request.UserTelegramId,
+            request.MessageId,
             $"Начнем квиз! На этой неделе ты выучил {result.LastWeekVocabularyEntriesCount} новых слов. " +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
@@ -79,8 +80,9 @@ public class StartQuizBotCommand : IBotCommand
             return false;
         }
         
-        await _client.SendTextMessageAsync(
+        await _client.EditMessageTextAsync(
             request.UserTelegramId,
+            request.MessageId,
             "Кажется, что ты уже начал один квиз." +
             $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
             cancellationToken: token);
@@ -95,8 +97,9 @@ public class StartQuizBotCommand : IBotCommand
             return false;
         }
         
-        await _client.SendTextMessageAsync(
+        await _client.EditMessageTextAsync(
             request.UserTelegramId,
+            request.MessageId,
             "У тебя пока не было новых слов на этой неделе. Напиши в чатик слово cat и попробуй запустить эту команду еще раз.😉",
             cancellationToken: token);
         return true;
