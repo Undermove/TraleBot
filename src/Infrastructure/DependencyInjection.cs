@@ -3,6 +3,7 @@ using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
+using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Translation;
 using Microsoft.Extensions.Configuration;
@@ -36,6 +37,7 @@ public static class DependencyInjection
         services.AddSingleton<IBotCommand, AcceptCheckoutCommand>();
         services.AddSingleton<IBotCommand, PayCommand>();
         services.AddSingleton<IBotCommand, QuizCommand>();
+        services.AddSingleton<IBotCommand, StartQuizBotCommand>();
         services.AddSingleton<IBotCommand, StopQuizBotCommand>();
         services.AddSingleton<IBotCommand, RemoveEntryCommand>();
         services.AddSingleton<IBotCommand, CheckQuizAnswerBotCommand>();

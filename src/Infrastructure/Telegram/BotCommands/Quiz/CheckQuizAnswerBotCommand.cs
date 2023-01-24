@@ -6,7 +6,7 @@ using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.Quiz;
 
 public class CheckQuizAnswerBotCommand: IBotCommand
 {

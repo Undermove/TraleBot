@@ -1,17 +1,19 @@
 using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.StartNewQuiz;
+using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.Quiz;
 
-public class QuizCommand : IBotCommand
+public class StartQuizBotCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
     private readonly IMediator _mediator;
 
-    public QuizCommand(TelegramBotClient client, IMediator mediator)
+    public StartQuizBotCommand(TelegramBotClient client, IMediator mediator)
     {
         _client = client;
         _mediator = mediator;
@@ -20,20 +22,37 @@ public class QuizCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Quiz));
+        return Task.FromResult(commandPayload.StartsWith(CommandNames.Quiz) && commandPayload.Split(' ').Length > 1);
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
-
-        if (await IsVocabularyEmpty(request, token, result) ||
-            await IsQuizNotStarted(request, token, result))
+        var quizTypeString = request.Text.Split(' ')[1];
+        Enum.TryParse<QuizTypes>(quizTypeString, true, out var quizType);
+     
+        switch (quizType)
         {
-            return;
-        }
+            case QuizTypes.LastWeek:
+                var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
+
+                if (await IsVocabularyEmpty(request, token, result) ||
+                    await IsQuizNotStarted(request, token, result))
+                {
+                    return;
+                }
         
-        await StartNewQuiz(request, token, result);
+                await StartNewQuiz(request, token, result);
+                break;
+            case QuizTypes.LastDay:
+            case QuizTypes.SeveralRandomWords:
+            case QuizTypes.MostFailed:
+            default:
+                await _client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    "🔄Этот тип квиза пока в разработке",
+                    cancellationToken: token);
+                break;
+        }
     }
 
     private async Task StartNewQuiz(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
