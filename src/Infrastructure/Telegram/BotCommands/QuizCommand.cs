@@ -55,30 +55,32 @@ public class QuizCommand : IBotCommand
 
     private async Task<bool> IsQuizNotStarted(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
     {
-        if (!result.IsQuizStartSuccessful)
+        if (result.IsQuizStartSuccessful)
         {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "Кажется, что ты уже начал один квиз." +
-                $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
-                cancellationToken: token);
-            return true;
+            return false;
         }
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Кажется, что ты уже начал один квиз." +
+            $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
+            cancellationToken: token);
+        return true;
 
-        return false;
     }
 
     private async Task<bool> IsVocabularyEmpty(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
     {
-        if (result.LastWeekVocabularyEntriesCount == 0)
+        if (result.LastWeekVocabularyEntriesCount != 0)
         {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "У тебя пока не было новых слов на этой неделе. Напиши в чатик слово cat и попробуй запустить эту команду еще раз.😉",
-                cancellationToken: token);
-            return true;
+            return false;
         }
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "У тебя пока не было новых слов на этой неделе. Напиши в чатик слово cat и попробуй запустить эту команду еще раз.😉",
+            cancellationToken: token);
+        return true;
 
-        return false;
     }
 }
