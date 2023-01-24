@@ -26,24 +26,18 @@ public class QuizCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId}, token);
-        if (result.LastWeekVocabularyEntriesCount == 0)
+
+        if (await IsVocabularyEmpty(request, token, result) ||
+            await IsQuizNotStarted(request, token, result))
         {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "У тебя пока не было новых слов на этой неделе. Напиши в чатик слово cat и попробуй запустить эту команду еще раз.😉",
-                cancellationToken: token);    
-            return;
-        }
-        if (!result.IsQuizStartSuccessful)
-        {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "Кажется, что ты уже начал один квиз." +
-                $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
-                cancellationToken: token);    
             return;
         }
         
+        await StartNewQuiz(request, token, result);
+    }
+
+    private async Task StartNewQuiz(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
+    {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"Начнем квиз! На этой неделе ты выучил {result.LastWeekVocabularyEntriesCount} новых слов. " +
@@ -51,20 +45,40 @@ public class QuizCommand : IBotCommand
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var word = await _mediator.Send(new GetNextQuizQuestionQuery {UserId = request.UserId}, token);
-        if (word == null)
+        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.UserId }, token);
+
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"Переведи слово: {word!.Word}",
+            cancellationToken: token);
+    }
+
+    private async Task<bool> IsQuizNotStarted(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
+    {
+        if (!result.IsQuizStartSuccessful)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "🏁Кажется, что квиз закончен!" +
-                "\r\n🥳Приятно видеть, как ты стараешься – это вдохновляет!",
+                "Кажется, что ты уже начал один квиз." +
+                $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
                 cancellationToken: token);
-            return;
+            return true;
         }
-        
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"Переведи слово: {word.Word}",
-            cancellationToken: token);
+
+        return false;
+    }
+
+    private async Task<bool> IsVocabularyEmpty(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
+    {
+        if (result.LastWeekVocabularyEntriesCount == 0)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "У тебя пока не было новых слов на этой неделе. Напиши в чатик слово cat и попробуй запустить эту команду еще раз.😉",
+                cancellationToken: token);
+            return true;
+        }
+
+        return false;
     }
 }
