@@ -27,6 +27,7 @@ public class CreateWebhook : IHostedService
 
     public async Task StopAsync(CancellationToken cancellationToken)
     {
-        await _telegramBotClient.DeleteWebhookAsync(true, cancellationToken);
+        // set first parameter to true in critical situations
+        await _telegramBotClient.DeleteWebhookAsync(false, cancellationToken);
     }
 }
