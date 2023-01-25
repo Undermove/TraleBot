@@ -55,7 +55,7 @@ public class StartQuizBotCommand : IBotCommand
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
-            $"Начнем квиз! На этой неделе ты выучил {result.LastWeekVocabularyEntriesCount} новых слов. " +
+            $"Начнем квиз! В него войдет {result.LastWeekVocabularyEntriesCount} выученных слов. " +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
