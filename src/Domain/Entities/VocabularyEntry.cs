@@ -9,6 +9,7 @@ public class VocabularyEntry
     public DateTime DateAdded { get; set; } 
     public Guid UserId { get; set; }
     public User User { get; set; }
-    
+    public int SuccessAnswersCount { get; set; }
+    public int FailedAnswersCount { get; set; }
     public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; }
 }

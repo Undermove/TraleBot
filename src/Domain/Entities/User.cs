@@ -8,6 +8,7 @@ public class User
     public Guid Id { get; set; }
     public long TelegramId { get; set; }
     public UserAccountType AccountType { get; set; }
+    public DateTime SubscribedUntil { get; set; }
     public ICollection<VocabularyEntry> VocabularyEntries { get; set; }
     public ICollection<Quiz> Quizzes { get; set; }
 }
