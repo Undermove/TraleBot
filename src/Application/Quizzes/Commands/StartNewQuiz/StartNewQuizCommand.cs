@@ -92,7 +92,11 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                         .ToList();
                     break;
                 case QuizTypes.MostFailed:
-                default:
+                    vocabularyEntries = user
+                        .VocabularyEntries
+                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
+                        .Where(entry => entry.SuccessAnswersCount <= entry.FailedAnswersCount)
+                        .ToList();
                     break;
             }
             

@@ -46,11 +46,13 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             {
                 currentQuiz.IncorrectAnswersCount++;
                 currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
+                quizVocabularyEntry.VocabularyEntry.FailedAnswersCount++;
                 await _dbContext.SaveChangesAsync(ct);
                 return new CheckQuizAnswerResult(false, quizVocabularyEntry.VocabularyEntry.Definition);
             }
             
             currentQuiz.CorrectAnswersCount++;
+            quizVocabularyEntry.VocabularyEntry.SuccessAnswersCount++;
             currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
             await _dbContext.SaveChangesAsync(ct);
             return new CheckQuizAnswerResult(true, quizVocabularyEntry.VocabularyEntry.Definition);;

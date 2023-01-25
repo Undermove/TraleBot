@@ -32,15 +32,6 @@ public class StartQuizBotCommand : IBotCommand
 
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId, QuizType = quizType}, token);
 
-        if (quizType == QuizTypes.MostFailed)
-        {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "🔄Этот тип квиза пока в разработке",
-                cancellationToken: token);
-            return;
-        }
-        
         if (await IsVocabularyEmpty(request, token, result) ||
             await IsQuizNotStarted(request, token, result))
         {
