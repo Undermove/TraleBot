@@ -33,6 +33,15 @@ public class TranslateCommand : IBotCommand
             Word = request.Text,
             UserId = request.UserId ?? throw new ApplicationException("User not registered"),
         }, token);
+
+        if (!result.isTranslationCompleted)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "Прости, пока не могу перевести это слово 😞.",
+                cancellationToken: token);
+            return;
+        }
         
         var keyboard = new InlineKeyboardMarkup(new[]
         {

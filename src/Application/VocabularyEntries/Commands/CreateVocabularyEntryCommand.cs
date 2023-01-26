@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Domain.Entities;
 using MediatR;
@@ -33,13 +34,22 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             
             var duplicate = user.VocabularyEntries
-                .SingleOrDefault(entry => entry.Word.ToLowerInvariant() == request.Word.ToLowerInvariant());
+                .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
             {
-                return new CreateVocabularyEntryResult(duplicate.Definition, duplicate.Id);
+                return new CreateVocabularyEntryResult(true, duplicate.Definition, duplicate.Id);
             }
+
+            string definition;
             
-            var definition = await _translationService.TranslateAsync(request.Word, ct);
+            try
+            {
+                definition = await _translationService.TranslateAsync(request.Word, ct);
+            }
+            catch (UntranslatableWordException)
+            {
+                return new CreateVocabularyEntryResult(false, "", Guid.Empty);
+            }
 
             var entryId = Guid.NewGuid();
             await _context.VocabularyEntries.AddAsync(new VocabularyEntry
@@ -53,7 +63,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             
             await _context.SaveChangesAsync(ct);
             
-            return new CreateVocabularyEntryResult(definition, entryId);
+            return new CreateVocabularyEntryResult(true, definition, entryId);
         }
     }
 }

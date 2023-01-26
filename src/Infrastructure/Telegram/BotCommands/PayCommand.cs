@@ -33,12 +33,12 @@ public class PayCommand : IBotCommand
         
         await _client.SendInvoiceAsync(
             request.UserTelegramId,
-            "Payment",
-            "Extended TraleBot",
-            "somePayload",
+            "TraleBot Premium Account",
+            "Extended TraleBot functionality",
+            "TraleBot Premium Account",
             _configuration.PaymentProviderToken,
-            "GEL",
-            new List<LabeledPrice> {new("Premium", 20*100)},
+            "EUR",
+            new List<LabeledPrice> {new("Premium", 5*100)},
             cancellationToken: token
         );
         

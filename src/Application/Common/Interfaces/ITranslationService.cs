@@ -1,3 +1,5 @@
+using Application.Common.Exceptions;
+
 namespace Application.Common.Interfaces;
 
 public interface ITranslationService
