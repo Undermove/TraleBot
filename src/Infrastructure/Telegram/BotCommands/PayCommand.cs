@@ -24,7 +24,9 @@ public class PayCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Pay));
+        return Task.FromResult(
+            commandPayload.Equals(CommandNames.Pay, StringComparison.InvariantCultureIgnoreCase) || 
+            commandPayload.StartsWith(CommandNames.PayIcon, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)

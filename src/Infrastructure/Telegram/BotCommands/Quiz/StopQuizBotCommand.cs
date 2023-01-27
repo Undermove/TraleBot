@@ -19,7 +19,8 @@ public class StopQuizBotCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.StopQuiz));
+        return Task.FromResult(commandPayload.Equals(CommandNames.StopQuiz) ||
+                               commandPayload.StartsWith(CommandNames.StopQuizIcon, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
