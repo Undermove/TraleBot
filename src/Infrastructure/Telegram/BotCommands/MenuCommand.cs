@@ -18,39 +18,30 @@ public class MenuCommand : IBotCommand
     {
         var commandPayload = request.Text;
         return Task.FromResult(
-            commandPayload.Equals(CommandNames.Menu, StringComparison.InvariantCultureIgnoreCase) ||
-            commandPayload.StartsWith(CommandNames.MenuCloseIcon, StringComparison.InvariantCultureIgnoreCase));
+            commandPayload.Equals(CommandNames.Menu, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        ReplyKeyboardMarkup keyboard;
-        if (request.Text.StartsWith(CommandNames.MenuCloseIcon, StringComparison.InvariantCultureIgnoreCase))
+        var keyboard = new ReplyKeyboardMarkup(new[]
         {
-            keyboard = new ReplyKeyboardMarkup(new KeyboardButton[]{});
-        }
-        else
-        {
-            keyboard = new ReplyKeyboardMarkup(new[]
+            new[]
             {
-                new[]
-                {
-                    new KeyboardButton($"{CommandNames.QuizIcon}Квиз"),
-                    new KeyboardButton($"{CommandNames.StopQuizIcon}Остановить квиз")
-                },
-                new[]
-                {
-                    new KeyboardButton($"{CommandNames.StopQuizIcon}Премиум"),
-                    new KeyboardButton($"{CommandNames.HelpIcon}Поддержка"),
-                    new KeyboardButton($"{CommandNames.MenuCloseIcon}Скрыть меню"),
-                }
-            });
-            keyboard.ResizeKeyboard = true;
-        }
+                new KeyboardButton($"{CommandNames.QuizIcon}Квиз"),
+                new KeyboardButton($"{CommandNames.StopQuizIcon}Остановить квиз")
+            },
+            new[]
+            {
+                new KeyboardButton($"{CommandNames.StopQuizIcon}Премиум"),
+                new KeyboardButton($"{CommandNames.HelpIcon}Поддержка"),
+            }
+        });
+        keyboard.ResizeKeyboard = true;
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "Меню",
+            replyMarkup: keyboard,
             cancellationToken: token);
     }
 }
