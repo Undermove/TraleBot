@@ -32,7 +32,7 @@ public class MenuCommand : IBotCommand
             },
             new[]
             {
-                new KeyboardButton($"{CommandNames.StopQuizIcon}Премиум"),
+                new KeyboardButton($"{CommandNames.PayIcon}Премиум"),
                 new KeyboardButton($"{CommandNames.HelpIcon}Поддержка"),
             }
         });
