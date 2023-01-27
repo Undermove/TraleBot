@@ -17,30 +17,40 @@ public class MenuCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Equals(CommandNames.Menu, StringComparison.InvariantCultureIgnoreCase));
+        return Task.FromResult(
+            commandPayload.Equals(CommandNames.Menu, StringComparison.InvariantCultureIgnoreCase) ||
+            commandPayload.StartsWith(CommandNames.MenuCloseIcon, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var keyboard = new ReplyKeyboardMarkup(new[]
+        ReplyKeyboardMarkup keyboard;
+        if (request.Text.StartsWith(CommandNames.MenuCloseIcon, StringComparison.InvariantCultureIgnoreCase))
         {
-            new[]
+            keyboard = new ReplyKeyboardMarkup(new KeyboardButton[]{});
+        }
+        else
+        {
+            keyboard = new ReplyKeyboardMarkup(new[]
             {
-                new KeyboardButton("🎲Новый квиз"),
-                new KeyboardButton("⏹Остановить квиз")
-            },
-            new[]
-            {
-                new KeyboardButton("💳Поддержать проект"),
-                new KeyboardButton("🆘Написать в поддержку"),
-            }
-        });
-        keyboard.ResizeKeyboard = true;
+                new[]
+                {
+                    new KeyboardButton($"{CommandNames.QuizIcon}Квиз"),
+                    new KeyboardButton($"{CommandNames.StopQuizIcon}Остановить квиз")
+                },
+                new[]
+                {
+                    new KeyboardButton($"{CommandNames.StopQuizIcon}Премиум"),
+                    new KeyboardButton($"{CommandNames.HelpIcon}Поддержка"),
+                    new KeyboardButton($"{CommandNames.MenuCloseIcon}Скрыть меню"),
+                }
+            });
+            keyboard.ResizeKeyboard = true;
+        }
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "Меню",
-            replyMarkup: keyboard,
             cancellationToken: token);
     }
 }
