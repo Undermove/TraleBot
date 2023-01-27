@@ -1,6 +1,5 @@
 using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.Models;
-using MediatR;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
@@ -8,12 +7,10 @@ namespace Infrastructure.Telegram.BotCommands;
 public class HelpCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
-    private readonly IMediator _mediator;
 
-    public HelpCommand(TelegramBotClient client, IMediator mediator)
+    public HelpCommand(TelegramBotClient client)
     {
         _client = client;
-        _mediator = mediator;
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
