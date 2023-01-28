@@ -22,7 +22,8 @@ public class StartQuizBotCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.StartsWith(CommandNames.Quiz) && commandPayload.Split(' ').Length > 1);
+        return Task.FromResult(commandPayload.StartsWith(CommandNames.Quiz) && 
+                               commandPayload.Split(' ').Length > 1);
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
