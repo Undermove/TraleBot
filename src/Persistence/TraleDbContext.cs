@@ -18,12 +18,14 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<VocabularyEntry> VocabularyEntries { get; set; } = null!;
     public DbSet<Quiz> Quizzes { get; set; } = null!;
-    
+    public DbSet<Invoice> Invoices { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new VocabularyEntryConfiguration());
         modelBuilder.ApplyConfiguration(new QuizConfiguration());
+        modelBuilder.ApplyConfiguration(new InvoiceConfiguration());
         modelBuilder.ApplyConfiguration(new QuizVocabularyEntryConfiguration());
     }
 }
