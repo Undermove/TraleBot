@@ -6,6 +6,7 @@ public static class CommandNames
     public const string Help = "/help";
     public const string HelpIcon = "🆘";
     public const string Menu = "/menu";
+    public const string CloseMenu = "❌";
     public const string Quiz = "/quiz";
     public const string QuizIcon = "🎲";
     public const string StopQuiz = "/stopquiz";

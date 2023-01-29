@@ -27,13 +27,14 @@ public class MenuCommand : IBotCommand
         {
             new[]
             {
-                new KeyboardButton($"{CommandNames.QuizIcon}Квиз"),
-                new KeyboardButton($"{CommandNames.StopQuizIcon}Остановить квиз")
+                new KeyboardButton($"{CommandNames.QuizIcon} Квиз"),
+                new KeyboardButton($"{CommandNames.StopQuizIcon} Остановить квиз")
             },
             new[]
             {
                 new KeyboardButton($"{CommandNames.PayIcon} Премиум"),
-                new KeyboardButton($"{CommandNames.HelpIcon}Поддержка"),
+                new KeyboardButton($"{CommandNames.HelpIcon} Поддержка"),
+                new KeyboardButton($"{CommandNames.CloseMenu} Закрыть меню")
             }
         });
         keyboard.ResizeKeyboard = true;
