@@ -58,7 +58,10 @@ public class TelegramDialogProcessor: IDialogProcessor
     {
         await _telegramBotClient.SendTextMessageAsync(
             telegramRequest.UserTelegramId,
-            "Постой! Прости, кажется у меня что-то сломалось 😞 Попробуй еще раз через несколько минут.", 
+            "Прости, кажется у меня что-то сломалось 😞 Попробуй еще раз через несколько минут." +
+            "\r\nЕсли приложение не заработало, то напиши" +
+            "\r\n🤖Разработчику бота @Undermove1" +
+            "\r\n💬Или в чат поддержки https://t.me/TraleBotSupport", 
             cancellationToken: token);
         _logger.LogError(e, "Exception while processing request from user: {User} with command {Command}",
             telegramRequest.UserTelegramId, telegramRequest.Text);
