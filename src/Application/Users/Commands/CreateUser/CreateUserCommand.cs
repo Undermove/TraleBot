@@ -1,12 +1,11 @@
 using Application.Common;
-using Application.Common.Models;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Users.Commands.CreateUser;
 
-public class CreateUserCommand : IRequest<UserCreatedResultType>, ITransactional
+public class CreateUserCommand : IRequest<UserCreatedResultType>
 {
     public long TelegramId { get; set; }
 
