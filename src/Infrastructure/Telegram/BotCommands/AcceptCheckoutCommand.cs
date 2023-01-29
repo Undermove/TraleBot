@@ -26,7 +26,7 @@ public class AcceptCheckoutCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        await _mediator.Send(new ProcessPaymentCommand() { UserId = request.UserId, PreCheckoutQueryId = request.Text}, token);
+        await _mediator.Send(new ProcessPaymentCommand { UserId = request.UserId, PreCheckoutQueryId = request.Text}, token);
         await _client.AnswerPreCheckoutQueryAsync(request.Text, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
