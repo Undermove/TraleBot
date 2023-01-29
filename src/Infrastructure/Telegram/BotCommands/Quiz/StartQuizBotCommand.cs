@@ -31,7 +31,7 @@ public class StartQuizBotCommand : IBotCommand
         var quizTypeString = request.Text.Split(' ')[1];
         Enum.TryParse<QuizTypes>(quizTypeString, true, out var quizType);
 
-        var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.UserId, QuizType = quizType}, token);
+        var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
 
         if (await IsVocabularyEmpty(request, token, result) ||
             await IsQuizNotStarted(request, token, result))
@@ -52,7 +52,7 @@ public class StartQuizBotCommand : IBotCommand
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.UserId }, token);
+        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,

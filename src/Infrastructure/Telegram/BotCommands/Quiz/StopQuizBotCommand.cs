@@ -25,7 +25,7 @@ public class StopQuizBotCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        await _mediator.Send(new StopQuizCommand {UserId = request.UserId}, token);
+        await _mediator.Send(new StopQuizCommand {UserId = request.User!.Id}, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"Хорошо, пока закончим этот квиз. 😌" +

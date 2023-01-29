@@ -1,5 +1,6 @@
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using User = Domain.Entities.User;
 
 namespace Infrastructure.Telegram.Models;
 
@@ -7,12 +8,12 @@ public class TelegramRequest
 {
     public int MessageId { get; }
     public long UserTelegramId { get; }
-    public Guid? UserId { get; }
+    public User? User { get; }
     public string Text { get; }
     public string UserName { get; }
     public UpdateType RequestType { get; }
     
-    public TelegramRequest(Update request, Guid? userId)
+    public TelegramRequest(Update request, User? user)
     {
         UserTelegramId = request.Message?.From?.Id 
                          ?? request.CallbackQuery?.From.Id 
@@ -30,7 +31,7 @@ public class TelegramRequest
                    ?? request.CallbackQuery?.From.FirstName 
                    ?? request.PreCheckoutQuery?.From.FirstName 
                    ?? throw new ArgumentException("User Name not found");
-        UserId = userId;
+        User = user;
         RequestType = request.Type;
     }
 }

@@ -31,7 +31,7 @@ public class PayCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        _logger.LogInformation("User with ID: {id} requested invoice", request.UserId);
+        _logger.LogInformation("User with ID: {id} requested invoice", request.User!.Id);
         
         await _client.SendInvoiceAsync(
             request.UserTelegramId,
@@ -44,6 +44,6 @@ public class PayCommand : IBotCommand
             cancellationToken: token
         );
         
-        _logger.LogInformation("Invoice sent to user with ID: {id}", request.UserId);
+        _logger.LogInformation("Invoice sent to user with ID: {id}", request.User!.Id);
     }
 }

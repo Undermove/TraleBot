@@ -81,7 +81,7 @@ public class TelegramDialogProcessor: IDialogProcessor
                              ?? throw new ArgumentException();
         var user = await _mediator.Send(new GetUserByTelegramId {TelegramId = userTelegramId}, ct);
         
-        var telegramRequest = new TelegramRequest(casted, user?.Id);
+        var telegramRequest = new TelegramRequest(casted, user);
         return telegramRequest;
     }
 }

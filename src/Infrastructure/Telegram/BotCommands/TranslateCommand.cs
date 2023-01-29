@@ -31,7 +31,7 @@ public class TranslateCommand : IBotCommand
         var result = await _mediator.Send(new CreateVocabularyEntryCommand
         {
             Word = request.Text,
-            UserId = request.UserId ?? throw new ApplicationException("User not registered"),
+            UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
         if (!result.isTranslationCompleted)

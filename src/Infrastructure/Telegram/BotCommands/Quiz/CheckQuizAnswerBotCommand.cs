@@ -22,7 +22,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
     public async Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var isQuizStarted = await _mediator.Send(
-            new CheckIsQuizStartedQuery { UserId = request.UserId },
+            new CheckIsQuizStartedQuery { UserId = request.User!.Id },
             ct);
         return isQuizStarted;
     }
@@ -30,7 +30,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken ct)
     {
         var checkResult = await _mediator.Send(
-            new CheckQuizAnswerCommand { UserId = request.UserId, Answer = request.Text },
+            new CheckQuizAnswerCommand { UserId = request.User!.Id, Answer = request.Text },
             ct);
 
         if (checkResult.IsAnswerCorrect)
@@ -55,7 +55,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
     private async Task TrySendNextQuestion(TelegramRequest request, CancellationToken ct)
     {
-        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.UserId }, ct);
+        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
         if (word == null)
         {
             await CompleteQuiz(request, ct);
@@ -70,7 +70,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
     private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)
     {
-        var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.UserId }, ct);
+        var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
         double correctnessPercent = Math.Round(100 * (quizStats.CorrectAnswersCount / (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
