@@ -33,7 +33,12 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             {
                 throw new NotFoundException(nameof(User), request.UserId);
             }
-            
+
+            if (user.AccountType == UserAccountType.Free && request.QuizType != QuizTypes.LastWeek)
+            {
+                return new StartNewQuizResult(0, false);
+            }
+
             await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
             var startedQuizzesCount = user.Quizzes.Count(q => q.IsCompleted == false);
             if (startedQuizzesCount > 0)
