@@ -32,7 +32,8 @@ public class CreateUserCommand : IRequest<UserCreatedResultType>
             {
                 Id = Guid.NewGuid(),
                 TelegramId = request.TelegramId,
-                RegisteredAtUtc = DateTime.UtcNow
+                RegisteredAtUtc = DateTime.UtcNow,
+                AccountType = UserAccountType.Free
             };
             _dbContext.Users.Add(user);
 

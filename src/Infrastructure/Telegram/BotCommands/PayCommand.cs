@@ -25,7 +25,7 @@ public class PayCommand : IBotCommand
     {
         var commandPayload = request.Text;
         return Task.FromResult(
-            commandPayload.Equals(CommandNames.Pay, StringComparison.InvariantCultureIgnoreCase) || 
+            commandPayload.StartsWith(CommandNames.Pay, StringComparison.InvariantCultureIgnoreCase) || 
             commandPayload.StartsWith(CommandNames.PayIcon, StringComparison.InvariantCultureIgnoreCase));
     }
 

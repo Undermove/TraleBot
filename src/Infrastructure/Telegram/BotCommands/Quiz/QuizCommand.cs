@@ -26,12 +26,15 @@ public class QuizCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
+        var payLabel = request.User!.AccountType == UserAccountType.Free ? "🔓" : "";
+        var payCommand = request.User!.AccountType == UserAccountType.Free ? $"{CommandNames.Pay}" : $"{CommandNames.Quiz}";
+        
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData("За последнюю неделю", $"{CommandNames.Quiz} {QuizTypes.LastWeek}") },
-            new[] { InlineKeyboardButton.WithCallbackData("🔓За сегодня", $"{CommandNames.Quiz} {QuizTypes.LastDay}") },
-            new[] { InlineKeyboardButton.WithCallbackData("🔓10 случайных слов", $"{CommandNames.Quiz} {QuizTypes.SeveralRandomWords}") },
-            new[] { InlineKeyboardButton.WithCallbackData("🔓По наиболее частым ошибкам", $"{CommandNames.Quiz} {QuizTypes.MostFailed}") },
+            new[] { InlineKeyboardButton.WithCallbackData("🌗За последнюю неделю", $"{CommandNames.Quiz} {QuizTypes.LastWeek}") },
+            new[] { InlineKeyboardButton.WithCallbackData($"{payLabel}📅За сегодня", $"{payCommand} {QuizTypes.LastDay}") },
+            new[] { InlineKeyboardButton.WithCallbackData($"{payLabel}🎲10 случайных слов", $"{payCommand} {QuizTypes.SeveralRandomWords}") },
+            new[] { InlineKeyboardButton.WithCallbackData($"{payLabel}⚖️По наиболее частым ошибкам", $"{payCommand} {QuizTypes.MostFailed}") },
         });
 
         await _client.SendTextMessageAsync(
