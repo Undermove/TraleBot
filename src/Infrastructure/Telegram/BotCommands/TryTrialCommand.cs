@@ -35,8 +35,8 @@ public class TryTrialCommand : IBotCommand
 
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            InlineKeyboardButton.WithCallbackData("✅ Попробовать бесплатную версию (карта не нужна)", $"{CommandNames.ActivateTrial}"),
-            InlineKeyboardButton.WithCallbackData("💳 Взять на год со скидкой", $"{CommandNames.Pay}")
+            new[] { InlineKeyboardButton.WithCallbackData("✅ Попробовать бесплатную версию (карта не нужна)", $"{CommandNames.ActivateTrial}") },
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Взять на год со скидкой", $"{CommandNames.Pay}") }
         });
         await _client.SendTextMessageAsync(
             request.UserTelegramId, 
