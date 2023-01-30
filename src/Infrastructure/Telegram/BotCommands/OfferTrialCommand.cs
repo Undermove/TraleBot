@@ -6,12 +6,12 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class TryTrialCommand : IBotCommand
+public class OfferTrialCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
     private readonly ILogger _logger;
 
-    public TryTrialCommand(TelegramBotClient client, ILoggerFactory logger)
+    public OfferTrialCommand(TelegramBotClient client, ILoggerFactory logger)
     {
         _client = client;
         _logger = logger.CreateLogger(typeof(PayCommand));
@@ -21,7 +21,7 @@ public class TryTrialCommand : IBotCommand
     {
         var commandPayload = request.Text;
         return Task.FromResult(
-            commandPayload.StartsWith(CommandNames.TryTrial, StringComparison.InvariantCultureIgnoreCase));
+            commandPayload.StartsWith(CommandNames.OfferTrial, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
@@ -33,6 +33,7 @@ public class TryTrialCommand : IBotCommand
             new[] { InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)", $"{CommandNames.ActivateTrial}") },
             new[] { InlineKeyboardButton.WithCallbackData("💳 Год со скидкой. За 159 рублей", $"{CommandNames.Pay}") }
         });
+        
         await _client.SendTextMessageAsync(
             request.UserTelegramId, 
             "Эта функция недоступна для бесплатной версии, но вы можете взять пробную версию бота на месяц." +

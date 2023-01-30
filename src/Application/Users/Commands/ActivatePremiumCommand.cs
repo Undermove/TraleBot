@@ -4,12 +4,14 @@ using MediatR;
 
 namespace Application.Users.Commands;
 
-public class ActivatePremiumCommand : IRequest
+public class ActivatePremiumCommand : IRequest<PremiumActivationStatus>
 {
     public Guid? UserId { get; set; }
     public DateTime? InvoiceCreatedAdUtc { get; set; }
+
+    public bool IsTrial { get; set; }
     
-    public class Handler: IRequestHandler<ActivatePremiumCommand>
+    public class Handler: IRequestHandler<ActivatePremiumCommand, PremiumActivationStatus>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -18,14 +20,28 @@ public class ActivatePremiumCommand : IRequest
             _dbContext = dbContext;
         }
 
-        public async Task<Unit> Handle(ActivatePremiumCommand request, CancellationToken ct)
+        public async Task<PremiumActivationStatus> Handle(ActivatePremiumCommand request, CancellationToken ct)
         {
             object?[] keyValues = { request.UserId };
             User? user = await _dbContext.Users.FindAsync(keyValues: keyValues, ct);
 
+            if (request.IsTrial && user.SubscribedUntil != null)
+            {
+                return PremiumActivationStatus.TrialExpired;
+            }
+            
             user!.AccountType = UserAccountType.Premium;
-            user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddYears(1);
-            return Unit.Value;
+            user.SubscribedUntil = request.IsTrial 
+                ? request.InvoiceCreatedAdUtc!.Value.AddMonths(1) 
+                : request.InvoiceCreatedAdUtc!.Value.AddYears(1);
+            
+            return PremiumActivationStatus.Success;
         }
     }
+}
+
+public enum PremiumActivationStatus
+{
+    Success,
+    TrialExpired
 }

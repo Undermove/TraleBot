@@ -22,7 +22,8 @@ public class InvoiceSaved : INotification
             return _mediator.Send(new ActivatePremiumCommand
             {
                 UserId = userCreated.UserId,
-                InvoiceCreatedAdUtc = userCreated.InvoiceCreatedAt
+                InvoiceCreatedAdUtc = userCreated.InvoiceCreatedAt,
+                IsTrial = false
             }, cancellationToken);
         }
     }

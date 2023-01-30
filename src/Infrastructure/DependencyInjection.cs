@@ -39,7 +39,8 @@ public static class DependencyInjection
         services.AddSingleton<IBotCommand, CloseMenuCommand>();
         services.AddSingleton<IBotCommand, AcceptCheckoutCommand>();
         services.AddSingleton<IBotCommand, PayCommand>();
-        services.AddSingleton<IBotCommand, TryTrialCommand>();
+        services.AddSingleton<IBotCommand, OfferTrialCommand>();
+        services.AddSingleton<IBotCommand, ActivateTrialCommand>();
         services.AddSingleton<IBotCommand, QuizCommand>();
         services.AddSingleton<IBotCommand, StartQuizBotCommand>();
         services.AddSingleton<IBotCommand, StopQuizBotCommand>();
