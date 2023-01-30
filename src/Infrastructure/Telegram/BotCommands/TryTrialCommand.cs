@@ -9,16 +9,11 @@ namespace Infrastructure.Telegram.BotCommands;
 public class TryTrialCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
-    private readonly BotConfiguration _configuration;
     private readonly ILogger _logger;
 
-    public TryTrialCommand(
-        TelegramBotClient client, 
-        BotConfiguration configuration, 
-        ILoggerFactory logger)
+    public TryTrialCommand(TelegramBotClient client, ILoggerFactory logger)
     {
         _client = client;
-        _configuration = configuration;
         _logger = logger.CreateLogger(typeof(PayCommand));
     }
 
