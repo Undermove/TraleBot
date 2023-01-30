@@ -14,4 +14,6 @@ public static class CommandNames
     public const string RemoveEntry = "/removeentry";
     public const string Pay = "/pay";
     public const string PayIcon = "💳";
+    public const string TryTrial = "/trytrial";
+    public const string ActivateTrial = "/activatetrial";
 }
