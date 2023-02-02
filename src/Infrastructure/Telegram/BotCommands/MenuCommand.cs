@@ -28,7 +28,8 @@ public class MenuCommand : IBotCommand
             new[]
             {
                 new KeyboardButton($"{CommandNames.QuizIcon} Квиз"),
-                new KeyboardButton($"{CommandNames.StopQuizIcon} Остановить квиз")
+                new KeyboardButton($"{CommandNames.StopQuizIcon} Остановить квиз"),
+                new KeyboardButton($"{CommandNames.VocabularyIcon} Мой словарь")
             },
             new[]
             {
