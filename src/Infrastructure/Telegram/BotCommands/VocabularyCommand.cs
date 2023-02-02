@@ -1,3 +1,4 @@
+using Application.Common.Extensions;
 using Application.VocabularyEntries.Commands;
 using Application.VocabularyEntries.Queries.GetVocabularyEntriesList;
 using Infrastructure.Telegram.Models;
@@ -33,13 +34,18 @@ public class VocabularyCommand : IBotCommand
             return;
         }
         
-        await _client.SendTextMessageAsync(request.UserTelegramId, "🗑Словарь:", cancellationToken: token);
+        await _client.SendTextMessageAsync(request.UserTelegramId, "📖Ваш словарь:", cancellationToken: token);
         foreach (var batch in result.VocabularyEntries)
         {
             var a = batch.Select(entry => $"{entry.Word} - {entry.Definition}");
             var view = String.Join(Environment.NewLine, a);
             
             await _client.SendTextMessageAsync(request.UserTelegramId, view, cancellationToken: token);    
+        }
+        
+        if (!request.User.IsActivePremium())
+        {
+            await _client.SendTextMessageAsync(request.UserTelegramId, "Для бесплатной версии доступны только последние 7 дней", cancellationToken: token);
         }
     }
 }
