@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Extensions;
 using Domain.Entities;
 using MediatR;
 
@@ -19,28 +20,37 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
 
         public async Task<VocabularyEntriesListVm> Handle(GetVocabularyEntriesListQuery request, CancellationToken ct)
         {
-            if (request.UserId == null)
-            {
-                throw new ArgumentException("User Id cannot be null");
-            }
-
             object?[] keyValues = { request.UserId };
             var user = await _dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
             if (user == null)
             {
                 return new VocabularyEntriesListVm
                 {
-                    VocabularyEntries = new List<VocabularyEntry>()
+                    VocabularyEntries = Enumerable.Empty<VocabularyEntry[]>()
                 };
             }
 
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
-            
-            var vocabularyEntries = user
-                .VocabularyEntries
-                .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
-                .ToList();
-            
+
+            IEnumerable<VocabularyEntry[]> vocabularyEntries;
+            if (user.IsActivePremium())
+            {
+                vocabularyEntries = user
+                    .VocabularyEntries
+                    .OrderBy(entry => entry.DateAdded)
+                    .ToList()
+                    .Chunk(30);
+            }
+            else
+            {
+                vocabularyEntries = user
+                    .VocabularyEntries
+                    .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
+                    .OrderBy(entry => entry.DateAdded)
+                    .ToList()
+                    .Chunk(30);
+            }
+
             var response = new VocabularyEntriesListVm
             {
                 VocabularyEntries = vocabularyEntries
