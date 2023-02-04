@@ -53,7 +53,8 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
 
             var response = new VocabularyEntriesListVm
             {
-                VocabularyEntries = vocabularyEntries
+                VocabularyEntries = vocabularyEntries,
+                VocabularyWordsCount = user.VocabularyEntries.Count,
             };
             
             return response;

@@ -35,7 +35,7 @@ public class VocabularyCommand : IBotCommand
             return;
         }
         
-        await _client.SendTextMessageAsync(request.UserTelegramId, "📖Ваш словарь:", cancellationToken: token);
+        await _client.SendTextMessageAsync(request.UserTelegramId, $"📖В вашем словаре уже {result.VocabularyWordsCount} слов!", cancellationToken: token);
         foreach (var batch in result.VocabularyEntries)
         {
             var a = batch.Select(entry => $"{entry.Word} - {entry.Definition}");
