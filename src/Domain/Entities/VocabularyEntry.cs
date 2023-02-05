@@ -12,4 +12,21 @@ public class VocabularyEntry
     public int SuccessAnswersCount { get; set; }
     public int FailedAnswersCount { get; set; }
     public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; }
+
+    public MasteringLevel GetMasteringLevel()
+    {
+        if (SuccessAnswersCount <= FailedAnswersCount || SuccessAnswersCount <= 3)
+        {
+            return MasteringLevel.NotMastered;
+        }
+
+        return MasteringLevel.MasteredInForwardDirection;
+    } 
+}
+
+public enum MasteringLevel
+{
+    NotMastered,
+    MasteredInForwardDirection,
+    MasteredInBothDirections
 }

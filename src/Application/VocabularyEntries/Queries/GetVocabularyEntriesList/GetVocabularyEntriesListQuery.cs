@@ -1,5 +1,4 @@
 using Application.Common;
-using Application.Common.Extensions;
 using Domain.Entities;
 using MediatR;
 

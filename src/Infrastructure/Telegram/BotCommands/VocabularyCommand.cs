@@ -1,6 +1,5 @@
-using Application.Common.Extensions;
-using Application.VocabularyEntries.Commands;
 using Application.VocabularyEntries.Queries.GetVocabularyEntriesList;
+using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -35,13 +34,21 @@ public class VocabularyCommand : IBotCommand
             return;
         }
         
-        await _client.SendTextMessageAsync(request.UserTelegramId, $"📖В вашем словаре уже {result.VocabularyWordsCount} слов!", cancellationToken: token);
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId, 
+            $"📖В вашем словаре уже {result.VocabularyWordsCount} слов!" +
+            $"\r\n🥈 - новые слова" +
+            $"\r\n(мало правильных ответов в квизах)" +
+            $"\r\n🥇 - закрепелнные хорошо" +
+            $"\r\n(правильных ответов в квизах больше неправильных)",
+            //$"\r\n💎 - отлично закрепленные (правильных ответов больше во всех направлениях)", 
+            cancellationToken: token);
         foreach (var batch in result.VocabularyEntries)
         {
-            var a = batch.Select(entry => $"{entry.Word} - {entry.Definition}");
-            var view = String.Join(Environment.NewLine, a);
+            var vocabularyEntryView = batch.Select(entry => $"{GetMedalType(entry)} {entry.Word} - {entry.Definition}");
+            var vocabularyPageView = String.Join(Environment.NewLine, vocabularyEntryView);
             
-            await _client.SendTextMessageAsync(request.UserTelegramId, view, cancellationToken: token);    
+            await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, cancellationToken: token);    
         }
         
         if (!request.User.IsActivePremium())
@@ -49,4 +56,19 @@ public class VocabularyCommand : IBotCommand
             await _client.SendTextMessageAsync(request.UserTelegramId, "Для бесплатной версии доступны только последние 7 дней", cancellationToken: token);
         }
     }
+
+    private string GetMedalType(VocabularyEntry entry)
+    {
+        switch (entry.GetMasteringLevel())
+        {
+            case MasteringLevel.NotMastered:
+                return "🥈";
+            case MasteringLevel.MasteredInForwardDirection:
+                return "🥇";
+            case MasteringLevel.MasteredInBothDirections:
+                return "💎";
+        }
+        
+        return "";
+    } 
 }
