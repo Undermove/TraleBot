@@ -34,7 +34,7 @@ public class ActivateTrialCommand : IBotCommand
         {
             UserId = request.User.Id,
             InvoiceCreatedAdUtc = DateTime.UtcNow,
-            IsTrial = false
+            IsTrial = true
         }, token);
 
         if (result == PremiumActivationStatus.Success)
