@@ -40,12 +40,13 @@ public class VocabularyCommand : IBotCommand
             $"\r\n🥈 - новые слова" +
             $"\r\n(мало правильных ответов в квизах)" +
             $"\r\n🥇 - закрепелнные хорошо" +
-            $"\r\n(правильных ответов в квизах больше неправильных)",
+            $"\r\n(правильных ответов в квизах больше неправильных)" +
+            $"\r\nЦифрами указана статистика по квизам (правильно/неправильно)",
             //$"\r\n💎 - отлично закрепленные (правильных ответов больше во всех направлениях)", 
             cancellationToken: token);
         foreach (var batch in result.VocabularyEntries)
         {
-            var vocabularyEntryView = batch.Select(entry => $"{GetMedalType(entry)} {entry.Word} - {entry.Definition}");
+            var vocabularyEntryView = batch.Select(entry => $"{GetMedalType(entry)} {entry.SuccessAnswersCount}/{entry.FailedAnswersCount} {entry.Word} - {entry.Definition}");
             var vocabularyPageView = String.Join(Environment.NewLine, vocabularyEntryView);
             
             await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, cancellationToken: token);    
