@@ -46,7 +46,7 @@ public class VocabularyCommand : IBotCommand
             cancellationToken: token);
         foreach (var batch in result.VocabularyEntries)
         {
-            var vocabularyEntryView = batch.Select(entry => $"{GetMedalType(entry)} {entry.SuccessAnswersCount}/{entry.FailedAnswersCount} {entry.Word} - {entry.Definition}");
+            var vocabularyEntryView = batch.Select(entry => $"{GetMedalType(entry)} {entry.Word} - {entry.Definition} {entry.SuccessAnswersCount}/{entry.FailedAnswersCount}");
             var vocabularyPageView = String.Join(Environment.NewLine, vocabularyEntryView);
             
             await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, cancellationToken: token);    
