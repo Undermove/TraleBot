@@ -34,6 +34,8 @@ public class ActivatePremiumCommand : IRequest<PremiumActivationStatus>
             user.SubscribedUntil = request.IsTrial 
                 ? request.InvoiceCreatedAdUtc!.Value.AddMonths(1) 
                 : request.InvoiceCreatedAdUtc!.Value.AddYears(1);
+
+            await _dbContext.SaveChangesAsync(ct);
             
             return PremiumActivationStatus.Success;
         }
