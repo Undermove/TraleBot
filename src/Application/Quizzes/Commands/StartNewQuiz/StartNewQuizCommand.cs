@@ -100,7 +100,8 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
-                        .Where(entry => entry.SuccessAnswersCount <= entry.FailedAnswersCount)
+                        .Where(entry => entry.SuccessAnswersCount <= entry.FailedAnswersCount || 
+                                        entry.SuccessAnswersCount <= 3)
                         .ToList();
                     break;
             }
