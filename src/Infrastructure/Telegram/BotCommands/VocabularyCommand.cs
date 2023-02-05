@@ -3,6 +3,7 @@ using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
@@ -26,14 +27,21 @@ public class VocabularyCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result =  await _mediator.Send(new GetVocabularyEntriesListQuery() {UserId = request.User!.Id}, token);
+        var result =  await _mediator.Send(new GetVocabularyEntriesListQuery {UserId = request.User!.Id}, token);
 
         if (!result.VocabularyEntries.Any())
         {
+            // todo: refactor this to receive specified answer from app layer
+            if (result.VocabularyWordsCount > 0)
+            {
+                await OfferTrial(request, token, result);
+                return;
+            }
+            
             await _client.SendTextMessageAsync(request.UserTelegramId, "📖Словарь пока пуст", cancellationToken: token);
             return;
         }
-        
+
         await _client.SendTextMessageAsync(
             request.UserTelegramId, 
             $"📖В вашем словаре уже {result.VocabularyWordsCount} слов!" +
@@ -56,6 +64,25 @@ public class VocabularyCommand : IBotCommand
         {
             await _client.SendTextMessageAsync(request.UserTelegramId, "Для бесплатной версии доступны только последние 7 дней", cancellationToken: token);
         }
+    }
+
+    private async Task OfferTrial(TelegramRequest request, CancellationToken token, VocabularyEntriesListVm result)
+    {
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)",
+                    $"{CommandNames.ActivateTrial}")
+            },
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Год со скидкой. За 159 рублей", $"{CommandNames.Pay}") }
+        });
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"🔐Для разблокирования истории из {result.VocabularyWordsCount} слов активируйте триал или премиум подписку",
+            replyMarkup: keyboard,
+            cancellationToken: token);
     }
 
     private string GetMedalType(VocabularyEntry entry)
