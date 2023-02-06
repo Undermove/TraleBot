@@ -39,6 +39,20 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 request.UserTelegramId,
                 "✅Верно! Ты молодчина!",
                 cancellationToken: ct);
+            if (checkResult.ScoreToNextLevel > 0)
+            {
+                await _client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    $"До 🥇 осталось {checkResult.ScoreToNextLevel} правильных ответа!",
+                    cancellationToken: ct);
+            }
+            if (checkResult.ScoreToNextLevel == 0)
+            {
+                await _client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    "🥇",
+                    cancellationToken: ct);
+            }
         }
         else
         {

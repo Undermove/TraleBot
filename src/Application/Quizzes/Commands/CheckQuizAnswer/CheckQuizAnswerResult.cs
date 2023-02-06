@@ -1,3 +1,3 @@
 namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public record CheckQuizAnswerResult(bool IsAnswerCorrect, string CorrectAnswer);
+public record CheckQuizAnswerResult(bool IsAnswerCorrect, string CorrectAnswer, int ScoreToNextLevel);

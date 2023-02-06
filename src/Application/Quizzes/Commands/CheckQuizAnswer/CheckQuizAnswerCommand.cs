@@ -33,7 +33,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
 
             if (currentQuiz.QuizVocabularyEntries.Count == 0)
             {
-                throw new ApplicationException("Looks like quiz already completed of not started yet");
+                throw new ApplicationException("Looks like quiz already completed or not started yet");
             }
             
             var quizVocabularyEntry = currentQuiz
@@ -48,14 +48,14 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
                 currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
                 quizVocabularyEntry.VocabularyEntry.FailedAnswersCount++;
                 await _dbContext.SaveChangesAsync(ct);
-                return new CheckQuizAnswerResult(false, quizVocabularyEntry.VocabularyEntry.Definition);
+                return new CheckQuizAnswerResult(false, quizVocabularyEntry.VocabularyEntry.Definition, quizVocabularyEntry.VocabularyEntry.GetScoreToNextLevel());
             }
             
             currentQuiz.CorrectAnswersCount++;
             quizVocabularyEntry.VocabularyEntry.SuccessAnswersCount++;
             currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
             await _dbContext.SaveChangesAsync(ct);
-            return new CheckQuizAnswerResult(true, quizVocabularyEntry.VocabularyEntry.Definition);;
+            return new CheckQuizAnswerResult(true, quizVocabularyEntry.VocabularyEntry.Definition, quizVocabularyEntry.VocabularyEntry.GetScoreToNextLevel());
         }
     }
 }
