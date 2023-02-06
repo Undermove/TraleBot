@@ -37,7 +37,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
             {
-                return new CreateVocabularyEntryResult(true, duplicate.Definition, duplicate.Id);
+                return new CreateVocabularyEntryResult(TranslationStatus.ReceivedFromVocabulary, duplicate.Definition, duplicate.Id);
             }
 
             string definition;
@@ -48,7 +48,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             }
             catch (UntranslatableWordException)
             {
-                return new CreateVocabularyEntryResult(false, "", Guid.Empty);
+                return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "", Guid.Empty);
             }
 
             var entryId = Guid.NewGuid();
@@ -63,7 +63,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             
             await _context.SaveChangesAsync(ct);
             
-            return new CreateVocabularyEntryResult(true, definition, entryId);
+            return new CreateVocabularyEntryResult(TranslationStatus.Translated, definition, entryId);
         }
     }
 }

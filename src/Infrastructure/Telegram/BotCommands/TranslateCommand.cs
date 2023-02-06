@@ -34,7 +34,7 @@ public class TranslateCommand : IBotCommand
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
-        if (!result.isTranslationCompleted)
+        if (result.TranslationStatus == TranslationStatus.CantBeTranslated)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
@@ -45,7 +45,13 @@ public class TranslateCommand : IBotCommand
         
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            InlineKeyboardButton.WithCallbackData("❌ Не добавлять в словарь", $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")
+            new[]{ InlineKeyboardButton.WithCallbackData("❌ Удалить из словаря", $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")},
+            new[]
+            {
+                InlineKeyboardButton.WithUrl("Wooordhunt",$"https://wooordhunt.ru/word/{request.Text}"),
+                InlineKeyboardButton.WithUrl("Reverso Context",$"https://context.reverso.net/translation/russian-english/{request.Text}"),
+                InlineKeyboardButton.WithUrl("Послушать",$"https://youglish.com/pronounce/{request.Text}/english?")
+            }
         });
         
         await _client.SendTextMessageAsync(
