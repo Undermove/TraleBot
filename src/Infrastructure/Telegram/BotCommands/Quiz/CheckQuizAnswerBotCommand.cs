@@ -35,24 +35,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
         if (checkResult.IsAnswerCorrect)
         {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "✅Верно! Ты молодчина!",
-                cancellationToken: ct);
-            if (checkResult.ScoreToNextLevel > 0)
-            {
-                await _client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    $"До 🥇 осталось {checkResult.ScoreToNextLevel} правильных ответа!",
-                    cancellationToken: ct);
-            }
-            if (checkResult.ScoreToNextLevel == 0)
-            {
-                await _client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "🥇",
-                    cancellationToken: ct);
-            }
+            await SendCorrectAnswerConfirmation(request, ct, checkResult);
         }
         else
         {
@@ -65,6 +48,31 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         }
         
         await TrySendNextQuestion(request, ct);
+    }
+
+    private async Task SendCorrectAnswerConfirmation(TelegramRequest request, CancellationToken ct,
+        CheckQuizAnswerResult checkResult)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "✅Верно! Ты молодчина!",
+            cancellationToken: ct);
+        
+        if (checkResult.ScoreToNextLevel > 0)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                $"До 🥇 осталось {checkResult.ScoreToNextLevel} правильных ответа!",
+                cancellationToken: ct);
+        }
+
+        if (checkResult.ScoreToNextLevel == 0)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "🥇",
+                cancellationToken: ct);
+        }
     }
 
     private async Task TrySendNextQuestion(TelegramRequest request, CancellationToken ct)
