@@ -42,15 +42,21 @@ public class TranslateCommand : IBotCommand
                 cancellationToken: token);
             return;
         }
-        
+
+        var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.ReceivedFromVocabulary 
+            ?  "❌ Не добавлять в словарь." 
+            : "❌ Есть в словаре. Удалить?";
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[]{ InlineKeyboardButton.WithCallbackData("❌ Удалить из словаря", $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")},
+            new[]{ InlineKeyboardButton.WithCallbackData(removeFromVocabularyText, $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")},
             new[]
             {
-                InlineKeyboardButton.WithUrl("Wooordhunt",$"https://wooordhunt.ru/word/{request.Text}"),
-                InlineKeyboardButton.WithUrl("Reverso Context",$"https://context.reverso.net/translation/russian-english/{request.Text}"),
-                InlineKeyboardButton.WithUrl("Послушать",$"https://youglish.com/pronounce/{request.Text}/english?")
+                InlineKeyboardButton.WithUrl("Перевод Wooordhunt",$"https://wooordhunt.ru/word/{request.Text}"),
+                InlineKeyboardButton.WithUrl("Перевод Reverso Context",$"https://context.reverso.net/translation/russian-english/{request.Text}")
+            },
+            new[] 
+            {   
+                InlineKeyboardButton.WithUrl("Послушать на YouGlish",$"https://youglish.com/pronounce/{request.Text}/english?")
             }
         });
         
