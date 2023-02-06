@@ -5,12 +5,12 @@ Feel free to acquaint yourself with alpha version [here](https://t.me/trale_bot)
 1) Enter any word in english or russian and receive translation. 
 2) Word and it's definition will be automatically added into vocabulary.
 
-  /menu - open menu
-  /quiz - start new quiz
-  /stopquiz - stop current quiz
-  /vocabulary - open vocabulary
-  /help - report here if something wrong
-  /start - read bot description
+  /menu - open menu </br>
+  /quiz - start new quiz </br>
+  /stopquiz - stop current quiz </br>
+  /vocabulary - open vocabulary </br>
+  /help - report here if something wrong </br>
+  /start - read bot description </br>
 
 ### Build the Docker image
 docker build -t undermove/tralebot:latest .
@@ -18,7 +18,7 @@ docker build -t undermove/tralebot:latest .
 ### Run the Docker container
 docker run -p 1402:1402 undermove/tralebot:latest
 
-### How to create personal Tralebot
+### How to create personal TraleBot
 1) Go to https://t.me/BotFather
 2) Send /newbot
 3) Enter name
