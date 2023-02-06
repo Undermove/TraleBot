@@ -1,5 +1,4 @@
 using Application.Common;
-using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Domain.Entities;
 using MediatR;
@@ -40,13 +39,9 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 return new CreateVocabularyEntryResult(TranslationStatus.ReceivedFromVocabulary, duplicate.Definition, duplicate.Id);
             }
 
-            string definition;
-            
-            try
-            {
-                definition = await _translationService.TranslateAsync(request.Word, ct);
-            }
-            catch (UntranslatableWordException)
+            var translationResult = await _translationService.TranslateAsync(request.Word, ct);
+
+            if (!translationResult.IsSuccessful)
             {
                 return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "", Guid.Empty);
             }
@@ -56,14 +51,14 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             {
                 Id = entryId,
                 Word = request.Word.ToLowerInvariant(),
-                Definition = definition.ToLowerInvariant(),
+                Definition = translationResult.Definition.ToLowerInvariant(),
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
             }, ct);
             
             await _context.SaveChangesAsync(ct);
             
-            return new CreateVocabularyEntryResult(TranslationStatus.Translated, definition, entryId);
+            return new CreateVocabularyEntryResult(TranslationStatus.Translated, translationResult.Definition, entryId);
         }
     }
 }

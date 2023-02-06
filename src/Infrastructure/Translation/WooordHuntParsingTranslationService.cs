@@ -1,4 +1,3 @@
-using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using HtmlAgilityPack;
 
@@ -12,7 +11,8 @@ public class WooordHuntParsingTranslationService : ITranslationService
     {
         _clientFactory = clientFactory;
     }
-    public async Task<string> TranslateAsync(string requestWord, CancellationToken ct)
+    
+    public async Task<TranslationResult> TranslateAsync(string requestWord, CancellationToken ct)
     {
         // Make the HTTP GET request to the Google Translate API
         using var httpClient = _clientFactory.CreateClient();
@@ -28,12 +28,12 @@ public class WooordHuntParsingTranslationService : ITranslationService
         var element = htmlDoc.DocumentNode.SelectSingleNode("(//*[starts-with(@class, 't_inline')])[1]");
         if (element == null)
         {
-            throw new UntranslatableWordException();
+            return new TranslationResult("","", false);
         }
         
         // Get the text content of the element
         var text = element.InnerText;
-        var result = text.Split(',')[0];
-        return result;
+        var definition = text.Split(',')[0];
+        return new TranslationResult(definition, text, true);
     }
 }
