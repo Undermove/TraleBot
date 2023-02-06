@@ -43,8 +43,8 @@ public class TranslateCommand : IBotCommand
             return;
         }
 
-        var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.ReceivedFromVocabulary 
-            ?  "❌ Не добавлять в словарь." 
+        var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.Translated 
+            ? "❌ Не добавлять в словарь." 
             : "❌ Есть в словаре. Удалить?";
         var keyboard = new InlineKeyboardMarkup(new[]
         {
