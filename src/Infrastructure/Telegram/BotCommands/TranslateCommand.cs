@@ -1,4 +1,3 @@
-using Application.VocabularyEntries;
 using Application.VocabularyEntries.Commands;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -62,7 +61,7 @@ public class TranslateCommand : IBotCommand
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            result.Translation,
+            $"Определение: {result.Definition}" + $"\r\nДругие значения: {result.AdditionalInfo}",
             replyMarkup:keyboard,
             cancellationToken: token);
     }

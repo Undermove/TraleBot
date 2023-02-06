@@ -36,14 +36,14 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
             {
-                return new CreateVocabularyEntryResult(TranslationStatus.ReceivedFromVocabulary, duplicate.Definition, duplicate.Id);
+                return new CreateVocabularyEntryResult(TranslationStatus.ReceivedFromVocabulary, duplicate.Definition, duplicate.AdditionalInfo, duplicate.Id);
             }
 
             var translationResult = await _translationService.TranslateAsync(request.Word, ct);
 
             if (!translationResult.IsSuccessful)
             {
-                return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "", Guid.Empty);
+                return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", Guid.Empty);
             }
 
             var entryId = Guid.NewGuid();
@@ -52,13 +52,18 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 Id = entryId,
                 Word = request.Word.ToLowerInvariant(),
                 Definition = translationResult.Definition.ToLowerInvariant(),
+                AdditionalInfo = translationResult.AdditionalInfo.ToLowerInvariant(),
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
             }, ct);
             
             await _context.SaveChangesAsync(ct);
             
-            return new CreateVocabularyEntryResult(TranslationStatus.Translated, translationResult.Definition, entryId);
+            return new CreateVocabularyEntryResult(
+                TranslationStatus.Translated, 
+                translationResult.Definition, 
+                translationResult.AdditionalInfo,
+                entryId);
         }
     }
 }
