@@ -38,7 +38,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             
             var quizVocabularyEntry = currentQuiz
                 .QuizVocabularyEntries
-                .OrderBy(entry => entry.VocabularyEntryId)
+                .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
                 .Last();
             await _dbContext.Entry(quizVocabularyEntry).Reference(nameof(quizVocabularyEntry.VocabularyEntry)).LoadAsync(ct);
             

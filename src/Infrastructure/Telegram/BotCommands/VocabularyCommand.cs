@@ -3,6 +3,7 @@ using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
@@ -46,18 +47,16 @@ public class VocabularyCommand : IBotCommand
             request.UserTelegramId, 
             $"📖В вашем словаре уже {result.VocabularyWordsCount} слов!" +
             $"\r\n🥈 - новые слова" +
-            $"\r\n(мало правильных ответов в квизах)" +
-            $"\r\n🥇 - закрепелнные хорошо" +
-            $"\r\n(правильных ответов в квизах больше неправильных)" +
-            $"\r\nЦифрами указана статистика по квизам (правильно/неправильно)",
-            //$"\r\n💎 - отлично закрепленные (правильных ответов больше во всех направлениях)", 
+            $"\r\nПроходи квизы и переводи слова, чтобы получить золотую медаль 🥇", 
             cancellationToken: token);
         foreach (var batch in result.VocabularyEntries)
         {
-            var vocabularyEntryView = batch.Select(entry => $"{GetMedalType(entry)} {entry.Word} - {entry.Definition} {entry.SuccessAnswersCount}/{entry.FailedAnswersCount}");
+            var vocabularyEntryView = batch
+                .Select(entry => 
+                    $"{GetMedalType(entry)} {entry.Word} – {entry.Definition}");
             var vocabularyPageView = String.Join(Environment.NewLine, vocabularyEntryView);
             
-            await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, cancellationToken: token);    
+            await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, ParseMode.Html, cancellationToken: token);    
         }
         
         if (!request.User.IsActivePremium())
@@ -98,5 +97,5 @@ public class VocabularyCommand : IBotCommand
         }
         
         return "";
-    } 
+    }
 }

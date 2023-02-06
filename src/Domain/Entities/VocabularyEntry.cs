@@ -3,6 +3,8 @@ namespace Domain.Entities;
 // ReSharper disable once ClassNeverInstantiated.Global
 public class VocabularyEntry
 {
+    const int MinimumSuccessAnswersRequired = 3;
+    
     public Guid Id { get; set; }
     public string Word { get; set; }
     public string Definition { get; set; }
@@ -15,13 +17,18 @@ public class VocabularyEntry
 
     public MasteringLevel GetMasteringLevel()
     {
-        if (SuccessAnswersCount <= FailedAnswersCount || SuccessAnswersCount <= 3)
+        if (SuccessAnswersCount <= FailedAnswersCount || SuccessAnswersCount < MinimumSuccessAnswersRequired)
         {
             return MasteringLevel.NotMastered;
         }
 
         return MasteringLevel.MasteredInForwardDirection;
-    } 
+    }
+    
+    public int GetScoreToNextLevel()
+    {
+        return MinimumSuccessAnswersRequired + FailedAnswersCount - SuccessAnswersCount;
+    }
 }
 
 public enum MasteringLevel

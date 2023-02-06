@@ -31,12 +31,11 @@ public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
                 return null;
             } 
 
-            var vocabularyEntryId = currentQuiz.QuizVocabularyEntries
-                .OrderBy(entry => entry.VocabularyEntryId)
-                .Select(entry => entry.VocabularyEntryId)
-                .LastOrDefault();
-            object?[] keyValues = { vocabularyEntryId };
-            var vocabularyEntry = await _dbContext.VocabularyEntries.FindAsync(keyValues, ct);
+            var vocabularyEntry = currentQuiz
+                .QuizVocabularyEntries
+                .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
+                .Select(entry => entry.VocabularyEntry)
+                .Last();
             return vocabularyEntry;
         }
     }
