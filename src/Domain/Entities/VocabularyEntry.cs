@@ -18,7 +18,7 @@ public class VocabularyEntry
 
     public MasteringLevel GetMasteringLevel()
     {
-        if (SuccessAnswersCount > MinimumSuccessAnswersRequired)
+        if (SuccessAnswersCount < MinimumSuccessAnswersRequired)
         {
             return MasteringLevel.NotMastered;
         }
