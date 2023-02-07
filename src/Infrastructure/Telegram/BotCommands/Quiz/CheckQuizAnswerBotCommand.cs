@@ -62,7 +62,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                $"До 🥇 осталось {checkResult.ScoreToNextLevel} правильных ответа!",
+                $"Переведи это слово правильно еще в {checkResult.ScoreToNextLevel} квизах и получи по нему 🥇!",
                 cancellationToken: ct);
         }
 
