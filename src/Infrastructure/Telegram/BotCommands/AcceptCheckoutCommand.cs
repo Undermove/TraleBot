@@ -26,7 +26,18 @@ public class AcceptCheckoutCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        await _mediator.Send(new ProcessPaymentCommand { UserId = request.User!.Id, PreCheckoutQueryId = request.Text}, token);
+        var isParsed = Enum.TryParse<SubscriptionTerm>(request.InvoicePayload, out var subscriptionTerm);
+        if (!isParsed)
+        {
+            throw new ApplicationException("Invoice payload incorrect");
+        }
+        
+        await _mediator.Send(new ProcessPaymentCommand
+        {
+            UserId = request.User!.Id, 
+            PreCheckoutQueryId = request.Text,
+            SubscriptionTerm = subscriptionTerm
+        }, token);
         await _client.AnswerPreCheckoutQueryAsync(request.Text, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,

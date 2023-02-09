@@ -9,6 +9,7 @@ public class ProcessPaymentCommand : IRequest<PaymentAcceptedResult>
 {
     public Guid? UserId { get; set; }
     public string? PreCheckoutQueryId { get; set; }
+    public SubscriptionTerm SubscriptionTerm { get; set; }
 
     public class Handler : IRequestHandler<ProcessPaymentCommand, PaymentAcceptedResult>
     {
@@ -52,8 +53,12 @@ public class ProcessPaymentCommand : IRequest<PaymentAcceptedResult>
                 throw;
             }
 
-            await _mediator.Publish(
-                new InvoiceSaved { UserId = request.UserId, InvoiceCreatedAt = invoice.CreatedAtUtc }, ct);
+            await _mediator.Publish(new InvoiceSaved
+            {
+                UserId = request.UserId, 
+                InvoiceCreatedAt = invoice.CreatedAtUtc,
+                SubscriptionTerm = request.SubscriptionTerm
+            }, ct);
 
             return new PaymentAcceptedResult(true);
         }

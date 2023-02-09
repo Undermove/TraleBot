@@ -7,6 +7,7 @@ public class InvoiceSaved : INotification
 {
     public Guid? UserId { get; set; }
     public DateTime? InvoiceCreatedAt { get; set; } = null!;
+    public SubscriptionTerm SubscriptionTerm { get; set; }
 
     public class Handler : INotificationHandler<InvoiceSaved>
     {
@@ -17,13 +18,14 @@ public class InvoiceSaved : INotification
             _mediator = mediator;
         }
 
-        public Task Handle(InvoiceSaved userCreated, CancellationToken cancellationToken)
+        public Task Handle(InvoiceSaved invoceSaved, CancellationToken cancellationToken)
         {
             return _mediator.Send(new ActivatePremiumCommand
             {
-                UserId = userCreated.UserId,
-                InvoiceCreatedAdUtc = userCreated.InvoiceCreatedAt,
-                IsTrial = false
+                UserId = invoceSaved.UserId,
+                InvoiceCreatedAdUtc = invoceSaved.InvoiceCreatedAt,
+                IsTrial = false,
+                SubscriptionTerm = invoceSaved.SubscriptionTerm
             }, cancellationToken);
         }
     }

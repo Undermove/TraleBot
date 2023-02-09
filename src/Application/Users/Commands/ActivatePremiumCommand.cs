@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Invoices;
 using Domain.Entities;
 using MediatR;
 
@@ -8,7 +9,7 @@ public class ActivatePremiumCommand : IRequest<PremiumActivationStatus>
 {
     public Guid? UserId { get; set; }
     public DateTime? InvoiceCreatedAdUtc { get; set; }
-
+    public SubscriptionTerm SubscriptionTerm { get; set; }
     public bool IsTrial { get; set; }
     
     public class Handler: IRequestHandler<ActivatePremiumCommand, PremiumActivationStatus>
@@ -31,19 +32,32 @@ public class ActivatePremiumCommand : IRequest<PremiumActivationStatus>
             }
             
             user!.AccountType = UserAccountType.Premium;
-            user.SubscribedUntil = request.IsTrial 
-                ? request.InvoiceCreatedAdUtc!.Value.AddMonths(1) 
-                : request.InvoiceCreatedAdUtc!.Value.AddYears(1);
+
+            if (request.IsTrial)
+            {
+                user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddMonths(1);
+            }
+            else
+            {
+                switch (request.SubscriptionTerm)
+                {
+                    case SubscriptionTerm.Month:
+                        user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddMonths(1);
+                        break;
+                    case SubscriptionTerm.ThreeMonth:
+                        user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddMonths(3);
+                        break;
+                    case SubscriptionTerm.Year:
+                        user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddYears(1);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
 
             await _dbContext.SaveChangesAsync(ct);
             
             return PremiumActivationStatus.Success;
         }
     }
-}
-
-public enum PremiumActivationStatus
-{
-    Success,
-    TrialExpired
 }

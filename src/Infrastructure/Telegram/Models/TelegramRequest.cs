@@ -12,6 +12,7 @@ public class TelegramRequest
     public string Text { get; }
     public string UserName { get; }
     public UpdateType RequestType { get; }
+    public string InvoicePayload { get; }
     
     public TelegramRequest(Update request, User? user)
     {
@@ -33,5 +34,6 @@ public class TelegramRequest
                    ?? throw new ArgumentException("User Name not found");
         User = user;
         RequestType = request.Type;
+        InvoicePayload = request.PreCheckoutQuery?.InvoicePayload ?? "";
     }
 }

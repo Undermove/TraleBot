@@ -12,3 +12,10 @@ services:
       POSTGRES_PASSWORD: example
       POSTGRES_USER: example
       POSTGRES_DB: db
+
+  chrome:
+    image: browserless/chrome:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - ALLOWED_HOSTS=*

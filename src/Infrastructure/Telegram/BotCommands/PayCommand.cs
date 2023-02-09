@@ -1,3 +1,4 @@
+using Application.Invoices;
 using Infrastructure.Telegram.Models;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
@@ -32,17 +33,36 @@ public class PayCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         _logger.LogInformation("User with ID: {id} requested invoice", request.User!.Id);
+
+        await _client.SendTextMessageAsync(request.UserTelegramId,
+            "Выбери подписку и срок подписки:", 
+            cancellationToken: token);
         
-        await _client.SendInvoiceAsync(
-            request.UserTelegramId,
-            "TraleBot Premium Account",
-            "Extended TraleBot functionality",
-            "TraleBot Premium Account",
-            _configuration.PaymentProviderToken,
-            "EUR",
-            new List<LabeledPrice> {new("Premium", 5*100)},
-            cancellationToken: token
-        );
+        var prices = new List<LabeledPrice>
+        {
+            new("Месяц за 2,49€", 249),
+            new("3 месяца за 3,99€", 389),
+            new("Год за 5,99€", 599)
+        };
+        var counter = 0;
+        foreach (var price in prices)
+        {
+            var paymentType = ((SubscriptionTerm)counter++).ToString();
+            
+            await _client.SendInvoiceAsync(
+                request.UserTelegramId,
+                price.Label,
+                "Расширенный функционал",
+                paymentType,
+                _configuration.PaymentProviderToken,
+                "EUR",
+                new List<LabeledPrice>
+                {
+                    price
+                },
+                cancellationToken: token
+            );
+        }
         
         _logger.LogInformation("Invoice sent to user with ID: {id}", request.User!.Id);
     }
