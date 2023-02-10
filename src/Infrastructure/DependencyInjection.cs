@@ -3,6 +3,7 @@ using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
+using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Translation;

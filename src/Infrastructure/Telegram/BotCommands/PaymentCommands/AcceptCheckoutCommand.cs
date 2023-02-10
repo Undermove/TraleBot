@@ -4,7 +4,7 @@ using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
 public class AcceptCheckoutCommand : IBotCommand
 {

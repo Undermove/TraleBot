@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types.Payments;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
 public class PayCommand : IBotCommand
 {
