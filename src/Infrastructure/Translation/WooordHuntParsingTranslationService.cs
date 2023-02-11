@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.TranslationService;
 using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
@@ -28,12 +29,12 @@ public class WooordHuntParsingTranslationService : ITranslationService
         var element = htmlDoc.DocumentNode.SelectSingleNode("(//*[starts-with(@class, 't_inline')])[1]");
         if (element == null)
         {
-            return new TranslationResult("","", false);
+            return new TranslationResult("","", Language.En, false);
         }
         
         // Get the text content of the element
         var text = element.InnerText;
         var definition = text.Split(',')[0];
-        return new TranslationResult(definition, text, true);
+        return new TranslationResult(definition, text, Language.En, true);
     }
 }
