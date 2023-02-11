@@ -1,8 +1,10 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0
-WORKDIR /app
-COPY . .
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+COPY . ./app
 COPY /src/Trale/appsettings.json .
-RUN dotnet restore
-RUN dotnet publish -c Release -o out
+WORKDIR /app/
+RUN dotnet build -c Release -o output
+
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
+COPY --from=build /app/output .
 EXPOSE 1402
-ENTRYPOINT ["dotnet", "out/Trale.dll"]
+ENTRYPOINT ["dotnet", "Trale.dll"]

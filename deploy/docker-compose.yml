@@ -1,0 +1,9 @@
+version: '3.7'
+services:
+
+ tralebot:
+  image: undermove/tralebot
+  ports:
+   - '1402:1402'
+  env_file:
+   - .app_env
