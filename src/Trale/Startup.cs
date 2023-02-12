@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Persistence;
+using Serilog;
 using Trale.Common;
 using Trale.HostedServices;
 
@@ -58,7 +59,9 @@ public class Startup
         }
 
         app.UseRouting();
-
+        
+        app.UseSerilogRequestLogging();
+        
         app.UseAuthentication();  
         app.UseAuthorization();
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });

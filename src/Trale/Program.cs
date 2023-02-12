@@ -7,6 +7,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Persistence;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
+using Serilog.Sinks.Http.TextFormatters;
+using Serilog.Sinks.Loki;
 
 namespace Trale;
 
@@ -22,7 +27,14 @@ public class Program
                 config.AddJsonFile("appsettings.json")
                     .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
                     .AddEnvironmentVariables();
-            }).Build();
+            })
+            .UseSerilog((context, configuration) =>
+            {
+                configuration
+                    .ReadFrom.Configuration(context.Configuration)
+                    .WriteTo.LokiHttp("http://localhost:3031");
+            })
+            .Build();
         
         using (var scope = host.Services.CreateScope())
         {
