@@ -13,7 +13,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Persistence;
 using Serilog;
-using Serilog.Sinks.Elasticsearch;
 using Trale.Common;
 using Trale.HostedServices;
 
@@ -54,10 +53,6 @@ public class Startup
     {
         var logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
-            .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200")) {
-                AutoRegisterTemplate = true,
-                IndexFormat = "tralebot-logs-{0:yyyy.MM.dd}"
-            })
             .CreateLogger();
         loggerFactory.AddSerilog(logger);
         PrometheusStartup.UsePrometheus(app);
@@ -67,10 +62,6 @@ public class Startup
         {
             app.UseDeveloperExceptionPage();
         }
-
-        // app.UseDeveloperExceptionPage();
-        // app.UseSwagger();
-        // app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Trale v1"));
 
         app.UseRouting();
 
