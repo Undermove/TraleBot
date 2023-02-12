@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
@@ -12,7 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Persistence;
-using Serilog;
 using Trale.Common;
 using Trale.HostedServices;
 
@@ -51,10 +49,6 @@ public class Startup
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
     {
-        var logger = new LoggerConfiguration()
-            .Enrich.FromLogContext()
-            .CreateLogger();
-        loggerFactory.AddSerilog(logger);
         PrometheusStartup.UsePrometheus(app);
         
         app.UseMiddleware<ExceptionsMiddleware>();
