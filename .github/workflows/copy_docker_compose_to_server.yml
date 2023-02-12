@@ -19,7 +19,7 @@ jobs:
 #         Before copy file to server you should execute this command on the server: 
 #         1) sudo chown username: myfolder (folder on server with docke-compose: tralebot)
 #         2) sudo chmod u+w myfolder
-          remote: ../../usr/local/tralebot/deploy
+          remote: ../../usr/local/tralebot
           host: ${{ secrets.TRALEBOT_SERVER_HOST }}
           username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
           password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
