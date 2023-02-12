@@ -1,0 +1,16 @@
+version: '3.4'
+
+services:
+
+  loki:
+    container_name: loki
+    image: grafana/loki:master
+    ports:
+       - 3100:3100
+    command: -config.file=loki-local-config.yaml
+    healthcheck:
+        test: wget -q --tries=1 -O- http://localhost:3100/ready
+        interval: 3s
+        timeout: 3s
+        retries: 10
+        start_period: 10s
