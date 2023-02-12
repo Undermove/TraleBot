@@ -7,3 +7,4 @@ services:
    - '1402:1402'
   env_file:
    - .app_env
+  restart: always

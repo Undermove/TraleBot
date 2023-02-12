@@ -9,3 +9,4 @@ services:
    - ./data:/var/lib/postgresql/data
   env_file:
    - .db_env
+  restart: always
