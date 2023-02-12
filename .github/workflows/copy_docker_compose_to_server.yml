@@ -1,0 +1,22 @@
+name: Copy docker-compose files to server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+        
+      - name: Copy docker-compose files to server
+        uses: garygrossgarten/github-action-scp@release
+        with:
+          local: github/workspace/deploy
+#         Before copy file to server you should execute this command on the server: 
+#         1) sudo chown username: myfolder (folder on server with docke-compose: tralebot)
+#         2) sudo chmod u+w myfolder
+          remote: ../../usr/local/tralebot/deploy
+          host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+          password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
