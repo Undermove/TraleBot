@@ -7,7 +7,7 @@ services:
     image: grafana/loki:master
     ports:
        - 3100:3100
-    command: -config.file=loki-local-config.yaml
+    command: -config.file=/usr/local/tralebot/loki-local-config.yaml
     healthcheck:
         test: wget -q --tries=1 -O- http://localhost:3100/ready
         interval: 3s
