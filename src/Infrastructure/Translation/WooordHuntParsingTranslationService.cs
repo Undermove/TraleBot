@@ -29,12 +29,12 @@ public class WooordHuntParsingTranslationService : ITranslationService
         var element = htmlDoc.DocumentNode.SelectSingleNode("(//*[starts-with(@class, 't_inline')])[1]");
         if (element == null)
         {
-            return new TranslationResult("","", Language.En, false);
+            return new TranslationResult("","", false);
         }
         
         // Get the text content of the element
         var text = element.InnerText;
         var definition = text.Split(',')[0];
-        return new TranslationResult(definition, text, Language.En, true);
+        return new TranslationResult(definition, text, true);
     }
 }
