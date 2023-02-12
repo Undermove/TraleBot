@@ -8,6 +8,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
+      - shell: bash
+        run: |
+          ls -a
         
       - name: Copy docker-compose files to server
         uses: garygrossgarten/github-action-scp@release
