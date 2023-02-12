@@ -1,16 +1,28 @@
-version: '3.4'
+version: "3"
+
+networks:
+  loki:
 
 services:
-
   loki:
-    container_name: loki
-    image: grafana/loki:master
+    image: grafana/loki:2.7.0
     ports:
-       - 3100:3100
+      - "3100:3100"
     command: -config.file=/etc/loki/local-config.yaml
-    healthcheck:
-        test: wget -q --tries=1 -O- http://localhost:3100/ready
-        interval: 3s
-        timeout: 3s
-        retries: 10
-        start_period: 10s
+    networks:
+      - loki
+
+  promtail:
+    image: grafana/promtail:2.7.0
+    volumes:
+      - /var/log:/var/log
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - loki
+
+#   grafana:
+#     image: grafana/grafana:latest
+#     ports:
+#       - "3000:3000"
+#     networks:
+#       - loki
