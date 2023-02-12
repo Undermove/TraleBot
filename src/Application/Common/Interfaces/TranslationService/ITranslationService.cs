@@ -1,3 +1,5 @@
+using Application.Common.Interfaces.TranslationService;
+
 namespace Application.Common.Interfaces;
 
 public interface ITranslationService
@@ -10,5 +12,3 @@ public interface ITranslationService
     /// <returns>Translation of <see cref="requestWord"/></returns>
     Task<TranslationResult> TranslateAsync(string requestWord, CancellationToken ct);
 }
-
-public record TranslationResult(string Definition, string AdditionalInfo, bool IsSuccessful);
