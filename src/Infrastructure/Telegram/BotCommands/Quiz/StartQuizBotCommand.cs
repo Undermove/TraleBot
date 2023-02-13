@@ -33,8 +33,8 @@ public class StartQuizBotCommand : IBotCommand
 
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
 
-        if (await IsVocabularyEmpty(request, token, result) ||
-            await IsQuizNotStarted(request, token, result))
+        if (await IsQuizNotStarted(request, token, result) ||
+            await IsVocabularyEmpty(request, token, result))
         {
             return;
         }
