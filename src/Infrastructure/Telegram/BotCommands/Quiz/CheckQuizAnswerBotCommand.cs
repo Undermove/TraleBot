@@ -5,6 +5,7 @@ using Application.Quizzes.Queries;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
 
@@ -86,7 +87,8 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Переведи слово: {word.Word}",
+            $"Переведи слово: *{word.Word}*",
+            ParseMode.Markdown,
             cancellationToken: ct);
     }
 

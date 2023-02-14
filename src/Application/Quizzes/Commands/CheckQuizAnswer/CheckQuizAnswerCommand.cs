@@ -36,6 +36,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
                 throw new ApplicationException("Looks like quiz already completed or not started yet");
             }
             
+            // todo: need to fix after service reloading NRE occurs here in entry.VocabularyEntry.DateAdded
             var quizVocabularyEntry = currentQuiz
                 .QuizVocabularyEntries
                 .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
