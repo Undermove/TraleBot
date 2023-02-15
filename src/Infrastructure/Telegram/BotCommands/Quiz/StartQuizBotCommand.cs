@@ -4,6 +4,7 @@ using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
@@ -56,7 +57,9 @@ public class StartQuizBotCommand : IBotCommand
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Переведи слово: {word!.Word}",
+            $"Переведи слово: *{word!.Word}*",
+            parseMode: ParseMode.Markdown,
+            replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData("⏭ Пропустить")),
             cancellationToken: token);
     }
 
