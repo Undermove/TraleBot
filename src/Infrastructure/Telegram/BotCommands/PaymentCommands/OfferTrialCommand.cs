@@ -30,7 +30,7 @@ public class OfferTrialCommand : IBotCommand
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[] { InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)", $"{CommandNames.ActivateTrial}") },
-            new[] { InlineKeyboardButton.WithCallbackData("💳 Год со скидкой. За 159 рублей", $"{CommandNames.Pay}") }
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Купить подписку.", $"{CommandNames.Pay}") }
         });
         
         await _client.SendTextMessageAsync(
