@@ -27,6 +27,7 @@ public class OfferTrialCommand : IBotCommand
     {
         _logger.LogInformation("User with ID: {id} requested invoice", request.User!.Id);
 
+        // todo: if user subscription ends then offer only buy button
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[] { InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)", $"{CommandNames.ActivateTrial}") },
