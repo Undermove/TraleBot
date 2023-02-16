@@ -26,8 +26,8 @@ public class QuizCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        string PayLabel(string label) => request.User!.AccountType == UserAccountType.Free ? "🔓" : label;
-        var payCommand = request.User!.AccountType == UserAccountType.Free ? $"{CommandNames.OfferTrial}" : $"{CommandNames.Quiz}";
+        string PayLabel(string label) => request.User!.IsActivePremium() ? "🔓" : label;
+        var payCommand = request.User!.IsActivePremium() ? $"{CommandNames.OfferTrial}" : $"{CommandNames.Quiz}";
         
         var keyboard = new InlineKeyboardMarkup(new[]
         {
