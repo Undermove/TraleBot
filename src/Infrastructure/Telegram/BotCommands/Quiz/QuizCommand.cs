@@ -9,12 +9,10 @@ namespace Infrastructure.Telegram.BotCommands.Quiz;
 public class QuizCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
-    private IMediator _mediator;
 
-    public QuizCommand(TelegramBotClient client, IMediator mediator)
+    public QuizCommand(TelegramBotClient client)
     {
         _client = client;
-        _mediator = mediator;
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
