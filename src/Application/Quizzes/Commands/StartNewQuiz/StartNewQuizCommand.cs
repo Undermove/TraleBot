@@ -61,6 +61,14 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 UserId = request.UserId.Value,
                 QuizVocabularyEntries = vocabularyEntries
                     .Select(ve => new QuizVocabularyEntry {VocabularyEntry = ve}).ToList(),
+                QuizQuestions = vocabularyEntries.Select(ve => new QuizQuestion()
+                {
+                    Id = Guid.NewGuid(),
+                    VocabularyEntry = ve,
+                    VocabularyEntryId = ve.Id, 
+                    Question = ve.Word,
+                    Answer = ve.Definition
+                }).ToList(),
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false
             };
@@ -101,6 +109,13 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                        .ToList();
+                    break;
+                case QuizTypes.ReverseDirection:
+                    vocabularyEntries = user
+                        .VocabularyEntries
+                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
+                        .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
                         .ToList();
                     break;
             }

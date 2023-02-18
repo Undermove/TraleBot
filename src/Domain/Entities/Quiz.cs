@@ -11,4 +11,5 @@ public class Quiz
     public Guid UserId { get; set; }
     public User User { get; set; }
     public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; } = null!;
+    public ICollection<QuizQuestion> QuizQuestions { get; set; } = null!;
 }

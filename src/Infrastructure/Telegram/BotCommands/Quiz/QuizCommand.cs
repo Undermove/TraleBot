@@ -32,7 +32,8 @@ public class QuizCommand : IBotCommand
             new[] { InlineKeyboardButton.WithCallbackData("🌗 За последнюю неделю", $"{CommandNames.Quiz} {QuizTypes.LastWeek}") },
             new[] { InlineKeyboardButton.WithCallbackData($"{PayLabel("📅")} За сегодня", $"{payCommand} {QuizTypes.LastDay}") },
             new[] { InlineKeyboardButton.WithCallbackData($"{PayLabel("🎲")} 10 случайных слов", $"{payCommand} {QuizTypes.SeveralRandomWords}") },
-            new[] { InlineKeyboardButton.WithCallbackData($"{PayLabel("🥈")} По новым словам", $"{payCommand} {QuizTypes.MostFailed}") },
+            new[] { InlineKeyboardButton.WithCallbackData($"{PayLabel("🥈")} Закрепить новые", $"{payCommand} {QuizTypes.MostFailed}") },
+            new[] { InlineKeyboardButton.WithCallbackData($"{PayLabel("🥇")} Закрепить в обратном направлении", $"{payCommand} {QuizTypes.ReverseDirection}") },
         });
 
         await _client.SendTextMessageAsync(
