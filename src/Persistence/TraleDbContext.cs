@@ -19,6 +19,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<VocabularyEntry> VocabularyEntries { get; set; } = null!;
     public DbSet<Quiz> Quizzes { get; set; } = null!;
     public DbSet<Invoice> Invoices { get; set; } = null!;
+    public DbSet<QuizQuestion> QuizQuestions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
