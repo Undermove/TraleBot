@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Security.Cryptography.X509Certificates;
 using Application.Common;
 using Application.Common.Exceptions;
@@ -59,8 +60,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             {
                 Id = Guid.NewGuid(),
                 UserId = request.UserId.Value,
-                QuizVocabularyEntries = vocabularyEntries
-                    .Select(ve => new QuizVocabularyEntry {VocabularyEntry = ve}).ToList(),
+                QuizVocabularyEntries = ImmutableList<QuizVocabularyEntry>.Empty,
                 QuizQuestions = vocabularyEntries.Select(ve => new QuizQuestion()
                 {
                     Id = Guid.NewGuid(),
