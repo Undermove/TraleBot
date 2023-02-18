@@ -51,12 +51,12 @@ public class ActivateTrialCommand : IBotCommand
             _logger.LogInformation("Trial ended for user with ID: {id}", request.User!.Id);
             var keyboard = new InlineKeyboardMarkup(new[]
             {
-                new[] { InlineKeyboardButton.WithCallbackData("💳 Год премиума. За 180 рублей", $"{CommandNames.Pay}") }
+                new[] { InlineKeyboardButton.WithCallbackData("💳 Выбрать подписку", $"{CommandNames.Pay}") }
             });
         
             await _client.SendTextMessageAsync(
                 request.UserTelegramId, 
-                "🏁Твой триальный период подошел к концу. Ты можешь продолжить пользоваться функциями премиума оплатив год работы. " +
+                "🏁Твой триальный период подошел к концу. Ты можешь продолжить пользоваться функциями премиума оплатив подписку." +
                 "\r\n😇У нас не нужно привязывать карту. Никаких внезапных списаний по подпискам!",
                 replyMarkup: keyboard,
                 cancellationToken: token);
