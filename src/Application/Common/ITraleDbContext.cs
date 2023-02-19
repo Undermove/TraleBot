@@ -10,6 +10,7 @@ public interface ITraleDbContext
     DbSet<VocabularyEntry> VocabularyEntries { get; }
     DbSet<Quiz> Quizzes { get; }
     DbSet<Invoice> Invoices { get; }
+    DbSet<QuizQuestion> QuizQuestions { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);
 }

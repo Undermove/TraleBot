@@ -62,6 +62,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             }
 
             currentQuiz.QuizQuestions.Remove(quizQuestion);
+            _dbContext.QuizQuestions.Remove(quizQuestion);
             await _dbContext.SaveChangesAsync(ct);
             return result;
         }
