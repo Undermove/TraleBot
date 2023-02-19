@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Quizzes.Commands;
 
-public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
+public class GetNextQuizQuestionQuery : IRequest<QuizQuestion?>
 {
     public Guid? UserId { get; set; }
     
-    public class Handler: IRequestHandler<GetNextQuizQuestionQuery, VocabularyEntry?>
+    public class Handler: IRequestHandler<GetNextQuizQuestionQuery, QuizQuestion?>
     {
         private readonly ITraleDbContext _dbContext;
         
@@ -18,25 +18,24 @@ public class GetNextQuizQuestionQuery : IRequest<VocabularyEntry?>
             _dbContext = dbContext;
         }
         
-        public async Task<VocabularyEntry?> Handle(GetNextQuizQuestionQuery request, CancellationToken ct)
+        public async Task<QuizQuestion?> Handle(GetNextQuizQuestionQuery request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .SingleAsync(quiz => 
                     quiz.UserId == request.UserId && 
                     quiz.IsCompleted == false, cancellationToken: ct);
             
-            await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizVocabularyEntries)).LoadAsync(ct);
-            if (currentQuiz.QuizVocabularyEntries.Count == 0)
+            await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizQuestions)).LoadAsync(ct);
+            if (currentQuiz.QuizQuestions.Count == 0)
             {
                 return null;
             } 
 
-            var vocabularyEntry = currentQuiz
-                .QuizVocabularyEntries
+            var quizQuestion = currentQuiz
+                .QuizQuestions
                 .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
-                .Select(entry => entry.VocabularyEntry)
                 .Last();
-            return vocabularyEntry;
+            return quizQuestion;
         }
     }
 }
