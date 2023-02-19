@@ -5,5 +5,6 @@ public enum QuizTypes
     LastWeek,
     LastDay,
     SeveralRandomWords,
-    MostFailed
+    MostFailed,
+    ReverseDirection
 }

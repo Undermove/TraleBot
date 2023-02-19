@@ -1,4 +1,4 @@
-using System.Security.Cryptography.X509Certificates;
+using System.Collections.Immutable;
 using Application.Common;
 using Application.Common.Exceptions;
 using Domain.Entities;
@@ -59,8 +59,15 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             {
                 Id = Guid.NewGuid(),
                 UserId = request.UserId.Value,
-                QuizVocabularyEntries = vocabularyEntries
-                    .Select(ve => new QuizVocabularyEntry {VocabularyEntry = ve}).ToList(),
+                QuizVocabularyEntries = ImmutableList<QuizVocabularyEntry>.Empty,
+                QuizQuestions = vocabularyEntries.Select(ve => new QuizQuestion
+                {
+                    Id = Guid.NewGuid(),
+                    VocabularyEntry = ve,
+                    VocabularyEntryId = ve.Id, 
+                    Question = ve.Word,
+                    Answer = ve.Definition
+                }).ToList(),
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false
             };
@@ -101,6 +108,13 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                        .ToList();
+                    break;
+                case QuizTypes.ReverseDirection:
+                    vocabularyEntries = user
+                        .VocabularyEntries
+                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
+                        .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
                         .ToList();
                     break;
             }

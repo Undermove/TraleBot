@@ -42,7 +42,9 @@ public class StopQuizCommand : IRequest
 
             startedQuiz.IsCompleted = true;
             _dbContext.Quizzes.Update(startedQuiz);
-
+            
+            _dbContext.QuizQuestions.RemoveRange(startedQuiz.QuizQuestions.ToArray());
+            
             await _dbContext.SaveChangesAsync(ct);
             return Unit.Value;
         }

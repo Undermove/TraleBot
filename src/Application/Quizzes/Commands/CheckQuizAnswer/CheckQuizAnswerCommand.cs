@@ -28,35 +28,43 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
 
             await _dbContext
                 .Entry(currentQuiz)
-                .Collection(nameof(currentQuiz.QuizVocabularyEntries))
+                .Collection(nameof(currentQuiz.QuizQuestions))
                 .LoadAsync(ct);
-
-            if (currentQuiz.QuizVocabularyEntries.Count == 0)
+            
+            if (currentQuiz.QuizQuestions.Count == 0)
             {
                 throw new ApplicationException("Looks like quiz already completed or not started yet");
             }
             
             // todo: need to fix after service reloading NRE occurs here in entry.VocabularyEntry.DateAdded
-            var quizVocabularyEntry = currentQuiz
-                .QuizVocabularyEntries
+            
+            var quizQuestion = currentQuiz
+                .QuizQuestions
                 .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
                 .Last();
-            await _dbContext.Entry(quizVocabularyEntry).Reference(nameof(quizVocabularyEntry.VocabularyEntry)).LoadAsync(ct);
-            
-            if (quizVocabularyEntry.VocabularyEntry.Definition != request.Answer.ToLowerInvariant())
+
+            await _dbContext.Entry(quizQuestion).Reference(nameof(quizQuestion.VocabularyEntry)).LoadAsync(ct);
+
+            CheckQuizAnswerResult result;
+            if (quizQuestion.Answer.Equals(request.Answer, StringComparison.InvariantCultureIgnoreCase))
+            {
+                currentQuiz.CorrectAnswersCount++;
+                quizQuestion.VocabularyEntry.SuccessAnswersCount++;
+                result = new CheckQuizAnswerResult(true, quizQuestion.Answer,
+                    quizQuestion.VocabularyEntry.GetScoreToNextLevel());
+            }
+            else
             {
                 currentQuiz.IncorrectAnswersCount++;
-                currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
-                quizVocabularyEntry.VocabularyEntry.FailedAnswersCount++;
-                await _dbContext.SaveChangesAsync(ct);
-                return new CheckQuizAnswerResult(false, quizVocabularyEntry.VocabularyEntry.Definition, quizVocabularyEntry.VocabularyEntry.GetScoreToNextLevel());
+                quizQuestion.VocabularyEntry.FailedAnswersCount++;
+                result = new CheckQuizAnswerResult(false, quizQuestion.Answer,
+                    quizQuestion.VocabularyEntry.GetScoreToNextLevel());
             }
-            
-            currentQuiz.CorrectAnswersCount++;
-            quizVocabularyEntry.VocabularyEntry.SuccessAnswersCount++;
-            currentQuiz.QuizVocabularyEntries.Remove(quizVocabularyEntry);
+
+            currentQuiz.QuizQuestions.Remove(quizQuestion);
+            _dbContext.QuizQuestions.Remove(quizQuestion);
             await _dbContext.SaveChangesAsync(ct);
-            return new CheckQuizAnswerResult(true, quizVocabularyEntry.VocabularyEntry.Definition, quizVocabularyEntry.VocabularyEntry.GetScoreToNextLevel());
+            return result;
         }
     }
 }
