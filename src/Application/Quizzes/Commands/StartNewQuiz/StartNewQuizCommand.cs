@@ -48,9 +48,9 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             
-            var vocabularyEntries = CreateQuizQuestions(user, request.QuizType);
+            var quizQuestions = CreateQuizQuestions(user, request.QuizType);
 
-            if (vocabularyEntries.Count == 0)
+            if (quizQuestions.Count == 0)
             {
                 return new StartNewQuizResult(0, false);
             }
@@ -60,14 +60,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 Id = Guid.NewGuid(),
                 UserId = request.UserId.Value,
                 QuizVocabularyEntries = ImmutableList<QuizVocabularyEntry>.Empty,
-                QuizQuestions = vocabularyEntries.Select(ve => new QuizQuestion
-                {
-                    Id = Guid.NewGuid(),
-                    VocabularyEntry = ve,
-                    VocabularyEntryId = ve.Id, 
-                    Question = ve.Word,
-                    Answer = ve.Definition
-                }).ToList(),
+                QuizQuestions = quizQuestions,
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false
             };
@@ -75,13 +68,13 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             await _dbContext.Quizzes.AddAsync(quiz, ct);
             await _dbContext.SaveChangesAsync(ct);
 
-            return new StartNewQuizResult(vocabularyEntries.Count, true);
+            return new StartNewQuizResult(quizQuestions.Count, true);
         }
 
-        private static List<VocabularyEntry> CreateQuizQuestions(User user, QuizTypes quizType)
+        private static List<QuizQuestion> CreateQuizQuestions(User user, QuizTypes quizType)
         {
             Random rnd = new Random();
-            var vocabularyEntries = new List<VocabularyEntry>();
+            var vocabularyEntries = new List<QuizQuestion>();
             
             switch (quizType)
             {
@@ -89,18 +82,21 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
+                        .Select(QuizQuestion)
                         .ToList();
                     break;
                 case QuizTypes.LastDay:
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-1))
+                        .Select(QuizQuestion)
                         .ToList();
                     break;
                 case QuizTypes.SeveralRandomWords:
                     vocabularyEntries = user
                         .VocabularyEntries
                         .OrderBy(_ => rnd.Next()).Take(10)
+                        .Select(QuizQuestion)
                         .ToList();
                     break;
                 case QuizTypes.MostFailed:
@@ -108,6 +104,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                        .Select(QuizQuestion)
                         .ToList();
                     break;
                 case QuizTypes.ReverseDirection:
@@ -115,11 +112,36 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
+                        .Select(ReverseQuizQuestion)
                         .ToList();
                     break;
             }
             
             return vocabularyEntries;
+        }
+
+        private static QuizQuestion QuizQuestion(VocabularyEntry entry)
+        {
+            return new QuizQuestion
+            {
+                Id = Guid.NewGuid(),
+                VocabularyEntry = entry,
+                Question = entry.Word,
+                Answer = entry.Definition,
+                VocabularyEntryId = entry.Id
+            };
+        }
+        
+        private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
+        {
+            return new QuizQuestion
+            {
+                Id = Guid.NewGuid(),
+                VocabularyEntry = entry,
+                Question = entry.Definition,
+                Answer = entry.Word,
+                VocabularyEntryId = entry.Id
+            };
         }
     }
 }
