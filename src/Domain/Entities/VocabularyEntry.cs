@@ -40,12 +40,27 @@ public class VocabularyEntry
             return MasteringLevel.NotMastered;
         }
 
+        if (SuccessAnswersCountInReverseDirection > MinimumSuccessAnswersRequired)
+        {
+            return MasteringLevel.MasteredInBothDirections;
+        }
+
         return MasteringLevel.MasteredInForwardDirection;
     }
     
     public int GetScoreToNextLevel()
     {
-        return MinimumSuccessAnswersRequired - SuccessAnswersCount;
+        if (SuccessAnswersCount < MinimumSuccessAnswersRequired)
+        {
+            return MinimumSuccessAnswersRequired - SuccessAnswersCount;
+        }
+
+        if (SuccessAnswersCountInReverseDirection < MinimumSuccessAnswersRequired)
+        {
+            return MinimumSuccessAnswersRequired - SuccessAnswersCountInReverseDirection;
+        }
+
+        return 0;
     }
 }
 

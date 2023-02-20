@@ -111,6 +111,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
+                        .Take(20)
                         .Select(ReverseQuizQuestion)
                         .ToList();
                     break;

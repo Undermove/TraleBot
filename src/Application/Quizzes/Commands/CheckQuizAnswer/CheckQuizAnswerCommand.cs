@@ -55,7 +55,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             
             await _dbContext.SaveChangesAsync(ct);
             return new CheckQuizAnswerResult(isAnswerCorrect, quizQuestion.Answer,
-                quizQuestion.VocabularyEntry.GetScoreToNextLevel());;
+                quizQuestion.VocabularyEntry.GetScoreToNextLevel());
         }
     }
 }
