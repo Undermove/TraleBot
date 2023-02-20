@@ -15,7 +15,6 @@ public class VocabularyEntry
     public int SuccessAnswersCount { get; set; }
     public int SuccessAnswersCountInReverseDirection { get; set; }
     public int FailedAnswersCount { get; set; }
-    public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; }
     public ICollection<QuizQuestion> QuizQuestions { get; set; }
 
     public void ScorePoint(string answer)

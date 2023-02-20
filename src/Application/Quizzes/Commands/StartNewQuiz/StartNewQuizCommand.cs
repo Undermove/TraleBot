@@ -59,7 +59,6 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             {
                 Id = Guid.NewGuid(),
                 UserId = request.UserId.Value,
-                QuizVocabularyEntries = ImmutableList<QuizVocabularyEntry>.Empty,
                 QuizQuestions = quizQuestions,
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false
