@@ -37,7 +37,6 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             }
             
             // todo: need to fix after service reloading NRE occurs here in entry.VocabularyEntry.DateAdded
-            
             var quizQuestion = currentQuiz
                 .QuizQuestions
                 .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
@@ -45,26 +44,18 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
 
             await _dbContext.Entry(quizQuestion).Reference(nameof(quizQuestion.VocabularyEntry)).LoadAsync(ct);
 
-            CheckQuizAnswerResult result;
-            if (quizQuestion.Answer.Equals(request.Answer, StringComparison.InvariantCultureIgnoreCase))
-            {
-                currentQuiz.CorrectAnswersCount++;
-                quizQuestion.VocabularyEntry.SuccessAnswersCount++;
-                result = new CheckQuizAnswerResult(true, quizQuestion.Answer,
-                    quizQuestion.VocabularyEntry.GetScoreToNextLevel());
-            }
-            else
-            {
-                currentQuiz.IncorrectAnswersCount++;
-                quizQuestion.VocabularyEntry.FailedAnswersCount++;
-                result = new CheckQuizAnswerResult(false, quizQuestion.Answer,
-                    quizQuestion.VocabularyEntry.GetScoreToNextLevel());
-            }
-
+            bool isAnswerCorrect =
+                quizQuestion.Answer.Equals(request.Answer, StringComparison.InvariantCultureIgnoreCase);
+            
+            currentQuiz.ScorePoint(isAnswerCorrect);
+            quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
+            
             currentQuiz.QuizQuestions.Remove(quizQuestion);
             _dbContext.QuizQuestions.Remove(quizQuestion);
+            
             await _dbContext.SaveChangesAsync(ct);
-            return result;
+            return new CheckQuizAnswerResult(isAnswerCorrect, quizQuestion.Answer,
+                quizQuestion.VocabularyEntry.GetScoreToNextLevel());;
         }
     }
 }

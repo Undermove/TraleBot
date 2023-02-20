@@ -12,4 +12,16 @@ public class Quiz
     public User User { get; set; }
     public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; } = null!;
     public ICollection<QuizQuestion> QuizQuestions { get; set; } = null!;
+    
+    public void ScorePoint(bool isAnswerCorrect)
+    {
+        if (isAnswerCorrect)
+        {
+            CorrectAnswersCount++;
+        }
+        else
+        {
+            IncorrectAnswersCount++;
+        }
+    }
 }

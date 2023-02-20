@@ -13,10 +13,27 @@ public class VocabularyEntry
     public Guid UserId { get; set; }
     public User User { get; set; }
     public int SuccessAnswersCount { get; set; }
+    public int SuccessAnswersCountInReverseDirection { get; set; }
     public int FailedAnswersCount { get; set; }
     public IList<QuizVocabularyEntry> QuizVocabularyEntries { get; set; }
     public ICollection<QuizQuestion> QuizQuestions { get; set; }
 
+    public void ScorePoint(string answer)
+    {
+        if (answer.Equals(Definition, StringComparison.InvariantCultureIgnoreCase))
+        {
+            SuccessAnswersCount++;
+        }
+        else if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
+        {
+            SuccessAnswersCountInReverseDirection++;
+        }
+        else
+        {
+            FailedAnswersCount++;
+        }
+    }
+    
     public MasteringLevel GetMasteringLevel()
     {
         if (SuccessAnswersCount < MinimumSuccessAnswersRequired)
