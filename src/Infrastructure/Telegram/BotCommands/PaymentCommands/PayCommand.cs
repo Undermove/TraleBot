@@ -3,6 +3,7 @@ using Infrastructure.Telegram.Models;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types.Payments;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
@@ -32,38 +33,16 @@ public class PayCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        _logger.LogInformation("User with ID: {id} requested invoice", request.User!.Id);
-
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Месяц за 2,49€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.Month}") },
+            new[] { InlineKeyboardButton.WithCallbackData("💳 3 месяца за 3,99€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.ThreeMonth}") },
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Год за 5,99€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.Year}")}
+        });
+        
         await _client.SendTextMessageAsync(request.UserTelegramId,
-            "Выбери подписку и срок подписки:", 
+            "Выбери подписку и срок подписки:",
+            replyMarkup: keyboard,
             cancellationToken: token);
-        
-        var prices = new List<LabeledPrice>
-        {
-            new("Месяц за 2,49€", 249),
-            new("3 месяца за 3,99€", 389),
-            new("Год за 5,99€", 599)
-        };
-        var counter = 0;
-        foreach (var price in prices)
-        {
-            var paymentType = ((SubscriptionTerm)counter++).ToString();
-            
-            await _client.SendInvoiceAsync(
-                request.UserTelegramId,
-                price.Label,
-                "Расширенный функционал",
-                paymentType,
-                _configuration.PaymentProviderToken,
-                "EUR",
-                new List<LabeledPrice>
-                {
-                    price
-                },
-                cancellationToken: token
-            );
-        }
-        
-        _logger.LogInformation("Invoice sent to user with ID: {id}", request.User!.Id);
     }
 }
