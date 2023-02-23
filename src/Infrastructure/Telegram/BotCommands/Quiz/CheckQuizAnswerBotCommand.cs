@@ -54,7 +54,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
     }
 
     private async Task SendCorrectAnswerConfirmation(TelegramRequest request, CancellationToken ct,
-        CheckQuizAnswerResult2 checkResult)
+        CheckQuizAnswerResult checkResult)
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
