@@ -103,7 +103,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         double correctnessPercent = Math.Round(100 * (quizStats.CorrectAnswersCount / (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "🏄‍Вот это квиз! Вне зависимости от результатов ты молодец, что стараешься." +
+            "🏄‍Вот это квиз! Молодец, что стараешься! 💓" +
             "\r\nВот твоя статистика:" +
             $"\r\n✅Правильные ответы:            {quizStats.CorrectAnswersCount}" +
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
