@@ -17,20 +17,32 @@ public class VocabularyEntry
     public int FailedAnswersCount { get; set; }
     public ICollection<QuizQuestion> QuizQuestions { get; set; }
 
-    public void ScorePoint(string answer)
+    public MasteringLevel? ScorePoint(string answer)
     {
         if (answer.Equals(Definition, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCount++;
+            if (SuccessAnswersCount >= MinimumSuccessAnswersRequired)
+            {
+                return MasteringLevel.MasteredInForwardDirection;
+            }
+
+            return null;
         }
-        else if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
+        
+        if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCountInReverseDirection++;
+            if (SuccessAnswersCountInReverseDirection >= MinimumSuccessAnswersRequired)
+            {
+                return MasteringLevel.MasteredInBothDirections;
+            }
+            
+            return null;
         }
-        else
-        {
-            FailedAnswersCount++;
-        }
+        
+        FailedAnswersCount++;
+        return null;
     }
     
     public MasteringLevel GetMasteringLevel()
@@ -47,8 +59,24 @@ public class VocabularyEntry
 
         return MasteringLevel.MasteredInForwardDirection;
     }
+
+    public MasteringLevel? GetNextMasteringLevel()
+    {
+        if (SuccessAnswersCount < MinimumSuccessAnswersRequired)
+        {
+            return MasteringLevel.MasteredInForwardDirection;
+        }
+        
+        if (SuccessAnswersCount > MinimumSuccessAnswersRequired
+            && SuccessAnswersCountInReverseDirection < MinimumSuccessAnswersRequired)
+        {
+            return MasteringLevel.MasteredInBothDirections;
+        }
+
+        return null;
+    }
     
-    public int GetScoreToNextLevel()
+    public int? GetScoreToNextLevel()
     {
         if (SuccessAnswersCount < MinimumSuccessAnswersRequired)
         {
@@ -60,7 +88,7 @@ public class VocabularyEntry
             return MinimumSuccessAnswersRequired - SuccessAnswersCountInReverseDirection;
         }
 
-        return 0;
+        return null;
     }
 }
 

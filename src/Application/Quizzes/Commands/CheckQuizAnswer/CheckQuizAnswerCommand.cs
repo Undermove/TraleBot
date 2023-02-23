@@ -1,15 +1,16 @@
 using Application.Common;
+using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
+public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult2>
 {
     public Guid? UserId { get; set; }
     public string Answer { get; set; }
 
-    public class Handler : IRequestHandler<CheckQuizAnswerCommand, CheckQuizAnswerResult>
+    public class Handler : IRequestHandler<CheckQuizAnswerCommand, CheckQuizAnswerResult2>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -18,7 +19,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             _dbContext = dbContext;
         }
 
-        public async Task<CheckQuizAnswerResult> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
+        public async Task<CheckQuizAnswerResult2> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .OrderBy(quiz => quiz.DateStarted)
@@ -46,16 +47,20 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
 
             bool isAnswerCorrect =
                 quizQuestion.Answer.Equals(request.Answer, StringComparison.InvariantCultureIgnoreCase);
-            
+
             currentQuiz.ScorePoint(isAnswerCorrect);
-            quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
+            var masteringLevel = quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
             
             currentQuiz.QuizQuestions.Remove(quizQuestion);
             _dbContext.QuizQuestions.Remove(quizQuestion);
             
             await _dbContext.SaveChangesAsync(ct);
-            return new CheckQuizAnswerResult(isAnswerCorrect, quizQuestion.Answer,
-                quizQuestion.VocabularyEntry.GetScoreToNextLevel());
+            return new CheckQuizAnswerResult2(
+                isAnswerCorrect, 
+                quizQuestion.Answer, 
+                quizQuestion.VocabularyEntry.GetScoreToNextLevel(),
+                quizQuestion.VocabularyEntry.GetNextMasteringLevel(),
+                masteringLevel);
         }
     }
 }

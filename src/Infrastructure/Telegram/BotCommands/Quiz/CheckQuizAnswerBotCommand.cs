@@ -2,6 +2,7 @@ using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.CheckQuizAnswer;
 using Application.Quizzes.Commands.CompleteQuiz;
 using Application.Quizzes.Queries;
+using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -53,26 +54,28 @@ public class CheckQuizAnswerBotCommand: IBotCommand
     }
 
     private async Task SendCorrectAnswerConfirmation(TelegramRequest request, CancellationToken ct,
-        CheckQuizAnswerResult checkResult)
+        CheckQuizAnswerResult2 checkResult)
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "✅Верно! Ты молодчина!",
             cancellationToken: ct);
-        
-        if (checkResult.ScoreToNextLevel > 0)
-        {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                $"Переведи это слово правильно еще в {checkResult.ScoreToNextLevel} квизах и получи по нему 🥇!",
-                cancellationToken: ct);
-        }
 
-        if (checkResult.ScoreToNextLevel == 0)
+        if (checkResult.AcquiredLevel != null)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "🥇",
+                $"{GetMedalType(checkResult.AcquiredLevel.Value)}",
+                cancellationToken: ct);
+            
+            return;
+        }
+        
+        if (checkResult.ScoreToNextLevel != null && checkResult.NextLevel != null)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                $"Переведи это слово правильно еще в {checkResult.ScoreToNextLevel} квизах и получи по нему {GetMedalType(checkResult.NextLevel.Value)}!",
                 cancellationToken: ct);
         }
     }
@@ -106,5 +109,20 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
             $"\r\n📏Корректных ответов:         {correctnessPercent}%",
             cancellationToken: ct);
+    }
+    
+    private string GetMedalType(MasteringLevel masteringLevel)
+    {
+        switch (masteringLevel)
+        {
+            case MasteringLevel.NotMastered:
+                return "🥈";
+            case MasteringLevel.MasteredInForwardDirection:
+                return "🥇";
+            case MasteringLevel.MasteredInBothDirections:
+                return "💎";
+        }
+        
+        return "";
     }
 }
