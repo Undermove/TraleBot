@@ -45,9 +45,17 @@ public class TranslateCommand : IBotCommand
         var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.Translated 
             ? "❌ Не добавлять в словарь." 
             : "❌ Есть в словаре. Удалить?";
+        
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[]{ InlineKeyboardButton.WithCallbackData(removeFromVocabularyText, $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")},
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText, $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")
+            },
+            // new[]
+            // {
+            //     InlineKeyboardButton.WithCallbackData("Ввести свой перевод", $"{CommandNames.TranslateManually} {request.Text}")
+            // },
             new[]
             {
                 InlineKeyboardButton.WithUrl("Перевод Wooordhunt",$"https://wooordhunt.ru/word/{request.Text}"),

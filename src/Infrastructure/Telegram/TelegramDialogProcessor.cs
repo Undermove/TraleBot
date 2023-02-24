@@ -30,13 +30,13 @@ public class TelegramDialogProcessor: IDialogProcessor
     {
         var telegramRequest = await MapToTelegramRequest(request, token);
 
-        _logger.LogInformation("Incoming request {TelegramRequestText}", telegramRequest.Text);
+        _logger.LogDebug("Incoming request {TelegramRequestText}", telegramRequest.Text);
         try
         {
             foreach (var command in _commands)
             {
                 var typeName = command.GetType();
-                _logger.LogInformation("Try command {CommandName}", typeName);
+                _logger.LogDebug("Try command {CommandName}", typeName);
                 if (await command.IsApplicable(telegramRequest, token))
                 {
                     _logger.LogInformation("Applied command {CommandName}", typeName);
