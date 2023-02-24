@@ -22,7 +22,7 @@ public class VocabularyEntry
         if (answer.Equals(Definition, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCount++;
-            if (SuccessAnswersCount >= MinimumSuccessAnswersRequired)
+            if (SuccessAnswersCount == MinimumSuccessAnswersRequired)
             {
                 return MasteringLevel.MasteredInForwardDirection;
             }
@@ -33,7 +33,7 @@ public class VocabularyEntry
         if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCountInReverseDirection++;
-            if (SuccessAnswersCountInReverseDirection >= MinimumSuccessAnswersRequired)
+            if (SuccessAnswersCountInReverseDirection == MinimumSuccessAnswersRequired)
             {
                 return MasteringLevel.MasteredInBothDirections;
             }
