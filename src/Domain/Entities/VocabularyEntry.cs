@@ -52,7 +52,7 @@ public class VocabularyEntry
             return MasteringLevel.NotMastered;
         }
 
-        if (SuccessAnswersCountInReverseDirection > MinimumSuccessAnswersRequired)
+        if (SuccessAnswersCountInReverseDirection >= MinimumSuccessAnswersRequired)
         {
             return MasteringLevel.MasteredInBothDirections;
         }
