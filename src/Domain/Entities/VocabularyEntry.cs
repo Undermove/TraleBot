@@ -67,7 +67,7 @@ public class VocabularyEntry
             return MasteringLevel.MasteredInForwardDirection;
         }
         
-        if (SuccessAnswersCount > MinimumSuccessAnswersRequired
+        if (SuccessAnswersCount >= MinimumSuccessAnswersRequired
             && SuccessAnswersCountInReverseDirection < MinimumSuccessAnswersRequired)
         {
             return MasteringLevel.MasteredInBothDirections;
