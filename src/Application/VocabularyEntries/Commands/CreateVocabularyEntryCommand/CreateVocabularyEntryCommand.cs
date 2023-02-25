@@ -3,13 +3,14 @@ using Application.Common.Interfaces;
 using Domain.Entities;
 using MediatR;
 
-namespace Application.VocabularyEntries.Commands;
+namespace Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 
 public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult>
 {
     public Guid UserId { get; set; }
     public string Word { get; set; }
-    
+    public string? Definition { get; set; }
+
     public class Handler : IRequestHandler<CreateVocabularyEntryCommand, CreateVocabularyEntryResult>
     {
         private readonly ITranslationService _translationService;
@@ -39,11 +40,25 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 return new CreateVocabularyEntryResult(TranslationStatus.ReceivedFromVocabulary, duplicate.Definition, duplicate.AdditionalInfo, duplicate.Id);
             }
 
-            var translationResult = await _translationService.TranslateAsync(request.Word, ct);
-
-            if (!translationResult.IsSuccessful)
+            string definition;
+            string additionalInfo;
+            
+            if (request.Definition != null)
             {
-                return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", Guid.Empty);
+                definition = request.Definition;
+                additionalInfo = request.Definition;
+            }
+            else
+            {
+                var translationResult = await _translationService.TranslateAsync(request.Word, ct);
+
+                definition = translationResult.Definition.ToLowerInvariant();
+                additionalInfo = translationResult.AdditionalInfo.ToLowerInvariant();
+                
+                if (!translationResult.IsSuccessful)
+                {
+                    return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", Guid.Empty);
+                }
             }
 
             var entryId = Guid.NewGuid();
@@ -51,8 +66,8 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             {
                 Id = entryId,
                 Word = request.Word.ToLowerInvariant(),
-                Definition = translationResult.Definition.ToLowerInvariant(),
-                AdditionalInfo = translationResult.AdditionalInfo.ToLowerInvariant(),
+                Definition = definition,
+                AdditionalInfo = additionalInfo,
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
             }, ct);
@@ -61,8 +76,8 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 
-                translationResult.Definition, 
-                translationResult.AdditionalInfo,
+                definition, 
+                additionalInfo,
                 entryId);
         }
     }

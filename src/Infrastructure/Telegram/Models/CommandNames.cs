@@ -14,7 +14,7 @@ public static class CommandNames
     public const string StopQuiz = "/stopquiz";
     public const string StopQuizIcon = "⏹";
     public const string RemoveEntry = "/removeentry";
-    public const string TranslateManually = "/translatemanually";
+    public const string TranslateManually = "-";
     public const string Pay = "/pay";
     public const string PayIcon = "💳";
     public const string RequestInvoice = "/requestinvoice";

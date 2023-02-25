@@ -1,4 +1,5 @@
 using Application.VocabularyEntries.Commands;
+using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -37,7 +38,9 @@ public class TranslateCommand : IBotCommand
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "Прости, пока не могу перевести это слово 😞.",
+                "Прости, пока не могу перевести это слово 😞." +
+                "\r\nЕсли хочешь добавить перевод, то введи его в формате: слово-перевод" +
+                "\r\nК примеру: cat-кошка",
                 cancellationToken: token);
             return;
         }
@@ -54,7 +57,7 @@ public class TranslateCommand : IBotCommand
             },
             // new[]
             // {
-            //     InlineKeyboardButton.WithCallbackData("Ввести свой перевод", $"{CommandNames.TranslateManually} {request.Text}")
+            //     InlineKeyboardButton.WithCallbackData("Ввести свой перевод", $"{CommandNames.TranslateManually} {result.VocabularyEntryId}")
             // },
             new[]
             {
