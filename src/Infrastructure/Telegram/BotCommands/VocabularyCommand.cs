@@ -30,15 +30,14 @@ public class VocabularyCommand : IBotCommand
     {
         var result =  await _mediator.Send(new GetVocabularyEntriesListQuery {UserId = request.User!.Id}, token);
 
+        if (!request.User.IsActivePremium())
+        {
+            await OfferTrial(request, token, result);
+            return;
+        }
+
         if (!result.VocabularyEntries.Any())
         {
-            // todo: refactor this to receive specified answer from app layer
-            if (result.VocabularyWordsCount > 0)
-            {
-                await OfferTrial(request, token, result);
-                return;
-            }
-            
             await _client.SendTextMessageAsync(request.UserTelegramId, "📖Словарь пока пуст", cancellationToken: token);
             return;
         }
