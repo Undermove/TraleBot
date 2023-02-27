@@ -76,7 +76,7 @@ public class VocabularyCommand : IBotCommand
                 InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)",
                     $"{CommandNames.ActivateTrial}")
             },
-            new[] { InlineKeyboardButton.WithCallbackData("💳 Год со скидкой. За 159 рублей", $"{CommandNames.Pay}") }
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Выбрать подписку.", $"{CommandNames.Pay}") }
         });
         
         await _client.SendTextMessageAsync(
