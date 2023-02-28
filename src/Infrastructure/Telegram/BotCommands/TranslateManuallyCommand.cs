@@ -28,7 +28,7 @@ public class TranslateManuallyCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var split = request.Text.Split('-');
+        var split = request.Text.Split(CommandNames.TranslateManually);
         var word = split[0];
         var definition = split[1];
         
