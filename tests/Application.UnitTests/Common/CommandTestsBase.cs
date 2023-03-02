@@ -15,4 +15,12 @@ public abstract class CommandTestsBase : IDisposable
     {
         TraleContextFactory.Destroy(Context);
     }
+    
+    [TearDown]
+    public async Task TearDown()
+    {
+        await Context.Database.EnsureDeletedAsync();
+        TraleContextFactory.Destroy(Context);
+        Context = TraleContextFactory.Create();
+    }
 }
