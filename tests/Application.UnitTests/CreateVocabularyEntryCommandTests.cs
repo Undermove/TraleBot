@@ -9,7 +9,6 @@ namespace Application.UnitTests;
 
 public class CreateVocabularyEntryCommandTests : CommandTestsBase
 {
-
     private Mock<ITranslationService> _translationServicesMock = null!;
 
     [SetUp]
@@ -27,17 +26,19 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         await Context.SaveChangesAsync();
         var createSettingsCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, Context);
 
+        const string expectedWord = "cat";
+        const string expectedDefinition = "кошка";
         await createSettingsCommandHandler.Handle(new CreateVocabularyEntryCommand
         {
             UserId = existingUser.Id,
-            Word = "cat",
-            Definition = "кошка"
+            Word = expectedWord,
+            Definition = expectedDefinition
         }, CancellationToken.None);
 
         var vocabularyEntry = await Context.VocabularyEntries
-            .FirstOrDefaultAsync(entry => entry.Word == "cat");
+            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
-        vocabularyEntry.Definition.ShouldBe("кошка");
-        vocabularyEntry.AdditionalInfo.ShouldBe("кошка");
+        vocabularyEntry.Definition.ShouldBe(expectedDefinition);
+        vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
     }
 }
