@@ -1,6 +1,6 @@
 namespace Application.UnitTests;
 
-public class Tests
+public class CreateVocabularyEntryCommandTests
 {
     [SetUp]
     public void Setup()
@@ -8,7 +8,7 @@ public class Tests
     }
 
     [Test]
-    public void Test1()
+    public void SuccessPath()
     {
         Assert.Pass();
     }
