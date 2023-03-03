@@ -1,4 +1,5 @@
 using Application.Users.Commands.CreateUser;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -23,27 +24,10 @@ public class MenuCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var keyboard = new ReplyKeyboardMarkup(new[]
-        {
-            new[]
-            {
-                new KeyboardButton($"{CommandNames.QuizIcon} Квиз"),
-                new KeyboardButton($"{CommandNames.StopQuizIcon} Остановить квиз"),
-                new KeyboardButton($"{CommandNames.VocabularyIcon} Мой словарь")
-            },
-            new[]
-            {
-                new KeyboardButton($"{CommandNames.PayIcon} Премиум"),
-                new KeyboardButton($"{CommandNames.HelpIcon} Поддержка"),
-                new KeyboardButton($"{CommandNames.CloseMenu} Закрыть меню")
-            }
-        });
-        keyboard.ResizeKeyboard = true;
-
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "Меню",
-            replyMarkup: keyboard,
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
             cancellationToken: token);
     }
 }

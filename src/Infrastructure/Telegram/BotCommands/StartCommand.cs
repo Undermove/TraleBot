@@ -1,4 +1,5 @@
 using Application.Users.Commands.CreateUser;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -38,6 +39,7 @@ public class StartCommand : IBotCommand
             "\r\n/quiz - пройти квиз чтобы закрепить слова" +
             "\r\n/vocabulary - посмотреть слова в словаре" +
             "\r\n/menu - открыть меню",
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
             cancellationToken: token);
     }
 }
