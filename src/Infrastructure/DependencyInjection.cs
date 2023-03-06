@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddSingleton<IBotCommand, OfferTrialCommand>();
         services.AddSingleton<IBotCommand, ActivateTrialCommand>();
         services.AddSingleton<IBotCommand, VocabularyCommand>();
+        services.AddSingleton<IBotCommand, AchievementsCommand>();
         services.AddSingleton<IBotCommand, QuizCommand>();
         services.AddSingleton<IBotCommand, StartQuizBotCommand>();
         services.AddSingleton<IBotCommand, StopQuizBotCommand>();

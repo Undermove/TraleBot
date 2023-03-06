@@ -20,4 +20,5 @@ public static class CommandNames
     public const string RequestInvoice = "/requestinvoice";
     public const string OfferTrial = "/offertrial";
     public const string ActivateTrial = "/activatetrial";
+    public const string Achievements = "/achievements";
 }
