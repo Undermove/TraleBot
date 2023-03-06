@@ -100,7 +100,6 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 case QuizTypes.MostFailed:
                     vocabularyEntries = user
                         .VocabularyEntries
-                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-30))
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
                         .Select(QuizQuestion)
                         .ToList();
