@@ -83,21 +83,15 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                         .Select(QuizQuestion)
                         .ToList();
                     break;
-                case QuizTypes.LastDay:
+                case QuizTypes.SeveralComplicatedWords:
                     vocabularyEntries = user
                         .VocabularyEntries
-                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-1))
-                        .Select(QuizQuestion)
-                        .ToList();
-                    break;
-                case QuizTypes.SeveralRandomWords:
-                    vocabularyEntries = user
-                        .VocabularyEntries
+                        .Where(entry => entry.SuccessAnswersCount < entry.FailedAnswersCount)
                         .OrderBy(_ => rnd.Next()).Take(10)
                         .Select(QuizQuestion)
                         .ToList();
                     break;
-                case QuizTypes.MostFailed:
+                case QuizTypes.ForwardDirection:
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
