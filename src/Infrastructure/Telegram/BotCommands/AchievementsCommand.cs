@@ -10,12 +10,10 @@ namespace Infrastructure.Telegram.BotCommands;
 public class AchievementsCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
-    private readonly IMediator _mediator;
 
-    public AchievementsCommand(TelegramBotClient client, IMediator mediator)
+    public AchievementsCommand(TelegramBotClient client)
     {
         _client = client;
-        _mediator = mediator;
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
@@ -67,7 +65,6 @@ public class AchievementsCommand : IBotCommand
     💎 Я и есть словарь – 1000 слов с бриллиантом в словаре
     """;
         
-        await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             achievementsMessage,
