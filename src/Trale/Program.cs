@@ -8,9 +8,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Persistence;
 using Serilog;
-using Serilog.Events;
-using Serilog.Formatting.Compact;
-using Serilog.Sinks.Http.TextFormatters;
 using Serilog.Sinks.Loki;
 
 namespace Trale;

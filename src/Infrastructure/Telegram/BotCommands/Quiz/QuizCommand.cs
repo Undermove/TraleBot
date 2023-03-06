@@ -1,6 +1,5 @@
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
-using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 

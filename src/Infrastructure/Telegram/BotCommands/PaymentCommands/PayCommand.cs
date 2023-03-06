@@ -2,7 +2,6 @@ using Application.Invoices;
 using Infrastructure.Telegram.Models;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
-using Telegram.Bot.Types.Payments;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.PaymentCommands;

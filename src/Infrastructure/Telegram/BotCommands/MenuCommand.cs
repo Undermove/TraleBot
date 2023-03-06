@@ -1,8 +1,6 @@
-using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 

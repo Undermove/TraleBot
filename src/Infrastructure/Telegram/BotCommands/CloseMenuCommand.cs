@@ -1,4 +1,3 @@
-using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
