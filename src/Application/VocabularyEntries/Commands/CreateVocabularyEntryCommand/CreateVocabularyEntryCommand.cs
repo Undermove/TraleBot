@@ -7,9 +7,9 @@ namespace Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 
 public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult>
 {
-    public Guid UserId { get; set; }
-    public string Word { get; set; }
-    public string? Definition { get; set; }
+    public Guid UserId { get; init; }
+    public string? Word { get; init; }
+    public string? Definition { get; init; }
 
     public class Handler : IRequestHandler<CreateVocabularyEntryCommand, CreateVocabularyEntryResult>
     {
@@ -65,7 +65,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             await _context.VocabularyEntries.AddAsync(new VocabularyEntry
             {
                 Id = entryId,
-                Word = request.Word.ToLowerInvariant(),
+                Word = request.Word!.ToLowerInvariant(),
                 Definition = definition,
                 AdditionalInfo = additionalInfo,
                 UserId = request.UserId,

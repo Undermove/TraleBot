@@ -51,7 +51,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     [Test]
     public async Task ShouldSaveDefinitionFromTranslationServiceWhenRequestWithoutDefinitionIncome()
     {
-        const string expectedWord = "paucity";
+        const string? expectedWord = "paucity";
         const string expectedDefinition = "недостаточность";
         _translationServicesMock
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
@@ -74,7 +74,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     [Test]
     public async Task ShouldNotSaveDefinitionFromTranslationServiceWhenCantTranslateWordException()
     {
-        const string expectedWord = "paucity";
+        const string? expectedWord = "paucity";
         _translationServicesMock
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TranslationResult("", "", false));

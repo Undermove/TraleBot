@@ -13,7 +13,7 @@ public class WooordHuntParsingTranslationService : ITranslationService
         _clientFactory = clientFactory;
     }
     
-    public async Task<TranslationResult> TranslateAsync(string requestWord, CancellationToken ct)
+    public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
     {
         // Make the HTTP GET request to the Google Translate API
         using var httpClient = _clientFactory.CreateClient();
