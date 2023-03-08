@@ -70,4 +70,24 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         vocabularyEntry.Definition.ShouldBe(expectedDefinition);
         vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
     }
+    
+    [Test]
+    public async Task ShouldNotSaveDefinitionFromTranslationServiceWhenCantTranslateWordException()
+    {
+        const string expectedWord = "paucity";
+        _translationServicesMock
+            .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult("", "", false));
+        
+        var result = await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
+        {
+            UserId = _existingUser.Id,
+            Word = expectedWord
+        }, CancellationToken.None);
+
+        result.TranslationStatus.ShouldBe(TranslationStatus.CantBeTranslated);
+        var vocabularyEntry = await Context.VocabularyEntries
+            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
+        vocabularyEntry.ShouldBeNull();
+    }
 }
