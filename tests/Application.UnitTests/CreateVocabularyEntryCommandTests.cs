@@ -13,8 +13,8 @@ namespace Application.UnitTests;
 public class CreateVocabularyEntryCommandTests : CommandTestsBase
 {
     private Mock<ITranslationService> _translationServicesMock = null!;
-    private User _existingUser;
-    private CreateVocabularyEntryCommand.Handler _createVocabularyEntryCommandHandler;
+    private User _existingUser = null!;
+    private CreateVocabularyEntryCommand.Handler _createVocabularyEntryCommandHandler = null!;
         
     [SetUp]
     public async Task SetUp()
