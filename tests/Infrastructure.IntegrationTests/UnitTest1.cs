@@ -23,7 +23,7 @@ public class CommandProcessingHandlingTests
     }
 
     [Test]
-    public void Test1()
+    public void TestTestTest()
     {
         Assert.Pass();
     }
