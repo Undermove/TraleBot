@@ -90,4 +90,27 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldBeNull();
     }
+    
+    [Test]
+    public async Task ShouldGetDefinitionFromVocabularyWhenWordAlreadyInVocabulary()
+    {
+        const string? expectedWord = "paucity";
+        await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
+        {
+            UserId = _existingUser.Id,
+            Word = expectedWord,
+            Definition = expectedWord
+        }, CancellationToken.None);
+        
+        var result = await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
+        {
+            UserId = _existingUser.Id,
+            Word = expectedWord
+        }, CancellationToken.None);
+
+        result.TranslationStatus.ShouldBe(TranslationStatus.ReceivedFromVocabulary);
+        var vocabularyEntry = await Context.VocabularyEntries
+            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
+        vocabularyEntry.ShouldNotBeNull();
+    }
 }
