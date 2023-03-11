@@ -87,7 +87,8 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.SuccessAnswersCount < entry.FailedAnswersCount)
-                        .OrderBy(_ => rnd.Next()).Take(10)
+                        .OrderBy(_ => rnd.Next())
+                        .Take(10)
                         .Select(QuizQuestion)
                         .ToList();
                     break;
@@ -95,6 +96,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                        .Take(20)
                         .Select(QuizQuestion)
                         .ToList();
                     break;
