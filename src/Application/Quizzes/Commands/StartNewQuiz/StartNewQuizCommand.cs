@@ -80,6 +80,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
+                        .OrderBy(entry => entry.DateAdded)
                         .Select(QuizQuestion)
                         .ToList();
                     break;
@@ -96,6 +97,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                        .OrderBy(entry => entry.DateAdded)
                         .Take(20)
                         .Select(QuizQuestion)
                         .ToList();
@@ -104,6 +106,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                     vocabularyEntries = user
                         .VocabularyEntries
                         .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
+                        .OrderBy(entry => entry.DateAdded)
                         .Take(20)
                         .Select(ReverseQuizQuestion)
                         .ToList();
