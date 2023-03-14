@@ -1,6 +1,6 @@
 namespace Domain.Entities;
 
-public class Achievement
+public class UnlockedAchievement
 {
     public Guid Id { get; set; }
     public string Icon { get; set; }

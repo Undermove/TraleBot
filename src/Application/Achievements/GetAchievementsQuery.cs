@@ -11,7 +11,7 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
     {
         public Task<AchievementsListVm> Handle(GetAchievementsQuery request, CancellationToken cancellationToken)
         {
-            var achievements = new List<Achievement>()
+            var achievements = new List<UnlockedAchievement>()
             {
                 new()
                 {
@@ -62,12 +62,10 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
      
     💎 Я и есть словарь – 1000 слов с бриллиантом в словаре
     """;
-        
-        
     }
 }
 
 public class AchievementsListVm
 {
-    public required IList<Achievement> Achievements { get; init; }
+    public required IList<UnlockedAchievement> Achievements { get; init; }
 }
