@@ -1,4 +1,5 @@
 using Application.Common;
+using Domain.AchievementTypes;
 using Domain.Entities;
 using MediatR;
 
@@ -19,7 +20,8 @@ public class VocabularyEntrySaved : INotification
 
         public Task Handle(VocabularyEntrySaved invoceSaved, CancellationToken cancellationToken)
         {
-            if (_context.VocabularyEntries.Count(entry => entry.UserId == invoceSaved.UserId) == 10)
+            AdvancedSmallTalker achievement = new AdvancedSmallTalker();
+            if (achievement.CheckUnlockConditions(new VocabularyEntry()))
             {
                 return Task.CompletedTask;
             }

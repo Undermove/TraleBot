@@ -16,12 +16,12 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
                 new()
                 {
                     Id = Guid.NewGuid(), Icon = "🤪", Name = "Базовый разговорник",
-                    UnlockConditionsDescription = "10 слов в словаре", IsUnlocked = true
+                    UnlockConditionsDescription = "10 слов в словаре",
                 },
                 new()
                 {
                     Id = Guid.NewGuid(), Icon = "🗣", Name = "Прокачанный болтун",
-                    UnlockConditionsDescription = "100 слов в словаре", IsUnlocked = false
+                    UnlockConditionsDescription = "100 слов в словаре",
                 },
             };
 
