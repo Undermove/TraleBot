@@ -17,6 +17,4 @@ public class AchievementUnlockService : IAchievementUnlockService
         var strategy = _serviceProvider.GetService<AchievementTypeBase<T>>();
         strategy.CheckUnlockConditions(notification);
     }
-
-    // Other methods omitted for brevity
 }

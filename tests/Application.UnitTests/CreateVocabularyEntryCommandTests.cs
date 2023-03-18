@@ -1,3 +1,4 @@
+using Application.Achievements;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.TranslationService;
 using Application.UnitTests.Common;
@@ -15,18 +16,20 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     private Mock<ITranslationService> _translationServicesMock = null!;
     private User _existingUser = null!;
     private CreateVocabularyEntryCommand.Handler _createVocabularyEntryCommandHandler = null!;
-        
+    private Mock<IAchievementUnlockService> _achievementsService = null!;
+
     [SetUp]
     public async Task SetUp()
     {
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
         _translationServicesMock = mockRepository.Create<ITranslationService>();
-        
+        _achievementsService = mockRepository.Create<IAchievementUnlockService>();
+
         _existingUser = Create.TestUser();
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         
-        _createVocabularyEntryCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, Context);
+        _createVocabularyEntryCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, Context, _achievementsService.Object);
     }
 
     [Test]

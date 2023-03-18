@@ -1,3 +1,4 @@
+using Application.Achievements;
 using Application.Common;
 using Application.Common.Interfaces;
 using Domain.Entities;
@@ -15,11 +16,15 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
     {
         private readonly ITranslationService _translationService;
         private readonly ITraleDbContext _context;
+        private readonly IAchievementUnlockService _achievementUnlockService;
 
-        public Handler(ITranslationService translationService, ITraleDbContext context)
+        public Handler(ITranslationService translationService,
+            ITraleDbContext context,
+            IAchievementUnlockService achievementUnlockService)
         {
             _translationService = translationService;
             _context = context;
+            _achievementUnlockService = achievementUnlockService;
         }
 
         public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
@@ -73,6 +78,8 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             }, ct);
             
             await _context.SaveChangesAsync(ct);
+            
+            await _achievementUnlockService.HandleNotificationAsync(new VocabularyEntry());
             
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 
