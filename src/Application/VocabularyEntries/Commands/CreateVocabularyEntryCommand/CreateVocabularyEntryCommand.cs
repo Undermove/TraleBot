@@ -16,15 +16,15 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
     {
         private readonly ITranslationService _translationService;
         private readonly ITraleDbContext _context;
-        private readonly IAchievementUnlockService _achievementUnlockService;
+        private readonly IAchievementUnlocker _achievementUnlocker;
 
         public Handler(ITranslationService translationService,
             ITraleDbContext context,
-            IAchievementUnlockService achievementUnlockService)
+            IAchievementUnlocker achievementUnlocker)
         {
             _translationService = translationService;
             _context = context;
-            _achievementUnlockService = achievementUnlockService;
+            _achievementUnlocker = achievementUnlocker;
         }
 
         public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
@@ -67,7 +67,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             }
 
             var entryId = Guid.NewGuid();
-            await _context.VocabularyEntries.AddAsync(new VocabularyEntry
+            var vocabularyEntry = new VocabularyEntry
             {
                 Id = entryId,
                 Word = request.Word!.ToLowerInvariant(),
@@ -75,11 +75,14 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 AdditionalInfo = additionalInfo,
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
-            }, ct);
+            };
+            
+            await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);
             
             await _context.SaveChangesAsync(ct);
             
-            await _achievementUnlockService.HandleNotificationAsync(new VocabularyEntry());
+            _achievementUnlocker.CheckAchievements(vocabularyEntry);
+            
             
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 

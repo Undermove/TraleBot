@@ -11,17 +11,17 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
     {
         public Task<AchievementsListVm> Handle(GetAchievementsQuery request, CancellationToken cancellationToken)
         {
-            var achievements = new List<UnlockedAchievement>()
+            var achievements = new List<Achievement>()
             {
                 new()
                 {
                     Id = Guid.NewGuid(), Icon = "🤪", Name = "Базовый разговорник",
-                    UnlockConditionsDescription = "10 слов в словаре",
+                    Description = "10 слов в словаре",
                 },
                 new()
                 {
                     Id = Guid.NewGuid(), Icon = "🗣", Name = "Прокачанный болтун",
-                    UnlockConditionsDescription = "100 слов в словаре",
+                    Description = "100 слов в словаре",
                 },
             };
 
@@ -67,5 +67,5 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
 
 public class AchievementsListVm
 {
-    public required IList<UnlockedAchievement> Achievements { get; init; }
+    public required IList<Achievement> Achievements { get; init; }
 }
