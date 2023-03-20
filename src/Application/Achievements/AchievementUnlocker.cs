@@ -4,13 +4,13 @@ namespace Application.Achievements;
 
 public class AchievementUnlocker : IAchievementUnlocker
 {
-    private readonly IEnumerable<AchievementChecker<object>> _achievementCheckers;
+    private readonly IList<object> _achievementCheckers = new List<object>();
 
-    public AchievementUnlocker(IEnumerable<AchievementChecker<object>> achievementCheckers)
+    public void AddChecker(AchievementChecker<object> checker)
     {
-        _achievementCheckers = achievementCheckers;
+        _achievementCheckers.Add(checker);
     }
-
+    
     public List<Achievement> CheckAchievements<T>(T entity)
     {
         var unlockedAchievements = new List<Achievement>();
@@ -30,5 +30,10 @@ public class AchievementUnlocker : IAchievementUnlocker
         }
 
         return unlockedAchievements;
+    }
+
+    public void AddChecker<T>(AchievementChecker<T> checker)
+    {
+        _achievementCheckers.Add(checker);
     }
 }
