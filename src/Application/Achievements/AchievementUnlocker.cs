@@ -6,7 +6,6 @@ public class AchievementUnlocker : IAchievementUnlocker
 {
     private readonly IEnumerable<AchievementChecker<object>> _achievementCheckers;
 
-
     public AchievementUnlocker(IEnumerable<AchievementChecker<object>> achievementCheckers)
     {
         _achievementCheckers = achievementCheckers;

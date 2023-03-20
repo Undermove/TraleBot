@@ -29,15 +29,8 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
 
         public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
         {
-            object?[] keyValues = { request.UserId };
-            var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
-            if (user == null)
-            {
-                throw new ApplicationException($"User {request.UserId} not found");
-            }
-            
-            await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
-            
+            var user = await GetUser(request, ct);
+
             var duplicate = user.VocabularyEntries
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
@@ -82,13 +75,25 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             await _context.SaveChangesAsync(ct);
             
             _achievementUnlocker.CheckAchievements(vocabularyEntry);
-            
-            
+
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 
                 definition, 
                 additionalInfo,
                 entryId);
+        }
+
+        private async Task<User?> GetUser(CreateVocabularyEntryCommand request, CancellationToken ct)
+        {
+            object?[] keyValues = { request.UserId };
+            var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
+            if (user == null)
+            {
+                throw new ApplicationException($"User {request.UserId} not found");
+            }
+
+            await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            return user;
         }
     }
 }
