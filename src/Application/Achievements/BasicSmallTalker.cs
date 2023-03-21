@@ -2,14 +2,15 @@ using Domain.Entities;
 
 namespace Application.Achievements;
 
-public class BasicSmallTalkerChecker: AchievementChecker<VocabularyEntry>
+public class BasicSmallTalkerChecker: IAchievementChecker<VocabularyEntry>
 {
-    public override string Icon => "🤪";
-    public override string Name => "Базовый разговорник";
-    public override string Description => "10 слов в словаре";
+    public string Icon => "🤪";
+    public string Name => "Базовый разговорник";
+    public string Description => "10 слов в словаре";
     
-    public override bool CheckAchievement(VocabularyEntry entity)
+    public bool CheckAchievement(object entity)
     {
-        return entity.User.VocabularyEntries.Count == 10;
+        var vocabularyEntry = entity as VocabularyEntry;
+        return vocabularyEntry.User.VocabularyEntries.Count == 10;
     }
 }

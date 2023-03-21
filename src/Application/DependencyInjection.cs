@@ -10,10 +10,9 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddMediatR(Assembly.GetExecutingAssembly());
-        var achievementUnlocker = new AchievementUnlocker();
-        achievementUnlocker.AddChecker(new BasicSmallTalkerChecker());
-        
-        services.AddSingleton<IAchievementUnlocker>(achievementUnlocker);
+
+        services.AddScoped<IAchievementChecker<object>, BasicSmallTalkerChecker>();
+        services.AddSingleton<IAchievementUnlocker, AchievementUnlocker>();
         return services;
     }
 }
