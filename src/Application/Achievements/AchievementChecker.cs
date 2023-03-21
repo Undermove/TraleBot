@@ -1,5 +1,6 @@
 namespace Application.Achievements;
 
+// ReSharper disable once UnusedTypeParameter
 public interface IAchievementChecker<out T>
 {
     public string Icon { get; }
