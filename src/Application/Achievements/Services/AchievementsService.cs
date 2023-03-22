@@ -17,26 +17,26 @@ public class AchievementsService : IAchievementsService
         _achievementCheckers = achievementCheckers;
     }
 
-    public async Task AssignAchievements<T>(CancellationToken ct, Guid userId, T entity)
+    public async Task AssignAchievements<T>(T trigger, Guid userId, CancellationToken ct)
     {
         var user = await _context.Users.FindAsync(userId);
         await _context.Entry(user).Collection(nameof(user.Achievements)).LoadAsync(ct);
         
-        var achievementsThatMightBeOpened = CheckAchievementsThatMightBeOpened(entity, user);
+        var achievementsThatMightBeOpened = CheckAchievementsThatMightBeOpened(trigger, user);
         var newAchievements = GetOnlyNewAchievements(achievementsThatMightBeOpened, user);
         
         await _context.Achievements.AddRangeAsync(newAchievements, ct);
         await _context.SaveChangesAsync(ct);
     }
 
-    private List<Achievement> CheckAchievementsThatMightBeOpened<T>(T entity, User user)
+    private List<Achievement> CheckAchievementsThatMightBeOpened<T>(T trigger, User user)
     {
         var unlockedAchievements = new List<Achievement>();
 
         foreach (var achievementChecker in _achievementCheckers)
         {
             if (achievementChecker is IAchievementChecker<T> checker 
-                && checker.CheckAchievement(entity))
+                && checker.CheckAchievement(trigger))
             {
                 var achievement = new Achievement
                 {
