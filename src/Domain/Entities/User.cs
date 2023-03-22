@@ -19,16 +19,4 @@ public class User
     {
         return AccountType == UserAccountType.Premium && SubscribedUntil!.Value.Date > DateTime.UtcNow;
     }
-    
-    public void ApplyAchievements(List<Achievement> unlockedAchievements)
-    {
-        var unlockedAchievementTypeIds = Achievements.Select(achievement => achievement.AchievementTypeId).ToHashSet();
-        var newAchievements = unlockedAchievements
-            .Where(achievement => !unlockedAchievementTypeIds.Contains(achievement.AchievementTypeId));
-        
-        foreach (var newAchievement in newAchievements)
-        {
-            Achievements.Add(newAchievement);
-        }
-    }
 }

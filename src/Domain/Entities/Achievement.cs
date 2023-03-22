@@ -2,12 +2,13 @@ namespace Domain.Entities;
 
 public class Achievement
 {
-    public Guid Id { get; set; }
-    public Guid AchievementTypeId { get; set; }
-    public string Icon { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
+    public required Guid Id { get; init; }
+    public required Guid AchievementTypeId { get; init; }
+    public required DateTime DateAddedUtc { get; init; }
+    public required string Icon { get; init; }
+    public required string Name { get; init; }
+    public required string Description { get; init; }
     
-    public Guid UserId { get; set; }
-    public User User { get; set; }
+    public required Guid UserId { get; init; }
+    public required User User { get; init; }
 }

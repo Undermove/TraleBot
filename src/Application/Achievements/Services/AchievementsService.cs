@@ -17,14 +17,18 @@ public class AchievementsService : IAchievementsService
         _achievementCheckers = achievementCheckers;
     }
 
-    public async Task AssignAchievements<T>(CancellationToken ct, User user, T entity)
+    public async Task AssignAchievements<T>(CancellationToken ct, Guid userId, T entity)
     {
-        var newAchievements = CheckAchievements(entity);
-        user.ApplyAchievements(newAchievements);
+        var user = await _context.Users.FindAsync(userId);
+        await _context.Entry(user).Collection(nameof(user.Achievements)).LoadAsync(ct);
+        
+        var achievedAchievements = CheckAchievements(entity, user);
+        var newAchievements = ApplyAchievements(achievedAchievements, user);
+        await _context.Achievements.AddRangeAsync(newAchievements, ct);
         await _context.SaveChangesAsync(ct);
     }
 
-    private List<Achievement> CheckAchievements<T>(T entity)
+    private List<Achievement> CheckAchievements<T>(T entity, User user)
     {
         var unlockedAchievements = new List<Achievement>();
 
@@ -36,15 +40,30 @@ public class AchievementsService : IAchievementsService
                 var achievement = new Achievement
                 {
                     Id = Guid.NewGuid(),
+                    DateAddedUtc = DateTime.UtcNow,
                     AchievementTypeId = checker.AchievementTypeId,
                     Name = checker.Name,
                     Description = checker.Description,
                     Icon = checker.Icon,
+                    User = user,
+                    UserId = user.Id
                 };
                 unlockedAchievements.Add(achievement);
             }
         }
 
         return unlockedAchievements;
+    }
+    
+    public IEnumerable<Achievement> ApplyAchievements(List<Achievement> unlockedAchievements, User user)
+    {
+        var unlockedAchievementTypeIds = user.Achievements.Select(achievement => achievement.AchievementTypeId).ToHashSet();
+        var newAchievements = unlockedAchievements
+            .Where(achievement => !unlockedAchievementTypeIds.Contains(achievement.AchievementTypeId));
+        
+        foreach (var newAchievement in newAchievements)
+        {
+            yield return newAchievement;
+        }
     }
 }

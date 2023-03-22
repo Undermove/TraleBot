@@ -20,6 +20,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<Quiz> Quizzes { get; set; } = null!;
     public DbSet<Invoice> Invoices { get; set; } = null!;
     public DbSet<QuizQuestion> QuizQuestions { get; set; } = null!;
+    public DbSet<Achievement> Achievements { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,5 +28,6 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new VocabularyEntryConfiguration());
         modelBuilder.ApplyConfiguration(new QuizConfiguration());
         modelBuilder.ApplyConfiguration(new InvoiceConfiguration());
+        modelBuilder.ApplyConfiguration(new AchievementConfiguration());
     }
 }

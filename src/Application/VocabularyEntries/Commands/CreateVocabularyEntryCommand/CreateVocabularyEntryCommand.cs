@@ -74,7 +74,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             
             await _context.SaveChangesAsync(ct);
 
-            await _achievementService.AssignAchievements(ct, user, vocabularyEntry);
+            await _achievementService.AssignAchievements(ct, user.Id, vocabularyEntry);
 
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 

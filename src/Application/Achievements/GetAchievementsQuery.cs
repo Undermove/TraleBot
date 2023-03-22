@@ -15,13 +15,25 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
             {
                 new()
                 {
-                    Id = Guid.NewGuid(), Icon = "🤪", Name = "Базовый разговорник",
+                    Id = Guid.NewGuid(),
+                    Icon = "🤪",
+                    Name = "Базовый разговорник",
                     Description = "10 слов в словаре",
+                    AchievementTypeId = default,
+                    DateAddedUtc = default,
+                    UserId = default,
+                    User = null!,
                 },
                 new()
                 {
-                    Id = Guid.NewGuid(), Icon = "🗣", Name = "Прокачанный болтун",
+                    Id = Guid.NewGuid(),
+                    Icon = "🗣",
+                    Name = "Прокачанный болтун",
                     Description = "100 слов в словаре",
+                    AchievementTypeId = default,
+                    DateAddedUtc = default,
+                    UserId = default,
+                    User = null,
                 },
             };
 
