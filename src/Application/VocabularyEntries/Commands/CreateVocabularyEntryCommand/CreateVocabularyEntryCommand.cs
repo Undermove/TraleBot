@@ -1,4 +1,4 @@
-using Application.Achievements;
+using Application.Abstractions;
 using Application.Common;
 using Application.Common.Interfaces;
 using Domain.Entities;
@@ -16,15 +16,15 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
     {
         private readonly ITranslationService _translationService;
         private readonly ITraleDbContext _context;
-        private readonly IAchievementUnlocker _achievementUnlocker;
+        private readonly IAchievementsService _achievementService;
 
         public Handler(ITranslationService translationService,
             ITraleDbContext context,
-            IAchievementUnlocker achievementUnlocker)
+            IAchievementsService achievementService)
         {
             _translationService = translationService;
             _context = context;
-            _achievementUnlocker = achievementUnlocker;
+            _achievementService = achievementService;
         }
 
         public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
@@ -74,20 +74,13 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             
             await _context.SaveChangesAsync(ct);
 
-            await AssignAchievements(ct, user, vocabularyEntry);
+            await _achievementService.AssignAchievements(ct, user, vocabularyEntry);
 
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 
                 definition, 
                 additionalInfo,
                 entryId);
-        }
-
-        private async Task AssignAchievements(CancellationToken ct, User user, VocabularyEntry vocabularyEntry)
-        {
-            var newAchievements = _achievementUnlocker.CheckAchievements(vocabularyEntry);
-            user.ApplyAchievements(newAchievements);
-            await _context.SaveChangesAsync(ct);
         }
 
         private async Task<User?> GetUser(CreateVocabularyEntryCommand request, CancellationToken ct)

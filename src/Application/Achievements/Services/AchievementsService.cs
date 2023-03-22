@@ -1,17 +1,30 @@
+using Application.Abstractions;
+using Application.Common;
 using Domain.Entities;
 
-namespace Application.Achievements;
+namespace Application.Achievements.Services;
 
-public class AchievementUnlocker : IAchievementUnlocker
+public class AchievementsService : IAchievementsService
 {
     private readonly IEnumerable<IAchievementChecker<object>> _achievementCheckers;
+    private readonly ITraleDbContext _context;
 
-    public AchievementUnlocker(IEnumerable<IAchievementChecker<object>> achievementCheckers)
+    public AchievementsService(
+        ITraleDbContext context,
+        IEnumerable<IAchievementChecker<object>> achievementCheckers)
     {
+        _context = context;
         _achievementCheckers = achievementCheckers;
     }
 
-    public List<Achievement> CheckAchievements<T>(T entity)
+    public async Task AssignAchievements<T>(CancellationToken ct, User user, T entity)
+    {
+        var newAchievements = CheckAchievements(entity);
+        user.ApplyAchievements(newAchievements);
+        await _context.SaveChangesAsync(ct);
+    }
+
+    private List<Achievement> CheckAchievements<T>(T entity)
     {
         var unlockedAchievements = new List<Achievement>();
 
