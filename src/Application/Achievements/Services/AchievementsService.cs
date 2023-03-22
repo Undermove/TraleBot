@@ -22,13 +22,14 @@ public class AchievementsService : IAchievementsService
         var user = await _context.Users.FindAsync(userId);
         await _context.Entry(user).Collection(nameof(user.Achievements)).LoadAsync(ct);
         
-        var achievedAchievements = CheckAchievements(entity, user);
-        var newAchievements = ApplyAchievements(achievedAchievements, user);
+        var achievementsThatMightBeOpened = CheckAchievementsThatMightBeOpened(entity, user);
+        var newAchievements = GetOnlyNewAchievements(achievementsThatMightBeOpened, user);
+        
         await _context.Achievements.AddRangeAsync(newAchievements, ct);
         await _context.SaveChangesAsync(ct);
     }
 
-    private List<Achievement> CheckAchievements<T>(T entity, User user)
+    private List<Achievement> CheckAchievementsThatMightBeOpened<T>(T entity, User user)
     {
         var unlockedAchievements = new List<Achievement>();
 
@@ -55,7 +56,7 @@ public class AchievementsService : IAchievementsService
         return unlockedAchievements;
     }
     
-    public IEnumerable<Achievement> ApplyAchievements(List<Achievement> unlockedAchievements, User user)
+    public IEnumerable<Achievement> GetOnlyNewAchievements(List<Achievement> unlockedAchievements, User user)
     {
         var unlockedAchievementTypeIds = user.Achievements.Select(achievement => achievement.AchievementTypeId).ToHashSet();
         var newAchievements = unlockedAchievements
