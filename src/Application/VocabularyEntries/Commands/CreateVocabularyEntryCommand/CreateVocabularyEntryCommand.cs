@@ -73,14 +73,21 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);
             
             await _context.SaveChangesAsync(ct);
-            
-            _achievementUnlocker.CheckAchievements(vocabularyEntry);
+
+            await AssignAchievements(ct, user, vocabularyEntry);
 
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 
                 definition, 
                 additionalInfo,
                 entryId);
+        }
+
+        private async Task AssignAchievements(CancellationToken ct, User user, VocabularyEntry vocabularyEntry)
+        {
+            var newAchievements = _achievementUnlocker.CheckAchievements(vocabularyEntry);
+            user.ApplyAchievements(newAchievements);
+            await _context.SaveChangesAsync(ct);
         }
 
         private async Task<User?> GetUser(CreateVocabularyEntryCommand request, CancellationToken ct)

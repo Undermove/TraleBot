@@ -17,15 +17,18 @@ public class AchievementUnlocker : IAchievementUnlocker
 
         foreach (var achievementChecker in _achievementCheckers)
         {
-            if (achievementChecker is IAchievementChecker<T> checker && checker.CheckAchievement(entity))
+            if (achievementChecker is IAchievementChecker<T> checker 
+                && checker.CheckAchievement(entity))
             {
-                unlockedAchievements.Add(new Achievement
+                var achievement = new Achievement
                 {
                     Id = Guid.NewGuid(),
+                    AchievementTypeId = checker.AchievementTypeId,
                     Name = checker.Name,
                     Description = checker.Description,
                     Icon = checker.Icon,
-                });
+                };
+                unlockedAchievements.Add(achievement);
             }
         }
 

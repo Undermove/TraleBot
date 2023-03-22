@@ -13,9 +13,22 @@ public class User
     public ICollection<VocabularyEntry> VocabularyEntries { get; set; }
     public ICollection<Quiz> Quizzes { get; set; }
     public ICollection<Invoice> Invoices { get; set; }
+    public ICollection<Achievement> Achievements { get; set; }
     
     public bool IsActivePremium()
     {
         return AccountType == UserAccountType.Premium && SubscribedUntil!.Value.Date > DateTime.UtcNow;
+    }
+    
+    public void ApplyAchievements(List<Achievement> unlockedAchievements)
+    {
+        var unlockedAchievementTypeIds = Achievements.Select(achievement => achievement.AchievementTypeId).ToHashSet();
+        var newAchievements = unlockedAchievements
+            .Where(achievement => !unlockedAchievementTypeIds.Contains(achievement.AchievementTypeId));
+        
+        foreach (var newAchievement in newAchievements)
+        {
+            Achievements.Add(newAchievement);
+        }
     }
 }
