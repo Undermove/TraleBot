@@ -13,6 +13,7 @@ public class User
     public ICollection<VocabularyEntry> VocabularyEntries { get; set; }
     public ICollection<Quiz> Quizzes { get; set; }
     public ICollection<Invoice> Invoices { get; set; }
+    public ICollection<Achievement> Achievements { get; set; }
     
     public bool IsActivePremium()
     {

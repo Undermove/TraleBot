@@ -1,3 +1,4 @@
+using Application.Abstractions;
 using Application.Common;
 using Application.Common.Interfaces;
 using Domain.Entities;
@@ -15,24 +16,21 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
     {
         private readonly ITranslationService _translationService;
         private readonly ITraleDbContext _context;
+        private readonly IAchievementsService _achievementService;
 
-        public Handler(ITranslationService translationService, ITraleDbContext context)
+        public Handler(ITranslationService translationService,
+            ITraleDbContext context,
+            IAchievementsService achievementService)
         {
             _translationService = translationService;
             _context = context;
+            _achievementService = achievementService;
         }
 
         public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
         {
-            object?[] keyValues = { request.UserId };
-            var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
-            if (user == null)
-            {
-                throw new ApplicationException($"User {request.UserId} not found");
-            }
-            
-            await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
-            
+            var user = await GetUser(request, ct);
+
             var duplicate = user.VocabularyEntries
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
@@ -62,7 +60,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             }
 
             var entryId = Guid.NewGuid();
-            await _context.VocabularyEntries.AddAsync(new VocabularyEntry
+            var vocabularyEntry = new VocabularyEntry
             {
                 Id = entryId,
                 Word = request.Word!.ToLowerInvariant(),
@@ -70,15 +68,32 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 AdditionalInfo = additionalInfo,
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
-            }, ct);
+            };
+            
+            await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);
             
             await _context.SaveChangesAsync(ct);
-            
+
+            await _achievementService.AssignAchievements(vocabularyEntry, user.Id, ct);
+
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 
                 definition, 
                 additionalInfo,
                 entryId);
+        }
+
+        private async Task<User?> GetUser(CreateVocabularyEntryCommand request, CancellationToken ct)
+        {
+            object?[] keyValues = { request.UserId };
+            var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
+            if (user == null)
+            {
+                throw new ApplicationException($"User {request.UserId} not found");
+            }
+
+            await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            return user;
         }
     }
 }
