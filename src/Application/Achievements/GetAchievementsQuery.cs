@@ -11,7 +11,7 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
 
     public class Handler : IRequestHandler<GetAchievementsQuery, AchievementsListVm>
     {
-        private ITraleDbContext _context;
+        private readonly ITraleDbContext _context;
 
         public Handler(ITraleDbContext context)
         {
@@ -20,11 +20,11 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
 
         public async Task<AchievementsListVm> Handle(GetAchievementsQuery request, CancellationToken cancellationToken)
         {
-            var achievements =await _context.Achievements
+            var achievements = await _context.Achievements
                 .Where(a => a.UserId == request.UserId)
                 .ToListAsync(cancellationToken: cancellationToken);
 
-            var result = new AchievementsListVm() { Achievements = achievements };
+            var result = new AchievementsListVm { Achievements = achievements };
             return result;
         }
     }
