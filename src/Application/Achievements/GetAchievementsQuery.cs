@@ -1,5 +1,7 @@
+using Application.Common;
 using Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Achievements;
 
@@ -9,36 +11,21 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
 
     public class Handler : IRequestHandler<GetAchievementsQuery, AchievementsListVm>
     {
-        public Task<AchievementsListVm> Handle(GetAchievementsQuery request, CancellationToken cancellationToken)
+        private ITraleDbContext _context;
+
+        public Handler(ITraleDbContext context)
         {
-            var achievements = new List<Achievement>()
-            {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    Icon = "🤪",
-                    Name = "Базовый разговорник",
-                    Description = "10 слов в словаре",
-                    AchievementTypeId = default,
-                    DateAddedUtc = default,
-                    UserId = default,
-                    User = null!,
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    Icon = "🗣",
-                    Name = "Прокачанный болтун",
-                    Description = "100 слов в словаре",
-                    AchievementTypeId = default,
-                    DateAddedUtc = default,
-                    UserId = default,
-                    User = null,
-                },
-            };
+            _context = context;
+        }
+
+        public async Task<AchievementsListVm> Handle(GetAchievementsQuery request, CancellationToken cancellationToken)
+        {
+            var achievements =await _context.Achievements
+                .Where(a => a.UserId == request.UserId)
+                .ToListAsync(cancellationToken: cancellationToken);
 
             var result = new AchievementsListVm() { Achievements = achievements };
-            return Task.FromResult(result);
+            return result;
         }
     }
 
