@@ -13,6 +13,8 @@ public static class DependencyInjection
         services.AddMediatR(Assembly.GetExecutingAssembly());
 
         services.AddScoped<IAchievementChecker<object>, BasicSmallTalkerChecker>();
+        services.AddScoped<IAchievementChecker<object>, AdvancedSmallTalkerChecker>();
+        services.AddScoped<IAchievementChecker<object>, YoungEggheadChecker>();
         services.AddSingleton<IAchievementsService, AchievementsService>();
         return services;
     }
