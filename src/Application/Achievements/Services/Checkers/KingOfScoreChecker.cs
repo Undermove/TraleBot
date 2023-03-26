@@ -1,5 +1,4 @@
 using Application.Achievements.Services.Triggers;
-using Domain.Entities;
 
 namespace Application.Achievements.Services.Checkers;
 
@@ -8,7 +7,7 @@ public class KingOfScoreChecker: IAchievementChecker<GoldMedalsTrigger>
     public string Icon => "🥇";
     public string Name => "Король зачёта";
     public string Description => "1000 слов с золотой медалью";
-    public Guid AchievementTypeId => Guid.Parse("F6A17206-C0AC-4C76-9A3B-20F5F9DB68CF");
+    public Guid AchievementTypeId => Guid.Parse("9E98E35C-4ACF-47C9-A254-6661170EF6EF");
 
     public bool CheckAchievement(object trigger)
     {
