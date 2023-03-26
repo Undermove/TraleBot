@@ -1,6 +1,7 @@
 using System.Reflection;
-using Application.Abstractions;
 using Application.Achievements.Services;
+using Application.Achievements.Services.Checkers;
+using Application.Common.Interfaces.Achievements;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,8 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<object>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<object>, AdvancedSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<object>, YoungEggheadChecker>();
+        services.AddScoped<IAchievementChecker<object>, MedalistChecker>(); 
+        services.AddScoped<IAchievementChecker<object>, KingOfScoreChecker>();
         services.AddSingleton<IAchievementsService, AchievementsService>();
         return services;
     }

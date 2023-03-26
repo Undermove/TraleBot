@@ -1,6 +1,4 @@
-using Application.Common.Interfaces.TranslationService;
-
-namespace Application.Common.Interfaces;
+namespace Application.Common.Interfaces.TranslationService;
 
 public interface ITranslationService
 {

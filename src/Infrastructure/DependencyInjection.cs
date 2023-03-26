@@ -1,6 +1,7 @@
 using Application.Common;
 using Application.Common.Exceptions;
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.TranslationService;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;

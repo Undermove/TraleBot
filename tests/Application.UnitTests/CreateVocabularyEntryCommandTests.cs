@@ -1,6 +1,6 @@
-using Application.Abstractions;
 using Application.Achievements;
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Application.UnitTests.Common;
 using Application.VocabularyEntries.Commands;

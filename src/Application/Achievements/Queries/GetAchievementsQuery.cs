@@ -1,9 +1,10 @@
+using Application.Achievements.Services;
+using Application.Achievements.Services.Checkers;
 using Application.Common;
-using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Achievements;
+namespace Application.Achievements.Queries;
 
 public class GetAchievementsQuery : IRequest<AchievementsListVm>
 {
@@ -12,19 +13,30 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
     public class Handler : IRequestHandler<GetAchievementsQuery, AchievementsListVm>
     {
         private readonly ITraleDbContext _context;
-
-        public Handler(ITraleDbContext context)
+        private readonly IEnumerable<IAchievementChecker<object>> _achievementCheckers;
+        
+        public Handler(ITraleDbContext context, IEnumerable<IAchievementChecker<object>> achievementCheckers)
         {
             _context = context;
+            _achievementCheckers = achievementCheckers;
         }
 
         public async Task<AchievementsListVm> Handle(GetAchievementsQuery request, CancellationToken cancellationToken)
         {
-            var achievements = await _context.Achievements
+            var unlockedAchievements = await _context.Achievements
                 .Where(a => a.UserId == request.UserId)
+                .Select(achievement => achievement.AchievementTypeId)
                 .ToListAsync(cancellationToken: cancellationToken);
 
-            var result = new AchievementsListVm { Achievements = achievements };
+            var allAchievements = _achievementCheckers.Select(checker => new AchievementVm
+            {
+                Name = checker.Name,
+                Description = checker.Description,
+                Icon = checker.Icon,
+                IsUnlocked = unlockedAchievements.Contains(checker.AchievementTypeId)
+            }).ToList();
+            
+            var result = new AchievementsListVm { Achievements = allAchievements };
             return result;
         }
     }
@@ -62,9 +74,4 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
     💎 Я и есть словарь – 1000 слов с бриллиантом в словаре
     """;
     }
-}
-
-public class AchievementsListVm
-{
-    public required IList<Achievement> Achievements { get; init; }
 }

@@ -1,6 +1,6 @@
 using Domain.Entities;
 
-namespace Application.Achievements.Services;
+namespace Application.Achievements.Services.Checkers;
 
 public class BasicSmallTalkerChecker: IAchievementChecker<VocabularyEntry>
 {

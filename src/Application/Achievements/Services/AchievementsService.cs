@@ -1,5 +1,6 @@
-using Application.Abstractions;
+using Application.Achievements.Services.Checkers;
 using Application.Common;
+using Application.Common.Interfaces.Achievements;
 using Domain.Entities;
 
 namespace Application.Achievements.Services;
