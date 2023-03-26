@@ -32,7 +32,7 @@ public class AchievementsCommand : IBotCommand
         string GetAchievementIcon(bool isUnlocked, string icon) => isUnlocked ? icon : "🚫";
         
         var achievementsStrings = achievementsVm.Achievements
-            .Select(achievement => $@"{GetAchievementIcon(true, achievement.Icon)} {achievement.Name} – {achievement.Description}");
+            .Select(achievement => $@"{GetAchievementIcon(achievement.IsUnlocked, achievement.Icon)} {achievement.Name} – {achievement.Description}");
         var achievementsMessageHeader = "📊<b>Твои достижения:</b>\r\n\r\n";
         var achievementsMessage = string.Join("\r\n\r\n", achievementsStrings);
         

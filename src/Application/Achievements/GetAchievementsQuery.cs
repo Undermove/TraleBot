@@ -1,3 +1,4 @@
+using Application.Achievements.Services;
 using Application.Common;
 using Domain.Entities;
 using MediatR;
@@ -12,19 +13,30 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
     public class Handler : IRequestHandler<GetAchievementsQuery, AchievementsListVm>
     {
         private readonly ITraleDbContext _context;
-
-        public Handler(ITraleDbContext context)
+        private readonly IEnumerable<IAchievementChecker<object>> _achievementCheckers;
+        
+        public Handler(ITraleDbContext context, IEnumerable<IAchievementChecker<object>> achievementCheckers)
         {
             _context = context;
+            _achievementCheckers = achievementCheckers;
         }
 
         public async Task<AchievementsListVm> Handle(GetAchievementsQuery request, CancellationToken cancellationToken)
         {
-            var achievements = await _context.Achievements
+            var unlockedAchievements = await _context.Achievements
                 .Where(a => a.UserId == request.UserId)
+                .Select(achievement => achievement.AchievementTypeId)
                 .ToListAsync(cancellationToken: cancellationToken);
 
-            var result = new AchievementsListVm { Achievements = achievements };
+            var allAchievements = _achievementCheckers.Select(checker => new AchievementVm
+            {
+                Name = checker.Name,
+                Description = checker.Description,
+                Icon = checker.Icon,
+                IsUnlocked = unlockedAchievements.Contains(checker.AchievementTypeId)
+            }).ToList();
+            
+            var result = new AchievementsListVm { Achievements = allAchievements };
             return result;
         }
     }
@@ -66,5 +78,13 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
 
 public class AchievementsListVm
 {
-    public required IList<Achievement> Achievements { get; init; }
+    public required IList<AchievementVm> Achievements { get; init; }
+}
+
+public class AchievementVm
+{
+    public required string Icon { get; init; }
+    public required string Name { get; init; }
+    public required string Description { get; init; }
+    public bool IsUnlocked { get; init; }
 }
