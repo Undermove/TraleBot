@@ -1,4 +1,4 @@
-namespace Application.Achievements.Services;
+namespace Application.Achievements.Services.Checkers;
 
 // ReSharper disable once UnusedTypeParameter
 public interface IAchievementChecker<out T>
