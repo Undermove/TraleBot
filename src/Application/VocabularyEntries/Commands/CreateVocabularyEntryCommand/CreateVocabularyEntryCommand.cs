@@ -1,3 +1,4 @@
+using Application.Achievements.Services.Triggers;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Achievements;
@@ -75,7 +76,8 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             
             await _context.SaveChangesAsync(ct);
 
-            await _achievementService.AssignAchievements(vocabularyEntry, user.Id, ct);
+            var vocabularyCountTrigger = new VocabularyCountTrigger {VocabularyEntriesCount = user.VocabularyEntries.Count};
+            await _achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
 
             return new CreateVocabularyEntryResult(
                 TranslationStatus.Translated, 

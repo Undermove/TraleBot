@@ -2,5 +2,5 @@ namespace Application.Common.Interfaces.Achievements;
 
 public interface IAchievementsService
 {
-    Task AssignAchievements<T>(T trigger, Guid userId, CancellationToken ct);
+    Task AssignAchievements<T>(T trigger, Guid userId, CancellationToken ct) where T : IAchievementTrigger;
 }

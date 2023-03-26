@@ -18,7 +18,7 @@ public class AchievementsService : IAchievementsService
         _achievementCheckers = achievementCheckers;
     }
 
-    public async Task AssignAchievements<T>(T trigger, Guid userId, CancellationToken ct)
+    public async Task AssignAchievements<T>(T trigger, Guid userId, CancellationToken ct) where T : IAchievementTrigger
     {
         var user = await _context.Users.FindAsync(userId);
         await _context.Entry(user).Collection(nameof(user.Achievements)).LoadAsync(ct);
