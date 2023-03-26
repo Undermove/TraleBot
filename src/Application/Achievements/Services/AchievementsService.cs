@@ -1,5 +1,5 @@
-using Application.Abstractions;
 using Application.Common;
+using Application.Common.Interfaces.Achievements;
 using Domain.Entities;
 
 namespace Application.Achievements.Services;

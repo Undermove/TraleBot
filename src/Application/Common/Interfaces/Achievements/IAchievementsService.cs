@@ -1,6 +1,4 @@
-using Domain.Entities;
-
-namespace Application.Abstractions;
+namespace Application.Common.Interfaces.Achievements;
 
 public interface IAchievementsService
 {

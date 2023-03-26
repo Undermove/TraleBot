@@ -1,4 +1,5 @@
 using Application.Achievements;
+using Application.Achievements.Queries;
 using Application.Users.Commands.CreateUser;
 using Domain.Entities;
 using Infrastructure.Telegram.CommonComponents;

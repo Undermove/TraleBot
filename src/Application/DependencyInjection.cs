@@ -1,6 +1,6 @@
 using System.Reflection;
-using Application.Abstractions;
 using Application.Achievements.Services;
+using Application.Common.Interfaces.Achievements;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 

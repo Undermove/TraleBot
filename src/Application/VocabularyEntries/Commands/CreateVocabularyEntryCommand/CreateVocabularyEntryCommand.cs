@@ -1,6 +1,7 @@
-using Application.Abstractions;
 using Application.Common;
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.Achievements;
+using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using MediatR;
 

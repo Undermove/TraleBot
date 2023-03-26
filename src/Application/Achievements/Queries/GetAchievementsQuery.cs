@@ -1,10 +1,9 @@
 using Application.Achievements.Services;
 using Application.Common;
-using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Achievements;
+namespace Application.Achievements.Queries;
 
 public class GetAchievementsQuery : IRequest<AchievementsListVm>
 {
@@ -74,17 +73,4 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
     💎 Я и есть словарь – 1000 слов с бриллиантом в словаре
     """;
     }
-}
-
-public class AchievementsListVm
-{
-    public required IList<AchievementVm> Achievements { get; init; }
-}
-
-public class AchievementVm
-{
-    public required string Icon { get; init; }
-    public required string Name { get; init; }
-    public required string Description { get; init; }
-    public bool IsUnlocked { get; init; }
 }
