@@ -38,12 +38,12 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
 
         private async Task CheckAchievements(CompleteQuizCommand request, CancellationToken ct)
         {
-            var goldMedalsCount = await _dbContext.VocabularyEntries
-                .CountAsync(entry => entry.UserId == request.UserId &&
-                                     entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection,
-                    cancellationToken: ct);
+            var vocabularyEntries = await _dbContext.VocabularyEntries
+                .Where(entry => entry.UserId == request.UserId).ToListAsync(ct);
+            var goldMedalsCount = vocabularyEntries
+                .Count(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection);
 
-            var kingOfScoreTrigger = new KingOfScoreTrigger { GoldMedalWordsCount = goldMedalsCount };
+            var kingOfScoreTrigger = new GoldMedalsTrigger { GoldMedalWordsCount = goldMedalsCount };
             await _achievementsService.AssignAchievements(kingOfScoreTrigger, request.UserId.Value, ct);
         }
     }

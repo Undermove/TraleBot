@@ -3,7 +3,7 @@ using Domain.Entities;
 
 namespace Application.Achievements.Services.Checkers;
 
-public class KingOfScoreChecker: IAchievementChecker<KingOfScoreTrigger>
+public class KingOfScoreChecker: IAchievementChecker<GoldMedalsTrigger>
 {
     public string Icon => "🥇";
     public string Name => "Король зачёта";
@@ -12,7 +12,7 @@ public class KingOfScoreChecker: IAchievementChecker<KingOfScoreTrigger>
 
     public bool CheckAchievement(object trigger)
     {
-        var kingOfScoreTrigger = trigger as KingOfScoreTrigger;
+        var kingOfScoreTrigger = trigger as GoldMedalsTrigger;
         return kingOfScoreTrigger is { GoldMedalWordsCount: >= 1000 };
     }
 }
