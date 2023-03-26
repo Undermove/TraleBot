@@ -1,8 +1,9 @@
+using Application.Achievements.Services.Triggers;
 using Domain.Entities;
 
 namespace Application.Achievements.Services.Checkers;
 
-public class KingOfScoreChecker: IAchievementChecker<VocabularyEntry>
+public class KingOfScoreChecker: IAchievementChecker<KingOfScoreTrigger>
 {
     public string Icon => "🥇";
     public string Name => "Король зачёта";
@@ -11,6 +12,7 @@ public class KingOfScoreChecker: IAchievementChecker<VocabularyEntry>
 
     public bool CheckAchievement(object trigger)
     {
-        return true;
+        var kingOfScoreTrigger = trigger as KingOfScoreTrigger;
+        return kingOfScoreTrigger is { GoldMedalWordsCount: >= 1000 };
     }
 }
