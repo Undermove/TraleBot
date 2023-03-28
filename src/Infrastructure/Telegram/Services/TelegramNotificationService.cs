@@ -15,9 +15,21 @@ public class TelegramNotificationService: IUserNotificationService
 
     public async Task NotifyAboutUnlockedAchievementAsync(Achievement achievement, CancellationToken ct)
     {
+        var userTelegramId = achievement.User.TelegramId;
+        
         await _client.SendTextMessageAsync(
-            achievement.User.TelegramId,
-            "✅Платеж принят. Спасибо за поддержку нашего бота! Вам доступны дополнительные фичи.",
+            userTelegramId,
+            "✅Открыто новое достижение!",
+            cancellationToken: ct);
+        
+        await _client.SendTextMessageAsync(
+            userTelegramId,
+            achievement.Icon,
+            cancellationToken: ct);
+        
+        await _client.SendTextMessageAsync(
+            userTelegramId,
+            $"{achievement.Name} – {achievement.Description}",
             cancellationToken: ct);
     }
 }
