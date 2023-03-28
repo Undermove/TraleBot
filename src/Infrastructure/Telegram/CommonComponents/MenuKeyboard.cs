@@ -13,7 +13,11 @@ public static class MenuKeyboard
             {
                 new KeyboardButton($"{CommandNames.QuizIcon} Квиз"),
                 new KeyboardButton($"{CommandNames.StopQuizIcon} Остановить квиз"),
-                new KeyboardButton($"{CommandNames.VocabularyIcon} Мой словарь")
+            },
+            new []
+            {
+                new KeyboardButton($"{CommandNames.VocabularyIcon} Мой словарь"),
+                new KeyboardButton($"{CommandNames.AchievementsIcon} Достижения")
             },
             new[]
             {

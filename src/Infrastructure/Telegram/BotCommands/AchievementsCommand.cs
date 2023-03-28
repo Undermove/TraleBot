@@ -13,7 +13,7 @@ namespace Infrastructure.Telegram.BotCommands;
 public class AchievementsCommand : IBotCommand
 {
     private readonly TelegramBotClient _client;
-    private IMediator _mediator;
+    private readonly IMediator _mediator;
 
     public AchievementsCommand(TelegramBotClient client, IMediator mediator)
     {
@@ -24,7 +24,9 @@ public class AchievementsCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Achievements));
+        return Task.FromResult(
+            commandPayload.Contains(CommandNames.Achievements) || 
+            commandPayload.StartsWith(CommandNames.AchievementsIcon));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
