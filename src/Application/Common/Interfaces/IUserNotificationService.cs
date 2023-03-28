@@ -4,5 +4,5 @@ namespace Application.Common.Interfaces;
 
 public interface IUserNotificationService
 {
-    Task NotifyAboutUnlockedAchievementAsync(Achievement achievement);
+    Task NotifyAboutUnlockedAchievementAsync(Achievement achievement, CancellationToken ct);
 }
