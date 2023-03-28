@@ -1,6 +1,8 @@
 using Application.Common.Interfaces;
 using Domain.Entities;
+using Infrastructure.Telegram.Models;
 using Telegram.Bot;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.Services;
 
@@ -27,9 +29,18 @@ public class TelegramNotificationService: IUserNotificationService
             achievement.Icon,
             cancellationToken: ct);
         
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("📊Посмотреть все достижения", $"{CommandNames.Achievements}")
+            }
+        });
+        
         await _client.SendTextMessageAsync(
             userTelegramId,
-            $"{achievement.Name} – {achievement.Description}",
+            $"{achievement.Icon}{achievement.Name} – {achievement.Description}",
+            replyMarkup: keyboard,
             cancellationToken: ct);
     }
 }

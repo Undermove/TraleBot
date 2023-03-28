@@ -37,10 +37,10 @@ public class AchievementsService : IAchievementsService
 
     private async Task NotifyAboutAchievements(IEnumerable<Achievement> newAchievements, CancellationToken ct)
     {
-        // foreach (var newAchievement in newAchievements)
-        // {
-        //     await _userNotificationService.NotifyAboutUnlockedAchievementAsync(newAchievement, ct);
-        // }
+        foreach (var newAchievement in newAchievements)
+        {
+            await _userNotificationService.NotifyAboutUnlockedAchievementAsync(newAchievement, ct);
+        }
     }
 
     private List<Achievement> CheckAchievementsThatMightBeOpened<T>(T trigger, User user)
