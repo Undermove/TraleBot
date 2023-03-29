@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<object>, AdvancedSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<object>, YoungEggheadChecker>();
         services.AddScoped<IAchievementChecker<object>, StartingQuizzerChecker>();
+        services.AddScoped<IAchievementChecker<object>, PerfectionistChecker>();
         services.AddScoped<IAchievementChecker<object>, MedalistChecker>(); 
         services.AddScoped<IAchievementChecker<object>, SilverPrizeWinnerChecker>(); 
         services.AddScoped<IAchievementChecker<object>, KingOfScoreChecker>();

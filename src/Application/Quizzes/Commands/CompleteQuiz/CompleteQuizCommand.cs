@@ -31,12 +31,12 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
             quiz.IsCompleted = true;
             await _dbContext.SaveChangesAsync(ct);
 
-            await CheckAchievements(request, ct);
+            await CheckAchievements(request, quiz, ct);
 
             return new QuizCompletionStatistics(quiz.CorrectAnswersCount, quiz.IncorrectAnswersCount);
         }
 
-        private async Task CheckAchievements(CompleteQuizCommand request, CancellationToken ct)
+        private async Task CheckAchievements(CompleteQuizCommand request, Quiz quiz, CancellationToken ct)
         {
             var vocabularyEntries = await _dbContext.VocabularyEntries
                 .Where(entry => entry.UserId == request.UserId).ToListAsync(ct);
@@ -60,6 +60,13 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
                 QuizzesCount = count,  
             };
             await _achievementsService.AssignAchievements(startingQuizzerTrigger, request.UserId.Value, ct);
+            
+            var perfectionistTrigger = new PerfectionistTrigger
+            {
+                IncorrectAnswersCount = quiz.IncorrectAnswersCount,
+                WordsCount = quiz.CorrectAnswersCount + quiz.IncorrectAnswersCount,
+            };
+            await _achievementsService.AssignAchievements(perfectionistTrigger, request.UserId.Value, ct);
         }
     }
 }
