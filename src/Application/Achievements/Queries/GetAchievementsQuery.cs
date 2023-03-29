@@ -1,4 +1,3 @@
-using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
 using Application.Common;
 using MediatR;

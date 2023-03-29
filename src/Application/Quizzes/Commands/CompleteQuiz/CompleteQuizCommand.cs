@@ -42,8 +42,14 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
                 .Where(entry => entry.UserId == request.UserId).ToListAsync(ct);
             var goldMedalsCount = vocabularyEntries
                 .Count(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection);
-
-            var kingOfScoreTrigger = new GoldMedalsTrigger { GoldMedalWordsCount = goldMedalsCount };
+            var brilliantsCount = vocabularyEntries
+                .Count(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections);
+            
+            var kingOfScoreTrigger = new GoldMedalsTrigger
+            {
+                GoldMedalWordsCount = goldMedalsCount,
+                BrilliantWordsCount = brilliantsCount 
+            };
             await _achievementsService.AssignAchievements(kingOfScoreTrigger, request.UserId.Value, ct);
         }
     }

@@ -11,7 +11,12 @@ public class KingOfScoreChecker: IAchievementChecker<GoldMedalsTrigger>
 
     public bool CheckAchievement(object trigger)
     {
-        var kingOfScoreTrigger = trigger as GoldMedalsTrigger;
-        return kingOfScoreTrigger is { GoldMedalWordsCount: >= 1000 };
+        if (trigger is not GoldMedalsTrigger kingOfScoreTrigger)
+        {
+            return false;
+        }
+        
+        var medalWordsCount = kingOfScoreTrigger.GoldMedalWordsCount + kingOfScoreTrigger.BrilliantWordsCount;
+        return medalWordsCount >= 1000;
     }
 }
