@@ -51,6 +51,15 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
                 BrilliantWordsCount = brilliantsCount 
             };
             await _achievementsService.AssignAchievements(kingOfScoreTrigger, request.UserId.Value, ct);
+
+            var count = await _dbContext.Quizzes
+                .Where(quiz => quiz.UserId == request.UserId)
+                .CountAsync(cancellationToken: ct);
+            var startingQuizzerTrigger = new StartingQuizzerTrigger()
+            {
+                QuizzesCount = count,  
+            };
+            await _achievementsService.AssignAchievements(startingQuizzerTrigger, request.UserId.Value, ct);
         }
     }
 }
