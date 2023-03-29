@@ -1,5 +1,4 @@
 using Application.Achievements.Services.Triggers;
-using Domain.Entities;
 
 namespace Application.Achievements.Services.Checkers;
 
@@ -12,7 +11,7 @@ public class AdvancedSmallTalkerChecker: IAchievementChecker<VocabularyCountTrig
 
     public bool CheckAchievement(object trigger)
     {
-        var vocabularyEntry = trigger as VocabularyCountTrigger;
-        return vocabularyEntry is { VocabularyEntriesCount: >= 100 };
+        var vocabularyCountTrigger = trigger as VocabularyCountTrigger;
+        return vocabularyCountTrigger is { VocabularyEntriesCount: >= 100 };
     }
 }
