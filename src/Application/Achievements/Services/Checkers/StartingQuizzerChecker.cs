@@ -2,7 +2,7 @@ using Application.Achievements.Services.Triggers;
 
 namespace Application.Achievements.Services.Checkers;
 
-public class StartingQuizzer: IAchievementChecker<StartingQuizzerTrigger>
+public class StartingQuizzerChecker: IAchievementChecker<StartingQuizzerTrigger>
 {
     public string Icon => "⭐";
     public string Name => " Начинающий квизёр";
