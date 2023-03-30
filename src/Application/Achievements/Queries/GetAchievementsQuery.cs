@@ -1,5 +1,6 @@
 using Application.Achievements.Services.Checkers;
 using Application.Common;
+using Application.Common.Interfaces.Achievements;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,9 +13,9 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
     public class Handler : IRequestHandler<GetAchievementsQuery, AchievementsListVm>
     {
         private readonly ITraleDbContext _context;
-        private readonly IEnumerable<IAchievementChecker<object>> _achievementCheckers;
+        private readonly IEnumerable<IAchievementChecker<IAchievementTrigger>> _achievementCheckers;
         
-        public Handler(ITraleDbContext context, IEnumerable<IAchievementChecker<object>> achievementCheckers)
+        public Handler(ITraleDbContext context, IEnumerable<IAchievementChecker<IAchievementTrigger>> achievementCheckers)
         {
             _context = context;
             _achievementCheckers = achievementCheckers;

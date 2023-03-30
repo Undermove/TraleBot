@@ -8,13 +8,13 @@ namespace Application.Achievements.Services;
 
 public class AchievementsService : IAchievementsService
 {
-    private readonly IEnumerable<IAchievementChecker<object>> _achievementCheckers;
+    private readonly IEnumerable<IAchievementChecker<IAchievementTrigger>> _achievementCheckers;
     private readonly ITraleDbContext _context;
     private readonly IUserNotificationService _userNotificationService;
 
     public AchievementsService(
         ITraleDbContext context,
-        IEnumerable<IAchievementChecker<object>> achievementCheckers, IUserNotificationService userNotificationService)
+        IEnumerable<IAchievementChecker<IAchievementTrigger>> achievementCheckers, IUserNotificationService userNotificationService)
     {
         _context = context;
         _achievementCheckers = achievementCheckers;
@@ -49,7 +49,7 @@ public class AchievementsService : IAchievementsService
 
         foreach (var achievementChecker in _achievementCheckers)
         {
-            if (achievementChecker is IAchievementChecker<T> checker 
+            if (achievementChecker is { } checker 
                 && checker.CheckAchievement(trigger))
             {
                 var achievement = new Achievement

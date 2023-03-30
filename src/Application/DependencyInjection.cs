@@ -1,6 +1,7 @@
 using System.Reflection;
 using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
+using Application.Achievements.Services.Triggers;
 using Application.Common.Interfaces.Achievements;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,14 +14,14 @@ public static class DependencyInjection
     {
         services.AddMediatR(Assembly.GetExecutingAssembly());
 
-        services.AddScoped<IAchievementChecker<object>, BasicSmallTalkerChecker>();
-        services.AddScoped<IAchievementChecker<object>, AdvancedSmallTalkerChecker>();
-        services.AddScoped<IAchievementChecker<object>, YoungEggheadChecker>();
-        services.AddScoped<IAchievementChecker<object>, StartingQuizzerChecker>();
-        services.AddScoped<IAchievementChecker<object>, PerfectionistChecker>();
-        services.AddScoped<IAchievementChecker<object>, MedalistChecker>(); 
-        services.AddScoped<IAchievementChecker<object>, SilverPrizeWinnerChecker>(); 
-        services.AddScoped<IAchievementChecker<object>, KingOfScoreChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, YoungEggheadChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, StartingQuizzerChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, PerfectionistChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, MedalistChecker>(); 
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, SilverPrizeWinnerChecker>(); 
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, KingOfScoreChecker>();
         services.AddSingleton<IAchievementsService, AchievementsService>();
         return services;
     }
