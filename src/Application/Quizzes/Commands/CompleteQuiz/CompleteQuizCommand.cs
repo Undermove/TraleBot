@@ -9,7 +9,7 @@ namespace Application.Quizzes.Commands.CompleteQuiz;
 
 public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
 {
-    public Guid? UserId { get; set; }
+    public Guid? UserId { get; init; }
 
     public class Handler : IRequestHandler<CompleteQuizCommand, QuizCompletionStatistics>
     {
@@ -55,18 +55,18 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
             var count = await _dbContext.Quizzes
                 .Where(quiz => quiz.UserId == request.UserId)
                 .CountAsync(cancellationToken: ct);
-            var startingQuizzerTrigger = new StartingQuizzerTrigger()
+            var startingQuizzerTrigger = new StartingQuizzerTrigger
             {
                 QuizzesCount = count,  
             };
             await _achievementsService.AssignAchievements(startingQuizzerTrigger, request.UserId.Value, ct);
             
-            var perfectionistTrigger = new PerfectionistTrigger
+            var perfectQuizTrigger = new PerfectQuizTrigger
             {
                 IncorrectAnswersCount = quiz.IncorrectAnswersCount,
                 WordsCount = quiz.CorrectAnswersCount + quiz.IncorrectAnswersCount,
             };
-            await _achievementsService.AssignAchievements(perfectionistTrigger, request.UserId.Value, ct);
+            await _achievementsService.AssignAchievements(perfectQuizTrigger, request.UserId.Value, ct);
         }
     }
 }

@@ -2,8 +2,8 @@ using Application.Common.Interfaces.Achievements;
 
 namespace Application.Achievements.Services.Triggers;
 
-public class PerfectionistTrigger : IAchievementTrigger
+public class PerfectQuizTrigger : IAchievementTrigger
 {
     public required int WordsCount { get; init; }
-    public int IncorrectAnswersCount { get; set; }
+    public required int IncorrectAnswersCount { get; init; }
 }
