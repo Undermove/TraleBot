@@ -1,7 +1,6 @@
 using System.Reflection;
 using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
-using Application.Achievements.Services.Triggers;
 using Application.Common.Interfaces.Achievements;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, StartingQuizzerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, PerfectionistChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, SolverChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, JustAskChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, MedalistChecker>(); 
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, SilverPrizeWinnerChecker>(); 
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, KingOfScoreChecker>();
