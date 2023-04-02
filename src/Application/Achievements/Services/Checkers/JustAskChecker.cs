@@ -11,6 +11,6 @@ public class JustAskChecker: IAchievementChecker<RemoveWordTrigger>
 
     public bool CheckAchievement(object trigger)
     {
-        return true;
+        return trigger is RemoveWordTrigger;
     }
 }
