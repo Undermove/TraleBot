@@ -1,3 +1,4 @@
+using Application.Achievements.Services.Checkers;
 using Application.Achievements.Services.Triggers;
 using Application.Common;
 using Application.Common.Interfaces;
@@ -47,6 +48,9 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             {
                 definition = request.Definition;
                 additionalInfo = request.Definition;
+                
+                var manualTranslationTrigger = new ManualTranslationTrigger();
+                await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
             }
             else
             {

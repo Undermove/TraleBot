@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, PerfectionistChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, SolverChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, JustAskChecker>();
+        services.AddScoped<IAchievementChecker<IAchievementTrigger>, KnowByMyselfChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, MedalistChecker>(); 
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, SilverPrizeWinnerChecker>(); 
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, KingOfScoreChecker>();
