@@ -1,4 +1,3 @@
-using Application.VocabularyEntries.Commands;
 using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 using Infrastructure.Telegram.Models;
 using MediatR;

@@ -1,9 +1,3 @@
-using Application;
-using Application.Common.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Moq;
-
 namespace Infrastructure.UnitTests;
 
 public class CommandProcessingHandlingTests
