@@ -1,5 +1,4 @@
 using Application.Achievements.Services.Triggers;
-using Domain.Entities;
 
 namespace Application.Achievements.Services.Checkers;
 

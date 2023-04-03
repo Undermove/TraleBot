@@ -1,7 +1,5 @@
-using Application.Achievements.Services.Checkers;
 using Application.Achievements.Services.Triggers;
 using Application.Common;
-using Application.Common.Interfaces;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
