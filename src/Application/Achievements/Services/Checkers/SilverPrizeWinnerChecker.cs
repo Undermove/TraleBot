@@ -2,7 +2,7 @@ using Application.Achievements.Services.Triggers;
 
 namespace Application.Achievements.Services.Checkers;
 
-public class SilverPrizeWinnerChecker: IAchievementChecker<GoldMedalsTrigger>
+public class SilverPrizeWinnerChecker: IAchievementChecker<WordMasteringLevelTrigger>
 {
     public string Icon => "🥈";
     public string Name => "Серебряный призер";
@@ -11,7 +11,7 @@ public class SilverPrizeWinnerChecker: IAchievementChecker<GoldMedalsTrigger>
 
     public bool CheckAchievement(object trigger)
     {
-        if (trigger is not GoldMedalsTrigger kingOfScoreTrigger)
+        if (trigger is not WordMasteringLevelTrigger kingOfScoreTrigger)
         {
             return false;
         }

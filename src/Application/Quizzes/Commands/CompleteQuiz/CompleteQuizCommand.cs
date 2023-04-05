@@ -45,12 +45,12 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
             var brilliantsCount = vocabularyEntries
                 .Count(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections);
             
-            var kingOfScoreTrigger = new GoldMedalsTrigger
+            var wordMasteringLevelTrigger = new WordMasteringLevelTrigger
             {
                 GoldMedalWordsCount = goldMedalsCount,
                 BrilliantWordsCount = brilliantsCount 
             };
-            await _achievementsService.AssignAchievements(kingOfScoreTrigger, request.UserId.Value, ct);
+            await _achievementsService.AssignAchievements(wordMasteringLevelTrigger, request.UserId.Value, ct);
 
             var count = await _dbContext.Quizzes
                 .Where(quiz => quiz.UserId == request.UserId)
