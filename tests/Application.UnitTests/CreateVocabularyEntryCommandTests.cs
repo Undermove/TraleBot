@@ -1,3 +1,4 @@
+using Application.Achievements.Services.Triggers;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Application.UnitTests.Common;
@@ -22,6 +23,12 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
         _translationServicesMock = mockRepository.Create<ITranslationService>();
         _achievementsService = mockRepository.Create<IAchievementsService>();
+        _achievementsService.Setup(service => service.AssignAchievements(
+                It.IsAny<ManualTranslationTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _achievementsService.Setup(service => service.AssignAchievements(
+                It.IsAny<VocabularyCountTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _existingUser = Create.TestUser();
         Context.Users.Add(_existingUser);
@@ -35,6 +42,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     {
         const string expectedWord = "cat";
         const string expectedDefinition = "кошка";
+
         await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
         {
             UserId = _existingUser.Id,
