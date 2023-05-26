@@ -1,11 +1,10 @@
 using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
-using Infrastructure.Auth;
 using Infrastructure.Monitoring;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -34,12 +33,6 @@ public class Startup
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
             .AddNewtonsoftJson();
 
-        var authConfig = Configuration.GetSection("AuthConfiguration").Get<AuthConfiguration>();
-        services.AddSingleton(authConfig);
-        services.AddAuthentication("BasicAuthentication")  
-            .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);  
-  
-        services.AddScoped<IUserService, UserService>();
         services.AddApplication();
         services.AddPersistence(Configuration);
         
@@ -62,8 +55,6 @@ public class Startup
         
         app.UseSerilogRequestLogging();
         
-        app.UseAuthentication();  
-        app.UseAuthorization();
         app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
     }
 }
