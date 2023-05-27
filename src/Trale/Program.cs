@@ -2,6 +2,7 @@ using System;
 using System.Text.Json.Serialization;
 using Application;
 using Infrastructure;
+using Infrastructure.Monitoring;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -11,37 +12,37 @@ using Microsoft.Extensions.Logging;
 using Persistence;
 using Trale.HostedServices;
 
-var hostBuilder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-// Setup Bot configuration
 const string aspNetCoreEnvironment = "ASPNETCORE_ENVIRONMENT";
 string environmentName = Environment.GetEnvironmentVariable(aspNetCoreEnvironment);
 
-hostBuilder.WebHost.ConfigureAppConfiguration((_, config) =>
+builder.WebHost.ConfigureAppConfiguration((_, config) =>
 {
     config.AddJsonFile("appsettings.json")
         .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
         .AddEnvironmentVariables();
 });
 
-var configuration = hostBuilder.Configuration;
+var configuration = builder.Configuration;
 
-hostBuilder.Services
+builder.Services
     .AddControllers()
     .AddJsonOptions(options=>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
     .AddNewtonsoftJson();
 
-hostBuilder.Services.AddApplication();
-hostBuilder.Services.AddPersistence(configuration);
+builder.Services.AddApplication();
+builder.Services.AddPersistence(configuration);
         
-hostBuilder.Services.AddInfrastructure(configuration);
-hostBuilder.Services.AddHostedService<CreateWebhook>();
+builder.Services.AddInfrastructure(configuration);
+builder.Services.AddHostedService<CreateWebhook>();
 
-hostBuilder.WebHost.UseUrls("http://*:1402/");
-var host = hostBuilder.Build();
+builder.WebHost.UseUrls("http://*:1402/");
+var app = builder.Build();
+PrometheusStartup.UsePrometheus(app);
 
-using (var scope = host.Services.CreateScope())
+using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
@@ -57,5 +58,5 @@ using (var scope = host.Services.CreateScope())
     }
 }
 
-host.MapControllers();
-await host.RunAsync();
+app.MapControllers();
+await app.RunAsync();
