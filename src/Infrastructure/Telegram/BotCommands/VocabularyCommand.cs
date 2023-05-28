@@ -11,9 +11,9 @@ namespace Infrastructure.Telegram.BotCommands;
 public class VocabularyCommand : IBotCommand
 {
     private readonly IMediator _mediator;
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
 
-    public VocabularyCommand(IMediator mediator, TelegramBotClient client)
+    public VocabularyCommand(IMediator mediator, ITelegramBotClient client)
     {
         _mediator = mediator;
         _client = client;

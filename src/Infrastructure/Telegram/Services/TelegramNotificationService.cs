@@ -8,9 +8,9 @@ namespace Infrastructure.Telegram.Services;
 
 public class TelegramNotificationService: IUserNotificationService
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
 
-    public TelegramNotificationService(TelegramBotClient client)
+    public TelegramNotificationService(ITelegramBotClient client)
     {
         _client = client;
     }

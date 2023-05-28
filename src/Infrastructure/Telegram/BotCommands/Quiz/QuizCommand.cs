@@ -7,9 +7,9 @@ namespace Infrastructure.Telegram.BotCommands.Quiz;
 
 public class QuizCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
 
-    public QuizCommand(TelegramBotClient client)
+    public QuizCommand(ITelegramBotClient client)
     {
         _client = client;
     }

@@ -9,9 +9,9 @@ namespace Trale.HostedServices;
 public class CreateWebhook : IHostedService
 {
     private readonly BotConfiguration _config;
-    private readonly TelegramBotClient _telegramBotClient;
+    private readonly ITelegramBotClient _telegramBotClient;
 
-    public CreateWebhook(BotConfiguration config, TelegramBotClient telegramBotClient)
+    public CreateWebhook(BotConfiguration config, ITelegramBotClient telegramBotClient)
     {
         _config = config;
         _telegramBotClient = telegramBotClient;

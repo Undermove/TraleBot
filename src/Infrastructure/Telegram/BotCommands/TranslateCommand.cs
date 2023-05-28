@@ -8,12 +8,10 @@ namespace Infrastructure.Telegram.BotCommands;
 
 public class TranslateCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
 
-    public TranslateCommand(
-        TelegramBotClient client, 
-        IMediator mediator)
+    public TranslateCommand(ITelegramBotClient client, IMediator mediator)
     {
         _client = client;
         _mediator = mediator;

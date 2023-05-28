@@ -13,10 +13,10 @@ namespace Infrastructure.Telegram.BotCommands.Quiz;
 
 public class CheckQuizAnswerBotCommand: IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
 
-    public CheckQuizAnswerBotCommand(TelegramBotClient client, IMediator mediator)
+    public CheckQuizAnswerBotCommand(ITelegramBotClient client, IMediator mediator)
     {
         _client = client;
         _mediator = mediator;

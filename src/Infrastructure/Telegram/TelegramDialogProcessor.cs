@@ -12,13 +12,14 @@ public class TelegramDialogProcessor: IDialogProcessor
 {
     private readonly List<IBotCommand> _commands;
     private readonly ILogger _logger;
-    private readonly TelegramBotClient _telegramBotClient;
+    private readonly ITelegramBotClient _telegramBotClient;
     private readonly IMediator _mediator;
 
     public TelegramDialogProcessor(
         IEnumerable<IBotCommand> commands, 
         ILoggerFactory logger, 
-        TelegramBotClient telegramBotClient, IMediator mediator)
+        ITelegramBotClient telegramBotClient, 
+        IMediator mediator)
     {
         _telegramBotClient = telegramBotClient;
         _mediator = mediator;

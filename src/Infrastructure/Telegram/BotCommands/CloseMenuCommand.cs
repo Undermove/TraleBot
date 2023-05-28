@@ -6,9 +6,9 @@ namespace Infrastructure.Telegram.BotCommands;
 
 public class CloseMenuCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
 
-    public CloseMenuCommand(TelegramBotClient client)
+    public CloseMenuCommand(ITelegramBotClient client)
     {
         _client = client;
     }

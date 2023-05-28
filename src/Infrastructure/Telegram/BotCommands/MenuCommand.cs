@@ -6,9 +6,9 @@ namespace Infrastructure.Telegram.BotCommands;
 
 public class MenuCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
 
-    public MenuCommand(TelegramBotClient client)
+    public MenuCommand(ITelegramBotClient client)
     {
         _client = client;
     }

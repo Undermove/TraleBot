@@ -31,10 +31,6 @@ public static class DependencyInjection
         }
         
         services.AddSingleton(botConfig);
-        services.AddScoped(_ => 
-            new TelegramBotClient(botConfig.Token)
-        );
-        
         services.AddHttpClient("telegram_bot_client")
             .AddTypedClient<ITelegramBotClient>((httpClient, _) =>
             {

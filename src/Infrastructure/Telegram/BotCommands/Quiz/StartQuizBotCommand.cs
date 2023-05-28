@@ -11,10 +11,10 @@ namespace Infrastructure.Telegram.BotCommands.Quiz;
 
 public class StartQuizBotCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
 
-    public StartQuizBotCommand(TelegramBotClient client, IMediator mediator)
+    public StartQuizBotCommand(ITelegramBotClient client, IMediator mediator)
     {
         _client = client;
         _mediator = mediator;

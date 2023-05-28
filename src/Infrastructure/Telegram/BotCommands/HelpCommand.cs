@@ -5,9 +5,9 @@ namespace Infrastructure.Telegram.BotCommands;
 
 public class HelpCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
 
-    public HelpCommand(TelegramBotClient client)
+    public HelpCommand(ITelegramBotClient client)
     {
         _client = client;
     }

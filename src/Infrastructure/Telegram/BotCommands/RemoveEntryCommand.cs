@@ -8,9 +8,9 @@ namespace Infrastructure.Telegram.BotCommands;
 public class RemoveEntryCommand : IBotCommand
 {
     private readonly IMediator _mediator;
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
 
-    public RemoveEntryCommand(IMediator mediator, TelegramBotClient client)
+    public RemoveEntryCommand(IMediator mediator, ITelegramBotClient client)
     {
         _mediator = mediator;
         _client = client;
