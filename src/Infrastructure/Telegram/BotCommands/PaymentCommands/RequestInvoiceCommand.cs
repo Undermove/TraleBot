@@ -8,10 +8,10 @@ namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
 public class RequestInvoiceCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
     private readonly BotConfiguration _configuration;
     private readonly ILogger _logger;
-    private static readonly Dictionary<SubscriptionTerm, LabeledPrice> _prices = new()
+    private static readonly Dictionary<SubscriptionTerm, LabeledPrice> Prices = new()
     {
         {SubscriptionTerm.Month, new("Месяц за 2,49€", 249)},
         {SubscriptionTerm.ThreeMonth, new("3 месяца за 3,99€", 389)},
@@ -19,7 +19,7 @@ public class RequestInvoiceCommand : IBotCommand
     };
 
     public RequestInvoiceCommand(
-        TelegramBotClient client, 
+        ITelegramBotClient client, 
         BotConfiguration configuration, 
         ILoggerFactory logger)
     {
@@ -43,14 +43,14 @@ public class RequestInvoiceCommand : IBotCommand
 
         await _client.SendInvoiceAsync(
             request.UserTelegramId,
-            _prices[subscriptionTerm].Label,
+            Prices[subscriptionTerm].Label,
             "Расширенный функционал",
             subscriptionTerm.ToString(),
             _configuration.PaymentProviderToken,
             "EUR",
             new List<LabeledPrice>
             {
-                _prices[subscriptionTerm]
+                Prices[subscriptionTerm]
             },
             cancellationToken: token
         );

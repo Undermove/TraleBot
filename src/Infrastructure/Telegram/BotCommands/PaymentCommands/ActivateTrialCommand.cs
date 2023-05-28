@@ -9,11 +9,11 @@ namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
 public class ActivateTrialCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
     private readonly ILogger _logger;
     private readonly IMediator _mediator;
 
-    public ActivateTrialCommand(TelegramBotClient client, ILoggerFactory logger, IMediator mediator)
+    public ActivateTrialCommand(ITelegramBotClient client, ILoggerFactory logger, IMediator mediator)
     {
         _client = client;
         _mediator = mediator;

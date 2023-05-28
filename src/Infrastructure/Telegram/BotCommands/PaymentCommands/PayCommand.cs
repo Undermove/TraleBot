@@ -8,18 +8,11 @@ namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
 public class PayCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
-    private readonly BotConfiguration _configuration;
-    private readonly ILogger _logger;
-
-    public PayCommand(
-        TelegramBotClient client, 
-        BotConfiguration configuration, 
-        ILoggerFactory logger)
+    private readonly ITelegramBotClient _client;
+    
+    public PayCommand(ITelegramBotClient client)
     {
         _client = client;
-        _configuration = configuration;
-        _logger = logger.CreateLogger(typeof(PayCommand));
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)

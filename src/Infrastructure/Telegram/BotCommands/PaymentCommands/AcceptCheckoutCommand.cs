@@ -8,11 +8,11 @@ namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
 public class AcceptCheckoutCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
 
     public AcceptCheckoutCommand(
-        TelegramBotClient client,
+        ITelegramBotClient client,
         IMediator mediator)
     {
         _client = client;

@@ -7,10 +7,10 @@ namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
 public class OfferTrialCommand : IBotCommand
 {
-    private readonly TelegramBotClient _client;
+    private readonly ITelegramBotClient _client;
     private readonly ILogger _logger;
 
-    public OfferTrialCommand(TelegramBotClient client, ILoggerFactory logger)
+    public OfferTrialCommand(ITelegramBotClient client, ILoggerFactory logger)
     {
         _client = client;
         _logger = logger.CreateLogger(typeof(PayCommand));
