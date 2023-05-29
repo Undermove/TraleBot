@@ -9,7 +9,7 @@ namespace Application.Quizzes.Commands.CompleteQuiz;
 
 public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
 {
-    public Guid? UserId { get; init; }
+    public Guid UserId { get; init; }
 
     public class Handler : IRequestHandler<CompleteQuizCommand, QuizCompletionStatistics>
     {
@@ -50,23 +50,25 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
                 GoldMedalWordsCount = goldMedalsCount,
                 BrilliantWordsCount = brilliantsCount 
             };
-            await _achievementsService.AssignAchievements(wordMasteringLevelTrigger, request.UserId.Value, ct);
+            
+            await _achievementsService.AssignAchievements(wordMasteringLevelTrigger, request.UserId, ct);
 
             var count = await _dbContext.Quizzes
-                .Where(quiz => quiz.UserId == request.UserId)
+                .Where(q => q.UserId == request.UserId)
                 .CountAsync(cancellationToken: ct);
+            
             var startingQuizzerTrigger = new StartingQuizzerTrigger
             {
                 QuizzesCount = count,  
             };
-            await _achievementsService.AssignAchievements(startingQuizzerTrigger, request.UserId.Value, ct);
+            await _achievementsService.AssignAchievements(startingQuizzerTrigger, request.UserId, ct);
             
             var perfectQuizTrigger = new PerfectQuizTrigger
             {
                 IncorrectAnswersCount = quiz.IncorrectAnswersCount,
                 WordsCount = quiz.CorrectAnswersCount + quiz.IncorrectAnswersCount,
             };
-            await _achievementsService.AssignAchievements(perfectQuizTrigger, request.UserId.Value, ct);
+            await _achievementsService.AssignAchievements(perfectQuizTrigger, request.UserId, ct);
         }
     }
 }
