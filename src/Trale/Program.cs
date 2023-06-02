@@ -60,3 +60,6 @@ using (var scope = app.Services.CreateScope())
 
 app.MapControllers();
 await app.RunAsync();
+
+// ReSharper disable once ClassNeverInstantiated.Global
+public partial class Program { }
