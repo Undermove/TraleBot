@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc.Testing;
+﻿using Application.Common;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Persistence;
 
@@ -18,14 +20,17 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 	protected override IHost CreateHost(IHostBuilder builder)
 	{
 		
-		builder.ConfigureServices(collection =>
+		builder.ConfigureServices(services =>
 		{
 			// Remove AppDbContext
-			var descriptor = collection.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TraleDbContext>));
-			if (descriptor != null) collection.Remove(descriptor);
+			var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TraleDbContext>));
+			if (descriptor != null) services.Remove(descriptor);
+			
+			services.RemoveAll(typeof(ITraleDbContext));
 
-			collection.AddDbContext<TraleDbContext>(options =>
+			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
+			services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
 		});
 		return base.CreateHost(builder);
 	}
