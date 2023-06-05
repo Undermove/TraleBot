@@ -30,7 +30,7 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 
 			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
-			services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
+			services.AddSingleton<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
 		});
 		return base.CreateHost(builder);
 	}
