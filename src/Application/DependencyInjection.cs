@@ -27,7 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AmethystChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, EmeraldChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, MyselfVocabularyChecker>();
-        services.AddSingleton<IAchievementsService, AchievementsService>();
+        services.AddTransient<IAchievementsService, AchievementsService>();
         return services;
     }
 }
