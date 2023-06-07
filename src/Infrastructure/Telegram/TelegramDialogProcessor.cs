@@ -38,16 +38,22 @@ public class TelegramDialogProcessor: IDialogProcessor
             {
                 var typeName = command.GetType();
                 _logger.LogDebug("Try command {CommandName}", typeName);
-                if (await command.IsApplicable(telegramRequest, token))
+
+                if (!await command.IsApplicable(telegramRequest, token))
                 {
-                    _logger.LogInformation("Applied command {CommandName}", typeName);
-                    await command.Execute(telegramRequest, token);
-                    _logger.LogInformation("Command with text {RequestText} handled by {CommandName} ", telegramRequest.Text, typeName);
-                    return;
+                    continue;
                 }
+                
+                _logger.LogDebug("Applied command {CommandName}", typeName);
+                
+                await command.Execute(telegramRequest, token);
+                
+                _logger.LogInformation("Command with text {RequestText} handled by {CommandName} ", telegramRequest.Text, typeName);
+                
+                return;
             }
             
-            _logger.LogInformation("Command {CommandName} have no handlers", telegramRequest.Text);
+            _logger.LogDebug("Command {CommandName} have no handlers", telegramRequest.Text);
         }
         catch (Exception e)
         {
@@ -57,6 +63,9 @@ public class TelegramDialogProcessor: IDialogProcessor
 
     private async Task SendMessageAboutErrorToUser(CancellationToken token, TelegramRequest telegramRequest, Exception e)
     {
+        _logger.LogError(e, "Exception while processing request from user: {User} with command {Command}",
+            telegramRequest.UserTelegramId, telegramRequest.Text);
+        
         await _telegramBotClient.SendTextMessageAsync(
             telegramRequest.UserTelegramId,
             "Прости, кажется у меня что-то сломалось 😞 Попробуй еще раз через несколько минут." +
@@ -64,8 +73,6 @@ public class TelegramDialogProcessor: IDialogProcessor
             "\r\n🤖Разработчику бота @Undermove1" +
             "\r\n💬Или в чат поддержки https://t.me/TraleBotSupport", 
             cancellationToken: token);
-        _logger.LogError(e, "Exception while processing request from user: {User} with command {Command}",
-            telegramRequest.UserTelegramId, telegramRequest.Text);
     }
 
     private async Task<TelegramRequest> MapToTelegramRequest<T>(T request, CancellationToken ct)
