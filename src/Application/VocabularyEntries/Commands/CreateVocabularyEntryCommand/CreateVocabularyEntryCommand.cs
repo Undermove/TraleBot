@@ -32,7 +32,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
         {
             var user = await GetUser(request, ct);
 
-            var duplicate = user.VocabularyEntries
+            var duplicate = user!.VocabularyEntries
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
             {

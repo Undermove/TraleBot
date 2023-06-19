@@ -33,7 +33,7 @@ public abstract class DesignTimeDbContextFactoryBase<TContext> :
         return Create(connectionString);
     }
 
-    private TContext Create(string connectionString)
+    private TContext Create(string? connectionString)
     {
         if (string.IsNullOrEmpty(connectionString))
         {

@@ -54,7 +54,7 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex)
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating or initializing the database.");
+        logger.LogError(ex, "An error occurred while migrating or initializing the database");
     }
 }
 

@@ -23,6 +23,11 @@ public class AchievementsService : IAchievementsService
     public async Task AssignAchievements<T>(T trigger, Guid userId, CancellationToken ct) where T : IAchievementTrigger
     {
         var user = await _context.Users.FindAsync(userId);
+        if (user is null)
+        {
+            return;
+        }
+        
         await _context.Entry(user).Collection(nameof(user.Achievements)).LoadAsync(ct);
         
         var achievementsThatMightBeOpened = CheckAchievementsThatMightBeOpened(trigger, user);
@@ -42,7 +47,7 @@ public class AchievementsService : IAchievementsService
         }
     }
 
-    private List<Achievement> CheckAchievementsThatMightBeOpened<T>(T trigger, User user)
+    private List<Achievement> CheckAchievementsThatMightBeOpened<T>(T trigger, User user) where T: notnull
     {
         var unlockedAchievements = new List<Achievement>();
 

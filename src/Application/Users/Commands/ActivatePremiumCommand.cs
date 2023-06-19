@@ -26,7 +26,7 @@ public class ActivatePremiumCommand : IRequest<PremiumActivationStatus>
             object?[] keyValues = { request.UserId };
             User? user = await _dbContext.Users.FindAsync(keyValues: keyValues, ct);
 
-            if (request.IsTrial && user.SubscribedUntil != null)
+            if (request.IsTrial && user?.SubscribedUntil != null)
             {
                 return PremiumActivationStatus.TrialExpired;
             }

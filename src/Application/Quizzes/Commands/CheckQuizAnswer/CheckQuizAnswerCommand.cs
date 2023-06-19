@@ -6,8 +6,8 @@ namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
 public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
 {
-    public Guid? UserId { get; set; }
-    public string Answer { get; set; }
+    public Guid? UserId { get; init; }
+    public required string Answer { get; init; }
 
     public class Handler : IRequestHandler<CheckQuizAnswerCommand, CheckQuizAnswerResult>
     {
