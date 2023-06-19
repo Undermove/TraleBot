@@ -1,4 +1,5 @@
 ﻿using Application.Common;
+using Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +20,6 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 
 	protected override IHost CreateHost(IHostBuilder builder)
 	{
-		
 		builder.ConfigureServices(services =>
 		{
 			// Remove AppDbContext
@@ -31,6 +31,15 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
 			services.AddSingleton<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
+			
+			services.RemoveAll(typeof(BotConfiguration));
+			services.AddSingleton(new BotConfiguration
+			{
+				Token = null!,
+				HostAddress = null!,
+				WebhookToken = "test_token",
+				PaymentProviderToken = null!
+			});
 		});
 		return base.CreateHost(builder);
 	}

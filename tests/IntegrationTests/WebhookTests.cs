@@ -7,27 +7,21 @@ namespace IntegrationTests;
 public class WebhookTests: TestBase
 {
     //[Test]
-    public async Task HealthCheckEndpoint_Returns200StatusCode()
+    public async Task StartCommand_ResponseShouldContainText()
     {
         // Arrange
         var client = _testServer.CreateClient();    
         
-        var requestBody = new
+        var requestBody = new Update
         {
-            Token = "your_token",
-            Request = new Update
-            {
-                Id = 1
-                // Populate the Update properties as needed
-                // ...
-            }
+            Id = 1
         };
-
-        var jsonPayload = System.Text.Json.JsonSerializer.Serialize(requestBody);
+        
+        var jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(requestBody);
         var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await client.PostAsync("/telegram", content);
+        var response = await client.PostAsync($"/telegram/test_token", content);
 
         // Assert
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
