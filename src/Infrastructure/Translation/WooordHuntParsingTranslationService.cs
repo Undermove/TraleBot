@@ -35,7 +35,7 @@ public class WooordHuntParsingTranslationService : ITranslationService
         var text = element.InnerText;
         var definition = text.Split(',')[0];
 
-        var example = htmlDoc.DocumentNode.SelectSingleNode("p[@class=\"ex_o\"][1]/text()");//
+        // var example = htmlDoc.DocumentNode.SelectSingleNode("p[@class=\"ex_o\"][1]/text()");//
         return new TranslationResult(definition, text, true);
     }
 }
