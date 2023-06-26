@@ -7,8 +7,8 @@ services:
     image: postgres
     restart: always
     ports:
-      - 5432:5432
+      - "5435:5432"
     environment:
-      POSTGRES_PASSWORD: example
-      POSTGRES_USER: example
-      POSTGRES_DB: db
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_USER: test
+      POSTGRES_DB: tralebot
