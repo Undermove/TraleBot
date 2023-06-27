@@ -9,6 +9,7 @@ public class VocabularyEntry
     public string Word { get; set; }
     public string Definition { get; set; }
     public string AdditionalInfo { get; set; }
+    public string Example { get; set; }
     public DateTime DateAdded { get; set; } 
     public Guid UserId { get; set; }
     public User User { get; set; }

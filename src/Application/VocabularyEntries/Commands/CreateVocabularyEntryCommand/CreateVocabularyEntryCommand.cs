@@ -41,12 +41,13 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
 
             string definition;
             string additionalInfo;
+            string example = string.Empty;
             
             if (request.Definition != null)
             {
                 definition = request.Definition;
                 additionalInfo = request.Definition;
-                
+
                 var manualTranslationTrigger = new ManualTranslationTrigger();
                 await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
             }
@@ -56,6 +57,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
 
                 definition = translationResult.Definition.ToLowerInvariant();
                 additionalInfo = translationResult.AdditionalInfo.ToLowerInvariant();
+                example = translationResult.Example;
                 
                 if (!translationResult.IsSuccessful)
                 {
@@ -70,6 +72,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 Word = request.Word!.ToLowerInvariant(),
                 Definition = definition,
                 AdditionalInfo = additionalInfo,
+                Example = example,
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
             };
