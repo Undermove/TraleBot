@@ -32,12 +32,12 @@ public class ContextReversoParsingTranslationService: ITranslationService
         var element = htmlDoc.DocumentNode.SelectNodes("//*[contains(@class, 'translation ltr dict n')]//span[@class='display-term']");
         if (element == null)
         {
-            return new TranslationResult("","", false);
+            return new TranslationResult("","", "", false);
         }
         
         // Get the text content of the element
         var definition = element[0].InnerText;
         var additionalInfo = String.Join(", ", element.Select(node => node.InnerText));
-        return new TranslationResult(definition, additionalInfo, true);
+        return new TranslationResult(definition, additionalInfo, "", true);
     }
 }

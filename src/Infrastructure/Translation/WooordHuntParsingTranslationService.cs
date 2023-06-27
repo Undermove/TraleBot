@@ -1,3 +1,4 @@
+using System.Text;
 using Application.Common.Interfaces.TranslationService;
 using HtmlAgilityPack;
 
@@ -28,14 +29,17 @@ public class WooordHuntParsingTranslationService : ITranslationService
         var element = htmlDoc.DocumentNode.SelectSingleNode("(//*[starts-with(@class, 't_inline')])[1]");
         if (element == null)
         {
-            return new TranslationResult("","", false);
+            return new TranslationResult("","", "", false);
         }
         
         // Get the text content of the element
         var text = element.InnerText;
         var definition = text.Split(',')[0];
 
-        // var example = htmlDoc.DocumentNode.SelectSingleNode("p[@class=\"ex_o\"][1]/text()");//
-        return new TranslationResult(definition, text, true);
+        var example = htmlDoc.DocumentNode.SelectSingleNode("//p[@class=\"ex_o\"][1]/text()").InnerText;
+        var exampleTranslation = htmlDoc.DocumentNode.SelectSingleNode("//p[@class=\"ex_t human\"][1]/text()").InnerText;
+        StringBuilder sb = new StringBuilder().Append(example).Append(Environment.NewLine).Append(exampleTranslation);
+        
+        return new TranslationResult(definition, text, sb.ToString(), true);
     }
 }

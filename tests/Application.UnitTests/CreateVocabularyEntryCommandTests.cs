@@ -62,9 +62,12 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     {
         const string? expectedWord = "paucity";
         const string expectedDefinition = "недостаточность";
+        const string expectedExample = @"
+a paucity of useful answers to the problem of traffic congestion at rush hour 
+нехватка полезных ответов на проблему пробок в час пик";
         _translationServicesMock
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, true));
+            .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, expectedExample,true));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
         {
@@ -86,7 +89,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         const string? expectedWord = "paucity";
         _translationServicesMock
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TranslationResult("", "", false));
+            .ReturnsAsync(new TranslationResult("", "", "", false));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
         {
