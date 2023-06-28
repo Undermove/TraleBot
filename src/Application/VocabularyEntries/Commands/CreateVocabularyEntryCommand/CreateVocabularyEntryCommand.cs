@@ -36,7 +36,12 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
             {
-                return new CreateVocabularyEntryResult(TranslationStatus.ReceivedFromVocabulary, duplicate.Definition, duplicate.AdditionalInfo, duplicate.Id);
+                return new CreateVocabularyEntryResult(
+                    TranslationStatus.ReceivedFromVocabulary, 
+                    duplicate.Definition, 
+                    duplicate.AdditionalInfo,
+                    duplicate.Example,
+                    duplicate.Id);
             }
 
             string definition;
@@ -61,7 +66,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 
                 if (!translationResult.IsSuccessful)
                 {
-                    return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", Guid.Empty);
+                    return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
                 }
             }
 
@@ -88,6 +93,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 TranslationStatus.Translated, 
                 definition, 
                 additionalInfo,
+                example,
                 entryId);
         }
 

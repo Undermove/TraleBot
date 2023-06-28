@@ -69,7 +69,9 @@ public class TranslateCommand : IBotCommand
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Определение: {result.Definition}" + $"\r\nДругие значения: {result.AdditionalInfo}",
+            $"Определение: {result.Definition}" + 
+            $"\r\nДругие значения: {result.AdditionalInfo}" +
+            $"\r\nПример употребления: {result.Example}",
             replyMarkup:keyboard,
             cancellationToken: token);
     }
