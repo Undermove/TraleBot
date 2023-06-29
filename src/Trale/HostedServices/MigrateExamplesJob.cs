@@ -5,15 +5,16 @@ using Application.Common.Interfaces.TranslationService;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using Persistence;
 
 namespace Trale.HostedServices;
 
 public class MigrateExamplesJob : IHostedService
 {
-    private readonly ITraleDbContext _context;
+    private readonly TraleDbContext _context;
     private readonly ITranslationService _translationService;
 
-    public MigrateExamplesJob(ITraleDbContext context, ITranslationService translationService)
+    public MigrateExamplesJob(TraleDbContext context, ITranslationService translationService)
     {
         _context = context;
         _translationService = translationService;
