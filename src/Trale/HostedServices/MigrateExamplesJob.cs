@@ -10,13 +10,11 @@ namespace Trale.HostedServices;
 
 public class MigrateExamplesJob : IHostedService
 {
-    private readonly BotConfiguration _config;
     private readonly ITraleDbContext _context;
     private readonly ITranslationService _translationService;
 
-    public MigrateExamplesJob(BotConfiguration config, ITraleDbContext context, ITranslationService translationService)
+    public MigrateExamplesJob(ITraleDbContext context, ITranslationService translationService)
     {
-        _config = config;
         _context = context;
         _translationService = translationService;
     }
