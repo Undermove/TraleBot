@@ -29,8 +29,8 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			services.RemoveAll(typeof(ITraleDbContext));
 
 			services.AddDbContext<TraleDbContext>(options =>
-				options.UseNpgsql(_connectionString), ServiceLifetime.Singleton);
-			services.AddSingleton<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
+				options.UseNpgsql(_connectionString));
+			services.AddSingleton<ITraleDbContext>(provider => provider.GetRequiredService<TraleDbContext>() ?? throw new InvalidOperationException());
 			
 			services.RemoveAll(typeof(BotConfiguration));
 			services.AddSingleton(new BotConfiguration
