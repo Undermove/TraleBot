@@ -4,7 +4,7 @@ namespace IntegrationTests;
 
 public class HealthCheckIntegrationTests: TestBase
 {
-    //[Test]
+    [Test]
     public async Task HealthCheckEndpoint_Returns200StatusCode()
     {
         // Arrange
