@@ -57,9 +57,13 @@ public class StartQuizBotCommand : IBotCommand
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Переведи слово: *{word!.Question}*",
+            $"Переведи слово: *{word!.Question}*" +
+            $"\r\nПример употребления: {word.VocabularyEntry.Example}",
             parseMode: ParseMode.Markdown,
-            replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData("⏭ Пропустить")),
+            replyMarkup: new InlineKeyboardMarkup(new []
+            {
+                InlineKeyboardButton.WithCallbackData("⏭ Пропустить"),
+            }),
             cancellationToken: token);
     }
 

@@ -91,7 +91,8 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Переведи слово: *{word.Question}*",
+            $"Переведи слово: *{word.Question}*" +
+            $"\r\nПример употребления: {word.VocabularyEntry.Example}",
             ParseMode.Markdown,
             replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData("⏭ Пропустить")),
             cancellationToken: ct);
