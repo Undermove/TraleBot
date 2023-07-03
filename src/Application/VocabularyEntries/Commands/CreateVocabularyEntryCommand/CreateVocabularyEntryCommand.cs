@@ -33,7 +33,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
         {
             var user = await GetUser(request, ct);
 
-            if (IsContainsEmoji(request.Word))
+            if (IsContainsEmoji(request.Word!))
             {
                 return new CreateVocabularyEntryResult(TranslationStatus.Emojis, string.Empty, string.Empty,
                     string.Empty, Guid.Empty);
