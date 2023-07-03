@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Application.Achievements.Services.Triggers;
 using Application.Common;
 using Application.Common.Interfaces.Achievements;
@@ -32,6 +33,12 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
         {
             var user = await GetUser(request, ct);
 
+            if (IsContainsEmoji(request.Word))
+            {
+                return new CreateVocabularyEntryResult(TranslationStatus.Emojis, string.Empty, string.Empty,
+                    string.Empty, Guid.Empty);
+            }
+            
             var duplicate = user!.VocabularyEntries
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
@@ -95,6 +102,12 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 additionalInfo,
                 example,
                 entryId);
+        }
+        
+        private static bool IsContainsEmoji(string input)
+        {
+            string emojiPattern = @"\p{Cs}";
+            return Regex.IsMatch(input, emojiPattern);
         }
 
         private async Task<User?> GetUser(CreateVocabularyEntryCommand request, CancellationToken ct)

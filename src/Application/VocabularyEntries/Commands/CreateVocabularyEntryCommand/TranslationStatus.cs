@@ -4,5 +4,6 @@ public enum TranslationStatus
 {
     CantBeTranslated,
     Translated,
-    ReceivedFromVocabulary
+    ReceivedFromVocabulary,
+    Emojis,
 }

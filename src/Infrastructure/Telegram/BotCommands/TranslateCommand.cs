@@ -41,6 +41,15 @@ public class TranslateCommand : IBotCommand
                 cancellationToken: token);
             return;
         }
+        
+        if (result.TranslationStatus == TranslationStatus.Emojis)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "Кажется, что ты отправил мне слишком много эмодзи 😅.",
+                cancellationToken: token);
+            return;
+        }
 
         var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.Translated 
             ? "❌ Не добавлять в словарь." 
