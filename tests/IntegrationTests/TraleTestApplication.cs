@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Persistence;
+using Telegram.Bot;
 
 namespace IntegrationTests;
 
@@ -31,6 +32,10 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
 			services.AddSingleton<ITraleDbContext>(provider => provider.GetRequiredService<TraleDbContext>() ?? throw new InvalidOperationException());
+			
+			services.RemoveAll(typeof(ITelegramBotClient));
+
+			services.AddSingleton<ITelegramBotClient, TelegramClientFake>();
 			
 			services.RemoveAll(typeof(BotConfiguration));
 			services.AddSingleton(new BotConfiguration

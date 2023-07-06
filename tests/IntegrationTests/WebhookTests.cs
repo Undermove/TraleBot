@@ -6,7 +6,7 @@ namespace IntegrationTests;
 
 public class WebhookTests: TestBase
 {
-    //[Test]
+    [Test]
     public async Task StartCommand_ResponseShouldContainText()
     {
         // Arrange
