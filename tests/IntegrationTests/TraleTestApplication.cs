@@ -33,7 +33,7 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			services.RemoveAll(typeof(ITraleDbContext));
 			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
-			services.AddSingleton<ITraleDbContext>(provider => provider.GetRequiredService<TraleDbContext>() ?? throw new InvalidOperationException());
+			services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
 			
 			// Remove TelegramBotClient to test telegram calls
 			services.RemoveAll(typeof(ITelegramBotClient));
