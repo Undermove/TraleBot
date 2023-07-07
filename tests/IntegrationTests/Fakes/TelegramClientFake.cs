@@ -7,8 +7,11 @@ namespace IntegrationTests.Fakes;
 
 public class TelegramClientFake : ITelegramBotClient
 {
-	public Task<TResponse> MakeRequestAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new CancellationToken())
+	private readonly List<IRequest> _requests = new();
+
+	public Task<TResponse> MakeRequestAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new())
 	{
+		_requests.Add(request);
 		return Task.FromResult(default(TResponse)!);
 	}
 
