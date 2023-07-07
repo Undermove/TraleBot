@@ -3,7 +3,7 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Requests.Abstractions;
 
-namespace IntegrationTests;
+namespace IntegrationTests.Fakes;
 
 public class TelegramClientFake : ITelegramBotClient
 {

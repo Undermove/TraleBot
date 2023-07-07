@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Builder;
-using Prometheus.Client.AspNetCore;
-using Prometheus.Client.HttpRequestDurations;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Monitoring;
 
 public static class PrometheusStartup
 {
-    public static void UsePrometheus(IApplicationBuilder app)
+    public static void UsePrometheus(this IApplicationBuilder app)
     {
-        app.UsePrometheusServer();
-        app.UsePrometheusRequestDurations();
+        // we need to turn off prometheus server during tests so we resolve it here and in tests we resolve a fake
+        var resolver = app.ApplicationServices.GetRequiredService<IPrometheusResolver>();
+        resolver.UsePrometheus(app);
     }
 }

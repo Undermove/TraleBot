@@ -40,7 +40,8 @@ builder.Services.AddHostedService<CreateWebhook>();
 
 builder.WebHost.UseUrls("http://*:1402/");
 var app = builder.Build();
-PrometheusStartup.UsePrometheus(app);
+
+app.UsePrometheus();
 
 using (var scope = app.Services.CreateScope())
 {

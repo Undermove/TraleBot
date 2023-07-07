@@ -2,6 +2,7 @@ using Application.Common;
 using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.TranslationService;
+using Infrastructure.Monitoring;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;
@@ -23,6 +24,8 @@ public static class DependencyInjection
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
         services.AddSingleton<ITranslationService, WooordHuntParsingTranslationService>();
         services.AddHttpClient();
+
+        services.AddSingleton<IPrometheusResolver, PrometheusResolver>();
         
         var botConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
         if (botConfig == null)

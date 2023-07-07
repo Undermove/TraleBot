@@ -1,5 +1,7 @@
 ﻿using Application.Common;
 using Infrastructure;
+using Infrastructure.Monitoring;
+using IntegrationTests.Fakes;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,16 +29,17 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TraleDbContext>));
 			if (descriptor != null) services.Remove(descriptor);
 			
+			// Add a database context (AppDbContext) using an database from dotnet-testcontainers for testing.
 			services.RemoveAll(typeof(ITraleDbContext));
-
 			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
 			services.AddSingleton<ITraleDbContext>(provider => provider.GetRequiredService<TraleDbContext>() ?? throw new InvalidOperationException());
 			
+			// Remove TelegramBotClient to test telegram calls
 			services.RemoveAll(typeof(ITelegramBotClient));
-
 			services.AddSingleton<ITelegramBotClient, TelegramClientFake>();
 			
+			// add test bot configuration
 			services.RemoveAll(typeof(BotConfiguration));
 			services.AddSingleton(new BotConfiguration
 			{
@@ -45,6 +48,9 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 				WebhookToken = "test_token",
 				PaymentProviderToken = null!
 			});
+
+			services.RemoveAll<IPrometheusResolver>();
+			services.AddSingleton<IPrometheusResolver, PrometheusResolverFake>();
 		});
 		return base.CreateHost(builder);
 	}
