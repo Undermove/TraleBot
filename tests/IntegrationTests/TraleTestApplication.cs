@@ -28,10 +28,14 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			// Remove AppDbContext
 			var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<TraleDbContext>));
 			if (descriptor != null) services.Remove(descriptor);
-			
-			// Add a database context (AppDbContext) using an database from dotnet-testcontainers for testing.
 			services.RemoveAll<ITraleDbContext>();
 			services.RemoveAll<TraleDbContext>();
+			
+			// Add a database context (AppDbContext) using an database from dotnet-testcontainers for testing.
+			var optionsBuilder = new DbContextOptionsBuilder<TraleDbContext>();
+			optionsBuilder.UseNpgsql(_connectionString);
+			
+			services.AddScoped<DbContextOptions<TraleDbContext>>(_ => optionsBuilder.Options);
 			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
 			services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
