@@ -30,7 +30,8 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			if (descriptor != null) services.Remove(descriptor);
 			
 			// Add a database context (AppDbContext) using an database from dotnet-testcontainers for testing.
-			services.RemoveAll(typeof(ITraleDbContext));
+			services.RemoveAll<ITraleDbContext>();
+			services.RemoveAll<TraleDbContext>();
 			services.AddDbContext<TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
 			services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());

@@ -9,7 +9,7 @@ namespace Persistence;
 [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
 public class TraleDbContext : DbContext, ITraleDbContext
 {
-    public TraleDbContext(DbContextOptions options)
+    public TraleDbContext(DbContextOptions<TraleDbContext> options)
         : base(options)
     {
         
