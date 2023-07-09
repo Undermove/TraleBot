@@ -46,7 +46,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 request.UserTelegramId,
                 "❌😞Прости, но ответ неверный." +
                 $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
-                "\r\nДавай попробуем со следующим словом!",
+                "\r\nДавай попробуем со следующим словом!", 
                 cancellationToken: ct);
         }
         
@@ -82,19 +82,14 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
     private async Task TrySendNextQuestion(TelegramRequest request, CancellationToken ct)
     {
-        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
-        if (word == null)
+        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
+        if (quizQuestion == null)
         {
             await CompleteQuiz(request, ct);
             return;
         }
 
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"Переведи слово: *{word.Question}*",
-            ParseMode.Markdown,
-            replyMarkup: new InlineKeyboardMarkup(InlineKeyboardButton.WithCallbackData("⏭ Пропустить")),
-            cancellationToken: ct);
+        await _client.SendQuizQuestion(request, quizQuestion, ct);
     }
 
     private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)

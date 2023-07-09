@@ -53,17 +53,12 @@ public class StartQuizBotCommand : IBotCommand
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var word = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
+        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
 
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"Переведи слово: *{word!.Question}*",
-            parseMode: ParseMode.Markdown,
-            replyMarkup: new InlineKeyboardMarkup(new []
-            {
-                InlineKeyboardButton.WithCallbackData("⏭ Пропустить"),
-            }),
-            cancellationToken: token);
+        if (quizQuestion != null)
+        {
+            await _client.SendQuizQuestion(request, quizQuestion, token);
+        }
     }
 
     private async Task<bool> IsQuizNotStarted(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
