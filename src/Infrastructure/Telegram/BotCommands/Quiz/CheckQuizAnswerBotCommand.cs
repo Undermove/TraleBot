@@ -71,7 +71,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             return;
         }
         
-        if (checkResult.ScoreToNextLevel != null && checkResult.NextLevel != null)
+        if (checkResult is { ScoreToNextLevel: not null, NextLevel: not null })
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
@@ -108,16 +108,12 @@ public class CheckQuizAnswerBotCommand: IBotCommand
     
     private string GetMedalType(MasteringLevel masteringLevel)
     {
-        switch (masteringLevel)
+        return masteringLevel switch
         {
-            case MasteringLevel.NotMastered:
-                return "🥈";
-            case MasteringLevel.MasteredInForwardDirection:
-                return "🥇";
-            case MasteringLevel.MasteredInBothDirections:
-                return "💎";
-        }
-        
-        return "";
+            MasteringLevel.NotMastered => "🥈",
+            MasteringLevel.MasteredInForwardDirection => "🥇",
+            MasteringLevel.MasteredInBothDirections => "💎",
+            _ => ""
+        };
     }
 }

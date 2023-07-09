@@ -10,14 +10,21 @@ public static class QuizClientExtensions
 {
 	internal static async Task SendQuizQuestion(this ITelegramBotClient client, TelegramRequest request, QuizQuestion quizQuestion, CancellationToken ct)
 	{
+		var replyMarkup = new List<InlineKeyboardButton>
+		{
+			InlineKeyboardButton.WithCallbackData("⏭ Пропустить"),
+		};
+
+		// if (!string.IsNullOrEmpty(quizQuestion.VocabularyEntry.Example))
+		// {
+		// 	replyMarkup.Add(InlineKeyboardButton.WithCallbackData("👀 Показать пример", CommandNames.ShowExample));
+		// }
+		
 		await client.SendTextMessageAsync(
 			request.UserTelegramId,
 			$"Переведи слово: *{quizQuestion.Question}*",
 			ParseMode.Markdown,
-			replyMarkup: new InlineKeyboardMarkup(new []{
-				InlineKeyboardButton.WithCallbackData("⏭ Пропустить"), 
-				//InlineKeyboardButton.WithCallbackData("👀 Показать пример", "/showExample"),
-			}),
+			replyMarkup: new InlineKeyboardMarkup(replyMarkup),
 			cancellationToken: ct);
 	}
 }
