@@ -124,7 +124,8 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 VocabularyEntry = entry,
                 Question = entry.Word,
                 Answer = entry.Definition,
-                VocabularyEntryId = entry.Id
+                Example = entry.Example,
+                VocabularyEntryId = entry.Id,
             };
         }
         
@@ -136,6 +137,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 VocabularyEntry = entry,
                 Question = entry.Definition,
                 Answer = entry.Word,
+                Example = entry.Example.Replace(entry.Word, "______"),
                 VocabularyEntryId = entry.Id
             };
         }
