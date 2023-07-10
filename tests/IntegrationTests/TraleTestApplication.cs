@@ -30,7 +30,7 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			if (descriptor != null) services.Remove(descriptor);
 
 			// Add a database context (AppDbContext) using a database from dotnet-testcontainers for testing.
-			services.AddDbContext<TraleDbContext>(options =>
+			services.AddDbContext<ITraleDbContext, TraleDbContext>(options =>
 				options.UseNpgsql(_connectionString));
 
 			// Remove TelegramBotClient to test telegram calls
