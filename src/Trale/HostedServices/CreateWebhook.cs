@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using Infrastructure;
+using Infrastructure.Telegram;
 using Microsoft.Extensions.Hosting;
 using Telegram.Bot;
 

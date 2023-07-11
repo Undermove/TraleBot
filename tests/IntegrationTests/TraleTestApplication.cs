@@ -1,6 +1,6 @@
 ﻿using Application.Common;
-using Infrastructure;
 using Infrastructure.Monitoring;
+using Infrastructure.Telegram;
 using IntegrationTests.Fakes;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
