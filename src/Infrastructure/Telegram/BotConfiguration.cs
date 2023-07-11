@@ -1,4 +1,4 @@
-﻿namespace Infrastructure;
+﻿namespace Infrastructure.Telegram;
 
 public class BotConfiguration
 {
