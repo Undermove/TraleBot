@@ -23,7 +23,6 @@ public static class DependencyInjection
     {
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
         services.AddTransient<ITranslationService, WooordHuntParsingTranslationService>();
-        services.AddTransient<IOpenAiHttpClient, OpenAiHttpClient>();
         services.AddHttpClient();
 
         services.AddSingleton<IPrometheusResolver, PrometheusResolver>();
