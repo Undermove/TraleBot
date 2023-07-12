@@ -1,5 +1,7 @@
+using System.Text.RegularExpressions;
 using Application.Common;
 using Application.Common.Exceptions;
+using Application.Common.Extensions;
 using Domain.Entities;
 using MediatR;
 
@@ -128,7 +130,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 VocabularyEntryId = entry.Id,
             };
         }
-        
+
         private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
         {
             return new QuizQuestion
@@ -139,8 +141,8 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 Answer = entry.Word,
                 Example = entry.Example
                     // remove word from example to avoid spoiling of correct answer
-                    .Replace($" {entry.Word} ", "______") 
-                    .Replace($" {entry.Definition} ", "______"),
+                    .ReplaceWholeWord(entry.Word, "______")
+                    .ReplaceWholeWord(entry.Definition, "______"),
                 VocabularyEntryId = entry.Id
             };
         }
