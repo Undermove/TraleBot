@@ -137,7 +137,10 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 VocabularyEntry = entry,
                 Question = entry.Definition,
                 Answer = entry.Word,
-                Example = entry.Example.Replace(entry.Word, "______"),
+                Example = entry.Example
+                    // remove word from example to avoid spoiling of correct answer
+                    .Replace($" {entry.Word} ", "______") 
+                    .Replace($" {entry.Definition} ", "______"),
                 VocabularyEntryId = entry.Id
             };
         }
