@@ -46,7 +46,7 @@ public class ShowExampleCommand : IBotCommand
         
         await _client.EditMessageTextAsync(request.UserTelegramId, 
             request.MessageId,
-            $"Переведи: {quizQuestion.Question}" +
+            $"Переведи слово: {quizQuestion.Question}" +
             $"\r\nПример использования: {quizQuestion.Example}",
             replyMarkup: keyboard,
             cancellationToken:token 
