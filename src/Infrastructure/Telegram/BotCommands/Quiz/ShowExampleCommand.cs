@@ -1,4 +1,4 @@
-using Application.Quizzes.Commands;
+using Application.Quizzes.Queries.GetCurrentQuizQuestion;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -40,12 +40,14 @@ public class ShowExampleCommand : IBotCommand
             cancellationToken: token
         );
         
-        //var quizQuestion = await _mediator.Send(new GetCurrentQuizQuestionQuery { UserId = request.User!.Id }, token);
+        var quizQuestionId = Guid.Parse(request.Text.Split(" ")[1]);
+        
+        QuizQuestion quizQuestion = await _mediator.Send(new GetCurrentQuizQuestionQuery { QuizQuestionId = quizQuestionId }, token);
         
         await _client.EditMessageTextAsync(request.UserTelegramId, 
             request.MessageId,
-            $"Переведи:" +
-            $"\r\nПример использования:",
+            $"Переведи: {quizQuestion.Question}" +
+            $"\r\nПример использования: {quizQuestion.Example}",
             replyMarkup: keyboard,
             cancellationToken:token 
         );

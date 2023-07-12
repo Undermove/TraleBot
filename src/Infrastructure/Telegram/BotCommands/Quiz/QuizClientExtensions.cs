@@ -17,7 +17,7 @@ public static class QuizClientExtensions
 
 		if (!string.IsNullOrEmpty(quizQuestion.VocabularyEntry.Example))
 		{
-			replyMarkup.Add(InlineKeyboardButton.WithCallbackData("👀 Показать пример", CommandNames.ShowExample));
+			replyMarkup.Add(InlineKeyboardButton.WithCallbackData("👀 Показать пример", $"{CommandNames.ShowExample} {quizQuestion.Id}"));
 		}
 		
 		await client.SendTextMessageAsync(
