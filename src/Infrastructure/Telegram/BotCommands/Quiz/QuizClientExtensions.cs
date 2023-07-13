@@ -15,10 +15,10 @@ public static class QuizClientExtensions
 			InlineKeyboardButton.WithCallbackData("⏭ Пропустить"),
 		};
 
-		// if (!string.IsNullOrEmpty(quizQuestion.VocabularyEntry.Example))
-		// {
-		// 	replyMarkup.Add(InlineKeyboardButton.WithCallbackData("👀 Показать пример", CommandNames.ShowExample));
-		// }
+		if (!string.IsNullOrEmpty(quizQuestion.VocabularyEntry.Example))
+		{
+			replyMarkup.Add(InlineKeyboardButton.WithCallbackData("👀 Показать пример", $"{CommandNames.ShowExample} {quizQuestion.Id}"));
+		}
 		
 		await client.SendTextMessageAsync(
 			request.UserTelegramId,

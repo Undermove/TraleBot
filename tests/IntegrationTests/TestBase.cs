@@ -12,6 +12,7 @@ public class TestBase
     {
         // Start PostgreSQL container
         _postgresqlContainer = new PostgreSqlBuilder()
+            .WithCleanUp(true)
             .Build();
 
         await _postgresqlContainer.StartAsync();
