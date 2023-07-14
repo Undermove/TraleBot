@@ -42,7 +42,17 @@ public class ShowExampleCommand : IBotCommand
         
         var quizQuestionId = Guid.Parse(request.Text.Split(" ")[1]);
         
-        QuizQuestion quizQuestion = await _mediator.Send(new GetCurrentQuizQuestionQuery { QuizQuestionId = quizQuestionId }, token);
+        QuizQuestion? quizQuestion = await _mediator.Send(new GetCurrentQuizQuestionQuery { QuizQuestionId = quizQuestionId }, token);
+
+        if (quizQuestion == null)
+        {
+            await _client.EditMessageReplyMarkupAsync(request.UserTelegramId, 
+                request.MessageId,
+                replyMarkup: keyboard,
+                cancellationToken:token 
+            ); 
+            return;
+        }
         
         await _client.EditMessageTextAsync(request.UserTelegramId, 
             request.MessageId,
