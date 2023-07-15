@@ -46,11 +46,6 @@ public class ShowExampleCommand : IBotCommand
 
         if (quizQuestion == null)
         {
-            await _client.EditMessageReplyMarkupAsync(request.UserTelegramId, 
-                request.MessageId,
-                replyMarkup: keyboard,
-                cancellationToken:token 
-            ); 
             return;
         }
         
