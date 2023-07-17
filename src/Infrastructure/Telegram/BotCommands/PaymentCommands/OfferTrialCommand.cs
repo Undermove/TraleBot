@@ -25,8 +25,6 @@ public class OfferTrialCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        _logger.LogInformation("User with ID: {id} requested invoice", request.User!.Id);
-
         // todo: if user subscription ends then offer only buy button
         var keyboard = new InlineKeyboardMarkup(new[]
         {
@@ -40,7 +38,5 @@ public class OfferTrialCommand : IBotCommand
             "\r\nСуществование платной версии помогает нам развивать бесплатные функции бота и оплачивать сервер для его работы.",
             replyMarkup: keyboard,
             cancellationToken: token);
-        
-        _logger.LogInformation("Invoice sent to user with ID: {id}", request.User!.Id);
     }
 }
