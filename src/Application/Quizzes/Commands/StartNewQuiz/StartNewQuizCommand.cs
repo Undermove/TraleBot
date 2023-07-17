@@ -37,14 +37,14 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
 
             if (user.AccountType == UserAccountType.Free && request.QuizType != QuizTypes.LastWeek)
             {
-                return new StartNewQuizResult(0, false);
+                return new StartNewQuizResult(0, QuizStartStatus.NeedPremiumToActivate);
             }
 
             await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
             var startedQuizzesCount = user.Quizzes.Count(q => q.IsCompleted == false);
             if (startedQuizzesCount > 0)
             {
-                return new StartNewQuizResult(0, false);
+                return new StartNewQuizResult(0, QuizStartStatus.AlreadyStarted);
             }
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
@@ -53,7 +53,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
 
             if (quizQuestions.Count == 0)
             {
-                return new StartNewQuizResult(0, false);
+                return new StartNewQuizResult(0, QuizStartStatus.NotEnoughWords);
             }
 
             var quiz = new Quiz
@@ -68,53 +68,40 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             await _dbContext.Quizzes.AddAsync(quiz, ct);
             await _dbContext.SaveChangesAsync(ct);
 
-            return new StartNewQuizResult(quizQuestions.Count, true);
+            return new StartNewQuizResult(quizQuestions.Count, QuizStartStatus.Success);
         }
 
         private static List<QuizQuestion> CreateQuizQuestions(User user, QuizTypes quizType)
         {
             Random rnd = new Random();
-            var vocabularyEntries = new List<QuizQuestion>();
-            
-            switch (quizType)
+
+            var vocabularyEntries = quizType switch
             {
-                case QuizTypes.LastWeek:
-                    vocabularyEntries = user
-                        .VocabularyEntries
-                        .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
-                        .OrderBy(entry => entry.DateAdded)
-                        .Select(QuizQuestion)
-                        .ToList();
-                    break;
-                case QuizTypes.SeveralComplicatedWords:
-                    vocabularyEntries = user
-                        .VocabularyEntries
-                        .Where(entry => entry.SuccessAnswersCount < entry.FailedAnswersCount)
-                        .OrderBy(_ => rnd.Next())
-                        .Take(10)
-                        .Select(QuizQuestion)
-                        .ToList();
-                    break;
-                case QuizTypes.ForwardDirection:
-                    vocabularyEntries = user
-                        .VocabularyEntries
-                        .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
-                        .OrderBy(entry => entry.DateAdded)
-                        .Take(20)
-                        .Select(QuizQuestion)
-                        .ToList();
-                    break;
-                case QuizTypes.ReverseDirection:
-                    vocabularyEntries = user
-                        .VocabularyEntries
-                        .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
-                        .OrderBy(entry => entry.DateAdded)
-                        .Take(20)
-                        .Select(ReverseQuizQuestion)
-                        .ToList();
-                    break;
-            }
-            
+                QuizTypes.LastWeek => user.VocabularyEntries.Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
+                    .OrderBy(entry => entry.DateAdded)
+                    .Select(QuizQuestion)
+                    .ToList(),
+                QuizTypes.SeveralComplicatedWords => user.VocabularyEntries
+                    .Where(entry => entry.SuccessAnswersCount < entry.FailedAnswersCount)
+                    .OrderBy(_ => rnd.Next())
+                    .Take(10)
+                    .Select(QuizQuestion)
+                    .ToList(),
+                QuizTypes.ForwardDirection => user.VocabularyEntries
+                    .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                    .OrderBy(entry => entry.DateAdded)
+                    .Take(20)
+                    .Select(QuizQuestion)
+                    .ToList(),
+                QuizTypes.ReverseDirection => user.VocabularyEntries
+                    .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
+                    .OrderBy(entry => entry.DateAdded)
+                    .Take(20)
+                    .Select(ReverseQuizQuestion)
+                    .ToList(),
+                _ => new List<QuizQuestion>()
+            };
+
             return vocabularyEntries;
         }
 
