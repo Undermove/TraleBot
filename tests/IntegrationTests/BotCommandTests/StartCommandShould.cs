@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text;
+using Application.Common;
 using FluentAssertions;
 using IntegrationTests.DSL;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IntegrationTests.BotCommandTests;
 
@@ -10,6 +12,7 @@ public class StartCommandShould: TestBase
     [Test]
     public async Task CreateNewUser()
     {
+        var service = _testServer.Services.GetService<ITraleDbContext>();
         // Arrange
         var client = _testServer.CreateClient();    
         
