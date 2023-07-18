@@ -1,12 +1,13 @@
 using System.Net;
 using System.Text;
+using FluentAssertions;
 using IntegrationTests.DSL;
 
 namespace IntegrationTests.BotCommandTests;
 
 public class StartCommandShould: TestBase
 {
-    // [Test]
+    [Test]
     public async Task CreateNewUser()
     {
         // Arrange
@@ -21,6 +22,6 @@ public class StartCommandShould: TestBase
         var response = await client.PostAsync("/telegram/test_token", content);
 
         // Assert
-        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

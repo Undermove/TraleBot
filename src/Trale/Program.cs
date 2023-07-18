@@ -17,12 +17,9 @@ var builder = WebApplication.CreateBuilder(args);
 const string aspNetCoreEnvironment = "ASPNETCORE_ENVIRONMENT";
 string environmentName = Environment.GetEnvironmentVariable(aspNetCoreEnvironment);
 
-builder.WebHost.ConfigureAppConfiguration((_, config) =>
-{
-    config.AddJsonFile("appsettings.json")
+builder.Configuration.AddJsonFile("appsettings.json")
         .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
         .AddEnvironmentVariables();
-});
 
 var configuration = builder.Configuration;
 

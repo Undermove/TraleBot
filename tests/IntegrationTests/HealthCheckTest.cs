@@ -1,4 +1,5 @@
 using System.Net;
+using FluentAssertions;
 
 namespace IntegrationTests;
 
@@ -14,6 +15,6 @@ public class HealthCheckIntegrationTests: TestBase
         var response = await client.GetAsync("/healthz");
 
         // Assert
-        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }
