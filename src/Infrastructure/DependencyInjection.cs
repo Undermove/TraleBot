@@ -43,26 +43,26 @@ public static class DependencyInjection
 
         services.AddScoped<IUserNotificationService, TelegramNotificationService>();
         
-        services.AddSingleton<IDialogProcessor, TelegramDialogProcessor>();
-        services.AddSingleton<IBotCommand, StartCommand>();
-        services.AddSingleton<IBotCommand, HelpCommand>();
-        services.AddSingleton<IBotCommand, MenuCommand>();
-        services.AddSingleton<IBotCommand, CloseMenuCommand>();
-        services.AddSingleton<IBotCommand, AcceptCheckoutCommand>();
-        services.AddSingleton<IBotCommand, PayCommand>();
-        services.AddSingleton<IBotCommand, RequestInvoiceCommand>();
-        services.AddSingleton<IBotCommand, OfferTrialCommand>();
-        services.AddSingleton<IBotCommand, ActivateTrialCommand>();
-        services.AddSingleton<IBotCommand, VocabularyCommand>();
-        services.AddSingleton<IBotCommand, AchievementsCommand>();
-        services.AddSingleton<IBotCommand, QuizCommand>();
-        services.AddSingleton<IBotCommand, ShowExampleCommand>();
-        services.AddSingleton<IBotCommand, StartQuizBotCommand>();
-        services.AddSingleton<IBotCommand, StopQuizBotCommand>();
-        services.AddSingleton<IBotCommand, RemoveEntryCommand>();
-        services.AddSingleton<IBotCommand, CheckQuizAnswerBotCommand>();
-        services.AddSingleton<IBotCommand, TranslateManuallyCommand>();
-        services.AddSingleton<IBotCommand, TranslateCommand>();
+        services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
+        services.AddScoped<IBotCommand, StartCommand>();
+        services.AddScoped<IBotCommand, HelpCommand>();
+        services.AddScoped<IBotCommand, MenuCommand>();
+        services.AddScoped<IBotCommand, CloseMenuCommand>();
+        services.AddScoped<IBotCommand, AcceptCheckoutCommand>();
+        services.AddScoped<IBotCommand, PayCommand>();
+        services.AddScoped<IBotCommand, RequestInvoiceCommand>();
+        services.AddScoped<IBotCommand, OfferTrialCommand>();
+        services.AddScoped<IBotCommand, ActivateTrialCommand>();
+        services.AddScoped<IBotCommand, VocabularyCommand>();
+        services.AddScoped<IBotCommand, AchievementsCommand>();
+        services.AddScoped<IBotCommand, QuizCommand>();
+        services.AddScoped<IBotCommand, ShowExampleCommand>();
+        services.AddScoped<IBotCommand, StartQuizBotCommand>();
+        services.AddScoped<IBotCommand, StopQuizBotCommand>();
+        services.AddScoped<IBotCommand, RemoveEntryCommand>();
+        services.AddScoped<IBotCommand, CheckQuizAnswerBotCommand>();
+        services.AddScoped<IBotCommand, TranslateManuallyCommand>();
+        services.AddScoped<IBotCommand, TranslateCommand>();
         return services;
     }
 }

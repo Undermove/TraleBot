@@ -12,7 +12,6 @@ public class StartCommandShould: TestBase
     [Test]
     public async Task CreateNewUser()
     {
-        var service = _testServer.Services.GetService<ITraleDbContext>();
         // Arrange
         var client = _testServer.CreateClient();    
         
