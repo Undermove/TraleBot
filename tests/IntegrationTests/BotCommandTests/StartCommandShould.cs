@@ -3,6 +3,7 @@ using System.Text;
 using Application.Common;
 using FluentAssertions;
 using IntegrationTests.DSL;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace IntegrationTests.BotCommandTests;
@@ -25,5 +26,8 @@ public class StartCommandShould: TestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        DatabaseContext.Users.Count().Should().Be(1);
+        var user = await DatabaseContext.Users.FirstAsync(u => u.TelegramId == requestBody.Message!.From!.Id);
+        user.TelegramId.Should().Be(requestBody.Message!.From!.Id);
     }
 }

@@ -9,7 +9,7 @@ namespace IntegrationTests.Fakes;
 [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
 public class TelegramClientFake : ITelegramBotClient
 {
-	private readonly List<IRequest> _requests = new();
+	public readonly List<IRequest> _requests = new();
 
 	public Task<TResponse> MakeRequestAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new())
 	{
