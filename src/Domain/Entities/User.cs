@@ -10,10 +10,10 @@ public class User
     public UserAccountType AccountType { get; set; }
     public DateTime? SubscribedUntil { get; set; }
     public DateTime RegisteredAtUtc { get; set; }
-    public ICollection<VocabularyEntry> VocabularyEntries { get; set; }
-    public ICollection<Quiz> Quizzes { get; set; }
-    public ICollection<Invoice> Invoices { get; set; }
-    public ICollection<Achievement> Achievements { get; set; }
+    public virtual ICollection<VocabularyEntry> VocabularyEntries { get; set; }
+    public virtual ICollection<Quiz> Quizzes { get; set; }
+    public virtual ICollection<Invoice> Invoices { get; set; }
+    public virtual ICollection<Achievement> Achievements { get; set; }
     
     public bool IsActivePremium()
     {

@@ -7,5 +7,5 @@ public class Invoice
     public DateTime CreatedAtUtc { get; set; }
     
     public Guid UserId { get; set; }
-    public User User { get; set; }
+    public virtual User User { get; set; }
 }

@@ -9,8 +9,8 @@ public class Quiz
     public int IncorrectAnswersCount { get; set; }
     
     public Guid UserId { get; set; }
-    public User User { get; set; }
-    public ICollection<QuizQuestion> QuizQuestions { get; set; } = null!;
+    public virtual User User { get; set; }
+    public virtual ICollection<QuizQuestion> QuizQuestions { get; set; } = null!;
     
     public void ScorePoint(bool isAnswerCorrect)
     {

@@ -8,5 +8,5 @@ public class QuizQuestion
     public required string Example { get; set; }
     
     public Guid VocabularyEntryId { get; set; }
-    public VocabularyEntry VocabularyEntry { get; set; }
+    public virtual required VocabularyEntry VocabularyEntry { get; set; }
 }

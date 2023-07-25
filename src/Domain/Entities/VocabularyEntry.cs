@@ -12,11 +12,11 @@ public class VocabularyEntry
     public string Example { get; set; }
     public DateTime DateAdded { get; set; } 
     public Guid UserId { get; set; }
-    public User User { get; set; }
+    public virtual User User { get; set; }
     public int SuccessAnswersCount { get; set; }
     public int SuccessAnswersCountInReverseDirection { get; set; }
     public int FailedAnswersCount { get; set; }
-    public ICollection<QuizQuestion> QuizQuestions { get; set; }
+    public virtual ICollection<QuizQuestion> QuizQuestions { get; set; }
 
     public MasteringLevel? ScorePoint(string answer)
     {

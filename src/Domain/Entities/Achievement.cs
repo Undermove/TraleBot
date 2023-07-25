@@ -10,5 +10,5 @@ public class Achievement
     public required string Description { get; init; }
     
     public required Guid UserId { get; init; }
-    public required User User { get; init; }
+    public virtual required User User { get; init; }
 }
