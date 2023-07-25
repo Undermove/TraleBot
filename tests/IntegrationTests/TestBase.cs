@@ -11,7 +11,6 @@ public class TestBase
     protected TraleTestApplication _testServer = null!;
     private PostgreSqlContainer _postgresqlContainer = null!;
 
-    protected ITraleDbContext DatabaseContext { get; private set; } = null!;
     protected TelegramClientFake TelegramClientFake { get; private set; } = null!;
 
     [OneTimeSetUp]
@@ -26,8 +25,6 @@ public class TestBase
 
         // Build and start TestHost
         _testServer = new TraleTestApplication(_postgresqlContainer.GetConnectionString());
-        DatabaseContext = _testServer.Services.GetService<ITraleDbContext>() ??
-                          throw new InvalidOperationException();
         TelegramClientFake = _testServer.Services.GetService<ITelegramBotClient>() as TelegramClientFake ??
                              throw new InvalidOperationException();
     }

@@ -14,7 +14,7 @@ public class StartCommandShould: TestBase
     public async Task CreateNewUser()
     {
         // Arrange
-        var client = _testServer.CreateClient();    
+        using var client = _testServer.CreateClient();    
         
         var requestBody = Create.StartCommand();
         
@@ -26,8 +26,6 @@ public class StartCommandShould: TestBase
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        DatabaseContext.Users.Count().Should().Be(1);
-        var user = await DatabaseContext.Users.FirstAsync(u => u.TelegramId == requestBody.Message!.From!.Id);
-        user.TelegramId.Should().Be(requestBody.Message!.From!.Id);
+        await _testServer.ShouldContainUserWithTelegramId(requestBody.Message!.From!.Id);
     }
 }
