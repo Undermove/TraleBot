@@ -1,31 +1,24 @@
 using System.Net;
-using System.Text;
-using Application.Common;
 using FluentAssertions;
 using IntegrationTests.DSL;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using IntegrationTests.Extensions;
 
 namespace IntegrationTests.BotCommandTests;
 
 public class StartCommandShould: TestBase
 {
     [Test]
-    public async Task CreateNewUser()
+    public async Task CreateNewUser_WithFreeAccountType()
     {
         // Arrange
-        using var client = _testServer.CreateClient();    
-        
+        using var client = _testServer.CreateClient();
         var requestBody = Create.StartCommand();
-        
-        var jsonPayload = Newtonsoft.Json.JsonConvert.SerializeObject(requestBody);
-        var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await client.PostAsync("/telegram/test_token", content);
+        var response = await client.PostAsync("/telegram/test_token", requestBody.ToJsonContent());
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        await _testServer.ShouldContainUserWithTelegramId(requestBody.Message!.From!.Id);
+        await _testServer.ShouldContainFreeUserAccount(requestBody.Message!.From!.Id);
     }
 }
