@@ -20,18 +20,29 @@ public class OpenAITranslationService : ITranslationService
     
     public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
     {
-        var a = _openAIApi.Chat.StreamChatEnumerableAsync(new ChatRequest
+        var chat = _openAIApi.Chat.CreateConversation(new ChatRequest()
         {
-            Model = Model.ChatGPTTurbo,
-            Messages = new List<ChatMessage>
-            {
-                new()
-                {
-                    Content = "",
-                    Role = ChatMessageRole.User
-                }
-            }
+            Model = Model.ChatGPTTurbo
         });
+
+        // give instruction as System
+        chat.AppendSystemMessage(
+            "You are a teacher who helps russian students understand english words. If the user tells you a word in english, you give him " +
+            "translation into russian additional translations and example of usage in english" +
+            "If student give phrase you give him translation into russian and example of usage" +
+            "You do not say anything else.");
+
+        // give a few examples as user and assistant
+        chat.AppendUserInput("Cat");
+        chat.AppendExampleChatbotOutput("Definition: кот; AdditionalTranslations: кошка, кот, кат, гусеничный трактор, блевать, бить плетью; Example: A young cat is a kitten.");
+        chat.AppendUserInput("Pull yourself together");
+        chat.AppendExampleChatbotOutput("Definition: взять себя в руки; Example: I know you're very excited about the concert, but you need to pull yourself together.");
+
+        // now let's ask it a question'
+        chat.AppendUserInput(requestWord);
+        // and get the response
+        string response = await chat.GetResponseFromChatbotAsync();
+        Console.WriteLine(response); // "Yes"
 
         return new TranslationResult("definition", "text", "example", true);
     }
