@@ -4,7 +4,7 @@ using OpenAI_API;
 using OpenAI_API.Chat;
 using OpenAI_API.Models;
 
-namespace Infrastructure.Translation;
+namespace Infrastructure.Translation.OpenAiTranslation;
 
 public class OpenAITranslationService : ITranslationService
 {
@@ -58,10 +58,4 @@ public class OpenAITranslationService : ITranslationService
 
         return new TranslationResult(definition, additionalInfo, example, true);
     }
-}
-
-public class OpenAiConfig
-{
-    public const string Name = "OpenAiConfiguration"; 
-    public string ApiKey { get; set; }
 }

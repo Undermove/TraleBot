@@ -10,6 +10,7 @@ using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Telegram.Services;
 using Infrastructure.Translation;
+using Infrastructure.Translation.OpenAiTranslation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Persistence;
