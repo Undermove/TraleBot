@@ -38,17 +38,30 @@ public class OpenAITranslationService : ITranslationService
         chat.AppendUserInput("Pull yourself together");
         chat.AppendExampleChatbotOutput("Definition: взять себя в руки; Example: I know you're very excited about the concert, but you need to pull yourself together.");
 
-        // now let's ask it a question'
         chat.AppendUserInput(requestWord);
-        // and get the response
+        
         string response = await chat.GetResponseFromChatbotAsync();
-        Console.WriteLine(response); // "Yes"
+        const string DefinitionFieldName = "Definition: ";
+        const string AdditionalTranslationsFieldName = "AdditionalTranslations: ";
+        const string ExampleFieldName = "Example: ";
+        
+        var splitResponse = response.Split(";");
+        var definition = splitResponse
+            .SingleOrDefault(s => s.Contains(DefinitionFieldName))?
+            .Replace(DefinitionFieldName, "").Trim() ?? "";
+        var additionalInfo = splitResponse
+            .SingleOrDefault(s => s.Contains(AdditionalTranslationsFieldName))?
+            .Replace(AdditionalTranslationsFieldName, "").Trim() ?? "";
+        var example = splitResponse
+            .SingleOrDefault(s => s.Contains(ExampleFieldName))?
+            .Replace(ExampleFieldName, "").Trim() ?? "";
 
-        return new TranslationResult("definition", "text", "example", true);
+        return new TranslationResult(definition, additionalInfo, example, true);
     }
 }
 
 public class OpenAiConfig
 {
+    public const string Name = "OpenAiConfiguration"; 
     public string ApiKey { get; set; }
 }

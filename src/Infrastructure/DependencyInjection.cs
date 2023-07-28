@@ -22,12 +22,14 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
+
+        services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
         services.AddTransient<ITranslationService, WooordHuntParsingTranslationService>();
         services.AddHttpClient();
 
         services.AddSingleton<IPrometheusResolver, PrometheusResolver>();
         
-        var botConfig = configuration.GetSection("BotConfiguration").Get<BotConfiguration>();
+        var botConfig = configuration.GetSection(BotConfiguration.Configuration).Get<BotConfiguration>();
         if (botConfig == null)
         {
             throw new ConfigurationException(nameof(BotConfiguration));
