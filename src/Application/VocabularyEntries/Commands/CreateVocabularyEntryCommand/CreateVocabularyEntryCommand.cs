@@ -50,60 +50,60 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                     duplicate.Example,
                     duplicate.Id);
             }
-
-            string definition;
-            string additionalInfo;
-            string example = string.Empty;
             
             if (request.Definition != null)
             {
-                definition = request.Definition;
-                additionalInfo = request.Definition;
-
-                var manualTranslationTrigger = new ManualTranslationTrigger();
-                await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
+                return await CreateManualVocabularyEntry(request, ct, user);
             }
-            else
+
+            var translationResult = await _translationService.TranslateAsync(request.Word, ct);
+
+            if (!translationResult.IsSuccessful)
             {
-                var translationResult = await _translationService.TranslateAsync(request.Word, ct);
-
-                definition = translationResult.Definition.ToLowerInvariant();
-                additionalInfo = translationResult.AdditionalInfo.ToLowerInvariant();
-                example = translationResult.Example;
-                
-                if (!translationResult.IsSuccessful)
-                {
-                    return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
-                }
+                return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
             }
 
+            return await CreateVocabularyEntryResult(request, ct, translationResult.Definition, translationResult.AdditionalInfo, translationResult.Example, user);
+        }
+
+        private async Task<CreateVocabularyEntryResult> CreateManualVocabularyEntry(CreateVocabularyEntryCommand request, CancellationToken ct, User user)
+        {
+            var manualTranslationTrigger = new ManualTranslationTrigger();
+            await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
+
+            return await CreateVocabularyEntryResult(request, ct, request.Definition!, request.Definition!, "", user);
+        }
+
+        private async Task<CreateVocabularyEntryResult> CreateVocabularyEntryResult(CreateVocabularyEntryCommand request, CancellationToken ct,
+            string definition, string additionalInfo, string example, User user)
+        {
             var entryId = Guid.NewGuid();
             var vocabularyEntry = new VocabularyEntry
             {
                 Id = entryId,
                 Word = request.Word!.ToLowerInvariant(),
-                Definition = definition,
-                AdditionalInfo = additionalInfo,
+                Definition = definition.ToLowerInvariant(),
+                AdditionalInfo = additionalInfo.ToLowerInvariant(),
                 Example = example,
                 UserId = request.UserId,
                 DateAdded = DateTime.UtcNow
             };
-            
+
             await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);
-            
+
             await _context.SaveChangesAsync(ct);
 
-            var vocabularyCountTrigger = new VocabularyCountTrigger {VocabularyEntriesCount = user.VocabularyEntries.Count};
+            var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = user.VocabularyEntries.Count };
             await _achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
 
             return new CreateVocabularyEntryResult(
-                TranslationStatus.Translated, 
-                definition, 
+                TranslationStatus.Translated,
+                definition,
                 additionalInfo,
                 example,
                 entryId);
         }
-        
+
         private static bool IsContainsEmoji(string input)
         {
             string emojiPattern = @"\p{Cs}";
