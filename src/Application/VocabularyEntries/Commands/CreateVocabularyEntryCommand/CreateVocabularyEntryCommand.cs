@@ -16,17 +16,20 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
 
     public class Handler : IRequestHandler<CreateVocabularyEntryCommand, CreateVocabularyEntryResult>
     {
-        private readonly ITranslationService _translationService;
+        private readonly IParsingTranslationService _parsingTranslationService;
+        private readonly IAiTranslationService _aiTranslationService;
         private readonly ITraleDbContext _context;
         private readonly IAchievementsService _achievementService;
 
-        public Handler(ITranslationService translationService,
+        public Handler(IParsingTranslationService parsingTranslationService,
             ITraleDbContext context,
-            IAchievementsService achievementService)
+            IAchievementsService achievementService, 
+            IAiTranslationService aiTranslationService)
         {
-            _translationService = translationService;
+            _parsingTranslationService = parsingTranslationService;
             _context = context;
             _achievementService = achievementService;
+            _aiTranslationService = aiTranslationService;
         }
 
         public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
@@ -56,14 +59,27 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 return await CreateManualVocabularyEntry(request, ct, user);
             }
 
-            var translationResult = await _translationService.TranslateAsync(request.Word, ct);
+            var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(request.Word, ct);
 
-            if (!translationResult.IsSuccessful)
+            if (parsingTranslationResult.IsSuccessful)
             {
-                return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
+                return await CreateVocabularyEntryResult(request, ct, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user);
             }
+            
+            if (user.IsActivePremium())
+            {
+                var result = await _aiTranslationService.TranslateAsync(request.Word, ct);
+                if (!result.IsSuccessful)
+                {
+                    return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
+                }
 
-            return await CreateVocabularyEntryResult(request, ct, translationResult.Definition, translationResult.AdditionalInfo, translationResult.Example, user);
+                return await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user);
+            }
+            
+            return !user.IsActivePremium() 
+                ? new CreateVocabularyEntryResult(TranslationStatus.SuggestPremium, "","", "", Guid.Empty) 
+                : new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
         }
 
         private async Task<CreateVocabularyEntryResult> CreateManualVocabularyEntry(CreateVocabularyEntryCommand request, CancellationToken ct, User user)

@@ -12,7 +12,8 @@ namespace Application.UnitTests;
 
 public class CreateVocabularyEntryCommandTests : CommandTestsBase
 {
-    private Mock<ITranslationService> _translationServicesMock = null!;
+    private Mock<IParsingTranslationService> _translationServicesMock = null!;
+    private Mock<IAiTranslationService> _aiTranslationServicesMock = null!;
     private User _existingUser = null!;
     private CreateVocabularyEntryCommand.Handler _createVocabularyEntryCommandHandler = null!;
     private Mock<IAchievementsService> _achievementsService = null!;
@@ -21,7 +22,8 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     public async Task SetUp()
     {
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
-        _translationServicesMock = mockRepository.Create<ITranslationService>();
+        _translationServicesMock = mockRepository.Create<IParsingTranslationService>();
+        _aiTranslationServicesMock = mockRepository.Create<IAiTranslationService>();
         _achievementsService = mockRepository.Create<IAchievementsService>();
         _achievementsService.Setup(service => service.AssignAchievements(
                 It.IsAny<ManualTranslationTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -34,7 +36,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         
-        _createVocabularyEntryCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, Context, _achievementsService.Object);
+        _createVocabularyEntryCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, Context, _achievementsService.Object, _aiTranslationServicesMock.Object);
     }
 
     [Test]
@@ -84,7 +86,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
     }
     
     [Test]
-    public async Task ShouldNotSaveDefinitionFromTranslationServiceWhenCantTranslateWordException()
+    public async Task ShouldSuggestPremiumWhenCantTranslateWord()
     {
         const string? expectedWord = "paucity";
         _translationServicesMock
@@ -97,7 +99,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             Word = expectedWord
         }, CancellationToken.None);
 
-        result.TranslationStatus.ShouldBe(TranslationStatus.CantBeTranslated);
+        result.TranslationStatus.ShouldBe(TranslationStatus.SuggestPremium);
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldBeNull();

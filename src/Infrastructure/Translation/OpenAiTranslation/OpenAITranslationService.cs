@@ -6,11 +6,11 @@ using OpenAI_API.Models;
 
 namespace Infrastructure.Translation.OpenAiTranslation;
 
-public class OpenAITranslationService : ITranslationService
+public class OpenAiTranslationService : IAiTranslationService
 {
     private readonly OpenAIAPI _openAIApi;
     
-    public OpenAITranslationService(IHttpClientFactory clientFactory, IOptions<OpenAiConfig> config)
+    public OpenAiTranslationService(IHttpClientFactory clientFactory, IOptions<OpenAiConfig> config)
     {
         _openAIApi = new OpenAIAPI(config.Value.ApiKey)
         {
@@ -20,7 +20,7 @@ public class OpenAITranslationService : ITranslationService
     
     public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
     {
-        var chat = _openAIApi.Chat.CreateConversation(new ChatRequest()
+        var chat = _openAIApi.Chat.CreateConversation(new ChatRequest
         {
             Model = Model.ChatGPTTurbo
         });
@@ -37,7 +37,9 @@ public class OpenAITranslationService : ITranslationService
         chat.AppendExampleChatbotOutput("Definition: кот; AdditionalTranslations: кошка, кот, кат, гусеничный трактор, блевать, бить плетью; Example: A young cat is a kitten.");
         chat.AppendUserInput("Pull yourself together");
         chat.AppendExampleChatbotOutput("Definition: взять себя в руки; Example: I know you're very excited about the concert, but you need to pull yourself together.");
-
+        chat.AppendUserInput("Every cloud has a silver lining");
+        chat.AppendExampleChatbotOutput("Definition: нет худа без добра; Example: Even though he had lost the match, he had gained in experience and was now more confident. Every cloud has a silver lining.");
+        
         chat.AppendUserInput(requestWord);
         
         string response = await chat.GetResponseFromChatbotAsync();
@@ -45,6 +47,7 @@ public class OpenAITranslationService : ITranslationService
         const string AdditionalTranslationsFieldName = "AdditionalTranslations: ";
         const string ExampleFieldName = "Example: ";
         
+        // todo: process bad translation result
         var splitResponse = response.Split(";");
         var definition = splitResponse
             .SingleOrDefault(s => s.Contains(DefinitionFieldName))?

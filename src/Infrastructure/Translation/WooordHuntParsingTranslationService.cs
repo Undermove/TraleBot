@@ -4,11 +4,11 @@ using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class WooordHuntParsingTranslationService : ITranslationService
+public class WooordHuntParsingParsingTranslationService : IParsingTranslationService
 {
     private readonly IHttpClientFactory _clientFactory;
     
-    public WooordHuntParsingTranslationService(IHttpClientFactory clientFactory)
+    public WooordHuntParsingParsingTranslationService(IHttpClientFactory clientFactory)
     {
         _clientFactory = clientFactory;
     }

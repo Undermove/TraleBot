@@ -31,24 +31,35 @@ public class TranslateCommand : IBotCommand
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
-        if (result.TranslationStatus == TranslationStatus.CantBeTranslated)
+        switch (result.TranslationStatus)
         {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "Прости, пока не могу перевести это слово 😞." +
-                "\r\nЕсли хочешь добавить перевод, то введи его в формате: слово-перевод" +
-                "\r\nК примеру: cat-кошка",
-                cancellationToken: token);
-            return;
-        }
-        
-        if (result.TranslationStatus == TranslationStatus.Emojis)
-        {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "Кажется, что ты отправил мне слишком много эмодзи 😅.",
-                cancellationToken: token);
-            return;
+            case TranslationStatus.CantBeTranslated:
+                await _client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    "Прости, пока не могу перевести это слово 😞." +
+                    "\r\nЕсли хочешь добавить перевод, то введи его в формате: слово-перевод" +
+                    "\r\nК примеру: cat-кошка",
+                    cancellationToken: token);
+                return;
+            case TranslationStatus.SuggestPremium:
+                var reply = new InlineKeyboardMarkup(new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("✅ Посмотреть премиум.", $"{CommandNames.OfferTrial}")
+                });
+            
+                await _client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    "Не получилось сделать перевод при помощи стандартных средств. Можешь попробовать премиум-перевод с использованием OpenAI API. " +
+                    "Такой перевод дает возможность переводить идиомы с объяснениями и примерами использования.",
+                    replyMarkup: reply,
+                    cancellationToken: token);
+                return;
+            case TranslationStatus.Emojis:
+                await _client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    "Кажется, что ты отправил мне слишком много эмодзи 😅.",
+                    cancellationToken: token);
+                return;
         }
 
         var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.Translated 

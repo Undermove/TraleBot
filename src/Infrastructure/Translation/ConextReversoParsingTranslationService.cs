@@ -3,11 +3,11 @@ using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class ContextReversoParsingTranslationService: ITranslationService
+public class ContextReversoParsingParsingTranslationService: IParsingTranslationService
 {
     private readonly IHttpClientFactory _clientFactory;
 
-    public ContextReversoParsingTranslationService(IHttpClientFactory clientFactory)
+    public ContextReversoParsingParsingTranslationService(IHttpClientFactory clientFactory)
     {
         _clientFactory = clientFactory;
     }
