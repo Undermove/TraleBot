@@ -15,12 +15,14 @@ jobs:
           TRALEBOT_WEBHOOK_TOKEN: ${{ secrets.TRALEBOT_WEBHOOK_TOKEN }}
           TRALEBOT_PAYMENT_PROVIDER_TOKEN: ${{ secrets.TRALEBOT_PAYMENT_PROVIDER_TOKEN }}
           TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.TRALEBOT_DB_CONNECTION_STRING }}
+          TRALEBOT_OPENAI_TOKEN: ${{ secrets.TRALEBOT_OPENAI_TOKEN }}
         run: |
           echo "BotConfiguration__Token=$TRALEBOT_CONFIGURATION_TOKEN" > .app_env
           echo "BotConfiguration__HostAddress=$TRALEBOT_SERVER_HOST" >> .app_env
           echo "BotConfiguration__WebhookToken=$TRALEBOT_WEBHOOK_TOKEN" >> .app_env
           echo "BotConfiguration__PaymentProviderToken=$TRALEBOT_PAYMENT_PROVIDER_TOKEN" >> .app_env
           echo "ConnectionStrings__TraleBotDb=$TRALEBOT_DB_CONNECTION_STRING" >> .app_env
+          echo "OpenAiConfiguration__ApiKey=$TRALEBOT_OPENAI_TOKEN" >> .app_env
         
       - name: Copy file to remote
         uses: garygrossgarten/github-action-scp@release
