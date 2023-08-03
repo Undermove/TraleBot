@@ -49,7 +49,7 @@ public class OpenAiTranslationService : IAiTranslationService
         
         var splitResponse = response.Split(";");
 
-        if (!splitResponse.Contains(DefinitionFieldName))
+        if (!splitResponse.Any(s => s.Contains(DefinitionFieldName)))
         {
             return new TranslationResult("", "", "", false);
         }
