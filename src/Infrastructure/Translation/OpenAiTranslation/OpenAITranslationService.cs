@@ -47,8 +47,13 @@ public class OpenAiTranslationService : IAiTranslationService
         const string AdditionalTranslationsFieldName = "AdditionalTranslations: ";
         const string ExampleFieldName = "Example: ";
         
-        // todo: process bad translation result
         var splitResponse = response.Split(";");
+
+        if (!splitResponse.Contains(DefinitionFieldName))
+        {
+            return new TranslationResult("", "", "", false);
+        }
+        
         var definition = splitResponse
             .SingleOrDefault(s => s.Contains(DefinitionFieldName))?
             .Replace(DefinitionFieldName, "").Trim() ?? "";
