@@ -1,6 +1,6 @@
 namespace Application.Common.Interfaces.TranslationService;
 
-public interface ITranslationService
+public interface IAiTranslationService
 {
     /// <summary>
     /// Translate <see cref="requestWord"/> using network call to translation service

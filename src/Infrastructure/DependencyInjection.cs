@@ -25,7 +25,8 @@ public static class DependencyInjection
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
 
         services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
-        services.AddTransient<ITranslationService, WooordHuntParsingTranslationService>();
+        services.AddTransient<IParsingTranslationService, WooordHuntParsingParsingTranslationService>();
+        services.AddTransient<IAiTranslationService, OpenAiTranslationService>();
         services.AddHttpClient();
 
         services.AddSingleton<IPrometheusResolver, PrometheusResolver>();
