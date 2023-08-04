@@ -43,27 +43,28 @@ public class OpenAiTranslationService : IAiTranslationService
         chat.AppendUserInput(requestWord);
         
         string response = await chat.GetResponseFromChatbotAsync();
-        const string DefinitionFieldName = "Definition: ";
+        const string definitionFieldName = "Definition: ";
         const string AdditionalTranslationsFieldName = "AdditionalTranslations: ";
         const string ExampleFieldName = "Example: ";
         
         var splitResponse = response.Split(";");
 
-        if (!splitResponse.Any(s => s.Contains(DefinitionFieldName)))
+        if (!splitResponse.Any(s => s.Contains(definitionFieldName)))
         {
             return new TranslationResult("", "", "", false);
         }
         
-        var definition = splitResponse
-            .SingleOrDefault(s => s.Contains(DefinitionFieldName))?
-            .Replace(DefinitionFieldName, "").Trim() ?? "";
-        var additionalInfo = splitResponse
-            .SingleOrDefault(s => s.Contains(AdditionalTranslationsFieldName))?
-            .Replace(AdditionalTranslationsFieldName, "").Trim() ?? "";
-        var example = splitResponse
-            .SingleOrDefault(s => s.Contains(ExampleFieldName))?
-            .Replace(ExampleFieldName, "").Trim() ?? "";
+        var definition = GetField(splitResponse, definitionFieldName);
+        var additionalInfo = GetField(splitResponse, AdditionalTranslationsFieldName);
+        var example = GetField(splitResponse, ExampleFieldName);
 
         return new TranslationResult(definition, additionalInfo, example, true);
+    }
+
+    private static string GetField(string[] splitResponse, string fieldName)
+    {
+        return splitResponse
+            .SingleOrDefault(s => s.Contains(fieldName))?
+            .Replace(fieldName, "").Trim() ?? "";
     }
 }
