@@ -113,7 +113,9 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
                 VocabularyEntry = entry,
                 Question = entry.Word,
                 Answer = entry.Definition,
-                Example = entry.Example,
+                Example = entry.Example
+                    .ReplaceWholeWord(entry.Word, "______")
+                    .ReplaceWholeWord(entry.Definition, "______"),
                 VocabularyEntryId = entry.Id,
             };
         }
