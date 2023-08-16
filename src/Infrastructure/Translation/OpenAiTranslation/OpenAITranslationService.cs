@@ -28,7 +28,7 @@ public class OpenAiTranslationService : IAiTranslationService
         // give instruction as System
         chat.AppendSystemMessage(
             "You are a teacher who helps russian students understand english words. If the user tells you a word in english, you give him " +
-            "translation into russian additional translations and example of usage in english" +
+            "translation into russian in one word, additional translations and example of usage in english" +
             "If student give phrase you give him translation into russian and example of usage" +
             "You do not say anything else.");
 
