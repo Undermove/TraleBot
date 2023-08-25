@@ -37,21 +37,57 @@ public class TranslateManuallyCommand : IBotCommand
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
-        var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.Translated 
-            ? "❌ Не добавлять в словарь." 
-            : "❌ Есть в словаре. Удалить?";
-        
+        await result.Match(
+            success => HandleSuccess(request, token, success),
+            exists => HandleTranslationExists(request, token, exists), 
+            _ => Task.CompletedTask,
+            _ => Task.CompletedTask,
+            _ => Task.CompletedTask);
+    }
+
+    private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
+    {
+        var removeFromVocabularyText = "❌ Не добавлять в словарь.";
+        await SendTranslation(
+            request,
+            result.VocabularyEntryId,
+            result.Definition,
+            result.AdditionalInfo,
+            removeFromVocabularyText,
+            token);
+    }
+    
+    private async Task HandleTranslationExists(TelegramRequest request, CancellationToken token, TranslationExists result)
+    {
+        var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
+        await SendTranslation(
+            request,
+            result.VocabularyEntryId,
+            result.Definition,
+            result.AdditionalInfo,
+            removeFromVocabularyText,
+            token);
+    }
+
+    private async Task SendTranslation(
+        TelegramRequest request,
+        Guid vocabularyEntryId,
+        string definition,
+        string additionalInfo,
+        string removeFromVocabularyText,
+        CancellationToken token)
+    {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText, $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")
+                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText, $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
             }
         });
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Определение: {result.Definition}" + $"\r\nДругие значения: {result.AdditionalInfo}",
+            $"Определение: {definition}" + $"\r\nДругие значения: {additionalInfo}",
             replyMarkup: keyboard, 
             cancellationToken: token);
     }

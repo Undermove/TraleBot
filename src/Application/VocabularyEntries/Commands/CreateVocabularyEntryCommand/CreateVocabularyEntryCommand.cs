@@ -5,16 +5,17 @@ using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using MediatR;
+using OneOf;
 
 namespace Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 
-public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult>
+public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
 {
     public Guid UserId { get; init; }
     public string? Word { get; init; }
     public string? Definition { get; init; }
 
-    public class Handler : IRequestHandler<CreateVocabularyEntryCommand, CreateVocabularyEntryResult>
+    public class Handler : IRequestHandler<CreateVocabularyEntryCommand, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
         private readonly IAiTranslationService _aiTranslationService;
@@ -32,22 +33,20 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             _aiTranslationService = aiTranslationService;
         }
 
-        public async Task<CreateVocabularyEntryResult> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
+        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
         {
             var user = await GetUser(request, ct);
 
             if (IsContainsEmoji(request.Word!))
             {
-                return new CreateVocabularyEntryResult(TranslationStatus.Emojis, string.Empty, string.Empty,
-                    string.Empty, Guid.Empty);
+                return new EmojiDetected();
             }
             
             var duplicate = user!.VocabularyEntries
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
             if(duplicate != null)
             {
-                return new CreateVocabularyEntryResult(
-                    TranslationStatus.ReceivedFromVocabulary, 
+                return new TranslationExists(
                     duplicate.Definition, 
                     duplicate.AdditionalInfo,
                     duplicate.Example,
@@ -71,18 +70,18 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
                 var result = await _aiTranslationService.TranslateAsync(request.Word, ct);
                 if (!result.IsSuccessful)
                 {
-                    return new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
+                    return new TranslationFailure();
                 }
 
                 return await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user);
             }
             
             return !user.IsActivePremium() 
-                ? new CreateVocabularyEntryResult(TranslationStatus.SuggestPremium, "","", "", Guid.Empty) 
-                : new CreateVocabularyEntryResult(TranslationStatus.CantBeTranslated, "","", "", Guid.Empty);
+                ? new SuggestPremium() 
+                : new TranslationFailure();
         }
 
-        private async Task<CreateVocabularyEntryResult> CreateManualVocabularyEntry(CreateVocabularyEntryCommand request, CancellationToken ct, User user)
+        private async Task<TranslationSuccess> CreateManualVocabularyEntry(CreateVocabularyEntryCommand request, CancellationToken ct, User user)
         {
             var manualTranslationTrigger = new ManualTranslationTrigger();
             await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
@@ -90,7 +89,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             return await CreateVocabularyEntryResult(request, ct, request.Definition!, request.Definition!, "", user);
         }
 
-        private async Task<CreateVocabularyEntryResult> CreateVocabularyEntryResult(CreateVocabularyEntryCommand request, CancellationToken ct,
+        private async Task<TranslationSuccess> CreateVocabularyEntryResult(CreateVocabularyEntryCommand request, CancellationToken ct,
             string definition, string additionalInfo, string example, User user)
         {
             var entryId = Guid.NewGuid();
@@ -112,8 +111,7 @@ public class CreateVocabularyEntryCommand : IRequest<CreateVocabularyEntryResult
             var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = user.VocabularyEntries.Count };
             await _achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
 
-            return new CreateVocabularyEntryResult(
-                TranslationStatus.Translated,
+            return new TranslationSuccess(
                 definition,
                 additionalInfo,
                 example,

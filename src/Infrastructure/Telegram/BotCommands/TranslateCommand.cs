@@ -31,48 +31,92 @@ public class TranslateCommand : IBotCommand
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
-        switch (result.TranslationStatus)
-        {
-            case TranslationStatus.CantBeTranslated:
-                await _client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "Прости, пока не могу перевести это слово 😞." +
-                    "\r\nВозможно в нём есть опечатка." +
-                    "\r\n" +
-                    "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
-                    "\r\nК примеру: cat-кошка",
-                    cancellationToken: token);
-                return;
-            case TranslationStatus.SuggestPremium:
-                var reply = new InlineKeyboardMarkup(new[]
-                {
-                    InlineKeyboardButton.WithCallbackData("✅ Посмотреть премиум.", $"{CommandNames.OfferTrial}")
-                });
-            
-                await _client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "Не получилось сделать перевод при помощи стандартных средств. Можешь попробовать премиум-перевод с использованием OpenAI API. " +
-                    "Такой перевод дает возможность переводить идиомы с объяснениями и примерами использования.",
-                    replyMarkup: reply,
-                    cancellationToken: token);
-                return;
-            case TranslationStatus.Emojis:
-                await _client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "Кажется, что ты отправил мне слишком много эмодзи 😅.",
-                    cancellationToken: token);
-                return;
-        }
+        await result.Match<Task>(
+            success => HandleSuccess(request, token, success),
+            exists => HandleTranslationExists(request, token, exists),
+            _ => HandleEmojiDetected(request, token),
+            _ => HandleFailure(request, token),
+            _ => HandleSuggestPremium(request, token));
+    }
 
-        var removeFromVocabularyText = result.TranslationStatus == TranslationStatus.Translated 
-            ? "❌ Не добавлять в словарь." 
-            : "❌ Есть в словаре. Удалить?";
-        
+    private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
+    {
+        var removeFromVocabularyText = "❌ Не добавлять в словарь.";
+        await SendTranslation(
+            request, 
+            result.VocabularyEntryId,
+            result.Definition,
+            result.AdditionalInfo,
+            result.Example,
+            removeFromVocabularyText,
+            token);
+    }
+    
+    private async Task HandleTranslationExists(TelegramRequest request, CancellationToken token,
+        TranslationExists result)
+    {
+        var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
+        await SendTranslation(
+            request, 
+            result.VocabularyEntryId,
+            result.Definition,
+            result.AdditionalInfo,
+            result.Example,
+            removeFromVocabularyText,
+            token);
+    }
+    
+    private async Task HandleEmojiDetected(TelegramRequest request, CancellationToken token)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Кажется, что ты отправил мне слишком много эмодзи 😅.",
+            cancellationToken: token);
+    }
+    
+    private async Task HandleFailure(TelegramRequest request, CancellationToken token)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Прости, пока не могу перевести это слово 😞." +
+            "\r\nВозможно в нём есть опечатка." +
+            "\r\n" +
+            "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
+            "\r\nК примеру: cat-кошка",
+            cancellationToken: token);
+    }
+
+    private async Task HandleSuggestPremium(TelegramRequest request, CancellationToken token)
+    {
+        var reply = new InlineKeyboardMarkup(new[]
+        {
+            InlineKeyboardButton.WithCallbackData("✅ Посмотреть премиум.", $"{CommandNames.OfferTrial}")
+        });
+
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Не получилось сделать перевод при помощи стандартных средств. Можешь попробовать премиум-перевод с использованием OpenAI API. " +
+            "Такой перевод дает возможность переводить идиомы с объяснениями и примерами использования.",
+            replyMarkup: reply,
+            cancellationToken: token);
+    }
+
+
+    private async Task SendTranslation(
+        TelegramRequest request,
+        Guid vocabularyEntryId,
+        string definition,
+        string additionalInfo,
+        string example,
+        string removeFromVocabularyText, 
+        CancellationToken token)
+    {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText, $"{CommandNames.RemoveEntry} {result.VocabularyEntryId}")
+                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
+                    $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
             },
             // new[]
             // {
@@ -80,21 +124,23 @@ public class TranslateCommand : IBotCommand
             // },
             new[]
             {
-                InlineKeyboardButton.WithUrl("Перевод Wooordhunt",$"https://wooordhunt.ru/word/{request.Text}"),
-                InlineKeyboardButton.WithUrl("Перевод Reverso Context",$"https://context.reverso.net/translation/russian-english/{request.Text}")
+                InlineKeyboardButton.WithUrl("Перевод Wooordhunt", $"https://wooordhunt.ru/word/{request.Text}"),
+                InlineKeyboardButton.WithUrl("Перевод Reverso Context",
+                    $"https://context.reverso.net/translation/russian-english/{request.Text}")
             },
-            new[] 
-            {   
-                InlineKeyboardButton.WithUrl("Послушать на YouGlish",$"https://youglish.com/pronounce/{request.Text}/english?")
+            new[]
+            {
+                InlineKeyboardButton.WithUrl("Послушать на YouGlish",
+                    $"https://youglish.com/pronounce/{request.Text}/english?")
             }
         });
-        
+
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Определение: {result.Definition}" + 
-            $"\r\nДругие значения: {result.AdditionalInfo}" +
-            $"\r\nПример употребления: {result.Example}",
-            replyMarkup:keyboard,
+            $"Определение: {definition}" +
+            $"\r\nДругие значения: {additionalInfo}" +
+            $"\r\nПример употребления: {example}",
+            replyMarkup: keyboard,
             cancellationToken: token);
     }
 }
