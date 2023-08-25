@@ -77,7 +77,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             Word = expectedWord
         }, CancellationToken.None);
 
-        result.TranslationStatus.ShouldBe(TranslationStatus.Translated);
+        result.AsT0.ShouldNotBeNull();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
@@ -99,7 +99,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             Word = expectedWord
         }, CancellationToken.None);
 
-        result.TranslationStatus.ShouldBe(TranslationStatus.SuggestPremium);
+        result.AsT4.ShouldNotBeNull();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldBeNull();
@@ -122,7 +122,8 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             Word = expectedWord
         }, CancellationToken.None);
 
-        result.TranslationStatus.ShouldBe(TranslationStatus.ReceivedFromVocabulary);
+        var translationSuccess = result.AsT1;
+        translationSuccess.ShouldNotBeNull();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
