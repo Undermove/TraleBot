@@ -1,5 +1,6 @@
 using Application.Common;
 using Application.Common.Interfaces.Achievements;
+using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,8 +35,26 @@ public class GetAchievementsQuery : IRequest<AchievementsListVm>
                 Icon = checker.Icon,
                 IsUnlocked = unlockedAchievements.Contains(checker.AchievementTypeId)
             }).ToList();
+
+            var allVocabularyEntries = await _context.VocabularyEntries
+                .Where(entry => entry.UserId == request.UserId)
+                .ToListAsync(cancellationToken);
             
-            var result = new AchievementsListVm { Achievements = allAchievements };
+            var masteredInForwardDirectionProgress = allVocabularyEntries
+                .Count(entry => entry.UserId == request.UserId && 
+                                entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection);
+
+            var masteredInBothDirectionsProgress = allVocabularyEntries
+                .Count(entry => entry.UserId == request.UserId &&
+                                entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections);
+            
+            var result = new AchievementsListVm
+            {
+                Achievements = allAchievements,
+                VocabularyEntriesCount = allVocabularyEntries.Count,
+                MasteredInForwardDirectionProgress = masteredInForwardDirectionProgress + masteredInBothDirectionsProgress,
+                MasteredInBothDirectionProgress = masteredInBothDirectionsProgress
+            };
             return result;
         }
     }
