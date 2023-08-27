@@ -1,12 +1,5 @@
 namespace Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 
-public record CreateVocabularyEntryResult(
-    TranslationStatus TranslationStatus, 
-    string Definition,
-    string AdditionalInfo,
-    string Example,
-    Guid VocabularyEntryId);
-
 public record TranslationSuccess(
     string Definition,
     string AdditionalInfo,
@@ -19,8 +12,8 @@ public record TranslationExists(
     string Example,
     Guid VocabularyEntryId);
 
-public record SuggestPremium();
+public record SuggestPremium;
 
-public record TranslationFailure();
+public record TranslationFailure;
 
-public record EmojiDetected();
+public record EmojiDetected;
