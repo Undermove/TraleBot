@@ -34,14 +34,14 @@ public class StartQuizBotCommand : IBotCommand
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
 
         await result.Match<Task>(
-            started => StartQuiz(request, token, started),
+            started => SendFirstQuestion(request, token, started),
             _ => HandleNotEnoughWords(request, token),
             _ => HandleNeedPremiumToActivate(request, token),
             _ => HandleQuizAlreadyStarted(request, token)
         );
     }
     
-    private async Task StartQuiz(TelegramRequest request, CancellationToken token, QuizStarted result)
+    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, QuizStarted result)
     {
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
