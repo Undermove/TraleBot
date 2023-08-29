@@ -1,11 +1,6 @@
 namespace Application.Quizzes.Commands.StartNewQuiz;
 
-public record StartNewQuizResult(int LastWeekVocabularyEntriesCount, QuizStartStatus QuizStartStatus);
-
-public enum QuizStartStatus
-{
-	Success,
-	AlreadyStarted,
-	NotEnoughWords,
-	NeedPremiumToActivate
-}
+public record QuizStarted(int QuizQuestionsCount);
+public record NotEnoughWords;
+public record NeedPremiumToActivate;
+public record QuizAlreadyStarted;

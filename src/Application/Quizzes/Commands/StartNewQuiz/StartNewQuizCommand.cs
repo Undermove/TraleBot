@@ -1,18 +1,18 @@
-using System.Text.RegularExpressions;
 using Application.Common;
 using Application.Common.Exceptions;
 using Application.Common.Extensions;
 using Domain.Entities;
 using MediatR;
+using OneOf;
 
 namespace Application.Quizzes.Commands.StartNewQuiz;
 
-public class StartNewQuizCommand : IRequest<StartNewQuizResult>
+public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>>
 {
     public Guid? UserId { get; set; }
     public QuizTypes QuizType { get; set; }
     
-    public class Handler: IRequestHandler<StartNewQuizCommand, StartNewQuizResult>
+    public class Handler: IRequestHandler<StartNewQuizCommand, OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>>
     {
         private readonly ITraleDbContext _dbContext;
         
@@ -21,7 +21,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             _dbContext = dbContext;
         }
         
-        public async Task<StartNewQuizResult> Handle(StartNewQuizCommand request, CancellationToken ct)
+        public async Task<OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>> Handle(StartNewQuizCommand request, CancellationToken ct)
         {
             if (request.UserId == null)
             {
@@ -37,14 +37,14 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
 
             if (user.AccountType == UserAccountType.Free && request.QuizType != QuizTypes.LastWeek)
             {
-                return new StartNewQuizResult(0, QuizStartStatus.NeedPremiumToActivate);
+                return new NeedPremiumToActivate();
             }
 
             await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
             var startedQuizzesCount = user.Quizzes.Count(q => q.IsCompleted == false);
             if (startedQuizzesCount > 0)
             {
-                return new StartNewQuizResult(0, QuizStartStatus.AlreadyStarted);
+                return new QuizAlreadyStarted();
             }
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
@@ -53,7 +53,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
 
             if (quizQuestions.Count == 0)
             {
-                return new StartNewQuizResult(0, QuizStartStatus.NotEnoughWords);
+                return new NotEnoughWords();
             }
 
             var quiz = new Quiz
@@ -68,7 +68,7 @@ public class StartNewQuizCommand : IRequest<StartNewQuizResult>
             await _dbContext.Quizzes.AddAsync(quiz, ct);
             await _dbContext.SaveChangesAsync(ct);
 
-            return new StartNewQuizResult(quizQuestions.Count, QuizStartStatus.Success);
+            return new QuizStarted(quizQuestions.Count);
         }
 
         private static List<QuizQuestion> CreateQuizQuestions(User user, QuizTypes quizType)

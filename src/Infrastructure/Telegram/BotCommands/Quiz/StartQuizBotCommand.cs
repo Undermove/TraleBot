@@ -4,7 +4,6 @@ using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
@@ -34,20 +33,20 @@ public class StartQuizBotCommand : IBotCommand
 
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
 
-        if (await IsQuizNotStarted(request, token, result))
-        {
-            return;
-        }
-        
-        await SendFirstQuestion(request, token, result);
+        await result.Match<Task>(
+            started => StartQuiz(request, token, started),
+            _ => HandleNotEnoughWords(request, token),
+            _ => HandleNeedPremiumToActivate(request, token),
+            _ => HandleQuizAlreadyStarted(request, token)
+        );
     }
-
-    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
+    
+    private async Task StartQuiz(TelegramRequest request, CancellationToken token, QuizStarted result)
     {
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
-            $"Начнем квиз! В него войдет {result.LastWeekVocabularyEntriesCount} выученных слов. " +
+            $"Начнем квиз! В него войдет {result.QuizQuestionsCount} выученных слов. " +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
@@ -59,45 +58,39 @@ public class StartQuizBotCommand : IBotCommand
             await _client.SendQuizQuestion(request, quizQuestion, token);
         }
     }
-
-    private async Task<bool> IsQuizNotStarted(TelegramRequest request, CancellationToken token, StartNewQuizResult result)
+    
+    private async Task HandleNotEnoughWords(TelegramRequest request, CancellationToken token)
     {
-        switch (result.QuizStartStatus)
+        await _client.EditMessageTextAsync(
+            request.UserTelegramId,
+            request.MessageId,
+            "Для этого типа квизов пока не хватает слов. Попробуй набрать больше слов или закрепить новые 😉",
+            cancellationToken: token);
+    }
+
+    private async Task HandleNeedPremiumToActivate(TelegramRequest request, CancellationToken token)
+    {
+        var keyboard = new InlineKeyboardMarkup(new[]
         {
-            case QuizStartStatus.NotEnoughWords:
-                await _client.EditMessageTextAsync(
-                    request.UserTelegramId,
-                    request.MessageId,
-                    "Для этого типа квизов пока не хватает слов. Попробуй набрать больше слов или закрепить новые 😉",
-                    cancellationToken: token);
-                return true;
-            case QuizStartStatus.AlreadyStarted:
-                await _client.EditMessageTextAsync(
-                    request.UserTelegramId,
-                    request.MessageId,
-                    "Кажется, что ты уже начал один квиз." +
-                    $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
-                    cancellationToken: token);
-                return true;
-            case QuizStartStatus.NeedPremiumToActivate:
-            {
-                var keyboard = new InlineKeyboardMarkup(new[]
-                {
-                    new[] { InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)", $"{CommandNames.ActivateTrial}") },
-                    new[] { InlineKeyboardButton.WithCallbackData("💳 Купить подписку.", $"{CommandNames.Pay}") }
-                });
+            new[] { InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)", $"{CommandNames.ActivateTrial}") },
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Купить подписку.", $"{CommandNames.Pay}") }
+        });
             
-                await _client.EditMessageTextAsync(
-                    request.UserTelegramId,
-                    request.MessageId,
-                    "Для прохождения этого типа квиза нужен премиум аккаунт.",
-                    replyMarkup: keyboard,
-                    cancellationToken: token);
-                return true;
-            }
-            case QuizStartStatus.Success:
-            default:
-                return false;
-        }
+        await _client.EditMessageTextAsync(
+            request.UserTelegramId,
+            request.MessageId,
+            "Для прохождения этого типа квиза нужен премиум аккаунт.",
+            replyMarkup: keyboard,
+            cancellationToken: token);
+    }
+    
+    private async Task HandleQuizAlreadyStarted(TelegramRequest request, CancellationToken token)
+    {
+        await _client.EditMessageTextAsync(
+            request.UserTelegramId,
+            request.MessageId,
+            "Кажется, что ты уже начал один квиз." +
+            $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
+            cancellationToken: token);
     }
 }
