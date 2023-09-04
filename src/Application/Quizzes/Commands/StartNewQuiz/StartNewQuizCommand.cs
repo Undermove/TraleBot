@@ -55,11 +55,18 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             {
                 return new NotEnoughWords();
             }
+            
+            await SaveQuiz(request, ct, quizQuestions);
 
+            return new QuizStarted(quizQuestions.Count);
+        }
+
+        private async Task SaveQuiz(StartNewQuizCommand request, CancellationToken ct, List<QuizQuestion> quizQuestions)
+        {
             var quiz = new Quiz
             {
                 Id = Guid.NewGuid(),
-                UserId = request.UserId.Value,
+                UserId = request.UserId!.Value,
                 QuizQuestions = quizQuestions,
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false
@@ -67,8 +74,6 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
 
             await _dbContext.Quizzes.AddAsync(quiz, ct);
             await _dbContext.SaveChangesAsync(ct);
-
-            return new QuizStarted(quizQuestions.Count);
         }
 
         private static List<QuizQuestion> CreateQuizQuestions(User user, QuizTypes quizType)

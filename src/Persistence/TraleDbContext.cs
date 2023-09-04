@@ -21,6 +21,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<Invoice> Invoices { get; set; } = null!;
     public DbSet<QuizQuestion> QuizQuestions { get; set; } = null!;
     public DbSet<Achievement> Achievements { get; set; } = null!;
+    public DbSet<ShareableQuiz> ShareableQuizzes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

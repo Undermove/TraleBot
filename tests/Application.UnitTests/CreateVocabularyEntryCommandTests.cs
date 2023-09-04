@@ -32,7 +32,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
                 It.IsAny<VocabularyCountTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _existingUser = Create.TestUser();
+        _existingUser = Create.User().Build();
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         

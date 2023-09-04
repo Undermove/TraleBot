@@ -1,6 +1,7 @@
 namespace Domain.Entities;
 
 // ReSharper disable once ClassNeverInstantiated.Global
+// ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class VocabularyEntry
 {
     const int MinimumSuccessAnswersRequired = 3;
