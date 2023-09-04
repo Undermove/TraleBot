@@ -52,9 +52,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
     [Test]
     public async Task ShouldReturnForwardDirectionWords_ForPremiumUser_WithVocabularyEntries()
     {
-        var premiumUser = CreatePremiumUser();
-        var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
-        Context.VocabularyEntries.Add(vocabularyEntry);
+        var (premiumUser, _) = CreatePremiumUserWithVocabularyEntry();
         
         var result = await _sut.Handle(new StartNewQuizCommand
         {
@@ -70,14 +68,8 @@ public class StartNewQuizCommandTests : CommandTestsBase
     [Test]
     public async Task ShouldReturnQuizAlreadyStarted_WhenAnotherQuizInProgress()
     {
-        var premiumUser = CreatePremiumUser();
-        var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
-        Context.VocabularyEntries.Add(vocabularyEntry);
-        await _sut.Handle(new StartNewQuizCommand
-        {
-            UserId = premiumUser.Id, 
-            QuizType = QuizTypes.ForwardDirection
-        }, CancellationToken.None);
+        var (premiumUser, _) = CreatePremiumUserWithVocabularyEntry();
+        await StartFirstQuiz(premiumUser);
         
         var result = await _sut.Handle(new StartNewQuizCommand
         {
@@ -87,6 +79,38 @@ public class StartNewQuizCommandTests : CommandTestsBase
         
         result.IsT3.ShouldBeTrue();
         result.AsT3.ShouldBeOfType<QuizAlreadyStarted>();
+    }
+    
+    [Test]
+    public async Task ShouldCreateShareableQuiz_WhenQuizStarted()
+    {
+        var (premiumUser, vocabularyEntry) = CreatePremiumUserWithVocabularyEntry();
+        
+        await _sut.Handle(new StartNewQuizCommand
+        {
+            UserId = premiumUser.Id, 
+            QuizType = QuizTypes.ForwardDirection
+        }, CancellationToken.None);
+        
+        Context.ShareableQuizzes.Count().ShouldBe(1);
+        Context.ShareableQuizzes.ShouldContain(quiz => quiz.VocabularyEntries.Any(entry => entry.Id == vocabularyEntry.Id));
+    }
+
+    private (User, VocabularyEntry) CreatePremiumUserWithVocabularyEntry()
+    {
+        var premiumUser = CreatePremiumUser();
+        var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
+        Context.VocabularyEntries.Add(vocabularyEntry);
+        return (premiumUser, vocabularyEntry);
+    }
+
+    private async Task StartFirstQuiz(User premiumUser)
+    {
+        await _sut.Handle(new StartNewQuizCommand
+        {
+            UserId = premiumUser.Id,
+            QuizType = QuizTypes.ForwardDirection
+        }, CancellationToken.None);
     }
 
     private User CreatePremiumUser()

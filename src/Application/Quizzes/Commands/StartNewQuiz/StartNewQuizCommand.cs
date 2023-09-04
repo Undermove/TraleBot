@@ -56,12 +56,17 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 return new NotEnoughWords();
             }
             
-            await SaveQuiz(request, ct, quizQuestions);
-
+            await SaveQuiz(request, user, ct, quizQuestions);
+            
+            await _dbContext.SaveChangesAsync(ct);
             return new QuizStarted(quizQuestions.Count);
         }
 
-        private async Task SaveQuiz(StartNewQuizCommand request, CancellationToken ct, List<QuizQuestion> quizQuestions)
+        private async Task SaveQuiz(
+            StartNewQuizCommand request,
+            User user,
+            CancellationToken ct,
+            List<QuizQuestion> quizQuestions)
         {
             var quiz = new Quiz
             {
@@ -72,8 +77,18 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 IsCompleted = false
             };
 
+            var shareableQuiz = new ShareableQuiz
+            {
+                Id = Guid.NewGuid(),
+                QuizType = request.QuizType,
+                DateAddedUtc = DateTime.UtcNow,
+                CreatedByUser = user,
+                CreatedByUserId = user.Id,
+                VocabularyEntries = quizQuestions.Select(q => q.VocabularyEntry).ToList()
+            };
+            
+            await _dbContext.ShareableQuizzes.AddAsync(shareableQuiz, ct);
             await _dbContext.Quizzes.AddAsync(quiz, ct);
-            await _dbContext.SaveChangesAsync(ct);
         }
 
         private static List<QuizQuestion> CreateQuizQuestions(User user, QuizTypes quizType)
