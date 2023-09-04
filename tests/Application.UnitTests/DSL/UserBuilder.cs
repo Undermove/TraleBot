@@ -1,14 +1,6 @@
 using Domain.Entities;
 
-namespace Application.UnitTests.Common;
-
-public static class Create
-{
-    public static UserBuilder User()
-    {
-        return new UserBuilder();
-    }  
-}
+namespace Application.UnitTests.DSL;
 
 public class UserBuilder
 {

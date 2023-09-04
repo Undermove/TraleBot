@@ -1,5 +1,6 @@
 using Application.Quizzes.Commands.StartNewQuiz;
 using Application.UnitTests.Common;
+using Application.UnitTests.DSL;
 using Domain.Entities;
 using Shouldly;
 
@@ -53,15 +54,8 @@ public class StartNewQuizCommandTests : CommandTestsBase
     public async Task ShouldReturnForwardDirectionWords_ForPremiumUser_WithVocabularyEntries()
     {
         var premiumUser = CreatePremiumUser();
-        Context.VocabularyEntries.Add(new VocabularyEntry
-        {
-            Id = Guid.NewGuid(),
-            User = premiumUser,
-            Word = "cat",
-            Definition = "кошка",
-            Example = "cat is a cat",
-            AdditionalInfo = "кошка это кошка",
-        });
+        var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
+        Context.VocabularyEntries.Add(vocabularyEntry);
         
         var result = await _sut.Handle(new StartNewQuizCommand
         {
