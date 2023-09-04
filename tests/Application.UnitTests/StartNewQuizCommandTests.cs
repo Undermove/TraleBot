@@ -7,21 +7,28 @@ namespace Application.UnitTests;
 
 public class StartNewQuizCommandTests : CommandTestsBase
 {
+    private StartNewQuizCommand.Handler _sut = null!;
+    
+    [SetUp]
+    public void SetUp()
+    {
+        _sut = new StartNewQuizCommand.Handler(Context);
+    }
+    
     [Test]
     public async Task ShouldReturnNeedPremiumToActivate_ForUserWithoutPremium()
     {
         var existingUser = Create.User().Build();
         Context.Users.Add(existingUser);
         
-        var sut = new StartNewQuizCommand.Handler(Context);
 
-        var result = await sut.Handle(new StartNewQuizCommand
+        var result = await _sut.Handle(new StartNewQuizCommand
         {
             UserId = existingUser.Id, 
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
         
-        result.IsT2.ShouldBe(true);
+        result.IsT2.ShouldBeTrue();
         result.AsT2.ShouldBeOfType<NeedPremiumToActivate>();
         result.AsT2.ShouldNotBeNull();
     }
@@ -29,18 +36,47 @@ public class StartNewQuizCommandTests : CommandTestsBase
     [Test]
     public async Task ShouldReturnNotEnoughWords_ForPremiumUser_WithoutVocabularyEntries()
     {
-        var existingUser = Create.User().WithPremiumAccountType().Build();
-        Context.Users.Add(existingUser);
-        var sut = new StartNewQuizCommand.Handler(Context);
+        var premiumUser = CreatePremiumUser();
         
-        var result = await sut.Handle(new StartNewQuizCommand
+        var result = await _sut.Handle(new StartNewQuizCommand
         {
-            UserId = existingUser.Id, 
+            UserId = premiumUser.Id, 
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
         
-        result.IsT1.ShouldBe(true);
+        result.IsT1.ShouldBeTrue();
         result.AsT1.ShouldBeOfType<NotEnoughWords>();
         result.AsT1.ShouldNotBeNull();
+    }
+
+    [Test]
+    public async Task ShouldReturnForwardDirectionWords_ForPremiumUser_WithVocabularyEntries()
+    {
+        var premiumUser = CreatePremiumUser();
+        Context.VocabularyEntries.Add(new VocabularyEntry
+        {
+            Id = Guid.NewGuid(),
+            User = premiumUser,
+            Word = "cat",
+            Definition = "кошка",
+            Example = "cat is a cat",
+            AdditionalInfo = "кошка это кошка",
+        });
+        
+        var result = await _sut.Handle(new StartNewQuizCommand
+        {
+            UserId = premiumUser.Id, 
+            QuizType = QuizTypes.ForwardDirection
+        }, CancellationToken.None);
+        
+        result.IsT0.ShouldBeTrue();
+        result.AsT0.QuizQuestionsCount.ShouldBe(1);
+    }
+
+    private User CreatePremiumUser()
+    {
+        var premiumUser = Create.User().WithPremiumAccountType().Build();
+        Context.Users.Add(premiumUser);
+        return premiumUser;
     }
 }

@@ -121,7 +121,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 Example = entry.Example
                     .ReplaceWholeWord(entry.Word, "______")
                     .ReplaceWholeWord(entry.Definition, "______"),
-                VocabularyEntryId = entry.Id,
+                VocabularyEntryId = entry.Id
             };
         }
 
