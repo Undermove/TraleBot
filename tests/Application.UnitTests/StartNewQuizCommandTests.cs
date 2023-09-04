@@ -64,7 +64,30 @@ public class StartNewQuizCommandTests : CommandTestsBase
         }, CancellationToken.None);
         
         result.IsT0.ShouldBeTrue();
+        result.AsT0.ShouldBeOfType<QuizStarted>();
         result.AsT0.QuizQuestionsCount.ShouldBe(1);
+    }
+    
+    [Test]
+    public async Task ShouldReturnQuizAlreadyStarted_WhenAnotherQuizInProgress()
+    {
+        var premiumUser = CreatePremiumUser();
+        var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
+        Context.VocabularyEntries.Add(vocabularyEntry);
+        await _sut.Handle(new StartNewQuizCommand
+        {
+            UserId = premiumUser.Id, 
+            QuizType = QuizTypes.ForwardDirection
+        }, CancellationToken.None);
+        
+        var result = await _sut.Handle(new StartNewQuizCommand
+        {
+            UserId = premiumUser.Id, 
+            QuizType = QuizTypes.ForwardDirection
+        }, CancellationToken.None);
+        
+        result.IsT3.ShouldBeTrue();
+        result.AsT3.ShouldBeOfType<QuizAlreadyStarted>();
     }
 
     private User CreatePremiumUser()
