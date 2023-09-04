@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using Shouldly;
 
-namespace Application.UnitTests;
+namespace Application.UnitTests.Tests;
 
 public class CreateVocabularyEntryCommandTests : CommandTestsBase
 {

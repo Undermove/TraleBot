@@ -4,7 +4,7 @@ using Application.UnitTests.DSL;
 using Domain.Entities;
 using Shouldly;
 
-namespace Application.UnitTests;
+namespace Application.UnitTests.Tests;
 
 public class StartNewQuizCommandTests : CommandTestsBase
 {
@@ -22,7 +22,6 @@ public class StartNewQuizCommandTests : CommandTestsBase
         var existingUser = Create.User().Build();
         Context.Users.Add(existingUser);
         
-
         var result = await _sut.Handle(new StartNewQuizCommand
         {
             UserId = existingUser.Id, 
