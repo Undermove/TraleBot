@@ -93,7 +93,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         }, CancellationToken.None);
         
         Context.ShareableQuizzes.Count().ShouldBe(1);
-        Context.ShareableQuizzes.ShouldContain(quiz => quiz.VocabularyEntries.Any(entry => entry.Id == vocabularyEntry.Id));
+        Context.ShareableQuizzes.ShouldContain(quiz => quiz.VocabularyEntriesIds.Any(entry => entry == vocabularyEntry.Id));
     }
 
     private (User, VocabularyEntry) CreatePremiumUserWithVocabularyEntry()

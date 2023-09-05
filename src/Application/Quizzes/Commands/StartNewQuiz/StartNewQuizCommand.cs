@@ -84,7 +84,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 DateAddedUtc = DateTime.UtcNow,
                 CreatedByUser = user,
                 CreatedByUserId = user.Id,
-                VocabularyEntries = quizQuestions.Select(q => q.VocabularyEntry).ToList()
+                VocabularyEntriesIds = quizQuestions.Select(q => q.VocabularyEntry.Id).ToList()
             };
             
             await _dbContext.ShareableQuizzes.AddAsync(shareableQuiz, ct);

@@ -7,5 +7,5 @@ public class ShareableQuiz
     public required DateTime DateAddedUtc { get; set; }
     public required Guid CreatedByUserId { get; set; }
     public virtual User CreatedByUser { get; set; } = null!;
-    public virtual ICollection<VocabularyEntry> VocabularyEntries { get; set; } = null!;
+    public virtual ICollection<Guid> VocabularyEntriesIds { get; set; } = null!;
 }
