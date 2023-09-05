@@ -31,11 +31,6 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
                 .Collection(nameof(currentQuiz.QuizQuestions))
                 .LoadAsync(ct);
             
-            await _dbContext
-                .Entry(currentQuiz)
-                .Collection(nameof(currentQuiz.QuizQuestions))
-                .LoadAsync(ct);
-            
             if (currentQuiz.QuizQuestions.Count == 0)
             {
                 throw new ApplicationException("Looks like quiz already completed or not started yet");
