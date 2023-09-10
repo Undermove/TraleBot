@@ -112,11 +112,4 @@ public class StartNewQuizCommandTests : CommandTestsBase
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
     }
-
-    private User CreatePremiumUser()
-    {
-        var premiumUser = Create.User().WithPremiumAccountType().Build();
-        Context.Users.Add(premiumUser);
-        return premiumUser;
-    }
 }

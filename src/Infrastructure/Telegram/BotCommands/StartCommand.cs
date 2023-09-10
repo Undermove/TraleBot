@@ -1,3 +1,4 @@
+using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
@@ -25,7 +26,21 @@ public class StartCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
+        if (request.User == null)
+        {
+            await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
+        }
+
+        var commandWithArgs = request.Text.Split(' ');
+        if (IsContainsArguments(commandWithArgs))
+        {
+            await _mediator.Send(new CreateQuizFromShareableCommand
+            {
+                ShareableQuizId = Guid.Parse(commandWithArgs[1])
+            }, token);
+            return;
+        }
+        
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"Привет, {request.UserName}! " +
@@ -41,5 +56,10 @@ public class StartCommand : IBotCommand
             "\r\n/menu - открыть меню",
             replyMarkup: MenuKeyboard.GetMenuKeyboard(),
             cancellationToken: token);
+    }
+
+    private bool IsContainsArguments(string[] args)
+    {
+        return args.Length > 1;
     }
 }
