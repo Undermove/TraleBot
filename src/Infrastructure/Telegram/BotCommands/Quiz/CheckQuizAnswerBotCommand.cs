@@ -104,6 +104,20 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
             $"\r\n📏Корректных ответов:         {correctnessPercent}%",
             cancellationToken: ct);
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "👉Хочешь поделиться квизом с другом? Просто отправь ему эту ссылку: ",
+            replyMarkup: new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithUrl(
+                        "Поделиться квизом", 
+                        $"https://t.me/traletest_bot?start=0cda4a71-56ef-4897-99b6-2e37b050e021")
+                }
+            }),
+            cancellationToken: ct);
     }
     
     private string GetMedalType(MasteringLevel masteringLevel)
