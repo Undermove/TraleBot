@@ -114,7 +114,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 {
                     InlineKeyboardButton.WithSwitchInlineQuery(
                         "Поделиться квизом", 
-                        $"Привет! Пользователь {request.UserName} хочет чтобы ты прошел квиз: https://t.me/traletest_bot?start=0cda4a71-56ef-4897-99b6-2e37b050e021")
+                        $"Привет! Пользователь {request.UserName} хочет чтобы [ты прошел квиз:](https://t.me/traletest_bot?start=0cda4a71-56ef-4897-99b6-2e37b050e021)")
                 }
             }),
             cancellationToken: ct);

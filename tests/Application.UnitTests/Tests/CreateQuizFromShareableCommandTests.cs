@@ -44,7 +44,9 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             Id = Guid.NewGuid(),
             QuizType = QuizTypes.LastWeek,
             DateAddedUtc = DateTime.UtcNow,
-            CreatedByUserId = premiumUser.Id
+            CreatedByUserId = premiumUser.Id,
+            CreatedByUser = premiumUser,
+            VocabularyEntriesIds = new List<Guid>(){vocabularyEntry.Id} 
         };
         
         Context.ShareableQuizzes.Add(shareableQuiz);

@@ -1,8 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace Application.Common.Extensions;
+namespace Domain.Quiz;
 
-public static class ReplaceStringExtensions
+public static class ReplaceQuizWordExtensions
 {
 	
 	public static string ReplaceWholeWord(this string? input, string wordToReplace, string replacement)

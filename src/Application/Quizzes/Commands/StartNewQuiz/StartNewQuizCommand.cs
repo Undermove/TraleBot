@@ -1,7 +1,8 @@
 using Application.Common;
 using Application.Common.Exceptions;
-using Application.Common.Extensions;
+using Domain;
 using Domain.Entities;
+using Domain.Quiz;
 using MediatR;
 using OneOf;
 
@@ -15,10 +16,12 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
     public class Handler: IRequestHandler<StartNewQuizCommand, OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>>
     {
         private readonly ITraleDbContext _dbContext;
-        
-        public Handler(ITraleDbContext dbContext)
+        private readonly IQuizCreator _quizCreator;
+
+        public Handler(ITraleDbContext dbContext, IQuizCreator quizCreator)
         {
             _dbContext = dbContext;
+            _quizCreator = quizCreator;
         }
         
         public async Task<OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>> Handle(StartNewQuizCommand request, CancellationToken ct)
@@ -49,7 +52,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             
-            var quizQuestions = CreateQuizQuestions(user, request.QuizType);
+            var quizQuestions = _quizCreator.CreateQuizQuestions(user, request.QuizType);
 
             if (quizQuestions.Count == 0)
             {
@@ -89,71 +92,6 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             
             await _dbContext.ShareableQuizzes.AddAsync(shareableQuiz, ct);
             await _dbContext.Quizzes.AddAsync(quiz, ct);
-        }
-
-        private static List<QuizQuestion> CreateQuizQuestions(User user, QuizTypes quizType)
-        {
-            Random rnd = new Random();
-
-            var vocabularyEntries = quizType switch
-            {
-                QuizTypes.LastWeek => user.VocabularyEntries.Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
-                    .OrderBy(entry => entry.DateAdded)
-                    .Select(QuizQuestion)
-                    .ToList(),
-                QuizTypes.SeveralComplicatedWords => user.VocabularyEntries
-                    .Where(entry => entry.SuccessAnswersCount < entry.FailedAnswersCount)
-                    .OrderBy(_ => rnd.Next())
-                    .Take(10)
-                    .Select(QuizQuestion)
-                    .ToList(),
-                QuizTypes.ForwardDirection => user.VocabularyEntries
-                    .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
-                    .OrderBy(entry => entry.DateAdded)
-                    .Take(20)
-                    .Select(QuizQuestion)
-                    .ToList(),
-                QuizTypes.ReverseDirection => user.VocabularyEntries
-                    .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
-                    .OrderBy(entry => entry.DateAdded)
-                    .Take(20)
-                    .Select(ReverseQuizQuestion)
-                    .ToList(),
-                _ => new List<QuizQuestion>()
-            };
-
-            return vocabularyEntries;
-        }
-
-        private static QuizQuestion QuizQuestion(VocabularyEntry entry)
-        {
-            return new QuizQuestion
-            {
-                Id = Guid.NewGuid(),
-                VocabularyEntry = entry,
-                Question = entry.Word,
-                Answer = entry.Definition,
-                Example = entry.Example
-                    .ReplaceWholeWord(entry.Word, "______")
-                    .ReplaceWholeWord(entry.Definition, "______"),
-                VocabularyEntryId = entry.Id
-            };
-        }
-
-        private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
-        {
-            return new QuizQuestion
-            {
-                Id = Guid.NewGuid(),
-                VocabularyEntry = entry,
-                Question = entry.Definition,
-                Answer = entry.Word,
-                Example = entry.Example
-                    // remove word from example to avoid spoiling of correct answer
-                    .ReplaceWholeWord(entry.Word, "______")
-                    .ReplaceWholeWord(entry.Definition, "______"),
-                VocabularyEntryId = entry.Id
-            };
         }
     }
 }
