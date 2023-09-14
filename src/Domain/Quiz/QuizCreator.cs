@@ -4,29 +4,30 @@ namespace Domain.Quiz;
 
 public class QuizCreator : IQuizCreator
 {
-    public List<QuizQuestion> CreateQuizQuestions(User user, QuizTypes quizType)
+    public List<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries, QuizTypes quizType)
     {
         Random rnd = new Random();
 
-        var vocabularyEntries = quizType switch
+        var quizQuestions = quizType switch
         {
-            QuizTypes.LastWeek => user.VocabularyEntries.Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
+            QuizTypes.LastWeek => vocabularyEntries
+                .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
                 .OrderBy(entry => entry.DateAdded)
                 .Select(QuizQuestion)
                 .ToList(),
-            QuizTypes.SeveralComplicatedWords => user.VocabularyEntries
+            QuizTypes.SeveralComplicatedWords => vocabularyEntries
                 .Where(entry => entry.SuccessAnswersCount < entry.FailedAnswersCount)
                 .OrderBy(_ => rnd.Next())
                 .Take(10)
                 .Select(QuizQuestion)
                 .ToList(),
-            QuizTypes.ForwardDirection => user.VocabularyEntries
+            QuizTypes.ForwardDirection => vocabularyEntries
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
                 .OrderBy(entry => entry.DateAdded)
                 .Take(20)
                 .Select(QuizQuestion)
                 .ToList(),
-            QuizTypes.ReverseDirection => user.VocabularyEntries
+            QuizTypes.ReverseDirection => vocabularyEntries
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
                 .OrderBy(entry => entry.DateAdded)
                 .Take(20)
@@ -35,7 +36,7 @@ public class QuizCreator : IQuizCreator
             _ => new List<QuizQuestion>()
         };
 
-        return vocabularyEntries;
+        return quizQuestions;
     }
 
     private static QuizQuestion QuizQuestion(VocabularyEntry entry)

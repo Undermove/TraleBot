@@ -2,6 +2,7 @@ using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
 using Domain.Entities;
+using Domain.Quiz;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
@@ -14,16 +15,17 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
     [SetUp]
     public void SetUp()
     {
-        _sut = new CreateQuizFromShareableCommand.Handler(Context);
+        _sut = new CreateQuizFromShareableCommand.Handler(Context, new QuizCreator());
     }
     
     // [Test]
-    public async Task Test1()
+    public async Task ShouldCreateQuizWithVocabularyEntries()
     {
-        var (vocabularyEntry, shareableQuiz) = CreatePremiumUserWithShareableQuiz();
+        var (user, vocabularyEntry, shareableQuiz) = CreatePremiumUserWithShareableQuiz();
         
         await _sut.Handle(new CreateQuizFromShareableCommand
         {
+            UserId = user.Id, 
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
@@ -33,7 +35,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
         quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
     
-    private (VocabularyEntry, ShareableQuiz) CreatePremiumUserWithShareableQuiz()
+    private (User, VocabularyEntry, ShareableQuiz) CreatePremiumUserWithShareableQuiz()
     {
         var premiumUser = CreatePremiumUser();
         var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
@@ -51,6 +53,6 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
         
         Context.ShareableQuizzes.Add(shareableQuiz);
         
-        return (vocabularyEntry, shareableQuiz);
+        return (premiumUser, vocabularyEntry, shareableQuiz);
     }
 }

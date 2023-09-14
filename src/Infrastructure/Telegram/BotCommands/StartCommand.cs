@@ -26,9 +26,10 @@ public class StartCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
+        UserCreatedResultType userCreatedResultType;
         if (request.User == null)
         {
-            await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
+            userCreatedResultType = await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
         }
 
         var commandWithArgs = request.Text.Split(' ');
@@ -36,6 +37,7 @@ public class StartCommand : IBotCommand
         {
             await _mediator.Send(new CreateQuizFromShareableCommand
             {
+                UserId = request.User.Id,
                 ShareableQuizId = Guid.Parse(commandWithArgs[1])
             }, token);
             return;
