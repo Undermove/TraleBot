@@ -4,15 +4,16 @@ using Domain.Entities;
 using Domain.Quiz;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OneOf;
 
 namespace Application.Quizzes.Commands.CreateSharedQuiz;
 
-public class CreateQuizFromShareableCommand : IRequest<SharedQuizCreatedResult>
+public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>>
 {
     public required Guid UserId { get; set; }
     public required Guid ShareableQuizId { get; set; }
 
-    public class Handler : IRequestHandler<CreateQuizFromShareableCommand, SharedQuizCreatedResult>
+    public class Handler : IRequestHandler<CreateQuizFromShareableCommand, OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>>
     {
         private readonly ITraleDbContext _dbContext;
         private readonly IQuizCreator _quizCreator;
@@ -23,7 +24,7 @@ public class CreateQuizFromShareableCommand : IRequest<SharedQuizCreatedResult>
             _quizCreator = quizCreator;
         }
 
-        public async Task<SharedQuizCreatedResult> Handle(CreateQuizFromShareableCommand request, CancellationToken ct)
+        public async Task<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>> Handle(CreateQuizFromShareableCommand request, CancellationToken ct)
         {
             var shareableQuiz = await _dbContext.ShareableQuizzes.FirstOrDefaultAsync(
                 quiz => quiz.Id == request.ShareableQuizId,
@@ -40,14 +41,14 @@ public class CreateQuizFromShareableCommand : IRequest<SharedQuizCreatedResult>
             
             if (quizQuestions.Count == 0)
             {
-                return new SharedQuizCreatedResult();
+                return new NotEnoughQuestionsForSharedQuiz();
             }
             
             await SaveQuiz(request.UserId, ct, quizQuestions);
             
             await _dbContext.SaveChangesAsync(ct);
             
-            return new SharedQuizCreatedResult();
+            return new SharedQuizCreated(quizQuestions.Count);
         }
         
         private async Task SaveQuiz(

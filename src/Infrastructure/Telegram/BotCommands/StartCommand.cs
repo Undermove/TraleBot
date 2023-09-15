@@ -1,6 +1,9 @@
+using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.CreateSharedQuiz;
+using Application.Quizzes.Commands.StartNewQuiz;
 using Application.Users.Commands.CreateUser;
 using Domain.Entities;
+using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -39,11 +42,16 @@ public class StartCommand : IBotCommand
         var commandWithArgs = request.Text.Split(' ');
         if (IsContainsArguments(commandWithArgs))
         {
-            await _mediator.Send(new CreateQuizFromShareableCommand
+            var result = await _mediator.Send(new CreateQuizFromShareableCommand
             {
                 UserId = request.User?.Id ?? user.Id,
                 ShareableQuizId = Guid.Parse(commandWithArgs[1])
             }, token);
+
+            await result.Match(
+                created => SendFirstQuestion(request, token, created),
+                _ => Task.CompletedTask);
+            
             return;
         }
         
@@ -64,6 +72,24 @@ public class StartCommand : IBotCommand
             cancellationToken: token);
     }
 
+    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, SharedQuizCreated result)
+    {
+        await _client.EditMessageTextAsync(
+            request.UserTelegramId,
+            request.MessageId,
+            $"Начнем квиз! В него войдет {result.QuestionsCount} выученных слов. " +
+            "\r\nТы вызываешь у меня восторг!" +
+            $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
+            cancellationToken: token);
+
+        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
+
+        if (quizQuestion != null)
+        {
+            await _client.SendQuizQuestion(request, quizQuestion, token);
+        }
+    }
+    
     private bool IsContainsArguments(string[] args)
     {
         return args.Length > 1;
