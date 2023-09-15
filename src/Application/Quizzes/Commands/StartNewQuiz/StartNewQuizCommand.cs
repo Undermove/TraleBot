@@ -1,6 +1,5 @@
 using Application.Common;
 using Application.Common.Exceptions;
-using Domain;
 using Domain.Entities;
 using Domain.Quiz;
 using MediatR;

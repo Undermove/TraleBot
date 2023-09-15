@@ -1,5 +1,3 @@
-using Domain.Entities;
-
 namespace Application.UnitTests.DSL;
 
 public static class Create

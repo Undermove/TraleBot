@@ -4,7 +4,6 @@ using Domain.Entities;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
-using OneOf;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;

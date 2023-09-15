@@ -1,10 +1,8 @@
 using Application.Quizzes.Commands.StartNewQuiz;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
-using Domain;
 using Domain.Entities;
 using Domain.Quiz;
-using Moq;
 using Shouldly;
 
 namespace Application.UnitTests.Tests;
