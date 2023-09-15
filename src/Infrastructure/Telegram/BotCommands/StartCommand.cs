@@ -1,8 +1,10 @@
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
+using Domain.Entities;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
+using OneOf;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
@@ -26,10 +28,13 @@ public class StartCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        UserCreatedResultType userCreatedResultType;
+        User? user = request.User;
         if (request.User == null)
         {
-            userCreatedResultType = await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
+            var userCreatedResultType = await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
+            userCreatedResultType.Match(
+                created => user = created.User, 
+                exists => user = exists.User);
         }
 
         var commandWithArgs = request.Text.Split(' ');
@@ -37,7 +42,7 @@ public class StartCommand : IBotCommand
         {
             await _mediator.Send(new CreateQuizFromShareableCommand
             {
-                UserId = request.User.Id,
+                UserId = request.User?.Id ?? user.Id,
                 ShareableQuizId = Guid.Parse(commandWithArgs[1])
             }, token);
             return;
