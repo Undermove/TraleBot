@@ -74,9 +74,8 @@ public class StartCommand : IBotCommand
 
     private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, SharedQuizCreated result)
     {
-        await _client.EditMessageTextAsync(
+        await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            request.MessageId,
             $"Начнем квиз! В него войдет {result.QuestionsCount} выученных слов. " +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",

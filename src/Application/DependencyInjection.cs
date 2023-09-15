@@ -1,6 +1,8 @@
 using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
+using Application.Quizzes.Services;
+using Domain.Quiz;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +14,8 @@ public static class DependencyInjection
     {
         services.AddMediatR(AppDomain.CurrentDomain.GetAssemblies());
 
+        services.AddTransient<IQuizCreator, QuizCreator>();
+        
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, YoungEggheadChecker>();

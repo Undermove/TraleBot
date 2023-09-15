@@ -1,6 +1,7 @@
 using Domain.Entities;
+using Domain.Quiz;
 
-namespace Domain.Quiz;
+namespace Application.Quizzes.Services;
 
 public class QuizCreator : IQuizCreator
 {

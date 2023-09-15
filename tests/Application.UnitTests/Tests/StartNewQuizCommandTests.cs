@@ -1,4 +1,5 @@
 using Application.Quizzes.Commands.StartNewQuiz;
+using Application.Quizzes.Services;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
 using Domain.Entities;
