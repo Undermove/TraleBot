@@ -3,7 +3,6 @@ using Application.Quizzes.Services;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
 using Domain.Entities;
-using Domain.Quiz;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
