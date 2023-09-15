@@ -37,6 +37,29 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
         quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
     
+    [Test]
+    public async Task ShouldNotCreateQuizWhenAnotherQuizInProgress()
+    {
+        var (user, vocabularyEntry, shareableQuiz) = await CreatePremiumUserWithShareableQuiz();
+        await _sut.Handle(new CreateQuizFromShareableCommand
+        {
+            UserId = user.Id, 
+            ShareableQuizId = shareableQuiz.Id
+        }, CancellationToken.None);
+        
+        var result = await _sut.Handle(new CreateQuizFromShareableCommand
+        {
+            UserId = user.Id, 
+            ShareableQuizId = shareableQuiz.Id
+        }, CancellationToken.None);
+        
+        result.IsT2.ShouldBeTrue();
+        Context.Quizzes.Count().ShouldBe(1);
+        var quiz = Context.Quizzes.Include(quiz => quiz.QuizQuestions).FirstOrDefault();
+        quiz.ShouldNotBeNull();
+        quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
+    }
+    
     private async Task<(User, VocabularyEntry, ShareableQuiz)> CreatePremiumUserWithShareableQuiz()
     {
         var premiumUser = CreatePremiumUser();

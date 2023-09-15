@@ -8,12 +8,12 @@ using OneOf;
 
 namespace Application.Quizzes.Commands.CreateSharedQuiz;
 
-public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>>
+public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz, AnotherQuizInProgress>>
 {
     public required Guid UserId { get; set; }
     public required Guid ShareableQuizId { get; set; }
 
-    public class Handler : IRequestHandler<CreateQuizFromShareableCommand, OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>>
+    public class Handler : IRequestHandler<CreateQuizFromShareableCommand, OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz, AnotherQuizInProgress>>
     {
         private readonly ITraleDbContext _dbContext;
         private readonly IQuizCreator _quizCreator;
@@ -24,8 +24,15 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             _quizCreator = quizCreator;
         }
 
-        public async Task<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>> Handle(CreateQuizFromShareableCommand request, CancellationToken ct)
+        public async Task<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz, AnotherQuizInProgress>> Handle(CreateQuizFromShareableCommand request, CancellationToken ct)
         {
+            var anotherQuizInProgress = await _dbContext.Quizzes
+                .AnyAsync(quiz => quiz.UserId == request.UserId && quiz.IsCompleted == false, ct);
+            if (anotherQuizInProgress)
+            {
+                return new AnotherQuizInProgress();
+            }
+            
             var shareableQuiz = await _dbContext.ShareableQuizzes.FirstOrDefaultAsync(
                 quiz => quiz.Id == request.ShareableQuizId,
                 cancellationToken: ct);
