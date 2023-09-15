@@ -18,24 +18,25 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
         _sut = new CreateQuizFromShareableCommand.Handler(Context, new QuizCreator());
     }
     
-    // [Test]
+    [Test]
     public async Task ShouldCreateQuizWithVocabularyEntries()
     {
-        var (user, vocabularyEntry, shareableQuiz) = CreatePremiumUserWithShareableQuiz();
+        var (user, vocabularyEntry, shareableQuiz) = await CreatePremiumUserWithShareableQuiz();
         
-        await _sut.Handle(new CreateQuizFromShareableCommand
+        var result = await _sut.Handle(new CreateQuizFromShareableCommand
         {
             UserId = user.Id, 
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
+        result.IsT0.ShouldBeTrue();
         Context.Quizzes.Count().ShouldBe(1);
         var quiz = Context.Quizzes.Include(quiz => quiz.QuizQuestions).FirstOrDefault();
         quiz.ShouldNotBeNull();
         quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
     
-    private (User, VocabularyEntry, ShareableQuiz) CreatePremiumUserWithShareableQuiz()
+    private async Task<(User, VocabularyEntry, ShareableQuiz)> CreatePremiumUserWithShareableQuiz()
     {
         var premiumUser = CreatePremiumUser();
         var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
@@ -48,10 +49,11 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             DateAddedUtc = DateTime.UtcNow,
             CreatedByUserId = premiumUser.Id,
             CreatedByUser = premiumUser,
-            VocabularyEntriesIds = new List<Guid>(){vocabularyEntry.Id} 
+            VocabularyEntriesIds = new List<Guid> {vocabularyEntry.Id} 
         };
         
         Context.ShareableQuizzes.Add(shareableQuiz);
+        await Context.SaveChangesAsync();
         
         return (premiumUser, vocabularyEntry, shareableQuiz);
     }

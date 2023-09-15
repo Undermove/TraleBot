@@ -11,7 +11,7 @@ public class VocabularyEntry
     public string Definition { get; set; }
     public string AdditionalInfo { get; set; }
     public string Example { get; set; }
-    public DateTime DateAdded { get; set; } 
+    public DateTime DateAdded { get; set; } // rename to DateAddedUtc 
     public Guid UserId { get; set; }
     public virtual User User { get; set; }
     public int SuccessAnswersCount { get; set; }
