@@ -82,14 +82,11 @@ public class CheckQuizAnswerBotCommand: IBotCommand
 
     private async Task TrySendNextQuestion(TelegramRequest request, CancellationToken ct)
     {
-        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
-        if (quizQuestion == null)
-        {
-            await CompleteQuiz(request, ct);
-            return;
-        }
-
-        await _client.SendQuizQuestion(request, quizQuestion, ct);
+        var result = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
+        await result.Match(
+            question => _client.SendQuizQuestion(request, question.Question, ct),
+            _ => CompleteQuiz(request, ct) 
+        );
     }
 
     private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)
@@ -114,7 +111,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 {
                     InlineKeyboardButton.WithSwitchInlineQuery(
                         "Поделиться квизом", 
-                        $"Привет! Пользователь {request.UserName} хочет чтобы [ты прошел квиз:](https://t.me/traletest_bot?start=0cda4a71-56ef-4897-99b6-2e37b050e021)")
+                        $"Привет! Пользователь {request.UserName} прислал тебе квиз [ты прошел квиз:](https://t.me/traletest_bot?start=0cda4a71-56ef-4897-99b6-2e37b050e021)")
                 }
             }),
             cancellationToken: ct);

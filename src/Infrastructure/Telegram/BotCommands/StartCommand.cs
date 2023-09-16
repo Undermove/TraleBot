@@ -1,7 +1,5 @@
-using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Quizzes.Commands.GetNextQuizQuestion;
-using Application.Quizzes.Commands.StartNewQuiz;
 using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.CommonComponents;
@@ -83,21 +81,21 @@ public class StartCommand : IBotCommand
             cancellationToken: token);
     }
 
-    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, SharedQuizCreated result)
+    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, SharedQuizCreated sharedQuizCreated)
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Начнем квиз! В него войдет {result.QuestionsCount} выученных слов. " +
+            $"Начнем квиз! В него войдет {sharedQuizCreated.QuestionsCount} выученных слов. " +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
+        var result = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
 
-        if (quizQuestion != null)
-        {
-            await _client.SendQuizQuestion(request, quizQuestion, token);
-        }
+        await result.Match(
+            nextQuestion => _client.SendQuizQuestion(request, nextQuestion.Question, token),
+            _ => Task.CompletedTask 
+        );
     }
     
     private bool IsContainsArguments(string[] args)

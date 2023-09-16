@@ -42,22 +42,22 @@ public class StartQuizBotCommand : IBotCommand
         );
     }
     
-    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, QuizStarted result)
+    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, QuizStarted quizStarted)
     {
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
-            $"Начнем квиз! В него войдет {result.QuizQuestionsCount} выученных слов. " +
+            $"Начнем квиз! В него войдет {quizStarted.QuizQuestionsCount} выученных слов. " +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
+        var result = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
 
-        if (quizQuestion != null)
-        {
-            await _client.SendQuizQuestion(request, quizQuestion, token);
-        }
+        await result.Match(
+            nextQuestion => _client.SendQuizQuestion(request, nextQuestion.Question, token),
+            _ => HandleNotEnoughWords(request, token) 
+        );
     }
     
     private async Task HandleNotEnoughWords(TelegramRequest request, CancellationToken token)

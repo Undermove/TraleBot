@@ -1,15 +1,15 @@
 using Application.Common;
-using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OneOf;
 
 namespace Application.Quizzes.Commands.GetNextQuizQuestion;
 
-public class GetNextQuizQuestionQuery : IRequest<QuizQuestion?>
+public class GetNextQuizQuestionQuery : IRequest<OneOf<NextQuestion, QuizCompleted>>
 {
     public Guid? UserId { get; set; }
     
-    public class Handler: IRequestHandler<GetNextQuizQuestionQuery, QuizQuestion?>
+    public class Handler: IRequestHandler<GetNextQuizQuestionQuery, OneOf<NextQuestion, QuizCompleted>>
     {
         private readonly ITraleDbContext _dbContext;
         
@@ -18,7 +18,7 @@ public class GetNextQuizQuestionQuery : IRequest<QuizQuestion?>
             _dbContext = dbContext;
         }
         
-        public async Task<QuizQuestion?> Handle(GetNextQuizQuestionQuery request, CancellationToken ct)
+        public async Task<OneOf<NextQuestion, QuizCompleted>> Handle(GetNextQuizQuestionQuery request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .SingleAsync(quiz => 
@@ -28,14 +28,15 @@ public class GetNextQuizQuestionQuery : IRequest<QuizQuestion?>
             await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizQuestions)).LoadAsync(ct);
             if (currentQuiz.QuizQuestions.Count == 0)
             {
-                return null;
+                return new QuizCompleted(currentQuiz);
             } 
 
             var quizQuestion = currentQuiz
                 .QuizQuestions
                 .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
                 .Last();
-            return quizQuestion;
+            
+            return new NextQuestion(quizQuestion);
         }
     }
 }
