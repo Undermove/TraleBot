@@ -1,13 +1,15 @@
 using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.CreateSharedQuiz;
+using Application.Quizzes.Commands.GetNextQuizQuestion;
 using Application.Quizzes.Commands.StartNewQuiz;
 using Application.Users.Commands.CreateUser;
-using Domain.Entities;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types;
+using User = Domain.Entities.User;
 
 namespace Infrastructure.Telegram.BotCommands;
 
@@ -50,7 +52,8 @@ public class StartCommand : IBotCommand
 
             await result.Match(
                 created => SendFirstQuestion(request, token, created),
-                _ => Task.CompletedTask);
+                _ => Task.CompletedTask,
+                _ => SendAnotherQuizInProcessMessage(request, token));
             
             return;
         }
@@ -69,6 +72,14 @@ public class StartCommand : IBotCommand
             "\r\n/vocabulary - посмотреть слова в словаре" +
             "\r\n/menu - открыть меню",
             replyMarkup: MenuKeyboard.GetMenuKeyboard(),
+            cancellationToken: token);
+    }
+
+    private Task<Message> SendAnotherQuizInProcessMessage(TelegramRequest request, CancellationToken token)
+    {
+        return _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"Прости, кажется, что один квиз уже в процессе. Для начала нужно закончить его.",
             cancellationToken: token);
     }
 

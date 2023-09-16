@@ -3,7 +3,7 @@ using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Quizzes.Commands;
+namespace Application.Quizzes.Commands.GetNextQuizQuestion;
 
 public class GetNextQuizQuestionQuery : IRequest<QuizQuestion?>
 {

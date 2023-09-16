@@ -1,6 +1,7 @@
 using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.CheckQuizAnswer;
 using Application.Quizzes.Commands.CompleteQuiz;
+using Application.Quizzes.Commands.GetNextQuizQuestion;
 using Application.Quizzes.Queries;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;

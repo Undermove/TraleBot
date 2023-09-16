@@ -1,4 +1,5 @@
 using Application.Quizzes.Commands;
+using Application.Quizzes.Commands.GetNextQuizQuestion;
 using Application.Quizzes.Commands.StartNewQuiz;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
