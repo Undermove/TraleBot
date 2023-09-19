@@ -29,7 +29,7 @@ public class GetNextQuizQuestionQuery : IRequest<OneOf<NextQuestion, QuizComplet
             if (currentQuiz.QuizQuestions.Count == 0)
             {
                 return new QuizCompleted(currentQuiz);
-            } 
+            }
 
             var quizQuestion = currentQuiz
                 .QuizQuestions

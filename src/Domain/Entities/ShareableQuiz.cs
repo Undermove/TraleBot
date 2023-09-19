@@ -8,4 +8,6 @@ public class ShareableQuiz
     public required Guid CreatedByUserId { get; set; }
     public virtual User CreatedByUser { get; set; } = null!;
     public virtual ICollection<Guid> VocabularyEntriesIds { get; set; } = null!;
+    public Guid QuizId { get; set; }
+    public virtual Quiz Quiz { get; set; }
 }
