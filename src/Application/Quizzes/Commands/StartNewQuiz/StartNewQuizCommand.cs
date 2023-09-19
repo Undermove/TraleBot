@@ -70,15 +70,6 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             CancellationToken ct,
             List<QuizQuestion> quizQuestions)
         {
-            var quiz = new Quiz
-            {
-                Id = Guid.NewGuid(),
-                UserId = request.UserId!.Value,
-                QuizQuestions = quizQuestions,
-                DateStarted = DateTime.UtcNow,
-                IsCompleted = false
-            };
-
             var shareableQuiz = new ShareableQuiz
             {
                 Id = Guid.NewGuid(),
@@ -89,7 +80,17 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 VocabularyEntriesIds = quizQuestions.Select(q => q.VocabularyEntry.Id).ToList()
             };
             
-            await _dbContext.ShareableQuizzes.AddAsync(shareableQuiz, ct);
+            var quiz = new Quiz
+            {
+                Id = Guid.NewGuid(),
+                UserId = request.UserId!.Value,
+                QuizQuestions = quizQuestions,
+                DateStarted = DateTime.UtcNow,
+                IsCompleted = false,
+                ShareableQuiz = shareableQuiz,
+                ShareableQuizId = shareableQuiz.Id
+            };
+            
             await _dbContext.Quizzes.AddAsync(quiz, ct);
         }
     }

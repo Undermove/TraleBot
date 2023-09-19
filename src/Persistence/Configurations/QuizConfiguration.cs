@@ -15,7 +15,7 @@ public class QuizConfiguration : IEntityTypeConfiguration<Quiz>
         builder.Property(ve => ve.IsCompleted).HasDefaultValue(false);
         builder.HasOne(quiz => quiz.ShareableQuiz)
             .WithOne(u => u.Quiz)
-            .HasForeignKey<ShareableQuiz>(quiz => quiz.Id)
+            .HasForeignKey<ShareableQuiz>(quiz => quiz.QuizId)
             .IsRequired();
     }
 }

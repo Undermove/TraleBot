@@ -28,7 +28,7 @@ public class GetNextQuizQuestionQuery : IRequest<OneOf<NextQuestion, QuizComplet
             await _dbContext.Entry(currentQuiz).Collection(nameof(currentQuiz.QuizQuestions)).LoadAsync(ct);
             if (currentQuiz.QuizQuestions.Count == 0)
             {
-                return new QuizCompleted(currentQuiz);
+                return new QuizCompleted(currentQuiz.ShareableQuiz);
             }
 
             var quizQuestion = currentQuiz

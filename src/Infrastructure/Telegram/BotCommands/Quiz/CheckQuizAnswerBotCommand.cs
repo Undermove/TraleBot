@@ -7,6 +7,7 @@ using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
@@ -85,11 +86,11 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         var result = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
         await result.Match(
             question => _client.SendQuizQuestion(request, question.Question, ct),
-            _ => CompleteQuiz(request, ct) 
+            completed => CompleteQuiz(request, completed, ct) 
         );
     }
 
-    private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)
+    private async Task CompleteQuiz(TelegramRequest request, QuizCompleted quizCompleted, CancellationToken ct)
     {
         var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
         double correctnessPercent = Math.Round(100 * (quizStats.CorrectAnswersCount / (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
@@ -104,16 +105,17 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "👉Хочешь поделиться квизом с другом? Просто отправь ему эту ссылку: ",
+            "👉Хочешь поделиться квизом с другом? Просто нажми на кнопку: ",
             replyMarkup: new InlineKeyboardMarkup(new[]
             {
                 new[]
                 {
                     InlineKeyboardButton.WithSwitchInlineQuery(
                         "Поделиться квизом", 
-                        $"Привет! Пользователь {request.UserName} прислал тебе квиз [ты прошел квиз:](https://t.me/traletest_bot?start=0cda4a71-56ef-4897-99b6-2e37b050e021)")
+                        $"Привет! Давай восоревнуемся в знании иностранных слов: https://t.me/traletest_bot?start={quizCompleted?.ShareableQuiz?.Id ?? Guid.Empty}")
                 }
             }),
+            parseMode:ParseMode.Html,
             cancellationToken: ct);
     }
     
