@@ -1,5 +1,3 @@
-using Application.Quizzes.Commands;
-using Application.Quizzes.Commands.GetNextQuizQuestion;
 using Application.Quizzes.Commands.StartNewQuiz;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
@@ -35,14 +33,14 @@ public class StartQuizBotCommand : IBotCommand
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
 
         await result.Match<Task>(
-            started => SendFirstQuestion(request, token, started),
+            started => SendFirstQuestion(request, started, token),
             _ => HandleNotEnoughWords(request, token),
             _ => HandleNeedPremiumToActivate(request, token),
             _ => HandleQuizAlreadyStarted(request, token)
         );
     }
     
-    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, QuizStarted quizStarted)
+    private async Task SendFirstQuestion(TelegramRequest request, QuizStarted quizStarted, CancellationToken token)
     {
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
