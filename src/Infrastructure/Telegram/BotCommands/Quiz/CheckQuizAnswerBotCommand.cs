@@ -1,4 +1,3 @@
-using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.CheckQuizAnswer;
 using Application.Quizzes.Commands.CompleteQuiz;
 using Application.Quizzes.Commands.GetNextQuizQuestion;
@@ -94,16 +93,16 @@ public class CheckQuizAnswerBotCommand: IBotCommand
     private async Task CompleteSharedQuiz(TelegramRequest request, SharedQuizCompleted shareQuizCompleted, CancellationToken ct)
     {
         var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
-        double correctnessPercent = Math.Round(100 * (quizStats.CorrectAnswersCount / (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"""
             🖇Проверим результаты:"
             Твой результат:
-            ✅Правильные ответы:            {quizStats.CorrectAnswersCount}
+            ✅Правильные ответы:            {quizStats.CorrectAnswersCount}%
+            
             Результат твоего друга:
-            📏Правильные ответы:         {shareQuizCompleted.ShareableQuiz.CorrectAnswersCount}%
+            📏Правильные ответы:         {shareQuizCompleted.Quiz.CorrectAnswersCount}%
             """,
             cancellationToken: ct);
     }

@@ -8,4 +8,4 @@ public record NextQuestion(QuizQuestion Question);
 // change quiz to shareable quiz
 public record QuizCompleted(ShareableQuiz? ShareableQuiz);
 
-public record SharedQuizCompleted(Quiz ShareableQuiz);
+public record SharedQuizCompleted(Quiz Quiz);
