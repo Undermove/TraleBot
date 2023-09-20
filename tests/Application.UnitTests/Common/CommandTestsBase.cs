@@ -26,10 +26,11 @@ public abstract class CommandTestsBase : IDisposable
         Context = TraleContextFactory.Create();
     }
     
-    protected User CreatePremiumUser()
+    protected async Task<User> CreatePremiumUser()
     {
         var premiumUser = Create.User().WithPremiumAccountType().Build();
         Context.Users.Add(premiumUser);
+        await Context.SaveChangesAsync();
         return premiumUser;
     }
 }

@@ -40,7 +40,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
     [Test]
     public async Task ShouldReturnNotEnoughWords_ForPremiumUser_WithoutVocabularyEntries()
     {
-        var premiumUser = CreatePremiumUser();
+        var premiumUser = await CreatePremiumUser();
 
         var result = await _sut.Handle(new StartNewQuizCommand
         {
@@ -103,7 +103,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
 
     private async Task<(User, VocabularyEntry)> CreatePremiumUserWithVocabularyEntry()
     {
-        var premiumUser = CreatePremiumUser();
+        var premiumUser = await CreatePremiumUser();
         var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
         Context.VocabularyEntries.Add(vocabularyEntry);
         await Context.SaveChangesAsync();

@@ -61,7 +61,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
     
     private async Task<(User, VocabularyEntry, ShareableQuiz)> CreatePremiumUserWithShareableQuiz()
     {
-        var premiumUser = CreatePremiumUser();
+        var premiumUser = await CreatePremiumUser();
         var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
         Context.VocabularyEntries.Add(vocabularyEntry);
 
