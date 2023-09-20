@@ -32,7 +32,6 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
 
         var result = oneOf.AsT0;
         result.ShouldNotBeNull();
-        result.IsAnswerCorrect.ShouldBeTrue();
         Context.QuizQuestions.Count().ShouldBe(0);
         vocabularyEntry.SuccessAnswersCount.ShouldBe(1);
         quiz.CorrectAnswersCount.ShouldBe(1);
@@ -54,9 +53,8 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
         var oneOf = await _sut.Handle(command, CancellationToken.None);
 
 
-        CheckQuizAnswerResult? result = oneOf.AsT0;
+        IncorrectAnswer? result = oneOf.AsT1;
         result.ShouldNotBeNull();
-        result.IsAnswerCorrect.ShouldBeFalse();
         Context.QuizQuestions.Count().ShouldBe(0);
         vocabularyEntry.SuccessAnswersCount.ShouldBe(0);
         quiz.CorrectAnswersCount.ShouldBe(0);
@@ -79,7 +77,7 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
 
         var oneOf = await _sut.Handle(command, CancellationToken.None);
 
-        QuizCompletedResult? result = oneOf.AsT1;
+        QuizCompleted? result = oneOf.AsT2;
         result.ShouldNotBeNull();
         Context.QuizQuestions.Count().ShouldBe(0);
     }

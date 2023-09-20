@@ -8,6 +8,7 @@ using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using QuizCompleted = Application.Quizzes.Commands.GetNextQuizQuestion.QuizCompleted;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
 
@@ -37,31 +38,27 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             ct);
 
         await checkResult.Match(
-            result => SendNextQuestion(request, result, ct),
+            correctAnswer => SendCorrectAnswerConfirmation(request, correctAnswer, ct),
+            result => SendIncorrectAnswerConfirmation(request, result, ct),
             _ => Task.CompletedTask);
-    }
 
-    private async Task SendNextQuestion(TelegramRequest request, CheckQuizAnswerResult checkResult, CancellationToken ct)
-    {
-        if (checkResult.IsAnswerCorrect)
-        {
-            await SendCorrectAnswerConfirmation(request, ct, checkResult);
-        }
-        else
-        {
-            await _client.SendTextMessageAsync(
-                request.UserTelegramId,
-                "❌😞Прости, но ответ неверный." +
-                $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
-                "\r\nДавай попробуем со следующим словом!", 
-                cancellationToken: ct);
-        }
-        
         await TrySendNextQuestion(request, ct);
     }
 
-    private async Task SendCorrectAnswerConfirmation(TelegramRequest request, CancellationToken ct,
-        CheckQuizAnswerResult checkResult)
+    private async Task SendIncorrectAnswerConfirmation(TelegramRequest request, IncorrectAnswer checkResult, CancellationToken ct)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "❌😞Прости, но ответ неверный." +
+            $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
+            "\r\nДавай попробуем со следующим словом!", 
+            cancellationToken: ct);
+    }
+
+    private async Task SendCorrectAnswerConfirmation(
+        TelegramRequest request, 
+        CorrectAnswer checkResult,
+        CancellationToken ct)
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,

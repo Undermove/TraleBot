@@ -5,12 +5,12 @@ using OneOf;
 
 namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public class CheckQuizAnswerCommand: IRequest<OneOf<CheckQuizAnswerResult, QuizCompletedResult>>
+public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted>>
 {
     public Guid? UserId { get; init; }
     public required string Answer { get; init; }
 
-    public class Handler : IRequestHandler<CheckQuizAnswerCommand, OneOf<CheckQuizAnswerResult, QuizCompletedResult>>
+    public class Handler : IRequestHandler<CheckQuizAnswerCommand, OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted>>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -19,7 +19,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CheckQuizAnswerResult, QuizC
             _dbContext = dbContext;
         }
 
-        public async Task<OneOf<CheckQuizAnswerResult, QuizCompletedResult>> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
+        public async Task<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted>> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .OrderBy(quiz => quiz.DateStarted)
@@ -34,7 +34,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CheckQuizAnswerResult, QuizC
             
             if (currentQuiz.QuizQuestions.Count == 0)
             {
-                return new QuizCompletedResult(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount);
+                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount);
             }
             
             var quizQuestion = currentQuiz
@@ -54,12 +54,14 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CheckQuizAnswerResult, QuizC
             _dbContext.QuizQuestions.Remove(quizQuestion);
             
             await _dbContext.SaveChangesAsync(ct);
-            return new CheckQuizAnswerResult(
-                isAnswerCorrect, 
-                quizQuestion.Answer, 
-                quizQuestion.VocabularyEntry.GetScoreToNextLevel(),
-                quizQuestion.VocabularyEntry.GetNextMasteringLevel(),
-                masteringLevel);
+
+            return isAnswerCorrect
+                ? new CorrectAnswer(
+                    quizQuestion.VocabularyEntry.GetScoreToNextLevel(),
+                    quizQuestion.VocabularyEntry.GetNextMasteringLevel(),
+                    masteringLevel
+                )
+                : new IncorrectAnswer(quizQuestion.Answer);
         }
     }
 }
