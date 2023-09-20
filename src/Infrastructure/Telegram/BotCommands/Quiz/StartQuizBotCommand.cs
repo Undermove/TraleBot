@@ -32,7 +32,7 @@ public class StartQuizBotCommand : IBotCommand
 
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
 
-        await result.Match<Task>(
+        await result.Match(
             started => SendFirstQuestion(request, started, token),
             _ => HandleNotEnoughWords(request, token),
             _ => HandleNeedPremiumToActivate(request, token),

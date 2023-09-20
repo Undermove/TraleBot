@@ -32,7 +32,7 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
 
         var result = oneOf.AsT0;
         result.ShouldNotBeNull();
-        Context.QuizQuestions.Count().ShouldBe(0);
+        Context.QuizQuestions.Count().ShouldBe(1);
         vocabularyEntry.SuccessAnswersCount.ShouldBe(1);
         quiz.CorrectAnswersCount.ShouldBe(1);
         quiz.IncorrectAnswersCount.ShouldBe(0);
@@ -51,11 +51,10 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
         };
 
         var oneOf = await _sut.Handle(command, CancellationToken.None);
-
-
+        
         IncorrectAnswer? result = oneOf.AsT1;
         result.ShouldNotBeNull();
-        Context.QuizQuestions.Count().ShouldBe(0);
+        Context.QuizQuestions.Count().ShouldBe(1);
         vocabularyEntry.SuccessAnswersCount.ShouldBe(0);
         quiz.CorrectAnswersCount.ShouldBe(0);
         quiz.IncorrectAnswersCount.ShouldBe(1);
@@ -65,7 +64,7 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
     public async Task ShouldReturnQuizCompleted_WhenThereIsNoQuestions()
     {
         var user = await CreatePremiumUser();
-        var quiz = Create.Quiz().CreatedByUser(user).Build();
+        var quiz = Create.Quiz().WithShareableQuiz().CreatedByUser(user).Build();
         Context.Quizzes.Add(quiz);
         await Context.SaveChangesAsync(CancellationToken.None);
         
@@ -88,6 +87,7 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
         var quiz = Create
             .Quiz()
             .CreatedByUser(user)
+            .AddQuizQuestionWithVocabularyEntry(vocabularyEntry)
             .AddQuizQuestionWithVocabularyEntry(vocabularyEntry)
             .Build();
         Context.Quizzes.Add(quiz);

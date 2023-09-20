@@ -1,5 +1,4 @@
 using Application.Quizzes.Commands.CreateSharedQuiz;
-using Application.Quizzes.Commands.GetNextQuizQuestion;
 using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.CommonComponents;
@@ -90,13 +89,8 @@ public class StartCommand : IBotCommand
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var result = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
 
-        await result.Match(
-            nextQuestion => _client.SendQuizQuestion(request, nextQuestion.Question, token),
-            _ => Task.CompletedTask,
-            _ => Task.CompletedTask
-        );
+        await _client.SendQuizQuestion(request, sharedQuizCreated.FirstQuestion, token);
     }
     
     private bool IsContainsArguments(string[] args)

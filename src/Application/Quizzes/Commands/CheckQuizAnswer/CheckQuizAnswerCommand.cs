@@ -5,12 +5,12 @@ using OneOf;
 
 namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted>>
+public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted, SharedQuizCompleted>>
 {
     public Guid? UserId { get; init; }
     public required string Answer { get; init; }
 
-    public class Handler : IRequestHandler<CheckQuizAnswerCommand, OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted>>
+    public class Handler : IRequestHandler<CheckQuizAnswerCommand, OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted, SharedQuizCompleted>>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -19,7 +19,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
             _dbContext = dbContext;
         }
 
-        public async Task<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted>> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
+        public async Task<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted, SharedQuizCompleted>> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .OrderBy(quiz => quiz.DateStarted)
@@ -34,7 +34,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
             
             if (currentQuiz.QuizQuestions.Count == 0)
             {
-                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount);
+                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount, currentQuiz.ShareableQuiz.Id);
             }
             
             var quizQuestion = currentQuiz
@@ -56,13 +56,29 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
             
             await _dbContext.SaveChangesAsync(ct);
 
+            var nextQuizQuestion = currentQuiz
+                .QuizQuestions
+                .MinBy(entry => entry.VocabularyEntry.DateAdded);
+
+            if (nextQuizQuestion == null && currentQuiz.ShareableQuiz == null)
+            {
+                return new SharedQuizCompleted(currentQuiz);
+            }
+            
+            if (nextQuizQuestion == null)
+            {
+                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount,
+                    currentQuiz.ShareableQuizId);
+            }
+            
             return isAnswerCorrect
                 ? new CorrectAnswer(
                     quizQuestion.VocabularyEntry.GetScoreToNextLevel(),
                     quizQuestion.VocabularyEntry.GetNextMasteringLevel(),
-                    acquiredLevel
+                    acquiredLevel,
+                    nextQuizQuestion
                 )
-                : new IncorrectAnswer(quizQuestion.Answer);
+                : new IncorrectAnswer(quizQuestion.Answer, nextQuizQuestion);
         }
     }
 }
