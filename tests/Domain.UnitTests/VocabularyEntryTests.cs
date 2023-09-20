@@ -13,7 +13,7 @@ public class VocabularyEntryTests
         int successAnswersCount,
         int successAnswersCountInReverseDirection)
     {
-        VocabularyEntry vocabularyEntry = new VocabularyEntry
+        var vocabularyEntry = new VocabularyEntry
         {
             SuccessAnswersCount = successAnswersCount,
             SuccessAnswersCountInReverseDirection = successAnswersCountInReverseDirection,
@@ -35,7 +35,7 @@ public class VocabularyEntryTests
         int successAnswersCount,
         int successAnswersCountInReverseDirection)
     {
-        VocabularyEntry vocabularyEntry = new VocabularyEntry
+        var vocabularyEntry = new VocabularyEntry
         {
             SuccessAnswersCount = successAnswersCount,
             SuccessAnswersCountInReverseDirection = successAnswersCountInReverseDirection,
@@ -57,8 +57,8 @@ public class VocabularyEntryTests
         int successAnswersCount,
         int successAnswersCountInReverseDirection,
         int failedAnswersCount)
-    {;
-        VocabularyEntry vocabularyEntry = new VocabularyEntry
+    {
+        var vocabularyEntry = new VocabularyEntry
         {
             Word = word,
             Definition = definition,
@@ -81,7 +81,7 @@ public class VocabularyEntryTests
         int successAnswersCount,
         int successAnswersCountInReverseDirection)
     {
-        VocabularyEntry vocabularyEntry = new VocabularyEntry
+        var vocabularyEntry = new VocabularyEntry
         {
             SuccessAnswersCount = successAnswersCount,
             SuccessAnswersCountInReverseDirection = successAnswersCountInReverseDirection,
