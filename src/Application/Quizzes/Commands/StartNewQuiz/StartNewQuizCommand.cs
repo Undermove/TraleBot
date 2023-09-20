@@ -61,7 +61,10 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             await SaveQuiz(request, user, ct, quizQuestions);
             
             await _dbContext.SaveChangesAsync(ct);
-            return new QuizStarted(quizQuestions.Count);
+            var firstQuestion = quizQuestions
+                .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
+                .Last();
+            return new QuizStarted(quizQuestions.Count, firstQuestion);
         }
 
         private async Task SaveQuiz(

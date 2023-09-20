@@ -52,13 +52,7 @@ public class StartQuizBotCommand : IBotCommand
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var result = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
-
-        await result.Match(
-            nextQuestion => _client.SendQuizQuestion(request, nextQuestion.Question, token),
-            _ => HandleNotEnoughWords(request, token),
-            completed => Task.CompletedTask
-        );
+        await _client.SendQuizQuestion(request, quizStarted.FirstQuestion, token);
     }
     
     private async Task HandleNotEnoughWords(TelegramRequest request, CancellationToken token)
