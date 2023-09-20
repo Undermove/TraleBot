@@ -8,15 +8,16 @@ namespace Application.UnitTests.Tests;
 
 public class CheckQuizAnswerCommandTests : CommandTestsBase
 {
-    private readonly CheckQuizAnswerCommand.Handler _sut;
+    private CheckQuizAnswerCommand.Handler _sut = null!;
 
-    public CheckQuizAnswerCommandTests()
+    [SetUp]
+    public void SetUp()
     {
         _sut = new CheckQuizAnswerCommand.Handler(Context);
     }
-    
+
     [Test]
-    public async Task Test()
+    public async Task ShouldReturnSuccessAndRemoveQuizQuestion_WhenAnswerIsCorrect()
     {
         var user = await CreatePremiumUser();
         var vocabularyEntry = Create.VocabularyEntry().Build();
@@ -26,10 +27,54 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
             UserId = user.Id,
             Answer = vocabularyEntry.Definition
         };
-        
+
         var result = await _sut.Handle(command, CancellationToken.None);
-        
+
         result.IsAnswerCorrect.ShouldBeTrue();
+        Context.QuizQuestions.Count().ShouldBe(0);
+        vocabularyEntry.SuccessAnswersCount.ShouldBe(1);
+        quiz.CorrectAnswersCount.ShouldBe(1);
+        quiz.IncorrectAnswersCount.ShouldBe(0);
+    }
+
+    [Test]
+    public async Task ShouldReturnFailAndRemoveQuizQuestion_WhenAnswerIsInCorrect()
+    {
+        var user = await CreatePremiumUser();
+        var vocabularyEntry = Create.VocabularyEntry().Build();
+        var quiz = await CreateQuizWithOneQuestion(user, vocabularyEntry);
+        CheckQuizAnswerCommand command = new CheckQuizAnswerCommand
+        {
+            UserId = user.Id,
+            Answer = "Incorrect Answer"
+        };
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsAnswerCorrect.ShouldBeFalse();
+        Context.QuizQuestions.Count().ShouldBe(0);
+        vocabularyEntry.SuccessAnswersCount.ShouldBe(0);
+        quiz.CorrectAnswersCount.ShouldBe(0);
+        quiz.IncorrectAnswersCount.ShouldBe(1);
+    }
+
+    [Test]
+    public async Task ShouldReturnQuizCompleted_WhenThereIsNoQuestions()
+    {
+        var user = await CreatePremiumUser();
+        var quiz = Create.Quiz().CreatedByUser(user).Build();
+        Context.Quizzes.Add(quiz);
+
+        CheckQuizAnswerCommand command = new CheckQuizAnswerCommand
+        {
+            UserId = user.Id,
+            Answer = "any word"
+        };
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsAnswerCorrect.ShouldBeFalse();
+        Context.QuizQuestions.Count().ShouldBe(0);
     }
 
     private async Task<Quiz> CreateQuizWithOneQuestion(User user, VocabularyEntry vocabularyEntry)
