@@ -28,8 +28,10 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
             Answer = vocabularyEntry.Definition
         };
 
-        var result = await _sut.Handle(command, CancellationToken.None);
+        var oneOf = await _sut.Handle(command, CancellationToken.None);
 
+        var result = oneOf.AsT0;
+        result.ShouldNotBeNull();
         result.IsAnswerCorrect.ShouldBeTrue();
         Context.QuizQuestions.Count().ShouldBe(0);
         vocabularyEntry.SuccessAnswersCount.ShouldBe(1);
@@ -49,8 +51,11 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
             Answer = "Incorrect Answer"
         };
 
-        var result = await _sut.Handle(command, CancellationToken.None);
+        var oneOf = await _sut.Handle(command, CancellationToken.None);
 
+
+        CheckQuizAnswerResult? result = oneOf.AsT0;
+        result.ShouldNotBeNull();
         result.IsAnswerCorrect.ShouldBeFalse();
         Context.QuizQuestions.Count().ShouldBe(0);
         vocabularyEntry.SuccessAnswersCount.ShouldBe(0);
@@ -64,16 +69,18 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
         var user = await CreatePremiumUser();
         var quiz = Create.Quiz().CreatedByUser(user).Build();
         Context.Quizzes.Add(quiz);
-
+        await Context.SaveChangesAsync(CancellationToken.None);
+        
         CheckQuizAnswerCommand command = new CheckQuizAnswerCommand
         {
             UserId = user.Id,
             Answer = "any word"
         };
 
-        var result = await _sut.Handle(command, CancellationToken.None);
+        var oneOf = await _sut.Handle(command, CancellationToken.None);
 
-        result.IsAnswerCorrect.ShouldBeFalse();
+        QuizCompletedResult? result = oneOf.AsT1;
+        result.ShouldNotBeNull();
         Context.QuizQuestions.Count().ShouldBe(0);
     }
 

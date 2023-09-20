@@ -1,15 +1,16 @@
 using Application.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OneOf;
 
 namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
+public class CheckQuizAnswerCommand: IRequest<OneOf<CheckQuizAnswerResult, QuizCompletedResult>>
 {
     public Guid? UserId { get; init; }
     public required string Answer { get; init; }
 
-    public class Handler : IRequestHandler<CheckQuizAnswerCommand, CheckQuizAnswerResult>
+    public class Handler : IRequestHandler<CheckQuizAnswerCommand, OneOf<CheckQuizAnswerResult, QuizCompletedResult>>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -18,7 +19,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             _dbContext = dbContext;
         }
 
-        public async Task<CheckQuizAnswerResult> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
+        public async Task<OneOf<CheckQuizAnswerResult, QuizCompletedResult>> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .OrderBy(quiz => quiz.DateStarted)
@@ -33,7 +34,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             
             if (currentQuiz.QuizQuestions.Count == 0)
             {
-                throw new ApplicationException("Looks like quiz already completed or not started yet");
+                return new QuizCompletedResult(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount);
             }
             
             var quizQuestion = currentQuiz

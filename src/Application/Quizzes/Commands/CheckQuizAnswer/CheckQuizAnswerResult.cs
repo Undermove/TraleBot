@@ -8,3 +8,5 @@ public record CheckQuizAnswerResult(
     int? ScoreToNextLevel,
     MasteringLevel? NextLevel,
     MasteringLevel? AcquiredLevel);
+    
+public record QuizCompletedResult(int CorrectAnswersCount, int IncorrectAnswersCount);

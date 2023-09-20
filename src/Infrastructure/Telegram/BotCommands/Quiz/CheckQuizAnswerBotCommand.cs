@@ -36,6 +36,13 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             new CheckQuizAnswerCommand { UserId = request.User!.Id, Answer = request.Text },
             ct);
 
+        await checkResult.Match(
+            result => SendNextQuestion(request, result, ct),
+            _ => Task.CompletedTask);
+    }
+
+    private async Task SendNextQuestion(TelegramRequest request, CheckQuizAnswerResult checkResult, CancellationToken ct)
+    {
         if (checkResult.IsAnswerCorrect)
         {
             await SendCorrectAnswerConfirmation(request, ct, checkResult);
