@@ -19,32 +19,33 @@ public class VocabularyEntry
     public int FailedAnswersCount { get; set; }
     public virtual ICollection<QuizQuestion> QuizQuestions { get; set; }
 
-    public MasteringLevel? ScorePoint(string answer)
+    public void ScorePoint(string answer)
     {
         if (answer.Equals(Definition, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCount++;
-            if (SuccessAnswersCount == MinimumSuccessAnswersRequired)
-            {
-                return MasteringLevel.MasteredInForwardDirection;
-            }
-
-            return null;
+            return;
         }
         
         if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCountInReverseDirection++;
-            if (SuccessAnswersCountInReverseDirection == MinimumSuccessAnswersRequired)
-            {
-                return MasteringLevel.MasteredInBothDirections;
-            }
-            
-            return null;
+            return;
         }
         
         FailedAnswersCount++;
-        return null;
+    }
+
+    // null means nothing been acquired
+    public MasteringLevel? GetAcquiredLevel()
+    {
+        return SuccessAnswersCount switch
+        {
+            >= MinimumSuccessAnswersRequired when SuccessAnswersCountInReverseDirection == MinimumSuccessAnswersRequired
+                => MasteringLevel.MasteredInBothDirections,
+            MinimumSuccessAnswersRequired => MasteringLevel.MasteredInForwardDirection,
+            _ => null
+        };
     }
     
     public MasteringLevel GetMasteringLevel()

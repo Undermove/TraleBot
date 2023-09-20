@@ -48,7 +48,8 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
                 quizQuestion.Answer.Equals(request.Answer, StringComparison.InvariantCultureIgnoreCase);
 
             currentQuiz.ScorePoint(isAnswerCorrect);
-            var masteringLevel = quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
+            quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
+            var acquiredLevel = quizQuestion.VocabularyEntry.GetAcquiredLevel();
             
             currentQuiz.QuizQuestions.Remove(quizQuestion);
             _dbContext.QuizQuestions.Remove(quizQuestion);
@@ -59,7 +60,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
                 ? new CorrectAnswer(
                     quizQuestion.VocabularyEntry.GetScoreToNextLevel(),
                     quizQuestion.VocabularyEntry.GetNextMasteringLevel(),
-                    masteringLevel
+                    acquiredLevel
                 )
                 : new IncorrectAnswer(quizQuestion.Answer);
         }
