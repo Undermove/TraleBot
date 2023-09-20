@@ -56,7 +56,8 @@ public class StartQuizBotCommand : IBotCommand
 
         await result.Match(
             nextQuestion => _client.SendQuizQuestion(request, nextQuestion.Question, token),
-            _ => HandleNotEnoughWords(request, token) 
+            _ => HandleNotEnoughWords(request, token),
+            completed => Task.CompletedTask
         );
     }
     

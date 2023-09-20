@@ -12,7 +12,7 @@ public class Quiz
     public virtual User User { get; set; }
     public virtual ICollection<QuizQuestion> QuizQuestions { get; set; } = null!;
     public Guid ShareableQuizId { get; set; }
-    public virtual ShareableQuiz ShareableQuiz { get; set; }
+    public virtual ShareableQuiz? ShareableQuiz { get; set; }
     
     public void ScorePoint(bool isAnswerCorrect)
     {

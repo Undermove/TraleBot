@@ -86,8 +86,26 @@ public class CheckQuizAnswerBotCommand: IBotCommand
         var result = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
         await result.Match(
             question => _client.SendQuizQuestion(request, question.Question, ct),
-            completed => CompleteQuiz(request, completed, ct) 
+            completed => CompleteQuiz(request, completed, ct),
+            shareQuizCompleted => CompleteSharedQuiz(request, shareQuizCompleted, ct)
         );
+    }
+
+    private async Task CompleteSharedQuiz(TelegramRequest request, SharedQuizCompleted shareQuizCompleted, CancellationToken ct)
+    {
+        var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
+        double correctnessPercent = Math.Round(100 * (quizStats.CorrectAnswersCount / (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"""
+            🖇Проверим результаты:"
+            Твой результат:
+            ✅Правильные ответы:            {quizStats.CorrectAnswersCount}
+            Результат твоего друга:
+            📏Правильные ответы:         {shareQuizCompleted.ShareableQuiz.CorrectAnswersCount}%
+            """,
+            cancellationToken: ct);
     }
 
     private async Task CompleteQuiz(TelegramRequest request, QuizCompleted quizCompleted, CancellationToken ct)
@@ -112,7 +130,7 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 {
                     InlineKeyboardButton.WithSwitchInlineQuery(
                         "Поделиться квизом", 
-                        $"Привет! Давай восоревнуемся в знании иностранных слов: https://t.me/traletest_bot?start={quizCompleted?.ShareableQuiz?.Id ?? Guid.Empty}")
+                        $"Привет! Давай посоревнуемся в знании иностранных слов: \r\n https://t.me/traletest_bot?start={quizCompleted?.ShareableQuiz?.Id ?? Guid.Empty}")
                 }
             }),
             parseMode:ParseMode.Html,

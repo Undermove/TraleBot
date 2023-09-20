@@ -94,7 +94,8 @@ public class StartCommand : IBotCommand
 
         await result.Match(
             nextQuestion => _client.SendQuizQuestion(request, nextQuestion.Question, token),
-            _ => Task.CompletedTask 
+            _ => Task.CompletedTask,
+            _ => Task.CompletedTask
         );
     }
     
