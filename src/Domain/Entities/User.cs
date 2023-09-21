@@ -14,6 +14,7 @@ public class User
     public virtual ICollection<Quiz> Quizzes { get; set; }
     public virtual ICollection<Invoice> Invoices { get; set; }
     public virtual ICollection<Achievement> Achievements { get; set; }
+    public virtual ICollection<ShareableQuiz> ShareableQuizzes { get; set; }
     
     public bool IsActivePremium()
     {

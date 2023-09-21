@@ -25,13 +25,13 @@ public class StopQuizCommand : IRequest
             }
             
             // todo: check here if any quizzes already started
-
             object?[] keyValues = { request.UserId };
             var user = await _dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
             if (user == null)
             {
                 throw new NotFoundException("User", request.UserId);
             }
+            
             await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
             var startedQuiz = user.Quizzes.FirstOrDefault(q => q.IsCompleted == false);
             if (startedQuiz == null)

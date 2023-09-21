@@ -13,5 +13,9 @@ public class QuizConfiguration : IEntityTypeConfiguration<Quiz>
             .WithMany(u => u.Quizzes).HasForeignKey(quiz => quiz.UserId);
         builder.Property(ve => ve.DateStarted).IsRequired().ValueGeneratedOnAdd();
         builder.Property(ve => ve.IsCompleted).HasDefaultValue(false);
+        builder.HasOne(quiz => quiz.ShareableQuiz)
+            .WithOne(u => u.Quiz)
+            .HasForeignKey<ShareableQuiz>(quiz => quiz.QuizId)
+            .IsRequired();
     }
 }

@@ -1,4 +1,3 @@
-using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.StartNewQuiz;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
@@ -33,30 +32,25 @@ public class StartQuizBotCommand : IBotCommand
 
         var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
 
-        await result.Match<Task>(
-            started => SendFirstQuestion(request, token, started),
+        await result.Match(
+            started => SendFirstQuestion(request, started, token),
             _ => HandleNotEnoughWords(request, token),
             _ => HandleNeedPremiumToActivate(request, token),
             _ => HandleQuizAlreadyStarted(request, token)
         );
     }
     
-    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, QuizStarted result)
+    private async Task SendFirstQuestion(TelegramRequest request, QuizStarted quizStarted, CancellationToken token)
     {
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
-            $"Начнем квиз! В него войдет {result.QuizQuestionsCount} выученных слов. " +
+            $"Начнем квиз! В него войдет {quizStarted.QuizQuestionsCount} выученных слов. " +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
-        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, token);
-
-        if (quizQuestion != null)
-        {
-            await _client.SendQuizQuestion(request, quizQuestion, token);
-        }
+        await _client.SendQuizQuestion(request, quizStarted.FirstQuestion, token);
     }
     
     private async Task HandleNotEnoughWords(TelegramRequest request, CancellationToken token)

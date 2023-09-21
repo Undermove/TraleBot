@@ -21,6 +21,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<Invoice> Invoices { get; set; } = null!;
     public DbSet<QuizQuestion> QuizQuestions { get; set; } = null!;
     public DbSet<Achievement> Achievements { get; set; } = null!;
+    public DbSet<ShareableQuiz> ShareableQuizzes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -29,6 +30,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new QuizConfiguration());
         modelBuilder.ApplyConfiguration(new InvoiceConfiguration());
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());
+        modelBuilder.ApplyConfiguration(new ShareableQuizConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -1,4 +1,3 @@
-using Application.Common;
 using IntegrationTests.Fakes;
 using Microsoft.Extensions.DependencyInjection;
 using Telegram.Bot;

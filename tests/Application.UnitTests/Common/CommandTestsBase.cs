@@ -1,3 +1,5 @@
+using Application.UnitTests.DSL;
+using Domain.Entities;
 using Persistence;
 
 namespace Application.UnitTests.Common;
@@ -22,5 +24,13 @@ public abstract class CommandTestsBase : IDisposable
         await Context.Database.EnsureDeletedAsync();
         TraleContextFactory.Destroy(Context);
         Context = TraleContextFactory.Create();
+    }
+    
+    protected async Task<User> CreatePremiumUser()
+    {
+        var premiumUser = Create.User().WithPremiumAccountType().Build();
+        Context.Users.Add(premiumUser);
+        await Context.SaveChangesAsync();
+        return premiumUser;
     }
 }

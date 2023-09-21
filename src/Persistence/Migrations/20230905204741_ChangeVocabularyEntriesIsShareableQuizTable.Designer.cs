@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistence;
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    partial class TraleDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230905204741_ChangeVocabularyEntriesIsShareableQuizTable")]
+    partial class ChangeVocabularyEntriesIsShareableQuizTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,9 +107,6 @@ namespace Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
-                    b.Property<Guid>("ShareableQuizId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
@@ -163,9 +163,6 @@ namespace Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("QuizId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("QuizType")
                         .HasColumnType("integer");
 
@@ -176,9 +173,6 @@ namespace Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("QuizId")
-                        .IsUnique();
 
                     b.ToTable("ShareableQuizzes");
                 });
@@ -310,15 +304,7 @@ namespace Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Quiz", "Quiz")
-                        .WithOne("ShareableQuiz")
-                        .HasForeignKey("Domain.Entities.ShareableQuiz", "QuizId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("CreatedByUser");
-
-                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>
@@ -335,9 +321,6 @@ namespace Persistence.Migrations
             modelBuilder.Entity("Domain.Entities.Quiz", b =>
                 {
                     b.Navigation("QuizQuestions");
-
-                    b.Navigation("ShareableQuiz")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>

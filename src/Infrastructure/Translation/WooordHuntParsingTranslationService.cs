@@ -1,4 +1,3 @@
-using System.Text;
 using Application.Common.Interfaces.TranslationService;
 using HtmlAgilityPack;
 

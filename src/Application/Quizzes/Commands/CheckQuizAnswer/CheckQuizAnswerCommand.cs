@@ -1,15 +1,17 @@
 using Application.Common;
+using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OneOf;
 
 namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
+public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted, SharedQuizCompleted>>
 {
     public Guid? UserId { get; init; }
     public required string Answer { get; init; }
 
-    public class Handler : IRequestHandler<CheckQuizAnswerCommand, CheckQuizAnswerResult>
+    public class Handler : IRequestHandler<CheckQuizAnswerCommand, OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted, SharedQuizCompleted>>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -18,7 +20,7 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
             _dbContext = dbContext;
         }
 
-        public async Task<CheckQuizAnswerResult> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
+        public async Task<OneOf<CorrectAnswer, IncorrectAnswer, QuizCompleted, SharedQuizCompleted>> Handle(CheckQuizAnswerCommand request, CancellationToken ct)
         {
             var currentQuiz = await _dbContext.Quizzes
                 .OrderBy(quiz => quiz.DateStarted)
@@ -31,14 +33,15 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
                 .Collection(nameof(currentQuiz.QuizQuestions))
                 .LoadAsync(ct);
             
-            await _dbContext
-                .Entry(currentQuiz)
-                .Collection(nameof(currentQuiz.QuizQuestions))
-                .LoadAsync(ct);
+            if (currentQuiz.QuizQuestions.Count == 0 && currentQuiz.ShareableQuiz == null)
+            {
+                return new SharedQuizCompleted(currentQuiz);
+            }
             
             if (currentQuiz.QuizQuestions.Count == 0)
             {
-                throw new ApplicationException("Looks like quiz already completed or not started yet");
+                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount,
+                    currentQuiz.ShareableQuizId);
             }
             
             var quizQuestion = currentQuiz
@@ -52,18 +55,30 @@ public class CheckQuizAnswerCommand: IRequest<CheckQuizAnswerResult>
                 quizQuestion.Answer.Equals(request.Answer, StringComparison.InvariantCultureIgnoreCase);
 
             currentQuiz.ScorePoint(isAnswerCorrect);
-            var masteringLevel = quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
+            MasteringLevel? acquiredLevel = null;
+            if(currentQuiz.ShareableQuiz == null)
+            {
+                quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
+                acquiredLevel = quizQuestion.VocabularyEntry.GetAcquiredLevel();   
+            }
             
             currentQuiz.QuizQuestions.Remove(quizQuestion);
             _dbContext.QuizQuestions.Remove(quizQuestion);
             
             await _dbContext.SaveChangesAsync(ct);
-            return new CheckQuizAnswerResult(
-                isAnswerCorrect, 
-                quizQuestion.Answer, 
-                quizQuestion.VocabularyEntry.GetScoreToNextLevel(),
-                quizQuestion.VocabularyEntry.GetNextMasteringLevel(),
-                masteringLevel);
+
+            var nextQuizQuestion = currentQuiz
+                .QuizQuestions
+                .MinBy(entry => entry.VocabularyEntry.DateAdded);
+            
+            return isAnswerCorrect
+                ? new CorrectAnswer(
+                    quizQuestion.VocabularyEntry.GetScoreToNextLevel(),
+                    quizQuestion.VocabularyEntry.GetNextMasteringLevel(),
+                    acquiredLevel,
+                    nextQuizQuestion
+                )
+                : new IncorrectAnswer(quizQuestion.Answer, nextQuizQuestion);
         }
     }
 }

@@ -2,13 +2,14 @@ using Application.Achievements.Services.Triggers;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Application.UnitTests.Common;
+using Application.UnitTests.DSL;
 using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Shouldly;
 
-namespace Application.UnitTests;
+namespace Application.UnitTests.Tests;
 
 public class CreateVocabularyEntryCommandTests : CommandTestsBase
 {
@@ -32,7 +33,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
                 It.IsAny<VocabularyCountTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _existingUser = Create.TestUser();
+        _existingUser = Create.User().Build();
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         

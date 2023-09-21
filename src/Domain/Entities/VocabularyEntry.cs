@@ -1,6 +1,7 @@
 namespace Domain.Entities;
 
 // ReSharper disable once ClassNeverInstantiated.Global
+// ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
 public class VocabularyEntry
 {
     const int MinimumSuccessAnswersRequired = 3;
@@ -10,7 +11,7 @@ public class VocabularyEntry
     public string Definition { get; set; }
     public string AdditionalInfo { get; set; }
     public string Example { get; set; }
-    public DateTime DateAdded { get; set; } 
+    public DateTime DateAdded { get; set; } // rename to DateAddedUtc 
     public Guid UserId { get; set; }
     public virtual User User { get; set; }
     public int SuccessAnswersCount { get; set; }
@@ -18,32 +19,33 @@ public class VocabularyEntry
     public int FailedAnswersCount { get; set; }
     public virtual ICollection<QuizQuestion> QuizQuestions { get; set; }
 
-    public MasteringLevel? ScorePoint(string answer)
+    public void ScorePoint(string answer)
     {
         if (answer.Equals(Definition, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCount++;
-            if (SuccessAnswersCount == MinimumSuccessAnswersRequired)
-            {
-                return MasteringLevel.MasteredInForwardDirection;
-            }
-
-            return null;
+            return;
         }
         
         if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCountInReverseDirection++;
-            if (SuccessAnswersCountInReverseDirection == MinimumSuccessAnswersRequired)
-            {
-                return MasteringLevel.MasteredInBothDirections;
-            }
-            
-            return null;
+            return;
         }
         
         FailedAnswersCount++;
-        return null;
+    }
+
+    // null means nothing been acquired
+    public MasteringLevel? GetAcquiredLevel()
+    {
+        return SuccessAnswersCount switch
+        {
+            >= MinimumSuccessAnswersRequired when SuccessAnswersCountInReverseDirection == MinimumSuccessAnswersRequired
+                => MasteringLevel.MasteredInBothDirections,
+            MinimumSuccessAnswersRequired => MasteringLevel.MasteredInForwardDirection,
+            _ => null
+        };
     }
     
     public MasteringLevel GetMasteringLevel()

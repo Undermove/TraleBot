@@ -2,14 +2,15 @@ using Application.Common;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using OneOf;
 
 namespace Application.Users.Commands.CreateUser;
 
-public class CreateUserCommand : IRequest<UserCreatedResultType>
+public class CreateUserCommand : IRequest<OneOf<UserCreated, UserExists>>
 {
     public long TelegramId { get; set; }
 
-    public class Handler : IRequestHandler<CreateUserCommand, UserCreatedResultType>
+    public class Handler : IRequestHandler<CreateUserCommand, OneOf<UserCreated, UserExists>>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -18,14 +19,14 @@ public class CreateUserCommand : IRequest<UserCreatedResultType>
             _dbContext = dbContext;
         }
 
-        public async Task<UserCreatedResultType> Handle(CreateUserCommand request, CancellationToken cancellationToken)
+        public async Task<OneOf<UserCreated, UserExists>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
         {
             User? user = await _dbContext.Users.FirstOrDefaultAsync(
                 user => user.TelegramId == request.TelegramId,
                 cancellationToken: cancellationToken);
             if (user != null)
             {
-                return UserCreatedResultType.UserAlreadyExists;
+                return new UserExists(user);
             }
 
             user = new User
@@ -39,7 +40,7 @@ public class CreateUserCommand : IRequest<UserCreatedResultType>
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 
-            return UserCreatedResultType.Success;
+            return new UserCreated(user);
         }
     }
 }

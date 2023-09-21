@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistence;
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    partial class TraleDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230919073737_ShareableQuizToQuizRelations")]
+    partial class ShareableQuizToQuizRelations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -153,7 +156,6 @@ namespace Persistence.Migrations
             modelBuilder.Entity("Domain.Entities.ShareableQuiz", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("CreatedByUserId")
@@ -176,9 +178,6 @@ namespace Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("QuizId")
-                        .IsUnique();
 
                     b.ToTable("ShareableQuizzes");
                 });
@@ -312,7 +311,7 @@ namespace Persistence.Migrations
 
                     b.HasOne("Domain.Entities.Quiz", "Quiz")
                         .WithOne("ShareableQuiz")
-                        .HasForeignKey("Domain.Entities.ShareableQuiz", "QuizId")
+                        .HasForeignKey("Domain.Entities.ShareableQuiz", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

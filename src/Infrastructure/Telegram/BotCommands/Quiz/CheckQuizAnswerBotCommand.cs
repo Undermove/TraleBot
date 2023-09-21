@@ -1,4 +1,3 @@
-using Application.Quizzes.Commands;
 using Application.Quizzes.Commands.CheckQuizAnswer;
 using Application.Quizzes.Commands.CompleteQuiz;
 using Application.Quizzes.Queries;
@@ -8,10 +7,11 @@ using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
+using QuizCompleted = Application.Quizzes.Commands.CheckQuizAnswer.QuizCompleted;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
 
-public class CheckQuizAnswerBotCommand: IBotCommand
+public class CheckQuizAnswerBotCommand : IBotCommand
 {
     private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
@@ -36,25 +36,40 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             new CheckQuizAnswerCommand { UserId = request.User!.Id, Answer = request.Text },
             ct);
 
-        if (checkResult.IsAnswerCorrect)
-        {
-            await SendCorrectAnswerConfirmation(request, ct, checkResult);
-        }
-        else
+        await checkResult.Match(
+            correctAnswer => SendCorrectAnswerConfirmation(request, correctAnswer, ct),
+            incorrectAnswer => SendIncorrectAnswerConfirmation(request, incorrectAnswer, ct),
+            completed => CompleteQuiz(request, completed, ct),
+            sharedQuizCompleted => CompleteSharedQuiz(request, sharedQuizCompleted, ct)
+            );
+    }
+
+    private async Task SendIncorrectAnswerConfirmation(TelegramRequest request, IncorrectAnswer checkResult,
+        CancellationToken ct)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "❌😞Прости, но ответ неверный." +
+            $"\r\nПравильный ответ: {checkResult.CorrectAnswer}",
+            cancellationToken: ct);
+        
+        if (checkResult.NextQuizQuestion != null)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
-                "❌😞Прости, но ответ неверный." +
-                $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
-                "\r\nДавай попробуем со следующим словом!", 
+                "Давай попробуем со следующим словом!",
                 cancellationToken: ct);
+            await _client.SendQuizQuestion(request, checkResult.NextQuizQuestion, ct);
+            return;
         }
         
-        await TrySendNextQuestion(request, ct);
+        await Execute(request, ct);
     }
 
-    private async Task SendCorrectAnswerConfirmation(TelegramRequest request, CancellationToken ct,
-        CheckQuizAnswerResult checkResult)
+    private async Task SendCorrectAnswerConfirmation(
+        TelegramRequest request,
+        CorrectAnswer checkResult,
+        CancellationToken ct)
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
@@ -67,35 +82,49 @@ public class CheckQuizAnswerBotCommand: IBotCommand
                 request.UserTelegramId,
                 $"{GetMedalType(checkResult.AcquiredLevel.Value)}",
                 cancellationToken: ct);
-            
-            return;
         }
-        
-        if (checkResult is { ScoreToNextLevel: not null, NextLevel: not null })
+        else if (checkResult is { ScoreToNextLevel: not null, NextLevel: not null })
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
                 $"Переведи это слово правильно еще в {checkResult.ScoreToNextLevel} квизах и получи по нему {GetMedalType(checkResult.NextLevel.Value)}!",
                 cancellationToken: ct);
         }
-    }
 
-    private async Task TrySendNextQuestion(TelegramRequest request, CancellationToken ct)
-    {
-        var quizQuestion = await _mediator.Send(new GetNextQuizQuestionQuery { UserId = request.User!.Id }, ct);
-        if (quizQuestion == null)
+        if (checkResult.NextQuizQuestion != null)
         {
-            await CompleteQuiz(request, ct);
+            await _client.SendQuizQuestion(request, checkResult.NextQuizQuestion, ct);
             return;
         }
 
-        await _client.SendQuizQuestion(request, quizQuestion, ct);
+        await Execute(request, ct);
     }
 
-    private async Task CompleteQuiz(TelegramRequest request, CancellationToken ct)
+    private async Task CompleteSharedQuiz(TelegramRequest request, SharedQuizCompleted shareQuizCompleted,
+        CancellationToken ct)
     {
         var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
-        double correctnessPercent = Math.Round(100 * (quizStats.CorrectAnswersCount / (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
+
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"""
+             🖇Проверим результаты:"
+             Твой результат:
+             ✅Правильные ответы:            {quizStats.CorrectAnswersCount}%
+
+             Результат твоего друга:
+             📏Правильные ответы:         {shareQuizCompleted.Quiz.CorrectAnswersCount}%
+             """,
+            cancellationToken: ct);
+    }
+
+    private async Task CompleteQuiz(TelegramRequest request, QuizCompleted quizCompleted, CancellationToken ct)
+    {
+        var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
+        double correctnessPercent =
+            Math.Round(
+                100 * (quizStats.CorrectAnswersCount /
+                       (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "🏄‍Вот это квиз! Молодец, что стараешься! 💓" +
@@ -104,8 +133,23 @@ public class CheckQuizAnswerBotCommand: IBotCommand
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
             $"\r\n📏Корректных ответов:         {correctnessPercent}%",
             cancellationToken: ct);
+
+        // await _client.SendTextMessageAsync(
+        //     request.UserTelegramId,
+        //     "👉Хочешь поделиться квизом с другом? Просто нажми на кнопку: ",
+        //     replyMarkup: new InlineKeyboardMarkup(new[]
+        //     {
+        //         new[]
+        //         {
+        //             InlineKeyboardButton.WithSwitchInlineQuery(
+        //                 "Поделиться квизом",
+        //                 $"Привет! Давай посоревнуемся в знании иностранных слов: \r\n https://t.me/traletest_bot?start={quizCompleted.ShareableQuizId}")
+        //         }
+        //     }),
+        //     parseMode: ParseMode.Html,
+        //     cancellationToken: ct);
     }
-    
+
     private string GetMedalType(MasteringLevel masteringLevel)
     {
         return masteringLevel switch
