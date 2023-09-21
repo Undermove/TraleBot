@@ -134,20 +134,20 @@ public class CheckQuizAnswerBotCommand : IBotCommand
             $"\r\n📏Корректных ответов:         {correctnessPercent}%",
             cancellationToken: ct);
 
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "👉Хочешь поделиться квизом с другом? Просто нажми на кнопку: ",
-            replyMarkup: new InlineKeyboardMarkup(new[]
-            {
-                new[]
-                {
-                    InlineKeyboardButton.WithSwitchInlineQuery(
-                        "Поделиться квизом",
-                        $"Привет! Давай посоревнуемся в знании иностранных слов: \r\n https://t.me/traletest_bot?start={quizCompleted.ShareableQuizId}")
-                }
-            }),
-            parseMode: ParseMode.Html,
-            cancellationToken: ct);
+        // await _client.SendTextMessageAsync(
+        //     request.UserTelegramId,
+        //     "👉Хочешь поделиться квизом с другом? Просто нажми на кнопку: ",
+        //     replyMarkup: new InlineKeyboardMarkup(new[]
+        //     {
+        //         new[]
+        //         {
+        //             InlineKeyboardButton.WithSwitchInlineQuery(
+        //                 "Поделиться квизом",
+        //                 $"Привет! Давай посоревнуемся в знании иностранных слов: \r\n https://t.me/traletest_bot?start={quizCompleted.ShareableQuizId}")
+        //         }
+        //     }),
+        //     parseMode: ParseMode.Html,
+        //     cancellationToken: ct);
     }
 
     private string GetMedalType(MasteringLevel masteringLevel)
