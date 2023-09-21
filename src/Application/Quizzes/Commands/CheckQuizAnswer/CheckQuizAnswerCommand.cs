@@ -32,9 +32,15 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
                 .Collection(nameof(currentQuiz.QuizQuestions))
                 .LoadAsync(ct);
             
+            if (currentQuiz.QuizQuestions.Count == 0 && currentQuiz.ShareableQuiz == null)
+            {
+                return new SharedQuizCompleted(currentQuiz);
+            }
+            
             if (currentQuiz.QuizQuestions.Count == 0)
             {
-                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount, currentQuiz.ShareableQuiz.Id);
+                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount,
+                    currentQuiz.ShareableQuizId);
             }
             
             var quizQuestion = currentQuiz
@@ -59,17 +65,6 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
             var nextQuizQuestion = currentQuiz
                 .QuizQuestions
                 .MinBy(entry => entry.VocabularyEntry.DateAdded);
-
-            if (nextQuizQuestion == null && currentQuiz.ShareableQuiz == null)
-            {
-                return new SharedQuizCompleted(currentQuiz);
-            }
-            
-            if (nextQuizQuestion == null)
-            {
-                return new QuizCompleted(currentQuiz.CorrectAnswersCount, currentQuiz.IncorrectAnswersCount,
-                    currentQuiz.ShareableQuizId);
-            }
             
             return isAnswerCorrect
                 ? new CorrectAnswer(

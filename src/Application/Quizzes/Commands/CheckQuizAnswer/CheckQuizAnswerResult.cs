@@ -2,13 +2,13 @@ using Domain.Entities;
 
 namespace Application.Quizzes.Commands.CheckQuizAnswer;
 
-public record IncorrectAnswer(string CorrectAnswer, QuizQuestion NextQuizQuestion);
+public record IncorrectAnswer(string CorrectAnswer, QuizQuestion? NextQuizQuestion);
 
 public record CorrectAnswer(
     int? ScoreToNextLevel, 
     MasteringLevel? NextLevel,
     MasteringLevel? AcquiredLevel,
-    QuizQuestion NextQuizQuestion);
+    QuizQuestion? NextQuizQuestion);
     
 public record QuizCompleted(
     int CorrectAnswersCount,

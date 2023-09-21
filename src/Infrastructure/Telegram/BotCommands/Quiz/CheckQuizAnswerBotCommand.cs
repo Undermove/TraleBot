@@ -50,11 +50,20 @@ public class CheckQuizAnswerBotCommand : IBotCommand
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "❌😞Прости, но ответ неверный." +
-            $"\r\nПравильный ответ: {checkResult.CorrectAnswer}" +
-            "\r\nДавай попробуем со следующим словом!",
+            $"\r\nПравильный ответ: {checkResult.CorrectAnswer}",
             cancellationToken: ct);
         
-        await _client.SendQuizQuestion(request, checkResult.NextQuizQuestion, ct);
+        if (checkResult.NextQuizQuestion != null)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "Давай попробуем со следующим словом!",
+                cancellationToken: ct);
+            await _client.SendQuizQuestion(request, checkResult.NextQuizQuestion, ct);
+            return;
+        }
+        
+        await Execute(request, ct);
     }
 
     private async Task SendCorrectAnswerConfirmation(
@@ -81,8 +90,14 @@ public class CheckQuizAnswerBotCommand : IBotCommand
                 $"Переведи это слово правильно еще в {checkResult.ScoreToNextLevel} квизах и получи по нему {GetMedalType(checkResult.NextLevel.Value)}!",
                 cancellationToken: ct);
         }
-        
-        await _client.SendQuizQuestion(request, checkResult.NextQuizQuestion, ct);
+
+        if (checkResult.NextQuizQuestion != null)
+        {
+            await _client.SendQuizQuestion(request, checkResult.NextQuizQuestion, ct);
+            return;
+        }
+
+        await Execute(request, ct);
     }
 
     private async Task CompleteSharedQuiz(TelegramRequest request, SharedQuizCompleted shareQuizCompleted,
