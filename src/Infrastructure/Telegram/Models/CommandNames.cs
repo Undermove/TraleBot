@@ -7,13 +7,14 @@ public static class CommandNames
     public const string Help = "/help";
     public const string HelpIcon = "🆘";
     public const string Menu = "/menu";
+    public const string MenuIcon = "📋";
     public const string CloseMenu = "❌";
     
     // quiz commands
     public const string Quiz = "/quiz";
     public const string QuizIcon = "🎲";
     public const string StopQuiz = "/stopquiz";
-    public const string StopQuizIcon = "⏹";
+    public const string StopQuizIcon = "🛑";
     public const string ShowExample = "/showexample";
 
     // vocabulary commands

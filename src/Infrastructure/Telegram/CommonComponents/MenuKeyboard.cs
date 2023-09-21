@@ -7,26 +7,26 @@ public static class MenuKeyboard
 {
     public static IReplyMarkup GetMenuKeyboard()
     {
-        var keyboard = new ReplyKeyboardMarkup(new[]
+        var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
-                new KeyboardButton($"{CommandNames.QuizIcon} Квиз"),
-                new KeyboardButton($"{CommandNames.StopQuizIcon} Остановить квиз"),
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.QuizIcon} Закрепить слова"),
             },
             new []
             {
-                new KeyboardButton($"{CommandNames.VocabularyIcon} Мой словарь"),
-                new KeyboardButton($"{CommandNames.AchievementsIcon} Достижения")
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.VocabularyIcon} Мой словарь")
+            },
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.AchievementsIcon} Достижения")
             },
             new[]
             {
-                new KeyboardButton($"{CommandNames.PayIcon} Премиум"),
-                new KeyboardButton($"{CommandNames.HelpIcon} Поддержка"),
-                new KeyboardButton($"{CommandNames.CloseMenu} Закрыть меню")
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.PayIcon} Премиум"),
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.HelpIcon} Поддержка")
             }
         });
-        keyboard.ResizeKeyboard = true;
 
         return keyboard;
     }

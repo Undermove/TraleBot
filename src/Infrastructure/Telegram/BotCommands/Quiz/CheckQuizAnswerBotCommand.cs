@@ -132,6 +132,9 @@ public class CheckQuizAnswerBotCommand : IBotCommand
             $"\r\n✅Правильные ответы:            {quizStats.CorrectAnswersCount}" +
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
             $"\r\n📏Корректных ответов:         {correctnessPercent}%",
+            replyMarkup: new InlineKeyboardMarkup(
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
+                ),
             cancellationToken: ct);
 
         // await _client.SendTextMessageAsync(

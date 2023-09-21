@@ -1,4 +1,5 @@
 using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -132,6 +133,10 @@ public class TranslateCommand : IBotCommand
             {
                 InlineKeyboardButton.WithUrl("Послушать на YouGlish",
                     $"https://youglish.com/pronounce/{request.Text}/english?")
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
             }
         });
 

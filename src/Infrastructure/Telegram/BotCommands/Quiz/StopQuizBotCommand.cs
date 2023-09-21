@@ -1,4 +1,5 @@
 using Application.Quizzes.Commands;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -30,6 +31,7 @@ public class StopQuizBotCommand : IBotCommand
             request.UserTelegramId,
             $"Хорошо, пока закончим этот квиз. 😌" +
             $"\r\nЗахочешь еще один, просто пришли команду {CommandNames.Quiz}",
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
             cancellationToken: token);
     }
 }
