@@ -1,4 +1,5 @@
 using Application.Common;
+using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using OneOf;
@@ -54,8 +55,12 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
                 quizQuestion.Answer.Equals(request.Answer, StringComparison.InvariantCultureIgnoreCase);
 
             currentQuiz.ScorePoint(isAnswerCorrect);
-            quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
-            var acquiredLevel = quizQuestion.VocabularyEntry.GetAcquiredLevel();
+            MasteringLevel? acquiredLevel = null;
+            if(currentQuiz.ShareableQuiz == null)
+            {
+                quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
+                acquiredLevel = quizQuestion.VocabularyEntry.GetAcquiredLevel();   
+            }
             
             currentQuiz.QuizQuestions.Remove(quizQuestion);
             _dbContext.QuizQuestions.Remove(quizQuestion);
