@@ -1,6 +1,6 @@
 namespace Domain.Entities;
 
-public class QuizQuestion
+public abstract class QuizQuestion
 {
     public required Guid Id { get; set; }
     public required string Question { get; set; }
@@ -9,4 +9,13 @@ public class QuizQuestion
     
     public Guid VocabularyEntryId { get; set; }
     public virtual required VocabularyEntry VocabularyEntry { get; set; }
+}
+
+public class QuizQuestionWithTypeAnswer : QuizQuestion
+{
+}
+
+public class QuizQuestionWithVariants : QuizQuestion
+{
+    public required string[] Variants { get; set; }
 }

@@ -14,7 +14,7 @@ public class QuizBuilder
     
     public QuizBuilder AddQuizQuestionWithVocabularyEntry(VocabularyEntry vocabularyEntry)
     {
-        _quizQuestions.Add(new QuizQuestion
+        _quizQuestions.Add(new QuizQuestionWithTypeAnswer()
         {
             Id = Guid.NewGuid(),
             Question = vocabularyEntry.Word,

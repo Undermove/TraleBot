@@ -26,7 +26,7 @@ public class QuizCreator : IQuizCreator
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
                 .OrderBy(entry => entry.DateAdded)
                 .Take(20)
-                .Select(QuizQuestion)
+                .Select(ve => QuizQuestionWithVariants(ve, vocabularyEntries))
                 .ToList(),
             QuizTypes.ReverseDirection => vocabularyEntries
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
@@ -42,7 +42,7 @@ public class QuizCreator : IQuizCreator
 
     private static QuizQuestion QuizQuestion(VocabularyEntry entry)
     {
-        return new QuizQuestion
+        return new QuizQuestionWithTypeAnswer()
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
@@ -54,10 +54,26 @@ public class QuizCreator : IQuizCreator
             VocabularyEntryId = entry.Id
         };
     }
+    
+    private static QuizQuestion QuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
+    {
+        return new QuizQuestionWithVariants()
+        {
+            Id = Guid.NewGuid(),
+            VocabularyEntry = entry,
+            Question = entry.Word,
+            Answer = entry.Definition,
+            Variants = otherEntries.Select(vocabularyEntry => entry.Definition).ToArray(),
+            Example = entry.Example
+                .ReplaceWholeWord(entry.Word, "______")
+                .ReplaceWholeWord(entry.Definition, "______"),
+            VocabularyEntryId = entry.Id
+        };
+    }
 
     private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
     {
-        return new QuizQuestion
+        return new QuizQuestionWithTypeAnswer()
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
