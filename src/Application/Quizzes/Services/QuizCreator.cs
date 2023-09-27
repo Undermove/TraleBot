@@ -57,13 +57,20 @@ public class QuizCreator : IQuizCreator
     
     private static QuizQuestion QuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
     {
+        Random rnd = new Random();
         return new QuizQuestionWithVariants()
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
             Question = entry.Word,
             Answer = entry.Definition,
-            Variants = otherEntries.Select(vocabularyEntry => entry.Definition).ToArray(),
+            Variants = otherEntries
+                .Select(ve => ve.Definition)
+                .OrderBy(_ => rnd.Next())
+                .Take(3)
+                .Append(entry.Definition)
+                .OrderBy(_ => rnd.Next())
+                .ToArray(),
             Example = entry.Example
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
