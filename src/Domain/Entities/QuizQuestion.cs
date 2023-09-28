@@ -10,12 +10,3 @@ public abstract class QuizQuestion
     public Guid VocabularyEntryId { get; set; }
     public virtual required VocabularyEntry VocabularyEntry { get; set; }
 }
-
-public class QuizQuestionWithTypeAnswer : QuizQuestion
-{
-}
-
-public class QuizQuestionWithVariants : QuizQuestion
-{
-    public required string[] Variants { get; set; }
-}

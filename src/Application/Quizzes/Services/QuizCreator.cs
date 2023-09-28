@@ -58,7 +58,7 @@ public class QuizCreator : IQuizCreator
     private static QuizQuestion QuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
     {
         Random rnd = new Random();
-        return new QuizQuestionWithVariants()
+        return new QuizQuestionWithVariants
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
