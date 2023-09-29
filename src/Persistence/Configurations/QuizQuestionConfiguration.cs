@@ -8,6 +8,10 @@ public class QuizQuestionConfiguration : IEntityTypeConfiguration<QuizQuestion>
 {
     public void Configure(EntityTypeBuilder<QuizQuestion> builder)
     {
+        builder.HasDiscriminator<string>("QuestionType")
+            .HasValue("Base")
+            .HasValue<QuizQuestionWithTypeAnswer>("WithTypeAnswer")
+            .HasValue<QuizQuestionWithVariants>("WithVariants");
         builder.HasKey(quizQuestion => quizQuestion.Id);
         builder.Property(quizQuestion => quizQuestion.Question).IsRequired();
         builder.Property(quizQuestion => quizQuestion.Answer).IsRequired();
