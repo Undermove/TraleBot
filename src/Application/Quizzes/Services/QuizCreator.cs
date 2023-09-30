@@ -26,7 +26,7 @@ public class QuizCreator : IQuizCreator
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
                 .OrderBy(entry => entry.DateAdded)
                 .Take(20)
-                .Select(ve => QuizQuestionWithVariants(ve, vocabularyEntries))
+                .Select(ve => SelectQuizQuestionWithVariants(ve, vocabularyEntries))
                 .ToList(),
             QuizTypes.ReverseDirection => vocabularyEntries
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
@@ -42,7 +42,7 @@ public class QuizCreator : IQuizCreator
 
     private static QuizQuestion QuizQuestion(VocabularyEntry entry)
     {
-        return new QuizQuestionWithTypeAnswer()
+        return new QuizQuestionWithTypeAnswer
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
@@ -51,11 +51,12 @@ public class QuizCreator : IQuizCreator
             Example = entry.Example
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
-            VocabularyEntryId = entry.Id
+            VocabularyEntryId = entry.Id,
+            QuestionType = nameof(QuizQuestionWithTypeAnswer)
         };
     }
     
-    private static QuizQuestion QuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
+    private static QuizQuestion SelectQuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
     {
         Random rnd = new Random();
         return new QuizQuestionWithVariants
@@ -74,13 +75,14 @@ public class QuizCreator : IQuizCreator
             Example = entry.Example
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
-            VocabularyEntryId = entry.Id
+            VocabularyEntryId = entry.Id,
+            QuestionType = nameof(QuizQuestionWithVariants)
         };
     }
 
     private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
     {
-        return new QuizQuestionWithTypeAnswer()
+        return new QuizQuestionWithTypeAnswer
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
@@ -90,7 +92,7 @@ public class QuizCreator : IQuizCreator
                 // remove word from example to avoid spoiling of correct answer
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
-            VocabularyEntryId = entry.Id
+            VocabularyEntryId = entry.Id,
         };
     }
 }

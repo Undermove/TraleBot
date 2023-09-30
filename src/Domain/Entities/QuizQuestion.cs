@@ -9,4 +9,6 @@ public abstract class QuizQuestion
     
     public Guid VocabularyEntryId { get; set; }
     public virtual required VocabularyEntry VocabularyEntry { get; set; }
+
+    public virtual string QuestionType { get; set; } = null!;
 }
