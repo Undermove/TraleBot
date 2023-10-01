@@ -8,7 +8,7 @@ namespace Application.Quizzes.Services;
 public class QuizCreator : IQuizCreator
 {
     // used only in cases when user dont have enough words to create quiz
-    private static readonly ReadOnlyCollection<(string word, string definition)> SpareWords = new(new[]
+    private static readonly (string word, string definition)[] SpareWords = new[]
     {
         ("car", "машина"),
         ("dog", "собака"),
@@ -30,7 +30,7 @@ public class QuizCreator : IQuizCreator
         ("spoon", "ложка"),
         ("knife", "нож"),
         ("bag", "сумка")
-    });
+    };
     
     public List<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries, QuizTypes quizType)
     {
@@ -118,12 +118,11 @@ public class QuizCreator : IQuizCreator
     
     private static string[] CreateVariantsFromSpareWords(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
     {
-        var variantsWithSpareWords = otherEntries
-            .Select(ve => ve.Definition)
-            .Append(SpareWords[rnd.Next(0, SpareWords.Count)].definition)
-            .OrderBy(_ => rnd.Next());
+        var spareWordsDefinition = SpareWords.Select(tuple => tuple.definition).ToArray();
+        var userWords = otherEntries.Select(ve => ve.Definition).ToArray();
+        var combinedWords = spareWordsDefinition.Concat(userWords).ToArray();
         
-        return variantsWithSpareWords
+        return combinedWords
             .Where(ve => ve != entry.Definition)
             .OrderBy(_ => rnd.Next())
             .Take(3)
