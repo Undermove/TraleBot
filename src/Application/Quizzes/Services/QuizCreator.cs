@@ -1,10 +1,37 @@
+using System.Collections.ObjectModel;
 using Domain.Entities;
 using Domain.Quiz;
+using Nest;
 
 namespace Application.Quizzes.Services;
 
 public class QuizCreator : IQuizCreator
 {
+    // used only in cases when user dont have enough words to create quiz
+    private static readonly ReadOnlyCollection<(string word, string definition)> SpareWords = new(new[]
+    {
+        ("car", "машина"),
+        ("dog", "собака"),
+        ("cat", "кошка"),
+        ("house", "дом"),
+        ("bottle", "бутылка"),
+        ("table", "стол"),
+        ("chair", "стул"),
+        ("window", "окно"),
+        ("computer", "компьютер"),
+        ("phone", "телефон"),
+        ("pen", "ручка"),
+        ("pencil", "карандаш"),
+        ("book", "книга"),
+        ("cup", "чашка"),
+        ("glass", "стакан"),
+        ("plate", "тарелка"),
+        ("fork", "вилка"),
+        ("spoon", "ложка"),
+        ("knife", "нож"),
+        ("bag", "сумка")
+    });
+    
     public List<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries, QuizTypes quizType)
     {
         Random rnd = new Random();
@@ -59,25 +86,50 @@ public class QuizCreator : IQuizCreator
     private static QuizQuestion SelectQuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
     {
         Random rnd = new Random();
+        
         return new QuizQuestionWithVariants
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
             Question = entry.Word,
             Answer = entry.Definition,
-            Variants = otherEntries
-                .Select(ve => ve.Definition)
-                .OrderBy(_ => rnd.Next())
-                .Take(3)
-                .Append(entry.Definition)
-                .OrderBy(_ => rnd.Next())
-                .ToArray(),
+            Variants = otherEntries.Count >= 20
+                ? CreateVariantsFromQuizQuestions(entry, otherEntries, rnd)
+                : CreateVariantsFromSpareWords(entry, otherEntries, rnd) 
+            ,
             Example = entry.Example
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
             VocabularyEntryId = entry.Id,
             QuestionType = nameof(QuizQuestionWithVariants)
         };
+    }
+
+    private static string[] CreateVariantsFromQuizQuestions(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
+    {
+        return otherEntries.Where(ve => ve.Definition != entry.Definition)
+            .Select(ve => ve.Definition)
+            .OrderBy(_ => rnd.Next())
+            .Take(3)
+            .Append(entry.Definition)
+            .OrderBy(_ => rnd.Next())
+            .ToArray();
+    }
+    
+    private static string[] CreateVariantsFromSpareWords(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
+    {
+        var variantsWithSpareWords = otherEntries
+            .Select(ve => ve.Definition)
+            .Append(SpareWords[rnd.Next(0, SpareWords.Count)].definition)
+            .OrderBy(_ => rnd.Next());
+        
+        return variantsWithSpareWords
+            .Where(ve => ve != entry.Definition)
+            .OrderBy(_ => rnd.Next())
+            .Take(3)
+            .Append(entry.Definition)
+            .OrderBy(_ => rnd.Next())
+            .ToArray();
     }
 
     private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
