@@ -1,8 +1,8 @@
 using Application.Quizzes.Commands;
-using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
 
@@ -27,11 +27,17 @@ public class StopQuizBotCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         await _mediator.Send(new StopQuizCommand {UserId = request.User!.Id}, token);
+        var keyboard = new ReplyKeyboardRemove();
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Хорошо, пока закончим этот квиз. 😌" +
-            $"\r\nЗахочешь еще один, просто пришли команду {CommandNames.Quiz}",
-            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
+            $"Хорошо, пока закончим этот квиз. 😌",
+            replyMarkup: keyboard,
+            cancellationToken: token);
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"{CommandNames.MenuIcon} Меню",
+            replyMarkup: keyboard,
             cancellationToken: token);
     }
 }
