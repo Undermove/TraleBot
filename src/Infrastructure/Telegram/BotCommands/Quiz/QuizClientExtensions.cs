@@ -6,9 +6,40 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
 
-public static class QuizClientExtensions
+internal static class QuizClientExtensions
 {
-	internal static async Task SendQuizQuestion(this ITelegramBotClient client, TelegramRequest request, QuizQuestion quizQuestion, CancellationToken ct)
+	internal static Task SendQuizQuestion(this ITelegramBotClient client, TelegramRequest request, QuizQuestion quizQuestion, CancellationToken ct)
+	{
+		return quizQuestion switch
+		{
+			QuizQuestionWithTypeAnswer answer => SendQuizWithTypeAnswer(client, request, answer, ct),
+			QuizQuestionWithVariants variants => SendQuizWithVariants(client, request, variants, ct),
+			_ => throw new ArgumentException("Invalid type of quiz question")
+		};
+	}
+
+	private static async Task SendQuizWithVariants(ITelegramBotClient client, TelegramRequest request, QuizQuestionWithVariants quizQuestion, CancellationToken ct)
+	{
+		var variantButtons = quizQuestion.Variants
+			.Select(v => new KeyboardButton($"{v}"))
+			.ToList();
+
+		variantButtons.AddRange(new List<KeyboardButton>
+		{
+			new($"{CommandNames.StopQuizIcon} Закончить квиз")
+		});
+		
+		ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup(variantButtons);
+		
+		await client.SendTextMessageAsync(
+			request.UserTelegramId,
+			$"Переведи слово: *{quizQuestion.Question}*",
+			ParseMode.Markdown,
+			replyMarkup: keyboard,
+			cancellationToken: ct);
+	}
+
+	private static async Task SendQuizWithTypeAnswer(ITelegramBotClient client, TelegramRequest request, QuizQuestionWithTypeAnswer quizQuestion, CancellationToken ct)
 	{
 		InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup(new[]
 		{

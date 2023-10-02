@@ -117,6 +117,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         var castedQuestion = result.AsT0.FirstQuestion as QuizQuestionWithVariants;
         castedQuestion!.Variants.Length.ShouldBe(4);
         castedQuestion.Variants.ShouldContain(vocabularyEntry.Definition);
+        castedQuestion.Example.ShouldNotBeNullOrEmpty();
     }
 
     private async Task<(User, VocabularyEntry)> CreatePremiumUserWithVocabularyEntry()
