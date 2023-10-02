@@ -6,7 +6,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.Quiz;
 
-internal static class QuizClientExtensions
+internal static class QuizKeyboardsExtensions
 {
 	internal static Task SendQuizQuestion(this ITelegramBotClient client, TelegramRequest request, QuizQuestion quizQuestion, CancellationToken ct)
 	{
@@ -21,15 +21,28 @@ internal static class QuizClientExtensions
 	private static async Task SendQuizWithVariants(ITelegramBotClient client, TelegramRequest request, QuizQuestionWithVariants quizQuestion, CancellationToken ct)
 	{
 		var variantButtons = quizQuestion.Variants
-			.Select(v => new KeyboardButton($"{v}"))
+			.Select(v => new KeyboardButton(v))
 			.ToList();
 
-		variantButtons.AddRange(new List<KeyboardButton>
+		var keyboardRows = new List<List<KeyboardButton>>
 		{
-			new($"{CommandNames.StopQuizIcon} Закончить квиз")
-		});
+			new()
+			{
+				variantButtons[0],
+				variantButtons[1]
+			},
+			new()
+			{
+				variantButtons[2],
+				variantButtons[3]
+			},
+			new()
+			{
+				new($"{CommandNames.StopQuizIcon} Закончить квиз")
+			}
+		};
 		
-		ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup(variantButtons);
+		ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup(keyboardRows);
 		
 		await client.SendTextMessageAsync(
 			request.UserTelegramId,
