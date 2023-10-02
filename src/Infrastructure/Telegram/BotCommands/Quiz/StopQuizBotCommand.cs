@@ -1,4 +1,5 @@
 using Application.Quizzes.Commands;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -37,7 +38,7 @@ public class StopQuizBotCommand : IBotCommand
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"{CommandNames.MenuIcon} Меню",
-            replyMarkup: keyboard,
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
             cancellationToken: token);
     }
 }
