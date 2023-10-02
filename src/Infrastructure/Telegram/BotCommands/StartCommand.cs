@@ -43,7 +43,7 @@ public class StartCommand : IBotCommand
         {
             var result = await _mediator.Send(new CreateQuizFromShareableCommand
             {
-                UserId = request.User?.Id ?? user.Id,
+                UserId = request.User?.Id ?? user!.Id,
                 ShareableQuizId = Guid.Parse(commandWithArgs[1])
             }, token);
 
