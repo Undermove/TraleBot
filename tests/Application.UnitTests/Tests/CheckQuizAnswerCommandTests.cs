@@ -89,6 +89,7 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
             .CreatedByUser(user)
             .AddQuizQuestionWithVocabularyEntry(vocabularyEntry)
             .AddQuizQuestionWithVocabularyEntry(vocabularyEntry)
+            .WithShareableQuiz()
             .Build();
         Context.Quizzes.Add(quiz);
         await Context.SaveChangesAsync(CancellationToken.None);
