@@ -24,7 +24,7 @@ public class MenuCommand : IBotCommand
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "Меню",
+            $"{CommandNames.MenuIcon} Меню",
             replyMarkup: MenuKeyboard.GetMenuKeyboard(),
             cancellationToken: token);
     }

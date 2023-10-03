@@ -100,6 +100,25 @@ public class StartNewQuizCommandTests : CommandTestsBase
         Context.ShareableQuizzes.ShouldContain(quiz =>
             quiz.VocabularyEntriesIds.Any(entry => entry == vocabularyEntry.Id));
     }
+    
+    
+    [Test]
+    public async Task ShouldReturnQuizWithVariants_WhenRequestedQuizWithForwardDirection()
+    {
+        var (premiumUser, vocabularyEntry) = await CreatePremiumUserWithVocabularyEntry();
+        
+        var result = await _sut.Handle(new StartNewQuizCommand
+        {
+            UserId = premiumUser.Id,
+            QuizType = QuizTypes.ForwardDirection
+        }, CancellationToken.None);
+
+        result.AsT0.FirstQuestion.ShouldBeOfType<QuizQuestionWithVariants>();
+        var castedQuestion = result.AsT0.FirstQuestion as QuizQuestionWithVariants;
+        castedQuestion!.Variants.Length.ShouldBe(4);
+        castedQuestion.Variants.ShouldContain(vocabularyEntry.Definition);
+        castedQuestion.Example.ShouldNotBeNullOrEmpty();
+    }
 
     private async Task<(User, VocabularyEntry)> CreatePremiumUserWithVocabularyEntry()
     {

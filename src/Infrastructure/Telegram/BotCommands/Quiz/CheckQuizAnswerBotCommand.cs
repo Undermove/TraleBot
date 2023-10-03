@@ -5,7 +5,6 @@ using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
-using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using QuizCompleted = Application.Quizzes.Commands.CheckQuizAnswer.QuizCompleted;
 
@@ -107,6 +106,12 @@ public class CheckQuizAnswerBotCommand : IBotCommand
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
+            "🏄‍Вот это квиз! Молодец, что стараешься! 💓",
+            replyMarkup: new ReplyKeyboardRemove(),
+            cancellationToken: ct);
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
             $"""
              🖇Проверим результаты:"
              Твой результат:
@@ -125,6 +130,13 @@ public class CheckQuizAnswerBotCommand : IBotCommand
             Math.Round(
                 100 * (quizStats.CorrectAnswersCount /
                        (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
+
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "🏄‍Вот это квиз! Молодец, что стараешься! 💓",
+            replyMarkup: new ReplyKeyboardRemove(),
+            cancellationToken: ct);
+        
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "🏄‍Вот это квиз! Молодец, что стараешься! 💓" +

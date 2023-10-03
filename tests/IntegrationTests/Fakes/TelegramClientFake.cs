@@ -3,13 +3,14 @@ using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Requests.Abstractions;
-
+#pragma warning disable 67
 namespace IntegrationTests.Fakes;
 
 [SuppressMessage("ReSharper", "UnassignedGetOnlyAutoProperty")]
 public class TelegramClientFake : ITelegramBotClient
 {
-	public readonly List<IRequest> _requests = new();
+	// ReSharper disable once CollectionNeverQueried.Local
+	private readonly List<IRequest> _requests = new();
 
 	public Task<TResponse> MakeRequestAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new())
 	{
