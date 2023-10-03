@@ -1,7 +1,5 @@
-using System.Collections.ObjectModel;
 using Domain.Entities;
 using Domain.Quiz;
-using Nest;
 
 namespace Application.Quizzes.Services;
 
