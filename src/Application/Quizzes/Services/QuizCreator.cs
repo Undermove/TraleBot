@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Domain.Entities;
 using Domain.Quiz;
 
@@ -6,28 +7,47 @@ namespace Application.Quizzes.Services;
 public class QuizCreator : IQuizCreator
 {
     // used only in cases when user dont have enough words to create quiz
-    private static readonly (string word, string definition)[] SpareWords = new[]
-    {
+    private static readonly (string word, string definition)[] SpareWords = {
         ("car", "машина"),
+        ("машина", "car"),
         ("dog", "собака"),
+        ("собака", "dog"),
         ("cat", "кошка"),
+        ("кошка", "cat"),
         ("house", "дом"),
+        ("дом", "house"),
         ("bottle", "бутылка"),
+        ("бутылка", "bottle"),
         ("table", "стол"),
+        ("стол", "table"),
         ("chair", "стул"),
+        ("стул", "chair"),
         ("window", "окно"),
+        ("окно", "window"),
         ("computer", "компьютер"),
+        ("компьютер", "computer"),
         ("phone", "телефон"),
+        ("телефон", "phone"),
         ("pen", "ручка"),
+        ("ручка", "pen"),
         ("pencil", "карандаш"),
+        ("карандаш", "pencil"),
         ("book", "книга"),
+        ("книга", "book"),
         ("cup", "чашка"),
+        ("чашка", "cup"),
         ("glass", "стакан"),
+        ("стакан", "glass"),
         ("plate", "тарелка"),
+        ("тарелка", "plate"),
         ("fork", "вилка"),
+        ("вилка", "fork"),
         ("spoon", "ложка"),
+        ("ложка", "spoon"),
         ("knife", "нож"),
-        ("bag", "сумка")
+        ("нож", "knife"),
+        ("bag", "сумка"),
+        ("сумка", "bag")
     };
     
     public List<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries, QuizTypes quizType)
@@ -91,10 +111,7 @@ public class QuizCreator : IQuizCreator
             VocabularyEntry = entry,
             Question = entry.Word,
             Answer = entry.Definition,
-            Variants = otherEntries.Count >= 20
-                ? CreateVariantsFromQuizQuestions(entry, otherEntries, rnd)
-                : CreateVariantsFromSpareWords(entry, otherEntries, rnd) 
-            ,
+            Variants = CreateVariantsFromSpareWords(entry, otherEntries, rnd),
             Example = entry.Example
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
@@ -105,7 +122,8 @@ public class QuizCreator : IQuizCreator
 
     private static string[] CreateVariantsFromQuizQuestions(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
     {
-        return otherEntries.Where(ve => ve.Definition != entry.Definition)
+        return otherEntries.Where(ve => ve.Definition != entry.Definition 
+                                        && entry.Definition.DetectLanguage() == ve.Definition.DetectLanguage())
             .Select(ve => ve.Definition)
             .OrderBy(_ => rnd.Next())
             .Take(3)
@@ -121,12 +139,13 @@ public class QuizCreator : IQuizCreator
         var combinedWords = spareWordsDefinition.Concat(userWords).ToArray();
         
         return combinedWords
-            .Where(ve => ve != entry.Definition)
-            .OrderBy(_ => rnd.Next())
-            .Take(3)
-            .Append(entry.Definition)
-            .OrderBy(_ => rnd.Next())
-            .ToArray();
+            .Where(ve => ve != entry.Definition 
+                         && entry.Definition.DetectLanguage() == ve.DetectLanguage())
+                             .OrderBy(_ => rnd.Next())
+                             .Take(3)
+                             .Append(entry.Definition)
+                             .OrderBy(_ => rnd.Next())
+                             .ToArray();
     }
 
     private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
@@ -142,6 +161,25 @@ public class QuizCreator : IQuizCreator
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
             VocabularyEntryId = entry.Id,
+        };
+    }
+}
+
+public static class LanguageDetectionExtensions
+{
+    public static string DetectLanguage(this string input)
+    {
+        string englishPattern = @"[\p{IsBasicLatin}]";
+        string russianPattern = @"[\p{IsCyrillic}]";
+        
+        bool containsEnglish = Regex.IsMatch(input, englishPattern);
+        bool containsRussian = Regex.IsMatch(input, russianPattern);
+
+        return containsEnglish switch
+        {
+            true when containsRussian => "Russian",
+            true when !containsRussian => "English",
+            _ => "Mixed languages or unsupported characters"
         };
     }
 }
