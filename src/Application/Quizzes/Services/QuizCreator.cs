@@ -79,10 +79,23 @@ public class QuizCreator : IQuizCreator
                 .Take(20)
                 .Select(ReverseQuizQuestion)
                 .ToList(),
+            QuizTypes.SmartQuiz => CreateSmartQuizQuestions(vocabularyEntries),
             _ => new List<QuizQuestion>()
         };
 
         return quizQuestions;
+    }
+
+    private List<QuizQuestion> CreateSmartQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries)
+    {
+        var masteredInBothDirections = vocabularyEntries
+            .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections)
+            .OrderBy(entry => entry.DateAdded)
+            .Take(3)
+            .Select(ve => SelectQuizQuestionWithVariants(ve, vocabularyEntries))
+            .ToList();
+        
+        throw new NotImplementedException();
     }
 
     private static QuizQuestion QuizQuestion(VocabularyEntry entry)
@@ -118,18 +131,6 @@ public class QuizCreator : IQuizCreator
             VocabularyEntryId = entry.Id,
             QuestionType = nameof(QuizQuestionWithVariants)
         };
-    }
-
-    private static string[] CreateVariantsFromQuizQuestions(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
-    {
-        return otherEntries.Where(ve => ve.Definition != entry.Definition 
-                                        && entry.Definition.DetectLanguage() == ve.Definition.DetectLanguage())
-            .Select(ve => ve.Definition)
-            .OrderBy(_ => rnd.Next())
-            .Take(3)
-            .Append(entry.Definition)
-            .OrderBy(_ => rnd.Next())
-            .ToArray();
     }
     
     private static string[] CreateVariantsFromSpareWords(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)

@@ -5,5 +5,6 @@ public enum QuizTypes
     LastWeek,
     SeveralComplicatedWords,
     ForwardDirection,
-    ReverseDirection
+    ReverseDirection,
+    SmartQuiz
 }
