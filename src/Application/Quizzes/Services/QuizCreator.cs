@@ -88,27 +88,38 @@ public class QuizCreator : IQuizCreator
 
     private List<QuizQuestion> CreateSmartQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries)
     {
-        var wordsWithLevel = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+        const int notMasteredWordsCount = 3;
+        const int masteredInForwardDirectionCount = 2;
+        const int masteredInBothDirectionsCount = 2;
+        return SmartQuizQuestionsForMasteringLevel(vocabularyEntries, MasteringLevel.NotMastered, notMasteredWordsCount)
+            .Concat(SmartQuizQuestionsForMasteringLevel(vocabularyEntries, MasteringLevel.MasteredInForwardDirection, masteredInForwardDirectionCount))
+            .Concat(SmartQuizQuestionsForMasteringLevel(vocabularyEntries, MasteringLevel.MasteredInBothDirections, masteredInBothDirectionsCount))
+            .ToList();
+    }
+
+    private static List<QuizQuestion> SmartQuizQuestionsForMasteringLevel(ICollection<VocabularyEntry> vocabularyEntries, MasteringLevel masteringLevel, int wordsCount)
+    {
+        var wordsWithLevel = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == masteringLevel)
             .OrderBy(entry => entry.DateAdded)
             .Take(3)
             .ToArray();
-        
+
         var quizWithVariants = wordsWithLevel
             .Select(ve => SelectQuizQuestionWithVariants(ve, vocabularyEntries))
             .ToList();
-        
+
         var quizWithTypeAnswer = wordsWithLevel
             .Select(QuizQuestion)
             .ToArray();
-        
+
         var reverseQuizWithVariants = wordsWithLevel
             .Select(ve => ReverseQuizQuestionWithVariants(ve, vocabularyEntries))
             .ToArray();
-        
+
         var reverseQuizWithTypeAnswer = wordsWithLevel
             .Select(ReverseQuizQuestion)
             .ToArray();
-        
+
         return quizWithVariants
             .Concat(quizWithTypeAnswer)
             .Concat(reverseQuizWithVariants)
