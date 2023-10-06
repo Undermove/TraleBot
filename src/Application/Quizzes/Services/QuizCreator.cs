@@ -88,14 +88,32 @@ public class QuizCreator : IQuizCreator
 
     private List<QuizQuestion> CreateSmartQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries)
     {
-        var masteredInBothDirections = vocabularyEntries
-            .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections)
+        var wordsWithLevel = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
             .OrderBy(entry => entry.DateAdded)
             .Take(3)
+            .ToArray();
+        
+        var quizWithVariants = wordsWithLevel
             .Select(ve => SelectQuizQuestionWithVariants(ve, vocabularyEntries))
             .ToList();
         
-        throw new NotImplementedException();
+        var quizWithTypeAnswer = wordsWithLevel
+            .Select(QuizQuestion)
+            .ToArray();
+        
+        var reverseQuizWithVariants = wordsWithLevel
+            .Select(ve => ReverseQuizQuestionWithVariants(ve, vocabularyEntries))
+            .ToArray();
+        
+        var reverseQuizWithTypeAnswer = wordsWithLevel
+            .Select(ReverseQuizQuestion)
+            .ToArray();
+        
+        return quizWithVariants
+            .Concat(quizWithTypeAnswer)
+            .Concat(reverseQuizWithVariants)
+            .Concat(reverseQuizWithTypeAnswer)
+            .ToList();
     }
 
     private static QuizQuestion QuizQuestion(VocabularyEntry entry)
@@ -133,6 +151,25 @@ public class QuizCreator : IQuizCreator
         };
     }
     
+    private static QuizQuestion ReverseQuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
+    {
+        Random rnd = new Random();
+        
+        return new QuizQuestionWithVariants
+        {
+            Id = Guid.NewGuid(),
+            VocabularyEntry = entry,
+            Question = entry.Definition,
+            Answer = entry.Word,
+            Variants = CreateVariantsFromSpareWordsForReverseQuiz(entry, otherEntries, rnd),
+            Example = entry.Example
+                .ReplaceWholeWord(entry.Word, "______")
+                .ReplaceWholeWord(entry.Definition, "______"),
+            VocabularyEntryId = entry.Id,
+            QuestionType = nameof(QuizQuestionWithVariants)
+        };
+    }
+    
     private static string[] CreateVariantsFromSpareWords(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
     {
         var spareWordsDefinition = SpareWords.Select(tuple => tuple.definition).ToArray();
@@ -147,6 +184,22 @@ public class QuizCreator : IQuizCreator
                              .Append(entry.Definition)
                              .OrderBy(_ => rnd.Next())
                              .ToArray();
+    }
+    
+    private static string[] CreateVariantsFromSpareWordsForReverseQuiz(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
+    {
+        var spareWordsDefinition = SpareWords.Select(tuple => tuple.word).ToArray();
+        var userWords = otherEntries.Select(ve => ve.Word).ToArray();
+        var combinedWords = spareWordsDefinition.Concat(userWords).ToArray();
+        
+        return combinedWords
+            .Where(ve => ve != entry.Word 
+                         && entry.Word.DetectLanguage() == ve.DetectLanguage())
+            .OrderBy(_ => rnd.Next())
+            .Take(3)
+            .Append(entry.Word)
+            .OrderBy(_ => rnd.Next())
+            .ToArray();
     }
 
     private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)

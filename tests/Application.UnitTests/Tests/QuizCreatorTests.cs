@@ -30,12 +30,12 @@ public class QuizCreatorTests
         quizQuestions
             .Count(question =>
                 question is QuizQuestionWithVariants &&
-                question.VocabularyEntry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                question.VocabularyEntry.GetMasteringLevel() == level)
             .ShouldBe(quizQuestionCount);
         quizQuestions
             .Count(question =>
                 question is QuizQuestionWithTypeAnswer &&
-                question.VocabularyEntry.GetMasteringLevel() == MasteringLevel.NotMastered)
+                question.VocabularyEntry.GetMasteringLevel() == level)
             .ShouldBe(quizQuestionCount);
     }
 
