@@ -50,10 +50,27 @@ public class VocabularyEntryBuilder
         return this;
     }
     
+    // 🥈
     public VocabularyEntryBuilder WithSilverMedal()
+    {
+        _successAnswersCount = 0;
+        _successAnswersCountInReverseDirection = 0;
+        return this;
+    }
+    
+    // 🥇
+    public VocabularyEntryBuilder WithGoldMedal()
     {
         _successAnswersCount = 3;
         _successAnswersCountInReverseDirection = 0;
+        return this;
+    }
+    
+    // 💎
+    public VocabularyEntryBuilder WithEmerald()
+    {
+        _successAnswersCount = 3;
+        _successAnswersCountInReverseDirection = 3;
         return this;
     }
     
