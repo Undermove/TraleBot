@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using Application.Common.Extensions;
 using Domain.Entities;
 using Domain.Quiz;
 
@@ -238,25 +238,6 @@ public class QuizCreator : IQuizCreator
                 .ReplaceWholeWord(entry.Definition, "______"),
             VocabularyEntryId = entry.Id,
             OrderInQuiz = orderInQuiz
-        };
-    }
-}
-
-public static class LanguageDetectionExtensions
-{
-    public static string DetectLanguage(this string input)
-    {
-        string englishPattern = @"[\p{IsBasicLatin}]";
-        string russianPattern = @"[\p{IsCyrillic}]";
-        
-        bool containsEnglish = Regex.IsMatch(input, englishPattern);
-        bool containsRussian = Regex.IsMatch(input, russianPattern);
-
-        return containsEnglish switch
-        {
-            true when containsRussian => "Russian",
-            true when !containsRussian => "English",
-            _ => "Mixed languages or unsupported characters"
         };
     }
 }
