@@ -12,9 +12,8 @@ public static class LanguageDetectionExtensions
 
         return containsRussian switch
         {
-            true when containsRussian => "Russian",
-            false when !containsRussian => "English",
-            _ => "Mixed languages or unsupported characters"
+            true => "Russian",
+            false => "English",
         };
     }
 }
