@@ -12,7 +12,7 @@ public class QuizCreatorTests
     {
         // Arrange
         var quizCreator = new QuizCreator();
-        var vocabularyEntries = CreateVocabularyWith(3,2,2);
+        var vocabularyEntries = CreateVocabularyWith(10,10,10);
         var quizType = QuizTypes.SmartQuiz;
 
         // Act

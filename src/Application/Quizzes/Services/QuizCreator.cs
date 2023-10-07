@@ -57,12 +57,12 @@ public class QuizCreator : IQuizCreator
         var quizQuestions = quizType switch
         {
             QuizTypes.LastWeek => vocabularyEntries
-                .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
+                .Where(ve => ve.DateAdded > DateTime.Now.AddDays(-7))
                 .OrderBy(entry => entry.DateAdded)
                 .Select(QuizQuestion)
                 .ToList(),
             QuizTypes.SeveralComplicatedWords => vocabularyEntries
-                .Where(entry => entry.SuccessAnswersCount < entry.FailedAnswersCount)
+                .Where(ve => ve.SuccessAnswersCount < ve.FailedAnswersCount)
                 .OrderBy(_ => rnd.Next())
                 .Take(10)
                 .Select(QuizQuestion)
@@ -71,7 +71,7 @@ public class QuizCreator : IQuizCreator
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
                 .OrderBy(entry => entry.DateAdded)
                 .Take(20)
-                .Select(ve => SelectQuizQuestionWithVariants(ve, vocabularyEntries))
+                .Select((ve, i) => SelectQuizQuestionWithVariants(ve, vocabularyEntries, i))
                 .ToList(),
             QuizTypes.ReverseDirection => vocabularyEntries
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
@@ -91,43 +91,50 @@ public class QuizCreator : IQuizCreator
         const int notMasteredWordsCount = 3;
         const int masteredInForwardDirectionCount = 2;
         const int masteredInBothDirectionsCount = 2;
-        return SmartQuizQuestionsForMasteringLevel(vocabularyEntries, MasteringLevel.NotMastered, notMasteredWordsCount)
-            .Concat(SmartQuizQuestionsForMasteringLevel(vocabularyEntries, MasteringLevel.MasteredInForwardDirection, masteredInForwardDirectionCount))
-            .Concat(SmartQuizQuestionsForMasteringLevel(vocabularyEntries, MasteringLevel.MasteredInBothDirections, masteredInBothDirectionsCount))
+        var notMastered = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
+            .OrderBy(entry => entry.DateAdded)
+            .Take(notMasteredWordsCount)
+            .ToArray();
+        var masteredInForwardDirection = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
+            .OrderBy(entry => entry.DateAdded)
+            .Take(masteredInForwardDirectionCount)
+            .ToArray();
+        var masteredInBothDirections = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections)
+            .OrderBy(entry => entry.DateAdded)
+            .Take(masteredInBothDirectionsCount)
+            .ToArray();
+        var entriesForQuiz = notMastered.Concat(masteredInForwardDirection).Concat(masteredInBothDirections).ToList();
+        return SmartQuizQuestionsForMasteringLevel(entriesForQuiz, vocabularyEntries)
             .ToList();
     }
 
-    private static List<QuizQuestion> SmartQuizQuestionsForMasteringLevel(ICollection<VocabularyEntry> vocabularyEntries, MasteringLevel masteringLevel, int wordsCount)
+    private static List<QuizQuestion> SmartQuizQuestionsForMasteringLevel(ICollection<VocabularyEntry> quizEntries, ICollection<VocabularyEntry> allEntries)
     {
-        var wordsWithLevel = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == masteringLevel)
-            .OrderBy(entry => entry.DateAdded)
-            .Take(3)
-            .ToArray();
-
-        var quizWithVariants = wordsWithLevel
-            .Select(ve => SelectQuizQuestionWithVariants(ve, vocabularyEntries))
+        int orderInQuiz = 0;
+        var quizWithVariants = quizEntries
+            .Select(ve => SelectQuizQuestionWithVariants(ve, allEntries, orderInQuiz++))
             .ToList();
 
-        var quizWithTypeAnswer = wordsWithLevel
-            .Select(QuizQuestion)
+        var reverseQuizWithVariants = quizEntries
+            .Select(ve => ReverseQuizQuestionWithVariants(ve, allEntries, orderInQuiz++))
+            .ToArray();
+        
+        var quizWithTypeAnswer = quizEntries
+            .Select(entry => QuizQuestion(entry, orderInQuiz++))
             .ToArray();
 
-        var reverseQuizWithVariants = wordsWithLevel
-            .Select(ve => ReverseQuizQuestionWithVariants(ve, vocabularyEntries))
-            .ToArray();
-
-        var reverseQuizWithTypeAnswer = wordsWithLevel
-            .Select(ReverseQuizQuestion)
+        var reverseQuizWithTypeAnswer = quizEntries
+            .Select(ve => ReverseQuizQuestion(ve, orderInQuiz++))
             .ToArray();
 
         return quizWithVariants
-            .Concat(quizWithTypeAnswer)
             .Concat(reverseQuizWithVariants)
+            .Concat(quizWithTypeAnswer)
             .Concat(reverseQuizWithTypeAnswer)
             .ToList();
     }
 
-    private static QuizQuestion QuizQuestion(VocabularyEntry entry)
+    private static QuizQuestion QuizQuestion(VocabularyEntry entry, int orderNumber)
     {
         return new QuizQuestionWithTypeAnswer
         {
@@ -139,11 +146,13 @@ public class QuizCreator : IQuizCreator
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
             VocabularyEntryId = entry.Id,
-            QuestionType = nameof(QuizQuestionWithTypeAnswer)
+            QuestionType = nameof(QuizQuestionWithTypeAnswer),
+            OrderInQuiz = orderNumber
         };
     }
     
-    private static QuizQuestion SelectQuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
+    private static QuizQuestion SelectQuizQuestionWithVariants(VocabularyEntry entry,
+        ICollection<VocabularyEntry> otherEntries, int orderInQuiz)
     {
         Random rnd = new Random();
         
@@ -158,11 +167,12 @@ public class QuizCreator : IQuizCreator
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
             VocabularyEntryId = entry.Id,
-            QuestionType = nameof(QuizQuestionWithVariants)
+            QuestionType = nameof(QuizQuestionWithVariants), 
+            OrderInQuiz = orderInQuiz
         };
     }
     
-    private static QuizQuestion ReverseQuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries)
+    private static QuizQuestion ReverseQuizQuestionWithVariants(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, int orderInQuiz)
     {
         Random rnd = new Random();
         
@@ -177,7 +187,8 @@ public class QuizCreator : IQuizCreator
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
             VocabularyEntryId = entry.Id,
-            QuestionType = nameof(QuizQuestionWithVariants)
+            QuestionType = nameof(QuizQuestionWithVariants),
+            OrderInQuiz = orderInQuiz
         };
     }
     
@@ -213,7 +224,7 @@ public class QuizCreator : IQuizCreator
             .ToArray();
     }
 
-    private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry)
+    private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry, int orderInQuiz)
     {
         return new QuizQuestionWithTypeAnswer
         {
@@ -226,6 +237,7 @@ public class QuizCreator : IQuizCreator
                 .ReplaceWholeWord(entry.Word, "______")
                 .ReplaceWholeWord(entry.Definition, "______"),
             VocabularyEntryId = entry.Id,
+            OrderInQuiz = orderInQuiz
         };
     }
 }
