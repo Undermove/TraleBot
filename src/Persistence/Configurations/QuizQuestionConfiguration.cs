@@ -15,6 +15,7 @@ public class QuizQuestionConfiguration : IEntityTypeConfiguration<QuizQuestion>
         builder.HasKey(quizQuestion => quizQuestion.Id);
         builder.Property(quizQuestion => quizQuestion.Question).IsRequired();
         builder.Property(quizQuestion => quizQuestion.Answer).IsRequired();
+        builder.Property(quizQuestion => quizQuestion.OrderInQuiz).HasDefaultValue(0).IsRequired();
         builder.HasOne(invoice => invoice.VocabularyEntry)
             .WithMany(u => u.QuizQuestions)
             .HasForeignKey(invoice => invoice.VocabularyEntryId);

@@ -11,7 +11,9 @@ public class VocabularyEntryBuilder
     private string _definition = "кошка";
     private string _example = "cat is a cat";
     private string _additionalInfo = "кошка это кошка";
-    
+    private int _successAnswersCount;
+    private int _successAnswersCountInReverseDirection;
+
     public VocabularyEntryBuilder WithId(Guid id)
     {
         _id = id;
@@ -48,6 +50,30 @@ public class VocabularyEntryBuilder
         return this;
     }
     
+    // 🥈
+    public VocabularyEntryBuilder WithSilverMedal()
+    {
+        _successAnswersCount = 0;
+        _successAnswersCountInReverseDirection = 0;
+        return this;
+    }
+    
+    // 🥇
+    public VocabularyEntryBuilder WithGoldMedal()
+    {
+        _successAnswersCount = 3;
+        _successAnswersCountInReverseDirection = 0;
+        return this;
+    }
+    
+    // 💎
+    public VocabularyEntryBuilder WithEmerald()
+    {
+        _successAnswersCount = 3;
+        _successAnswersCountInReverseDirection = 3;
+        return this;
+    }
+    
     public VocabularyEntryBuilder WithAdditionalInfo(string additionalInfo)
     {
         _additionalInfo = additionalInfo;
@@ -64,7 +90,9 @@ public class VocabularyEntryBuilder
             Definition = _definition,
             Example = _example,
             AdditionalInfo = _additionalInfo,
-            DateAdded = _dateAddedUtc
+            DateAdded = _dateAddedUtc,
+            SuccessAnswersCount = _successAnswersCount,
+            SuccessAnswersCountInReverseDirection = _successAnswersCountInReverseDirection,
         };
     }
 }

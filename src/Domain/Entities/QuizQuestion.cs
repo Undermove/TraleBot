@@ -6,6 +6,7 @@ public abstract class QuizQuestion
     public required string Question { get; set; }
     public required string Answer { get; set; }
     public required string Example { get; set; }
+    public required int OrderInQuiz { get; set; }
     
     public Guid VocabularyEntryId { get; set; }
     public virtual required VocabularyEntry VocabularyEntry { get; set; }

@@ -46,7 +46,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
             
             var quizQuestion = currentQuiz
                 .QuizQuestions
-                .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
+                .OrderByDescending(entry => entry.OrderInQuiz)
                 .Last();
 
             await _dbContext.Entry(quizQuestion).Reference(nameof(quizQuestion.VocabularyEntry)).LoadAsync(ct);
@@ -72,7 +72,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
 
             var nextQuizQuestion = currentQuiz
                 .QuizQuestions
-                .MinBy(entry => entry.VocabularyEntry.DateAdded);
+                .MinBy(entry => entry.OrderInQuiz);
             
             return isAnswerCorrect
                 ? new CorrectAnswer(

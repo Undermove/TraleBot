@@ -20,7 +20,8 @@ public class QuizBuilder
             Question = vocabularyEntry.Word,
             Answer = vocabularyEntry.Definition,
             Example = vocabularyEntry.Example,
-            VocabularyEntry = vocabularyEntry
+            VocabularyEntry = vocabularyEntry,
+            OrderInQuiz = 0
         });
         
         return this;

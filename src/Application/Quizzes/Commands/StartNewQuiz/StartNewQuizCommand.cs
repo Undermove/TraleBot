@@ -62,7 +62,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             
             await _dbContext.SaveChangesAsync(ct);
             var firstQuestion = quizQuestions
-                .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
+                .OrderByDescending(entry => entry.OrderInQuiz)
                 .Last();
             return new QuizStarted(quizQuestions.Count, firstQuestion);
         }
