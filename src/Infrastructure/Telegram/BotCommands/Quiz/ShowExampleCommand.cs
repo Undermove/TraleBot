@@ -30,7 +30,14 @@ public class ShowExampleCommand : IBotCommand
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData("⏭ Пропустить") },
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData("⏭ Пропустить"),
+            },
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.StopQuizIcon} Закончить квиз", $"{CommandNames.StopQuiz}"),
+            }
         });
         
         await _client.EditMessageReplyMarkupAsync(

@@ -139,8 +139,7 @@ public class CheckQuizAnswerBotCommand : IBotCommand
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "🏄‍Вот это квиз! Молодец, что стараешься! 💓" +
-            "\r\nВот твоя статистика:" +
+            "Вот твоя статистика:" +
             $"\r\n✅Правильные ответы:            {quizStats.CorrectAnswersCount}" +
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
             $"\r\n📏Корректных ответов:         {correctnessPercent}%",

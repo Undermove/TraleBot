@@ -80,11 +80,17 @@ public class StartQuizBotCommand : IBotCommand
     
     private async Task HandleQuizAlreadyStarted(TelegramRequest request, CancellationToken token)
     {
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithCallbackData($"{CommandNames.StopQuizIcon} Остановить квиз", $"{CommandNames.StopQuiz}") },
+        });
+        
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
             "Кажется, что ты уже начал один квиз." +
-            $"\r\nЕсли хочешь его закончить, просто пришли {CommandNames.StopQuiz}",
+            "\r\nЕсли хочешь его закончить, просто нажми на кнопку",
+            replyMarkup: keyboard,
             cancellationToken: token);
     }
 }

@@ -87,7 +87,7 @@ internal static class QuizKeyboardsExtensions
 		
 		await client.SendTextMessageAsync(
 			request.UserTelegramId,
-			$"Переведи слово:",
+			"Введи перевод слова:",
 			replyMarkup: new ReplyKeyboardRemove(),
 			cancellationToken: ct);
 		
