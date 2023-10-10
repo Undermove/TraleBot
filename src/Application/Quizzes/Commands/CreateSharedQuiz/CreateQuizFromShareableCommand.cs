@@ -56,7 +56,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             await _dbContext.SaveChangesAsync(ct);
             
             var firstQuestion = quizQuestions
-                .OrderByDescending(entry => entry.VocabularyEntry.DateAdded)
+                .OrderByDescending(entry => entry.VocabularyEntry.DateAddedUtc)
                 .Last();
             
             return new SharedQuizCreated(quizQuestions.Count, firstQuestion);

@@ -57,8 +57,8 @@ public class QuizCreator : IQuizCreator
         var quizQuestions = quizType switch
         {
             QuizTypes.LastWeek => vocabularyEntries
-                .Where(ve => ve.DateAdded > DateTime.Now.AddDays(-7))
-                .OrderBy(entry => entry.DateAdded)
+                .Where(ve => ve.DateAddedUtc > DateTime.Now.AddDays(-7))
+                .OrderBy(entry => entry.DateAddedUtc)
                 .Select(QuizQuestion)
                 .ToList(),
             QuizTypes.SeveralComplicatedWords => vocabularyEntries
@@ -69,13 +69,13 @@ public class QuizCreator : IQuizCreator
                 .ToList(),
             QuizTypes.ForwardDirection => vocabularyEntries
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
-                .OrderBy(entry => entry.DateAdded)
+                .OrderBy(entry => entry.DateAddedUtc)
                 .Take(20)
                 .Select((ve, i) => SelectQuizQuestionWithVariants(ve, vocabularyEntries, i))
                 .ToList(),
             QuizTypes.ReverseDirection => vocabularyEntries
                 .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
-                .OrderBy(entry => entry.DateAdded)
+                .OrderBy(entry => entry.DateAddedUtc)
                 .Take(20)
                 .Select(ReverseQuizQuestion)
                 .ToList(),
@@ -92,15 +92,15 @@ public class QuizCreator : IQuizCreator
         const int masteredInForwardDirectionCount = 2;
         const int masteredInBothDirectionsCount = 2;
         var notMastered = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
-            .OrderBy(entry => entry.DateAdded)
+            .OrderBy(entry => entry.DateAddedUtc)
             .Take(notMasteredWordsCount)
             .ToArray();
         var masteredInForwardDirection = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
-            .OrderBy(entry => entry.DateAdded)
+            .OrderBy(entry => entry.DateAddedUtc)
             .Take(masteredInForwardDirectionCount)
             .ToArray();
         var masteredInBothDirections = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections)
-            .OrderBy(entry => entry.DateAdded)
+            .OrderBy(entry => entry.DateAddedUtc)
             .Take(masteredInBothDirectionsCount)
             .ToArray();
         var entriesForQuiz = notMastered.Concat(masteredInForwardDirection).Concat(masteredInBothDirections).ToList();

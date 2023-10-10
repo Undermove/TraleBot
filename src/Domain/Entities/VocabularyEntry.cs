@@ -6,12 +6,13 @@ public class VocabularyEntry
 {
     const int MinimumSuccessAnswersRequired = 3;
     
-    public Guid Id { get; set; }
-    public string Word { get; set; }
-    public string Definition { get; set; }
-    public string AdditionalInfo { get; set; }
-    public string Example { get; set; }
-    public DateTime DateAdded { get; set; } // rename to DateAddedUtc 
+    public required Guid Id { get; set; }
+    public required string Word { get; set; }
+    public required string Definition { get; set; }
+    public required string AdditionalInfo { get; set; }
+    public required string Example { get; set; }
+    public required DateTime DateAddedUtc { get; set; } // rename to DateAddedUtc
+    public required DateTime UpdatedAtUtc { get; set; } // rename to DateAddedUtc
     public Guid UserId { get; set; }
     public virtual User User { get; set; }
     public int SuccessAnswersCount { get; set; }
