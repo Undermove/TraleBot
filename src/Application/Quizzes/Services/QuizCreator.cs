@@ -92,15 +92,15 @@ public class QuizCreator : IQuizCreator
         const int masteredInForwardDirectionCount = 2;
         const int masteredInBothDirectionsCount = 2;
         var notMastered = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
-            .OrderBy(entry => entry.DateAddedUtc)
+            .OrderBy(entry => entry.UpdatedAtUtc)
             .Take(notMasteredWordsCount)
             .ToArray();
         var masteredInForwardDirection = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
-            .OrderBy(entry => entry.DateAddedUtc)
+            .OrderBy(entry => entry.UpdatedAtUtc)
             .Take(masteredInForwardDirectionCount)
             .ToArray();
         var masteredInBothDirections = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections)
-            .OrderBy(entry => entry.DateAddedUtc)
+            .OrderBy(entry => entry.UpdatedAtUtc)
             .Take(masteredInBothDirectionsCount)
             .ToArray();
         var entriesForQuiz = notMastered.Concat(masteredInForwardDirection).Concat(masteredInBothDirections).ToList();

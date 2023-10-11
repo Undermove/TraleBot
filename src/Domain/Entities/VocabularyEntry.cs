@@ -35,6 +35,7 @@ public class VocabularyEntry
         }
         
         FailedAnswersCount++;
+        UpdatedAtUtc = DateTime.UtcNow;
     }
 
     // null means nothing been acquired
