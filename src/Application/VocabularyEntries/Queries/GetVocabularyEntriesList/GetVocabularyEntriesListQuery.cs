@@ -36,7 +36,7 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
             {
                 vocabularyEntries = user
                     .VocabularyEntries
-                    .OrderBy(entry => entry.DateAdded)
+                    .OrderBy(entry => entry.DateAddedUtc)
                     .ToList()
                     .Chunk(30);
             }
@@ -44,8 +44,8 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
             {
                 vocabularyEntries = user
                     .VocabularyEntries
-                    .Where(entry => entry.DateAdded > DateTime.Now.AddDays(-7))
-                    .OrderBy(entry => entry.DateAdded)
+                    .Where(entry => entry.DateAddedUtc > DateTime.Now.AddDays(-7))
+                    .OrderBy(entry => entry.DateAddedUtc)
                     .ToList()
                     .Chunk(30);
             }

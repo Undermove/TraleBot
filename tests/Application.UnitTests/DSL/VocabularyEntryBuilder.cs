@@ -7,6 +7,7 @@ public class VocabularyEntryBuilder
     private Guid _id = Guid.NewGuid();
     private User _user = Create.User().Build();
     private DateTime _dateAddedUtc = DateTime.UtcNow;
+    private DateTime _updatedAtUtc = DateTime.UtcNow;
     private string _word = "cat";
     private string _definition = "кошка";
     private string _example = "cat is a cat";
@@ -29,6 +30,12 @@ public class VocabularyEntryBuilder
     public VocabularyEntryBuilder WithDateAdded(DateTime dateAdded)
     {
         _dateAddedUtc = dateAdded;
+        return this;
+    }
+    
+    public VocabularyEntryBuilder WithUpdatedAt(DateTime updatedAt)
+    {
+        _updatedAtUtc = updatedAt;
         return this;
     }
     
@@ -90,7 +97,8 @@ public class VocabularyEntryBuilder
             Definition = _definition,
             Example = _example,
             AdditionalInfo = _additionalInfo,
-            DateAdded = _dateAddedUtc,
+            DateAddedUtc = _dateAddedUtc,
+            UpdatedAtUtc = _updatedAtUtc,
             SuccessAnswersCount = _successAnswersCount,
             SuccessAnswersCountInReverseDirection = _successAnswersCountInReverseDirection,
         };

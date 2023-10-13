@@ -93,6 +93,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             string definition, string additionalInfo, string example, User user)
         {
             var entryId = Guid.NewGuid();
+            var dateAddedUtc = DateTime.UtcNow;
             var vocabularyEntry = new VocabularyEntry
             {
                 Id = entryId,
@@ -101,7 +102,8 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                 AdditionalInfo = additionalInfo.ToLowerInvariant(),
                 Example = example,
                 UserId = request.UserId,
-                DateAdded = DateTime.UtcNow
+                DateAddedUtc = dateAddedUtc,
+                UpdatedAtUtc = dateAddedUtc
             };
 
             await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);

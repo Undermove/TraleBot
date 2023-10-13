@@ -5,44 +5,42 @@ namespace Domain.UnitTests;
 
 public class VocabularyEntryTests
 {
-    [TestCase(MasteringLevel.MasteredInForwardDirection, 0,0)]
-    [TestCase(MasteringLevel.MasteredInBothDirections, 4,0)]
-    [TestCase(null, 4,4)]
+    [TestCase(MasteringLevel.MasteredInForwardDirection, 0, 0)]
+    [TestCase(MasteringLevel.MasteredInBothDirections, 4, 0)]
+    [TestCase(null, 4, 4)]
     public void GetNextMasteringLevelShouldReturnFor(
         MasteringLevel? expectedMasteringLevel,
         int successAnswersCount,
         int successAnswersCountInReverseDirection)
     {
-        var vocabularyEntry = new VocabularyEntry
-        {
-            SuccessAnswersCount = successAnswersCount,
-            SuccessAnswersCountInReverseDirection = successAnswersCountInReverseDirection,
-        };
+        var vocabularyEntry = Create.VocabularyEntry()
+            .WithSuccessAnswersCount(successAnswersCount)
+            .WithSuccessAnswersCountInReverseDirection(successAnswersCountInReverseDirection)
+            .Build();
 
         var result = vocabularyEntry.GetNextMasteringLevel();
 
         result.ShouldBe(expectedMasteringLevel);
     }
 
-    [TestCase(3, 0,0)]
-    [TestCase(1, 2,0)]
-    [TestCase(1, 4,2)]
-    [TestCase(3, 4,0)]
-    [TestCase(3, 0,5)]
-    [TestCase(null, 4,4)]
+    [TestCase(3, 0, 0)]
+    [TestCase(1, 2, 0)]
+    [TestCase(1, 4, 2)]
+    [TestCase(3, 4, 0)]
+    [TestCase(3, 0, 5)]
+    [TestCase(null, 4, 4)]
     public void GetScoreToNextLevelShouldReturnFor(
         int? expectedScore,
         int successAnswersCount,
         int successAnswersCountInReverseDirection)
     {
-        var vocabularyEntry = new VocabularyEntry
-        {
-            SuccessAnswersCount = successAnswersCount,
-            SuccessAnswersCountInReverseDirection = successAnswersCountInReverseDirection,
-        };
+        var vocabularyEntry = Create.VocabularyEntry()
+            .WithSuccessAnswersCount(successAnswersCount)
+            .WithSuccessAnswersCountInReverseDirection(successAnswersCountInReverseDirection)
+            .Build();
 
         var result = vocabularyEntry.GetScoreToNextLevel();
-        
+
         result.ShouldBe(expectedScore);
     }
 
@@ -58,34 +56,32 @@ public class VocabularyEntryTests
         int successAnswersCountInReverseDirection,
         int failedAnswersCount)
     {
-        var vocabularyEntry = new VocabularyEntry
-        {
-            Word = word,
-            Definition = definition,
-        };
+        var vocabularyEntry = Create.VocabularyEntry()
+            .WithWord(word)
+            .WithDefinition(definition)
+            .Build();
 
         vocabularyEntry.ScorePoint(answer);
-        
+
         vocabularyEntry.SuccessAnswersCount.ShouldBe(successAnswersCount);
         vocabularyEntry.SuccessAnswersCountInReverseDirection.ShouldBe(successAnswersCountInReverseDirection);
         vocabularyEntry.FailedAnswersCount.ShouldBe(failedAnswersCount);
     }
 
-    [TestCase(MasteringLevel.MasteredInForwardDirection, 3,0)]
-    [TestCase(MasteringLevel.MasteredInBothDirections, 3,3)]
-    [TestCase(MasteringLevel.MasteredInBothDirections, 4,3)]
-    [TestCase(null, 0,3)]
-    [TestCase(null, 4,4)]
+    [TestCase(MasteringLevel.MasteredInForwardDirection, 3, 0)]
+    [TestCase(MasteringLevel.MasteredInBothDirections, 3, 3)]
+    [TestCase(MasteringLevel.MasteredInBothDirections, 4, 3)]
+    [TestCase(null, 0, 3)]
+    [TestCase(null, 4, 4)]
     public void Test(
         MasteringLevel? expectedMasteringLevel,
         int successAnswersCount,
         int successAnswersCountInReverseDirection)
     {
-        var vocabularyEntry = new VocabularyEntry
-        {
-            SuccessAnswersCount = successAnswersCount,
-            SuccessAnswersCountInReverseDirection = successAnswersCountInReverseDirection,
-        };
+        var vocabularyEntry = Create.VocabularyEntry()
+            .WithSuccessAnswersCount(successAnswersCount)
+            .WithSuccessAnswersCountInReverseDirection(successAnswersCountInReverseDirection)
+            .Build();
 
         var result = vocabularyEntry.GetAcquiredLevel();
 
