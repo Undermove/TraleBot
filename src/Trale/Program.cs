@@ -34,6 +34,7 @@ builder.Services.AddPersistence(configuration);
         
 builder.Services.AddInfrastructure(configuration);
 builder.Services.AddHostedService<CreateWebhook>();
+builder.Services.AddHostedService<MigrateVocabularyEntryDateUtc>();
 
 builder.WebHost.UseUrls("http://*:1402/");
 var app = builder.Build();
