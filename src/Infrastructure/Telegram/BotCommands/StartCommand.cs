@@ -84,7 +84,7 @@ public class StartCommand : IBotCommand
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Начнем квиз! В него войдет {sharedQuizCreated.QuestionsCount} выученных слов. " +
+            $"Начнем квиз! В него войдет {sharedQuizCreated.QuestionsCount} вопросов." +
             "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
