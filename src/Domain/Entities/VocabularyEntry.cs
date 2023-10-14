@@ -25,12 +25,14 @@ public class VocabularyEntry
         if (answer.Equals(Definition, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCount++;
+            UpdatedAtUtc = DateTime.UtcNow;
             return;
         }
         
         if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
         {
             SuccessAnswersCountInReverseDirection++;
+            UpdatedAtUtc = DateTime.UtcNow;
             return;
         }
         
