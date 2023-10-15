@@ -46,7 +46,6 @@ public class StartQuizBotCommand : IBotCommand
             request.UserTelegramId,
             request.MessageId,
             $"Начнем квиз! В него войдет {quizStarted.QuizQuestionsCount} вопросов." +
-            "\r\nТы вызываешь у меня восторг!" +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
 
