@@ -15,4 +15,4 @@ public record QuizCompleted(
     int IncorrectAnswersCount,
     Guid ShareableQuizId);
     
-public record SharedQuizCompleted(Quiz Quiz);
+public record SharedQuizCompleted(string CurrentUserScore, string QuizAuthorName, string QuizAuthorScore);

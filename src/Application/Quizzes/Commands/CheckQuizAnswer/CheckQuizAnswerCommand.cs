@@ -35,7 +35,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
             
             if (currentQuiz.QuizQuestions.Count == 0 && currentQuiz.ShareableQuiz == null)
             {
-                return new SharedQuizCompleted(currentQuiz);
+                return new SharedQuizCompleted("CurrentUserScore", "QuizAuthorName", "QuizAuthorScore");
             }
             
             if (currentQuiz.QuizQuestions.Count == 0)
