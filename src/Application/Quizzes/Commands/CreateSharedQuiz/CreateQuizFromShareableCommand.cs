@@ -67,7 +67,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             CancellationToken ct,
             List<QuizQuestion> quizQuestions)
         {
-            var quiz = new Quiz
+            var quiz = new UserQuiz
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,

@@ -83,7 +83,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 VocabularyEntriesIds = quizQuestions.Select(q => q.VocabularyEntry.Id).ToList()
             };
             
-            var quiz = new Quiz
+            var quiz = new UserQuiz
             {
                 Id = Guid.NewGuid(),
                 UserId = request.UserId!.Value,

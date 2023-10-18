@@ -49,7 +49,7 @@ public class QuizBuilder
     
     public Quiz Build()
     {
-        return new Quiz
+        return new UserQuiz
         {
             Id = _quizId,
             IsCompleted = _isCompleted,
