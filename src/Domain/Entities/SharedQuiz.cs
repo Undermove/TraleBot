@@ -2,5 +2,6 @@ namespace Domain.Entities;
 
 public class SharedQuiz : Quiz
 {
-    Quiz ParentQuiz { get; set; } = null!;
+    public required string CreatedByUserName { get; set; }
+    public required double CreatedByUserScore { get; set; }
 }

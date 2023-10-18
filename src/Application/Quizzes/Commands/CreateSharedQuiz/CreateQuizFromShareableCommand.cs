@@ -51,7 +51,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
                 return new NotEnoughQuestionsForSharedQuiz();
             }
             
-            await SaveQuiz(request.UserId, ct, quizQuestions);
+            await SaveQuiz(request.UserId, ct, quizQuestions, shareableQuiz);
             
             await _dbContext.SaveChangesAsync(ct);
             
@@ -62,18 +62,23 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             return new SharedQuizCreated(quizQuestions.Count, firstQuestion);
         }
         
-        private async Task SaveQuiz(
-            Guid userId,
+        private async Task SaveQuiz(Guid userId,
             CancellationToken ct,
-            List<QuizQuestion> quizQuestions)
+            List<QuizQuestion> quizQuestions, ShareableQuiz shareableQuiz)
         {
-            var quiz = new UserQuiz
+            var createdByUserScore = Math.Round(
+                100 * (shareableQuiz.Quiz.CorrectAnswersCount /
+                       (shareableQuiz.Quiz.IncorrectAnswersCount + (double)shareableQuiz.Quiz.CorrectAnswersCount)), 0);
+            
+            var quiz = new SharedQuiz
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 QuizQuestions = quizQuestions,
                 DateStarted = DateTime.UtcNow,
-                IsCompleted = false
+                IsCompleted = false,
+                CreatedByUserName = shareableQuiz.CreatedByUser.TelegramId.ToString(),
+                CreatedByUserScore = createdByUserScore,
             };
             
             await _dbContext.Quizzes.AddAsync(quiz, ct);
