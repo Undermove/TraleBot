@@ -12,6 +12,7 @@ public class ShareableQuizConfiguration : IEntityTypeConfiguration<ShareableQuiz
         builder.HasKey(sq => sq.Id);
         builder.Property(sq => sq.QuizType).IsRequired();
         builder.Property(sq => sq.DateAddedUtc).IsRequired().ValueGeneratedOnAdd();
+        builder.Property(sq => sq.CreatedByUserName).IsRequired();
         builder.HasOne(sq => sq.CreatedByUser)
             .WithMany(u => u.ShareableQuizzes)
             .HasForeignKey(sq => sq.CreatedByUserId);

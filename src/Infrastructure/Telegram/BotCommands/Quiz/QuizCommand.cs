@@ -28,11 +28,13 @@ public class QuizCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var quizTypeString = request.Text.Split(' ')[1];
-        Enum.TryParse<QuizTypes>(quizTypeString, true, out var quizType);
-
         var result =
-            await _mediator.Send(new StartNewQuizCommand { UserId = request.User!.Id, QuizType = QuizTypes.SmartQuiz },
+            await _mediator.Send(new StartNewQuizCommand
+                {
+                    UserId = request.User!.Id,
+                    UserName = request.UserName,
+                    QuizType = QuizTypes.SmartQuiz
+                },
                 token);
 
         await result.Match(

@@ -32,10 +32,14 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
                 .Entry(currentQuiz)
                 .Collection(nameof(currentQuiz.QuizQuestions))
                 .LoadAsync(ct);
-            
-            if (currentQuiz.QuizQuestions.Count == 0 && currentQuiz.ShareableQuiz == null)
+
+            if (currentQuiz.QuizQuestions.Count == 0 && currentQuiz is SharedQuiz sharedQuiz)
             {
-                return new SharedQuizCompleted("CurrentUserScore", "QuizAuthorName", "QuizAuthorScore");
+                double correctnessPercent =
+                    Math.Round(
+                        100 * (currentQuiz.CorrectAnswersCount /
+                    (currentQuiz.IncorrectAnswersCount + (double)currentQuiz.CorrectAnswersCount)), 0);
+                return new SharedQuizCompleted(correctnessPercent, sharedQuiz.CreatedByUserName, sharedQuiz.CreatedByUserScore);
             }
             
             if (currentQuiz.QuizQuestions.Count == 0)

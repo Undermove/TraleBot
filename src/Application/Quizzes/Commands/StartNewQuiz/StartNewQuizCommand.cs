@@ -9,8 +9,9 @@ namespace Application.Quizzes.Commands.StartNewQuiz;
 
 public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>>
 {
-    public Guid? UserId { get; set; }
-    public QuizTypes QuizType { get; set; }
+    public required Guid? UserId { get; set; }
+    public required string UserName { get; set; }
+    public required QuizTypes QuizType { get; set; }
     
     public class Handler: IRequestHandler<StartNewQuizCommand, OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>>
     {
@@ -80,6 +81,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 DateAddedUtc = DateTime.UtcNow,
                 CreatedByUser = user,
                 CreatedByUserId = user.Id,
+                CreatedByUserName = request.UserName,
                 VocabularyEntriesIds = quizQuestions.Select(q => q.VocabularyEntry.Id).ToList()
             };
             

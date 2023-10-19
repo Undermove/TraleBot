@@ -72,6 +72,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             DateAddedUtc = DateTime.UtcNow,
             CreatedByUserId = premiumUser.Id,
             CreatedByUser = premiumUser,
+            CreatedByUserName = "NameFromRequest",
             VocabularyEntriesIds = new List<Guid> {vocabularyEntry.Id} 
         };
         

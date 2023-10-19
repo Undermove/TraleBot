@@ -29,6 +29,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         var result = await _sut.Handle(new StartNewQuizCommand
         {
             UserId = existingUser.Id,
+            UserName = "NameFromRequest",
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
@@ -45,6 +46,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         var result = await _sut.Handle(new StartNewQuizCommand
         {
             UserId = premiumUser.Id,
+            UserName = "NameFromRequest",
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
@@ -61,6 +63,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         var result = await _sut.Handle(new StartNewQuizCommand
         {
             UserId = premiumUser.Id,
+            UserName = "NameFromRequest",
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
@@ -78,6 +81,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         var result = await _sut.Handle(new StartNewQuizCommand
         {
             UserId = premiumUser.Id,
+            UserName = "NameFromRequest",
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
@@ -93,6 +97,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         await _sut.Handle(new StartNewQuizCommand
         {
             UserId = premiumUser.Id,
+            UserName = "NameFromRequest",
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
@@ -110,6 +115,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         var result = await _sut.Handle(new StartNewQuizCommand
         {
             UserId = premiumUser.Id,
+            UserName = "NameFromRequest",
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
@@ -134,6 +140,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
         await _sut.Handle(new StartNewQuizCommand
         {
             UserId = premiumUser.Id,
+            UserName = "NameFromRequest",
             QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
     }

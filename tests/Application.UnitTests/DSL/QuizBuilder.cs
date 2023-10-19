@@ -10,6 +10,7 @@ public class QuizBuilder
     private readonly DateTime _dateStarted = DateTime.UtcNow;
     private User _createdByUser = new();
     private ShareableQuiz? _shareableQuiz;
+    private string _createdByUserName = "NameFromRequest";
 
     
     public QuizBuilder AddQuizQuestionWithVocabularyEntry(VocabularyEntry vocabularyEntry)
@@ -41,7 +42,8 @@ public class QuizBuilder
             QuizType = QuizTypes.ForwardDirection,
             DateAddedUtc = DateTime.UtcNow,
             CreatedByUserId = _createdByUser.Id,
-            VocabularyEntriesIds = _quizQuestions.Select(qq => qq.VocabularyEntry.Id).ToList()
+            VocabularyEntriesIds = _quizQuestions.Select(qq => qq.VocabularyEntry.Id).ToList(),
+            CreatedByUserName = _createdByUserName
         };
         
         return this;
