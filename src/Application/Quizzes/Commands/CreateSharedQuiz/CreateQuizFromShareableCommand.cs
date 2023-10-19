@@ -77,7 +77,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
                 QuizQuestions = quizQuestions,
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false,
-                CreatedByUserName = shareableQuiz.CreatedByUser.TelegramId.ToString(),
+                CreatedByUserName = shareableQuiz.CreatedByUserName,
                 CreatedByUserScore = createdByUserScore,
             };
             
