@@ -30,7 +30,12 @@ public class StartQuizBotCommand : IBotCommand
         var quizTypeString = request.Text.Split(' ')[1];
         Enum.TryParse<QuizTypes>(quizTypeString, true, out var quizType);
 
-        var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
+        var result = await _mediator.Send(new StartNewQuizCommand
+        {
+            UserId = request.User!.Id,
+            UserName = request.UserName,
+            QuizType = quizType
+        }, token);
 
         await result.Match(
             started => SendFirstQuestion(request, started, token),
