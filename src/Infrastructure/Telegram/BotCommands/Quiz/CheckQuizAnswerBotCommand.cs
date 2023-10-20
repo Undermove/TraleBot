@@ -13,13 +13,15 @@ namespace Infrastructure.Telegram.BotCommands.Quiz;
 
 public class CheckQuizAnswerBotCommand : IBotCommand
 {
+    private readonly BotConfiguration _config;
     private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
 
-    public CheckQuizAnswerBotCommand(ITelegramBotClient client, IMediator mediator)
+    public CheckQuizAnswerBotCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration config)
     {
         _client = client;
         _mediator = mediator;
+        _config = config;
     }
 
     public async Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
@@ -159,7 +161,7 @@ public class CheckQuizAnswerBotCommand : IBotCommand
                     InlineKeyboardButton.WithSwitchInlineQuery(
                         "Поделиться квизом",
                         $"Привет! Давай посоревнуемся в знании иностранных слов:" +
-                        $"\r\nhttps://t.me/traletest_bot?start={quizCompleted.ShareableQuizId}")
+                        $"\r\nhttps://t.me/{_config.BotName}?start={quizCompleted.ShareableQuizId}")
                 }
             }),
             parseMode: ParseMode.Html,

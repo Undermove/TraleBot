@@ -44,7 +44,8 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 				Token = null!,
 				HostAddress = null!,
 				WebhookToken = "test_token",
-				PaymentProviderToken = null!
+				PaymentProviderToken = null!,
+				BotName = "traletestmock_bot"
 			});
 
 			services.RemoveAll<IPrometheusResolver>();
