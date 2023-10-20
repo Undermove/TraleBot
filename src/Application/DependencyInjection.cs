@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddMediatR(AppDomain.CurrentDomain.GetAssemblies());
 
         services.AddTransient<IQuizCreator, QuizCreator>();
+        services.AddTransient<IQuizVocabularyEntriesAdvisor, QuizVocabularyEntriesAdvisor>();
         
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();

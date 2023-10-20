@@ -5,6 +5,7 @@ using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using QuizCompleted = Application.Quizzes.Commands.CheckQuizAnswer.QuizCompleted;
 
@@ -115,10 +116,10 @@ public class CheckQuizAnswerBotCommand : IBotCommand
             $"""
              🖇Проверим результаты:"
              Твой результат:
-             ✅Правильные ответы:            {quizStats.CorrectAnswersCount}%
+             ✅Правильные ответы:         {shareQuizCompleted.CurrentUserScore}%
 
-             Результат твоего друга:
-             📏Правильные ответы:         {shareQuizCompleted.Quiz.CorrectAnswersCount}%
+             Результат {shareQuizCompleted.QuizAuthorName}:
+             📏Правильные ответы:         {shareQuizCompleted.QuizAuthorScore}%
              """,
             cancellationToken: ct);
     }
@@ -147,21 +148,22 @@ public class CheckQuizAnswerBotCommand : IBotCommand
                 InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
                 ),
             cancellationToken: ct);
-
-        // await _client.SendTextMessageAsync(
-        //     request.UserTelegramId,
-        //     "👉Хочешь поделиться квизом с другом? Просто нажми на кнопку: ",
-        //     replyMarkup: new InlineKeyboardMarkup(new[]
-        //     {
-        //         new[]
-        //         {
-        //             InlineKeyboardButton.WithSwitchInlineQuery(
-        //                 "Поделиться квизом",
-        //                 $"Привет! Давай посоревнуемся в знании иностранных слов: \r\n https://t.me/traletest_bot?start={quizCompleted.ShareableQuizId}")
-        //         }
-        //     }),
-        //     parseMode: ParseMode.Html,
-        //     cancellationToken: ct);
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "👉Хочешь поделиться квизом с другом? Просто нажми на кнопку: ",
+            replyMarkup: new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithSwitchInlineQuery(
+                        "Поделиться квизом",
+                        $"Привет! Давай посоревнуемся в знании иностранных слов:" +
+                        $"\r\nhttps://t.me/traletest_bot?start={quizCompleted.ShareableQuizId}")
+                }
+            }),
+            parseMode: ParseMode.Html,
+            cancellationToken: ct);
     }
 
     private string GetMedalType(MasteringLevel masteringLevel)

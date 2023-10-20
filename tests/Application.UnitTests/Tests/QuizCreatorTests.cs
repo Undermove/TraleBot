@@ -12,15 +12,14 @@ public class QuizCreatorTests
     {
         // Arrange
         var quizCreator = new QuizCreator();
-        var vocabularyEntries = CreateVocabularyWith(10,10,10);
-        var quizType = QuizTypes.SmartQuiz;
+        var vocabularyEntries = CreateVocabularyWith(1,1,1);
 
         // Act
-        var quizQuestions = quizCreator.CreateQuizQuestions(vocabularyEntries, quizType);
+        var quizQuestions = quizCreator.CreateQuizQuestions(vocabularyEntries, vocabularyEntries).ToList();
 
         // Assert
-        quizQuestions.Count.ShouldBe(28);
-        AssertQuizQuestionOfMasteringLevel(quizQuestions, 6, MasteringLevel.NotMastered);
+        quizQuestions.Count.ShouldBe(12);
+        AssertQuizQuestionOfMasteringLevel(quizQuestions, 4, MasteringLevel.NotMastered);
         AssertQuizQuestionOfMasteringLevel(quizQuestions, 4, MasteringLevel.MasteredInForwardDirection);
         AssertQuizQuestionOfMasteringLevel(quizQuestions, 4, MasteringLevel.MasteredInBothDirections);
     }
@@ -29,13 +28,10 @@ public class QuizCreatorTests
     {
         quizQuestions
             .Count(question =>
-                question is QuizQuestionWithVariants &&
-                question.VocabularyEntry.GetMasteringLevel() == level)
-            .ShouldBe(quizQuestionCount);
-        quizQuestions
-            .Count(question =>
-                question is QuizQuestionWithTypeAnswer &&
-                question.VocabularyEntry.GetMasteringLevel() == level)
+                (question is QuizQuestionWithVariants &&
+                 question.VocabularyEntry.GetMasteringLevel() == level) ||
+                (question is QuizQuestionWithTypeAnswer &&
+                 question.VocabularyEntry.GetMasteringLevel() == level))
             .ShouldBe(quizQuestionCount);
     }
 

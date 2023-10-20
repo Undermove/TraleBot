@@ -18,7 +18,9 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
         private readonly ITraleDbContext _dbContext;
         private readonly IQuizCreator _quizCreator;
 
-        public Handler(ITraleDbContext dbContext, IQuizCreator quizCreator)
+        public Handler(
+            ITraleDbContext dbContext,
+            IQuizCreator quizCreator)
         {
             _dbContext = dbContext;
             _quizCreator = quizCreator;
@@ -43,39 +45,45 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             var vocabularyEntries = await _dbContext.VocabularyEntries
                 .Where(ve => shareableQuiz.VocabularyEntriesIds.Contains(ve.Id))
                 .ToArrayAsync(ct);
-
-            var quizQuestions = _quizCreator.CreateQuizQuestions(vocabularyEntries, shareableQuiz.QuizType);
             
-            if (quizQuestions.Count == 0)
+            var quizQuestions = _quizCreator.CreateQuizQuestions(vocabularyEntries, vocabularyEntries).ToArray();
+            
+            if (quizQuestions.Length == 0)
             {
                 return new NotEnoughQuestionsForSharedQuiz();
             }
             
-            await SaveQuiz(request.UserId, ct, quizQuestions);
+            await SaveQuiz(request.UserId, ct, quizQuestions, shareableQuiz);
             
             await _dbContext.SaveChangesAsync(ct);
             
             var firstQuestion = quizQuestions
-                .OrderByDescending(entry => entry.VocabularyEntry.DateAddedUtc)
+                .OrderByDescending(entry => entry.OrderInQuiz)
                 .Last();
             
-            return new SharedQuizCreated(quizQuestions.Count, firstQuestion);
+            return new SharedQuizCreated(quizQuestions.Length, firstQuestion);
         }
         
-        private async Task SaveQuiz(
-            Guid userId,
+        private async Task SaveQuiz(Guid userId,
             CancellationToken ct,
-            List<QuizQuestion> quizQuestions)
+            QuizQuestion[] quizQuestions, 
+            ShareableQuiz shareableQuiz)
         {
-            var quiz = new Quiz
+            var createdByUserScore = Math.Round(
+                100 * (shareableQuiz.Quiz.CorrectAnswersCount /
+                       (shareableQuiz.Quiz.IncorrectAnswersCount + (double)shareableQuiz.Quiz.CorrectAnswersCount)), 0);
+            
+            var quiz = new SharedQuiz
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 QuizQuestions = quizQuestions,
                 DateStarted = DateTime.UtcNow,
-                IsCompleted = false
+                IsCompleted = false,
+                CreatedByUserName = shareableQuiz.CreatedByUserName,
+                CreatedByUserScore = createdByUserScore,
             };
-            
+
             await _dbContext.Quizzes.AddAsync(quiz, ct);
         }
     }

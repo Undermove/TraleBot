@@ -4,5 +4,5 @@ namespace Domain.Quiz;
 
 public interface IQuizCreator
 {
-    List<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries, QuizTypes quizType);
+    ICollection<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> quizEntries, ICollection<VocabularyEntry> allUserEntries);
 }

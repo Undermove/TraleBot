@@ -30,12 +30,15 @@ public class StartQuizBotCommand : IBotCommand
         var quizTypeString = request.Text.Split(' ')[1];
         Enum.TryParse<QuizTypes>(quizTypeString, true, out var quizType);
 
-        var result = await _mediator.Send(new StartNewQuizCommand {UserId = request.User!.Id, QuizType = quizType}, token);
+        var result = await _mediator.Send(new StartNewQuizCommand
+        {
+            UserId = request.User!.Id,
+            UserName = request.UserName,
+        }, token);
 
         await result.Match(
             started => SendFirstQuestion(request, started, token),
             _ => HandleNotEnoughWords(request, token),
-            _ => HandleNeedPremiumToActivate(request, token),
             _ => HandleQuizAlreadyStarted(request, token)
         );
     }
@@ -58,22 +61,6 @@ public class StartQuizBotCommand : IBotCommand
             request.UserTelegramId,
             request.MessageId,
             "Для этого типа квизов пока не хватает слов. Попробуй набрать больше слов или закрепить новые 😉",
-            cancellationToken: token);
-    }
-
-    private async Task HandleNeedPremiumToActivate(TelegramRequest request, CancellationToken token)
-    {
-        var keyboard = new InlineKeyboardMarkup(new[]
-        {
-            new[] { InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)", $"{CommandNames.ActivateTrial}") },
-            new[] { InlineKeyboardButton.WithCallbackData("💳 Купить подписку.", $"{CommandNames.Pay}") }
-        });
-            
-        await _client.EditMessageTextAsync(
-            request.UserTelegramId,
-            request.MessageId,
-            "Для прохождения этого типа квиза нужен премиум аккаунт.",
-            replyMarkup: keyboard,
             cancellationToken: token);
     }
     

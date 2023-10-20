@@ -50,80 +50,29 @@ public class QuizCreator : IQuizCreator
         ("сумка", "bag")
     };
     
-    public List<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries, QuizTypes quizType)
+    public ICollection<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> quizEntries, ICollection<VocabularyEntry> allUserEntries)
     {
         Random rnd = new Random();
-
-        var quizQuestions = quizType switch
-        {
-            QuizTypes.LastWeek => vocabularyEntries
-                .Where(ve => ve.DateAddedUtc > DateTime.Now.AddDays(-7))
-                .OrderBy(entry => entry.DateAddedUtc)
-                .Select(QuizQuestion)
-                .ToList(),
-            QuizTypes.SeveralComplicatedWords => vocabularyEntries
-                .Where(ve => ve.SuccessAnswersCount < ve.FailedAnswersCount)
-                .OrderBy(_ => rnd.Next())
-                .Take(10)
-                .Select(QuizQuestion)
-                .ToList(),
-            QuizTypes.ForwardDirection => vocabularyEntries
-                .Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
-                .OrderBy(entry => entry.DateAddedUtc)
-                .Take(20)
-                .Select((ve, i) => SelectQuizQuestionWithVariants(ve, vocabularyEntries, i))
-                .ToList(),
-            QuizTypes.ReverseDirection => vocabularyEntries
-                .Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
-                .OrderBy(entry => entry.DateAddedUtc)
-                .Take(20)
-                .Select(ReverseQuizQuestion)
-                .ToList(),
-            QuizTypes.SmartQuiz => CreateSmartQuizQuestions(vocabularyEntries),
-            _ => new List<QuizQuestion>()
-        };
-
-        return quizQuestions;
-    }
-
-    private List<QuizQuestion> CreateSmartQuizQuestions(ICollection<VocabularyEntry> vocabularyEntries)
-    {
-        const int notMasteredWordsCount = 3;
-        const int masteredInForwardDirectionCount = 2;
-        const int masteredInBothDirectionsCount = 2;
-        var notMastered = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
-            .OrderBy(entry => entry.UpdatedAtUtc)
-            .Take(notMasteredWordsCount)
-            .ToArray();
-        var masteredInForwardDirection = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection)
-            .OrderBy(entry => entry.UpdatedAtUtc)
-            .Take(masteredInForwardDirectionCount)
-            .ToArray();
-        var masteredInBothDirections = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInBothDirections)
-            .OrderBy(entry => entry.UpdatedAtUtc)
-            .Take(masteredInBothDirectionsCount)
-            .ToArray();
-        var entriesForQuiz = notMastered.Concat(masteredInForwardDirection).Concat(masteredInBothDirections).ToList();
-        return SmartQuizQuestionsForMasteringLevel(entriesForQuiz, vocabularyEntries)
-            .ToList();
-    }
-
-    private static List<QuizQuestion> SmartQuizQuestionsForMasteringLevel(ICollection<VocabularyEntry> quizEntries, ICollection<VocabularyEntry> allEntries)
-    {
         int orderInQuiz = 0;
         var quizWithVariants = quizEntries
-            .Select(ve => SelectQuizQuestionWithVariants(ve, allEntries, orderInQuiz++))
+            .Select(ve => SelectQuizQuestionWithVariants(ve, allUserEntries, orderInQuiz++))
             .ToList();
 
         var reverseQuizWithVariants = quizEntries
-            .Select(ve => ReverseQuizQuestionWithVariants(ve, allEntries, orderInQuiz++))
+            .OrderBy(_ => rnd.Next())
+            .ToArray()
+            .Select(ve => ReverseQuizQuestionWithVariants(ve, allUserEntries, orderInQuiz++))
             .ToArray();
         
         var quizWithTypeAnswer = quizEntries
+            .OrderBy(_ => rnd.Next())
+            .ToArray()
             .Select(entry => QuizQuestion(entry, orderInQuiz++))
             .ToArray();
 
         var reverseQuizWithTypeAnswer = quizEntries
+            .OrderBy(_ => rnd.Next())
+            .ToArray()
             .Select(ve => ReverseQuizQuestion(ve, orderInQuiz++))
             .ToArray();
 

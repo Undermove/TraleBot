@@ -6,10 +6,11 @@ public class QuizBuilder
 {
     private readonly Guid _quizId = Guid.NewGuid();
     private readonly List<QuizQuestion> _quizQuestions = new();
-    private readonly bool _isCompleted = false;
+    private bool _isCompleted;
     private readonly DateTime _dateStarted = DateTime.UtcNow;
     private User _createdByUser = new();
     private ShareableQuiz? _shareableQuiz;
+    private string _createdByUserName = "NameFromRequest";
 
     
     public QuizBuilder AddQuizQuestionWithVocabularyEntry(VocabularyEntry vocabularyEntry)
@@ -32,6 +33,12 @@ public class QuizBuilder
         _createdByUser = user;
         return this;
     }
+    
+    public QuizBuilder WithCompleted()
+    {
+        _isCompleted = true;
+        return this;
+    }
 
     public QuizBuilder WithShareableQuiz()
     {
@@ -41,7 +48,8 @@ public class QuizBuilder
             QuizType = QuizTypes.ForwardDirection,
             DateAddedUtc = DateTime.UtcNow,
             CreatedByUserId = _createdByUser.Id,
-            VocabularyEntriesIds = _quizQuestions.Select(qq => qq.VocabularyEntry.Id).ToList()
+            VocabularyEntriesIds = _quizQuestions.Select(qq => qq.VocabularyEntry.Id).ToList(),
+            CreatedByUserName = _createdByUserName
         };
         
         return this;
@@ -49,7 +57,7 @@ public class QuizBuilder
     
     public Quiz Build()
     {
-        return new Quiz
+        return new UserQuiz
         {
             Id = _quizId,
             IsCompleted = _isCompleted,
