@@ -52,20 +52,27 @@ public class QuizCreator : IQuizCreator
     
     public ICollection<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> quizEntries, ICollection<VocabularyEntry> allUserEntries)
     {
+        Random rnd = new Random();
         int orderInQuiz = 0;
         var quizWithVariants = quizEntries
             .Select(ve => SelectQuizQuestionWithVariants(ve, allUserEntries, orderInQuiz++))
             .ToList();
 
         var reverseQuizWithVariants = quizEntries
+            .OrderBy(_ => rnd.Next())
+            .ToArray()
             .Select(ve => ReverseQuizQuestionWithVariants(ve, allUserEntries, orderInQuiz++))
             .ToArray();
         
         var quizWithTypeAnswer = quizEntries
+            .OrderBy(_ => rnd.Next())
+            .ToArray()
             .Select(entry => QuizQuestion(entry, orderInQuiz++))
             .ToArray();
 
         var reverseQuizWithTypeAnswer = quizEntries
+            .OrderBy(_ => rnd.Next())
+            .ToArray()
             .Select(ve => ReverseQuizQuestion(ve, orderInQuiz++))
             .ToArray();
 
