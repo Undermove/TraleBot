@@ -17,25 +17,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
     public void SetUp()
     {
         _quizCreator = new QuizCreator();
-        _sut = new StartNewQuizCommand.Handler(Context, _quizCreator);
-    }
-
-    [Test]
-    public async Task ShouldReturnNeedPremiumToActivate_ForUserWithoutPremium()
-    {
-        var existingUser = Create.User().Build();
-        Context.Users.Add(existingUser);
-
-        var result = await _sut.Handle(new StartNewQuizCommand
-        {
-            UserId = existingUser.Id,
-            UserName = "NameFromRequest",
-            QuizType = QuizTypes.ForwardDirection
-        }, CancellationToken.None);
-
-        result.IsT2.ShouldBeTrue();
-        result.AsT2.ShouldBeOfType<NeedPremiumToActivate>();
-        result.AsT2.ShouldNotBeNull();
+        _sut = new StartNewQuizCommand.Handler(Context, _quizCreator, new QuizVocabularyEntriesAdvisor());
     }
 
     [Test]
@@ -47,7 +29,6 @@ public class StartNewQuizCommandTests : CommandTestsBase
         {
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
-            QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
         result.IsT1.ShouldBeTrue();
@@ -64,12 +45,11 @@ public class StartNewQuizCommandTests : CommandTestsBase
         {
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
-            QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
         result.IsT0.ShouldBeTrue();
         result.AsT0.ShouldBeOfType<QuizStarted>();
-        result.AsT0.QuizQuestionsCount.ShouldBe(1);
+        result.AsT0.QuizQuestionsCount.ShouldBe(4);
     }
 
     [Test]
@@ -82,11 +62,9 @@ public class StartNewQuizCommandTests : CommandTestsBase
         {
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
-            QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
-
-        result.IsT3.ShouldBeTrue();
-        result.AsT3.ShouldBeOfType<QuizAlreadyStarted>();
+        
+        result.Value.ShouldBeOfType<QuizAlreadyStarted>();
     }
 
     [Test]
@@ -98,7 +76,6 @@ public class StartNewQuizCommandTests : CommandTestsBase
         {
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
-            QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
         Context.ShareableQuizzes.Count().ShouldBe(1);
@@ -116,7 +93,6 @@ public class StartNewQuizCommandTests : CommandTestsBase
         {
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
-            QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
 
         result.AsT0.FirstQuestion.ShouldBeOfType<QuizQuestionWithVariants>();
@@ -141,7 +117,6 @@ public class StartNewQuizCommandTests : CommandTestsBase
         {
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
-            QuizType = QuizTypes.ForwardDirection
         }, CancellationToken.None);
     }
 }

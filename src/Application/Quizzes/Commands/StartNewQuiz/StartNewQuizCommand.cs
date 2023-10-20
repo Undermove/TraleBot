@@ -7,24 +7,25 @@ using OneOf;
 
 namespace Application.Quizzes.Commands.StartNewQuiz;
 
-public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>>
+public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, QuizAlreadyStarted>>
 {
     public required Guid? UserId { get; set; }
     public required string UserName { get; set; }
-    public required QuizTypes QuizType { get; set; }
     
-    public class Handler: IRequestHandler<StartNewQuizCommand, OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>>
+    public class Handler: IRequestHandler<StartNewQuizCommand, OneOf<QuizStarted, NotEnoughWords, QuizAlreadyStarted>>
     {
         private readonly ITraleDbContext _dbContext;
         private readonly IQuizCreator _quizCreator;
+        private readonly IQuizVocabularyEntriesAdvisor _quizAdvisor;
 
-        public Handler(ITraleDbContext dbContext, IQuizCreator quizCreator)
+        public Handler(ITraleDbContext dbContext, IQuizCreator quizCreator, IQuizVocabularyEntriesAdvisor quizAdvisor)
         {
             _dbContext = dbContext;
             _quizCreator = quizCreator;
+            _quizAdvisor = quizAdvisor;
         }
         
-        public async Task<OneOf<QuizStarted, NotEnoughWords, NeedPremiumToActivate, QuizAlreadyStarted>> Handle(StartNewQuizCommand request, CancellationToken ct)
+        public async Task<OneOf<QuizStarted, NotEnoughWords, QuizAlreadyStarted>> Handle(StartNewQuizCommand request, CancellationToken ct)
         {
             if (request.UserId == null)
             {
@@ -38,11 +39,6 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
                 throw new NotFoundException(nameof(User), request.UserId);
             }
 
-            if (user.AccountType == UserAccountType.Free && request.QuizType != QuizTypes.LastWeek)
-            {
-                return new NeedPremiumToActivate();
-            }
-
             await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
             var startedQuizzesCount = user.Quizzes.Count(q => q.IsCompleted == false);
             if (startedQuizzesCount > 0)
@@ -52,37 +48,41 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             
-            var quizQuestions = _quizCreator.CreateQuizQuestions(user.VocabularyEntries);
+            var entriesForQuiz = _quizAdvisor.AdviceVocabularyEntriesForQuiz(user.VocabularyEntries).ToArray();
+            var quizQuestions = _quizCreator
+                .CreateQuizQuestions(entriesForQuiz, user.VocabularyEntries)
+                .ToArray();
 
-            if (quizQuestions.Count == 0)
+            if (entriesForQuiz.Length == 0)
             {
                 return new NotEnoughWords();
             }
             
-            await SaveQuiz(request, user, ct, quizQuestions);
+            await SaveQuiz(request, user, ct, quizQuestions, entriesForQuiz);
             
             await _dbContext.SaveChangesAsync(ct);
             var firstQuestion = quizQuestions
                 .OrderByDescending(entry => entry.OrderInQuiz)
                 .Last();
-            return new QuizStarted(quizQuestions.Count, firstQuestion);
+            return new QuizStarted(quizQuestions.Length, firstQuestion);
         }
 
         private async Task SaveQuiz(
             StartNewQuizCommand request,
             User user,
             CancellationToken ct,
-            List<QuizQuestion> quizQuestions)
+            QuizQuestion[] quizQuestions,
+            VocabularyEntry[] vocabularyEntries)
         {
             var shareableQuiz = new ShareableQuiz
             {
                 Id = Guid.NewGuid(),
-                QuizType = request.QuizType,
+                QuizType = QuizTypes.SmartQuiz,
                 DateAddedUtc = DateTime.UtcNow,
                 CreatedByUser = user,
                 CreatedByUserId = user.Id,
                 CreatedByUserName = request.UserName,
-                VocabularyEntriesIds = quizQuestions.Select(q => q.VocabularyEntry.Id).ToList()
+                VocabularyEntriesIds = vocabularyEntries.Select(q => q.Id).ToList()
             };
             
             var quiz = new UserQuiz

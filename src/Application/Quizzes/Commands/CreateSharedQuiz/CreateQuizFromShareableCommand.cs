@@ -18,7 +18,9 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
         private readonly ITraleDbContext _dbContext;
         private readonly IQuizCreator _quizCreator;
 
-        public Handler(ITraleDbContext dbContext, IQuizCreator quizCreator)
+        public Handler(
+            ITraleDbContext dbContext,
+            IQuizCreator quizCreator)
         {
             _dbContext = dbContext;
             _quizCreator = quizCreator;
@@ -43,10 +45,10 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             var vocabularyEntries = await _dbContext.VocabularyEntries
                 .Where(ve => shareableQuiz.VocabularyEntriesIds.Contains(ve.Id))
                 .ToArrayAsync(ct);
-
-            var quizQuestions = _quizCreator.CreateQuizQuestions(vocabularyEntries);
             
-            if (quizQuestions.Count == 0)
+            var quizQuestions = _quizCreator.CreateQuizQuestions(vocabularyEntries, vocabularyEntries).ToArray();
+            
+            if (quizQuestions.Length == 0)
             {
                 return new NotEnoughQuestionsForSharedQuiz();
             }
@@ -59,12 +61,13 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
                 .OrderByDescending(entry => entry.VocabularyEntry.DateAddedUtc)
                 .Last();
             
-            return new SharedQuizCreated(quizQuestions.Count, firstQuestion);
+            return new SharedQuizCreated(quizQuestions.Length, firstQuestion);
         }
         
         private async Task SaveQuiz(Guid userId,
             CancellationToken ct,
-            List<QuizQuestion> quizQuestions, ShareableQuiz shareableQuiz)
+            QuizQuestion[] quizQuestions, 
+            ShareableQuiz shareableQuiz)
         {
             var createdByUserScore = Math.Round(
                 100 * (shareableQuiz.Quiz.CorrectAnswersCount /

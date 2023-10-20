@@ -6,7 +6,7 @@ public class QuizBuilder
 {
     private readonly Guid _quizId = Guid.NewGuid();
     private readonly List<QuizQuestion> _quizQuestions = new();
-    private readonly bool _isCompleted = false;
+    private bool _isCompleted;
     private readonly DateTime _dateStarted = DateTime.UtcNow;
     private User _createdByUser = new();
     private ShareableQuiz? _shareableQuiz;
@@ -31,6 +31,12 @@ public class QuizBuilder
     public QuizBuilder CreatedByUser(User user)
     {
         _createdByUser = user;
+        return this;
+    }
+    
+    public QuizBuilder WithCompleted()
+    {
+        _isCompleted = true;
         return this;
     }
 

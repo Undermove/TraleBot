@@ -29,9 +29,12 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
-        result.IsT0.ShouldBeTrue();
-        Context.Quizzes.Count().ShouldBe(1);
-        var quiz = Context.Quizzes.Include(quiz => quiz.QuizQuestions).FirstOrDefault();
+        result.Value.ShouldBeOfType<SharedQuizCreated>();
+        Context.Quizzes.Count().ShouldBe(2);
+        var quiz = Context.Quizzes
+            .Where(q => q.GetType() == typeof(SharedQuiz))
+            .Include(quiz => quiz.QuizQuestions)
+            .FirstOrDefault();
         quiz.ShouldNotBeNull();
         quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
@@ -52,8 +55,9 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
-        result.IsT2.ShouldBeTrue();
-        Context.Quizzes.Count().ShouldBe(1);
+        result.Value.ShouldBeOfType<AnotherQuizInProgress>();
+        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz)).ShouldBe(1);
+        Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(1);
         var quiz = Context.Quizzes.Include(quiz => quiz.QuizQuestions).FirstOrDefault();
         quiz.ShouldNotBeNull();
         quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
@@ -64,6 +68,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
         var premiumUser = await CreatePremiumUser();
         var vocabularyEntry = Create.VocabularyEntry().WithUser(premiumUser).Build();
         Context.VocabularyEntries.Add(vocabularyEntry);
+        var quiz = Create.Quiz().WithCompleted().CreatedByUser(premiumUser).Build();
 
         var shareableQuiz = new ShareableQuiz
         {
@@ -73,7 +78,8 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             CreatedByUserId = premiumUser.Id,
             CreatedByUser = premiumUser,
             CreatedByUserName = "NameFromRequest",
-            VocabularyEntriesIds = new List<Guid> {vocabularyEntry.Id} 
+            VocabularyEntriesIds = new List<Guid> {vocabularyEntry.Id},
+            Quiz = quiz 
         };
         
         Context.ShareableQuizzes.Add(shareableQuiz);
