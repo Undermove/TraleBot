@@ -44,7 +44,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
                 .Where(ve => shareableQuiz.VocabularyEntriesIds.Contains(ve.Id))
                 .ToArrayAsync(ct);
 
-            var quizQuestions = _quizCreator.CreateQuizQuestions(vocabularyEntries, shareableQuiz.QuizType);
+            var quizQuestions = _quizCreator.CreateQuizQuestions(vocabularyEntries);
             
             if (quizQuestions.Count == 0)
             {
@@ -80,7 +80,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
                 CreatedByUserName = shareableQuiz.CreatedByUserName,
                 CreatedByUserScore = createdByUserScore,
             };
-            
+
             await _dbContext.Quizzes.AddAsync(quiz, ct);
         }
     }

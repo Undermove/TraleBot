@@ -52,7 +52,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, N
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             
-            var quizQuestions = _quizCreator.CreateQuizQuestions(user.VocabularyEntries, request.QuizType);
+            var quizQuestions = _quizCreator.CreateQuizQuestions(user.VocabularyEntries);
 
             if (quizQuestions.Count == 0)
             {

@@ -16,7 +16,7 @@ public class QuizCreatorTests
         var quizType = QuizTypes.SmartQuiz;
 
         // Act
-        var quizQuestions = quizCreator.CreateQuizQuestions(vocabularyEntries, quizType);
+        var quizQuestions = quizCreator.CreateQuizQuestions(vocabularyEntries);
 
         // Assert
         quizQuestions.Count.ShouldBe(28);
