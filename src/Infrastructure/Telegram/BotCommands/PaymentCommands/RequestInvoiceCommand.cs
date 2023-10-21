@@ -44,7 +44,7 @@ public class RequestInvoiceCommand : IBotCommand
         await _client.SendInvoiceAsync(
             request.UserTelegramId,
             Prices[subscriptionTerm].Label,
-            "Расширенный функционал",
+            "Донейшен",
             subscriptionTerm.ToString(),
             _configuration.PaymentProviderToken,
             "EUR",

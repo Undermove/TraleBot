@@ -23,7 +23,7 @@ public static class MenuKeyboard
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.PayIcon} Премиум"),
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.PayIcon} Донаты"),
                 InlineKeyboardButton.WithCallbackData($"{CommandNames.HelpIcon} Поддержка")
             }
         });

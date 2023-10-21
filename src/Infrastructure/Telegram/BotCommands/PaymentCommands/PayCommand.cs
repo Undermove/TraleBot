@@ -26,13 +26,13 @@ public class PayCommand : IBotCommand
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithCallbackData("💳 Месяц за 2,49€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.Month}") },
-            new[] { InlineKeyboardButton.WithCallbackData("💳 3 месяца за 3,99€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.ThreeMonth}") },
-            new[] { InlineKeyboardButton.WithCallbackData("💳 Год за 5,99€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.Year}")}
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Американо: 2,49€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.Month}") },
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Капучино: 3,99€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.ThreeMonth}") },
+            new[] { InlineKeyboardButton.WithCallbackData("💳 Кокосовый раф: 5,99€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.Year}")}
         });
         
         await _client.SendTextMessageAsync(request.UserTelegramId,
-            "Выбери подписку и срок подписки:",
+            "☕️ Если вам понравился бот, то вы можете купить мне кофе.",
             replyMarkup: keyboard,
             cancellationToken: token);
     }
