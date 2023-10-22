@@ -16,6 +16,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     }
     
     public DbSet<User> Users { get; set; } = null!;
+    public DbSet<UserSettings> UsersSettings { get; set; } = null!;
     public DbSet<VocabularyEntry> VocabularyEntries { get; set; } = null!;
     public DbSet<Quiz> Quizzes { get; set; } = null!;
     public DbSet<Invoice> Invoices { get; set; } = null!;
