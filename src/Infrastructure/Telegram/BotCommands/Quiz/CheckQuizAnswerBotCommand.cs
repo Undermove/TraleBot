@@ -107,11 +107,7 @@ public class CheckQuizAnswerBotCommand : IBotCommand
     {
         var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
 
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "🏄‍Вот это квиз! Молодец, что стараешься! 💓",
-            replyMarkup: new ReplyKeyboardRemove(),
-            cancellationToken: ct);
+        await SendResultCongrats(request, ct, shareQuizCompleted.CurrentUserScore);
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
@@ -134,11 +130,7 @@ public class CheckQuizAnswerBotCommand : IBotCommand
                 100 * (quizStats.CorrectAnswersCount /
                        (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
 
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "🏄‍Вот это квиз! Молодец, что стараешься! 💓",
-            replyMarkup: new ReplyKeyboardRemove(),
-            cancellationToken: ct);
+        await SendResultCongrats(request, ct, correctnessPercent);
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
@@ -166,6 +158,30 @@ public class CheckQuizAnswerBotCommand : IBotCommand
             }),
             parseMode: ParseMode.Html,
             cancellationToken: ct);
+    }
+
+    private async Task SendResultCongrats(TelegramRequest request, CancellationToken ct, double correctnessPercent)
+    {
+        if (Math.Abs(correctnessPercent - 100) < 0.001)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "Максимальный результат! Ты молодец! 🎉🎉🎉",
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: ct);
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "🎆",
+                cancellationToken: ct);
+        }
+        else
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                "🏄‍Вот это квиз! Молодец, что стараешься! 💓",
+                replyMarkup: new ReplyKeyboardRemove(),
+                cancellationToken: ct);
+        }
     }
 
     private string GetMedalType(MasteringLevel masteringLevel)

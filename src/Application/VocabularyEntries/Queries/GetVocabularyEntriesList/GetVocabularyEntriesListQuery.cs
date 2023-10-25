@@ -31,24 +31,12 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
 
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
 
-            IEnumerable<VocabularyEntry[]> vocabularyEntries;
-            if (user.IsActivePremium())
-            {
-                vocabularyEntries = user
-                    .VocabularyEntries
-                    .OrderBy(entry => entry.DateAddedUtc)
-                    .ToList()
-                    .Chunk(30);
-            }
-            else
-            {
-                vocabularyEntries = user
-                    .VocabularyEntries
-                    .Where(entry => entry.DateAddedUtc > DateTime.Now.AddDays(-7))
-                    .OrderBy(entry => entry.DateAddedUtc)
-                    .ToList()
-                    .Chunk(30);
-            }
+            IEnumerable<VocabularyEntry[]> vocabularyEntries = user
+                .VocabularyEntries
+                .Where(entry => entry.DateAddedUtc > DateTime.Now.AddDays(-7))
+                .OrderBy(entry => entry.DateAddedUtc)
+                .ToList()
+                .Chunk(30);
 
             var response = new VocabularyEntriesListVm
             {

@@ -30,12 +30,6 @@ public class VocabularyCommand : IBotCommand
     {
         var result =  await _mediator.Send(new GetVocabularyEntriesListQuery {UserId = request.User!.Id}, token);
 
-        if (!request.User.IsActivePremium())
-        {
-            await OfferTrial(request, token, result);
-            return;
-        }
-
         if (!result.VocabularyEntries.Any())
         {
             await _client.SendTextMessageAsync(request.UserTelegramId, "📖Словарь пока пуст", cancellationToken: token);
@@ -64,25 +58,6 @@ public class VocabularyCommand : IBotCommand
         {
             await _client.SendTextMessageAsync(request.UserTelegramId, "Для бесплатной версии доступны только последние 7 дней", cancellationToken: token);
         }
-    }
-
-    private async Task OfferTrial(TelegramRequest request, CancellationToken token, VocabularyEntriesListVm result)
-    {
-        var keyboard = new InlineKeyboardMarkup(new[]
-        {
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData("✅ Пробная на месяц. (карта не нужна)",
-                    $"{CommandNames.ActivateTrial}")
-            },
-            new[] { InlineKeyboardButton.WithCallbackData("💳 Выбрать подписку.", $"{CommandNames.Pay}") }
-        });
-        
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"🔐Для разблокирования истории из {result.VocabularyWordsCount} слов активируйте триал или премиум подписку",
-            replyMarkup: keyboard,
-            cancellationToken: token);
     }
 
     private string GetMedalType(VocabularyEntry entry)
