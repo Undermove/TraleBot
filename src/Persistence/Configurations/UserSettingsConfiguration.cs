@@ -8,9 +8,7 @@ public class UserSettingsConfiguration : IEntityTypeConfiguration<UserSettings>
 {
     public void Configure(EntityTypeBuilder<UserSettings> builder)
     {
-        builder
-            .HasKey(us => us.Id);
-
+        builder.HasKey(us => us.Id);
         builder
             .Property(us => us.CurrentLanguage)
             .HasDefaultValue(Language.English)

@@ -2,8 +2,8 @@ namespace Domain.Entities;
 
 public class UserSettings
 {
-    public Guid Id { get; set; }
-    public Guid UserId { get; set; }
-    public virtual User User { get; set; }
-    public Language CurrentLanguage { get; set; }
+    public required Guid Id { get; set; }
+    public required Guid UserId { get; set; }
+    public virtual required User User { get; set; }
+    public required Language CurrentLanguage { get; set; }
 }
