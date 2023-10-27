@@ -30,7 +30,7 @@ public class VocabularyCommand : IBotCommand
     {
         var result =  await _mediator.Send(new GetVocabularyEntriesListQuery {UserId = request.User!.Id}, token);
 
-        if (!result.VocabularyEntries.Any())
+        if (!result.VocabularyEntriesPages.Any())
         {
             await _client.SendTextMessageAsync(request.UserTelegramId, "📖Словарь пока пуст", cancellationToken: token);
             return;
@@ -44,7 +44,7 @@ public class VocabularyCommand : IBotCommand
             "\r\n💎 - закрепленное в двух направлениях слово.Ты правильно перевел его в более чем 3 квизах по закрепленным словам" +
             "\r\nПроходи квизы и переводи слова, чтобы получить 🥇 и 💎 по всем словам!", 
             cancellationToken: token);
-        foreach (var batch in result.VocabularyEntries)
+        foreach (var batch in result.VocabularyEntriesPages)
         {
             var vocabularyEntryView = batch
                 .Select(entry => 

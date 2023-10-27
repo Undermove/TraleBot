@@ -25,7 +25,7 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
             {
                 return new VocabularyEntriesListVm
                 {
-                    VocabularyEntries = Enumerable.Empty<VocabularyEntry[]>()
+                    VocabularyEntriesPages = Enumerable.Empty<VocabularyEntry[]>()
                 };
             }
 
@@ -33,14 +33,13 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
 
             IEnumerable<VocabularyEntry[]> vocabularyEntries = user
                 .VocabularyEntries
-                .Where(entry => entry.DateAddedUtc > DateTime.Now.AddDays(-7))
                 .OrderBy(entry => entry.DateAddedUtc)
                 .ToList()
                 .Chunk(30);
 
             var response = new VocabularyEntriesListVm
             {
-                VocabularyEntries = vocabularyEntries,
+                VocabularyEntriesPages = vocabularyEntries,
                 VocabularyWordsCount = user.VocabularyEntries.Count,
             };
             
