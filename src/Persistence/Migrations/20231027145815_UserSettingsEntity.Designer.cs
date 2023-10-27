@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistence;
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    partial class TraleDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231027145815_UserSettingsEntity")]
+    partial class UserSettingsEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -57,7 +60,7 @@ namespace Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Achievements", (string)null);
+                    b.ToTable("Achievements");
                 });
 
             modelBuilder.Entity("Domain.Entities.Invoice", b =>
@@ -80,7 +83,7 @@ namespace Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Invoices", (string)null);
+                    b.ToTable("Invoices");
                 });
 
             modelBuilder.Entity("Domain.Entities.Quiz", b =>
@@ -118,7 +121,7 @@ namespace Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Quizzes", (string)null);
+                    b.ToTable("Quizzes");
 
                     b.HasDiscriminator<string>("QuizType").HasValue("Quiz");
 
@@ -164,7 +167,7 @@ namespace Persistence.Migrations
 
                     b.HasIndex("VocabularyEntryId");
 
-                    b.ToTable("QuizQuestions", (string)null);
+                    b.ToTable("QuizQuestions");
 
                     b.HasDiscriminator<string>("QuestionType").HasValue("QuizQuestion");
 
@@ -205,7 +208,7 @@ namespace Persistence.Migrations
                     b.HasIndex("QuizId")
                         .IsUnique();
 
-                    b.ToTable("ShareableQuizzes", (string)null);
+                    b.ToTable("ShareableQuizzes");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
@@ -232,7 +235,7 @@ namespace Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserSettings", b =>
@@ -252,7 +255,7 @@ namespace Persistence.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UsersSettings", (string)null);
+                    b.ToTable("UsersSettings");
                 });
 
             modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>
@@ -302,7 +305,7 @@ namespace Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("VocabularyEntries", (string)null);
+                    b.ToTable("VocabularyEntries");
                 });
 
             modelBuilder.Entity("Domain.Entities.SharedQuiz", b =>

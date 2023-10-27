@@ -28,7 +28,7 @@ public class CreateUserCommand : IRequest<OneOf<UserCreated, UserExists>>
             {
                 return new UserExists(user);
             }
-
+            
             user = new User
             {
                 Id = Guid.NewGuid(),
@@ -36,6 +36,17 @@ public class CreateUserCommand : IRequest<OneOf<UserCreated, UserExists>>
                 RegisteredAtUtc = DateTime.UtcNow,
                 AccountType = UserAccountType.Free
             };
+            
+            var settings = new UserSettings
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                User = user,
+                CurrentLanguage = Language.English
+            };
+            
+            user.UserSettingsId = settings.Id;
+            
             _dbContext.Users.Add(user);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
