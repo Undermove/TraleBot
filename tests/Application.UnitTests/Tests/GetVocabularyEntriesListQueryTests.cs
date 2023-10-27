@@ -8,13 +8,8 @@ namespace Application.UnitTests.Tests;
 
 public class GetVocabularyEntriesListQueryTests : CommandTestsBase
 {
-    private GetVocabularyEntriesListQuery.Handler _sut;
-
-    public GetVocabularyEntriesListQueryTests(GetVocabularyEntriesListQuery.Handler sut)
-    {
-        _sut = sut;
-    }
-
+    private GetVocabularyEntriesListQuery.Handler _sut = null!;
+    
     [SetUp]
     public void SetUp()
     {
