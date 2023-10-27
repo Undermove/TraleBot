@@ -33,4 +33,12 @@ public abstract class CommandTestsBase : IDisposable
         await Context.SaveChangesAsync();
         return premiumUser;
     }
+    
+    protected async Task<User> CreateFreeUser()
+    {
+        var premiumUser = Create.User().Build();
+        Context.Users.Add(premiumUser);
+        await Context.SaveChangesAsync();
+        return premiumUser;
+    }
 }
