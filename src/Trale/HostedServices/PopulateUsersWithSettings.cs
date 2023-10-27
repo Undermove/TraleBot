@@ -29,15 +29,23 @@ public class PopulateUsersWithSettings : IHostedService
     {
         var users = await _context.Users.ToListAsync(cancellationToken);
         var result = users
-            .Select(user => new UserSettings()
+            .Select(user => new UserSettings
             {
                 Id = Guid.NewGuid(), 
                 CurrentLanguage = Language.English, 
                 UserId = user.Id, 
                 User = user
             }).ToList();
-
+        
         await _context.UsersSettings.AddRangeAsync(result, cancellationToken);
+        
+        _context.Users.UpdateRange(users.Select(user =>
+        {
+            user.UserSettingsId = result.First(settings => settings.UserId == user.Id).Id;
+            return user;
+        }));
+        
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
