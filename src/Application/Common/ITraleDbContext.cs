@@ -7,6 +7,7 @@ namespace Application.Common;
 public interface ITraleDbContext
 {
     DbSet<User> Users { get; }
+    DbSet<UserSettings> UsersSettings { get; }
     DbSet<VocabularyEntry> VocabularyEntries { get; }
     DbSet<Quiz> Quizzes { get; }
     DbSet<Invoice> Invoices { get; }
