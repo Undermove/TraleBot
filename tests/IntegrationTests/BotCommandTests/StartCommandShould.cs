@@ -7,7 +7,7 @@ namespace IntegrationTests.BotCommandTests;
 
 public class StartCommandShould: TestBase
 {
-    //[Test]
+    [Test]
     public async Task CreateNewUser_WithFreeAccountType()
     {
         // Arrange
