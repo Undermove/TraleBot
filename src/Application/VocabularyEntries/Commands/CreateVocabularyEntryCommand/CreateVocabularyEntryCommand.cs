@@ -67,7 +67,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             
             if (user.IsActivePremium())
             {
-                var result = await _aiTranslationService.TranslateAsync(request.Word, ct);
+                var result = await _aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
                 if (!result.IsSuccessful)
                 {
                     return new TranslationFailure();
@@ -103,7 +103,8 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                 Example = example,
                 UserId = request.UserId,
                 DateAddedUtc = dateAddedUtc,
-                UpdatedAtUtc = dateAddedUtc
+                UpdatedAtUtc = dateAddedUtc,
+                Language = user.Settings.CurrentLanguage
             };
 
             await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);

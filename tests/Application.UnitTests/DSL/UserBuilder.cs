@@ -20,7 +20,13 @@ public class UserBuilder
         {
             Id = _userId,
             TelegramId = _telegramId,
-            AccountType = _accountType
+            AccountType = _accountType,
+            Settings = new UserSettings
+            {
+                Id = Guid.NewGuid(),
+                UserId = _userId,
+                CurrentLanguage = Language.English
+            }
         };
     }
 }

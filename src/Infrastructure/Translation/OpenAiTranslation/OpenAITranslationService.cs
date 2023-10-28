@@ -1,4 +1,5 @@
 using Application.Common.Interfaces.TranslationService;
+using Domain.Entities;
 using Microsoft.Extensions.Options;
 using OpenAI_API;
 using OpenAI_API.Chat;
@@ -18,7 +19,7 @@ public class OpenAiTranslationService : IAiTranslationService
         };
     }
     
-    public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
+    public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language, CancellationToken ct)
     {
         var chat = _openAIApi.Chat.CreateConversation(new ChatRequest
         {

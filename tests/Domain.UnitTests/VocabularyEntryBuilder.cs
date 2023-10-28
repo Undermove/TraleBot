@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using Domain.Entities;
 
 namespace Domain.UnitTests;
 
+[SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
 public class VocabularyEntryBuilder
 {
     private Guid _id = Guid.NewGuid();
@@ -13,6 +15,7 @@ public class VocabularyEntryBuilder
     private string _additionalInfo = "кошка это кошка";
     private int _successAnswersCount;
     private int _successAnswersCountInReverseDirection;
+    private Language _language = Language.English;
 
     public VocabularyEntryBuilder WithWord(string word)
     {
@@ -51,6 +54,7 @@ public class VocabularyEntryBuilder
             UpdatedAtUtc = _updatedAtUtc,
             SuccessAnswersCount = _successAnswersCount,
             SuccessAnswersCountInReverseDirection = _successAnswersCountInReverseDirection,
+            Language = _language
         };
     }
 }

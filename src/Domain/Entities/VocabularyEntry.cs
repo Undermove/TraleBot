@@ -19,6 +19,7 @@ public class VocabularyEntry
     public int SuccessAnswersCountInReverseDirection { get; set; }
     public int FailedAnswersCount { get; set; }
     public virtual ICollection<QuizQuestion> QuizQuestions { get; set; }
+    public required Language Language { get; set; }
 
     public void ScorePoint(string answer)
     {

@@ -12,12 +12,12 @@ public class QuizQuestionConfiguration : IEntityTypeConfiguration<QuizQuestion>
             .HasDiscriminator<string>("QuestionType")
             .HasValue<QuizQuestionWithTypeAnswer>(nameof(QuizQuestionWithTypeAnswer))
             .HasValue<QuizQuestionWithVariants>(nameof(QuizQuestionWithVariants));
-        builder.HasKey(quizQuestion => quizQuestion.Id);
-        builder.Property(quizQuestion => quizQuestion.Question).IsRequired();
-        builder.Property(quizQuestion => quizQuestion.Answer).IsRequired();
-        builder.Property(quizQuestion => quizQuestion.OrderInQuiz).HasDefaultValue(0).IsRequired();
-        builder.HasOne(invoice => invoice.VocabularyEntry)
-            .WithMany(u => u.QuizQuestions)
-            .HasForeignKey(invoice => invoice.VocabularyEntryId);
+        builder.HasKey(q => q.Id);
+        builder.Property(q => q.Question).IsRequired();
+        builder.Property(q => q.Answer).IsRequired();
+        builder.Property(q => q.OrderInQuiz).HasDefaultValue(0).IsRequired();
+        builder.HasOne(q => q.VocabularyEntry)
+            .WithMany(v => v.QuizQuestions)
+            .HasForeignKey(q => q.VocabularyEntryId);
     }
 }

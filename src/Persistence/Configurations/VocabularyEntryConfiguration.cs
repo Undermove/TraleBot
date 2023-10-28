@@ -11,6 +11,7 @@ public class VocabularyEntryConfiguration : IEntityTypeConfiguration<VocabularyE
         builder.HasKey(ve => ve.Id);
         builder.Property(ve => ve.Word).IsRequired();
         builder.Property(ve => ve.Definition).IsRequired();
+        builder.Property(ve => ve.Language).HasDefaultValue(Language.English).IsRequired();
         builder.HasOne(ve => ve.User)
             .WithMany(u => u.VocabularyEntries)
             .HasForeignKey(ve => ve.UserId);

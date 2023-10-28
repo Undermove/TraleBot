@@ -14,6 +14,7 @@ public class VocabularyEntryBuilder
     private string _additionalInfo = "кошка это кошка";
     private int _successAnswersCount;
     private int _successAnswersCountInReverseDirection;
+    private Language _language = Language.English;
 
     public VocabularyEntryBuilder WithId(Guid id)
     {
@@ -101,6 +102,7 @@ public class VocabularyEntryBuilder
             UpdatedAtUtc = _updatedAtUtc,
             SuccessAnswersCount = _successAnswersCount,
             SuccessAnswersCountInReverseDirection = _successAnswersCountInReverseDirection,
+            Language = _language
         };
     }
 }
