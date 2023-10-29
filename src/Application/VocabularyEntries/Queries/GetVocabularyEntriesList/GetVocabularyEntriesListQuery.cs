@@ -33,6 +33,7 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
 
             IEnumerable<VocabularyEntry[]> vocabularyEntries = user
                 .VocabularyEntries
+                .Where(entry => entry.Language == user.Settings.CurrentLanguage)
                 .OrderBy(entry => entry.DateAddedUtc)
                 .ToList()
                 .Chunk(30);

@@ -88,6 +88,12 @@ public class VocabularyEntryBuilder
         return this;
     }
     
+    public VocabularyEntryBuilder WithLanguage(Language language)
+    {
+        _language = language;
+        return this;
+    }
+    
     public VocabularyEntry Build()
     {
         return new VocabularyEntry

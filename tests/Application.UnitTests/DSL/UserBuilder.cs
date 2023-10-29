@@ -7,10 +7,17 @@ public class UserBuilder
     private Guid _userId = Guid.NewGuid();
     private int _telegramId = 123456789;
     private UserAccountType _accountType = UserAccountType.Free;
+    private Language _currentLanguage = Language.English;
     
     public UserBuilder WithPremiumAccountType()
     {
         _accountType = UserAccountType.Premium;
+        return this;
+    }
+    
+    public UserBuilder WithCurrentLanguage(Language language)
+    {
+        _currentLanguage = language;
         return this;
     }
     
@@ -25,7 +32,7 @@ public class UserBuilder
             {
                 Id = Guid.NewGuid(),
                 UserId = _userId,
-                CurrentLanguage = Language.English
+                CurrentLanguage = _currentLanguage
             }
         };
     }
