@@ -13,7 +13,7 @@ public class TemporaryTestsForGlosbeParser
     {
         var clientFactory = new Mock<IHttpClientFactory>();
         clientFactory.Setup(factory => factory.CreateClient(It.IsAny<string>()))
-            .Returns(new HttpClient());
+            .Returns(() => new HttpClient());
         _glosbeTranslationService = new GlosbeParsingTranslationService(clientFactory.Object);
     }
 
