@@ -1,3 +1,4 @@
+using System.Text;
 using Application.Common.Interfaces.TranslationService;
 using HtmlAgilityPack;
 
@@ -20,9 +21,9 @@ public class GlosbeParsingTranslationService : IParsingTranslationService
         var definition = await Definition(ct, requestUrl, searchPattern);
         
         var additionalInfoUrl = $"https://glosbe.com/ka/ru/{definition}/fragment/details?phraseIndex=0&translationPhrase={requestWord}&translationIndex=0&reverse=true";
-        const string additionalSearchPattern = "//main//section[1]//div//ul/li[1]//div//div/h3";
+        const string additionalSearchPattern = "//p//span";
 
-        var additionalInfo = await Definition(ct, additionalInfoUrl, additionalSearchPattern);
+        var additionalInfo = await AdditionalInfo(ct, additionalInfoUrl, additionalSearchPattern);
         //-- возможно просто можно вот такой запрос делать
         // хотя так сделать не выйдет, потому что для формирования строки нужно еще сделать перевод слова
         //https://glosbe.com/ka/ru/ქლიავი/fragment/details?phraseIndex=0&translationPhrase=слива&translationIndex=0&reverse=true
@@ -44,5 +45,19 @@ public class GlosbeParsingTranslationService : IParsingTranslationService
         var element = htmlDoc.DocumentNode.SelectSingleNode(searchPattern);
         var definition = element.InnerText.Trim('\n');
         return definition;
+    }
+    
+    private async Task<string> AdditionalInfo(CancellationToken ct, string requestUrl, string searchPattern)
+    {
+        using var httpClient = _clientFactory.CreateClient();
+        var responseContent = await httpClient.GetStringAsync(requestUrl, ct);
+
+        var htmlDoc = new HtmlDocument();
+        htmlDoc.LoadHtml(responseContent);
+        var elements = htmlDoc.DocumentNode.SelectNodes(searchPattern);
+        var stringBuilder = new StringBuilder();
+
+        var strings = elements.Select(node => node.InnerText).ToArray();
+        return stringBuilder.AppendJoin(", ", strings).ToString();
     }
 }
