@@ -58,7 +58,8 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
         const string exampleElementsSearchPattern = "//div//div//div//div//div[contains(@class, \"w-1/2\")]";
         var exampleElements = htmlDoc.DocumentNode.SelectNodes(exampleElementsSearchPattern);
         var exampleValues = exampleElements?.Select(node => node.InnerText).ToArray() ?? Array.Empty<string>();
-        var example = exampleValues.Length > 0  ? exampleValues[0].Trim() : "";
+        var exampleIndex = requestWord.DetectLanguage() == "Russian" ? 0 : 1;
+        var example = exampleValues.Length > 0  ? exampleValues[exampleIndex].Trim() : "";
         return (additionalInfo, example);
     }
 }
