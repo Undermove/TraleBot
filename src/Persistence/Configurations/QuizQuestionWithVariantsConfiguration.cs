@@ -10,7 +10,7 @@ public class QuizQuestionWithVariantsConfiguration : IEntityTypeConfiguration<Qu
     {
         builder.Property(quizQuestion => quizQuestion.Variants).IsRequired()
             .HasConversion(
-                v => string.Join(',', v),
-                v => v.Split(',', StringSplitOptions.RemoveEmptyEntries));
+                v => string.Join("\n;", v),
+                v => v.Split("\n;", StringSplitOptions.RemoveEmptyEntries));
     }
 }
