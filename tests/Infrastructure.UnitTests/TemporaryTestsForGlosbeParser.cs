@@ -40,22 +40,22 @@ public class TemporaryTestsForGlosbeParser
     [Test]
     public async Task CheckBumagaTranslation()
     {
-        var result = await _glosbeTranslationService.TranslateAsync("ქაღალდი", CancellationToken.None);
+        var result = await _glosbeTranslationService.TranslateAsync("бумага", CancellationToken.None);
 
         result.IsSuccessful.ShouldBeTrue();
-        result.Definition.ShouldBe("бумага");
-        result.AdditionalInfo.ShouldBe("бумага");
+        result.Definition.ShouldBe("ქაღალდი");
+        result.AdditionalInfo.ShouldBe("ქაღალდი");
         result.Example.ShouldBe("შემდეგ ერთი დიდი წიგნი და მრავალი სხვა ქაღალდი მოგვცეს და დაგვავალეს, ყოველივე ეს სონიას გაწერამდე წაგვეკითხა და შეგვესწავლა.");
     }
     
     [Test]
     public async Task CheckBumagaBackwardTranslation()
     {
-        var result = await _glosbeTranslationService.TranslateAsync("бумага", CancellationToken.None);
+        var result = await _glosbeTranslationService.TranslateAsync("ქაღალდი", CancellationToken.None);
 
         result.IsSuccessful.ShouldBeTrue();
-        result.Definition.ShouldBe("ქაღალდი");
-        result.AdditionalInfo.ShouldBe("ქაღალდი");
+        result.Definition.ShouldBe("бумага");
+        result.AdditionalInfo.ShouldBe("бумага");
         result.Example.ShouldBe("შემდეგ ერთი დიდი წიგნი და მრავალი სხვა ქაღალდი მოგვცეს და დაგვავალეს, ყოველივე ეს სონიას გაწერამდე წაგვეკითხა და შეგვესწავლა.");
     }
 }
