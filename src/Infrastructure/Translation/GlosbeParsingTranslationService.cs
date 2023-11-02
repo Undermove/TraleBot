@@ -1,10 +1,12 @@
 using System.Text;
+using Application.Common.Extensions;
 using Application.Common.Interfaces.TranslationService;
+using Domain.Entities;
 using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class GlosbeParsingTranslationService : IParsingTranslationService
+public class GlosbeParsingTranslationService : IParsingUniversalTranslator
 {
     private readonly IHttpClientFactory _clientFactory;
     
@@ -12,28 +14,18 @@ public class GlosbeParsingTranslationService : IParsingTranslationService
     {
         _clientFactory = clientFactory;
     }
-    public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
+    public async Task<TranslationResult> TranslateAsync(string? requestWord, Language targetLanguage, CancellationToken ct)
     {
-        // Make the HTTP GET request to the Google Translate API
-        var requestUrl = $"https://glosbe.com/ru/ka/{requestWord}";
-        var definition = await Definition(ct, requestUrl);
+        var definition = await GetDefinition(requestWord, ct);
+        var (additionalInfo, example) = await GetAdditionalInfoAndExampleForDefinition(definition, requestWord, ct);
         
-        
-        var (additionalInfo, example) = await AdditionalInfo(definition, requestWord, ct);
-        //-- возможно просто можно вот такой запрос делать
-        // хотя так сделать не выйдет, потому что для формирования строки нужно еще сделать перевод слова
-        //https://glosbe.com/ka/ru/ქლიავი/fragment/details?phraseIndex=0&translationPhrase=слива&translationIndex=0&reverse=true
-        //https://glosbe.com/ru/ka/книга/fragment/details?phraseIndex=0&translationPhrase=წიგნი&translationIndex=0&reverse=true
-        //https://glosbe.com/ru/ka/%D0%BA%D0%BD%D0%B8%D0%B3%D0%B0/fragment/details?phraseIndex=0&translationPhrase=%E1%83%AC%E1%83%98%E1%83%92%E1%83%9C%E1%83%98&translationIndex=0&reverse=true
-        // слива - ქლიავი это хороший пример слова, которое не содержит примеров применения
-        // книга - წიგნი это хороший пример слова, которое содержит примеры применения
-        
-
         return new TranslationResult(definition, additionalInfo, example, true);
     }
 
-    private async Task<string> Definition(CancellationToken ct, string requestUrl)
+    private async Task<string> GetDefinition(string requestWord, CancellationToken ct)
     {
+        string languagePrefix = requestWord.DetectLanguage() == "Russian" ? "ru/ka" : "ka/ru";
+        var requestUrl = $"https://glosbe.com/{languagePrefix}/{requestWord}";
         using var httpClient = _clientFactory.CreateClient();
         var responseContent = await httpClient.GetStringAsync(requestUrl, ct);
         
@@ -46,9 +38,10 @@ public class GlosbeParsingTranslationService : IParsingTranslationService
         return definition;
     }
     
-    private async Task<(string additionalInfo, string example)> AdditionalInfo(string definition, string requestWord, CancellationToken ct)
+    private async Task<(string additionalInfo, string example)> GetAdditionalInfoAndExampleForDefinition(string definition, string requestWord, CancellationToken ct)
     {
-        var additionalInfoUrl = $"https://glosbe.com/ka/ru/{definition}/fragment/details?phraseIndex=0&translationPhrase={requestWord}&translationIndex=0&reverse=true";
+        string languagePrefix = requestWord.DetectLanguage() == "Russian" ? "ka/ru" : "ru/ka";
+        var additionalInfoUrl = $"https://glosbe.com/{languagePrefix}/{definition}/fragment/details?phraseIndex=0&translationPhrase={requestWord}&translationIndex=0&reverse=true";
         const string additionalSearchPattern = "//p//span";
 
         using var httpClient = _clientFactory.CreateClient();
@@ -59,7 +52,7 @@ public class GlosbeParsingTranslationService : IParsingTranslationService
         
         var additionalInfoElements = htmlDoc.DocumentNode.SelectNodes(additionalSearchPattern);
         var stringBuilder = new StringBuilder();
-        var additionalInfoValues = additionalInfoElements.Select(node => node.InnerText).ToArray();
+        var additionalInfoValues = additionalInfoElements?.Select(node => node.InnerText).ToArray() ?? Array.Empty<string>();
         var additionalInfo = stringBuilder.AppendJoin(", ", additionalInfoValues).ToString();
         
         const string exampleElementsSearchPattern = "//div//div//div//div//div[contains(@class, \"w-1/2\")]";

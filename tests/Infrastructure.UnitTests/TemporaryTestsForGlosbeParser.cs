@@ -1,3 +1,4 @@
+using Domain.Entities;
 using Infrastructure.Translation;
 using Moq;
 using Shouldly;
@@ -20,27 +21,29 @@ public class TemporaryTestsForGlosbeParser
     [Test]
     public async Task CheckSlivaTranslation()
     {
-        var result = await _glosbeTranslationService.TranslateAsync("слива", CancellationToken.None);
+        var result = await _glosbeTranslationService.TranslateAsync("слива", Language.Georgian, CancellationToken.None);
 
         result.IsSuccessful.ShouldBeTrue();
         result.Definition.ShouldBe("ქლიავი");
         result.AdditionalInfo.ShouldBe("ქლიავი, საჭურისი, კურკისგან დაცლილი ხილი, გამომშრალი ხილი");
+        result.Example.ShouldBe("");
     }
     
     [Test]
     public async Task CheckBackwardSlivaTranslation()
     {
-        var result = await _glosbeTranslationService.TranslateAsync("ქლიავი", CancellationToken.None);
+        var result = await _glosbeTranslationService.TranslateAsync("ქლიავი", Language.Georgian, CancellationToken.None);
 
         result.IsSuccessful.ShouldBeTrue();
         result.Definition.ShouldBe("слива");
         result.AdditionalInfo.ShouldBe("слива");
+        result.Example.ShouldBe("");
     }
     
     [Test]
     public async Task CheckBumagaTranslation()
     {
-        var result = await _glosbeTranslationService.TranslateAsync("бумага", CancellationToken.None);
+        var result = await _glosbeTranslationService.TranslateAsync("бумага", Language.Georgian, CancellationToken.None);
 
         result.IsSuccessful.ShouldBeTrue();
         result.Definition.ShouldBe("ქაღალდი");
@@ -51,7 +54,7 @@ public class TemporaryTestsForGlosbeParser
     [Test]
     public async Task CheckBumagaBackwardTranslation()
     {
-        var result = await _glosbeTranslationService.TranslateAsync("ქაღალდი", CancellationToken.None);
+        var result = await _glosbeTranslationService.TranslateAsync("ქაღალდი", Language.Georgian, CancellationToken.None);
 
         result.IsSuccessful.ShouldBeTrue();
         result.Definition.ShouldBe("бумага");
