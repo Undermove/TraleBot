@@ -26,6 +26,7 @@ public static class DependencyInjection
 
         services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
         services.AddTransient<IParsingTranslationService, WooordHuntParsingParsingTranslationService>();
+        services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiTranslationService>();
         services.AddHttpClient();
 

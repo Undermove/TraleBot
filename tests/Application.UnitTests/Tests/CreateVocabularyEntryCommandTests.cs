@@ -14,6 +14,7 @@ namespace Application.UnitTests.Tests;
 public class CreateVocabularyEntryCommandTests : CommandTestsBase
 {
     private Mock<IParsingTranslationService> _translationServicesMock = null!;
+    private Mock<IParsingUniversalTranslator> _universalTranslationServicesMock = null!;
     private Mock<IAiTranslationService> _aiTranslationServicesMock = null!;
     private User _existingUser = null!;
     private CreateVocabularyEntryCommand.Handler _createVocabularyEntryCommandHandler = null!;
@@ -24,6 +25,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     {
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
         _translationServicesMock = mockRepository.Create<IParsingTranslationService>();
+        _universalTranslationServicesMock = mockRepository.Create<IParsingUniversalTranslator>();
         _aiTranslationServicesMock = mockRepository.Create<IAiTranslationService>();
         _achievementsService = mockRepository.Create<IAchievementsService>();
         _achievementsService.Setup(service => service.AssignAchievements(
@@ -37,7 +39,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         
-        _createVocabularyEntryCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, Context, _achievementsService.Object, _aiTranslationServicesMock.Object);
+        _createVocabularyEntryCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, _universalTranslationServicesMock.Object, Context, _achievementsService.Object, _aiTranslationServicesMock.Object);
     }
 
     [Test]

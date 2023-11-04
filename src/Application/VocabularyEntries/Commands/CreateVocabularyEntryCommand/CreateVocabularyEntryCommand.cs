@@ -18,16 +18,19 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
     public class Handler : IRequestHandler<CreateVocabularyEntryCommand, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
+        private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
         private readonly IAiTranslationService _aiTranslationService;
         private readonly ITraleDbContext _context;
         private readonly IAchievementsService _achievementService;
 
         public Handler(IParsingTranslationService parsingTranslationService,
+            IParsingUniversalTranslator parsingUniversalTranslator,
             ITraleDbContext context,
             IAchievementsService achievementService, 
             IAiTranslationService aiTranslationService)
         {
             _parsingTranslationService = parsingTranslationService;
+            _parsingUniversalTranslator = parsingUniversalTranslator;
             _context = context;
             _achievementService = achievementService;
             _aiTranslationService = aiTranslationService;
@@ -44,6 +47,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             
             var duplicate = user!.VocabularyEntries
                 .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
+            
             if(duplicate != null)
             {
                 return new TranslationExists(
@@ -58,6 +62,14 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                 return await CreateManualVocabularyEntry(request, ct, user);
             }
 
+            if (user.Settings.CurrentLanguage == Language.Georgian)
+            {
+                var result = await _parsingUniversalTranslator.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
+                return result.IsSuccessful 
+                    ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user) 
+                    : new TranslationFailure();
+            }
+            
             var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(request.Word, ct);
 
             if (parsingTranslationResult.IsSuccessful)
