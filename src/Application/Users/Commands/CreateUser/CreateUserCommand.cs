@@ -48,6 +48,7 @@ public class CreateUserCommand : IRequest<OneOf<UserCreated, UserExists>>
             user.UserSettingsId = settings.Id;
             
             _dbContext.Users.Add(user);
+            _dbContext.UsersSettings.Add(settings);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 

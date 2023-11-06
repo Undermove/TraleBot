@@ -28,7 +28,7 @@ public class GetUserByTelegramId: IRequest<User?>
             {
                 await _dbContext
                     .Entry(user)
-                    .Collection(nameof(user.Settings))
+                    .Reference(nameof(user.Settings))
                     .LoadAsync(cancellationToken);    
             }
             
