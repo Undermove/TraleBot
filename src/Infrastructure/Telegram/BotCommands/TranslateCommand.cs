@@ -1,5 +1,5 @@
 using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
-using Infrastructure.Telegram.CommonComponents;
+using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -112,33 +112,32 @@ public class TranslateCommand : IBotCommand
         string removeFromVocabularyText, 
         CancellationToken token)
     {
-        var keyboard = new InlineKeyboardMarkup(new[]
+        var replyMarkup = new List<InlineKeyboardButton[]>
         {
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
                     $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
-            },
-            // new[]
-            // {
-            //     InlineKeyboardButton.WithCallbackData("Ввести свой перевод", $"{CommandNames.TranslateManually} {result.VocabularyEntryId}")
-            // },
-            new[]
+            }
+        };
+
+        if (request.User!.Settings.CurrentLanguage == Language.English)
+        {
+            replyMarkup.Add(new[]
             {
                 InlineKeyboardButton.WithUrl("Перевод Wooordhunt", $"https://wooordhunt.ru/word/{request.Text}"),
                 InlineKeyboardButton.WithUrl("Перевод Reverso Context",
                     $"https://context.reverso.net/translation/russian-english/{request.Text}")
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithUrl("Послушать на YouGlish",
-                    $"https://youglish.com/pronounce/{request.Text}/english?")
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
-            }
+            });
+        }
+        
+        replyMarkup.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Перевести на другой язык", CommandNames.ChangeLanguage),
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
         });
+        
+        var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId,

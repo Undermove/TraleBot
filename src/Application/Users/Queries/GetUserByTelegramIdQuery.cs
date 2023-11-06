@@ -23,6 +23,15 @@ public class GetUserByTelegramId: IRequest<User?>
             var user = await _dbContext.Users
                 .Where(u => u.TelegramId == request.TelegramId)
                 .FirstOrDefaultAsync(cancellationToken);
+
+            if (user != null)
+            {
+                await _dbContext
+                    .Entry(user)
+                    .Collection(nameof(user.Settings))
+                    .LoadAsync(cancellationToken);    
+            }
+            
             return user;
         }
     }
