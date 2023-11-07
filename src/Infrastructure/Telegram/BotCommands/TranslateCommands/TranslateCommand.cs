@@ -5,7 +5,7 @@ using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
 public class TranslateCommand : IBotCommand
 {
@@ -133,7 +133,7 @@ public class TranslateCommand : IBotCommand
         
         replyMarkup.Add(new[]
         {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Перевести на другой язык", CommandNames.ChangeLanguage),
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeLanguage} {request.MessageId}"),
             InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
         });
         

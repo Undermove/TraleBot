@@ -7,6 +7,7 @@ using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using Infrastructure.Telegram.BotCommands.Quiz;
+using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Telegram.Services;
 using Infrastructure.Translation;

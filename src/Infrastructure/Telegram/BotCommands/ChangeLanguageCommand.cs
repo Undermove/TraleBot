@@ -23,15 +23,17 @@ public class ChangeLanguageCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
+        var messageId = request.Text.Split(' ')[1];
+        
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"/switch_language {Language.English}"),
+                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"/switch_language {Language.English} {messageId}"),
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"/switch_language {Language.Georgian}"),
+                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"/switch_language {Language.Georgian} {messageId}"),
             }
         });
         

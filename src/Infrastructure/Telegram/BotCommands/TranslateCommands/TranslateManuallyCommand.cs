@@ -4,7 +4,7 @@ using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
 public class TranslateManuallyCommand : IBotCommand
 {

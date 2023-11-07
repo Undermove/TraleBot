@@ -62,7 +62,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                 return await CreateManualVocabularyEntry(request, ct, user);
             }
 
-            if (user.Settings.CurrentLanguage == Language.Georgian)
+            if (user.Settings.CurrentLanguage != Language.English)
             {
                 var result = await _parsingUniversalTranslator.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
                 return result.IsSuccessful 
