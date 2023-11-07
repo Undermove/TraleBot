@@ -3,7 +3,6 @@ using Application.Achievements.Services.Triggers;
 using Application.Common;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
-using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 using Domain.Entities;
 using MediatR;
 using OneOf;

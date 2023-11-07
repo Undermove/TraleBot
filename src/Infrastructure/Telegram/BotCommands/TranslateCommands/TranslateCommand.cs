@@ -1,4 +1,3 @@
-using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;

@@ -3,7 +3,6 @@ using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
-using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
