@@ -26,7 +26,7 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new CreateVocabularyEntryCommand
+        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntryCommand
         {
             Word = request.Text,
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),

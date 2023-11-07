@@ -30,7 +30,7 @@ public class TranslateManuallyCommand : IBotCommand
         var definition = split[1];
         
         // todo create new handler for manual translation
-        var result = await _mediator.Send(new CreateVocabularyEntryCommand
+        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntryCommand
         {
             Word = word,
             Definition = definition,

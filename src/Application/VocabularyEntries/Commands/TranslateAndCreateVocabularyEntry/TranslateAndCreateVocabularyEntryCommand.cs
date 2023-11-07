@@ -9,13 +9,13 @@ using OneOf;
 
 namespace Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
 
-public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
+public class TranslateAndCreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
 {
     public Guid UserId { get; init; }
     public string? Word { get; init; }
     public string? Definition { get; init; }
 
-    public class Handler : IRequestHandler<CreateVocabularyEntryCommand, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
+    public class Handler : IRequestHandler<TranslateAndCreateVocabularyEntryCommand, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
         private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
@@ -36,7 +36,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             _aiTranslationService = aiTranslationService;
         }
 
-        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
+        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>> Handle(TranslateAndCreateVocabularyEntryCommand request, CancellationToken ct)
         {
             var user = await GetUser(request, ct);
 
@@ -93,7 +93,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                 : new TranslationFailure();
         }
 
-        private async Task<TranslationSuccess> CreateManualVocabularyEntry(CreateVocabularyEntryCommand request, CancellationToken ct, User user)
+        private async Task<TranslationSuccess> CreateManualVocabularyEntry(TranslateAndCreateVocabularyEntryCommand request, CancellationToken ct, User user)
         {
             var manualTranslationTrigger = new ManualTranslationTrigger();
             await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
@@ -101,7 +101,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             return await CreateVocabularyEntryResult(request, ct, request.Definition!, request.Definition!, "", user);
         }
 
-        private async Task<TranslationSuccess> CreateVocabularyEntryResult(CreateVocabularyEntryCommand request, CancellationToken ct,
+        private async Task<TranslationSuccess> CreateVocabularyEntryResult(TranslateAndCreateVocabularyEntryCommand request, CancellationToken ct,
             string definition, string additionalInfo, string example, User user)
         {
             var entryId = Guid.NewGuid();
@@ -139,7 +139,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             return Regex.IsMatch(input, emojiPattern);
         }
 
-        private async Task<User?> GetUser(CreateVocabularyEntryCommand request, CancellationToken ct)
+        private async Task<User?> GetUser(TranslateAndCreateVocabularyEntryCommand request, CancellationToken ct)
         {
             object?[] keyValues = { request.UserId };
             var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
