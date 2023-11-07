@@ -5,6 +5,7 @@ using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using OneOf;
 
 namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
@@ -45,8 +46,10 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                 return new EmojiDetected();
             }
             
-            var duplicate = user!.VocabularyEntries
-                .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
+            var duplicate = await _context.VocabularyEntries
+                .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
+                                               && entry.Language == user!.Settings.CurrentLanguage
+                                               && entry.Word.Equals(request.Word), ct);
             
             if(duplicate != null)
             {
@@ -149,6 +152,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             }
 
             await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            await _context.Entry(user).Reference(nameof(user.Settings)).LoadAsync(ct);
             return user;
         }
     }

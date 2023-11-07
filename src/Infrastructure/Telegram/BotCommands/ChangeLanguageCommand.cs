@@ -17,23 +17,23 @@ public class ChangeLanguageCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Equals(CommandNames.ChangeLanguage, StringComparison.InvariantCultureIgnoreCase) ||
+        return Task.FromResult(commandPayload.StartsWith(CommandNames.ChangeLanguage, StringComparison.InvariantCultureIgnoreCase) ||
                                commandPayload.StartsWith(CommandNames.ChangeLanguageIcon, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var messageId = request.Text.Split(' ')[1];
+        var translatedWord = request.Text.Split(' ')[1];
         
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"/switch_language {Language.English} {messageId}"),
+                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"{CommandNames.TranslateToAnotherLanguage}|{Language.English}|{translatedWord}"),
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"/switch_language {Language.Georgian} {messageId}"),
+                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"{CommandNames.TranslateToAnotherLanguage}|{Language.Georgian}|{translatedWord}"),
             }
         });
         

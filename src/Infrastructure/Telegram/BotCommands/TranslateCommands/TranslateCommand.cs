@@ -133,7 +133,7 @@ public class TranslateCommand : IBotCommand
         
         replyMarkup.Add(new[]
         {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeLanguage} {request.MessageId}"),
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeLanguage} {request.Text}"),
             InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
         });
         

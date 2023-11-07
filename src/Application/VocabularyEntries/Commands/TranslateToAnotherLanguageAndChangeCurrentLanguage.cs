@@ -34,11 +34,11 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
         public async Task<OneOf<TranslationSuccess, TranslationExists, SuggestPremium, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
         {
             var user = request.User;
+            
             var duplicate = await _context.VocabularyEntries
                 .SingleOrDefaultAsync(entry => entry.UserId == request.User.Id
-                                          && entry.Language == request.TargetLanguage
-                                          && entry.Word.Equals(request.Word,
-                                              StringComparison.InvariantCultureIgnoreCase), ct);
+                                               && entry.Language == request.TargetLanguage
+                                               && entry.Word.Equals(request.Word), cancellationToken: ct);
 
             if(duplicate != null)
             {
@@ -100,7 +100,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                 UserId = user.Id,
                 DateAddedUtc = dateAddedUtc,
                 UpdatedAtUtc = dateAddedUtc,
-                Language = user.Settings.CurrentLanguage
+                Language = request.TargetLanguage
             };
 
             await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);
