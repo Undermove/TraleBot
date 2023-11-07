@@ -1,4 +1,5 @@
 using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
+using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -30,7 +31,7 @@ public class TranslateManuallyCommand : IBotCommand
         var definition = split[1];
         
         // todo create new handler for manual translation
-        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntryCommand
+        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntry
         {
             Word = word,
             Definition = definition,

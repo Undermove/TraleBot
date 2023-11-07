@@ -25,7 +25,7 @@ public class RemoveEntryCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var callback = request.Text.Split(' ')[1];
-        await _mediator.Send(new RemoveVocabularyEntryCommand() {VocabularyEntryId = Guid.Parse(callback)}, token);
+        await _mediator.Send(new RemoveVocabularyEntry() {VocabularyEntryId = Guid.Parse(callback)}, token);
         await _client.EditMessageTextAsync(request.UserTelegramId, request.MessageId, "🗑Удалил из словаря", cancellationToken: token);
     }
 }

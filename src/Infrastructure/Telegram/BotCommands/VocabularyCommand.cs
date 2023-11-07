@@ -28,7 +28,7 @@ public class VocabularyCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result =  await _mediator.Send(new GetVocabularyEntriesListQuery {UserId = request.User!.Id}, token);
+        var result =  await _mediator.Send(new GetVocabularyEntriesList {UserId = request.User!.Id}, token);
 
         if (!result.VocabularyEntriesPages.Any())
         {

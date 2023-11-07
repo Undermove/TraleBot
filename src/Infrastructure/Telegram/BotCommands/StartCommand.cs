@@ -32,7 +32,7 @@ public class StartCommand : IBotCommand
         User? user = request.User;
         if (request.User == null)
         {
-            var userCreatedResultType = await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
+            var userCreatedResultType = await _mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
             userCreatedResultType.Match(
                 created => user = created.User, 
                 exists => user = exists.User);

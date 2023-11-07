@@ -30,7 +30,7 @@ public class ActivateTrialCommand : IBotCommand
     {
         _logger.LogInformation("User with ID: {id} requested trial", request.User!.Id);
 
-        var result = await _mediator.Send(new ActivatePremiumCommand
+        var result = await _mediator.Send(new ActivatePremium
         {
             UserId = request.User.Id,
             InvoiceCreatedAdUtc = DateTime.UtcNow,

@@ -26,7 +26,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var command = TranslateInfo.BuildFromRawMessage(request.Text);
-        var result = await _mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguageCommand
+        var result = await _mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
             Word = command.Word,
             TargetLanguage = command.TargetLanguage

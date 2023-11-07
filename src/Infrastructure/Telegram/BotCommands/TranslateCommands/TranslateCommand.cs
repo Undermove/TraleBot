@@ -1,4 +1,5 @@
 using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
+using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -26,7 +27,7 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntryCommand
+        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntry
         {
             Word = request.Text,
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),

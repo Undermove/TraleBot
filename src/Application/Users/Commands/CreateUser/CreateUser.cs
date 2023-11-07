@@ -6,11 +6,11 @@ using OneOf;
 
 namespace Application.Users.Commands.CreateUser;
 
-public class CreateUserCommand : IRequest<OneOf<UserCreated, UserExists>>
+public class CreateUser : IRequest<OneOf<UserCreated, UserExists>>
 {
     public long TelegramId { get; set; }
 
-    public class Handler : IRequestHandler<CreateUserCommand, OneOf<UserCreated, UserExists>>
+    public class Handler : IRequestHandler<CreateUser, OneOf<UserCreated, UserExists>>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -19,7 +19,7 @@ public class CreateUserCommand : IRequest<OneOf<UserCreated, UserExists>>
             _dbContext = dbContext;
         }
 
-        public async Task<OneOf<UserCreated, UserExists>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
+        public async Task<OneOf<UserCreated, UserExists>> Handle(CreateUser request, CancellationToken cancellationToken)
         {
             User? user = await _dbContext.Users.FirstOrDefaultAsync(
                 user => user.TelegramId == request.TelegramId,

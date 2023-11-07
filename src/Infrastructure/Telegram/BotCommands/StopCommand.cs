@@ -24,7 +24,7 @@ public class StopCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        await _mediator.Send(new CreateUserCommand {TelegramId = request.UserTelegramId}, token);
+        await _mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"Привет, {request.UserName}! Меня зовут Trale. От английского translate and learn. Остроумно, да? 🙂" +

@@ -8,12 +8,12 @@ namespace Application.UnitTests.Tests;
 
 public class GetVocabularyEntriesListQueryTests : CommandTestsBase
 {
-    private GetVocabularyEntriesListQuery.Handler _sut = null!;
+    private GetVocabularyEntriesList.Handler _sut = null!;
     
     [SetUp]
     public void SetUp()
     {
-        _sut = new GetVocabularyEntriesListQuery.Handler(Context);
+        _sut = new GetVocabularyEntriesList.Handler(Context);
     }
 
     [Test]
@@ -25,7 +25,7 @@ public class GetVocabularyEntriesListQueryTests : CommandTestsBase
         Context.VocabularyEntries.AddRange(oldVocabularyEntry, newVocabularyEntry);
         await Context.SaveChangesAsync();
 
-        var result = await _sut.Handle(new GetVocabularyEntriesListQuery()
+        var result = await _sut.Handle(new GetVocabularyEntriesList()
         {
             UserId = premiumUser.Id
         }, CancellationToken.None);
@@ -52,7 +52,7 @@ public class GetVocabularyEntriesListQueryTests : CommandTestsBase
         Context.VocabularyEntries.AddRange(englishVocabularyEntry, georgianVocabularyEntry);
         await Context.SaveChangesAsync();
 
-        var result = await _sut.Handle(new GetVocabularyEntriesListQuery
+        var result = await _sut.Handle(new GetVocabularyEntriesList
         {
             UserId = premiumUser.Id
         }, CancellationToken.None);
@@ -79,7 +79,7 @@ public class GetVocabularyEntriesListQueryTests : CommandTestsBase
         Context.VocabularyEntries.AddRange(englishVocabularyEntry, georgianVocabularyEntry);
         await Context.SaveChangesAsync();
 
-        var result = await _sut.Handle(new GetVocabularyEntriesListQuery
+        var result = await _sut.Handle(new GetVocabularyEntriesList
         {
             UserId = premiumUser.Id
         }, CancellationToken.None);
