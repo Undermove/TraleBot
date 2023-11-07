@@ -97,21 +97,15 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             User user,
             CancellationToken ct)
         {
-            var dateAddedUtc = DateTime.UtcNow;
-            var vocabularyEntry = new VocabularyEntry
-            {
-                Id = request.VocabularyEntryId,
-                Word = sourceEntry.Word.ToLowerInvariant(),
-                Definition = definition.ToLowerInvariant(),
-                AdditionalInfo = additionalInfo.ToLowerInvariant(),
-                Example = example,
-                UserId = sourceEntry.UserId,
-                DateAddedUtc = sourceEntry.DateAddedUtc,
-                UpdatedAtUtc = dateAddedUtc,
-                Language = request.TargetLanguage
-            };
-
-            _context.VocabularyEntries.Update(vocabularyEntry);
+            var updatedAtUtc = DateTime.UtcNow;
+            sourceEntry.Word = sourceEntry.Word.ToLowerInvariant();
+            sourceEntry.Definition = definition.ToLowerInvariant();
+            sourceEntry.AdditionalInfo = additionalInfo.ToLowerInvariant();
+            sourceEntry.Example = example;
+            sourceEntry.UpdatedAtUtc = updatedAtUtc;
+            sourceEntry.Language = request.TargetLanguage;
+            
+            _context.VocabularyEntries.Update(sourceEntry);
             
             user.Settings.CurrentLanguage = request.TargetLanguage;
             _context.UsersSettings.Update(user.Settings);
