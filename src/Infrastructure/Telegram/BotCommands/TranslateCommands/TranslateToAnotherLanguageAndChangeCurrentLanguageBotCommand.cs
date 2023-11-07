@@ -28,6 +28,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
         var command = TranslateInfo.BuildFromRawMessage(request.Text);
         var result = await _mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
+            User = request.User ?? throw new ApplicationException("User not registered"),
             Word = command.Word,
             TargetLanguage = command.TargetLanguage
         }, token);
