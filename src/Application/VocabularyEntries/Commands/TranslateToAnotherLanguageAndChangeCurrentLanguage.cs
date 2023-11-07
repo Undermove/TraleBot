@@ -11,8 +11,8 @@ namespace Application.VocabularyEntries.Commands;
 public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<TranslationSuccess, TranslationExists, SuggestPremium, TranslationFailure>>
 {
     public required User User { get; init; }
-    public required string Word { get; init; }
     public required Language TargetLanguage { get; init; }
+    public Guid VocabularyEntryId { get; set; }
 
     public class Handler : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, OneOf<TranslationSuccess, TranslationExists, SuggestPremium, TranslationFailure>>
     {
@@ -34,11 +34,19 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
         public async Task<OneOf<TranslationSuccess, TranslationExists, SuggestPremium, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
         {
             var user = request.User;
+            object?[] keyValues = { request.VocabularyEntryId };
+            var sourceEntry = await _context.VocabularyEntries.FindAsync(keyValues, cancellationToken: ct);
+
+            if (sourceEntry == null)
+            {
+                throw new ApplicationException("original entry not found");
+            }
             
             var duplicate = await _context.VocabularyEntries
                 .SingleOrDefaultAsync(entry => entry.UserId == request.User.Id
                                                && entry.Language == request.TargetLanguage
-                                               && entry.Word.Equals(request.Word), cancellationToken: ct);
+                                               && entry.Word.Equals(sourceEntry.Word), 
+                    cancellationToken: ct);
 
             if(duplicate != null)
             {
@@ -51,28 +59,28 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             
             if (request.TargetLanguage != Language.English)
             {
-                var result = await _parsingUniversalTranslator.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
+                var result = await _parsingUniversalTranslator.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
                 return result.IsSuccessful 
-                    ? await CreateVocabularyEntryAndChangeCurrentLanguage(request, ct, result.Definition, result.AdditionalInfo, result.Example, user) 
+                    ? await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, result.Definition, result.AdditionalInfo, result.Example, user, ct) 
                     : new TranslationFailure();
             }
             
-            var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(request.Word, ct);
+            var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
 
             if (parsingTranslationResult.IsSuccessful)
             {
-                return await CreateVocabularyEntryAndChangeCurrentLanguage(request, ct, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user);
+                return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user, ct);
             }
             
             if (user.IsActivePremium())
             {
-                var result = await _aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
+                var result = await _aiTranslationService.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
                 if (!result.IsSuccessful)
                 {
                     return new TranslationFailure();
                 }
 
-                return await CreateVocabularyEntryAndChangeCurrentLanguage(request, ct, result.Definition, result.AdditionalInfo, result.Example, user);
+                return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, result.Definition, result.AdditionalInfo, result.Example, user, ct);
             }
             
             return !user.IsActivePremium() 
@@ -80,30 +88,30 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                 : new TranslationFailure();
         }
         
-        private async Task<TranslationSuccess> CreateVocabularyEntryAndChangeCurrentLanguage(
-            TranslateToAnotherLanguageAndChangeCurrentLanguage request, 
-            CancellationToken ct,
-            string definition, 
-            string additionalInfo, 
-            string example, 
-            User user)
+        private async Task<TranslationSuccess> UpdateVocabularyEntryAndChangeCurrentLanguage(
+            TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+            VocabularyEntry sourceEntry,
+            string definition,
+            string additionalInfo,
+            string example,
+            User user,
+            CancellationToken ct)
         {
-            var entryId = Guid.NewGuid();
             var dateAddedUtc = DateTime.UtcNow;
             var vocabularyEntry = new VocabularyEntry
             {
-                Id = entryId,
-                Word = request.Word!.ToLowerInvariant(),
+                Id = request.VocabularyEntryId,
+                Word = sourceEntry.Word.ToLowerInvariant(),
                 Definition = definition.ToLowerInvariant(),
                 AdditionalInfo = additionalInfo.ToLowerInvariant(),
                 Example = example,
-                UserId = user.Id,
-                DateAddedUtc = dateAddedUtc,
+                UserId = sourceEntry.UserId,
+                DateAddedUtc = sourceEntry.DateAddedUtc,
                 UpdatedAtUtc = dateAddedUtc,
                 Language = request.TargetLanguage
             };
 
-            await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);
+            _context.VocabularyEntries.Update(vocabularyEntry);
             
             user.Settings.CurrentLanguage = request.TargetLanguage;
             _context.UsersSettings.Update(user.Settings);
@@ -117,7 +125,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                 definition,
                 additionalInfo,
                 example,
-                entryId);
+                request.VocabularyEntryId);
         }
     }
 }

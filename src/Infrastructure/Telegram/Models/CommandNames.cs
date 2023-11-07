@@ -20,7 +20,7 @@ public static class CommandNames
     // vocabulary commands
     public const string RemoveEntry = "/removeentry";
     public const string TranslateManually = "-";
-    public const string TranslateToAnotherLanguage = "/translatetoanother";
+    public const string TranslateToAnotherLanguage = "/swaplang";
     public const string Vocabulary = "/vocabulary";
     public const string VocabularyIcon = "📘";
     

@@ -30,8 +30,8 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
         var result = await _mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
-            Word = command.Word,
-            TargetLanguage = command.TargetLanguage
+            TargetLanguage = command.TargetLanguage,
+            VocabularyEntryId = command.VocabularyEntryId
         }, token);
 
         await result.Match<Task>(
@@ -66,14 +66,6 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
             result.Example,
             removeFromVocabularyText,
             token);
-    }
-    
-    private async Task HandleEmojiDetected(TelegramRequest request, CancellationToken token)
-    {
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "Кажется, что ты отправил мне слишком много эмодзи 😅.",
-            cancellationToken: token);
     }
     
     private async Task HandleFailure(TelegramRequest request, CancellationToken token)
@@ -140,8 +132,9 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
         
         var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
-        await _client.SendTextMessageAsync(
+        await _client.EditMessageTextAsync(
             request.UserTelegramId,
+            request.MessageId,
             $"Определение: {definition}" +
             $"\r\nДругие значения: {additionalInfo}" +
             $"\r\nПример употребления: {example}",
@@ -153,14 +146,14 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
 public class TranslateInfo
 {
     public Language TargetLanguage { get; set; }
-    public string Word { get; init; }
-    
-    public TranslateInfo(string language, string word)
+    public Guid VocabularyEntryId { get; set; }
+
+    private TranslateInfo(string language, string vocabularyEntryId)
     {
-        TargetLanguage = Enum.Parse<Language>(language); 
-        Word = word;
+        TargetLanguage = (Language)Int16.Parse(language); 
+        VocabularyEntryId = Guid.Parse(vocabularyEntryId);
     }
-    
+
     public static TranslateInfo BuildFromRawMessage(string rawMessage)
     {
         var split = rawMessage.Split('|');
