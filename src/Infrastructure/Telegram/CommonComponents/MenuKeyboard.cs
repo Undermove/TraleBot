@@ -19,7 +19,7 @@ public static class MenuKeyboard
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Переключить язык")
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Переключить язык")
             },
             new []
             {

@@ -36,6 +36,8 @@ public static class CommandNames
     public const string AchievementsIcon = "📊";
     
     // language commands
-    public const string ChangeLanguage = "/changelanguage";
-    public const string ChangeLanguageIcon = "🌐";
+    public const string ChangeTranslationLanguage = "/changetranslation";
+    public const string ChangeTranslationLanguageIcon = "🌐";
+    public const string ChangeCurrentLanguageMenu = "/changelanguagemenu";
+    public const string ChangeCurrentLanguage = "/changelanguage";
 }

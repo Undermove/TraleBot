@@ -6,11 +6,11 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class ChangeLanguageCommand : IBotCommand
+public class ChangeTranslationLanguageCommand : IBotCommand
 {
     private readonly ITelegramBotClient _client;
 
-    public ChangeLanguageCommand(ITelegramBotClient client)
+    public ChangeTranslationLanguageCommand(ITelegramBotClient client)
     {
         _client = client;
     }
@@ -18,8 +18,8 @@ public class ChangeLanguageCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.StartsWith(CommandNames.ChangeLanguage, StringComparison.InvariantCultureIgnoreCase) ||
-                               commandPayload.StartsWith(CommandNames.ChangeLanguageIcon, StringComparison.InvariantCultureIgnoreCase));
+        return Task.FromResult(commandPayload.StartsWith(CommandNames.ChangeTranslationLanguage, StringComparison.InvariantCultureIgnoreCase) ||
+                               commandPayload.StartsWith(CommandNames.ChangeTranslationLanguageIcon, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
