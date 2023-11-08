@@ -26,7 +26,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var command = TranslateInfo.BuildFromRawMessage(request.Text);
+        var command = ChangeLanguageCallback.BuildFromRawMessage(request.Text);
         var result = await _mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
@@ -140,23 +140,5 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
             $"\r\nПример употребления: {example}",
             replyMarkup: keyboard,
             cancellationToken: token);
-    }
-}
-
-public class TranslateInfo
-{
-    public Language TargetLanguage { get; set; }
-    public Guid VocabularyEntryId { get; set; }
-
-    private TranslateInfo(string language, string vocabularyEntryId)
-    {
-        TargetLanguage = (Language)Int16.Parse(language); 
-        VocabularyEntryId = Guid.Parse(vocabularyEntryId);
-    }
-
-    public static TranslateInfo BuildFromRawMessage(string rawMessage)
-    {
-        var split = rawMessage.Split('|');
-        return new TranslateInfo(split[1], split[2]);
     }
 }

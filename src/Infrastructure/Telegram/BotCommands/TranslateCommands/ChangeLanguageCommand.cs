@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -29,11 +30,20 @@ public class ChangeLanguageCommand : IBotCommand
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"{CommandNames.TranslateToAnotherLanguage}|{(int)Language.English}|{vocabularyEntryId}"),
+                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский",
+                    new ChangeLanguageCallback
+                    {
+                        TargetLanguage = Language.English,
+                        VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
+                    }.ToStringCallback())
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"{CommandNames.TranslateToAnotherLanguage}|{(int)Language.Georgian}|{vocabularyEntryId}"),
+                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", new ChangeLanguageCallback
+                {
+                    TargetLanguage = Language.Georgian,
+                    VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
+                }.ToStringCallback())
             }
         });
         
