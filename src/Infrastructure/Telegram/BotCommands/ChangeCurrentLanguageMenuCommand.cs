@@ -6,11 +6,11 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class ChangeCurrentLanguageCommand : IBotCommand
+public class ChangeCurrentLanguageMenuCommand : IBotCommand
 {
     private readonly ITelegramBotClient _client;
 
-    public ChangeCurrentLanguageCommand(ITelegramBotClient client)
+    public ChangeCurrentLanguageMenuCommand(ITelegramBotClient client)
     {
         _client = client;
     }

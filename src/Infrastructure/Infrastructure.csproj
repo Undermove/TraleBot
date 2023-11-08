@@ -28,4 +28,8 @@
       <ProjectReference Include="..\Application\Application.csproj" />
       <ProjectReference Include="..\Persistence\Persistence.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Telegram\BotCommands\ChangeCurrentLanguage\" />
+    </ItemGroup>
 </Project>

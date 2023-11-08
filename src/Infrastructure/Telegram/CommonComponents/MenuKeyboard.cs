@@ -5,7 +5,7 @@ namespace Infrastructure.Telegram.CommonComponents;
 
 public static class MenuKeyboard
 {
-    public static IReplyMarkup GetMenuKeyboard()
+    public static InlineKeyboardMarkup GetMenuKeyboard()
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
@@ -19,7 +19,7 @@ public static class MenuKeyboard
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Переключить язык")
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Переключить язык", $"{CommandNames.ChangeCurrentLanguageMenu}")
             },
             new []
             {
