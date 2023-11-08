@@ -19,6 +19,10 @@ public static class MenuKeyboard
             },
             new []
             {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Переключить язык")
+            },
+            new []
+            {
                 InlineKeyboardButton.WithCallbackData($"{CommandNames.AchievementsIcon} Достижения")
             },
             new[]
