@@ -53,11 +53,6 @@ public class VocabularyCommand : IBotCommand
             
             await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, ParseMode.Html, cancellationToken: token);    
         }
-        
-        if (!request.User.IsActivePremium())
-        {
-            await _client.SendTextMessageAsync(request.UserTelegramId, "Для бесплатной версии доступны только последние 7 дней", cancellationToken: token);
-        }
     }
 
     private string GetMedalType(VocabularyEntry entry)

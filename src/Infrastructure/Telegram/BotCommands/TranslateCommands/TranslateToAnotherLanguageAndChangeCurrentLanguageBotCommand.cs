@@ -127,6 +127,10 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
         replyMarkup.Add(new[]
         {
             InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeLanguage} {vocabularyEntryId}"),
+        });
+        
+        replyMarkup.Add(new[]
+        {
             InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
         });
         
