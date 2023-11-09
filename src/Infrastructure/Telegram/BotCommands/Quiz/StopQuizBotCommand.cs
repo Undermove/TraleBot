@@ -38,7 +38,7 @@ public class StopQuizBotCommand : IBotCommand
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"{CommandNames.MenuIcon} Меню",
-            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(request.User.Settings.CurrentLanguage),
             cancellationToken: token);
     }
 }

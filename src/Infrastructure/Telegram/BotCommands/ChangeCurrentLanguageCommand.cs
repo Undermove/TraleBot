@@ -27,7 +27,7 @@ public class ChangeCurrentLanguageCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var targetLanguage = request.Text.Split(' ')[1];
-        await _mediator.Send(new ChangeCurrentLanguage
+        var currentLanguage = await _mediator.Send(new ChangeCurrentLanguage
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
             TargetLanguage = Enum.Parse<Language>(targetLanguage)
@@ -36,7 +36,7 @@ public class ChangeCurrentLanguageCommand : IBotCommand
         await _client.EditMessageReplyMarkupAsync(
             request.UserTelegramId,
             request.MessageId,
-            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(currentLanguage),
             cancellationToken: token);
     }
 }

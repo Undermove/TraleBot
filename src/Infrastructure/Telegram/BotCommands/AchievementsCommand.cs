@@ -44,7 +44,7 @@ public class AchievementsCommand : IBotCommand
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"{statisticsMessageHeader}\r\n{statistics}\r\n\r\n{achievementsMessageHeader}\r\n\r\n{achievementsMessage}",
-            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(request.User.Settings.CurrentLanguage),
             parseMode: ParseMode.Html,
             cancellationToken: token);
     }

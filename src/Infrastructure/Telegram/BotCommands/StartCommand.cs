@@ -1,5 +1,6 @@
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
+using Domain.Entities;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
@@ -68,7 +69,7 @@ public class StartCommand : IBotCommand
             "\r\n/quiz - пройти квиз чтобы закрепить слова" +
             "\r\n/vocabulary - посмотреть слова в словаре" +
             "\r\n/menu - открыть меню",
-            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(Language.English),
             cancellationToken: token);
     }
 

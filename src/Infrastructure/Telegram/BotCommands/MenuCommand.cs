@@ -1,5 +1,7 @@
+using Application.Users.Queries;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
+using MediatR;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
@@ -7,10 +9,12 @@ namespace Infrastructure.Telegram.BotCommands;
 public class MenuCommand : IBotCommand
 {
     private readonly ITelegramBotClient _client;
+    private readonly IMediator _mediator;
 
-    public MenuCommand(ITelegramBotClient client)
+    public MenuCommand(ITelegramBotClient client, IMediator mediator)
     {
         _client = client;
+        _mediator = mediator;
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
@@ -25,7 +29,7 @@ public class MenuCommand : IBotCommand
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             $"{CommandNames.MenuIcon} Меню",
-            replyMarkup: MenuKeyboard.GetMenuKeyboard(),
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage),
             cancellationToken: token);
     }
 }
