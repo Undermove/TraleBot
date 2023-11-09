@@ -48,7 +48,7 @@ public class CreateManualTranslation : IRequest<OneOf<EntrySaved, EntryAlreadyEx
                     duplicate.Id);
             }
             
-            if (request.Definition != null)
+            if (request.Definition == null)
             {
                 return new DefinitionIsNotSet();
             }
