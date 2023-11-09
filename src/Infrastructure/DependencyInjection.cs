@@ -7,6 +7,7 @@ using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using Infrastructure.Telegram.BotCommands.Quiz;
+using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Telegram.Services;
 using Infrastructure.Translation;
@@ -26,6 +27,7 @@ public static class DependencyInjection
 
         services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
         services.AddTransient<IParsingTranslationService, WooordHuntParsingParsingTranslationService>();
+        services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiTranslationService>();
         services.AddHttpClient();
 
@@ -65,6 +67,10 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, StopQuizBotCommand>();
         services.AddScoped<IBotCommand, RemoveEntryCommand>();
         services.AddScoped<IBotCommand, CheckQuizAnswerBotCommand>();
+        services.AddScoped<IBotCommand, ChangeCurrentLanguageMenuCommand>();
+        services.AddScoped<IBotCommand, ChangeCurrentLanguageCommand>();
+        services.AddScoped<IBotCommand, ChangeTranslationLanguageCommand>();
+        services.AddScoped<IBotCommand, TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand>();
         services.AddScoped<IBotCommand, TranslateManuallyCommand>();
         services.AddScoped<IBotCommand, TranslateCommand>();
         return services;

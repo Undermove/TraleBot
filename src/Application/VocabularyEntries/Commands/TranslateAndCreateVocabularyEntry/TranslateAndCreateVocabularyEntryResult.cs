@@ -1,4 +1,4 @@
-namespace Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
+namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 
 public record TranslationSuccess(
     string Definition,

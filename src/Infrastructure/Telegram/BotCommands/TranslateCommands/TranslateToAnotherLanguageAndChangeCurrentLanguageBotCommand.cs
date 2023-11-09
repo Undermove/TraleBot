@@ -1,18 +1,18 @@
-using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
-using Infrastructure.Telegram.CommonComponents;
+using Application.VocabularyEntries.Commands;
+using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateCommand : IBotCommand
+public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBotCommand
 {
     private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
 
-    public TranslateCommand(ITelegramBotClient client, IMediator mediator)
+    public TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITelegramBotClient client, IMediator mediator)
     {
         _client = client;
         _mediator = mediator;
@@ -21,25 +21,26 @@ public class TranslateCommand : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(!commandPayload.Contains("/"));
+        return Task.FromResult(commandPayload.Contains(CommandNames.TranslateToAnotherLanguage));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new CreateVocabularyEntryCommand
+        var command = ChangeLanguageCallback.BuildFromRawMessage(request.Text);
+        var result = await _mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
-            Word = request.Text,
-            UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
+            User = request.User ?? throw new ApplicationException("User not registered"),
+            TargetLanguage = command.TargetLanguage,
+            VocabularyEntryId = command.VocabularyEntryId
         }, token);
 
         await result.Match<Task>(
             success => HandleSuccess(request, token, success),
             exists => HandleTranslationExists(request, token, exists),
-            _ => HandleEmojiDetected(request, token),
             _ => HandleFailure(request, token),
             _ => HandleSuggestPremium(request, token));
     }
-
+    
     private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
@@ -65,14 +66,6 @@ public class TranslateCommand : IBotCommand
             result.Example,
             removeFromVocabularyText,
             token);
-    }
-    
-    private async Task HandleEmojiDetected(TelegramRequest request, CancellationToken token)
-    {
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "Кажется, что ты отправил мне слишком много эмодзи 😅.",
-            cancellationToken: token);
     }
     
     private async Task HandleFailure(TelegramRequest request, CancellationToken token)
@@ -112,36 +105,40 @@ public class TranslateCommand : IBotCommand
         string removeFromVocabularyText, 
         CancellationToken token)
     {
-        var keyboard = new InlineKeyboardMarkup(new[]
+        var replyMarkup = new List<InlineKeyboardButton[]>
         {
             new[]
             {
                 InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
                     $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
-            },
-            // new[]
-            // {
-            //     InlineKeyboardButton.WithCallbackData("Ввести свой перевод", $"{CommandNames.TranslateManually} {result.VocabularyEntryId}")
-            // },
-            new[]
+            }
+        };
+
+        if (request.User!.Settings.CurrentLanguage == Language.English)
+        {
+            replyMarkup.Add(new[]
             {
                 InlineKeyboardButton.WithUrl("Перевод Wooordhunt", $"https://wooordhunt.ru/word/{request.Text}"),
                 InlineKeyboardButton.WithUrl("Перевод Reverso Context",
                     $"https://context.reverso.net/translation/russian-english/{request.Text}")
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithUrl("Послушать на YouGlish",
-                    $"https://youglish.com/pronounce/{request.Text}/english?")
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
-            }
+            });
+        }
+        
+        replyMarkup.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeTranslationLanguage} {vocabularyEntryId}"),
         });
+        
+        replyMarkup.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
+        });
+        
+        var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
-        await _client.SendTextMessageAsync(
+        await _client.EditMessageTextAsync(
             request.UserTelegramId,
+            request.MessageId,
             $"Определение: {definition}" +
             $"\r\nДругие значения: {additionalInfo}" +
             $"\r\nПример употребления: {example}",

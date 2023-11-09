@@ -5,35 +5,38 @@ using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using OneOf;
 
-namespace Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
+namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 
-public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
+public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
 {
     public Guid UserId { get; init; }
     public string? Word { get; init; }
-    public string? Definition { get; init; }
 
-    public class Handler : IRequestHandler<CreateVocabularyEntryCommand, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
+    public class Handler : IRequestHandler<TranslateAndCreateVocabularyEntry, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
+        private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
         private readonly IAiTranslationService _aiTranslationService;
         private readonly ITraleDbContext _context;
         private readonly IAchievementsService _achievementService;
 
         public Handler(IParsingTranslationService parsingTranslationService,
+            IParsingUniversalTranslator parsingUniversalTranslator,
             ITraleDbContext context,
             IAchievementsService achievementService, 
             IAiTranslationService aiTranslationService)
         {
             _parsingTranslationService = parsingTranslationService;
+            _parsingUniversalTranslator = parsingUniversalTranslator;
             _context = context;
             _achievementService = achievementService;
             _aiTranslationService = aiTranslationService;
         }
 
-        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>> Handle(CreateVocabularyEntryCommand request, CancellationToken ct)
+        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
         {
             var user = await GetUser(request, ct);
 
@@ -42,8 +45,11 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                 return new EmojiDetected();
             }
             
-            var duplicate = user!.VocabularyEntries
-                .SingleOrDefault(entry => entry.Word.Equals(request.Word, StringComparison.InvariantCultureIgnoreCase));
+            var duplicate = await _context.VocabularyEntries
+                .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
+                                               && entry.Language == user.Settings.CurrentLanguage
+                                               && entry.Word.Equals(request.Word), ct);
+            
             if(duplicate != null)
             {
                 return new TranslationExists(
@@ -52,12 +58,15 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                     duplicate.Example,
                     duplicate.Id);
             }
-            
-            if (request.Definition != null)
-            {
-                return await CreateManualVocabularyEntry(request, ct, user);
-            }
 
+            if (user.Settings.CurrentLanguage != Language.English)
+            {
+                var result = await _parsingUniversalTranslator.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
+                return result.IsSuccessful 
+                    ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user) 
+                    : new TranslationFailure();
+            }
+            
             var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(request.Word, ct);
 
             if (parsingTranslationResult.IsSuccessful)
@@ -81,15 +90,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
                 : new TranslationFailure();
         }
 
-        private async Task<TranslationSuccess> CreateManualVocabularyEntry(CreateVocabularyEntryCommand request, CancellationToken ct, User user)
-        {
-            var manualTranslationTrigger = new ManualTranslationTrigger();
-            await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
-
-            return await CreateVocabularyEntryResult(request, ct, request.Definition!, request.Definition!, "", user);
-        }
-
-        private async Task<TranslationSuccess> CreateVocabularyEntryResult(CreateVocabularyEntryCommand request, CancellationToken ct,
+        private async Task<TranslationSuccess> CreateVocabularyEntryResult(TranslateAndCreateVocabularyEntry request, CancellationToken ct,
             string definition, string additionalInfo, string example, User user)
         {
             var entryId = Guid.NewGuid();
@@ -127,7 +128,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             return Regex.IsMatch(input, emojiPattern);
         }
 
-        private async Task<User?> GetUser(CreateVocabularyEntryCommand request, CancellationToken ct)
+        private async Task<User> GetUser(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
         {
             object?[] keyValues = { request.UserId };
             var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
@@ -137,6 +138,7 @@ public class CreateVocabularyEntryCommand : IRequest<OneOf<TranslationSuccess, T
             }
 
             await _context.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            await _context.Entry(user).Reference(nameof(user.Settings)).LoadAsync(ct);
             return user;
         }
     }

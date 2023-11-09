@@ -28,7 +28,7 @@ public class VocabularyCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result =  await _mediator.Send(new GetVocabularyEntriesListQuery {UserId = request.User!.Id}, token);
+        var result =  await _mediator.Send(new GetVocabularyEntriesList {UserId = request.User!.Id}, token);
 
         if (!result.VocabularyEntriesPages.Any())
         {
@@ -52,11 +52,6 @@ public class VocabularyCommand : IBotCommand
             var vocabularyPageView = String.Join(Environment.NewLine, vocabularyEntryView);
             
             await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, ParseMode.Html, cancellationToken: token);    
-        }
-        
-        if (!request.User.IsActivePremium())
-        {
-            await _client.SendTextMessageAsync(request.UserTelegramId, "Для бесплатной версии доступны только последние 7 дней", cancellationToken: token);
         }
     }
 

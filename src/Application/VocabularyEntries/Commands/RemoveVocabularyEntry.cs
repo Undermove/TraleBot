@@ -5,11 +5,11 @@ using MediatR;
 
 namespace Application.VocabularyEntries.Commands;
 
-public class RemoveVocabularyEntryCommand : IRequest
+public class RemoveVocabularyEntry : IRequest
 {
     public required Guid VocabularyEntryId { get; init; }
     
-    public class Handler : IRequestHandler<RemoveVocabularyEntryCommand>
+    public class Handler : IRequestHandler<RemoveVocabularyEntry>
     {
         private readonly ITraleDbContext _dbContext;
         private readonly IAchievementsService _achievementsService;
@@ -20,7 +20,7 @@ public class RemoveVocabularyEntryCommand : IRequest
             _achievementsService = achievementsService;
         }
 
-        public async Task<Unit> Handle(RemoveVocabularyEntryCommand request, CancellationToken ct)
+        public async Task<Unit> Handle(RemoveVocabularyEntry request, CancellationToken ct)
         {
             var entry = await _dbContext.VocabularyEntries.FindAsync(request.VocabularyEntryId);
             if (entry == null)

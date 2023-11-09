@@ -3,7 +3,7 @@ using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
-using Application.VocabularyEntries.Commands.CreateVocabularyEntryCommand;
+using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -14,9 +14,10 @@ namespace Application.UnitTests.Tests;
 public class CreateVocabularyEntryCommandTests : CommandTestsBase
 {
     private Mock<IParsingTranslationService> _translationServicesMock = null!;
+    private Mock<IParsingUniversalTranslator> _universalTranslationServicesMock = null!;
     private Mock<IAiTranslationService> _aiTranslationServicesMock = null!;
     private User _existingUser = null!;
-    private CreateVocabularyEntryCommand.Handler _createVocabularyEntryCommandHandler = null!;
+    private TranslateAndCreateVocabularyEntry.Handler _createVocabularyEntryCommandHandler = null!;
     private Mock<IAchievementsService> _achievementsService = null!;
 
     [SetUp]
@@ -24,6 +25,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
     {
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
         _translationServicesMock = mockRepository.Create<IParsingTranslationService>();
+        _universalTranslationServicesMock = mockRepository.Create<IParsingUniversalTranslator>();
         _aiTranslationServicesMock = mockRepository.Create<IAiTranslationService>();
         _achievementsService = mockRepository.Create<IAchievementsService>();
         _achievementsService.Setup(service => service.AssignAchievements(
@@ -37,27 +39,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         
-        _createVocabularyEntryCommandHandler = new CreateVocabularyEntryCommand.Handler(_translationServicesMock.Object, Context, _achievementsService.Object, _aiTranslationServicesMock.Object);
-    }
-
-    [Test]
-    public async Task ShouldSaveManualDefinitionWhenItComes()
-    {
-        const string expectedWord = "cat";
-        const string expectedDefinition = "кошка";
-
-        await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
-        {
-            UserId = _existingUser.Id,
-            Word = expectedWord,
-            Definition = expectedDefinition
-        }, CancellationToken.None);
-
-        var vocabularyEntry = await Context.VocabularyEntries
-            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
-        vocabularyEntry.ShouldNotBeNull();
-        vocabularyEntry.Definition.ShouldBe(expectedDefinition);
-        vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
+        _createVocabularyEntryCommandHandler = new TranslateAndCreateVocabularyEntry.Handler(_translationServicesMock.Object, _universalTranslationServicesMock.Object, Context, _achievementsService.Object, _aiTranslationServicesMock.Object);
     }
     
     [Test]
@@ -72,7 +54,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, expectedExample,true));
         
-        var result = await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
         {
             UserId = _existingUser.Id,
             Word = expectedWord
@@ -94,7 +76,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TranslationResult("", "", "", false));
         
-        var result = await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
         {
             UserId = _existingUser.Id,
             Word = expectedWord
@@ -104,29 +86,5 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldBeNull();
-    }
-    
-    [Test]
-    public async Task ShouldGetDefinitionFromVocabularyWhenWordAlreadyInVocabulary()
-    {
-        const string? expectedWord = "paucity";
-        await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
-        {
-            UserId = _existingUser.Id,
-            Word = expectedWord,
-            Definition = expectedWord
-        }, CancellationToken.None);
-        
-        var result = await _createVocabularyEntryCommandHandler.Handle(new CreateVocabularyEntryCommand
-        {
-            UserId = _existingUser.Id,
-            Word = expectedWord
-        }, CancellationToken.None);
-
-        var translationSuccess = result.AsT1;
-        translationSuccess.ShouldNotBeNull();
-        var vocabularyEntry = await Context.VocabularyEntries
-            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
-        vocabularyEntry.ShouldNotBeNull();
     }
 }

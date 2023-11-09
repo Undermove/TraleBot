@@ -5,14 +5,14 @@ using MediatR;
 
 namespace Application.Users.Commands;
 
-public class ActivatePremiumCommand : IRequest<PremiumActivationStatus>
+public class ActivatePremium : IRequest<PremiumActivationStatus>
 {
     public Guid? UserId { get; set; }
     public DateTime? InvoiceCreatedAdUtc { get; set; }
     public SubscriptionTerm SubscriptionTerm { get; set; }
     public bool IsTrial { get; set; }
     
-    public class Handler: IRequestHandler<ActivatePremiumCommand, PremiumActivationStatus>
+    public class Handler: IRequestHandler<ActivatePremium, PremiumActivationStatus>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -21,7 +21,7 @@ public class ActivatePremiumCommand : IRequest<PremiumActivationStatus>
             _dbContext = dbContext;
         }
 
-        public async Task<PremiumActivationStatus> Handle(ActivatePremiumCommand request, CancellationToken ct)
+        public async Task<PremiumActivationStatus> Handle(ActivatePremium request, CancellationToken ct)
         {
             object?[] keyValues = { request.UserId };
             User? user = await _dbContext.Users.FindAsync(keyValues: keyValues, ct);

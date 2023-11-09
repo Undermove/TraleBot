@@ -4,11 +4,11 @@ using MediatR;
 
 namespace Application.VocabularyEntries.Queries.GetVocabularyEntriesList;
 
-public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
+public class GetVocabularyEntriesList: IRequest<VocabularyEntriesListVm>
 {
     public Guid? UserId { get; set; }
     
-    public class Handler: IRequestHandler<GetVocabularyEntriesListQuery, VocabularyEntriesListVm>
+    public class Handler: IRequestHandler<GetVocabularyEntriesList, VocabularyEntriesListVm>
     {
         private readonly ITraleDbContext _dbContext;
 
@@ -17,7 +17,7 @@ public class GetVocabularyEntriesListQuery: IRequest<VocabularyEntriesListVm>
             _dbContext = dbContext;
         }
 
-        public async Task<VocabularyEntriesListVm> Handle(GetVocabularyEntriesListQuery request, CancellationToken ct)
+        public async Task<VocabularyEntriesListVm> Handle(GetVocabularyEntriesList request, CancellationToken ct)
         {
             object?[] keyValues = { request.UserId };
             var user = await _dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);

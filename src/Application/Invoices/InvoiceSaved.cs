@@ -20,7 +20,7 @@ public class InvoiceSaved : INotification
 
         public Task Handle(InvoiceSaved invoceSaved, CancellationToken cancellationToken)
         {
-            return _mediator.Send(new ActivatePremiumCommand
+            return _mediator.Send(new ActivatePremium
             {
                 UserId = invoceSaved.UserId,
                 InvoiceCreatedAdUtc = invoceSaved.InvoiceCreatedAt,

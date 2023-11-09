@@ -20,6 +20,7 @@ public static class CommandNames
     // vocabulary commands
     public const string RemoveEntry = "/removeentry";
     public const string TranslateManually = "-";
+    public const string TranslateToAnotherLanguage = "/swaplang";
     public const string Vocabulary = "/vocabulary";
     public const string VocabularyIcon = "📘";
     
@@ -33,4 +34,10 @@ public static class CommandNames
     // achievements commands
     public const string Achievements = "/achievements";
     public const string AchievementsIcon = "📊";
+    
+    // language commands
+    public const string ChangeTranslationLanguage = "/changetranslation";
+    public const string ChangeTranslationLanguageIcon = "🌐";
+    public const string ChangeCurrentLanguageMenu = "/changelanguagemenu";
+    public const string ChangeCurrentLanguage = "/changelanguage";
 }

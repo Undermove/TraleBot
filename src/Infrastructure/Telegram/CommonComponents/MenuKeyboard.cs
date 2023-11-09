@@ -1,3 +1,4 @@
+using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot.Types.ReplyMarkups;
 
@@ -5,7 +6,7 @@ namespace Infrastructure.Telegram.CommonComponents;
 
 public static class MenuKeyboard
 {
-    public static IReplyMarkup GetMenuKeyboard()
+    public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage)
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
@@ -19,6 +20,10 @@ public static class MenuKeyboard
             },
             new []
             {
+                InlineKeyboardButton.WithCallbackData($"Сменить язык словаря: {GetLanguageFlag(currentLanguage)}", $"{CommandNames.ChangeCurrentLanguageMenu}")
+            },
+            new []
+            {
                 InlineKeyboardButton.WithCallbackData($"{CommandNames.AchievementsIcon} Достижения")
             },
             new[]
@@ -29,5 +34,15 @@ public static class MenuKeyboard
         });
 
         return keyboard;
+    }
+
+    private static string GetLanguageFlag(Language language)
+    {
+        return language switch
+        {
+            Language.English => "🇬🇧",
+            Language.Georgian => "🇬🇪",
+            _ => "🇬🇧"
+        };
     }
 }
