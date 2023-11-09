@@ -47,7 +47,17 @@ public class QuizCreator : IQuizCreator
         ("knife", "нож"),
         ("нож", "knife"),
         ("bag", "сумка"),
-        ("сумка", "bag")
+        ("сумка", "bag"),
+        ("საზამთრო", "арбуз"),
+        ("арбуз", "საზამთრო"),
+        ("вилка", "ჩანგალი"),
+        ("ჩანგალი", "вилка"),
+        ("მანქანა", "машина"),
+        ("машина","მანქანა"),
+        ("ხე", "дерево"),
+        ("дерево", "ხე"),
+        ("თეფში", "тарелка"),
+        ("тарелка", "თეფში"),
     };
     
     public ICollection<QuizQuestion> CreateQuizQuestions(ICollection<VocabularyEntry> quizEntries, ICollection<VocabularyEntry> allUserEntries)

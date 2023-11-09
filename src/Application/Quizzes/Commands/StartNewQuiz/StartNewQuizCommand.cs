@@ -47,8 +47,11 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, Q
             }
             
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            var vocabularyEntriesByCurrentLanguage = user.VocabularyEntries
+                .Where(entry => entry.Language == user.Settings.CurrentLanguage)
+                .ToArray();
             
-            var entriesForQuiz = _quizAdvisor.AdviceVocabularyEntriesForQuiz(user.VocabularyEntries).ToArray();
+            var entriesForQuiz = _quizAdvisor.AdviceVocabularyEntriesForQuiz(vocabularyEntriesByCurrentLanguage).ToArray();
             var quizQuestions = _quizCreator
                 .CreateQuizQuestions(entriesForQuiz, user.VocabularyEntries)
                 .ToArray();

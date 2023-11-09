@@ -28,7 +28,7 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
 
     private async Task<string> GetDefinition(string requestWord, CancellationToken ct)
     {
-        string languagePrefix = requestWord.DetectLanguage() == "Russian" ? "ru/ka" : "ka/ru";
+        string languagePrefix = requestWord.DetectLanguage() == Language.Russian ? "ru/ka" : "ka/ru";
         var requestUrl = $"https://glosbe.com/{languagePrefix}/{requestWord}";
         using var httpClient = _clientFactory.CreateClient();
         var responseContent = await httpClient.GetStringAsync(requestUrl, ct);
@@ -43,7 +43,7 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
     
     private async Task<(string additionalInfo, string example)> GetAdditionalInfoAndExampleForDefinition(string definition, string requestWord, CancellationToken ct)
     {
-        string languagePrefix = requestWord.DetectLanguage() == "Russian" ? "ka/ru" : "ru/ka";
+        string languagePrefix = requestWord.DetectLanguage() == Language.Russian ? "ka/ru" : "ru/ka";
         var additionalInfoUrl = $"https://glosbe.com/{languagePrefix}/{definition}/fragment/details?phraseIndex=0&translationPhrase={requestWord}&translationIndex=0&reverse=true";
 
         using var httpClient = _clientFactory.CreateClient();
@@ -59,7 +59,7 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
         
         var exampleElements = htmlDoc.DocumentNode.SelectNodes(ExampleElementsSearchPattern);
         var exampleValues = exampleElements?.Select(node => node.InnerText).ToArray() ?? Array.Empty<string>();
-        var exampleIndex = requestWord.DetectLanguage() == "Russian" ? 0 : 1;
+        var exampleIndex = requestWord.DetectLanguage() == Language.Russian ? 0 : 1;
         var example = exampleValues.Length > 0  ? exampleValues[exampleIndex].Trim() : "";
         return (additionalInfo, example);
     }
