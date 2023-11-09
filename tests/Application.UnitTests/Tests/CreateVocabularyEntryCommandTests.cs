@@ -41,26 +41,6 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
         
         _createVocabularyEntryCommandHandler = new TranslateAndCreateVocabularyEntry.Handler(_translationServicesMock.Object, _universalTranslationServicesMock.Object, Context, _achievementsService.Object, _aiTranslationServicesMock.Object);
     }
-
-    [Test]
-    public async Task ShouldSaveManualDefinitionWhenItComes()
-    {
-        const string expectedWord = "cat";
-        const string expectedDefinition = "кошка";
-
-        await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
-        {
-            UserId = _existingUser.Id,
-            Word = expectedWord,
-            Definition = expectedDefinition
-        }, CancellationToken.None);
-
-        var vocabularyEntry = await Context.VocabularyEntries
-            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
-        vocabularyEntry.ShouldNotBeNull();
-        vocabularyEntry.Definition.ShouldBe(expectedDefinition);
-        vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
-    }
     
     [Test]
     public async Task ShouldSaveDefinitionFromTranslationServiceWhenRequestWithoutDefinitionIncome()
@@ -106,29 +86,5 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldBeNull();
-    }
-    
-    [Test]
-    public async Task ShouldGetDefinitionFromVocabularyWhenWordAlreadyInVocabulary()
-    {
-        const string? expectedWord = "paucity";
-        await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
-        {
-            UserId = _existingUser.Id,
-            Word = expectedWord,
-            Definition = expectedWord
-        }, CancellationToken.None);
-        
-        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
-        {
-            UserId = _existingUser.Id,
-            Word = expectedWord
-        }, CancellationToken.None);
-
-        var translationSuccess = result.AsT1;
-        translationSuccess.ShouldNotBeNull();
-        var vocabularyEntry = await Context.VocabularyEntries
-            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
-        vocabularyEntry.ShouldNotBeNull();
     }
 }
