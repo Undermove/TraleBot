@@ -14,7 +14,6 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
 {
     public Guid UserId { get; init; }
     public string? Word { get; init; }
-    public string? Definition { get; init; }
 
     public class Handler : IRequestHandler<TranslateAndCreateVocabularyEntry, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
     {
@@ -48,7 +47,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             
             var duplicate = await _context.VocabularyEntries
                 .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
-                                               && entry.Language == user!.Settings.CurrentLanguage
+                                               && entry.Language == user.Settings.CurrentLanguage
                                                && entry.Word.Equals(request.Word), ct);
             
             if(duplicate != null)
@@ -58,11 +57,6 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                     duplicate.AdditionalInfo,
                     duplicate.Example,
                     duplicate.Id);
-            }
-            
-            if (request.Definition != null)
-            {
-                return await CreateManualVocabularyEntry(request, ct, user);
             }
 
             if (user.Settings.CurrentLanguage != Language.English)
@@ -94,14 +88,6 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             return !user.IsActivePremium() 
                 ? new SuggestPremium() 
                 : new TranslationFailure();
-        }
-
-        private async Task<TranslationSuccess> CreateManualVocabularyEntry(TranslateAndCreateVocabularyEntry request, CancellationToken ct, User user)
-        {
-            var manualTranslationTrigger = new ManualTranslationTrigger();
-            await _achievementService.AssignAchievements(manualTranslationTrigger, user.Id, ct);
-
-            return await CreateVocabularyEntryResult(request, ct, request.Definition!, request.Definition!, "", user);
         }
 
         private async Task<TranslationSuccess> CreateVocabularyEntryResult(TranslateAndCreateVocabularyEntry request, CancellationToken ct,
@@ -142,7 +128,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             return Regex.IsMatch(input, emojiPattern);
         }
 
-        private async Task<User?> GetUser(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
+        private async Task<User> GetUser(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
         {
             object?[] keyValues = { request.UserId };
             var user = await _context.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);

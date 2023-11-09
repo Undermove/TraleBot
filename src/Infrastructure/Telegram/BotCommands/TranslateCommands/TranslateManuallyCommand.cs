@@ -1,4 +1,4 @@
-using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
+using Application.VocabularyEntries.Commands;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -30,7 +30,7 @@ public class TranslateManuallyCommand : IBotCommand
         var definition = split[1];
         
         // todo create new handler for manual translation
-        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntry
+        var result = await _mediator.Send(new CreateManualTranslation
         {
             Word = word,
             Definition = definition,
@@ -38,14 +38,13 @@ public class TranslateManuallyCommand : IBotCommand
         }, token);
 
         await result.Match(
-            success => HandleSuccess(request, token, success),
-            exists => HandleTranslationExists(request, token, exists), 
-            _ => Task.CompletedTask,
-            _ => Task.CompletedTask,
-            _ => Task.CompletedTask);
+            success => HandleSuccess(request, success, token),
+            exists => HandleTranslationExists(request, exists, token), 
+            _ => HandleDefinitionIsNotSet(request,  token),
+            _ => HandleEmojiDetected(request, token));
     }
 
-    private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
+    private async Task HandleSuccess(TelegramRequest request, EntrySaved result, CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         await SendTranslation(
@@ -57,7 +56,8 @@ public class TranslateManuallyCommand : IBotCommand
             token);
     }
     
-    private async Task HandleTranslationExists(TelegramRequest request, CancellationToken token, TranslationExists result)
+    private async Task HandleTranslationExists(TelegramRequest request, EntryAlreadyExists result,
+        CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         await SendTranslation(
@@ -67,6 +67,22 @@ public class TranslateManuallyCommand : IBotCommand
             result.AdditionalInfo,
             removeFromVocabularyText,
             token);
+    }
+    
+    private Task HandleDefinitionIsNotSet(TelegramRequest request, CancellationToken token)
+    {
+        return _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Возможно отсутствует определение. Введи его в формате: слово - определение",
+            cancellationToken: token);
+    }
+    
+    private async Task HandleEmojiDetected(TelegramRequest request, CancellationToken token)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Кажется, что ты отправил мне слишком много эмодзи 😅.",
+            cancellationToken: token);
     }
 
     private async Task SendTranslation(
