@@ -37,7 +37,7 @@ public class CreateManualTranslation : IRequest<OneOf<EntrySaved, EntryAlreadyEx
             
             var duplicate = await _context.VocabularyEntries
                 .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
-                                               && entry.Language == user!.Settings.CurrentLanguage
+                                               && entry.Language == user.Settings.CurrentLanguage
                                                && entry.Word.Equals(request.Word), ct);
             
             if(duplicate != null)
