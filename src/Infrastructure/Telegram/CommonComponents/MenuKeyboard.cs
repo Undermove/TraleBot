@@ -36,7 +36,7 @@ public static class MenuKeyboard
         return keyboard;
     }
 
-    private static string GetLanguageFlag(Language language)
+    public static string GetLanguageFlag(this Language language)
     {
         return language switch
         {

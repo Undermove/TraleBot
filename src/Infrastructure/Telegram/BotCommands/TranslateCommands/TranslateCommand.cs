@@ -1,5 +1,6 @@
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -79,8 +80,8 @@ public class TranslateCommand : IBotCommand
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "Прости, пока не могу перевести это слово 😞." +
-            "\r\nВозможно в нём есть опечатка." +
+            $"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}" +
+            "\r\nСлова нет в моей базе или в нём есть опечатка." +
             "\r\n" +
             "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
             "\r\nК примеру: cat-кошка",

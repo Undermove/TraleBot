@@ -20,13 +20,19 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
     
     public async Task<TranslationResult> TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
     {
-        var definition = await GetDefinition(requestWord, ct);
+        var (isTranslated, definition) = await GetDefinition(requestWord, ct);
+
+        if (!isTranslated)
+        {
+            return new TranslationResult("", "", "", false);
+        }
+        
         var (additionalInfo, example) = await GetAdditionalInfoAndExampleForDefinition(definition, requestWord, ct);
         
         return new TranslationResult(definition, additionalInfo, example, true);
     }
 
-    private async Task<string> GetDefinition(string requestWord, CancellationToken ct)
+    private async Task<(bool isTranslated, string definition)> GetDefinition(string requestWord, CancellationToken ct)
     {
         string languagePrefix = requestWord.DetectLanguage() == Language.Russian ? "ru/ka" : "ka/ru";
         var requestUrl = $"https://glosbe.com/{languagePrefix}/{requestWord}";
@@ -37,8 +43,12 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
         htmlDoc.LoadHtml(responseContent);
         
         var element = htmlDoc.DocumentNode.SelectSingleNode(DefinitionSearchPattern);
+        if (element == null)
+        {
+            return (false, "");
+        }
         var definition = element.InnerText.Trim('\n');
-        return definition;
+        return (true, definition);
     }
     
     private async Task<(string additionalInfo, string example)> GetAdditionalInfoAndExampleForDefinition(string definition, string requestWord, CancellationToken ct)
