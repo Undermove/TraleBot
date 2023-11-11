@@ -68,7 +68,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                 var translationLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
                 result = await _parsingUniversalTranslator.TranslateAsync(request.Word, translationLanguage, ct);
                 return result.IsSuccessful 
-                    ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user) 
+                    ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user, Language.Georgian) 
                     : new TranslationFailure();
             }
             
@@ -76,18 +76,18 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
 
             if (parsingTranslationResult.IsSuccessful)
             {
-                return await CreateVocabularyEntryResult(request, ct, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user);
+                return await CreateVocabularyEntryResult(request, ct, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user, Language.English);
             }
             
             result = await _aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
             
             return result.IsSuccessful
-                ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user)
+                ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user, Language.English)
                 : new TranslationFailure();
         }
 
         private async Task<TranslationSuccess> CreateVocabularyEntryResult(TranslateAndCreateVocabularyEntry request, CancellationToken ct,
-            string definition, string additionalInfo, string example, User user)
+            string definition, string additionalInfo, string example, User user, Language language)
         {
             var entryId = Guid.NewGuid();
             var dateAddedUtc = DateTime.UtcNow;
@@ -101,7 +101,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                 UserId = request.UserId,
                 DateAddedUtc = dateAddedUtc,
                 UpdatedAtUtc = dateAddedUtc,
-                Language = user.Settings.CurrentLanguage
+                Language = language
             };
 
             await _context.VocabularyEntries.AddAsync(vocabularyEntry, ct);

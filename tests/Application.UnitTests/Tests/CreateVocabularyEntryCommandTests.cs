@@ -67,6 +67,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         vocabularyEntry.Definition.ShouldBe(expectedDefinition);
         vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
         vocabularyEntry.Example.ShouldBe(expectedExample);
+        vocabularyEntry.Language.ShouldBe(Language.English);
     }
     
     [Test]
@@ -92,5 +93,6 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         vocabularyEntry.Definition.ShouldBe(expectedDefinition);
         vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
         vocabularyEntry.Example.ShouldBe(expectedExample);
+        vocabularyEntry.Language.ShouldBe(Language.Georgian);
     }
 }
