@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using Application.Common.Extensions;
 using Application.Common.Interfaces.TranslationService;
@@ -37,7 +38,16 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
         string languagePrefix = requestWord.DetectLanguage() == Language.Russian ? "ru/ka" : "ka/ru";
         var requestUrl = $"https://glosbe.com/{languagePrefix}/{requestWord}";
         using var httpClient = _clientFactory.CreateClient();
-        var responseContent = await httpClient.GetStringAsync(requestUrl, ct);
+        string responseContent;
+        
+        try
+        {
+             responseContent = await httpClient.GetStringAsync(requestUrl, ct);
+        }
+        catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
+        {
+            return (false, "");
+        }
         
         var htmlDoc = new HtmlDocument();
         htmlDoc.LoadHtml(responseContent);

@@ -61,4 +61,12 @@ public class TemporaryTestsForGlosbeParser
         result.AdditionalInfo.ShouldBe("бумага");
         result.Example.ShouldBe("შემდეგ ერთი დიდი წიგნი და მრავალი სხვა ქაღალდი მოგვცეს და დაგვავალეს, ყოველივე ეს სონიას გაწერამდე წაგვეკითხა და შეგვესწავლა.");
     }
+        
+    [Test]
+    public async Task CheckWordWithTypoBackwardTranslation()
+    {
+        var result = await _glosbeTranslationService.TranslateAsync("ჩვრნი", Language.Georgian, CancellationToken.None);
+
+        result.IsSuccessful.ShouldBeFalse();
+    }
 }
