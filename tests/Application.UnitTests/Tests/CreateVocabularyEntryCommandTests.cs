@@ -35,7 +35,7 @@ public class CreateVocabularyEntryCommandTests : CommandTestsBase
                 It.IsAny<VocabularyCountTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _existingUser = Create.User().Build();
+        _existingUser = Create.User().WithCurrentLanguage(Language.English).Build();
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         
@@ -66,15 +66,18 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         vocabularyEntry.ShouldNotBeNull();
         vocabularyEntry.Definition.ShouldBe(expectedDefinition);
         vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
+        vocabularyEntry.Example.ShouldBe(expectedExample);
     }
     
     [Test]
-    public async Task ShouldSuggestPremiumWhenCantTranslateWord()
+    public async Task ShouldTranslateGeorgianWordEvenIfCurrentLanguageIsEnglish()
     {
-        const string? expectedWord = "paucity";
-        _translationServicesMock
-            .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TranslationResult("", "", "", false));
+        const string? expectedWord = "თეფში";
+        const string expectedDefinition = "тарелка";
+        const string expectedExample = "ეს არის ის ფასი რასაც ვიხდით, რომ ვიყოთ ძალიან ჭკვიანები.";
+        _universalTranslationServicesMock
+            .Setup(service => service.TranslateAsync(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, expectedExample, true));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
         {
@@ -82,9 +85,12 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             Word = expectedWord
         }, CancellationToken.None);
 
-        result.AsT4.ShouldNotBeNull();
+        result.AsT0.ShouldNotBeNull();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
-        vocabularyEntry.ShouldBeNull();
+        vocabularyEntry.ShouldNotBeNull();
+        vocabularyEntry.Definition.ShouldBe(expectedDefinition);
+        vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
+        vocabularyEntry.Example.ShouldBe(expectedExample);
     }
 }

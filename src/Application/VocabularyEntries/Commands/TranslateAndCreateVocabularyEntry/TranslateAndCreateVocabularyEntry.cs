@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Application.Achievements.Services.Triggers;
 using Application.Common;
+using Application.Common.Extensions;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
@@ -10,12 +11,12 @@ using OneOf;
 
 namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 
-public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
+public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure>>
 {
-    public Guid UserId { get; init; }
-    public string? Word { get; init; }
+    public required Guid UserId { get; init; }
+    public required string Word { get; init; }
 
-    public class Handler : IRequestHandler<TranslateAndCreateVocabularyEntry, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>>
+    public class Handler : IRequestHandler<TranslateAndCreateVocabularyEntry, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
         private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
@@ -36,18 +37,20 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             _aiTranslationService = aiTranslationService;
         }
 
-        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure, SuggestPremium>> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
+        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure>> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
         {
             var user = await GetUser(request, ct);
 
-            if (IsContainsEmoji(request.Word!))
+            if (IsContainsEmoji(request.Word))
             {
                 return new EmojiDetected();
             }
             
+            var wordLanguage = request.Word.DetectLanguage();
+            
             var duplicate = await _context.VocabularyEntries
                 .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
-                                               && entry.Language == user.Settings.CurrentLanguage
+                                               && (entry.Language == user.Settings.CurrentLanguage || entry.Language == wordLanguage)
                                                && entry.Word.Equals(request.Word), ct);
             
             if(duplicate != null)
@@ -59,9 +62,11 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                     duplicate.Id);
             }
 
-            if (user.Settings.CurrentLanguage != Language.English)
+            TranslationResult? result;
+            if (user.Settings.CurrentLanguage == Language.Georgian || wordLanguage == Language.Georgian)
             {
-                var result = await _parsingUniversalTranslator.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
+                var translationLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
+                result = await _parsingUniversalTranslator.TranslateAsync(request.Word, translationLanguage, ct);
                 return result.IsSuccessful 
                     ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user) 
                     : new TranslationFailure();
@@ -74,19 +79,10 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                 return await CreateVocabularyEntryResult(request, ct, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user);
             }
             
-            if (user.IsActivePremium())
-            {
-                var result = await _aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
-                if (!result.IsSuccessful)
-                {
-                    return new TranslationFailure();
-                }
-
-                return await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user);
-            }
+            result = await _aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
             
-            return !user.IsActivePremium() 
-                ? new SuggestPremium() 
+            return result.IsSuccessful
+                ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user)
                 : new TranslationFailure();
         }
 

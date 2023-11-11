@@ -12,8 +12,6 @@ public record TranslationExists(
     string Example,
     Guid VocabularyEntryId);
 
-public record SuggestPremium;
-
 public record TranslationFailure;
 
 public record EmojiDetected;

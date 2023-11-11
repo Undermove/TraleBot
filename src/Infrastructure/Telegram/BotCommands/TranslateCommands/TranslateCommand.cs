@@ -37,8 +37,7 @@ public class TranslateCommand : IBotCommand
             success => HandleSuccess(request, token, success),
             exists => HandleTranslationExists(request, token, exists),
             _ => HandleEmojiDetected(request, token),
-            _ => HandleFailure(request, token),
-            _ => HandleSuggestPremium(request, token));
+            _ => HandleFailure(request, token));
     }
 
     private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
