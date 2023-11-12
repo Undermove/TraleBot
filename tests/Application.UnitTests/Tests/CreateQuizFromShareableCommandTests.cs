@@ -56,12 +56,15 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
         }, CancellationToken.None);
         
         result.Value.ShouldBeOfType<SharedQuizCreated>();
-        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz)).ShouldBe(1);
-        Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(2);
-        Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz) && q.IsCompleted == false).ShouldBe(1);
-        var quiz = Context.Quizzes.Include(quiz => quiz.QuizQuestions).FirstOrDefault();
+        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz)).ShouldBe(2);
+        Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(1);
+        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == false).ShouldBe(1);
+        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == true).ShouldBe(1);
+        var quiz = Context.Quizzes.Where(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == true)
+            .Include(quiz => quiz.QuizQuestions)
+            .FirstOrDefault();
         quiz.ShouldNotBeNull();
-        quiz.QuizQuestions.Count.ShouldBe(1);
+        quiz.QuizQuestions.Count.ShouldBe(4);
         quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
     
