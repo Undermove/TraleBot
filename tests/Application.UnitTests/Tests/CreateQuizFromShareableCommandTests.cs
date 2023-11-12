@@ -40,7 +40,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
     }
     
     [Test]
-    public async Task ShouldNotCreateQuizWhenAnotherQuizInProgress()
+    public async Task ShouldRecreateQuizWhenAnotherQuizInProgress()
     {
         var (user, vocabularyEntry, shareableQuiz) = await CreatePremiumUserWithShareableQuiz();
         await _sut.Handle(new CreateQuizFromShareableCommand
@@ -55,11 +55,13 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
-        result.Value.ShouldBeOfType<AnotherQuizInProgress>();
+        result.Value.ShouldBeOfType<SharedQuizCreated>();
         Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz)).ShouldBe(1);
-        Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(1);
+        Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(2);
+        Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz) && q.IsCompleted == false).ShouldBe(1);
         var quiz = Context.Quizzes.Include(quiz => quiz.QuizQuestions).FirstOrDefault();
         quiz.ShouldNotBeNull();
+        quiz.QuizQuestions.Count.ShouldBe(1);
         quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
     

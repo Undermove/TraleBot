@@ -92,7 +92,7 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, Q
             {
                 Id = Guid.NewGuid(),
                 UserId = request.UserId!.Value,
-                QuizQuestions = quizQuestions,
+                QuizQuestions = quizQuestions.ToList(),
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false,
                 ShareableQuiz = shareableQuiz,

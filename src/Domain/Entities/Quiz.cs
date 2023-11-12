@@ -10,7 +10,7 @@ public abstract class Quiz
 
     public Guid UserId { get; set; }
     public virtual User User { get; set; }
-    public virtual ICollection<QuizQuestion> QuizQuestions { get; set; } = null!;
+    public virtual List<QuizQuestion> QuizQuestions { get; set; } = null!;
     public Guid ShareableQuizId { get; set; }
     public virtual ShareableQuiz? ShareableQuiz { get; set; }
 

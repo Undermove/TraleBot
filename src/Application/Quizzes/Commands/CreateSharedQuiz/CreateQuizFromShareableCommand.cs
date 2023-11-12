@@ -28,11 +28,22 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
 
         public async Task<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz, AnotherQuizInProgress>> Handle(CreateQuizFromShareableCommand request, CancellationToken ct)
         {
-            var anotherQuizInProgress = await _dbContext.Quizzes
-                .AnyAsync(quiz => quiz.UserId == request.UserId && quiz.IsCompleted == false, ct);
-            if (anotherQuizInProgress)
+            var startedQuiz = await _dbContext.Quizzes
+                .FirstOrDefaultAsync(quiz => quiz.UserId == request.UserId && quiz.IsCompleted == false, ct);
+            if (startedQuiz != null)
             {
-                return new AnotherQuizInProgress();
+                startedQuiz.IsCompleted = true;
+                var questions = startedQuiz.QuizQuestions.ToArray();
+
+                foreach (var question in questions)
+                {
+                    _dbContext.Entry(question).State = EntityState.Detached;
+                }
+
+                startedQuiz.QuizQuestions.Clear();
+
+                _dbContext.Quizzes.Update(startedQuiz);
+                await _dbContext.SaveChangesAsync(ct);
             }
             
             var shareableQuiz = await _dbContext.ShareableQuizzes.FirstOrDefaultAsync(
@@ -77,7 +88,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
-                QuizQuestions = quizQuestions,
+                QuizQuestions = quizQuestions.ToList(),
                 DateStarted = DateTime.UtcNow,
                 IsCompleted = false,
                 CreatedByUserName = shareableQuiz.CreatedByUserName,
