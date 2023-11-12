@@ -60,12 +60,20 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
         Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(1);
         Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == false).ShouldBe(1);
         Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == true).ShouldBe(1);
-        var quiz = Context.Quizzes.Where(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == true)
+        
+        var completedQuiz = Context.Quizzes.Where(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == true)
             .Include(quiz => quiz.QuizQuestions)
             .FirstOrDefault();
-        quiz.ShouldNotBeNull();
-        quiz.QuizQuestions.Count.ShouldBe(4);
-        quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
+        
+        completedQuiz.ShouldNotBeNull();
+        completedQuiz.QuizQuestions.Count.ShouldBe(0);
+        
+        var startedQuiz = Context.Quizzes.Where(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == false)
+            .Include(quiz => quiz.QuizQuestions)
+            .FirstOrDefault();
+        startedQuiz.ShouldNotBeNull();
+        startedQuiz.QuizQuestions.Count.ShouldBe(4);
+        startedQuiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
     
     private async Task<(User, VocabularyEntry, ShareableQuiz)> CreatePremiumUserWithShareableQuiz()

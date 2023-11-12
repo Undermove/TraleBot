@@ -33,13 +33,6 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             if (startedQuiz != null)
             {
                 startedQuiz.IsCompleted = true;
-                var questions = startedQuiz.QuizQuestions.ToArray();
-
-                foreach (var question in questions)
-                {
-                    _dbContext.Entry(question).State = EntityState.Detached;
-                }
-
                 startedQuiz.QuizQuestions.Clear();
 
                 _dbContext.Quizzes.Update(startedQuiz);
