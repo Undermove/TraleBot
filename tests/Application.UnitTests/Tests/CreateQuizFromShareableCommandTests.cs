@@ -40,7 +40,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
     }
     
     [Test]
-    public async Task ShouldNotCreateQuizWhenAnotherQuizInProgress()
+    public async Task ShouldRecreateQuizWhenAnotherQuizInProgress()
     {
         var (user, vocabularyEntry, shareableQuiz) = await CreatePremiumUserWithShareableQuiz();
         await _sut.Handle(new CreateQuizFromShareableCommand
@@ -55,12 +55,25 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
-        result.Value.ShouldBeOfType<AnotherQuizInProgress>();
-        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz)).ShouldBe(1);
+        result.Value.ShouldBeOfType<SharedQuizCreated>();
+        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz)).ShouldBe(2);
         Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(1);
-        var quiz = Context.Quizzes.Include(quiz => quiz.QuizQuestions).FirstOrDefault();
-        quiz.ShouldNotBeNull();
-        quiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
+        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == false).ShouldBe(1);
+        Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == true).ShouldBe(1);
+        
+        var completedQuiz = Context.Quizzes.Where(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == true)
+            .Include(quiz => quiz.QuizQuestions)
+            .FirstOrDefault();
+        
+        completedQuiz.ShouldNotBeNull();
+        completedQuiz.QuizQuestions.Count.ShouldBe(0);
+        
+        var startedQuiz = Context.Quizzes.Where(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == false)
+            .Include(quiz => quiz.QuizQuestions)
+            .FirstOrDefault();
+        startedQuiz.ShouldNotBeNull();
+        startedQuiz.QuizQuestions.Count.ShouldBe(4);
+        startedQuiz.QuizQuestions.ShouldContain(question => question.VocabularyEntryId == vocabularyEntry.Id);
     }
     
     private async Task<(User, VocabularyEntry, ShareableQuiz)> CreatePremiumUserWithShareableQuiz()
