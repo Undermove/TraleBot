@@ -8,13 +8,13 @@ using OneOf;
 
 namespace Application.VocabularyEntries.Commands;
 
-public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<TranslationSuccess, TranslationExists, SuggestPremium, TranslationFailure>>
+public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>>
 {
     public required User User { get; init; }
     public required Language TargetLanguage { get; init; }
     public Guid VocabularyEntryId { get; set; }
 
-    public class Handler : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, OneOf<TranslationSuccess, TranslationExists, SuggestPremium, TranslationFailure>>
+    public class Handler : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, OneOf<TranslationSuccess, TranslationExists, TranslationFailure>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
         private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
@@ -31,7 +31,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             _achievementService = achievementService;
         }
 
-        public async Task<OneOf<TranslationSuccess, TranslationExists, SuggestPremium, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
+        public async Task<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
         {
             var user = request.User;
             object?[] keyValues = { request.VocabularyEntryId };
@@ -56,10 +56,11 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                     duplicate.Example,
                     duplicate.Id);
             }
-            
+
+            TranslationResult? result;
             if (request.TargetLanguage != Language.English)
             {
-                var result = await _parsingUniversalTranslator.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
+                result = await _parsingUniversalTranslator.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
                 return result.IsSuccessful 
                     ? await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, result.Definition, result.AdditionalInfo, result.Example, user, ct) 
                     : new TranslationFailure();
@@ -72,20 +73,13 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                 return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user, ct);
             }
             
-            if (user.IsActivePremium())
+            result = await _aiTranslationService.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
+            if (!result.IsSuccessful)
             {
-                var result = await _aiTranslationService.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
-                if (!result.IsSuccessful)
-                {
-                    return new TranslationFailure();
-                }
-
-                return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, result.Definition, result.AdditionalInfo, result.Example, user, ct);
+                return new TranslationFailure();
             }
-            
-            return !user.IsActivePremium() 
-                ? new SuggestPremium() 
-                : new TranslationFailure();
+
+            return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, result.Definition, result.AdditionalInfo, result.Example, user, ct);
         }
         
         private async Task<TranslationSuccess> UpdateVocabularyEntryAndChangeCurrentLanguage(
@@ -135,7 +129,5 @@ public record TranslationExists(
     string AdditionalInfo,
     string Example,
     Guid VocabularyEntryId);
-
-public record SuggestPremium;
 
 public record TranslationFailure;

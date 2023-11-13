@@ -1,5 +1,6 @@
 using Application.VocabularyEntries.Commands;
 using Domain.Entities;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -37,8 +38,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
         await result.Match<Task>(
             success => HandleSuccess(request, token, success),
             exists => HandleTranslationExists(request, token, exists),
-            _ => HandleFailure(request, token),
-            _ => HandleSuggestPremium(request, token));
+            _ => HandleFailure(request, token));
     }
     
     private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
@@ -72,29 +72,13 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            "Прости, пока не могу перевести это слово 😞." +
-            "\r\nВозможно в нём есть опечатка." +
+            $"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}" +
+            "\r\nСлова нет в моей базе или в нём есть опечатка." +
             "\r\n" +
             "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
             "\r\nК примеру: cat-кошка",
             cancellationToken: token);
     }
-
-    private async Task HandleSuggestPremium(TelegramRequest request, CancellationToken token)
-    {
-        var reply = new InlineKeyboardMarkup(new[]
-        {
-            InlineKeyboardButton.WithCallbackData("✅ Посмотреть премиум.", $"{CommandNames.OfferTrial}")
-        });
-
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "Не получилось сделать перевод при помощи стандартных средств. Можешь попробовать премиум-перевод с использованием OpenAI API. " +
-            "Такой перевод дает возможность переводить идиомы с объяснениями и примерами использования.",
-            replyMarkup: reply,
-            cancellationToken: token);
-    }
-
 
     private async Task SendTranslation(
         TelegramRequest request,
