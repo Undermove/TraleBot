@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Application.Common;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Persistence.Configurations;
 
 namespace Persistence;
@@ -24,6 +25,10 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<Achievement> Achievements { get; set; } = null!;
     public DbSet<ShareableQuiz> ShareableQuizzes { get; set; } = null!;
 
+    public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        return await Database.BeginTransactionAsync(cancellationToken);
+    }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new UserConfiguration());

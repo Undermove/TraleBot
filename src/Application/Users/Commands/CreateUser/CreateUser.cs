@@ -46,12 +46,14 @@ public class CreateUser : IRequest<OneOf<UserCreated, UserExists>>
             };
             
             user.UserSettingsId = settings.Id;
+
+            var transaction = await _dbContext.BeginTransactionAsync(cancellationToken);
             
             _dbContext.Users.Add(user);
             _dbContext.UsersSettings.Add(settings);
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-
+            await transaction.CommitAsync(cancellationToken);
             return new UserCreated(user);
         }
     }
