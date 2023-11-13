@@ -32,9 +32,10 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
                 .FirstOrDefaultAsync(quiz => quiz.UserId == request.UserId && quiz.IsCompleted == false, ct);
             if (startedQuiz != null)
             {
+                _dbContext.QuizQuestions.RemoveRange(startedQuiz.QuizQuestions);
                 startedQuiz.IsCompleted = true;
                 startedQuiz.QuizQuestions.Clear();
-
+                
                 _dbContext.Quizzes.Update(startedQuiz);
                 await _dbContext.SaveChangesAsync(ct);
             }
