@@ -95,4 +95,33 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         vocabularyEntry.Example.ShouldBe(expectedExample);
         vocabularyEntry.Language.ShouldBe(Language.Georgian);
     }
+    
+    [Test]
+    public async Task ShouldTranslateEnglishWordEvenIfCurrentLanguageIsGeorgian()
+    {
+        var userWithCurrentLanguageGeorgian = Create.User().WithCurrentLanguage(Language.Georgian).Build();
+        Context.Users.Add(userWithCurrentLanguageGeorgian);
+        await Context.SaveChangesAsync();
+        const string? expectedWord = "plate";
+        const string expectedDefinition = "тарелка";
+        const string expectedExample = "Table was full of plates.";
+        _translationServicesMock
+            .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, expectedExample, true));
+        
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
+        {
+            UserId = userWithCurrentLanguageGeorgian.Id,
+            Word = expectedWord
+        }, CancellationToken.None);
+
+        result.Value.ShouldBeOfType<TranslationSuccess>();
+        var vocabularyEntry = await Context.VocabularyEntries
+            .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
+        vocabularyEntry.ShouldNotBeNull();
+        vocabularyEntry.Definition.ShouldBe(expectedDefinition);
+        vocabularyEntry.AdditionalInfo.ShouldBe(expectedDefinition);
+        vocabularyEntry.Example.ShouldBe(expectedExample);
+        vocabularyEntry.Language.ShouldBe(Language.English);
+    }
 }

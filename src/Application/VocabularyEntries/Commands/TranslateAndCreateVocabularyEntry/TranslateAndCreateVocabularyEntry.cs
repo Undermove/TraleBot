@@ -63,9 +63,11 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             }
 
             TranslationResult? result;
-            if (user.Settings.CurrentLanguage == Language.Georgian || wordLanguage == Language.Georgian)
+
+            var translationLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
+
+            if (translationLanguage == Language.Georgian)
             {
-                var translationLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
                 result = await _parsingUniversalTranslator.TranslateAsync(request.Word, translationLanguage, ct);
                 return result.IsSuccessful 
                     ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user, Language.Georgian) 
