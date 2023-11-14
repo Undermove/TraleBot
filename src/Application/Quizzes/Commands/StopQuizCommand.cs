@@ -23,28 +23,29 @@ public class StopQuizCommand : IRequest
             {
                 throw new ArgumentException("User Id cannot be null");
             }
-            
-            // todo: check here if any quizzes already started
-            object?[] keyValues = { request.UserId };
-            var user = await _dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
-            if (user == null)
-            {
-                throw new NotFoundException("User", request.UserId);
-            }
-            
-            await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
-            var startedQuiz = user.Quizzes.FirstOrDefault(q => q.IsCompleted == false);
+
+            var startedQuiz = _dbContext.Quizzes.FirstOrDefault(q => q.UserId == request.UserId && q.IsCompleted == false);
             if (startedQuiz == null)
             {
                 return Unit.Value;
             }
 
-            startedQuiz.IsCompleted = true;
-            _dbContext.Quizzes.Update(startedQuiz);
+            await using var transaction =  await _dbContext.BeginTransactionAsync(ct);
+            try
+            {
+                startedQuiz.IsCompleted = true;
+                _dbContext.Quizzes.Update(startedQuiz);
+                _dbContext.QuizQuestions.RemoveRange(startedQuiz.QuizQuestions.ToArray());
+
+                await _dbContext.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
             
-            _dbContext.QuizQuestions.RemoveRange(startedQuiz.QuizQuestions.ToArray());
-            
-            await _dbContext.SaveChangesAsync(ct);
             return Unit.Value;
         }
     }
