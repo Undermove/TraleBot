@@ -1,5 +1,6 @@
 using Application.VocabularyEntries.Queries.GetVocabularyEntriesList;
 using Domain.Entities;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -38,10 +39,10 @@ public class VocabularyCommand : IBotCommand
 
         await _client.SendTextMessageAsync(
             request.UserTelegramId, 
-            $"📖Слов в твоём словаре: {result.VocabularyWordsCount}" +
+            $"📖Слов в твоём словаре {request.User.Settings.CurrentLanguage.GetLanguageFlag()}: {result.VocabularyWordsCount}" +
             "\r\n🥈 - новые слова" +
-            "\r\n🥇 - закрепленное слово.Ты правильно перевел его в более чем 3 квизах" +
-            "\r\n💎 - закрепленное в двух направлениях слово.Ты правильно перевел его в более чем 3 квизах по закрепленным словам" +
+            "\r\n🥇 - закрепленное слово. Ты правильно перевел его в более чем 3 квизах" +
+            "\r\n💎 - закрепленное в двух направлениях слово. Ты правильно перевел его в более чем 3 квизах по закрепленным словам" +
             "\r\nПроходи квизы и переводи слова, чтобы получить 🥇 и 💎 по всем словам!", 
             cancellationToken: token);
         foreach (var batch in result.VocabularyEntriesPages)

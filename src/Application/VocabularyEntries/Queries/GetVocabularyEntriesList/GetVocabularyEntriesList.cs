@@ -31,6 +31,7 @@ public class GetVocabularyEntriesList: IRequest<VocabularyEntriesListVm>
 
             await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
 
+            int vocabularyEntriesCount = user.VocabularyEntries.Count(entry => entry.Language == user.Settings.CurrentLanguage);
             IEnumerable<VocabularyEntry[]> vocabularyEntries = user
                 .VocabularyEntries
                 .Where(entry => entry.Language == user.Settings.CurrentLanguage)
@@ -41,7 +42,7 @@ public class GetVocabularyEntriesList: IRequest<VocabularyEntriesListVm>
             var response = new VocabularyEntriesListVm
             {
                 VocabularyEntriesPages = vocabularyEntries,
-                VocabularyWordsCount = user.VocabularyEntries.Count,
+                VocabularyWordsCount = vocabularyEntriesCount
             };
             
             return response;
