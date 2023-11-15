@@ -87,22 +87,6 @@ public class TranslateCommand : IBotCommand
             cancellationToken: token);
     }
 
-    private async Task HandleSuggestPremium(TelegramRequest request, CancellationToken token)
-    {
-        var reply = new InlineKeyboardMarkup(new[]
-        {
-            InlineKeyboardButton.WithCallbackData("✅ Посмотреть премиум.", $"{CommandNames.OfferTrial}")
-        });
-
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "Не получилось сделать перевод при помощи стандартных средств. Можешь попробовать премиум-перевод с использованием OpenAI API. " +
-            "Такой перевод дает возможность переводить идиомы с объяснениями и примерами использования.",
-            replyMarkup: reply,
-            cancellationToken: token);
-    }
-
-
     private async Task SendTranslation(
         TelegramRequest request,
         Guid vocabularyEntryId,

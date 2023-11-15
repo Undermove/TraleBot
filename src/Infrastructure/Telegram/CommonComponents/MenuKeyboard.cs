@@ -10,6 +10,10 @@ public static class MenuKeyboard
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
+            new []
+            {
+                InlineKeyboardButton.WithCallbackData($"Сменить язык словаря: {GetLanguageFlag(currentLanguage)}", $"{CommandNames.ChangeCurrentLanguageMenu}")
+            },
             new[]
             {
                 InlineKeyboardButton.WithCallbackData($"{CommandNames.QuizIcon} Закрепить слова"),
@@ -17,10 +21,6 @@ public static class MenuKeyboard
             new []
             {
                 InlineKeyboardButton.WithCallbackData($"{CommandNames.VocabularyIcon} Мой словарь")
-            },
-            new []
-            {
-                InlineKeyboardButton.WithCallbackData($"Сменить язык словаря: {GetLanguageFlag(currentLanguage)}", $"{CommandNames.ChangeCurrentLanguageMenu}")
             },
             new []
             {
