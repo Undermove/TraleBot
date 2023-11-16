@@ -54,6 +54,12 @@ public class VocabularyCommand : IBotCommand
             
             await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, ParseMode.Html, cancellationToken: token);    
         }
+        
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"{CommandNames.MenuIcon} Меню",
+            replyMarkup: MenuKeyboard.GetMenuKeyboard(request.User.Settings.CurrentLanguage),
+            cancellationToken: token);
     }
 
     private string GetMedalType(VocabularyEntry entry)

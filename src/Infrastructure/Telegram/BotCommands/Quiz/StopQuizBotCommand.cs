@@ -31,7 +31,7 @@ public class StopQuizBotCommand : IBotCommand
         var keyboard = new ReplyKeyboardRemove();
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Хорошо, пока закончим этот квиз. 😌",
+            "Хорошо, пока закончим этот квиз. 😌",
             replyMarkup: keyboard,
             cancellationToken: token);
         
