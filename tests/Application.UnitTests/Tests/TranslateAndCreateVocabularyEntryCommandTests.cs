@@ -11,7 +11,7 @@ using Shouldly;
 
 namespace Application.UnitTests.Tests;
 
-public class CreateVocabularyEntryCommandTests : CommandTestsBase
+public class TranslateAndCreateVocabularyEntryCommandTests : CommandTestsBase
 {
     private Mock<IParsingTranslationService> _translationServicesMock = null!;
     private Mock<IParsingUniversalTranslator> _universalTranslationServicesMock = null!;
@@ -52,7 +52,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
 нехватка полезных ответов на проблему пробок в час пик";
         _translationServicesMock
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, expectedExample,true));
+            .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
         {
@@ -60,7 +60,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             Word = expectedWord
         }, CancellationToken.None);
 
-        result.AsT0.ShouldNotBeNull();
+        result.Value.ShouldBeOfType<TranslationSuccess>();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
@@ -78,7 +78,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         const string expectedExample = "ეს არის ის ფასი რასაც ვიხდით, რომ ვიყოთ ძალიან ჭკვიანები.";
         _universalTranslationServicesMock
             .Setup(service => service.TranslateAsync(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, expectedExample, true));
+            .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
         {
@@ -86,7 +86,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
             Word = expectedWord
         }, CancellationToken.None);
 
-        result.AsT0.ShouldNotBeNull();
+        result.Value.ShouldBeOfType<TranslationSuccess>();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
@@ -107,7 +107,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
         const string expectedExample = "Table was full of plates.";
         _translationServicesMock
             .Setup(service => service.TranslateAsync(expectedWord, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new TranslationResult(expectedDefinition, expectedDefinition, expectedExample, true));
+            .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
         {

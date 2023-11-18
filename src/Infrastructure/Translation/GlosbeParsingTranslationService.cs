@@ -25,12 +25,12 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
 
         if (!isTranslated)
         {
-            return new TranslationResult("", "", "", false);
+            return new TranslationResult.Failure();
         }
         
         var (additionalInfo, example) = await GetAdditionalInfoAndExampleForDefinition(definition, requestWord, ct);
         
-        return new TranslationResult(definition, additionalInfo, example, true);
+        return new TranslationResult.Success(definition, additionalInfo, example);
     }
 
     private async Task<(bool isTranslated, string definition)> GetDefinition(string requestWord, CancellationToken ct)

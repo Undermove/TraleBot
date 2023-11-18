@@ -62,30 +62,42 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                     duplicate.Id);
             }
 
-            TranslationResult? result;
-
             var translationLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
 
             if (translationLanguage == Language.Georgian)
             {
-                result = await _parsingUniversalTranslator.TranslateAsync(request.Word, translationLanguage, ct);
-                return result.IsSuccessful 
-                    ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user, Language.Georgian) 
-                    : new TranslationFailure();
+                var parsingResult = await _parsingUniversalTranslator.TranslateAsync(request.Word, translationLanguage, ct);
+                return parsingResult switch
+                {
+                    TranslationResult.Success s =>
+                        await CreateVocabularyEntryResult(
+                            request,
+                            ct,
+                            s.Definition,
+                            s.AdditionalInfo,
+                            s.Example,
+                            user,
+                            Language.Georgian),
+                    _ => new TranslationFailure()
+                };
             }
             
             var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(request.Word, ct);
 
-            if (parsingTranslationResult.IsSuccessful)
+            if (parsingTranslationResult is TranslationResult.Success success)
             {
-                return await CreateVocabularyEntryResult(request, ct, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user, Language.English);
+                return await CreateVocabularyEntryResult(
+                    request, ct, success.Definition, success.AdditionalInfo,
+                    success.Example, user, Language.English);
             }
             
-            result = await _aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
-            
-            return result.IsSuccessful
-                ? await CreateVocabularyEntryResult(request, ct, result.Definition, result.AdditionalInfo, result.Example, user, Language.English)
-                : new TranslationFailure();
+            var result = await _aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
+
+            return result switch
+            {
+                TranslationResult.Success s => await CreateVocabularyEntryResult(request, ct, s.Definition, s.AdditionalInfo, s.Example, user, Language.English),
+                _ => new TranslationFailure()
+            };
         }
 
         private async Task<TranslationSuccess> CreateVocabularyEntryResult(TranslateAndCreateVocabularyEntry request, CancellationToken ct,

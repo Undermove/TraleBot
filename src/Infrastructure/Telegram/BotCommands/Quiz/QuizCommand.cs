@@ -35,7 +35,7 @@ public class QuizCommand : IBotCommand
                     UserName = request.UserName,
                 },
                 token);
-
+        
         await result.Match(
             started => SendFirstQuestion(request, started, token),
             _ => HandleNotEnoughWords(request, token),

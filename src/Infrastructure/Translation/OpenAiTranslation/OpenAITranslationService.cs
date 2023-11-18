@@ -21,6 +21,11 @@ public class OpenAiTranslationService : IAiTranslationService
     
     public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language, CancellationToken ct)
     {
+        if (requestWord is { Length: > 40 })
+        {
+            return new TranslationResult.PromptLengthExceeded();
+        }
+        
         var chat = _openAIApi.Chat.CreateConversation(new ChatRequest
         {
             Model = Model.ChatGPTTurbo
@@ -52,14 +57,14 @@ public class OpenAiTranslationService : IAiTranslationService
 
         if (!splitResponse.Any(s => s.Contains(definitionFieldName)))
         {
-            return new TranslationResult("", "", "", false);
+            return new TranslationResult.Failure();
         }
         
         var definition = GetField(splitResponse, definitionFieldName);
         var additionalInfo = GetField(splitResponse, AdditionalTranslationsFieldName);
         var example = GetField(splitResponse, ExampleFieldName);
 
-        return new TranslationResult(definition, additionalInfo, example, true);
+        return new TranslationResult.Success(definition, additionalInfo, example);
     }
 
     private static string GetField(string[] splitResponse, string fieldName)

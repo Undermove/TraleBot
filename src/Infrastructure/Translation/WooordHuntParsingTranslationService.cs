@@ -28,7 +28,7 @@ public class WooordHuntParsingParsingTranslationService : IParsingTranslationSer
         var element = htmlDoc.DocumentNode.SelectSingleNode("(//*[starts-with(@class, 't_inline')])[1]");
         if (element == null)
         {
-            return new TranslationResult("","", "", false);
+            return new TranslationResult.Failure();
         }
         
         // Get the text content of the element
@@ -38,6 +38,6 @@ public class WooordHuntParsingParsingTranslationService : IParsingTranslationSer
         var example = htmlDoc.DocumentNode.SelectSingleNode("//p[@class=\"ex_o\"][1]/text()") 
                       ?? htmlDoc.DocumentNode.SelectSingleNode("//div[@class=\"word_ex\"]/span[1]");
 
-        return new TranslationResult(definition, text, example?.InnerText ?? "", true);
+        return new TranslationResult.Success(definition, text, example?.InnerText ?? "");
     }
 }

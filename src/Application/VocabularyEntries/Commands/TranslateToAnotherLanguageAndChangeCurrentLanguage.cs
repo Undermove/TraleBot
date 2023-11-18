@@ -1,5 +1,4 @@
 using Application.Common;
-using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using MediatR;
@@ -20,15 +19,13 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
         private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
         private readonly IAiTranslationService _aiTranslationService;
         private readonly ITraleDbContext _context;
-        private readonly IAchievementsService _achievementService;
 
-        public Handler(ITraleDbContext context, IParsingUniversalTranslator parsingUniversalTranslator, IParsingTranslationService parsingTranslationService, IAiTranslationService aiTranslationService, IAchievementsService achievementService)
+        public Handler(ITraleDbContext context, IParsingUniversalTranslator parsingUniversalTranslator, IParsingTranslationService parsingTranslationService, IAiTranslationService aiTranslationService)
         {
             _context = context;
             _parsingUniversalTranslator = parsingUniversalTranslator;
             _parsingTranslationService = parsingTranslationService;
             _aiTranslationService = aiTranslationService;
-            _achievementService = achievementService;
         }
 
         public async Task<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
@@ -56,32 +53,56 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                     duplicate.Example,
                     duplicate.Id);
             }
-
-            TranslationResult? result;
-            if (request.TargetLanguage != Language.English)
-            {
-                result = await _parsingUniversalTranslator.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
-                return result.IsSuccessful 
-                    ? await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, result.Definition, result.AdditionalInfo, result.Example, user, ct) 
-                    : new TranslationFailure();
-            }
             
-            var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
-
-            if (parsingTranslationResult.IsSuccessful)
+            return request.TargetLanguage switch
             {
-                return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, parsingTranslationResult.Definition, parsingTranslationResult.AdditionalInfo, parsingTranslationResult.Example, user, ct);
-            }
-            
-            result = await _aiTranslationService.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
-            if (!result.IsSuccessful)
-            {
-                return new TranslationFailure();
-            }
-
-            return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry, result.Definition, result.AdditionalInfo, result.Example, user, ct);
+                Language.English => await TranslateByEnglishTranslationFlow(request, ct, sourceEntry, user),
+                _ => await TranslateByGeorgianTranslationFlow(request, ct, sourceEntry, user)
+            }; 
         }
-        
+
+        private async Task<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>> TranslateByGeorgianTranslationFlow(
+            TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+            CancellationToken ct, VocabularyEntry sourceEntry,
+            User user)
+        {
+            var result = await _parsingUniversalTranslator.TranslateAsync(sourceEntry.Word, request.TargetLanguage, ct);
+            return result switch
+            {
+                TranslationResult.Success s =>
+                    await UpdateVocabularyEntryAndChangeCurrentLanguage(request,
+                        sourceEntry,
+                        s.Definition,
+                        s.AdditionalInfo,
+                        s.Example,
+                        user, ct),
+                TranslationResult.Failure => new TranslationFailure(),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+
+        private async Task<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+            CancellationToken ct, VocabularyEntry sourceEntry, User user)
+        {
+            var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
+            if (parsingTranslationResult is TranslationResult.Success success)
+            {
+                return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry,
+                    success.Definition, success.AdditionalInfo,
+                    success.Example, user, ct);
+            }
+            
+            var result = await _aiTranslationService.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
+            return result switch
+            {
+                TranslationResult.Success s => await UpdateVocabularyEntryAndChangeCurrentLanguage(
+                    request, sourceEntry, s.Definition,
+                    s.AdditionalInfo, s.Example, user, ct),
+                TranslationResult.Failure => new TranslationFailure(),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+
         private async Task<TranslationSuccess> UpdateVocabularyEntryAndChangeCurrentLanguage(
             TranslateToAnotherLanguageAndChangeCurrentLanguage request,
             VocabularyEntry sourceEntry,
