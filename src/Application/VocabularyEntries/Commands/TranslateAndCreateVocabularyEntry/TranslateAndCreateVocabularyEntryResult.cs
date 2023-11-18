@@ -14,4 +14,6 @@ public record TranslationExists(
 
 public record TranslationFailure;
 
+public record PromptLengthExceeded;
+
 public record EmojiDetected;

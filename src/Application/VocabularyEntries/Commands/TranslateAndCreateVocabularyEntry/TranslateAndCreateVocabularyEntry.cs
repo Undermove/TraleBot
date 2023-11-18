@@ -11,12 +11,12 @@ using OneOf;
 
 namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 
-public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure>>
+public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, PromptLengthExceeded, TranslationFailure>>
 {
     public required Guid UserId { get; init; }
     public required string Word { get; init; }
 
-    public class Handler : IRequestHandler<TranslateAndCreateVocabularyEntry, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure>>
+    public class Handler : IRequestHandler<TranslateAndCreateVocabularyEntry, OneOf<TranslationSuccess, TranslationExists, EmojiDetected, PromptLengthExceeded, TranslationFailure>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
         private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
@@ -37,7 +37,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             _aiTranslationService = aiTranslationService;
         }
 
-        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, TranslationFailure>> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
+        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, PromptLengthExceeded, TranslationFailure>> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
         {
             var user = await GetUser(request, ct);
 
@@ -96,6 +96,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             return result switch
             {
                 TranslationResult.Success s => await CreateVocabularyEntryResult(request, ct, s.Definition, s.AdditionalInfo, s.Example, user, Language.English),
+                TranslationResult.PromptLengthExceeded => new PromptLengthExceeded(),
                 _ => new TranslationFailure()
             };
         }

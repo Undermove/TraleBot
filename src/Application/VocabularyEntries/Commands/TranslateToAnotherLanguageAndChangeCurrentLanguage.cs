@@ -7,13 +7,13 @@ using OneOf;
 
 namespace Application.VocabularyEntries.Commands;
 
-public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>>
+public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>>
 {
     public required User User { get; init; }
     public required Language TargetLanguage { get; init; }
     public Guid VocabularyEntryId { get; set; }
 
-    public class Handler : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, OneOf<TranslationSuccess, TranslationExists, TranslationFailure>>
+    public class Handler : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
         private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
@@ -28,7 +28,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             _aiTranslationService = aiTranslationService;
         }
 
-        public async Task<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
+        public async Task<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
         {
             var user = request.User;
             object?[] keyValues = { request.VocabularyEntryId };
@@ -61,7 +61,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             }; 
         }
 
-        private async Task<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>> TranslateByGeorgianTranslationFlow(
+        private async Task<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>> TranslateByGeorgianTranslationFlow(
             TranslateToAnotherLanguageAndChangeCurrentLanguage request,
             CancellationToken ct, VocabularyEntry sourceEntry,
             User user)
@@ -81,7 +81,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             };
         }
 
-        private async Task<OneOf<TranslationSuccess, TranslationExists, TranslationFailure>> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+        private async Task<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
             CancellationToken ct, VocabularyEntry sourceEntry, User user)
         {
             var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
@@ -99,6 +99,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                     request, sourceEntry, s.Definition,
                     s.AdditionalInfo, s.Example, user, ct),
                 TranslationResult.Failure => new TranslationFailure(),
+                TranslationResult.PromptLengthExceeded => new PromptLengthExceeded(),
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
@@ -150,5 +151,7 @@ public record TranslationExists(
     string AdditionalInfo,
     string Example,
     Guid VocabularyEntryId);
+
+public record PromptLengthExceeded;
 
 public record TranslationFailure;

@@ -37,6 +37,7 @@ public class TranslateCommand : IBotCommand
             success => HandleSuccess(request, token, success),
             exists => HandleTranslationExists(request, token, exists),
             _ => HandleEmojiDetected(request, token),
+            _ => HandlePromptLengthExceeded(request, token),
             _ => HandleFailure(request, token));
     }
 
@@ -72,6 +73,16 @@ public class TranslateCommand : IBotCommand
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "Кажется, что ты отправил мне слишком много эмодзи 😅.",
+            cancellationToken: token);
+    }
+    
+    private async Task HandlePromptLengthExceeded(TelegramRequest request, CancellationToken token)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            @"
+📏 Длинна строки слишком большая. Попробуй сократить её. Разрешено не более 40 символов.
+",
             cancellationToken: token);
     }
     

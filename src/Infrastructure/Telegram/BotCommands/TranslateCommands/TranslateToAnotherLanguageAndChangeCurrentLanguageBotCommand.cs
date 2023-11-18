@@ -38,6 +38,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
         await result.Match<Task>(
             success => HandleSuccess(request, token, success),
             exists => HandleTranslationExists(request, token, exists),
+            _ => HandlePromptLengthExceeded(request, token),
             _ => HandleFailure(request, token));
     }
     
@@ -66,6 +67,16 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
             result.Example,
             removeFromVocabularyText,
             token);
+    }
+    
+    private async Task HandlePromptLengthExceeded(TelegramRequest request, CancellationToken token)
+    {
+        await _client.SendTextMessageAsync(
+            request.UserTelegramId,
+            @"
+📏 Длинна строки слишком большая. Попробуй сократить её. Разрешено не более 40 символов.
+",
+            cancellationToken: token);
     }
     
     private async Task HandleFailure(TelegramRequest request, CancellationToken token)
