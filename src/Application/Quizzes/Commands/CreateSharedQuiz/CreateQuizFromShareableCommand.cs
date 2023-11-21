@@ -8,12 +8,12 @@ using OneOf;
 
 namespace Application.Quizzes.Commands.CreateSharedQuiz;
 
-public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz, AnotherQuizInProgress>>
+public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>>
 {
     public required Guid UserId { get; set; }
     public required Guid ShareableQuizId { get; set; }
 
-    public class Handler : IRequestHandler<CreateQuizFromShareableCommand, OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz, AnotherQuizInProgress>>
+    public class Handler : IRequestHandler<CreateQuizFromShareableCommand, OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>>
     {
         private readonly ITraleDbContext _dbContext;
         private readonly IQuizCreator _quizCreator;
@@ -26,7 +26,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             _quizCreator = quizCreator;
         }
 
-        public async Task<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz, AnotherQuizInProgress>> Handle(CreateQuizFromShareableCommand request, CancellationToken ct)
+        public async Task<OneOf<SharedQuizCreated, NotEnoughQuestionsForSharedQuiz>> Handle(CreateQuizFromShareableCommand request, CancellationToken ct)
         {
             var startedQuiz = await _dbContext.Quizzes
                 .FirstOrDefaultAsync(quiz => quiz.UserId == request.UserId && quiz.IsCompleted == false, ct);

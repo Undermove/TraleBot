@@ -50,8 +50,7 @@ public class StartCommand : IBotCommand
 
             await result.Match(
                 created => SendFirstQuestion(request, token, created),
-                _ => Task.CompletedTask,
-                _ => SendAnotherQuizInProcessMessage(request, token));
+                _ => Task.CompletedTask);
             
             return;
         }
@@ -71,14 +70,6 @@ public class StartCommand : IBotCommand
 Выбери язык, который хочешь учить, и начнем!
 ",
             replyMarkup: MenuKeyboard.GetMenuKeyboard(Language.English),
-            cancellationToken: token);
-    }
-
-    private Task<Message> SendAnotherQuizInProcessMessage(TelegramRequest request, CancellationToken token)
-    {
-        return _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"Прости, кажется, что один квиз уже в процессе. Для начала нужно закончить его.",
             cancellationToken: token);
     }
 
