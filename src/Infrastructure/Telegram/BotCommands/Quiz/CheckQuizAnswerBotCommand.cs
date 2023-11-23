@@ -2,6 +2,7 @@ using Application.Quizzes.Commands.CheckQuizAnswer;
 using Application.Quizzes.Commands.CompleteQuiz;
 using Application.Quizzes.Queries;
 using Domain.Entities;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
@@ -105,8 +106,6 @@ public class CheckQuizAnswerBotCommand : IBotCommand
     private async Task CompleteSharedQuiz(TelegramRequest request, SharedQuizCompleted shareQuizCompleted,
         CancellationToken ct)
     {
-        var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
-
         await SendResultCongrats(request, ct, shareQuizCompleted.CurrentUserScore);
         
         await _client.SendTextMessageAsync(
@@ -120,6 +119,27 @@ public class CheckQuizAnswerBotCommand : IBotCommand
              📏Правильные ответы:         {shareQuizCompleted.QuizAuthorScore}%
              """,
             cancellationToken: ct);
+
+        if (!request.User.LanguageIsSet)
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                @$"Привет, {request.UserName}!
+Меня зовут Trale и я помогаю вести персональный словарь и закреплять выученное 🙂
+
+Работаю с несколькими языками: 
+Английский 🇬🇧
+Грузинский 🇬🇪
+
+Напиши мне незнакомое слово, а я найду его перевод и занесу в твой словарь по выбранному языку.
+
+Один язык бесплатно, мультиязыковой словарь – по справедливой подписке.
+
+Выбери язык, который хочешь учить, и начнем!
+",
+                replyMarkup: LanguageKeyboard.GetLanguageKeyboard($"{CommandNames.SetInitialLanguage}"),
+                cancellationToken: ct);
+        }
     }
 
     private async Task CompleteQuiz(TelegramRequest request, QuizCompleted quizCompleted, CancellationToken ct)

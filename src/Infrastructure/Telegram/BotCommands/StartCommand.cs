@@ -67,7 +67,7 @@ public class StartCommand : IBotCommand
 
 Выбери язык, который хочешь учить, и начнем!
 ",
-            replyMarkup: LanguageKeyboard.GetLanguageKeyboard($"{CommandNames.ChangeCurrentLanguage}"),
+            replyMarkup: LanguageKeyboard.GetLanguageKeyboard($"{CommandNames.SetInitialLanguage}"),
             cancellationToken: token);
     }
 
@@ -78,8 +78,7 @@ public class StartCommand : IBotCommand
             $"Начнем квиз! В него войдет {sharedQuizCreated.QuestionsCount} вопросов." +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
-
-
+        
         await _client.SendQuizQuestion(request, sharedQuizCreated.FirstQuestion, token);
     }
     

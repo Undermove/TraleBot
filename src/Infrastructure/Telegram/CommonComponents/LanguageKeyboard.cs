@@ -12,11 +12,11 @@ public static class LanguageKeyboard
         {
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", callbackData)
+                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"{callbackData} {Language.English}"),
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", callbackData)
+                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"{callbackData} {Language.Georgian}"),
             }
         });
 
