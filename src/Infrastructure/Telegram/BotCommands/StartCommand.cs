@@ -69,7 +69,7 @@ public class StartCommand : IBotCommand
 
 Выбери язык, который хочешь учить, и начнем!
 ",
-            replyMarkup: LanguageKeyboard.GetLanguageKeyboard(""),
+            replyMarkup: LanguageKeyboard.GetLanguageKeyboard($"{CommandNames.ChangeCurrentLanguage}"),
             cancellationToken: token);
     }
 
