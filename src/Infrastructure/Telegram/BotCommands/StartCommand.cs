@@ -1,13 +1,10 @@
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
-using Domain.Entities;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
-using Telegram.Bot.Types;
-using User = Domain.Entities.User;
 
 namespace Infrastructure.Telegram.BotCommands;
 
@@ -30,7 +27,7 @@ public class StartCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        User? user = request.User;
+        var user = request.User;
         if (request.User == null)
         {
             var userCreatedResultType = await _mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
@@ -40,7 +37,7 @@ public class StartCommand : IBotCommand
         }
 
         var commandWithArgs = request.Text.Split(' ');
-        if (IsContainsArguments(commandWithArgs))
+        if (ContainsArguments(commandWithArgs))
         {
             var result = await _mediator.Send(new CreateQuizFromShareableCommand
             {
@@ -61,11 +58,12 @@ public class StartCommand : IBotCommand
 Меня зовут Trale и я помогаю вести персональный словарь и закреплять выученное 🙂
 
 Работаю с несколькими языками: 
-Английски 🇬🇧
+Английский 🇬🇧
 Грузинский 🇬🇪
 
 Напиши мне незнакомое слово, а я найду его перевод и занесу в твой словарь по выбранному языку.
-Один язык бесплатно, мультиязыковой словарь – по недорогой подписке.
+
+Один язык бесплатно, мультиязыковой словарь – по справедливой подписке.
 
 Выбери язык, который хочешь учить, и начнем!
 ",
@@ -85,7 +83,7 @@ public class StartCommand : IBotCommand
         await _client.SendQuizQuestion(request, sharedQuizCreated.FirstQuestion, token);
     }
     
-    private bool IsContainsArguments(string[] args)
+    private static bool ContainsArguments(string[] args)
     {
         return args.Length > 1;
     }
