@@ -35,7 +35,7 @@ public class CreateUser : IRequest<OneOf<UserCreated, UserExists>>
                 TelegramId = request.TelegramId,
                 RegisteredAtUtc = DateTime.UtcNow,
                 AccountType = UserAccountType.Free,
-                LanguageIsSet = false
+                InitialLanguageSet = false
             };
             
             var settings = new UserSettings

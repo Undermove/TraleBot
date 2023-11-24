@@ -120,7 +120,7 @@ public class CheckQuizAnswerBotCommand : IBotCommand
              """,
             cancellationToken: ct);
 
-        if (!request.User.LanguageIsSet)
+        if (!request.User.InitialLanguageSet)
         {
             await _client.SendTextMessageAsync(
                 request.UserTelegramId,
