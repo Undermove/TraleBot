@@ -6,8 +6,8 @@ namespace Application.Users.Commands;
 
 public class SetInitialLanguage : IRequest<SetInitialLanguageResult>
 {
-    public Guid UserId { get; set; }
-    public Language InitialLanguage { get; set; }
+    public required Guid UserId { get; init; }
+    public required Language InitialLanguage { get; init; }
     
     public class Handler : IRequestHandler<SetInitialLanguage, SetInitialLanguageResult>
     {
@@ -41,13 +41,13 @@ public class SetInitialLanguage : IRequest<SetInitialLanguageResult>
             _context.UsersSettings.Update(userSettings);
             await _context.SaveChangesAsync(cancellationToken);
             
-            return new SetInitialLanguageResult.InitialLanguageSet();
+            return new SetInitialLanguageResult.InitialLanguageSet(request.InitialLanguage);
         }
     }
 }
 
 public abstract record SetInitialLanguageResult
 {
-    public sealed record InitialLanguageSet() : SetInitialLanguageResult;
+    public sealed record InitialLanguageSet(Language InitialLanguage) : SetInitialLanguageResult;
     public sealed record InitialLanguageAlreadySet() : SetInitialLanguageResult;
 }
