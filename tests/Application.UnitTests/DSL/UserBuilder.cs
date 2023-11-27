@@ -8,7 +8,8 @@ public class UserBuilder
     private int _telegramId = 123456789;
     private UserAccountType _accountType = UserAccountType.Free;
     private Language _currentLanguage = Language.English;
-    
+    private bool _initialLanguageSet;
+
     public UserBuilder WithPremiumAccountType()
     {
         _accountType = UserAccountType.Premium;
@@ -21,17 +22,25 @@ public class UserBuilder
         return this;
     }
     
+    public UserBuilder WithInitialLanguageSet(bool initialLanguageSet)
+    {
+        _initialLanguageSet = initialLanguageSet;
+        return this;
+    }
+    
     public User Build()
     {
+        var settingsGuid = Guid.NewGuid();
         return new User
         {
             Id = _userId,
             TelegramId = _telegramId,
             AccountType = _accountType,
-            InitialLanguageSet = false,
+            InitialLanguageSet = _initialLanguageSet,
+            UserSettingsId = settingsGuid,
             Settings = new UserSettings
             {
-                Id = Guid.NewGuid(),
+                Id = settingsGuid,
                 UserId = _userId,
                 CurrentLanguage = _currentLanguage
             }
