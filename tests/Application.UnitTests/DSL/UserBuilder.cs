@@ -28,6 +28,7 @@ public class UserBuilder
             Id = _userId,
             TelegramId = _telegramId,
             AccountType = _accountType,
+            InitialLanguageSet = false,
             Settings = new UserSettings
             {
                 Id = Guid.NewGuid(),
