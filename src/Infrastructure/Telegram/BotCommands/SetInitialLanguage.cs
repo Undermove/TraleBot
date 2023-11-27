@@ -47,7 +47,7 @@ public class SetInitialLanguage : IBotCommand
             request.UserTelegramId,
             request.MessageId,
 @$"
-Отлично я буду переводить слова с {initialLanguageSet.InitialLanguage} на русский и обратно
+Отлично я буду переводить слова с {initialLanguageSet.InitialLanguage.GetLanguageFlag()} на русский и обратно
 
 Ты можешь переключить язык в любой момент в меню.
 ", 
