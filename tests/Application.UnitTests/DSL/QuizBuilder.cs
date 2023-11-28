@@ -8,14 +8,14 @@ public class QuizBuilder
     private readonly List<QuizQuestion> _quizQuestions = new();
     private bool _isCompleted;
     private readonly DateTime _dateStarted = DateTime.UtcNow;
-    private User _createdByUser = new();
+    private User _createdByUser = new() { InitialLanguageSet = false };
     private ShareableQuiz? _shareableQuiz;
     private string _createdByUserName = "NameFromRequest";
 
     
     public QuizBuilder AddQuizQuestionWithVocabularyEntry(VocabularyEntry vocabularyEntry)
     {
-        _quizQuestions.Add(new QuizQuestionWithTypeAnswer()
+        _quizQuestions.Add(new QuizQuestionWithTypeAnswer
         {
             Id = Guid.NewGuid(),
             Question = vocabularyEntry.Word,

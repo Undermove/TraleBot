@@ -64,6 +64,7 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, QuizCommand>();
         services.AddScoped<IBotCommand, ShowExampleCommand>();
         services.AddScoped<IBotCommand, StartQuizBotCommand>();
+        services.AddScoped<IBotCommand, SetInitialLanguage>();
         services.AddScoped<IBotCommand, StopQuizBotCommand>();
         services.AddScoped<IBotCommand, RemoveEntryCommand>();
         services.AddScoped<IBotCommand, CheckQuizAnswerBotCommand>();

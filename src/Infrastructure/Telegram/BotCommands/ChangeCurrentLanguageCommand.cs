@@ -33,6 +33,7 @@ public class ChangeCurrentLanguageCommand : IBotCommand
             TargetLanguage = Enum.Parse<Language>(targetLanguage)
         }, token);
         
+        // need to send message with keyboard to change language
         await _client.EditMessageReplyMarkupAsync(
             request.UserTelegramId,
             request.MessageId,

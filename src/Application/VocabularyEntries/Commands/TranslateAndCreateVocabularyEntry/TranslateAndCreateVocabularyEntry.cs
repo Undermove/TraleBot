@@ -51,7 +51,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             var duplicate = await _context.VocabularyEntries
                 .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
                                                && (entry.Language == user.Settings.CurrentLanguage || entry.Language == wordLanguage)
-                                               && entry.Word.Equals(request.Word), ct);
+                                               && entry.Word.Equals(request.Word.ToLowerInvariant()), ct);
             
             if(duplicate != null)
             {

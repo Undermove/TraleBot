@@ -42,7 +42,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             var duplicate = await _context.VocabularyEntries
                 .SingleOrDefaultAsync(entry => entry.UserId == request.User.Id
                                                && entry.Language == request.TargetLanguage
-                                               && entry.Word.Equals(sourceEntry.Word), 
+                                               && entry.Word.Equals(sourceEntry.Word.ToLowerInvariant()), 
                     cancellationToken: ct);
 
             if(duplicate != null)
