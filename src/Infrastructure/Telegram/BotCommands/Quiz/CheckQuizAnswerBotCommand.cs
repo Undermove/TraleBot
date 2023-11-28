@@ -106,6 +106,8 @@ public class CheckQuizAnswerBotCommand : IBotCommand
     private async Task CompleteSharedQuiz(TelegramRequest request, SharedQuizCompleted shareQuizCompleted,
         CancellationToken ct)
     {
+        await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
+        
         await SendResultCongrats(request, ct, shareQuizCompleted.CurrentUserScore);
         
         await _client.SendTextMessageAsync(
