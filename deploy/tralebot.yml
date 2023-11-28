@@ -32,6 +32,37 @@ spec:
           image: undermove/tralebot:latest
           ports:
             - containerPort: 1402
+          env:
+            - name: TRALEBOT_CONFIGURATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_CONFIGURATION_TOKEN
+            - name: TRALEBOT_SERVER_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_SERVER_HOST
+            - name: TRALEBOT_WEBHOOK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_WEBHOOK_TOKEN
+            - name: TRALEBOT_PAYMENT_PROVIDER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_PAYMENT_PROVIDER_TOKEN
+            - name: TRALEBOT_DB_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_DB_CONNECTION_STRING
+            - name: TRALEBOT_OPENAI_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_OPENAI_TOKEN
 
 ---
 
@@ -51,3 +82,20 @@ spec:
                 name: tralebot-service
                 port:
                   number: 80
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tralebot-secrets
+type: Opaque
+data:
+  TRALEBOT_CONFIGURATION_TOKEN: {{ TRALEBOT_CONFIGURATION_TOKEN | b64enc | quote }}
+  TRALEBOT_SERVER_HOST: {{ TRALEBOT_SERVER_HOST | b64enc | quote }}
+  TRALEBOT_WEBHOOK_TOKEN: {{ TRALEBOT_WEBHOOK_TOKEN | b64enc | quote }}
+  TRALEBOT_PAYMENT_PROVIDER_TOKEN: {{ TRALEBOT_PAYMENT_PROVIDER_TOKEN | b64enc | quote }}
+  TRALEBOT_DB_CONNECTION_STRING: {{ TRALEBOT_DB_CONNECTION_STRING | b64enc | quote }}
+  TRALEBOT_OPENAI_TOKEN: {{ TRALEBOT_OPENAI_TOKEN | b64enc | quote }}
+
+---
