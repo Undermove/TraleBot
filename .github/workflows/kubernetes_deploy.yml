@@ -11,12 +11,20 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Kubectl
-        uses: azure/setup-kubectl@v1
+        uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
+          
+      - name: Get Kubernetes Config
+        run: echo "${{ secrets.KUBE_CONFIG_DATA }}" > kubeconfig.yaml && export KUBECONFIG=kubeconfig.yaml
+
+      - name: Set Kubernetes Context
+        run: kubectl config use-context microk8s
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
 
       - name: Get secret values
         run: |
