@@ -66,6 +66,6 @@ metadata:
   name: tralebot-secrets
 type: Opaque
 data:
-  TRALEBOT_DB_CONNECTION_STRING: {{ TRALEBOT_DB_CONNECTION_STRING | b64enc | quote }}
+  TRALEBOT_DB_CONNECTION_STRING: $TRALEBOT_DB_CONNECTION_STRING
 
 ---

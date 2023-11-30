@@ -1,0 +1,30 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v1
+        with:
+          version: 'latest'
+
+      - name: Get secret values
+        run: |
+          echo "KUBE_TRALEBOT_DB_CONNECTION_STRING=$KUBE_TRALEBOT_DB_CONNECTION_STRING" >> $GITHUB_ENV
+        env:
+          TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }}
+
+      - name: Deploy to Kubernetes
+        run: kubectl apply -f ./deploy/tralebot.yml
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
