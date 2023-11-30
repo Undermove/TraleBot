@@ -19,7 +19,7 @@ jobs:
           version: 'latest'
           
       - name: Get Kubernetes Config
-        run: ls $HOME/.kube/ && echo "${{ secrets.KUBE_CONFIG_DATA }}" > kubeconfig.yaml && mv kubeconfig.yaml $HOME/.kube/config
+        run: ls $HOME/ && echo "${{ secrets.KUBE_CONFIG_DATA }}" > kubeconfig.yaml && mv kubeconfig.yaml $HOME/.kube/config
 
       - name: Set Kubernetes Context
         run: kubectl config use-context microk8s
