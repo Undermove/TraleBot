@@ -17,14 +17,12 @@ jobs:
         uses: azure/setup-kubectl@v3
         with:
           version: 'latest'
-          
-      - name: Get Kubernetes Config
-        run: echo $KUBECONFIG && echo "${{ secrets.KUBE_CONFIG_DATA }}" > kubeconfig.yaml && mv kubeconfig.yaml $HOME/.kube/config
 
-      - name: Set Kubernetes Context
-        run: kubectl config use-context microk8s
-        env:
-          KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+      - uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+          context: microk8s
 
       - name: Get secret values
         run: |
