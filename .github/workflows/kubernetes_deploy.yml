@@ -24,13 +24,8 @@ jobs:
           kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
           context: microk8s
 
-      - name: Get secret values
-        run: |
-          echo "KUBE_TRALEBOT_DB_CONNECTION_STRING=$KUBE_TRALEBOT_DB_CONNECTION_STRING" >> $GITHUB_ENV
-        env:
-          TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }}
-
       - name: Deploy to Kubernetes
         run: kubectl apply -f ./deploy/tralebot.yml -n tralebot-prod
         env:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+          TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }}
