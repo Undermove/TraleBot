@@ -25,7 +25,7 @@ jobs:
           context: microk8s
 
       - name: Deploy to Kubernetes
-        run: kubectl apply -f ./deploy/tralebot.yml -n tralebot-prod && echo $TRALEBOT_DB_CONNECTION_STRING
+        run: envsubst < ./deploy/tralebot.yml | kubectl apply -n tralebot-prod -f - 
         env:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-          TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }} | base64 -d
+          TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }}
