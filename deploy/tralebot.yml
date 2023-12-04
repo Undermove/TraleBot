@@ -38,6 +38,11 @@ spec:
                 secretKeyRef:
                   name: tralebot-secrets
                   key: TRALEBOT_DB_CONNECTION_STRING
+            - name: BotConfiguration__WebhookToken
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_WEBHOOK_TOKEN
 
 ---
 
@@ -67,5 +72,6 @@ metadata:
 type: Opaque
 data:
   TRALEBOT_DB_CONNECTION_STRING: $TRALEBOT_DB_CONNECTION_STRING
+  TRALEBOT_WEBHOOK_TOKEN: $TRALEBOT_WEBHOOK_TOKEN
 
 ---
