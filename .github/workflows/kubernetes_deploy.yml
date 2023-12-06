@@ -28,7 +28,7 @@ jobs:
         run: envsubst < ./deploy/tralebot.yml | kubectl apply -n tralebot-prod -f - 
         env:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
-          KUBE_TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }} | base64
+          KUBE_TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }}
           TRALEBOT_WEBHOOK_TOKEN: ${{ secrets.TRALEBOT_WEBHOOK_TOKEN }} | base64
           TRALEBOT_CONFIGURATION_TOKEN: ${{ secrets.TRALEBOT_CONFIGURATION_TOKEN }} | base64
 #          TRALEBOT_SERVER_HOST: ""
