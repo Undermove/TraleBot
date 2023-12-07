@@ -1,4 +1,4 @@
-name: Deploy to Kubernetes
+name: Deploy Database to Kubernetes
 
 on:
   workflow_dispatch:
