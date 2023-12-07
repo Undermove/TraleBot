@@ -25,15 +25,12 @@ jobs:
           context: microk8s
 
       - name: Deploy to Kubernetes
-        run: |
-          export ENCODED_TRALEBOT_WEBHOOK_TOKEN=$(echo -n "${{ secrets.TRALEBOT_WEBHOOK_TOKEN }}" | base64)
-          export ENCODED_TRALEBOT_CONFIGURATION_TOKEN=$(echo -n "${{ secrets.TRALEBOT_CONFIGURATION_TOKEN }}" | base64)
-          envsubst < ./deploy/tralebot.yml | kubectl apply -n tralebot-prod -f - 
+        run: envsubst < ./deploy/tralebot.yml | kubectl apply -n tralebot-prod -f - 
         env:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
           KUBE_TRALEBOT_DB_CONNECTION_STRING: ${{ secrets.KUBE_TRALEBOT_DB_CONNECTION_STRING }}
-          TRALEBOT_WEBHOOK_TOKEN: $ENCODED_TRALEBOT_WEBHOOK_TOKEN
-          TRALEBOT_CONFIGURATION_TOKEN: $ENCODED_TRALEBOT_CONFIGURATION_TOKEN
+          TRALEBOT_WEBHOOK_TOKEN: ${{ secrets.TRALEBOT_WEBHOOK_TOKEN }}
+          TRALEBOT_CONFIGURATION_TOKEN: ${{ secrets.TRALEBOT_CONFIGURATION_TOKEN }}
 #          TRALEBOT_SERVER_HOST: ""
 #          TRALEBOT_PAYMENT_PROVIDER_TOKEN: ${{ secrets.TRALEBOT_PAYMENT_PROVIDER_TOKEN }}
 #          TRALEBOT_OPENAI_TOKEN: ${{ secrets.TRALEBOT_OPENAI_TOKEN }}

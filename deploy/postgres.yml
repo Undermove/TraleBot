@@ -30,17 +30,13 @@ spec:
           image: postgres:16.1
           ports:
             - containerPort: 5432
-#          env:
-#            - name: POSTGRES_DB
-#              value: "${{ secrets.POSTGRES_DB }}"
-#            - name: POSTGRES_USER
-#              value: "${{ secrets.POSTGRES_USER }}"
-#            - name: POSTGRES_PASSWORD
-#              value: "${{ secrets.POSTGRES_PASSWORD }}"
-#            - name: --auth-host
-#              value: "scram-sha-256"
-#            - name: --auth-local
-#              value: "scram-sha-256"
+          env:
+            - name: POSTGRES_DB
+              value: $POSTGRES_DB
+            - name: POSTGRES_USER
+              value: $POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              value: $POSTGRES_PASSWORD
           resources:
             requests:
               memory: "100Mi"
