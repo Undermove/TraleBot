@@ -23,7 +23,7 @@ jobs:
           context: microk8s
 
       - name: Deploy to Kubernetes
-        run: envsubst < ./deploy/postgress.yml | kubectl apply -n tralebot-prod -f - 
+        run: envsubst < ./deploy/postgres.yml | kubectl apply -n tralebot-prod -f - 
         env:
           KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
