@@ -37,13 +37,6 @@ spec:
               value: $POSTGRES_USER
             - name: POSTGRES_PASSWORD
               value: $POSTGRES_PASSWORD
-          resources:
-            requests:
-              memory: "100Mi"
-              cpu: "250m"
-            limits:
-              memory: "200Mi"
-              cpu: "500m"
           volumeMounts:
             - name: postgres-data
               mountPath: /var/lib/postgresql
