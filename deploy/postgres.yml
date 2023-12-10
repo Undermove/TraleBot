@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres
+  name: postgres-statefulset
 spec:
   updateStrategy:
     type: RollingUpdate
@@ -10,7 +10,7 @@ spec:
     matchLabels:
       app: postgres
       
-  serviceName: postgres
+  serviceName: postgres-svc
   replicas: 1
   
   volumeClaimTemplates:
@@ -46,7 +46,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres
+  name: postgres-svc
   labels:
     app: postgres
 spec:
