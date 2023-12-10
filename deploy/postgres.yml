@@ -1,35 +1,38 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-pvc
-spec:
-  accessModes: [ReadWriteOnce]
-  resources: { requests: { storage: 5Gi } }
+volumeClaimTemplates:
+  - metadata:
+      name: postgres-disc
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: postgres
-  labels:
-    app: postgres
-    name: postgres
 spec:
-  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  
   selector:
     matchLabels:
       app: postgres
-      task: postgres
+      
+  serviceName: postgres
+  replicas: 1
+  
   template:
     metadata:
       labels:
         app: postgres
-        task: postgres
     spec:
       containers:
         - name: postgres
           image: postgres:16.1
-          ports:
-            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-disc
+              mountPath: /data
           env:
             - name: POSTGRES_DB
               value: $POSTGRES_DB
@@ -37,13 +40,8 @@ spec:
               value: $POSTGRES_USER
             - name: POSTGRES_PASSWORD
               value: $POSTGRES_PASSWORD
-          volumeMounts:
-            - name: postgres-data
-              mountPath: /var/lib/postgresql
-      volumes:
-        - name: postgres-data
-          persistentVolumeClaim:
-            claimName: postgres-pvc
+            - name: PGDATA
+              value: /data/pgdata
 ---
 apiVersion: v1
 kind: Service
