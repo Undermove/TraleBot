@@ -1,12 +1,3 @@
-volumeClaimTemplates:
-  - metadata:
-      name: postgres-disc
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources:
-        requests:
-          storage: 10Gi
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -21,6 +12,15 @@ spec:
       
   serviceName: postgres
   replicas: 1
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-disc
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 10Gi
   
   template:
     metadata:
