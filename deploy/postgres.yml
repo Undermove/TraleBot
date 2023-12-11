@@ -1,17 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-svc
+  labels:
+    app: postgres
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres-statefulset
+  selector:
+    app: postgres
+    task: postgres
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres-statefulset
 spec:
+  serviceName: "postgres-svc"
+  replicas: 1 
   updateStrategy:
     type: RollingUpdate
   
   selector:
     matchLabels:
       app: postgres
-      
-  serviceName: postgres-svc
-  replicas: 1
+
   
   volumeClaimTemplates:
     - metadata:
@@ -33,6 +48,9 @@ spec:
           volumeMounts:
             - name: postgres-disc
               mountPath: /data
+          ports:
+            - containerPort: 5432
+              name: postgres-statefulset
           env:
             - name: POSTGRES_DB
               value: $POSTGRES_DB
@@ -42,18 +60,4 @@ spec:
               value: $POSTGRES_PASSWORD
             - name: PGDATA
               value: /data/pgdata
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-svc
-  labels:
-    app: postgres
-spec:
-  ports:
-    - port: 5432
-      targetPort: 5432
-  selector:
-    app: postgres
-    task: postgres
----
+
