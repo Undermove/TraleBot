@@ -8,6 +8,7 @@ spec:
   ports:
     - port: 5432
       name: postgres
+  clusterIP: None
   selector:
     app: postgres
     task: postgres
