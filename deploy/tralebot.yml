@@ -48,21 +48,21 @@ spec:
                 secretKeyRef:
                   name: tralebot-secrets
                   key: TRALEBOT_CONFIGURATION_TOKEN
-#            - name: BotConfiguration__HostAddress
-#              valueFrom:
-#                secretKeyRef:
-#                  name: tralebot-secrets
-#                  key: TRALEBOT_SERVER_HOST
-#            - name: BotConfiguration__PaymentProviderToken
-#              valueFrom:
-#                secretKeyRef:
-#                  name: tralebot-secrets
-#                  key: TRALEBOT_PAYMENT_PROVIDER_TOKEN
-#            - name: OpenAiConfiguration__ApiKey
-#              valueFrom:
-#                secretKeyRef:
-#                  name: tralebot-secrets
-#                  key: TRALEBOT_OPENAI_TOKEN
+            - name: BotConfiguration__PaymentProviderToken
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_PAYMENT_PROVIDER_TOKEN
+            - name: OpenAiConfiguration__ApiKey
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_OPENAI_TOKEN
+            - name: BotConfiguration__HostAddress
+              valueFrom:
+                secretKeyRef:
+                  name: tralebot-secrets
+                  key: TRALEBOT_SERVER_HOST
 
 ---
 
@@ -100,9 +100,10 @@ data:
   TRALEBOT_DB_CONNECTION_STRING: $TRALEBOT_DB_CONNECTION_STRING
   TRALEBOT_WEBHOOK_TOKEN: $TRALEBOT_WEBHOOK_TOKEN
   TRALEBOT_CONFIGURATION_TOKEN: $TRALEBOT_CONFIGURATION_TOKEN
+  TRALEBOT_PAYMENT_PROVIDER_TOKEN: $TRALEBOT_PAYMENT_PROVIDER_TOKEN
+  TRALEBOT_OPENAI_TOKEN: $TRALEBOT_OPENAI_TOKEN
 #  TRALEBOT_SERVER_HOST: $TRALEBOT_SERVER_HOST
-#  TRALEBOT_PAYMENT_PROVIDER_TOKEN: $TRALEBOT_PAYMENT_PROVIDER_TOKEN
-#  TRALEBOT_OPENAI_TOKEN: $TRALEBOT_OPENAI_TOKEN
+
 ---
 
 
