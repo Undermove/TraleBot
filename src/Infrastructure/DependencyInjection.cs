@@ -43,7 +43,7 @@ public static class DependencyInjection
         services.AddHttpClient("telegram_bot_client")
             .AddTypedClient<ITelegramBotClient>((httpClient, _) =>
             {
-                TelegramBotClientOptions options = new(botConfig.Token);
+                TelegramBotClientOptions options = new(botConfig.Token.Trim());
                 return new TelegramBotClient(options, httpClient);
             });
 
