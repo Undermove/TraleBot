@@ -51,7 +51,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: undermove/tralebot:latest
+          tags: undermove/tralebot:${{ github.run_number }}
           
   deploy:
     runs-on: ubuntu-latest
@@ -81,3 +81,4 @@ jobs:
           TRALEBOT_PAYMENT_PROVIDER_TOKEN: ${{ secrets.KUBE_TRALEBOT_PAYMENT_PROVIDER_TOKEN_BASE64 }}
           TRALEBOT_OPENAI_TOKEN: ${{ secrets.KUBE_TRALEBOT_OPENAI_TOKEN_BASE64 }}
           TRALEBOT_SERVER_HOST: ${{ secrets.KUBE_TRALEBOT_SERVER_HOST_BASE64 }}
+          RUN_NUMBER: ${{ github.run_number }}

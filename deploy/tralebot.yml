@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: tralebot-container
-          image: undermove/tralebot:latest
+          image: undermove/tralebot:$RUN_NUMBER
           ports:
             - containerPort: 1402
           env:
