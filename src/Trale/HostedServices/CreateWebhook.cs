@@ -27,6 +27,7 @@ public class CreateWebhook : IHostedService
         {
             if (!string.IsNullOrEmpty(_config.HostAddress))
             {
+                _logger.LogInformation($"{_config.HostAddress}/telegram/{_config.WebhookToken}");
                 var webhookUri = new Uri($"{_config.HostAddress}/telegram/{_config.WebhookToken}");
                 await _telegramBotClient.SetWebhookAsync(webhookUri.AbsoluteUri, dropPendingUpdates: false, cancellationToken: cancellationToken);
             }
