@@ -73,7 +73,7 @@ public class VocabularyEntryTests
     [TestCase(MasteringLevel.MasteredInBothDirections, 4, 3)]
     [TestCase(null, 0, 3)]
     [TestCase(null, 4, 4)]
-    public void Test(
+    public void GetAcquiredLevelShouldReturn(
         MasteringLevel? expectedMasteringLevel,
         int successAnswersCount,
         int successAnswersCountInReverseDirection)
@@ -84,6 +84,26 @@ public class VocabularyEntryTests
             .Build();
 
         var result = vocabularyEntry.GetAcquiredLevel();
+
+        result.ShouldBe(expectedMasteringLevel);
+    }
+
+    [TestCase(MasteringLevel.NotMastered, 0, 0)]
+    [TestCase(MasteringLevel.NotMastered, 2, 4)]
+    [TestCase(MasteringLevel.MasteredInForwardDirection, 4, 2)]
+    [TestCase(MasteringLevel.MasteredInBothDirections, 4, 4)]
+    [TestCase(MasteringLevel.NotMastered, 0, 4)]
+    public void GetMasteringShouldReturn(
+        MasteringLevel expectedMasteringLevel,
+        int successAnswersCount,
+        int successAnswersCountInReverseDirection)
+    {
+        var vocabularyEntry = Create.VocabularyEntry()
+            .WithSuccessAnswersCount(successAnswersCount)
+            .WithSuccessAnswersCountInReverseDirection(successAnswersCountInReverseDirection)
+            .Build();
+
+        var result = vocabularyEntry.GetMasteringLevel();
 
         result.ShouldBe(expectedMasteringLevel);
     }
