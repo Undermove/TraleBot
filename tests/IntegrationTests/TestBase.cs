@@ -18,6 +18,7 @@ public class TestBase
         // Start PostgreSQL container
         _postgresqlContainer = new PostgreSqlBuilder()
             .WithCleanUp(true)
+            .WithImage("postgres:16.1")
             .Build();
 
         await _postgresqlContainer.StartAsync();
