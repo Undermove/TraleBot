@@ -33,5 +33,6 @@ public class TestBase
     {
         await _testServer.DisposeAsync();
         await _postgresqlContainer.StopAsync();
+        await _postgresqlContainer.DisposeAsync();
     }
 }

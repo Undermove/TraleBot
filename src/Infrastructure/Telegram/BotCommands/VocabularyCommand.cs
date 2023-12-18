@@ -52,7 +52,7 @@ public class VocabularyCommand : IBotCommand
                     $"{GetMedalType(entry)} {entry.Word} – {entry.Definition}");
             var vocabularyPageView = String.Join(Environment.NewLine, vocabularyEntryView);
             
-            await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, ParseMode.Html, cancellationToken: token);    
+            await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, parseMode: ParseMode.Html, cancellationToken: token);    
         }
         
         await _client.SendTextMessageAsync(

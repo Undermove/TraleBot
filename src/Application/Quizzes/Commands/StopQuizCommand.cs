@@ -17,7 +17,7 @@ public class StopQuizCommand : IRequest
             _dbContext = dbContext;
         }
         
-        public async Task<Unit> Handle(StopQuizCommand request, CancellationToken ct)
+        public async Task Handle(StopQuizCommand request, CancellationToken ct)
         {
             if (request.UserId == null)
             {
@@ -27,7 +27,7 @@ public class StopQuizCommand : IRequest
             var startedQuiz = _dbContext.Quizzes.FirstOrDefault(q => q.UserId == request.UserId && q.IsCompleted == false);
             if (startedQuiz == null)
             {
-                return Unit.Value;
+                return;
             }
 
             await using var transaction =  await _dbContext.BeginTransactionAsync(ct);
@@ -45,8 +45,6 @@ public class StopQuizCommand : IRequest
                 await transaction.RollbackAsync(ct);
                 throw;
             }
-            
-            return Unit.Value;
         }
     }
 }

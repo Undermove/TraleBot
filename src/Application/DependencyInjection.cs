@@ -1,9 +1,9 @@
+using System.Reflection;
 using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
 using Application.Quizzes.Services;
 using Domain.Quiz;
-using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application;
@@ -12,7 +12,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddMediatR(AppDomain.CurrentDomain.GetAssemblies());
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 
         services.AddTransient<IQuizCreator, QuizCreator>();
         services.AddTransient<IQuizVocabularyEntriesAdvisor, QuizVocabularyEntriesAdvisor>();

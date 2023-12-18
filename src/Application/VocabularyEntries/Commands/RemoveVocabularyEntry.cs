@@ -20,19 +20,18 @@ public class RemoveVocabularyEntry : IRequest
             _achievementsService = achievementsService;
         }
 
-        public async Task<Unit> Handle(RemoveVocabularyEntry request, CancellationToken ct)
+        public async Task Handle(RemoveVocabularyEntry request, CancellationToken ct)
         {
             var entry = await _dbContext.VocabularyEntries.FindAsync(request.VocabularyEntryId);
             if (entry == null)
             {
-                return Unit.Value;
+                return;
             }
             
             _dbContext.VocabularyEntries.Remove(entry);
             await _dbContext.SaveChangesAsync(ct);
             
             await _achievementsService.AssignAchievements(new RemoveWordTrigger(), entry.UserId, ct);
-            return Unit.Value;
         }
     }
 }

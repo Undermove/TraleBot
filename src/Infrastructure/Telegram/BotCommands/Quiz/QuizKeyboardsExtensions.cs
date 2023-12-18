@@ -47,7 +47,7 @@ internal static class QuizKeyboardsExtensions
 		await client.SendTextMessageAsync(
 			request.UserTelegramId,
 			$"Переведи слово: *{quizQuestion.Question}*",
-			ParseMode.Markdown,
+			parseMode: ParseMode.Markdown,
 			replyMarkup: keyboard,
 			cancellationToken: ct);
 	}
@@ -94,7 +94,7 @@ internal static class QuizKeyboardsExtensions
 		await client.SendTextMessageAsync(
 			request.UserTelegramId,
 			$"*{quizQuestion.Question}*",
-			ParseMode.Markdown,
+			parseMode: ParseMode.Markdown,
 			replyMarkup: keyboard,
 			cancellationToken: ct);
 	}
