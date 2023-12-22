@@ -1,4 +1,6 @@
 using Application.Common.Interfaces.TranslationService;
+using Azure;
+using Azure.AI.OpenAI;
 using Domain.Entities;
 using Microsoft.Extensions.Options;
 using OpenAI_API;
@@ -7,13 +9,21 @@ using OpenAI_API.Models;
 
 namespace Infrastructure.Translation.OpenAiTranslation;
 
-public class OpenAiTranslationService(IHttpClientFactory clientFactory, IOptions<OpenAiConfig> config)
-    : IAiTranslationService
+public class OpenAiAzureTranslationService : IAiTranslationService
 {
-    private readonly OpenAIAPI _openAiApi = new(config.Value.ApiKey)
+    readonly Uri _azureOpenAiResourceUri = new("https://my-resource.openai.azure.com/");
+    readonly AzureKeyCredential _azureOpenAiApiKey = new(Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY") ?? string.Empty);
+    private readonly OpenAIClient _client;
+    private readonly OpenAIAPI _openAiApi;
+
+    public OpenAiAzureTranslationService(IHttpClientFactory clientFactory, IOptions<OpenAiConfig> config)
     {
-        HttpClientFactory = clientFactory
-    };
+        _client = new(_azureOpenAiResourceUri, _azureOpenAiApiKey);
+        _openAiApi = new(config.Value.ApiKey)
+        {
+            HttpClientFactory = clientFactory
+        };
+    }
 
     public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language, CancellationToken ct)
     {
