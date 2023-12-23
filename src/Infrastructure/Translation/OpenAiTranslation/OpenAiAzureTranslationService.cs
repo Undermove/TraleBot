@@ -11,7 +11,7 @@ namespace Infrastructure.Translation.OpenAiTranslation;
 
 public class OpenAiAzureTranslationService : IAiTranslationService
 {
-    readonly Uri _azureOpenAiResourceUri = new("https://my-resource.openai.azure.com/");
+    readonly Uri _azureOpenAiResourceUri = new("https://api.openai.com/");
     readonly AzureKeyCredential _azureOpenAiApiKey = new(Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY") ?? string.Empty);
     private readonly OpenAIClient _client;
     private readonly OpenAIAPI _openAiApi;
