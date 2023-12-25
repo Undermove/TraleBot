@@ -7,13 +7,13 @@ using OneOf;
 
 namespace Application.VocabularyEntries.Commands;
 
-public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>>
+public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<ChangeAndTranslationResult>
 {
     public required User User { get; init; }
     public required Language TargetLanguage { get; init; }
     public Guid VocabularyEntryId { get; set; }
 
-    public class Handler : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>>
+    public class Handler : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, ChangeAndTranslationResult>
     {
         private readonly IParsingTranslationService _parsingTranslationService;
         private readonly IParsingUniversalTranslator _parsingUniversalTranslator;
@@ -28,12 +28,17 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             _aiTranslationService = aiTranslationService;
         }
 
-        public async Task<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
+        public async Task<ChangeAndTranslationResult> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
         {
             var user = request.User;
             object?[] keyValues = { request.VocabularyEntryId };
             var sourceEntry = await _context.VocabularyEntries.FindAsync(keyValues, cancellationToken: ct);
 
+            if (!request.User.IsActivePremium())
+            {
+                return new ChangeAndTranslationResult.PremiumRequired();
+            }
+            
             if (sourceEntry == null)
             {
                 throw new ApplicationException("original entry not found");
@@ -47,7 +52,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
 
             if(duplicate != null)
             {
-                return new TranslationExists(
+                return new ChangeAndTranslationResult.TranslationExists(
                     duplicate.Definition, 
                     duplicate.AdditionalInfo,
                     duplicate.Example,
@@ -61,7 +66,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             }; 
         }
 
-        private async Task<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>> TranslateByGeorgianTranslationFlow(
+        private async Task<ChangeAndTranslationResult> TranslateByGeorgianTranslationFlow(
             TranslateToAnotherLanguageAndChangeCurrentLanguage request,
             CancellationToken ct, VocabularyEntry sourceEntry,
             User user)
@@ -76,12 +81,12 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                         s.AdditionalInfo,
                         s.Example,
                         user, ct),
-                TranslationResult.Failure => new TranslationFailure(),
+                TranslationResult.Failure => new ChangeAndTranslationResult.TranslationFailure(),
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
 
-        private async Task<OneOf<TranslationSuccess, TranslationExists, PromptLengthExceeded, TranslationFailure>> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+        private async Task<ChangeAndTranslationResult> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
             CancellationToken ct, VocabularyEntry sourceEntry, User user)
         {
             var parsingTranslationResult = await _parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
@@ -98,13 +103,13 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
                 TranslationResult.Success s => await UpdateVocabularyEntryAndChangeCurrentLanguage(
                     request, sourceEntry, s.Definition,
                     s.AdditionalInfo, s.Example, user, ct),
-                TranslationResult.Failure => new TranslationFailure(),
-                TranslationResult.PromptLengthExceeded => new PromptLengthExceeded(),
+                TranslationResult.Failure => new ChangeAndTranslationResult.TranslationFailure(),
+                TranslationResult.PromptLengthExceeded => new ChangeAndTranslationResult.PromptLengthExceeded(),
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
 
-        private async Task<TranslationSuccess> UpdateVocabularyEntryAndChangeCurrentLanguage(
+        private async Task<ChangeAndTranslationResult> UpdateVocabularyEntryAndChangeCurrentLanguage(
             TranslateToAnotherLanguageAndChangeCurrentLanguage request,
             VocabularyEntry sourceEntry,
             string definition,
@@ -131,7 +136,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
             // var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = user.VocabularyEntries.Count };
             // await _achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
 
-            return new TranslationSuccess(
+            return new ChangeAndTranslationResult.TranslationSuccess(
                 definition,
                 additionalInfo,
                 example,
@@ -140,18 +145,23 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<OneOf<
     }
 }
 
-public record TranslationSuccess(
-    string Definition,
-    string AdditionalInfo,
-    string Example,
-    Guid VocabularyEntryId);
+public abstract record ChangeAndTranslationResult
+{
+    public sealed record TranslationSuccess(
+        string Definition,
+        string AdditionalInfo,
+        string Example,
+        Guid VocabularyEntryId) : ChangeAndTranslationResult;
 
-public record TranslationExists(
-    string Definition,
-    string AdditionalInfo,
-    string Example,
-    Guid VocabularyEntryId);
+    public record TranslationExists(
+        string Definition,
+        string AdditionalInfo,
+        string Example,
+        Guid VocabularyEntryId) : ChangeAndTranslationResult;
 
-public record PromptLengthExceeded;
+    public record PromptLengthExceeded : ChangeAndTranslationResult;
 
-public record TranslationFailure;
+    public record TranslationFailure : ChangeAndTranslationResult;
+
+    public record PremiumRequired : ChangeAndTranslationResult;
+}

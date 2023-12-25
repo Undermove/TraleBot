@@ -1,20 +1,12 @@
 using Domain.Entities;
-using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class ChangeTranslationLanguageCommand : IBotCommand
+public class ChangeTranslationLanguageCommand(ITelegramBotClient client) : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-
-    public ChangeTranslationLanguageCommand(ITelegramBotClient client)
-    {
-        _client = client;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -47,7 +39,7 @@ public class ChangeTranslationLanguageCommand : IBotCommand
             }
         });
         
-        await _client.EditMessageReplyMarkupAsync(
+        await client.EditMessageReplyMarkupAsync(
             request.UserTelegramId,
             request.MessageId,
             replyMarkup: keyboard,
