@@ -26,7 +26,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
         _universalTranslationServicesMock = mockRepository.Create<IParsingUniversalTranslator>();
         _aiTranslationServicesMock = mockRepository.Create<IAiTranslationService>();
 
-        _existingUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        _existingUser = Create.User().WithPremiumAccountType().WithCurrentLanguage(Language.English).Build();
         _existingVocabularyEntry = Create.VocabularyEntry()
             .WithUser(_existingUser)
             .WithWord("недостаточность")
@@ -58,7 +58,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
             VocabularyEntryId = _existingVocabularyEntry.Id
         }, CancellationToken.None);
 
-        result.Value.ShouldBeOfType<TranslationSuccess>().ShouldNotBeNull();
+        result.ShouldBeOfType<ChangeAndTranslationResult.TranslationSuccess>().ShouldNotBeNull();
         var vocabularyEntry = await Context.VocabularyEntries
             .SingleOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
