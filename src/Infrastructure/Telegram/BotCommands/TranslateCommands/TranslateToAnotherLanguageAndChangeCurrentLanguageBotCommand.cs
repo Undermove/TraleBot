@@ -49,12 +49,13 @@ text: $@"Бесплатный аккаунт позволяет содержат
 При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage} будет удалён. Чтобы иметь несколько словарей, подключи PRO-подписку.",
             replyMarkup: new InlineKeyboardMarkup(new[]
             {
-                InlineKeyboardButton.WithCallbackData($"Удалить и перевести: {premiumRequired.TargetLanguage}", new ChangeLanguageCallback
-                {
-                    TargetLanguage = Language.Georgian,
-                    VocabularyEntryId = Guid.NewGuid()
-                }.ToStringCallback()),
-                InlineKeyboardButton.WithCallbackData("Подключить PRO", CommandNames.Pay)
+                InlineKeyboardButton.WithCallbackData($"Удалить и перевести на {premiumRequired.TargetLanguage.GetLanguageFlag()}",
+                    new ChangeLanguageCallback
+                    {
+                        TargetLanguage = premiumRequired.TargetLanguage,
+                        VocabularyEntryId = premiumRequired.VocabularyEntryId
+                    }.ToStringCallback()),
+                InlineKeyboardButton.WithCallbackData("Посмотреть Premium", CommandNames.Pay)
             }),
             cancellationToken: token);
     }
