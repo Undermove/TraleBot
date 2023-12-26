@@ -36,7 +36,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
 
             if (!request.User.IsActivePremium())
             {
-                return new ChangeAndTranslationResult.PremiumRequired();
+                return new ChangeAndTranslationResult.PremiumRequired(user.Settings.CurrentLanguage, request.TargetLanguage);
             }
             
             if (sourceEntry == null)
@@ -163,5 +163,5 @@ public abstract record ChangeAndTranslationResult
 
     public record TranslationFailure : ChangeAndTranslationResult;
 
-    public record PremiumRequired : ChangeAndTranslationResult;
+    public record PremiumRequired(Language CurrentLanguage, Language TargetLanguage) : ChangeAndTranslationResult;
 }

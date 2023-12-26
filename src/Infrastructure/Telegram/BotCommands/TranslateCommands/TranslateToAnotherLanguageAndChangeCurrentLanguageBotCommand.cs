@@ -32,12 +32,33 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
             ChangeAndTranslationResult.TranslationExists exists => HandleTranslationExists(request, exists, token),
             ChangeAndTranslationResult.TranslationSuccess success => HandleSuccess(request, success, token),
             ChangeAndTranslationResult.PromptLengthExceeded => HandlePromptLengthExceeded(request, token),
-            //ChangeAndTranslationResult.PremiumRequired => HandlePremiumRequired(request, token),
+            ChangeAndTranslationResult.PremiumRequired premiumRequired => HandlePremiumRequired(request, premiumRequired, token),
             ChangeAndTranslationResult.TranslationFailure => HandleFailure(request, token),
             _ => throw new ArgumentOutOfRangeException(nameof(result))
         });
     }
-    
+
+    private async Task HandlePremiumRequired(
+        TelegramRequest request,
+        ChangeAndTranslationResult.PremiumRequired premiumRequired,
+        CancellationToken token)
+    {
+        await client.SendTextMessageAsync(
+            request.UserTelegramId, 
+text: $@"Бесплатный аккаунт позволяет содержать только один словарь. 
+При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage} будет удалён. Чтобы иметь несколько словарей, подключи PRO-подписку.",
+            replyMarkup: new InlineKeyboardMarkup(new[]
+            {
+                InlineKeyboardButton.WithCallbackData($"Удалить и перевести: {premiumRequired.TargetLanguage}", new ChangeLanguageCallback
+                {
+                    TargetLanguage = Language.Georgian,
+                    VocabularyEntryId = Guid.NewGuid()
+                }.ToStringCallback()),
+                InlineKeyboardButton.WithCallbackData("Подключить PRO", CommandNames.Pay)
+            }),
+            cancellationToken: token);
+    }
+
     private Task HandleSuccess(TelegramRequest request, ChangeAndTranslationResult.TranslationSuccess result, CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
@@ -68,9 +89,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
     {
         await client.SendTextMessageAsync(
             request.UserTelegramId,
-            @"
-📏 Длинна строки слишком большая. Попробуй сократить её. Разрешено не более 40 символов.
-",
+            "📏 Длина строки слишком большая. Попробуй сократить её. Разрешено не более 40 символов.",
             cancellationToken: token);
     }
     
@@ -78,11 +97,11 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
     {
         await client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}" +
-            "\r\nСлова нет в моей базе или в нём есть опечатка." +
-            "\r\n" +
-            "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
-            "\r\nК примеру: cat-кошка",
+@$"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}
+Слова нет в моей базе или в нём есть опечатка.
+
+Если хочешь добавить ручной перевод, то введи его в формате: слово-перевод
+К примеру: cat-кошка",
             cancellationToken: token);
     }
 
