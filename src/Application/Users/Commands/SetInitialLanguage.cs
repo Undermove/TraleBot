@@ -9,18 +9,11 @@ public class SetInitialLanguage : IRequest<SetInitialLanguageResult>
     public required Guid UserId { get; init; }
     public required Language InitialLanguage { get; init; }
     
-    public class Handler : IRequestHandler<SetInitialLanguage, SetInitialLanguageResult>
+    public class Handler(ITraleDbContext context) : IRequestHandler<SetInitialLanguage, SetInitialLanguageResult>
     {
-        private readonly ITraleDbContext _context;
-
-        public Handler(ITraleDbContext context)
-        {
-            _context = context;
-        }
-
         public async Task<SetInitialLanguageResult> Handle(SetInitialLanguage request, CancellationToken cancellationToken)
         {
-            var user = await _context.Users.FindAsync( new object[] { request.UserId }, cancellationToken);
+            var user = await context.Users.FindAsync( new object[] { request.UserId }, cancellationToken);
 
             if (user == null)
             {
@@ -32,14 +25,14 @@ public class SetInitialLanguage : IRequest<SetInitialLanguageResult>
                 return new SetInitialLanguageResult.InitialLanguageAlreadySet();
             }
             
-            var userSettings = await _context.UsersSettings.FindAsync(new object[] { user.UserSettingsId }, cancellationToken); 
+            var userSettings = await context.UsersSettings.FindAsync(new object[] { user.UserSettingsId }, cancellationToken); 
 
             user.InitialLanguageSet = true;
             userSettings!.CurrentLanguage = request.InitialLanguage;
             
-            _context.Users.Update(user);
-            _context.UsersSettings.Update(userSettings);
-            await _context.SaveChangesAsync(cancellationToken);
+            context.Users.Update(user);
+            context.UsersSettings.Update(userSettings);
+            await context.SaveChangesAsync(cancellationToken);
             
             return new SetInitialLanguageResult.InitialLanguageSet(request.InitialLanguage);
         }

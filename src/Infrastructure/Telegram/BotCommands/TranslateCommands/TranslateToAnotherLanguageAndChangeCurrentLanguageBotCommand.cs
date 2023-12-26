@@ -8,17 +8,9 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBotCommand
+public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITelegramBotClient client, IMediator mediator)
+    : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    private readonly IMediator _mediator;
-
-    public TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITelegramBotClient client, IMediator mediator)
-    {
-        _client = client;
-        _mediator = mediator;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -28,24 +20,28 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var command = ChangeLanguageCallback.BuildFromRawMessage(request.Text);
-        var result = await _mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
+        var result = await mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
             TargetLanguage = command.TargetLanguage,
             VocabularyEntryId = command.VocabularyEntryId
         }, token);
 
-        await result.Match<Task>(
-            success => HandleSuccess(request, token, success),
-            exists => HandleTranslationExists(request, token, exists),
-            _ => HandlePromptLengthExceeded(request, token),
-            _ => HandleFailure(request, token));
+        await (result switch
+        {
+            ChangeAndTranslationResult.TranslationExists exists => HandleTranslationExists(request, exists, token),
+            ChangeAndTranslationResult.TranslationSuccess success => HandleSuccess(request, success, token),
+            ChangeAndTranslationResult.PromptLengthExceeded => HandlePromptLengthExceeded(request, token),
+            //ChangeAndTranslationResult.PremiumRequired => HandlePremiumRequired(request, token),
+            ChangeAndTranslationResult.TranslationFailure => HandleFailure(request, token),
+            _ => throw new ArgumentOutOfRangeException(nameof(result))
+        });
     }
     
-    private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
+    private Task HandleSuccess(TelegramRequest request, ChangeAndTranslationResult.TranslationSuccess result, CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
-        await SendTranslation(
+        return SendTranslation(
             request, 
             result.VocabularyEntryId,
             result.Definition,
@@ -55,11 +51,10 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
             token);
     }
     
-    private async Task HandleTranslationExists(TelegramRequest request, CancellationToken token,
-        TranslationExists result)
+    private Task HandleTranslationExists(TelegramRequest request, ChangeAndTranslationResult.TranslationExists result, CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
-        await SendTranslation(
+        return SendTranslation(
             request, 
             result.VocabularyEntryId,
             result.Definition,
@@ -71,7 +66,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
     
     private async Task HandlePromptLengthExceeded(TelegramRequest request, CancellationToken token)
     {
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             @"
 📏 Длинна строки слишком большая. Попробуй сократить её. Разрешено не более 40 символов.
@@ -81,7 +76,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
     
     private async Task HandleFailure(TelegramRequest request, CancellationToken token)
     {
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             $"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}" +
             "\r\nСлова нет в моей базе или в нём есть опечатка." +
@@ -131,7 +126,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand : IBot
         
         var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
-        await _client.EditMessageTextAsync(
+        await client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
             $"Определение: {definition}" +
