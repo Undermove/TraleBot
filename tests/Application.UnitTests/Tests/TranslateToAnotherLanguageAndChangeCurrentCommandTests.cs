@@ -58,7 +58,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
             VocabularyEntryId = _existingVocabularyEntry.Id
         }, CancellationToken.None);
 
-        result.ShouldBeOfType<ChangeAndTranslationResult.TranslationSuccess>().ShouldNotBeNull();
+        result.ShouldBeOfType<ChangeAndTranslationResult.TranslationSuccess>();
         var vocabularyEntry = await Context.VocabularyEntries
             .SingleOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
@@ -67,5 +67,29 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
         vocabularyEntry.Example.ShouldBe(expectedExample);
         vocabularyEntry.Language.ShouldBe(Language.Georgian);
         _existingUser.Settings.CurrentLanguage.ShouldBe(Language.Georgian);
+    }
+    
+    [Test]
+    public async Task ShouldReturnNeedPremiumWhenRequestFromFreeUser()
+    {
+        var freeUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        Context.Users.Add(freeUser);
+        
+        const string? expectedWord = "недостаточность";
+        const string expectedDefinition = "ნაკლებობა";
+        const string expectedExample = "რეალურად, 20 წლის წინ ჩვენ ვცხოვრობდით მსოფლიოში, სადაც პრობლემა";
+        _universalTranslationServicesMock
+            .Setup(service => service.TranslateAsync(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
+        
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateToAnotherLanguageAndChangeCurrentLanguage
+        {
+            User = freeUser,
+            TargetLanguage = Language.Georgian,
+            VocabularyEntryId = _existingVocabularyEntry.Id
+        }, CancellationToken.None);
+
+        result.ShouldBeOfType<ChangeAndTranslationResult.PremiumRequired>();
+        freeUser.Settings.CurrentLanguage.ShouldBe(Language.English);
     }
 }
