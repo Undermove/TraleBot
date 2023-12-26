@@ -46,10 +46,12 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
         await client.SendTextMessageAsync(
             request.UserTelegramId, 
 text: $@"Бесплатный аккаунт позволяет содержать только один словарь. 
-При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage} будет удалён. Чтобы иметь несколько словарей, подключи PRO-подписку.",
+
+При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage.GetLanguageFlag()} будет удалён. Чтобы иметь несколько словарей, подключи PRO-подписку.",
             replyMarkup: new InlineKeyboardMarkup(new[]
             {
                 InlineKeyboardButton.WithCallbackData($"Удалить и перевести на {premiumRequired.TargetLanguage.GetLanguageFlag()}",
+                    // todo: change to specified callback with delete and translate
                     new ChangeLanguageCallback
                     {
                         TargetLanguage = premiumRequired.TargetLanguage,
