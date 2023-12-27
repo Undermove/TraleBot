@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Infrastructure.Telegram.CallbackSerialization;
 
-public static class Callback
+public static class CallbackSerializer
 {
     public static string Serialize<T>(T callbackData) where T: notnull
     {
@@ -38,6 +38,9 @@ public static class Callback
                         continue;
                     case var type when type == typeof(Guid):
                         properties[i].SetValue(result, Guid.Parse(values[i]));
+                        continue;
+                    case var type when type.BaseType == typeof(Enum):
+                        properties[i].SetValue(result, Enum.Parse(type, values[i]));
                         continue;
                     default:
                         properties[i].SetValue(result, values[i]);
