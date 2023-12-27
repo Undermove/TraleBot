@@ -1,5 +1,6 @@
 using Application.VocabularyEntries.Commands;
 using Domain.Entities;
+using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -19,7 +20,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var command = TranslateToAnotherLanguageCallback.BuildFromRawMessage(request.Text);
+        var command = request.Text.Deserialize<TranslateToAnotherLanguageCallback>();
         var result = await mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
@@ -59,7 +60,7 @@ text: $@"Бесплатный аккаунт позволяет содержат
                         {
                             TargetLanguage = premiumRequired.TargetLanguage,
                             VocabularyEntryId = premiumRequired.VocabularyEntryId
-                        }.ToStringCallback())
+                        }.Serialize())
                 },
                 new[]
                 {

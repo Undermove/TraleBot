@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -27,7 +28,7 @@ public class ChangeTranslationLanguageCommand(ITelegramBotClient client) : IBotC
                     {
                         TargetLanguage = Language.English,
                         VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
-                    }.ToStringCallback())
+                    }.Serialize())
             },
             new []
             {
@@ -35,7 +36,7 @@ public class ChangeTranslationLanguageCommand(ITelegramBotClient client) : IBotC
                 {
                     TargetLanguage = Language.Georgian,
                     VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
-                }.ToStringCallback())
+                }.Serialize())
             }
         });
         

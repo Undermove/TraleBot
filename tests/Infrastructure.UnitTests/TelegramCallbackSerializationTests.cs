@@ -14,13 +14,14 @@ public class TelegramCallbackSerializationTests
         bool needToDelete = true;
         TestEnum testEnum = TestEnum.Second;
         
-        var result = CallbackSerializer.Serialize(new SomeTelegramCallback(
-            "command",
-            userId,
-            messageId,
-            chatId,
-            needToDelete, 
-            testEnum));
+        var result = new SomeTelegramCallback
+        {
+            UserId = userId,
+            MessageId = messageId,
+            ChatId = chatId,
+            NeedToDelete = needToDelete,
+            TestEnum = testEnum
+        }.Serialize();
         
         result.ShouldBe($"command|{userId}|{messageId}|{chatId}|{needToDelete}|{testEnum}");
     }
@@ -64,14 +65,16 @@ public class TelegramCallbackSerializationTests
     }
 }
 
-public record SomeTelegramCallback(
-    string CommandName, 
-    Guid UserId,
-    int MessageId,
-    long ChatId,
-    bool NeedToDelete,
-    TestEnum TestEnum);
-    
+public class SomeTelegramCallback
+{
+    public string CommandName => "command";
+    public Guid UserId { get; init; }
+    public int MessageId { get; init; }
+    public long ChatId { get; init; }
+    public bool NeedToDelete { get; init; }
+    public TestEnum TestEnum { get; init; }
+}
+
 public enum TestEnum
 {
     First,

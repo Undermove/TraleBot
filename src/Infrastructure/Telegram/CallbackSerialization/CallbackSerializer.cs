@@ -43,7 +43,10 @@ public static class CallbackSerializer
                         properties[i].SetValue(result, Enum.Parse(type, values[i]));
                         continue;
                     default:
-                        properties[i].SetValue(result, values[i]);
+                        if (properties[i].SetMethod is not null)
+                        {
+                            properties[i].SetValue(result, values[i]);
+                        }
                         continue;
                 }
             }
