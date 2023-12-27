@@ -5,7 +5,7 @@ namespace Infrastructure.Telegram.CallbackSerialization;
 
 public static class CallbackSerializer
 {
-    public static string Serialize<T>(T callbackData) where T: notnull
+    public static string Serialize<T>(this T callbackData) where T: notnull
     {
         StringBuilder stringBuilder = new StringBuilder();
         var propertyValues = callbackData.GetType().GetProperties().Select(info => info.GetValue(callbackData));
@@ -14,7 +14,7 @@ public static class CallbackSerializer
         return stringBuilder.ToString();
     }
     
-    public static T Deserialize<T>(string callbackData)
+    public static T Deserialize<T>(this string callbackData)
     {
         var properties = typeof(T).GetProperties();
         var values = callbackData.Split('|');

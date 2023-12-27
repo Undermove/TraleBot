@@ -34,8 +34,8 @@ public class TelegramCallbackSerializationTests
         bool needToDelete = true;
         TestEnum testEnum = TestEnum.Second;
         
-        SomeTelegramCallback result = CallbackSerializer
-            .Deserialize<SomeTelegramCallback>($"command|{userId}|{messageId}|{chatId}|{needToDelete}|{testEnum}");
+        SomeTelegramCallback result = $"command|{userId}|{messageId}|{chatId}|{needToDelete}|{testEnum}"
+            .Deserialize<SomeTelegramCallback>();
 
         result.CommandName.ShouldBe("command");
         result.UserId.ShouldBe(userId);
@@ -50,7 +50,7 @@ public class TelegramCallbackSerializationTests
     {
         var userId = Guid.NewGuid();
         
-        Should.Throw<ArgumentException>(() => CallbackSerializer.Deserialize<SomeTelegramCallback>($"command|{userId}|asdfdsfsdf"))
+        Should.Throw<ArgumentException>(() => $"command|{userId}|asdfdsfsdf".Deserialize<SomeTelegramCallback>())
             .Message.ShouldBe("Cannot deserialize callback data");
     }
     
@@ -59,7 +59,7 @@ public class TelegramCallbackSerializationTests
     {
         var userId = Guid.NewGuid();
         
-        Should.Throw<FormatException>(() => CallbackSerializer.Deserialize<SomeTelegramCallback>($"command;{userId};asdfdsfsdf"))
+        Should.Throw<FormatException>(() => $"command;{userId};asdfdsfsdf".Deserialize<SomeTelegramCallback>())
             .Message.ShouldBe("Can't find valid count of properties. Optional fields is not supported. It also may occurs because of unsupported separator type");
     }
 }
