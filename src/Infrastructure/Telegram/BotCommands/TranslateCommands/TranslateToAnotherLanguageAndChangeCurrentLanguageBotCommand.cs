@@ -19,7 +19,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var command = ChangeLanguageCallback.BuildFromRawMessage(request.Text);
+        var command = TranslateToAnotherLanguageCallback.BuildFromRawMessage(request.Text);
         var result = await mediator.Send(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
@@ -55,7 +55,7 @@ text: $@"Бесплатный аккаунт позволяет содержат
                     InlineKeyboardButton.WithCallbackData(
                         $"Удалить и перевести на {premiumRequired.TargetLanguage.GetLanguageFlag()}",
                         // todo: change to specified callback with delete and translate
-                        new ChangeLanguageCallback
+                        new TranslateToAnotherLanguageCallback
                         {
                             TargetLanguage = premiumRequired.TargetLanguage,
                             VocabularyEntryId = premiumRequired.VocabularyEntryId

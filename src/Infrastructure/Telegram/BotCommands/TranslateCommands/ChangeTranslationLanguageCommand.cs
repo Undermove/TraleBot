@@ -23,7 +23,7 @@ public class ChangeTranslationLanguageCommand(ITelegramBotClient client) : IBotC
             new[]
             {
                 InlineKeyboardButton.WithCallbackData("🇬🇧 Английский",
-                    new ChangeLanguageCallback
+                    new TranslateToAnotherLanguageCallback
                     {
                         TargetLanguage = Language.English,
                         VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
@@ -31,7 +31,7 @@ public class ChangeTranslationLanguageCommand(ITelegramBotClient client) : IBotC
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", new ChangeLanguageCallback
+                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", new TranslateToAnotherLanguageCallback
                 {
                     TargetLanguage = Language.Georgian,
                     VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
