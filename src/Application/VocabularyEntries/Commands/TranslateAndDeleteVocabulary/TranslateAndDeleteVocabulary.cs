@@ -25,29 +25,14 @@ public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
             object?[] keyValues = { request.VocabularyEntryId };
             var sourceEntry = await context.VocabularyEntries.FindAsync(keyValues, cancellationToken: ct);
 
-            // if (!request.User.IsActivePremium())
-            // {
-            //     return new ChangeAndTranslationResult.PremiumRequired(user.Settings.CurrentLanguage, request.TargetLanguage, request.VocabularyEntryId);
-            // }
+            if (request.User.IsActivePremium())
+            {
+                return new ChangeAndTranslationResult.NoActionNeeded();
+            }
             
             if (sourceEntry == null)
             {
                 throw new ApplicationException("original entry not found");
-            }
-            
-            var duplicate = await context.VocabularyEntries
-                .SingleOrDefaultAsync(entry => entry.UserId == request.User.Id
-                                               && entry.Language == request.TargetLanguage
-                                               && entry.Word.Equals(sourceEntry.Word.ToLowerInvariant()), 
-                    cancellationToken: ct);
-
-            if(duplicate != null)
-            {
-                return new ChangeAndTranslationResult.TranslationExists(
-                    duplicate.Definition, 
-                    duplicate.AdditionalInfo,
-                    duplicate.Example,
-                    duplicate.Id);
             }
 
             await using var transaction =  await context.BeginTransactionAsync(ct);
@@ -176,5 +161,5 @@ public abstract record ChangeAndTranslationResult
 
     public sealed record TranslationFailure : ChangeAndTranslationResult;
 
-    public sealed record PremiumRequired(Language CurrentLanguage, Language TargetLanguage, Guid VocabularyEntryId) : ChangeAndTranslationResult;
+    public sealed record NoActionNeeded() : ChangeAndTranslationResult;
 }
