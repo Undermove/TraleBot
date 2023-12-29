@@ -151,12 +151,6 @@ public abstract record ChangeAndTranslationResult
         string Example,
         Guid VocabularyEntryId) : ChangeAndTranslationResult;
 
-    public sealed record TranslationExists(
-        string Definition,
-        string AdditionalInfo,
-        string Example,
-        Guid VocabularyEntryId) : ChangeAndTranslationResult;
-
     public sealed record PromptLengthExceeded : ChangeAndTranslationResult;
 
     public sealed record TranslationFailure : ChangeAndTranslationResult;
