@@ -8,17 +8,8 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateCommand : IBotCommand
+public class TranslateCommand(ITelegramBotClient client, IMediator mediator) : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    private readonly IMediator _mediator;
-
-    public TranslateCommand(ITelegramBotClient client, IMediator mediator)
-    {
-        _client = client;
-        _mediator = mediator;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -27,7 +18,7 @@ public class TranslateCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntry
+        var result = await mediator.Send(new TranslateAndCreateVocabularyEntry
         {
             Word = request.Text,
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
@@ -70,7 +61,7 @@ public class TranslateCommand : IBotCommand
     
     private async Task HandleEmojiDetected(TelegramRequest request, CancellationToken token)
     {
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             "Кажется, что ты отправил мне слишком много эмодзи 😅.",
             cancellationToken: token);
@@ -78,7 +69,7 @@ public class TranslateCommand : IBotCommand
     
     private async Task HandlePromptLengthExceeded(TelegramRequest request, CancellationToken token)
     {
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             @"
 📏 Длинна строки слишком большая. Попробуй сократить её. Разрешено не более 40 символов.
@@ -88,7 +79,7 @@ public class TranslateCommand : IBotCommand
     
     private async Task HandleFailure(TelegramRequest request, CancellationToken token)
     {
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             $"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}" +
             "\r\nСлова нет в моей базе или в нём есть опечатка." +
@@ -138,7 +129,7 @@ public class TranslateCommand : IBotCommand
         
         var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             $"Определение: {definition}" +
             $"\r\nДругие значения: {additionalInfo}" +
