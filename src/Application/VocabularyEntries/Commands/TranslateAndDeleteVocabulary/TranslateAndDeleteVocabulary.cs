@@ -155,5 +155,5 @@ public abstract record ChangeAndTranslationResult
 
     public sealed record TranslationFailure : ChangeAndTranslationResult;
 
-    public sealed record NoActionNeeded() : ChangeAndTranslationResult;
+    public sealed record NoActionNeeded : ChangeAndTranslationResult;
 }
