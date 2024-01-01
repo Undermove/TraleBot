@@ -24,15 +24,18 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator) : I
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
-        await result.Match<Task>(
-            success => HandleSuccess(request, token, success),
-            exists => HandleTranslationExists(request, token, exists),
-            _ => HandleEmojiDetected(request, token),
-            _ => HandlePromptLengthExceeded(request, token),
-            _ => HandleFailure(request, token));
+        await (result switch
+        {
+            CreateVocabularyEntryResult.TranslationSuccess success => HandleSuccess(request, token, success),
+            CreateVocabularyEntryResult.TranslationExists exists => HandleTranslationExists(request, token, exists),
+            CreateVocabularyEntryResult.EmojiDetected => HandleEmojiDetected(request, token),
+            CreateVocabularyEntryResult.PromptLengthExceeded => HandlePromptLengthExceeded(request, token),
+            CreateVocabularyEntryResult.TranslationFailure => HandleFailure(request, token),
+            _ => throw new ArgumentOutOfRangeException(nameof(result))
+        });
     }
 
-    private async Task HandleSuccess(TelegramRequest request, CancellationToken token, TranslationSuccess result)
+    private async Task HandleSuccess(TelegramRequest request, CancellationToken token, CreateVocabularyEntryResult.TranslationSuccess result)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         await SendTranslation(
@@ -45,11 +48,11 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator) : I
             token);
     }
     
-    private async Task HandleTranslationExists(TelegramRequest request, CancellationToken token,
-        TranslationExists result)
+    private Task HandleTranslationExists(TelegramRequest request, CancellationToken token,
+        CreateVocabularyEntryResult.TranslationExists result)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
-        await SendTranslation(
+        return SendTranslation(
             request, 
             result.VocabularyEntryId,
             result.Definition,

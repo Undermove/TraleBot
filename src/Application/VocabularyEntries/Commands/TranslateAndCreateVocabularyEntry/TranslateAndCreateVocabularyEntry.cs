@@ -11,7 +11,7 @@ using OneOf;
 
 namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 
-public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, PromptLengthExceeded, TranslationFailure>>
+public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryResult>
 {
     public required Guid UserId { get; init; }
     public required string Word { get; init; }
@@ -22,16 +22,15 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
         ITraleDbContext context,
         IAchievementsService achievementService,
         IAiTranslationService aiTranslationService)
-        : IRequestHandler<TranslateAndCreateVocabularyEntry, OneOf<TranslationSuccess, TranslationExists, EmojiDetected,
-            PromptLengthExceeded, TranslationFailure>>
+        : IRequestHandler<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>
     {
-        public async Task<OneOf<TranslationSuccess, TranslationExists, EmojiDetected, PromptLengthExceeded, TranslationFailure>> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
+        public async Task<CreateVocabularyEntryResult> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
         {
             var user = await GetUser(request, ct);
 
             if (IsContainsEmoji(request.Word))
             {
-                return new EmojiDetected();
+                return new CreateVocabularyEntryResult.EmojiDetected();
             }
             
             var wordLanguage = request.Word.DetectLanguage();
@@ -43,7 +42,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             
             if(duplicate != null)
             {
-                return new TranslationExists(
+                return new CreateVocabularyEntryResult.TranslationExists(
                     duplicate.Definition, 
                     duplicate.AdditionalInfo,
                     duplicate.Example,
@@ -66,7 +65,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
                             s.Example,
                             user,
                             Language.Georgian),
-                    _ => new TranslationFailure()
+                    _ => new CreateVocabularyEntryResult.TranslationFailure()
                 };
             }
             
@@ -84,12 +83,12 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             return result switch
             {
                 TranslationResult.Success s => await CreateVocabularyEntryResult(request, ct, s.Definition, s.AdditionalInfo, s.Example, user, Language.English),
-                TranslationResult.PromptLengthExceeded => new PromptLengthExceeded(),
-                _ => new TranslationFailure()
+                TranslationResult.PromptLengthExceeded => new CreateVocabularyEntryResult.PromptLengthExceeded(),
+                _ => new CreateVocabularyEntryResult.TranslationFailure()
             };
         }
 
-        private async Task<TranslationSuccess> CreateVocabularyEntryResult(TranslateAndCreateVocabularyEntry request, CancellationToken ct,
+        private async Task<CreateVocabularyEntryResult.TranslationSuccess> CreateVocabularyEntryResult(TranslateAndCreateVocabularyEntry request, CancellationToken ct,
             string definition, string additionalInfo, string example, User user, Language language)
         {
             var entryId = Guid.NewGuid();
@@ -114,7 +113,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<OneOf<TranslationSucce
             var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = user.VocabularyEntries.Count };
             await achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
 
-            return new TranslationSuccess(
+            return new CreateVocabularyEntryResult.TranslationSuccess(
                 definition,
                 additionalInfo,
                 example,

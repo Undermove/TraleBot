@@ -1,19 +1,22 @@
 namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 
-public record TranslationSuccess(
-    string Definition,
-    string AdditionalInfo,
-    string Example,
-    Guid VocabularyEntryId);
+public abstract record CreateVocabularyEntryResult
+{
+    public sealed record TranslationSuccess(
+        string Definition,
+        string AdditionalInfo,
+        string Example,
+        Guid VocabularyEntryId): CreateVocabularyEntryResult;
 
-public record TranslationExists(
-    string Definition,
-    string AdditionalInfo,
-    string Example,
-    Guid VocabularyEntryId);
+    public sealed record TranslationExists(
+        string Definition,
+        string AdditionalInfo,
+        string Example,
+        Guid VocabularyEntryId): CreateVocabularyEntryResult;
 
-public record TranslationFailure;
+    public sealed record TranslationFailure: CreateVocabularyEntryResult;
 
-public record PromptLengthExceeded;
+    public sealed record PromptLengthExceeded: CreateVocabularyEntryResult;
 
-public record EmojiDetected;
+    public sealed record EmojiDetected: CreateVocabularyEntryResult;
+}
