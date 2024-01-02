@@ -7,7 +7,6 @@ using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using OneOf;
 
 namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 

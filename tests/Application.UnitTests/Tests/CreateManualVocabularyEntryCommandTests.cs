@@ -41,13 +41,14 @@ public class CreateManualVocabularyEntryCommandTests : CommandTestsBase
         const string expectedWord = "cat";
         const string expectedDefinition = "кошка";
 
-        await _createVocabularyEntryCommandHandler.Handle(new CreateManualTranslation
+        var result = await _createVocabularyEntryCommandHandler.Handle(new CreateManualTranslation
         {
             UserId = _existingUser.Id,
             Word = expectedWord,
             Definition = expectedDefinition
         }, CancellationToken.None);
 
+        result.ShouldBeOfType<ManualTranslationResult.EntrySaved>();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();
@@ -72,8 +73,7 @@ public class CreateManualVocabularyEntryCommandTests : CommandTestsBase
             Word = expectedWord
         }, CancellationToken.None);
 
-        var translationSuccess = result.AsT1;
-        translationSuccess.ShouldNotBeNull();
+        result.ShouldBeOfType<ManualTranslationResult.EntryAlreadyExists>();
         var vocabularyEntry = await Context.VocabularyEntries
             .FirstOrDefaultAsync(entry => entry.Word == expectedWord);
         vocabularyEntry.ShouldNotBeNull();

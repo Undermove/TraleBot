@@ -37,14 +37,17 @@ public class TranslateManuallyCommand : IBotCommand
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
-        await result.Match(
-            success => HandleSuccess(request, success, token),
-            exists => HandleTranslationExists(request, exists, token), 
-            _ => HandleDefinitionIsNotSet(request,  token),
-            _ => HandleEmojiDetected(request, token));
+        await (result switch
+        {
+            ManualTranslationResult.EntrySaved success => HandleSuccess(request, success, token),
+            ManualTranslationResult.EntryAlreadyExists exists => HandleTranslationExists(request, exists, token),
+            ManualTranslationResult.EmojiNotAllowed => HandleEmojiDetected(request, token),
+            ManualTranslationResult.DefinitionIsNotSet => HandleDefinitionIsNotSet(request,  token),
+            _ => throw new ArgumentOutOfRangeException(nameof(result))
+        });
     }
 
-    private async Task HandleSuccess(TelegramRequest request, EntrySaved result, CancellationToken token)
+    private async Task HandleSuccess(TelegramRequest request, ManualTranslationResult.EntrySaved result, CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         await SendTranslation(
@@ -56,7 +59,7 @@ public class TranslateManuallyCommand : IBotCommand
             token);
     }
     
-    private async Task HandleTranslationExists(TelegramRequest request, EntryAlreadyExists result,
+    private async Task HandleTranslationExists(TelegramRequest request, ManualTranslationResult.EntryAlreadyExists result,
         CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
