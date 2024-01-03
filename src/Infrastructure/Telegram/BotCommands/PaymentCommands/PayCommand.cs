@@ -5,15 +5,8 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
-public class PayCommand : IBotCommand
+public class PayCommand(ITelegramBotClient client) : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    
-    public PayCommand(ITelegramBotClient client)
-    {
-        _client = client;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -31,7 +24,7 @@ public class PayCommand : IBotCommand
             new[] { InlineKeyboardButton.WithCallbackData("💳 12 месяцев: 5,99€", $"{CommandNames.RequestInvoice} {SubscriptionTerm.Year}")}
         });
         
-        await _client.SendTextMessageAsync(request.UserTelegramId,
+        await client.SendTextMessageAsync(request.UserTelegramId,
             "⭐ Премиум аккаунт позволяет вести несколько словарей без удаления.",
             replyMarkup: keyboard,
             cancellationToken: token);
