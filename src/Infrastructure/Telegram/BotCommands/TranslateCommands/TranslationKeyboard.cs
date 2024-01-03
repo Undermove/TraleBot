@@ -1,6 +1,7 @@
 using Application.VocabularyEntries.Commands;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -41,6 +42,39 @@ public static class TranslationKeyboard
             result.Example,
             removeFromVocabularyText,
             token);
+    }
+    
+    public static async Task HandleEmojiDetected(this ITelegramBotClient client,TelegramRequest request, CancellationToken token)
+    {
+        await client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Кажется, что ты отправил мне слишком много эмодзи 😅.",
+            cancellationToken: token);
+    }
+    
+    public static async Task HandlePromptLengthExceeded(
+        this ITelegramBotClient client,
+        TelegramRequest request,
+        CancellationToken token)
+    {
+        await client.SendTextMessageAsync(
+            request.UserTelegramId,
+            @"
+📏 Длинна строки слишком большая. Попробуй сократить её. Разрешено не более 40 символов.
+",
+            cancellationToken: token);
+    }
+    
+    public static async Task HandleFailure(this ITelegramBotClient client,TelegramRequest request, CancellationToken token)
+    {
+        await client.SendTextMessageAsync(
+            request.UserTelegramId,
+            $"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}" +
+            "\r\nСлова нет в моей базе или в нём есть опечатка." +
+            "\r\n" +
+            "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
+            "\r\nК примеру: cat-кошка",
+            cancellationToken: token);
     }
     
     private static async Task SendTranslation(
