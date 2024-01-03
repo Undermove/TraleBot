@@ -3,10 +3,11 @@ using Domain.Entities;
 using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.Models;
 using MediatR;
+using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateAndDeleteVocabularyCommand(IMediator mediator) : IBotCommand
+public class TranslateAndDeleteVocabularyCommand(ITelegramBotClient client, IMediator mediator) : IBotCommand
 {
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
@@ -17,12 +18,20 @@ public class TranslateAndDeleteVocabularyCommand(IMediator mediator) : IBotComma
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var callback = request.Text.Deserialize<TranslateAndDeleteVocabularyCallback>();
-        await mediator.Send(new TranslateAndDeleteVocabulary
+        var result = await mediator.Send(new TranslateAndDeleteVocabulary
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
             TargetLanguage = callback.TargetLanguage,
             VocabularyEntryId = callback.VocabularyEntryId
         }, token);
+        
+        await (result switch
+        {
+            ChangeAndTranslationResult.TranslationSuccess success => client.HandleSuccess(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
+            ChangeAndTranslationResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
+            ChangeAndTranslationResult.TranslationFailure => client.HandleFailure(request, token),
+            _ => throw new ArgumentOutOfRangeException(nameof(result))
+        });
     }
 }
 

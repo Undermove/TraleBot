@@ -1,4 +1,3 @@
-using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
@@ -11,34 +10,40 @@ public static class TranslationKeyboard
 {
     public static Task HandleSuccess(this ITelegramBotClient client,
         TelegramRequest request, 
-        CreateVocabularyEntryResult.TranslationSuccess result, 
+        Guid vocabularyEntryId,
+        string definition,
+        string additionalInfo,
+        string? example,
         CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         return SendTranslation(
             client,
             request, 
-            result.VocabularyEntryId,
-            result.Definition,
-            result.AdditionalInfo,
-            result.Example,
+            vocabularyEntryId,
+            definition,
+            additionalInfo,
+            example,
             removeFromVocabularyText,
             token);
     }
     
     public static Task HandleTranslationExists(this ITelegramBotClient client, 
         TelegramRequest request,
-        CreateVocabularyEntryResult.TranslationExists result,
+        Guid vocabularyEntryId,
+        string definition,
+        string additionalInfo,
+        string? example,
         CancellationToken token)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return SendTranslation(
             client,
             request,
-            result.VocabularyEntryId,
-            result.Definition,
-            result.AdditionalInfo,
-            result.Example,
+            vocabularyEntryId,
+            definition,
+            additionalInfo,
+            example,
             removeFromVocabularyText,
             token);
     }
@@ -76,13 +81,21 @@ public static class TranslationKeyboard
             cancellationToken: token);
     }
     
+    public static Task HandleDefinitionIsNotSet(this ITelegramBotClient client, TelegramRequest request, CancellationToken token)
+    {
+        return client.SendTextMessageAsync(
+            request.UserTelegramId,
+            "Возможно отсутствует определение. Введи его в формате: слово - определение",
+            cancellationToken: token);
+    }
+    
     private static async Task SendTranslation(
         ITelegramBotClient client,
         TelegramRequest request,
         Guid vocabularyEntryId,
         string definition,
         string additionalInfo,
-        string example,
+        string? example,
         string removeFromVocabularyText, 
         CancellationToken token)
     {

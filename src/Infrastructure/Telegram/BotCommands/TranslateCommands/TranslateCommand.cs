@@ -23,8 +23,8 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator) : I
 
         await (result switch
         {
-            CreateVocabularyEntryResult.TranslationSuccess success => client.HandleSuccess(request, success, token),
-            CreateVocabularyEntryResult.TranslationExists exists => client.HandleTranslationExists(request, exists,  token),
+            CreateVocabularyEntryResult.TranslationSuccess success => client.HandleSuccess(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
+            CreateVocabularyEntryResult.TranslationExists exists => client.HandleTranslationExists(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token),
             CreateVocabularyEntryResult.EmojiDetected => client.HandleEmojiDetected(request, token),
             CreateVocabularyEntryResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             CreateVocabularyEntryResult.TranslationFailure => client.HandleFailure(request, token),
