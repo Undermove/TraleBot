@@ -1,4 +1,3 @@
-using Application.VocabularyEntries.Commands;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Telegram.CommonComponents;
@@ -69,11 +68,11 @@ public static class TranslationKeyboard
     {
         await client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}" +
-            "\r\nСлова нет в моей базе или в нём есть опечатка." +
-            "\r\n" +
-            "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
-            "\r\nК примеру: cat-кошка",
+@$"🙇‍ Пока не могу перевести это слово. Для текущего языка перевода: {request.User!.Settings.CurrentLanguage.GetLanguageFlag()}
+Слова нет в моей базе или в нём есть опечатка.
+
+Если хочешь добавить ручной перевод, то введи его в формате: слово-перевод
+К примеру: cat-кошка",
             cancellationToken: token);
     }
     
@@ -120,9 +119,9 @@ public static class TranslationKeyboard
 
         await client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"Определение: {definition}" +
-            $"\r\nДругие значения: {additionalInfo}" +
-            $"\r\nПример употребления: {example}",
+@$"Определение: {definition}
+Другие значения: {additionalInfo}
+Пример употребления: {example}",
             replyMarkup: keyboard,
             cancellationToken: token);
     }
