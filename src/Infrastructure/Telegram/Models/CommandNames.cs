@@ -21,7 +21,7 @@ public static class CommandNames
     public const string RemoveEntry = "/removeentry";
     public const string TranslateManually = "-";
     public const string TranslateToAnotherLanguage = "/swaplang";
-    public const string TranslateAndDeleteVocabulary = "/translateanddelete";
+    public const string TranslateAndDeleteVocabulary = "/tradl";
     public const string Vocabulary = "/vocabulary";
     public const string VocabularyIcon = "📘";
     

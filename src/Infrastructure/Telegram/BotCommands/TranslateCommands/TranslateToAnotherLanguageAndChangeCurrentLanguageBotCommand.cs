@@ -61,6 +61,7 @@ text: $@"Бесплатный аккаунт позволяет содержат
                             TargetLanguage = premiumRequired.TargetLanguage,
                             VocabularyEntryId = premiumRequired.VocabularyEntryId
                         }.Serialize())
+                        
                 },
                 new[]
                 {
@@ -73,6 +74,7 @@ text: $@"Бесплатный аккаунт позволяет содержат
 
 public class TranslateToAnotherLanguageCallback
 {
+    // ReSharper disable once UnusedMember.Global
     public string CommandName => CommandNames.TranslateToAnotherLanguage;
     public required Guid VocabularyEntryId { get; init; }
     public required Language TargetLanguage { get; init; }
