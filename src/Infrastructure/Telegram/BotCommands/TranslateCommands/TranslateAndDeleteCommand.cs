@@ -30,8 +30,17 @@ public class TranslateAndDeleteVocabularyCommand(ITelegramBotClient client, IMed
             ChangeAndTranslationResult.TranslationSuccess success => client.HandleSuccess(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
             ChangeAndTranslationResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             ChangeAndTranslationResult.TranslationFailure => client.HandleFailure(request, token),
+            ChangeAndTranslationResult.NoActionNeeded => HandleNoActionNeeded(request, token),
             _ => throw new ArgumentOutOfRangeException(nameof(result))
         });
+    }
+    
+    private async Task HandleNoActionNeeded(TelegramRequest request, CancellationToken token)
+    {
+        await client.SendTextMessageAsync(
+            request.UserTelegramId,
+            @"🙇‍ У тебя есть премиум, так что ты можешь просто перевести слово без удаления словаря.",
+            cancellationToken: token);
     }
 }
 
