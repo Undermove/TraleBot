@@ -26,40 +26,13 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator) : I
 
         await (result switch
         {
-            CreateVocabularyEntryResult.TranslationSuccess success => HandleSuccess(request, token, success),
-            CreateVocabularyEntryResult.TranslationExists exists => HandleTranslationExists(request, token, exists),
+            CreateVocabularyEntryResult.TranslationSuccess success => client.HandleSuccess(request, success, token),
+            CreateVocabularyEntryResult.TranslationExists exists => client.HandleTranslationExists(request, exists,  token),
             CreateVocabularyEntryResult.EmojiDetected => HandleEmojiDetected(request, token),
             CreateVocabularyEntryResult.PromptLengthExceeded => HandlePromptLengthExceeded(request, token),
             CreateVocabularyEntryResult.TranslationFailure => HandleFailure(request, token),
             _ => throw new ArgumentOutOfRangeException(nameof(result))
         });
-    }
-
-    private async Task HandleSuccess(TelegramRequest request, CancellationToken token, CreateVocabularyEntryResult.TranslationSuccess result)
-    {
-        var removeFromVocabularyText = "❌ Не добавлять в словарь.";
-        await SendTranslation(
-            request, 
-            result.VocabularyEntryId,
-            result.Definition,
-            result.AdditionalInfo,
-            result.Example,
-            removeFromVocabularyText,
-            token);
-    }
-    
-    private Task HandleTranslationExists(TelegramRequest request, CancellationToken token,
-        CreateVocabularyEntryResult.TranslationExists result)
-    {
-        var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
-        return SendTranslation(
-            request, 
-            result.VocabularyEntryId,
-            result.Definition,
-            result.AdditionalInfo,
-            result.Example,
-            removeFromVocabularyText,
-            token);
     }
     
     private async Task HandleEmojiDetected(TelegramRequest request, CancellationToken token)
@@ -89,55 +62,6 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator) : I
             "\r\n" +
             "\r\nЕсли хочешь добавить ручной перевод, то введи его в формате: слово-перевод" +
             "\r\nК примеру: cat-кошка",
-            cancellationToken: token);
-    }
-
-    private async Task SendTranslation(
-        TelegramRequest request,
-        Guid vocabularyEntryId,
-        string definition,
-        string additionalInfo,
-        string example,
-        string removeFromVocabularyText, 
-        CancellationToken token)
-    {
-        var replyMarkup = new List<InlineKeyboardButton[]>
-        {
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
-                    $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
-            }
-        };
-
-        if (request.User!.Settings.CurrentLanguage == Language.English)
-        {
-            replyMarkup.Add(new[]
-            {
-                InlineKeyboardButton.WithUrl("Перевод Wooordhunt", $"https://wooordhunt.ru/word/{request.Text}"),
-                InlineKeyboardButton.WithUrl("Перевод Reverso Context",
-                    $"https://context.reverso.net/translation/russian-english/{request.Text}")
-            });
-        }
-        
-        replyMarkup.Add(new[]
-        {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeTranslationLanguage} {vocabularyEntryId}"),
-        });
-        
-        replyMarkup.Add(new[]
-        {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
-        });
-        
-        var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
-
-        await client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"Определение: {definition}" +
-            $"\r\nДругие значения: {additionalInfo}" +
-            $"\r\nПример употребления: {example}",
-            replyMarkup: keyboard,
             cancellationToken: token);
     }
 }
