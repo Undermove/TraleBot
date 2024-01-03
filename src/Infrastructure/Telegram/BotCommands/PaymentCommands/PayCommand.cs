@@ -32,7 +32,7 @@ public class PayCommand : IBotCommand
         });
         
         await _client.SendTextMessageAsync(request.UserTelegramId,
-            "☕️ Премиум аккаунт позволяет вести несколько словарей без удаления.",
+            "⭐ Премиум аккаунт позволяет вести несколько словарей без удаления.",
             replyMarkup: keyboard,
             cancellationToken: token);
     }
