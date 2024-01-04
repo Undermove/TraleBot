@@ -1,20 +1,13 @@
 using Domain.Entities;
-using Infrastructure.Telegram.BotCommands.TranslateCommands;
+using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class ChangeTranslationLanguageCommand : IBotCommand
+public class ChangeTranslationLanguageCommand(ITelegramBotClient client) : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-
-    public ChangeTranslationLanguageCommand(ITelegramBotClient client)
-    {
-        _client = client;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -31,23 +24,23 @@ public class ChangeTranslationLanguageCommand : IBotCommand
             new[]
             {
                 InlineKeyboardButton.WithCallbackData("🇬🇧 Английский",
-                    new ChangeLanguageCallback
+                    new TranslateToAnotherLanguageCallback
                     {
                         TargetLanguage = Language.English,
                         VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
-                    }.ToStringCallback())
+                    }.Serialize())
             },
             new []
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", new ChangeLanguageCallback
+                InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", new TranslateToAnotherLanguageCallback
                 {
                     TargetLanguage = Language.Georgian,
                     VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
-                }.ToStringCallback())
+                }.Serialize())
             }
         });
         
-        await _client.EditMessageReplyMarkupAsync(
+        await client.EditMessageReplyMarkupAsync(
             request.UserTelegramId,
             request.MessageId,
             replyMarkup: keyboard,

@@ -5,17 +5,8 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
-public class OfferTrialCommand : IBotCommand
+public class OfferTrialCommand(ITelegramBotClient client) : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    private readonly ILogger _logger;
-
-    public OfferTrialCommand(ITelegramBotClient client, ILoggerFactory logger)
-    {
-        _client = client;
-        _logger = logger.CreateLogger(typeof(PayCommand));
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -32,7 +23,7 @@ public class OfferTrialCommand : IBotCommand
             new[] { InlineKeyboardButton.WithCallbackData("💳 Купить подписку.", $"{CommandNames.Pay}") }
         });
         
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId, 
             "Эта функция недоступна для бесплатной версии, но вы можете взять пробную версию бота на месяц." +
             "\r\nСуществование платной версии помогает нам развивать бесплатные функции бота и оплачивать сервер для его работы.",

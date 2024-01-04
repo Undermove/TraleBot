@@ -2,21 +2,11 @@ using Application.VocabularyEntries.Commands;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateManuallyCommand : IBotCommand
+public class TranslateManuallyCommand(ITelegramBotClient client, IMediator mediator) : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    private readonly IMediator _mediator;
-
-    public TranslateManuallyCommand(ITelegramBotClient client, IMediator mediator)
-    {
-        _client = client;
-        _mediator = mediator;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -30,81 +20,20 @@ public class TranslateManuallyCommand : IBotCommand
         var definition = split[1];
         
         // todo create new handler for manual translation
-        var result = await _mediator.Send(new CreateManualTranslation
+        var result = await mediator.Send(new CreateManualTranslation
         {
             Word = word,
             Definition = definition,
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
-        await result.Match(
-            success => HandleSuccess(request, success, token),
-            exists => HandleTranslationExists(request, exists, token), 
-            _ => HandleDefinitionIsNotSet(request,  token),
-            _ => HandleEmojiDetected(request, token));
-    }
-
-    private async Task HandleSuccess(TelegramRequest request, EntrySaved result, CancellationToken token)
-    {
-        var removeFromVocabularyText = "❌ Не добавлять в словарь.";
-        await SendTranslation(
-            request,
-            result.VocabularyEntryId,
-            result.Definition,
-            result.AdditionalInfo,
-            removeFromVocabularyText,
-            token);
-    }
-    
-    private async Task HandleTranslationExists(TelegramRequest request, EntryAlreadyExists result,
-        CancellationToken token)
-    {
-        var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
-        await SendTranslation(
-            request,
-            result.VocabularyEntryId,
-            result.Definition,
-            result.AdditionalInfo,
-            removeFromVocabularyText,
-            token);
-    }
-    
-    private Task HandleDefinitionIsNotSet(TelegramRequest request, CancellationToken token)
-    {
-        return _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "Возможно отсутствует определение. Введи его в формате: слово - определение",
-            cancellationToken: token);
-    }
-    
-    private async Task HandleEmojiDetected(TelegramRequest request, CancellationToken token)
-    {
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            "Кажется, что ты отправил мне слишком много эмодзи 😅.",
-            cancellationToken: token);
-    }
-
-    private async Task SendTranslation(
-        TelegramRequest request,
-        Guid vocabularyEntryId,
-        string definition,
-        string additionalInfo,
-        string removeFromVocabularyText,
-        CancellationToken token)
-    {
-        var keyboard = new InlineKeyboardMarkup(new[]
+        await (result switch
         {
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText, $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
-            }
+            ManualTranslationResult.EntrySaved success => client.HandleSuccess(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, null, token),
+            ManualTranslationResult.EntryAlreadyExists exists => client.HandleTranslationExists(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, null, token),
+            ManualTranslationResult.EmojiNotAllowed => client.HandleEmojiDetected(request, token),
+            ManualTranslationResult.DefinitionIsNotSet => client.HandleDefinitionIsNotSet(request, token),
+            _ => throw new ArgumentOutOfRangeException(nameof(result))
         });
-        
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"Определение: {definition}" + $"\r\nДругие значения: {additionalInfo}",
-            replyMarkup: keyboard, 
-            cancellationToken: token);
     }
 }

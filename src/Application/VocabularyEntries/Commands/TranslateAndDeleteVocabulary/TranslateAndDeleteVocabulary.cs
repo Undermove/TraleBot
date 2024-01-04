@@ -4,9 +4,9 @@ using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.VocabularyEntries.Commands;
+namespace Application.VocabularyEntries.Commands.TranslateAndDeleteVocabulary;
 
-public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<ChangeAndTranslationResult>
+public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
 {
     public required User User { get; init; }
     public required Language TargetLanguage { get; init; }
@@ -17,48 +17,55 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
         IParsingUniversalTranslator parsingUniversalTranslator,
         IParsingTranslationService parsingTranslationService,
         IAiTranslationService aiTranslationService)
-        : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, ChangeAndTranslationResult>
+        : IRequestHandler<TranslateAndDeleteVocabulary, ChangeAndTranslationResult>
     {
-        public async Task<ChangeAndTranslationResult> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
+        public async Task<ChangeAndTranslationResult> Handle(TranslateAndDeleteVocabulary request, CancellationToken ct)
         {
             var user = request.User;
             object?[] keyValues = { request.VocabularyEntryId };
             var sourceEntry = await context.VocabularyEntries.FindAsync(keyValues, cancellationToken: ct);
 
-            if (!request.User.IsActivePremium())
+            if (request.User.IsActivePremium())
             {
-                return new ChangeAndTranslationResult.PremiumRequired(user.Settings.CurrentLanguage, request.TargetLanguage, request.VocabularyEntryId);
+                return new ChangeAndTranslationResult.NoActionNeeded();
             }
             
             if (sourceEntry == null)
             {
                 throw new ApplicationException("original entry not found");
             }
-            
-            var duplicate = await context.VocabularyEntries
-                .SingleOrDefaultAsync(entry => entry.UserId == request.User.Id
-                                               && entry.Language == request.TargetLanguage
-                                               && entry.Word.Equals(sourceEntry.Word.ToLowerInvariant()), 
-                    cancellationToken: ct);
 
-            if(duplicate != null)
-            {
-                return new ChangeAndTranslationResult.TranslationExists(
-                    duplicate.Definition, 
-                    duplicate.AdditionalInfo,
-                    duplicate.Example,
-                    duplicate.Id);
-            }
+            await using var transaction =  await context.BeginTransactionAsync(ct);
             
-            return request.TargetLanguage switch
+            try
             {
-                Language.English => await TranslateByEnglishTranslationFlow(request, ct, sourceEntry, user),
-                _ => await TranslateByGeorgianTranslationFlow(request, ct, sourceEntry, user)
-            }; 
+                var changeAndTranslationResult = request.TargetLanguage switch
+                {
+                    Language.English => await TranslateByEnglishTranslationFlow(request, ct, sourceEntry, user),
+                    _ => await TranslateByGeorgianTranslationFlow(request, ct, sourceEntry, user)
+                };
+                
+                var otherVocabulary = await context.VocabularyEntries
+                    .Where(entry => entry.UserId == request.User.Id
+                                    && entry.Language == sourceEntry.Language
+                                    && entry.Word.Equals(sourceEntry.Word.ToLowerInvariant()))
+                    .ToListAsync(ct);
+                
+                context.VocabularyEntries.RemoveRange(otherVocabulary);
+
+                await transaction.CommitAsync(ct);
+
+                return changeAndTranslationResult;
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
         }
 
         private async Task<ChangeAndTranslationResult> TranslateByGeorgianTranslationFlow(
-            TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+            TranslateAndDeleteVocabulary request,
             CancellationToken ct, VocabularyEntry sourceEntry,
             User user)
         {
@@ -77,7 +84,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
             };
         }
 
-        private async Task<ChangeAndTranslationResult> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+        private async Task<ChangeAndTranslationResult> TranslateByEnglishTranslationFlow(TranslateAndDeleteVocabulary request,
             CancellationToken ct, VocabularyEntry sourceEntry, User user)
         {
             var parsingTranslationResult = await parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
@@ -101,7 +108,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
         }
 
         private async Task<ChangeAndTranslationResult> UpdateVocabularyEntryAndChangeCurrentLanguage(
-            TranslateToAnotherLanguageAndChangeCurrentLanguage request,
+            TranslateAndDeleteVocabulary request,
             VocabularyEntry sourceEntry,
             string definition,
             string additionalInfo,
@@ -144,15 +151,9 @@ public abstract record ChangeAndTranslationResult
         string Example,
         Guid VocabularyEntryId) : ChangeAndTranslationResult;
 
-    public sealed record TranslationExists(
-        string Definition,
-        string AdditionalInfo,
-        string Example,
-        Guid VocabularyEntryId) : ChangeAndTranslationResult;
-
     public sealed record PromptLengthExceeded : ChangeAndTranslationResult;
 
     public sealed record TranslationFailure : ChangeAndTranslationResult;
 
-    public sealed record PremiumRequired(Language CurrentLanguage, Language TargetLanguage, Guid VocabularyEntryId) : ChangeAndTranslationResult;
+    public sealed record NoActionNeeded : ChangeAndTranslationResult;
 }

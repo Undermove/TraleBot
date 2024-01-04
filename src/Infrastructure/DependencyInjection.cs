@@ -28,7 +28,6 @@ public static class DependencyInjection
         services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
         services.AddTransient<IParsingTranslationService, WooordHuntParsingParsingTranslationService>();
         services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
-        // services.AddTransient<IAiTranslationService, OpenAiTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiAzureTranslationService>();
         services.AddHttpClient();
 
@@ -72,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, ChangeCurrentLanguageMenuCommand>();
         services.AddScoped<IBotCommand, ChangeCurrentLanguageCommand>();
         services.AddScoped<IBotCommand, ChangeTranslationLanguageCommand>();
+        services.AddScoped<IBotCommand, TranslateAndDeleteVocabularyCommand>();
         services.AddScoped<IBotCommand, TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand>();
         services.AddScoped<IBotCommand, TranslateManuallyCommand>();
         services.AddScoped<IBotCommand, TranslateCommand>();

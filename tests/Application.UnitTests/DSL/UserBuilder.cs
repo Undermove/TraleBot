@@ -9,10 +9,12 @@ public class UserBuilder
     private UserAccountType _accountType = UserAccountType.Free;
     private Language _currentLanguage = Language.English;
     private bool _initialLanguageSet;
+    private DateTime _subscriptionEndDate;
 
     public UserBuilder WithPremiumAccountType()
     {
         _accountType = UserAccountType.Premium;
+        _subscriptionEndDate = DateTime.UtcNow.AddDays(1);
         return this;
     }
     
@@ -43,7 +45,8 @@ public class UserBuilder
                 Id = settingsGuid,
                 UserId = _userId,
                 CurrentLanguage = _currentLanguage
-            }
+            },
+            SubscribedUntil = _subscriptionEndDate
         };
     }
 }
