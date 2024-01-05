@@ -22,9 +22,12 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator) : IBotC
         if (request.User == null)
         {
             var userCreatedResultType = await mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
-            userCreatedResultType.Match(
-                created => user = created.User, 
-                exists => user = exists.User);
+            user = userCreatedResultType switch
+            {
+                CreateUserResult.UserCreated created => created.User,
+                CreateUserResult.UserExists exists => exists.User,
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
 
         var commandWithArgs = request.Text.Split(' ');

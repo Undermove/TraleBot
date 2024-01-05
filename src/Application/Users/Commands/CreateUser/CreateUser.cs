@@ -2,17 +2,16 @@ using Application.Common;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using OneOf;
 
 namespace Application.Users.Commands.CreateUser;
 
-public class CreateUser : IRequest<OneOf<CreateUserResult.UserCreated, CreateUserResult.UserExists>>
+public class CreateUser : IRequest<CreateUserResult>
 {
     public long TelegramId { get; set; }
 
-    public class Handler(ITraleDbContext dbContext) : IRequestHandler<CreateUser, OneOf<CreateUserResult.UserCreated, CreateUserResult.UserExists>>
+    public class Handler(ITraleDbContext dbContext) : IRequestHandler<CreateUser, CreateUserResult>
     {
-        public async Task<OneOf<CreateUserResult.UserCreated, CreateUserResult.UserExists>> Handle(CreateUser request, CancellationToken cancellationToken)
+        public async Task<CreateUserResult> Handle(CreateUser request, CancellationToken cancellationToken)
         {
             User? user = await dbContext.Users.FirstOrDefaultAsync(
                 user => user.TelegramId == request.TelegramId,
