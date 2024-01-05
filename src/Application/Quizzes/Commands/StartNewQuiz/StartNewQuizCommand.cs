@@ -3,29 +3,18 @@ using Application.Common.Exceptions;
 using Domain.Entities;
 using Domain.Quiz;
 using MediatR;
-using OneOf;
 
 namespace Application.Quizzes.Commands.StartNewQuiz;
 
-public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, QuizAlreadyStarted>>
+public class StartNewQuizCommand : IRequest<StartNewQuizResult>
 {
     public required Guid? UserId { get; set; }
     public required string UserName { get; set; }
     
-    public class Handler: IRequestHandler<StartNewQuizCommand, OneOf<QuizStarted, NotEnoughWords, QuizAlreadyStarted>>
+    public class Handler(ITraleDbContext dbContext, IQuizCreator quizCreator, IQuizVocabularyEntriesAdvisor quizAdvisor)
+        : IRequestHandler<StartNewQuizCommand, StartNewQuizResult>
     {
-        private readonly ITraleDbContext _dbContext;
-        private readonly IQuizCreator _quizCreator;
-        private readonly IQuizVocabularyEntriesAdvisor _quizAdvisor;
-
-        public Handler(ITraleDbContext dbContext, IQuizCreator quizCreator, IQuizVocabularyEntriesAdvisor quizAdvisor)
-        {
-            _dbContext = dbContext;
-            _quizCreator = quizCreator;
-            _quizAdvisor = quizAdvisor;
-        }
-        
-        public async Task<OneOf<QuizStarted, NotEnoughWords, QuizAlreadyStarted>> Handle(StartNewQuizCommand request, CancellationToken ct)
+        public async Task<StartNewQuizResult> Handle(StartNewQuizCommand request, CancellationToken ct)
         {
             if (request.UserId == null)
             {
@@ -33,41 +22,41 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, Q
             }
 
             object?[] keyValues = { request.UserId };
-            var user = await _dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
+            var user = await dbContext.Users.FindAsync(keyValues: keyValues, cancellationToken: ct);
             if (user == null)
             {
                 throw new NotFoundException(nameof(User), request.UserId);
             }
 
-            await _dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
+            await dbContext.Entry(user).Collection(nameof(user.Quizzes)).LoadAsync(ct);
             var startedQuizzesCount = user.Quizzes.Count(q => q.IsCompleted == false);
             if (startedQuizzesCount > 0)
             {
-                return new QuizAlreadyStarted();
+                return new StartNewQuizResult.QuizAlreadyStarted();
             }
             
-            await _dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
+            await dbContext.Entry(user).Collection(nameof(user.VocabularyEntries)).LoadAsync(ct);
             var vocabularyEntriesByCurrentLanguage = user.VocabularyEntries
                 .Where(entry => entry.Language == user.Settings.CurrentLanguage)
                 .ToArray();
             
-            var entriesForQuiz = _quizAdvisor.AdviceVocabularyEntriesForQuiz(vocabularyEntriesByCurrentLanguage).ToArray();
-            var quizQuestions = _quizCreator
+            var entriesForQuiz = quizAdvisor.AdviceVocabularyEntriesForQuiz(vocabularyEntriesByCurrentLanguage).ToArray();
+            var quizQuestions = quizCreator
                 .CreateQuizQuestions(entriesForQuiz, user.VocabularyEntries)
                 .ToArray();
 
             if (entriesForQuiz.Length == 0)
             {
-                return new NotEnoughWords();
+                return new StartNewQuizResult.NotEnoughWords();
             }
             
             await SaveQuiz(request, user, ct, quizQuestions, entriesForQuiz);
             
-            await _dbContext.SaveChangesAsync(ct);
+            await dbContext.SaveChangesAsync(ct);
             var firstQuestion = quizQuestions
                 .OrderByDescending(entry => entry.OrderInQuiz)
                 .Last();
-            return new QuizStarted(quizQuestions.Length, firstQuestion);
+            return new StartNewQuizResult.QuizStarted(quizQuestions.Length, firstQuestion);
         }
 
         private async Task SaveQuiz(
@@ -99,7 +88,16 @@ public class StartNewQuizCommand : IRequest<OneOf<QuizStarted, NotEnoughWords, Q
                 ShareableQuizId = shareableQuiz.Id
             };
             
-            await _dbContext.Quizzes.AddAsync(quiz, ct);
+            await dbContext.Quizzes.AddAsync(quiz, ct);
         }
     }
+}
+
+public abstract record StartNewQuizResult
+{
+    public record QuizStarted(int QuizQuestionsCount, QuizQuestion FirstQuestion) : StartNewQuizResult;
+
+    public record NotEnoughWords : StartNewQuizResult;
+
+    public record QuizAlreadyStarted : StartNewQuizResult;
 }

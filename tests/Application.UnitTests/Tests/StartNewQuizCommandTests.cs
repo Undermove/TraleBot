@@ -30,10 +30,8 @@ public class StartNewQuizCommandTests : CommandTestsBase
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
         }, CancellationToken.None);
-
-        result.IsT1.ShouldBeTrue();
-        result.AsT1.ShouldBeOfType<NotEnoughWords>();
-        result.AsT1.ShouldNotBeNull();
+        
+        result.ShouldBeOfType<StartNewQuizResult.NotEnoughWords>();
     }
 
     [Test]
@@ -46,10 +44,9 @@ public class StartNewQuizCommandTests : CommandTestsBase
             UserId = premiumUser.Id,
             UserName = "NameFromRequest",
         }, CancellationToken.None);
-
-        result.IsT0.ShouldBeTrue();
-        result.AsT0.ShouldBeOfType<QuizStarted>();
-        result.AsT0.QuizQuestionsCount.ShouldBe(4);
+        
+        result.ShouldBeOfType<StartNewQuizResult.QuizStarted>();
+        ((StartNewQuizResult.QuizStarted)result).QuizQuestionsCount.ShouldBe(4);
     }
 
     [Test]
@@ -64,7 +61,7 @@ public class StartNewQuizCommandTests : CommandTestsBase
             UserName = "NameFromRequest",
         }, CancellationToken.None);
         
-        result.Value.ShouldBeOfType<QuizAlreadyStarted>();
+        result.ShouldBeOfType<StartNewQuizResult.QuizAlreadyStarted>();
     }
 
     [Test]
@@ -95,8 +92,9 @@ public class StartNewQuizCommandTests : CommandTestsBase
             UserName = "NameFromRequest",
         }, CancellationToken.None);
 
-        result.AsT0.FirstQuestion.ShouldBeOfType<QuizQuestionWithVariants>();
-        var castedQuestion = result.AsT0.FirstQuestion as QuizQuestionWithVariants;
+        var quizStarted = (StartNewQuizResult.QuizStarted)result;
+        quizStarted.FirstQuestion.ShouldBeOfType<QuizQuestionWithVariants>();
+        var castedQuestion = quizStarted.FirstQuestion as QuizQuestionWithVariants;
         castedQuestion!.Variants.Length.ShouldBe(4);
         castedQuestion.Variants.ShouldContain(vocabularyEntry.Definition);
         castedQuestion.Example.ShouldNotBeNullOrEmpty();
