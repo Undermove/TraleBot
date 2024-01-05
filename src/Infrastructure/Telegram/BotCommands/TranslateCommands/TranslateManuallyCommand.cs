@@ -19,7 +19,6 @@ public class TranslateManuallyCommand(ITelegramBotClient client, IMediator media
         var word = split[0];
         var definition = split[1];
         
-        // todo create new handler for manual translation
         var result = await mediator.Send(new CreateManualTranslation
         {
             Word = word,
