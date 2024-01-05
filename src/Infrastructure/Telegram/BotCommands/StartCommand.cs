@@ -8,17 +8,8 @@ using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class StartCommand : IBotCommand
+public class StartCommand(ITelegramBotClient client, IMediator mediator) : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    private readonly IMediator _mediator;
-
-    public StartCommand(ITelegramBotClient client, IMediator mediator)
-    {
-        _client = client;
-        _mediator = mediator;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -30,7 +21,7 @@ public class StartCommand : IBotCommand
         var user = request.User;
         if (request.User == null)
         {
-            var userCreatedResultType = await _mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
+            var userCreatedResultType = await mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
             userCreatedResultType.Match(
                 created => user = created.User, 
                 exists => user = exists.User);
@@ -39,20 +30,23 @@ public class StartCommand : IBotCommand
         var commandWithArgs = request.Text.Split(' ');
         if (ContainsArguments(commandWithArgs))
         {
-            var result = await _mediator.Send(new CreateQuizFromShareableCommand
+            var result = await mediator.Send(new CreateQuizFromShareableCommand
             {
                 UserId = request.User?.Id ?? user!.Id,
                 ShareableQuizId = Guid.Parse(commandWithArgs[1])
             }, token);
 
-            await result.Match(
-                created => SendFirstQuestion(request, token, created),
-                _ => Task.CompletedTask);
+            await (result switch
+            {
+                CreateQuizFromShareableResult.SharedQuizCreated created => SendFirstQuestion(request, token, created),
+                CreateQuizFromShareableResult.NotEnoughQuestionsForSharedQuiz _ => Task.CompletedTask,
+                _ => throw new ArgumentOutOfRangeException(nameof(result))
+            });
             
             return;
         }
         
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
 @$"✌️ Привет, {request.UserName}!
 
@@ -74,15 +68,15 @@ P.S. Обрати внимание: если решишь пользоватьс
             cancellationToken: token);
     }
 
-    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, SharedQuizCreated sharedQuizCreated)
+    private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, CreateQuizFromShareableResult.SharedQuizCreated sharedQuizCreated)
     {
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             $"Начнем квиз! В него войдет {sharedQuizCreated.QuestionsCount} вопросов." +
             $"\r\n🏁На случай, если захочешь закончить квиз – вот команда {CommandNames.StopQuiz}",
             cancellationToken: token);
         
-        await _client.SendQuizQuestion(request, sharedQuizCreated.FirstQuestion, token);
+        await client.SendQuizQuestion(request, sharedQuizCreated.FirstQuestion, token);
     }
     
     private static bool ContainsArguments(string[] args)

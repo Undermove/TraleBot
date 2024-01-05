@@ -29,7 +29,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
-        result.Value.ShouldBeOfType<SharedQuizCreated>();
+        result.ShouldBeOfType<SharedQuizCreated>();
         Context.Quizzes.Count().ShouldBe(2);
         var quiz = Context.Quizzes
             .Where(q => q.GetType() == typeof(SharedQuiz))
@@ -55,7 +55,7 @@ public class CreateQuizFromShareableCommandTests : CommandTestsBase
             ShareableQuizId = shareableQuiz.Id
         }, CancellationToken.None);
         
-        result.Value.ShouldBeOfType<SharedQuizCreated>();
+        result.ShouldBeOfType<SharedQuizCreated>();
         Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz)).ShouldBe(2);
         Context.Quizzes.Count(q => q.GetType() == typeof(UserQuiz)).ShouldBe(1);
         Context.Quizzes.Count(q => q.GetType() == typeof(SharedQuiz) && q.IsCompleted == false).ShouldBe(1);
