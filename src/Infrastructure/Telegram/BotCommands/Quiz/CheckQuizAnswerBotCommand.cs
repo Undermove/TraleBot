@@ -147,19 +147,15 @@ public class CheckQuizAnswerBotCommand : IBotCommand
     private async Task CompleteQuiz(TelegramRequest request, QuizCompleted quizCompleted, CancellationToken ct)
     {
         var quizStats = await _mediator.Send(new CompleteQuizCommand { UserId = request.User!.Id }, ct);
-        double correctnessPercent =
-            Math.Round(
-                100 * (quizStats.CorrectAnswersCount /
-                       (quizStats.IncorrectAnswersCount + (double)quizStats.CorrectAnswersCount)), 0);
-
-        await SendResultCongrats(request, ct, correctnessPercent);
+        
+        await SendResultCongrats(request, ct, quizStats.CorrectnessPercent);
         
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
             "Вот твоя статистика:" +
             $"\r\n✅Правильные ответы:            {quizStats.CorrectAnswersCount}" +
             $"\r\n❌Неправильные ответы:        {quizStats.IncorrectAnswersCount}" +
-            $"\r\n📏Корректных ответов:         {correctnessPercent}%",
+            $"\r\n📏Корректных ответов:         {quizStats.CorrectnessPercent}%",
             replyMarkup: new InlineKeyboardMarkup(
                 InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
                 ),

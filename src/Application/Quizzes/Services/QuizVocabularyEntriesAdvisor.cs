@@ -9,7 +9,7 @@ public class QuizVocabularyEntriesAdvisor : IQuizVocabularyEntriesAdvisor
     const int MasteredInForwardDirectionCount = 2;
     const int MasteredInBothDirectionsCount = 2;
     
-    public ICollection<VocabularyEntry> AdviceVocabularyEntriesForQuiz(ICollection<VocabularyEntry> vocabularyEntries)
+    public IEnumerable<VocabularyEntry> AdviceVocabularyEntriesForQuiz(ICollection<VocabularyEntry> vocabularyEntries)
     {
         var notMastered = vocabularyEntries.Where(entry => entry.GetMasteringLevel() == MasteringLevel.NotMastered)
             .OrderBy(entry => entry.UpdatedAtUtc)

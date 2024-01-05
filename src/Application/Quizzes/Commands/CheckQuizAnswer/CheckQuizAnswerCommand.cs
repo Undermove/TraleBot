@@ -35,10 +35,7 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
 
             if (currentQuiz.QuizQuestions.Count == 0 && currentQuiz is SharedQuiz sharedQuiz)
             {
-                double correctnessPercent =
-                    Math.Round(
-                        100 * (currentQuiz.CorrectAnswersCount /
-                    (currentQuiz.IncorrectAnswersCount + (double)currentQuiz.CorrectAnswersCount)), 0);
+                double correctnessPercent = currentQuiz.GetCorrectnessPercent();
                 return new SharedQuizCompleted(correctnessPercent, sharedQuiz.CreatedByUserName, sharedQuiz.CreatedByUserScore);
             }
             

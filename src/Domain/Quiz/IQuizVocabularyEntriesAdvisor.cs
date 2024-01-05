@@ -4,5 +4,5 @@ namespace Domain.Quiz;
 
 public interface IQuizVocabularyEntriesAdvisor
 {
-    ICollection<VocabularyEntry> AdviceVocabularyEntriesForQuiz(ICollection<VocabularyEntry> vocabularyEntries);
+    IEnumerable<VocabularyEntry> AdviceVocabularyEntriesForQuiz(ICollection<VocabularyEntry> vocabularyEntries);
 }

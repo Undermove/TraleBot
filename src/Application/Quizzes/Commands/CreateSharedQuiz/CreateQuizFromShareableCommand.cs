@@ -74,9 +74,7 @@ public class CreateQuizFromShareableCommand : IRequest<OneOf<SharedQuizCreated, 
             QuizQuestion[] quizQuestions, 
             ShareableQuiz shareableQuiz)
         {
-            var createdByUserScore = Math.Round(
-                100 * (shareableQuiz.Quiz.CorrectAnswersCount /
-                       (shareableQuiz.Quiz.IncorrectAnswersCount + (double)shareableQuiz.Quiz.CorrectAnswersCount)), 0);
+            var createdByUserScore = shareableQuiz.Quiz.GetCorrectnessPercent();
             
             var quiz = new SharedQuiz
             {

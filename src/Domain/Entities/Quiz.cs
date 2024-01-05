@@ -25,4 +25,7 @@ public abstract class Quiz
             IncorrectAnswersCount++;
         }
     }
+
+    public double GetCorrectnessPercent() => 
+        Math.Round(100 * (CorrectAnswersCount / (IncorrectAnswersCount + (double)CorrectAnswersCount)), 0);
 }
