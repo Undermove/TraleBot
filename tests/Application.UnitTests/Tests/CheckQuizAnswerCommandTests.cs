@@ -30,7 +30,7 @@ public class CheckQuizAnswerCommandTests : CommandTestsBase
 
         var checkQuizAnswerResult = await _sut.Handle(command, CancellationToken.None);
 
-        checkQuizAnswerResult.ShouldBeOfType<CheckQuizAnswerResult.QuizCompleted>();
+        checkQuizAnswerResult.ShouldBeOfType<CheckQuizAnswerResult.CorrectAnswer>();
         Context.QuizQuestions.Count().ShouldBe(1);
         vocabularyEntry.SuccessAnswersCount.ShouldBe(1);
         quiz.CorrectAnswersCount.ShouldBe(1);
