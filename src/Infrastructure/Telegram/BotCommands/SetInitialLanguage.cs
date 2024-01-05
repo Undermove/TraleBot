@@ -7,17 +7,8 @@ using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class SetInitialLanguage : IBotCommand
+public class SetInitialLanguage(IMediator mediator, ITelegramBotClient client) : IBotCommand
 {
-    private readonly IMediator _mediator;
-    private readonly ITelegramBotClient _client;
-
-    public SetInitialLanguage(IMediator mediator, ITelegramBotClient client)
-    {
-        _mediator = mediator;
-        _client = client;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -26,7 +17,7 @@ public class SetInitialLanguage : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result = await _mediator.Send(new Application.Users.Commands.SetInitialLanguage
+        var result = await mediator.Send(new Application.Users.Commands.SetInitialLanguage
         {
             UserId = request.User.Id,
             InitialLanguage = ToLanguage(request.Text.Split(' ')[1])
@@ -43,7 +34,7 @@ public class SetInitialLanguage : IBotCommand
     private async Task HandleInitialLanguageSet(TelegramRequest request,
         SetInitialLanguageResult.InitialLanguageSet initialLanguageSet, CancellationToken ct)
     {
-        await _client.EditMessageTextAsync(
+        await client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
 @$"
@@ -59,7 +50,7 @@ public class SetInitialLanguage : IBotCommand
         TelegramRequest request,
         CancellationToken ct)
     {
-        await _client.EditMessageTextAsync(
+        await client.EditMessageTextAsync(
             request.UserTelegramId,
             request.MessageId,
             "Ты уже выбрал основной язык, если хочешь пользоваться мультисловарем, то нужно активировать премиум",

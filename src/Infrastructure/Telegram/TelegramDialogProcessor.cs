@@ -5,28 +5,20 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using User = Domain.Entities.User;
 
 namespace Infrastructure.Telegram;
 
-public class TelegramDialogProcessor: IDialogProcessor
+public class TelegramDialogProcessor(
+    IEnumerable<IBotCommand> commands,
+    ILoggerFactory logger,
+    ITelegramBotClient telegramBotClient,
+    IMediator mediator)
+    : IDialogProcessor
 {
-    private readonly List<IBotCommand> _commands;
-    private readonly ILogger _logger;
-    private readonly ITelegramBotClient _telegramBotClient;
-    private readonly IMediator _mediator;
+    private readonly List<IBotCommand> _commands = commands.ToList();
+    private readonly ILogger _logger = logger.CreateLogger(typeof(TelegramDialogProcessor));
 
-    public TelegramDialogProcessor(
-        IEnumerable<IBotCommand> commands, 
-        ILoggerFactory logger, 
-        ITelegramBotClient telegramBotClient, 
-        IMediator mediator)
-    {
-        _telegramBotClient = telegramBotClient;
-        _mediator = mediator;
-        _commands = commands.ToList();
-        _logger = logger.CreateLogger(typeof(TelegramDialogProcessor));
-    }
-    
     public async Task ProcessCommand<T>(T request, CancellationToken token)
     {
         var telegramRequest = await MapToTelegramRequest(request, token);
@@ -66,7 +58,7 @@ public class TelegramDialogProcessor: IDialogProcessor
         _logger.LogError(e, "Exception while processing request from user: {User} with command {Command}",
             telegramRequest.UserTelegramId, telegramRequest.Text);
         
-        await _telegramBotClient.SendTextMessageAsync(
+        await telegramBotClient.SendTextMessageAsync(
             telegramRequest.UserTelegramId,
             "Прости, кажется у меня что-то сломалось 😞 Попробуй еще раз через несколько минут." +
             "\r\nЕсли приложение не заработало, то напиши" +
@@ -87,7 +79,13 @@ public class TelegramDialogProcessor: IDialogProcessor
                              ?? casted.MyChatMember?.From.Id
                              ?? casted.PreCheckoutQuery?.From.Id
                              ?? throw new ArgumentException();
-        var user = await _mediator.Send(new GetUserByTelegramId {TelegramId = userTelegramId}, ct);
+        var result = await mediator.Send(new GetUserByTelegramId {TelegramId = userTelegramId}, ct);
+        var user = result switch
+        {
+            GetUserResult.ExistedUser existedUser => existedUser.User,
+            GetUserResult.UserNotExists => null,
+            _ => throw new ArgumentOutOfRangeException()
+        };
         
         var telegramRequest = new TelegramRequest(casted, user);
         return telegramRequest;

@@ -73,8 +73,8 @@ public class AchievementsService : IAchievementsService
 
         return unlockedAchievements;
     }
-    
-    public IEnumerable<Achievement> GetOnlyNewAchievements(List<Achievement> unlockedAchievements, User user)
+
+    private IEnumerable<Achievement> GetOnlyNewAchievements(List<Achievement> unlockedAchievements, User user)
     {
         var unlockedAchievementTypeIds = user.Achievements.Select(achievement => achievement.AchievementTypeId).ToHashSet();
         var newAchievements = unlockedAchievements
