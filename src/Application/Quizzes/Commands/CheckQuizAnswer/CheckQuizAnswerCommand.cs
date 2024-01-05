@@ -57,10 +57,8 @@ public class CheckQuizAnswerCommand: IRequest<OneOf<CorrectAnswer, IncorrectAnsw
 
             currentQuiz.ScorePoint(isAnswerCorrect);
             MasteringLevel? acquiredLevel = null;
-
-            // todo: create a separate class for quiz that created from shareable quiz and
-            // move this logic there to specified handler to avoid this unclear behavior
-            if(currentQuiz.ShareableQuiz != null)
+            
+            if(currentQuiz is not SharedQuiz)
             {
                 quizQuestion.VocabularyEntry.ScorePoint(request.Answer);
                 acquiredLevel = quizQuestion.VocabularyEntry.GetAcquiredLevel();   
