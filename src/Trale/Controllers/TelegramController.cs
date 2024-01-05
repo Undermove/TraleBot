@@ -28,6 +28,5 @@ public class TelegramController(
         
         _logger.LogWarning("Somebody trying to bruteforce webhook token current value: {Token}", token);
         return Task.CompletedTask;
-
     }
 }
