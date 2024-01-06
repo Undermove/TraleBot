@@ -4,11 +4,13 @@ metadata:
   name: tralebot-service
   labels:
     app: tralebot
-    k8s-app: tralebot
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "80"
 spec:
   selector:
     app: tralebot
-    k8s-app: tralebot
   ports:
     - protocol: TCP
       port: 80
@@ -21,18 +23,16 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  labels:
-    k8s-app: tralebot-servicemonitor 
   name: tralebot-servicemonitor
 spec:
   selector:
     matchLabels:
-      k8s-app: tralebot
+      app: tralebot
   endpoints:
     - port: metrics
+      path: /metrics
   namespaceSelector:
-    matchNames:
-      - tralebot-prod
+    any: true
 
 ---
 
@@ -40,9 +40,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tralebot-deployment
-  annotations:
-    prometheus.io/scrape: 'true'
-    prometheus.io/port: metrics
 spec:
   replicas: 1
   selector:
