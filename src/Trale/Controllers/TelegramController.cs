@@ -10,31 +10,23 @@ namespace Trale.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class TelegramController : Controller
+public class TelegramController(
+    BotConfiguration configuration,
+    ILoggerFactory logger,
+    IDialogProcessor dialogProcessor)
+    : Controller
 {
-    private readonly BotConfiguration _configuration;
-    private readonly ILogger _logger;
-    private readonly IDialogProcessor _dialogProcessor;
-
-    public TelegramController(
-        BotConfiguration configuration,
-        ILoggerFactory logger,
-        IDialogProcessor dialogProcessor)
-    {
-        _configuration = configuration;
-        _dialogProcessor = dialogProcessor;
-        _logger = logger.CreateLogger(typeof(TelegramController));
-    }
+    private readonly ILogger _logger = logger.CreateLogger(typeof(TelegramController));
 
     [HttpPost("{token?}")]
-    public async Task Webhook(string token, [FromBody] Update request, CancellationToken cancellationToken)
+    public Task Webhook(string token, [FromBody] Update request, CancellationToken cancellationToken)
     {
-        if (token != _configuration.WebhookToken)
+        if (token == configuration.WebhookToken)
         {
-            _logger.LogWarning("Somebody trying to bruteforce webhook token current value: {Token}", token);
-            return;
+            return dialogProcessor.ProcessCommand(request, cancellationToken);
         }
         
-        await _dialogProcessor.ProcessCommand(request, cancellationToken);
+        _logger.LogWarning("Somebody trying to bruteforce webhook token current value: {Token}", token);
+        return Task.CompletedTask;
     }
 }

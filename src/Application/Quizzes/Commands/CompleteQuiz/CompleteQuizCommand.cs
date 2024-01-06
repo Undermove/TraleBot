@@ -11,34 +11,26 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
 {
     public Guid UserId { get; init; }
 
-    public class Handler : IRequestHandler<CompleteQuizCommand, QuizCompletionStatistics>
+    public class Handler(ITraleDbContext dbContext, IAchievementsService achievementsService)
+        : IRequestHandler<CompleteQuizCommand, QuizCompletionStatistics>
     {
-        private readonly ITraleDbContext _dbContext;
-        private readonly IAchievementsService _achievementsService;
-
-        public Handler(ITraleDbContext dbContext, IAchievementsService achievementsService)
-        {
-            _dbContext = dbContext;
-            _achievementsService = achievementsService;
-        }
-
         public async Task<QuizCompletionStatistics> Handle(CompleteQuizCommand request, CancellationToken ct)
         {
-            var quiz = await _dbContext.Quizzes
+            var quiz = await dbContext.Quizzes
                 .FirstAsync(quiz => quiz.UserId == request.UserId &&
                                quiz.IsCompleted == false, 
                     cancellationToken: ct);
             quiz.IsCompleted = true;
-            await _dbContext.SaveChangesAsync(ct);
+            await dbContext.SaveChangesAsync(ct);
 
             await CheckAchievements(request, quiz, ct);
 
-            return new QuizCompletionStatistics(quiz.CorrectAnswersCount, quiz.IncorrectAnswersCount);
+            return new QuizCompletionStatistics(quiz.GetCorrectnessPercent(), quiz.CorrectAnswersCount, quiz.IncorrectAnswersCount);
         }
 
         private async Task CheckAchievements(CompleteQuizCommand request, Quiz quiz, CancellationToken ct)
         {
-            var vocabularyEntries = await _dbContext.VocabularyEntries
+            var vocabularyEntries = await dbContext.VocabularyEntries
                 .Where(entry => entry.UserId == request.UserId).ToListAsync(ct);
             var goldMedalsCount = vocabularyEntries
                 .Count(entry => entry.GetMasteringLevel() == MasteringLevel.MasteredInForwardDirection);
@@ -51,9 +43,9 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
                 BrilliantWordsCount = brilliantsCount 
             };
             
-            await _achievementsService.AssignAchievements(wordMasteringLevelTrigger, request.UserId, ct);
+            await achievementsService.AssignAchievements(wordMasteringLevelTrigger, request.UserId, ct);
 
-            var count = await _dbContext.Quizzes
+            var count = await dbContext.Quizzes
                 .Where(q => q.UserId == request.UserId)
                 .CountAsync(cancellationToken: ct);
             
@@ -61,14 +53,16 @@ public class CompleteQuizCommand : IRequest<QuizCompletionStatistics>
             {
                 QuizzesCount = count,  
             };
-            await _achievementsService.AssignAchievements(startingQuizzerTrigger, request.UserId, ct);
+            await achievementsService.AssignAchievements(startingQuizzerTrigger, request.UserId, ct);
             
             var perfectQuizTrigger = new PerfectQuizTrigger
             {
                 IncorrectAnswersCount = quiz.IncorrectAnswersCount,
                 WordsCount = quiz.CorrectAnswersCount + quiz.IncorrectAnswersCount,
             };
-            await _achievementsService.AssignAchievements(perfectQuizTrigger, request.UserId, ct);
+            await achievementsService.AssignAchievements(perfectQuizTrigger, request.UserId, ct);
         }
     }
 }
+
+public record QuizCompletionStatistics(double CorrectnessPercent, int CorrectAnswersCount, int IncorrectAnswersCount);

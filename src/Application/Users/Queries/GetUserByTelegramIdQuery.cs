@@ -5,34 +5,36 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Users.Queries;
 
-public class GetUserByTelegramId: IRequest<User?>
+public class GetUserByTelegramId: IRequest<GetUserResult>
 {
-    public long? TelegramId { get; set; }
+    public required long TelegramId { get; init; }
 
-    public class Handler : IRequestHandler<GetUserByTelegramId, User?>
+    public class Handler(ITraleDbContext dbContext) : IRequestHandler<GetUserByTelegramId, GetUserResult>
     {
-        private readonly ITraleDbContext _dbContext;
-
-        public Handler(ITraleDbContext dbContext)
+        public async Task<GetUserResult> Handle(GetUserByTelegramId request, CancellationToken cancellationToken)
         {
-            _dbContext = dbContext;
-        }
-        
-        public async Task<User?> Handle(GetUserByTelegramId request, CancellationToken cancellationToken)
-        {
-            var user = await _dbContext.Users
+            var user = await dbContext.Users
                 .Where(u => u.TelegramId == request.TelegramId)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (user != null)
+            if (user == null)
             {
-                await _dbContext
-                    .Entry(user)
-                    .Reference(nameof(user.Settings))
-                    .LoadAsync(cancellationToken);    
+                return new GetUserResult.UserNotExists();
             }
-            
-            return user;
+
+            await dbContext
+                .Entry(user)
+                .Reference(nameof(user.Settings))
+                .LoadAsync(cancellationToken);
+
+            return new GetUserResult.ExistedUser(user);
         }
     }
+}
+
+public abstract record GetUserResult
+{
+    public sealed record ExistedUser(User User) : GetUserResult;
+    
+    public sealed record UserNotExists : GetUserResult;
 }

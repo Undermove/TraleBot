@@ -2,31 +2,23 @@ using Application.Common;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using OneOf;
 
 namespace Application.Users.Commands.CreateUser;
 
-public class CreateUser : IRequest<OneOf<UserCreated, UserExists>>
+public class CreateUser : IRequest<CreateUserResult>
 {
     public long TelegramId { get; set; }
 
-    public class Handler : IRequestHandler<CreateUser, OneOf<UserCreated, UserExists>>
+    public class Handler(ITraleDbContext dbContext) : IRequestHandler<CreateUser, CreateUserResult>
     {
-        private readonly ITraleDbContext _dbContext;
-
-        public Handler(ITraleDbContext dbContext)
+        public async Task<CreateUserResult> Handle(CreateUser request, CancellationToken cancellationToken)
         {
-            _dbContext = dbContext;
-        }
-
-        public async Task<OneOf<UserCreated, UserExists>> Handle(CreateUser request, CancellationToken cancellationToken)
-        {
-            User? user = await _dbContext.Users.FirstOrDefaultAsync(
+            User? user = await dbContext.Users.FirstOrDefaultAsync(
                 user => user.TelegramId == request.TelegramId,
                 cancellationToken: cancellationToken);
             if (user != null)
             {
-                return new UserExists(user);
+                return new CreateUserResult.UserExists(user);
             }
             
             user = new User
@@ -48,14 +40,21 @@ public class CreateUser : IRequest<OneOf<UserCreated, UserExists>>
             
             user.UserSettingsId = settings.Id;
 
-            var transaction = await _dbContext.BeginTransactionAsync(cancellationToken);
+            var transaction = await dbContext.BeginTransactionAsync(cancellationToken);
             
-            _dbContext.Users.Add(user);
-            _dbContext.UsersSettings.Add(settings);
+            dbContext.Users.Add(user);
+            dbContext.UsersSettings.Add(settings);
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-            return new UserCreated(user);
+            return new CreateUserResult.UserCreated(user);
         }
     }
+}
+
+public abstract record CreateUserResult
+{
+    public sealed record UserCreated(User User) : CreateUserResult;
+
+    public sealed record UserExists(User User) : CreateUserResult;
 }

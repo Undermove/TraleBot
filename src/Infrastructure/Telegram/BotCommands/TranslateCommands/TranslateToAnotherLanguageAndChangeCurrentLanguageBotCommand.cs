@@ -55,7 +55,6 @@ text: $@"Бесплатный аккаунт позволяет содержат
                 {
                     InlineKeyboardButton.WithCallbackData(
                         $"Удалить и перевести на {premiumRequired.TargetLanguage.GetLanguageFlag()}",
-                        // todo: change to specified callback with delete and translate
                         new TranslateAndDeleteVocabularyCallback
                         {
                             TargetLanguage = premiumRequired.TargetLanguage,
