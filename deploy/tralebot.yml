@@ -9,6 +9,7 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 1402
+      name: "metrics"
   type: NodePort
 
 ---
@@ -22,7 +23,7 @@ spec:
     matchLabels:
       app: tralebot
   endpoints:
-    - port: '80'
+    - port: "metrics"
 
 ---
 
