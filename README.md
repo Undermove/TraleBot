@@ -6,11 +6,6 @@ Feel free to acquaint yourself with alpha version [here](https://t.me/trale_bot)
 2) Word and it's definition will be automatically added into vocabulary.
 
   /menu - open menu </br>
-  /quiz - start new quiz </br>
-  /stopquiz - stop current quiz </br>
-  /vocabulary - open vocabulary </br>
-  /help - report here if something wrong </br>
-  /start - read bot description </br>
 
 ### Build the Docker image
 docker build -t undermove/tralebot:latest .
