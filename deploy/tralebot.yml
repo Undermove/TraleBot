@@ -13,10 +13,26 @@ spec:
 
 ---
 
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+ name: tralebot-servicemonitor
+spec:
+ selector:
+   matchLabels:
+     app: tralebot
+ endpoints:
+   - port: 1402
+
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tralebot-deployment
+  annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/port: '1402'
 spec:
   replicas: 1
   selector:
