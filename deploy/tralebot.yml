@@ -16,13 +16,13 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
- name: tralebot-servicemonitor
+  name: tralebot-servicemonitor
 spec:
- selector:
-   matchLabels:
-     app: tralebot
- endpoints:
-   - port: 1402
+  selector:
+    matchLabels:
+      app: tralebot
+  endpoints:
+    - port: 1402
 
 ---
 
