@@ -22,7 +22,7 @@ spec:
     matchLabels:
       app: tralebot
   endpoints:
-    - port: '1402'
+    - port: '80'
 
 ---
 
