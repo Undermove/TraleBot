@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tralebot-service
+  labels:
+    app: tralebot
 spec:
   selector:
     app: tralebot
@@ -9,7 +11,7 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 1402
-      name: "metrics"
+      name: metrics
   type: NodePort
 
 ---
@@ -23,7 +25,7 @@ spec:
     matchLabels:
       app: tralebot
   endpoints:
-    - port: "metrics"
+    - port: metrics
 
 ---
 
@@ -33,7 +35,7 @@ metadata:
   name: tralebot-deployment
   annotations:
     prometheus.io/scrape: 'true'
-    prometheus.io/port: '1402'
+    prometheus.io/port: metrics
 spec:
   replicas: 1
   selector:
