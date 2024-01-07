@@ -17,8 +17,6 @@ spec:
       name: http
   selector:
     app: tralebot
-    app.kubernetes.io/instance: tralebot
-    app.kubernetes.io/name: tralebot
 
 ---
 
