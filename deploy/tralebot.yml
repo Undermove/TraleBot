@@ -7,8 +7,6 @@ metadata:
     prometheus.io/scrape: "true"
   labels:
     app: tralebot
-    app.kubernetes.io/instance: tralebot
-    app.kubernetes.io/name: tralebot
     app.kubernetes.io/part-of: tralebot
 spec:
   type: NodePort

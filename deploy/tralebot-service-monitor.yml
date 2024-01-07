@@ -2,15 +2,16 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: tralebot-servicemonitor
-  namespace: observability
+  namespace: tralebot-prod
   labels:
-    app: prometheus-operator-buygroup
+    app: prometheus-operator-tralebot
     release: prometheus-operator
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/instance: tralebot
       app.kubernetes.io/name: tralebot
+      app.kubernetes.io/part-of: tralebot
   endpoints:
     - interval: 15s
       path: /metrics
