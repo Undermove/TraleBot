@@ -17,14 +17,12 @@ metadata:
   namespace: tralebot-prod
 spec:
   endpoints:
-    - enableHttp2: true
-      path: /metrics
-      port: http-web
+    - path: /metrics
+      port: http
   namespaceSelector:
     matchNames:
-      - observability
+      - tralebot-prod
   selector:
     matchLabels:
-      app: kube-prometheus-stack-alertmanager
-      release: kube-prom-stack
-      self-monitor: "true"
+      app: tralebot
+      app.kubernetes.io/part-of: tralebot
