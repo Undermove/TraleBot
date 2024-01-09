@@ -20,6 +20,28 @@ spec:
 
 ---
 
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    heritage: Helm
+    release: kube-prom-stack
+  name: tralebot
+  namespace: tralebot-prod
+spec:
+  endpoints:
+    - path: /metrics
+      port: http
+  namespaceSelector:
+    matchNames:
+      - tralebot-prod
+  selector:
+    matchLabels:
+      app: tralebot
+      app.kubernetes.io/part-of: tralebot
+
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
