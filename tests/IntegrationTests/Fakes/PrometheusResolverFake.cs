@@ -5,7 +5,7 @@ namespace IntegrationTests.Fakes;
 
 public class PrometheusResolverFake : IPrometheusResolver
 {
-	public void UsePrometheus(IApplicationBuilder app)
+	public void UsePrometheus(WebApplication app)
 	{
 		// do nothing
 	}

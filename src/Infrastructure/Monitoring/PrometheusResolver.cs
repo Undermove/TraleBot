@@ -1,14 +1,11 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Prometheus.Client.AspNetCore;
-using Prometheus.Client.HttpRequestDurations;
 
 namespace Infrastructure.Monitoring;
 
 class PrometheusResolver : IPrometheusResolver
 {	
-	public void UsePrometheus(IApplicationBuilder app)
+	public void UsePrometheus(WebApplication app)
 	{
-		app.UsePrometheusServer();
-		app.UsePrometheusRequestDurations();
+		app.MapPrometheusScrapingEndpoint();
 	}
 }

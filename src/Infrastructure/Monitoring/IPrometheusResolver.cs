@@ -4,5 +4,5 @@ namespace Infrastructure.Monitoring;
 
 public interface IPrometheusResolver
 {
-	void UsePrometheus(IApplicationBuilder app);
+	void UsePrometheus(WebApplication app);
 }

@@ -14,6 +14,7 @@ using Infrastructure.Translation;
 using Infrastructure.Translation.OpenAiTranslation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Metrics;
 using Persistence;
 using Telegram.Bot;
 
@@ -38,6 +39,13 @@ public static class DependencyInjection
         {
             throw new ConfigurationException(nameof(BotConfiguration));
         }
+        
+        services.AddOpenTelemetry()
+            .WithMetrics(builder =>
+            {
+                builder.AddPrometheusExporter();
+                builder.AddMeter("Microsoft.AspNetCore.Hosting", "Microsoft.AspNetCore.Server.Kestrel");
+            });
         
         services.AddSingleton(botConfig);
         services.AddHttpClient("telegram_bot_client")
