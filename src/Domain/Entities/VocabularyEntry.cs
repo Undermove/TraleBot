@@ -32,13 +32,19 @@ public class VocabularyEntry
         
         if(answer.Equals(Word, StringComparison.InvariantCultureIgnoreCase))
         {
+            if(SuccessAnswersCount < MinimumSuccessAnswersRequired)
+            {
+                UpdatedAtUtc = DateTime.UtcNow;
+                return;
+            }
+            
             SuccessAnswersCountInReverseDirection++;
             UpdatedAtUtc = DateTime.UtcNow;
             return;
         }
         
-        FailedAnswersCount++;
         UpdatedAtUtc = DateTime.UtcNow;
+        FailedAnswersCount++;
     }
 
     // null means nothing been acquired

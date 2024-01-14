@@ -44,28 +44,31 @@ public class VocabularyEntryTests
         result.ShouldBe(expectedScore);
     }
 
-    [TestCase("кот", "cat", "кот", 1, 0, 0)]
-    [TestCase("cat", "cat", "кот", 0, 1, 0)]
-    [TestCase("cat", "кот", "cat", 1, 0, 0)]
-    [TestCase("электропривод", "cat", "кот", 0, 0, 1)]
+    [TestCase("кот", "cat", "кот", 0,1, 0, 0)]
+    [TestCase("cat", "cat", "кот", 0,0, 0, 0)]
+    [TestCase("cat", "cat", "кот", 3,3, 1, 0)]
+    [TestCase("cat", "кот", "cat", 0,1, 0, 0)]
+    [TestCase("электропривод", "cat", "кот", 0, 0, 0, 1)]
     public void ScorePointShouldReturn(
         string answer,
         string word,
         string definition,
-        int successAnswersCount,
-        int successAnswersCountInReverseDirection,
-        int failedAnswersCount)
+        int initialSuccessAnswersCount,
+        int expectedSuccessAnswersCount,
+        int expectedSuccessAnswersCountInReverseDirection,
+        int expectedFailedAnswersCount)
     {
         var vocabularyEntry = Create.VocabularyEntry()
             .WithWord(word)
             .WithDefinition(definition)
+            .WithSuccessAnswersCount(initialSuccessAnswersCount)
             .Build();
 
         vocabularyEntry.ScorePoint(answer);
 
-        vocabularyEntry.SuccessAnswersCount.ShouldBe(successAnswersCount);
-        vocabularyEntry.SuccessAnswersCountInReverseDirection.ShouldBe(successAnswersCountInReverseDirection);
-        vocabularyEntry.FailedAnswersCount.ShouldBe(failedAnswersCount);
+        vocabularyEntry.SuccessAnswersCount.ShouldBe(expectedSuccessAnswersCount);
+        vocabularyEntry.SuccessAnswersCountInReverseDirection.ShouldBe(expectedSuccessAnswersCountInReverseDirection);
+        vocabularyEntry.FailedAnswersCount.ShouldBe(expectedFailedAnswersCount);
     }
 
     [TestCase(MasteringLevel.MasteredInForwardDirection, 3, 0)]
