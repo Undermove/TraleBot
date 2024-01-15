@@ -50,13 +50,18 @@ public class VocabularyEntry
     // null means nothing been acquired
     public MasteringLevel? GetAcquiredLevel()
     {
-        return SuccessAnswersCount switch
+        if (SuccessAnswersCount >= MinimumSuccessAnswersRequired
+            && SuccessAnswersCountInReverseDirection == MinimumSuccessAnswersRequired)
         {
-            >= MinimumSuccessAnswersRequired when SuccessAnswersCountInReverseDirection == MinimumSuccessAnswersRequired
-                => MasteringLevel.MasteredInBothDirections,
-            MinimumSuccessAnswersRequired => MasteringLevel.MasteredInForwardDirection,
-            _ => null
-        };
+            return MasteringLevel.MasteredInBothDirections;
+        }
+
+        if (SuccessAnswersCount == MinimumSuccessAnswersRequired
+            && SuccessAnswersCountInReverseDirection < MinimumSuccessAnswersRequired)
+        {
+            return MasteringLevel.MasteredInForwardDirection;
+        }
+        return null;
     }
     
     public MasteringLevel GetMasteringLevel()

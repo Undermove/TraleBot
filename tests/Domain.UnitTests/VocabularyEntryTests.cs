@@ -74,6 +74,7 @@ public class VocabularyEntryTests
     [TestCase(MasteringLevel.MasteredInForwardDirection, 3, 0)]
     [TestCase(MasteringLevel.MasteredInBothDirections, 3, 3)]
     [TestCase(MasteringLevel.MasteredInBothDirections, 4, 3)]
+    [TestCase(null, 3, 4)]
     [TestCase(null, 0, 3)]
     [TestCase(null, 4, 4)]
     public void GetAcquiredLevelShouldReturn(
