@@ -5,61 +5,55 @@ using Microsoft.Extensions.Options;
 using Language = Domain.Entities.Language;
 using TranslationResult = Application.Common.Interfaces.TranslationService.TranslationResult;
 
-namespace Infrastructure.Translation.GoogleTranslation
+namespace Infrastructure.Translation.GoogleTranslation;
+
+public class GoogleTranslationService : IGoogleTranslationService
 {
-    public class GoogleTranslationService : IGoogleTranslationService
+    private readonly TranslationClient _translationClient;
+
+    public GoogleTranslationService(IOptions<GoogleApiConfig> config)
     {
-        private readonly TranslationClient _translationClient;
-
-        public GoogleTranslationService(IOptions<GoogleApiConfig> config)
-        {
-            var data = Convert.FromBase64String(config.Value.ApiKeyBase64);
-            var apiKey = Encoding.UTF8.GetString(data);
-            _translationClient = TranslationClient.CreateFromApiKey(apiKey);
-        }
-
-        public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language,
-            CancellationToken ct)
-        {
-            if (requestWord is { Length: > 40 })
-            {
-                return new TranslationResult.PromptLengthExceeded();
-            }
-            
-            var targetLanguage = GetLanguageCode(language);
-            
-            var response = await _translationClient.TranslateTextAsync(
-                text: requestWord,
-                targetLanguage: targetLanguage,
-                cancellationToken: ct
-            );
-
-            if (response == null)
-            {
-                return new TranslationResult.Failure();
-            }
-
-            // Create a TranslationResult object based on the response from the API
-            return new TranslationResult.Success(
-                response.TranslatedText,
-                "",
-                ""
-            );
-        }
-
-        private static string GetLanguageCode(Language language)
-        {
-            return language switch
-            {
-                Language.English => LanguageCodes.English,
-                Language.Georgian => LanguageCodes.Georgian,
-                _ => ""
-            };
-        }
+        var data = Convert.FromBase64String(config.Value.ApiKeyBase64);
+        var apiKey = Encoding.UTF8.GetString(data);
+        _translationClient = TranslationClient.CreateFromApiKey(apiKey);
     }
-}
 
-public record GoogleApiConfig(string ApiKeyBase64)
-{
-    public const string Name = "GoogleTranslateApiConfiguration";
+    public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language,
+        CancellationToken ct)
+    {
+        if (requestWord is { Length: > 40 })
+        {
+            return new TranslationResult.PromptLengthExceeded();
+        }
+            
+        var targetLanguage = GetLanguageCode(language);
+            
+        var response = await _translationClient.TranslateTextAsync(
+            text: requestWord,
+            targetLanguage: targetLanguage,
+            cancellationToken: ct
+        );
+
+        if (response == null)
+        {
+            return new TranslationResult.Failure();
+        }
+
+        // Create a TranslationResult object based on the response from the API
+        return new TranslationResult.Success(
+            response.TranslatedText,
+            "",
+            ""
+        );
+    }
+
+    private static string GetLanguageCode(Language language)
+    {
+        return language switch
+        {
+            Language.English => LanguageCodes.English,
+            Language.Georgian => LanguageCodes.Georgian,
+            _ => ""
+        };
+    }
 }
