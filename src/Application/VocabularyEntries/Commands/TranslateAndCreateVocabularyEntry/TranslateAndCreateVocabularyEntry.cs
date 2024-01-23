@@ -18,6 +18,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
     public class Handler(
         IParsingTranslationService parsingTranslationService,
         IParsingUniversalTranslator parsingUniversalTranslator,
+        IGoogleTranslationService googleTranslationService,
         ITraleDbContext context,
         IAchievementsService achievementService,
         IAiTranslationService aiTranslationService)
@@ -53,6 +54,12 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
             if (translationLanguage == Language.Georgian)
             {
                 var parsingResult = await parsingUniversalTranslator.TranslateAsync(request.Word, translationLanguage, ct);
+                
+                if (parsingResult is TranslationResult.Failure)
+                {
+                    parsingResult = await googleTranslationService.TranslateAsync(request.Word, translationLanguage, ct);
+                }
+                
                 return parsingResult switch
                 {
                     TranslationResult.Success s =>
@@ -64,6 +71,7 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
                             s.Example,
                             user,
                             Language.Georgian),
+                    TranslationResult.PromptLengthExceeded => new CreateVocabularyEntryResult.PromptLengthExceeded(),
                     _ => new CreateVocabularyEntryResult.TranslationFailure()
                 };
             }

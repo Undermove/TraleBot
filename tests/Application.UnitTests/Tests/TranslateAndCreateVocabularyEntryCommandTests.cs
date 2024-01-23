@@ -19,6 +19,7 @@ public class TranslateAndCreateVocabularyEntryCommandTests : CommandTestsBase
     private User _existingUser = null!;
     private TranslateAndCreateVocabularyEntry.Handler _createVocabularyEntryCommandHandler = null!;
     private Mock<IAchievementsService> _achievementsService = null!;
+    private Mock<IGoogleTranslationService> _googleTranslationService = null!;
 
     [SetUp]
     public async Task SetUp()
@@ -27,6 +28,7 @@ public class TranslateAndCreateVocabularyEntryCommandTests : CommandTestsBase
         _translationServicesMock = mockRepository.Create<IParsingTranslationService>();
         _universalTranslationServicesMock = mockRepository.Create<IParsingUniversalTranslator>();
         _aiTranslationServicesMock = mockRepository.Create<IAiTranslationService>();
+        _googleTranslationService = mockRepository.Create<IGoogleTranslationService>();
         _achievementsService = mockRepository.Create<IAchievementsService>();
         _achievementsService.Setup(service => service.AssignAchievements(
                 It.IsAny<ManualTranslationTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -39,7 +41,13 @@ public class TranslateAndCreateVocabularyEntryCommandTests : CommandTestsBase
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         
-        _createVocabularyEntryCommandHandler = new TranslateAndCreateVocabularyEntry.Handler(_translationServicesMock.Object, _universalTranslationServicesMock.Object, Context, _achievementsService.Object, _aiTranslationServicesMock.Object);
+        _createVocabularyEntryCommandHandler = new TranslateAndCreateVocabularyEntry.Handler(
+            _translationServicesMock.Object,
+            _universalTranslationServicesMock.Object,
+            _googleTranslationService.Object,
+            Context,
+            _achievementsService.Object,
+            _aiTranslationServicesMock.Object);
     }
     
     [Test]
