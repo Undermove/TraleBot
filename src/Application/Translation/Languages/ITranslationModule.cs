@@ -1,7 +1,7 @@
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 
-namespace Application.Translation;
+namespace Application.Translation.Languages;
 
 public interface ITranslationModule
 {

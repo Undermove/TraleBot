@@ -1,4 +1,5 @@
 using Application.Common.Interfaces.TranslationService;
+using Application.Translation.Languages;
 using Domain.Entities;
 
 namespace Application.Translation;
