@@ -21,24 +21,30 @@ namespace Infrastructure.Translation.GoogleTranslation
         public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language,
             CancellationToken ct)
         {
-            // You can set the source language and target language based on your requirements
-            var sourceLanguage = LanguageCodes.English;
+            if (requestWord is { Length: > 40 })
+            {
+                return new TranslationResult.PromptLengthExceeded();
+            }
+            
             var targetLanguage = GetLanguageCode(language);
-
+            
             var response = await _translationClient.TranslateTextAsync(
                 text: requestWord,
                 targetLanguage: targetLanguage,
-                sourceLanguage: sourceLanguage,
                 cancellationToken: ct
             );
 
+            if (response == null)
+            {
+                return new TranslationResult.Failure();
+            }
+
             // Create a TranslationResult object based on the response from the API
-            var translationResult = new TranslationResult.Success(
+            return new TranslationResult.Success(
                 response.TranslatedText,
                 "",
                 ""
             );
-            return translationResult;
         }
 
         private static string GetLanguageCode(Language language)
