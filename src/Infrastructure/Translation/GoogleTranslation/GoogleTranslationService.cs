@@ -1,15 +1,25 @@
+using System.Text;
 using Google.Cloud.Translation.V2;
 using Application.Common.Interfaces.TranslationService;
+using Microsoft.Extensions.Options;
 using Language = Domain.Entities.Language;
 using TranslationResult = Application.Common.Interfaces.TranslationService.TranslationResult;
 
 namespace Infrastructure.Translation.GoogleTranslation
 {
-    public class GoogleTranslationService(string apiKey) : IGoogleTranslationService
+    public class GoogleTranslationService : IGoogleTranslationService
     {
-        private readonly TranslationClient _translationClient = TranslationClient.CreateFromApiKey(apiKey);
+        private readonly TranslationClient _translationClient;
 
-        public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language, CancellationToken ct)
+        public GoogleTranslationService(IOptions<GoogleApiConfig> config)
+        {
+            var data = Convert.FromBase64String(config.Value.ApiKeyBase64);
+            var apiKey = Encoding.UTF8.GetString(data);
+            _translationClient = TranslationClient.CreateFromApiKey(apiKey);
+        }
+
+        public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language,
+            CancellationToken ct)
         {
             // You can set the source language and target language based on your requirements
             var sourceLanguage = LanguageCodes.English;
@@ -33,18 +43,17 @@ namespace Infrastructure.Translation.GoogleTranslation
 
         private static string GetLanguageCode(Language language)
         {
-            // Map your application's language enum to Google Cloud Translation API language codes
-            // This is a simple example, you might need to extend it based on your needs
-            switch (language)
+            return language switch
             {
-                case Language.English:
-                    return LanguageCodes.English;
-                case Language.Georgian:
-                    return LanguageCodes.Georgian;
-                // Add more cases as needed
-                default:
-                    return "";
-            }
+                Language.English => LanguageCodes.English,
+                Language.Georgian => LanguageCodes.Georgian,
+                _ => ""
+            };
         }
     }
+}
+
+public record GoogleApiConfig(string ApiKeyBase64)
+{
+    public const string Name = "GoogleTranslateApiConfiguration";
 }
