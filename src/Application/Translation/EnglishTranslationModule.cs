@@ -3,21 +3,21 @@ using Domain.Entities;
 
 namespace Application.Translation;
 
-public class EnglishTranslationModule : ITranslationModule
+public class EnglishTranslationModule(
+    IParsingTranslationService parsingTranslationService,
+    IAiTranslationService aiTranslationService) : ITranslationModule
 {
-    public Language GetLanguage()
-    {
-        return Language.English;
-    }
+    public Language GetLanguage() => Language.English;
 
-    public Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct)
+    public async Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var parsingTranslationResult = await parsingTranslationService.TranslateAsync(wordToTranslate, ct);
+        
+        if (parsingTranslationResult is TranslationResult.Success)
+        {
+            return parsingTranslationResult;
+        }
+        
+        return await aiTranslationService.TranslateAsync(wordToTranslate, GetLanguage(), ct);
     }
-}
-
-public interface ITranslationModule
-{
-    Language GetLanguage();
-    Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct);
 }

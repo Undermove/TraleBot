@@ -17,8 +17,3 @@ public class LanguageTranslator : ILanguageTranslator
         return _translationModules[targetLanguage].Translate(wordToTranslate, ct);
     }
 }
-
-public interface ILanguageTranslator
-{
-    Task<TranslationResult> Translate(string wordToTranslate, Language targetLanguage, CancellationToken ct);
-}
