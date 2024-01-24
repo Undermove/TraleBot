@@ -3,19 +3,13 @@ using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class ContextReversoParsingParsingTranslationService: IParsingTranslationService
+public class ContextReversoParsingParsingTranslationService(IHttpClientFactory clientFactory)
+    : IParsingTranslationService
 {
-    private readonly IHttpClientFactory _clientFactory;
-
-    public ContextReversoParsingParsingTranslationService(IHttpClientFactory clientFactory)
-    {
-        _clientFactory = clientFactory;
-    }
-    
     public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
     {
         // Make the HTTP GET request to the Google Translate API
-        using var httpClient = _clientFactory.CreateClient();
+        using var httpClient = clientFactory.CreateClient();
         var requestUrl = $"https://context.reverso.net/translation/english-russian/{requestWord}/#-";
         httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36");
         httpClient.DefaultRequestHeaders.Accept.ParseAdd("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");

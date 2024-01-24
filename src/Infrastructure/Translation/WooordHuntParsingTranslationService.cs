@@ -3,19 +3,12 @@ using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class WooordHuntParsingParsingTranslationService : IParsingTranslationService
+public class WooordHuntParsingParsingTranslationService(IHttpClientFactory clientFactory) : IParsingTranslationService
 {
-    private readonly IHttpClientFactory _clientFactory;
-    
-    public WooordHuntParsingParsingTranslationService(IHttpClientFactory clientFactory)
-    {
-        _clientFactory = clientFactory;
-    }
-    
     public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
     {
         // Make the HTTP GET request to the Google Translate API
-        using var httpClient = _clientFactory.CreateClient();
+        using var httpClient = clientFactory.CreateClient();
         var requestUrl = $"https://wooordhunt.ru/word/{requestWord}";
         var response = await httpClient.GetAsync(requestUrl, ct);
         var responseContent = await response.Content.ReadAsStringAsync(ct);

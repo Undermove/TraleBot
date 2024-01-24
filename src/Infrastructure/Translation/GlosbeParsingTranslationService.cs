@@ -7,18 +7,12 @@ using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class GlosbeParsingTranslationService : IParsingUniversalTranslator
+public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory) : IParsingUniversalTranslator
 {
-    private readonly IHttpClientFactory _clientFactory;
     const string DefinitionSearchPattern = "//main//section[1]//div//ul/li[1]//div//div/h3";
     const string AdditionalSearchPattern = "//p//span";
     private const string ExampleElementsSearchPattern = "//div//div//div//div//div[contains(@class, \"w-1/2\")]";
-    
-    public GlosbeParsingTranslationService(IHttpClientFactory clientFactory)
-    {
-        _clientFactory = clientFactory;
-    }
-    
+
     public async Task<TranslationResult> TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
     {
         var (isTranslated, definition) = await GetDefinition(requestWord, ct);
@@ -37,7 +31,7 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
     {
         string languagePrefix = requestWord.DetectLanguage() == Language.Russian ? "ru/ka" : "ka/ru";
         var requestUrl = $"https://glosbe.com/{languagePrefix}/{requestWord}";
-        using var httpClient = _clientFactory.CreateClient();
+        using var httpClient = clientFactory.CreateClient();
         string responseContent;
         
         try
@@ -66,7 +60,7 @@ public class GlosbeParsingTranslationService : IParsingUniversalTranslator
         string languagePrefix = requestWord.DetectLanguage() == Language.Russian ? "ka/ru" : "ru/ka";
         var additionalInfoUrl = $"https://glosbe.com/{languagePrefix}/{definition}/fragment/details?phraseIndex=0&translationPhrase={requestWord}&translationIndex=0&reverse=true";
 
-        using var httpClient = _clientFactory.CreateClient();
+        using var httpClient = clientFactory.CreateClient();
         var responseContent = await httpClient.GetStringAsync(additionalInfoUrl, ct);
 
         var htmlDoc = new HtmlDocument();
