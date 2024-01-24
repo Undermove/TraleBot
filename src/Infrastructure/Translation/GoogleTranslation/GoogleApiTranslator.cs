@@ -7,11 +7,11 @@ using TranslationResult = Application.Common.Interfaces.TranslationService.Trans
 
 namespace Infrastructure.Translation.GoogleTranslation;
 
-public class GoogleTranslationService : IGoogleTranslationService
+public class GoogleApiTranslator : IGoogleApiTranslator
 {
     private readonly TranslationClient _translationClient;
 
-    public GoogleTranslationService(IOptions<GoogleApiConfig> config)
+    public GoogleApiTranslator(IOptions<GoogleApiConfig> config)
     {
         var data = Convert.FromBase64String(config.Value.ApiKeyBase64);
         var apiKey = Encoding.UTF8.GetString(data);

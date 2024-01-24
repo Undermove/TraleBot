@@ -5,7 +5,7 @@ namespace Application.Translation.Languages;
 
 public class GeorgianTranslationModule(
     IParsingUniversalTranslator parsingUniversalTranslator,
-    IGoogleTranslationService googleTranslationService
+    IGoogleApiTranslator googleApiTranslator
     
 ) : ITranslationModule
 {
@@ -17,7 +17,7 @@ public class GeorgianTranslationModule(
         
         if (parsingResult is TranslationResult.Failure)
         {
-            parsingResult = await googleTranslationService.TranslateAsync(wordToTranslate, GetLanguage(), ct);
+            parsingResult = await googleApiTranslator.TranslateAsync(wordToTranslate, GetLanguage(), ct);
         }
 
         return parsingResult;

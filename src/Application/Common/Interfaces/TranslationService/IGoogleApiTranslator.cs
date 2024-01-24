@@ -2,7 +2,7 @@ using Domain.Entities;
 
 namespace Application.Common.Interfaces.TranslationService;
 
-public interface IGoogleTranslationService
+public interface IGoogleApiTranslator
 {
     /// <summary>
     /// Translate <see cref="requestWord"/> using network call to GoogleAPI service

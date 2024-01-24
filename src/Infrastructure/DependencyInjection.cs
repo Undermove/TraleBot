@@ -29,7 +29,7 @@ public static class DependencyInjection
 
         services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
         services.Configure<GoogleApiConfig>(configuration.GetSection(GoogleApiConfig.Name));
-        services.AddTransient<IGoogleTranslationService, GoogleTranslationService>();
+        services.AddTransient<IGoogleApiTranslator, GoogleApiTranslator>();
         services.AddTransient<IParsingTranslationService, WooordHuntParsingParsingTranslationService>();
         services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiAzureTranslationService>();
