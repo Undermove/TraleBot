@@ -1,49 +1,99 @@
 using Application.Common.Interfaces.TranslationService;
 using Application.Translation.Languages;
+using Domain.Entities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
+using Shouldly;
 
 namespace Application.UnitTests.Translation;
 
 public class GeorgianTranslationModuleShould
 {
     private GeorgianTranslationModule _sut = null!;
+    Mock<IParsingUniversalTranslator> _parsingUniversalTranslator = null!;
+    Mock<IGoogleApiTranslator> _googleTranslationService = null!;
+    Mock<ILoggerFactory> _loggerFactory = null!;
 
     [SetUp]
     public void SetUp()
     {
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
-        Mock<IParsingUniversalTranslator> parsingUniversalTranslator = mockRepository.Create<IParsingUniversalTranslator>();
-        Mock<IGoogleApiTranslator> googleTranslationService = mockRepository.Create<IGoogleApiTranslator>();
-        _sut = new GeorgianTranslationModule(parsingUniversalTranslator.Object, googleTranslationService.Object);
+        _parsingUniversalTranslator = mockRepository.Create<IParsingUniversalTranslator>();
+        _googleTranslationService = mockRepository.Create<IGoogleApiTranslator>();
+        _loggerFactory = mockRepository.Create<ILoggerFactory>(MockBehavior.Loose);
+        _loggerFactory.Setup(x => x.CreateLogger(nameof(GeorgianTranslationModule))).Returns(() => NullLogger.Instance);
+        _sut = new GeorgianTranslationModule(_parsingUniversalTranslator.Object, _googleTranslationService.Object, _loggerFactory.Object);
     }
 
     [Test]
-    public void ReturnTranslationFromParsingTranslator_WhenExists()
+    public async Task ReturnTranslationFromParsingTranslator_WhenExists()
     {
+        _parsingUniversalTranslator.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Success("ქლიავი", "", ""));
+        _googleTranslationService.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Failure());
         
+        var result = await _sut.Translate("слива", CancellationToken.None);
+
+        result.ShouldBeOfType<TranslationResult.Success>();
+        var casted = result as TranslationResult.Success;
+        casted?.Definition.ShouldBe("ქლიავი");
     }
     
     [Test]
-    public void ReturnTranslationFromGoogleApiTranslator_WhenExists()
+    public async Task ReturnTranslationFromGoogleApiTranslator_WhenExistsAndUniversalParserFailure()
     {
+        _parsingUniversalTranslator.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Failure());
+        _googleTranslationService.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Success("ქლიავი", "", ""));
         
+        var result = await _sut.Translate("слива", CancellationToken.None);
+
+        result.ShouldBeOfType<TranslationResult.Success>();
+        var casted = result as TranslationResult.Success;
+        casted?.Definition.ShouldBe("ქლიავი");
     }
     
     [Test]
-    public void ReturnTranslationFailure_WhenTranslationNotExistsInAllTranslators()
+    public async Task ReturnTranslationFailure_WhenTranslationNotExistsInAllTranslators()
     {
+        _parsingUniversalTranslator.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Failure());
+        _googleTranslationService.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Failure());
         
+        var result = await _sut.Translate("слива", CancellationToken.None);
+
+        result.ShouldBeOfType<TranslationResult.Failure>();
     }
     
     [Test]
-    public void ReturnTranslation_FirstTranslatorThrowError_AndSecondTranslatorWorksCorrectlyException()
+    public async Task ReturnTranslation_WhenFirstTranslatorThrowError_AndSecondTranslatorWorksCorrectly()
     {
+        _parsingUniversalTranslator.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .Throws<Exception>();
+        _googleTranslationService.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Success("ქლიავი", "", ""));
         
+        var result = await _sut.Translate("слива", CancellationToken.None);
+
+        result.ShouldBeOfType<TranslationResult.Success>();
+        var casted = result as TranslationResult.Success;
+        casted?.Definition.ShouldBe("ქლიავი");
     }
     
     [Test]
-    public void ReturnTranslationFailure_WhenBothTranslatorsThrowsException()
+    public async Task ReturnTranslationFailure_WhenBothTranslatorsThrowsException()
     {
+        _parsingUniversalTranslator.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .Throws<Exception>();
+        _googleTranslationService.Setup(x => x.TranslateAsync("слива", Language.Georgian, It.IsAny<CancellationToken>()))
+            .Throws<Exception>();
         
+        var result = await _sut.Translate("слива", CancellationToken.None);
+
+        result.ShouldBeOfType<TranslationResult.Failure>();
     }
 }

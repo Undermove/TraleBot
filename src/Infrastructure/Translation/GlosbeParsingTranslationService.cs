@@ -4,11 +4,15 @@ using Application.Common.Extensions;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using HtmlAgilityPack;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Translation;
 
-public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory) : IParsingUniversalTranslator
+public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory, ILoggerFactory logger)
+    : IParsingUniversalTranslator
 {
+    private readonly ILogger _logger = logger.CreateLogger(typeof(GlosbeParsingTranslationService));
+
     const string DefinitionSearchPattern = "//main//section[1]//div//ul/li[1]//div//div/h3";
     const string AdditionalSearchPattern = "//p//span";
     private const string ExampleElementsSearchPattern = "//div//div//div//div//div[contains(@class, \"w-1/2\")]";
@@ -33,13 +37,18 @@ public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory) :
         var requestUrl = $"https://glosbe.com/{languagePrefix}/{requestWord}";
         using var httpClient = clientFactory.CreateClient();
         string responseContent;
-        
+
         try
         {
-             responseContent = await httpClient.GetStringAsync(requestUrl, ct);
+            responseContent = await httpClient.GetStringAsync(requestUrl, ct);
         }
         catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
+            return (false, "");
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Glosbe parsing error");
             return (false, "");
         }
         
