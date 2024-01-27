@@ -1,6 +1,8 @@
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using Infrastructure.Translation;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
 
@@ -16,7 +18,9 @@ public class GlosbeParserTests
         var clientFactory = new Mock<IHttpClientFactory>();
         clientFactory.Setup(factory => factory.CreateClient(It.IsAny<string>()))
             .Returns(() => new HttpClient());
-        _glosbeTranslationService = new GlosbeParsingTranslationService(clientFactory.Object);
+        var loggerFactory = new Mock<ILoggerFactory>();
+        loggerFactory.Setup(x => x.CreateLogger(nameof(GlosbeParsingTranslationService))).Returns(() => NullLogger.Instance);
+        _glosbeTranslationService = new GlosbeParsingTranslationService(clientFactory.Object, loggerFactory.Object);
     }
 
     [Test]
