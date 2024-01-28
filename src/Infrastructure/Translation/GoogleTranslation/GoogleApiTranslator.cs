@@ -1,6 +1,7 @@
 using System.Text;
 using Google.Cloud.Translation.V2;
 using Application.Common.Interfaces.TranslationService;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.Extensions.Options;
 using Language = Domain.Entities.Language;
 using TranslationResult = Application.Common.Interfaces.TranslationService.TranslationResult;
@@ -14,11 +15,12 @@ public class GoogleApiTranslator : IGoogleApiTranslator
     public GoogleApiTranslator(IOptions<GoogleApiConfig> config)
     {
         var data = Convert.FromBase64String(config.Value.ApiKeyBase64);
-        var apiKey = Encoding.UTF8.GetString(data);
-        _translationClient = TranslationClient.CreateFromApiKey(apiKey);
+        var credentialsJson = Encoding.UTF8.GetString(data);
+        var credential = GoogleCredential.FromJson(credentialsJson);
+        _translationClient = TranslationClient.Create(credential);
     }
 
-    public async Task<TranslationResult> TranslateAsync(string? requestWord, Language language,
+    public async Task<TranslationResult> TranslateAsync(string? requestWord, Language targetLanguage,
         CancellationToken ct)
     {
         if (requestWord is { Length: > 40 })
@@ -26,11 +28,11 @@ public class GoogleApiTranslator : IGoogleApiTranslator
             return new TranslationResult.PromptLengthExceeded();
         }
             
-        var targetLanguage = GetLanguageCode(language);
+        var targetLanguageCode = GetLanguageCode(targetLanguage);
             
         var response = await _translationClient.TranslateTextAsync(
             text: requestWord,
-            targetLanguage: targetLanguage,
+            targetLanguage: targetLanguageCode,
             cancellationToken: ct
         );
 
@@ -53,6 +55,7 @@ public class GoogleApiTranslator : IGoogleApiTranslator
         {
             Language.English => LanguageCodes.English,
             Language.Georgian => LanguageCodes.Georgian,
+            Language.Russian => LanguageCodes.Russian,
             _ => ""
         };
     }

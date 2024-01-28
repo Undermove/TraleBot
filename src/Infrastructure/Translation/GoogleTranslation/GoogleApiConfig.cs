@@ -1,6 +1,7 @@
 namespace Infrastructure.Translation.GoogleTranslation;
 
-public record GoogleApiConfig(string ApiKeyBase64)
+public class GoogleApiConfig
 {
+    public required string ApiKeyBase64 { get; init; }
     public const string Name = "GoogleTranslateApiConfiguration";
 }
