@@ -11,5 +11,5 @@ public interface IGoogleApiTranslator
     /// <param name="language"></param>
     /// <param name="ct">Cancellation token for inner http client</param>
     /// <returns>Translation of <see cref="requestWord"/></returns>
-    Task<TranslationResult> TranslateAsync(string? requestWord, Language language, CancellationToken ct);
+    Task<TranslationResult> TranslateAsync(string requestWord, Language language, CancellationToken ct);
 }
