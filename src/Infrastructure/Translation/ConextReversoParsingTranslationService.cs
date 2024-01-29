@@ -3,8 +3,8 @@ using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class ContextReversoParsingParsingTranslationService(IHttpClientFactory clientFactory)
-    : IParsingTranslationService
+public class ContextReversoParsingEnglishParsingEnglishTranslator(IHttpClientFactory clientFactory)
+    : IParsingEnglishTranslator
 {
     public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
     {

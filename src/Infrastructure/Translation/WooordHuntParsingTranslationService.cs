@@ -3,7 +3,7 @@ using HtmlAgilityPack;
 
 namespace Infrastructure.Translation;
 
-public class WooordHuntParsingParsingTranslationService(IHttpClientFactory clientFactory) : IParsingTranslationService
+public class WooordHuntParsingEnglishParsingEnglishTranslator(IHttpClientFactory clientFactory) : IParsingEnglishTranslator
 {
     public async Task<TranslationResult> TranslateAsync(string? requestWord, CancellationToken ct)
     {

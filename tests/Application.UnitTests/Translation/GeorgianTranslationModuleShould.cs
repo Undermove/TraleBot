@@ -11,14 +11,14 @@ namespace Application.UnitTests.Translation;
 public class GeorgianTranslationModuleShould
 {
     private GeorgianTranslationModule _sut = null!;
-    Mock<IParsingUniversalTranslator> _parsingUniversalTranslator = null!;
-    Mock<IGoogleApiTranslator> _googleTranslationService = null!;
-    Mock<ILoggerFactory> _loggerFactory = null!;
+    private Mock<IParsingUniversalTranslator> _parsingUniversalTranslator = null!;
+    private Mock<IGoogleApiTranslator> _googleTranslationService = null!;
+    private Mock<ILoggerFactory> _loggerFactory = null!;
 
     [SetUp]
     public void SetUp()
     {
-        MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
+        var mockRepository = new MockRepository(MockBehavior.Strict);
         _parsingUniversalTranslator = mockRepository.Create<IParsingUniversalTranslator>();
         _googleTranslationService = mockRepository.Create<IGoogleApiTranslator>();
         _loggerFactory = mockRepository.Create<ILoggerFactory>(MockBehavior.Loose);
