@@ -28,18 +28,17 @@ public class GoogleApiTranslator : IGoogleApiTranslator
         {
             return new TranslationResult.PromptLengthExceeded();
         }
-        
-        var targetLanguageCode = requestWord.DetectLanguage() == Language.Russian 
-            ? GetLanguageCode(targetLanguage) 
+
+        var targetLanguageCode = requestWord.DetectLanguage() == Language.Russian
+            ? GetLanguageCode(targetLanguage)
             : LanguageCodes.Russian;
-            
+
         var response = await _translationClient.TranslateTextAsync(
             text: requestWord,
             targetLanguage: targetLanguageCode,
             cancellationToken: ct
         );
 
-        
         if (response == null)
         {
             return new TranslationResult.Failure();
