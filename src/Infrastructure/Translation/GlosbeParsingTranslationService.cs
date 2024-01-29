@@ -40,7 +40,13 @@ public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory, I
 
         try
         {
-            responseContent = await httpClient.GetStringAsync(requestUrl, ct);
+            var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+            request.Headers.Clear();
+            request.Headers.Add("User-Agent", "curl/8.4.0");
+            request.Headers.Add("Host", "glosbe.com");
+            request.Headers.Add("Accept", "*/*");
+            var response = await httpClient.SendAsync(request, ct);
+            responseContent = await response.Content.ReadAsStringAsync(ct);
         }
         catch (HttpRequestException e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
@@ -70,7 +76,13 @@ public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory, I
         var additionalInfoUrl = $"https://glosbe.com/{languagePrefix}/{definition}/fragment/details?phraseIndex=0&translationPhrase={requestWord}&translationIndex=0&reverse=true";
 
         using var httpClient = clientFactory.CreateClient();
-        var responseContent = await httpClient.GetStringAsync(additionalInfoUrl, ct);
+        var request = new HttpRequestMessage(HttpMethod.Get, additionalInfoUrl);
+        request.Headers.Clear();
+        request.Headers.Add("User-Agent", "curl/8.4.0");
+        request.Headers.Add("Host", "glosbe.com");
+        request.Headers.Add("Accept", "*/*");
+        var response = await httpClient.SendAsync(request, ct);
+        var responseContent = await response.Content.ReadAsStringAsync(ct);
 
         var htmlDoc = new HtmlDocument();
         htmlDoc.LoadHtml(responseContent);
