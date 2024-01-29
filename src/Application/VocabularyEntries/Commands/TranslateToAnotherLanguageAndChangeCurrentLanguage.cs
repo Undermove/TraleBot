@@ -15,7 +15,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
     public class Handler(
         ITraleDbContext context,
         IParsingUniversalTranslator parsingUniversalTranslator,
-        IParsingTranslationService parsingTranslationService,
+        IParsingEnglishTranslator parsingEnglishTranslator,
         IAiTranslationService aiTranslationService)
         : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, ChangeAndTranslationResult>
     {
@@ -80,7 +80,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
         private async Task<ChangeAndTranslationResult> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
             CancellationToken ct, VocabularyEntry sourceEntry, User user)
         {
-            var parsingTranslationResult = await parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
+            var parsingTranslationResult = await parsingEnglishTranslator.TranslateAsync(sourceEntry.Word, ct);
             if (parsingTranslationResult is TranslationResult.Success success)
             {
                 return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry,

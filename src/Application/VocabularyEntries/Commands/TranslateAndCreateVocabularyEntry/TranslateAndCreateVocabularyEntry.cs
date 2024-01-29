@@ -4,6 +4,7 @@ using Application.Common;
 using Application.Common.Extensions;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
+using Application.Translation;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -16,11 +17,9 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
     public required string Word { get; init; }
 
     public class Handler(
-        IParsingTranslationService parsingTranslationService,
-        IParsingUniversalTranslator parsingUniversalTranslator,
+        ILanguageTranslator languageTranslator,
         ITraleDbContext context,
-        IAchievementsService achievementService,
-        IAiTranslationService aiTranslationService)
+        IAchievementsService achievementService)
         : IRequestHandler<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>
     {
         public async Task<CreateVocabularyEntryResult> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
@@ -48,40 +47,20 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
                     duplicate.Id);
             }
 
-            var translationLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
+            var targetLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
 
-            if (translationLanguage == Language.Georgian)
+            var translationResult = await languageTranslator.Translate(request.Word, targetLanguage, ct);
+            return translationResult switch
             {
-                var parsingResult = await parsingUniversalTranslator.TranslateAsync(request.Word, translationLanguage, ct);
-                return parsingResult switch
-                {
-                    TranslationResult.Success s =>
-                        await CreateVocabularyEntryResult(
-                            request,
-                            ct,
-                            s.Definition,
-                            s.AdditionalInfo,
-                            s.Example,
-                            user,
-                            Language.Georgian),
-                    _ => new CreateVocabularyEntryResult.TranslationFailure()
-                };
-            }
-            
-            var parsingTranslationResult = await parsingTranslationService.TranslateAsync(request.Word, ct);
-
-            if (parsingTranslationResult is TranslationResult.Success success)
-            {
-                return await CreateVocabularyEntryResult(
-                    request, ct, success.Definition, success.AdditionalInfo,
-                    success.Example, user, Language.English);
-            }
-            
-            var result = await aiTranslationService.TranslateAsync(request.Word, user.Settings.CurrentLanguage, ct);
-
-            return result switch
-            {
-                TranslationResult.Success s => await CreateVocabularyEntryResult(request, ct, s.Definition, s.AdditionalInfo, s.Example, user, Language.English),
+                TranslationResult.Success s =>
+                    await CreateVocabularyEntryResult(
+                        request,
+                        ct,
+                        s.Definition,
+                        s.AdditionalInfo,
+                        s.Example,
+                        user,
+                        targetLanguage),
                 TranslationResult.PromptLengthExceeded => new CreateVocabularyEntryResult.PromptLengthExceeded(),
                 _ => new CreateVocabularyEntryResult.TranslationFailure()
             };

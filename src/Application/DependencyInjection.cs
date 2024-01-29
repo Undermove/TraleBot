@@ -3,6 +3,8 @@ using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
 using Application.Quizzes.Services;
+using Application.Translation;
+using Application.Translation.Languages;
 using Domain.Quiz;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +18,10 @@ public static class DependencyInjection
 
         services.AddTransient<IQuizCreator, QuizCreator>();
         services.AddTransient<IQuizVocabularyEntriesAdvisor, QuizVocabularyEntriesAdvisor>();
+
+        services.AddTransient<ILanguageTranslator, LanguageTranslator>();
+        services.AddScoped<ITranslationModule, EnglishTranslationModule>();
+        services.AddScoped<ITranslationModule, GeorgianTranslationModule>();
         
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();

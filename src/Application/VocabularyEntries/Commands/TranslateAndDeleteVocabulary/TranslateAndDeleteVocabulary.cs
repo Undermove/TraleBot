@@ -15,7 +15,7 @@ public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
     public class Handler(
         ITraleDbContext context,
         IParsingUniversalTranslator parsingUniversalTranslator,
-        IParsingTranslationService parsingTranslationService,
+        IParsingEnglishTranslator parsingEnglishTranslator,
         IAiTranslationService aiTranslationService)
         : IRequestHandler<TranslateAndDeleteVocabulary, ChangeAndTranslationResult>
     {
@@ -87,7 +87,7 @@ public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
         private async Task<ChangeAndTranslationResult> TranslateByEnglishTranslationFlow(TranslateAndDeleteVocabulary request,
             CancellationToken ct, VocabularyEntry sourceEntry, User user)
         {
-            var parsingTranslationResult = await parsingTranslationService.TranslateAsync(sourceEntry.Word, ct);
+            var parsingTranslationResult = await parsingEnglishTranslator.TranslateAsync(sourceEntry.Word, ct);
             if (parsingTranslationResult is TranslationResult.Success success)
             {
                 return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry,

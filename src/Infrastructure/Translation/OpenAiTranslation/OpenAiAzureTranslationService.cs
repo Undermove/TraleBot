@@ -25,13 +25,13 @@ public class OpenAiAzureTranslationService(IOptions<OpenAiConfig> config) : IAiT
                     "You are a teacher who helps russian students understand english words. If the user tells you a word in english, you give him " +
                     "translation into russian in one word, additional translations and example of usage in english" +
                     "If student give phrase you give him translation into russian and example of usage" +
-                    "You do not say anything else."),
+                    "You do not say anything else. Your answer should always starts with 'Definition: ' have 'AdditionalTranslations: ' and ends with 'Example: '"),
                 new ChatRequestUserMessage("Cat"),
                 new ChatRequestAssistantMessage("Definition: кот; AdditionalTranslations: кошка, кот, кат, гусеничный трактор, блевать, бить плетью; Example: A young cat is a kitten."),
                 new ChatRequestUserMessage("Pull yourself together"),
-                new ChatRequestAssistantMessage("Definition: взять себя в руки; Example: I know you're very excited about the concert, but you need to pull yourself together."),
+                new ChatRequestAssistantMessage("Definition: взять себя в руки; AdditionalTranslations:; Example: I know you're very excited about the concert, but you need to pull yourself together."),
                 new ChatRequestUserMessage("Every cloud has a silver lining"),
-                new ChatRequestAssistantMessage("Definition: нет худа без добра; Example: Even though he had lost the match, he had gained in experience and was now more confident. Every cloud has a silver lining."),
+                new ChatRequestAssistantMessage("Definition: нет худа без добра; AdditionalTranslations:; Example: Even though he had lost the match, he had gained in experience and was now more confident. Every cloud has a silver lining."),
                 new ChatRequestUserMessage(requestWord)
             }
         };

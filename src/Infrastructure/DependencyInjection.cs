@@ -11,6 +11,7 @@ using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Telegram.Services;
 using Infrastructure.Translation;
+using Infrastructure.Translation.GoogleTranslation;
 using Infrastructure.Translation.OpenAiTranslation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +28,9 @@ public static class DependencyInjection
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
 
         services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
-        services.AddTransient<IParsingTranslationService, WooordHuntParsingParsingTranslationService>();
+        services.Configure<GoogleApiConfig>(configuration.GetSection(GoogleApiConfig.Name));
+        services.AddTransient<IGoogleApiTranslator, GoogleApiTranslator>();
+        services.AddTransient<IParsingEnglishTranslator, WooordHuntParsingEnglishParsingEnglishTranslator>();
         services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiAzureTranslationService>();
         services.AddHttpClient();

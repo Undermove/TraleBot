@@ -11,7 +11,7 @@ namespace Application.UnitTests.Tests;
 
 public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : CommandTestsBase
 {
-    private Mock<IParsingTranslationService> _translationServicesMock = null!;
+    private Mock<IParsingEnglishTranslator> _translationServicesMock = null!;
     private Mock<IParsingUniversalTranslator> _universalTranslationServicesMock = null!;
     private Mock<IAiTranslationService> _aiTranslationServicesMock = null!;
     private User _existingUser = null!;
@@ -22,7 +22,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
     public async Task SetUp()
     {
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
-        _translationServicesMock = mockRepository.Create<IParsingTranslationService>();
+        _translationServicesMock = mockRepository.Create<IParsingEnglishTranslator>();
         _universalTranslationServicesMock = mockRepository.Create<IParsingUniversalTranslator>();
         _aiTranslationServicesMock = mockRepository.Create<IAiTranslationService>();
 
