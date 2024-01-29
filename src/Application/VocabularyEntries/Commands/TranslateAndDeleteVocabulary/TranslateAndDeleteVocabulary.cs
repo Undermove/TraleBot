@@ -1,12 +1,13 @@
 using Application.Common;
 using Application.Common.Interfaces.TranslationService;
+using Application.Translation;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.VocabularyEntries.Commands.TranslateAndDeleteVocabulary;
 
-public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
+public class TranslateAndDeleteVocabulary : IRequest<ChangeAndTranslationResult>
 {
     public required User User { get; init; }
     public required Language TargetLanguage { get; init; }
@@ -14,9 +15,7 @@ public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
 
     public class Handler(
         ITraleDbContext context,
-        IParsingUniversalTranslator parsingUniversalTranslator,
-        IParsingEnglishTranslator parsingEnglishTranslator,
-        IAiTranslationService aiTranslationService)
+        ILanguageTranslator languageTranslator)
         : IRequestHandler<TranslateAndDeleteVocabulary, ChangeAndTranslationResult>
     {
         public async Task<ChangeAndTranslationResult> Handle(TranslateAndDeleteVocabulary request, CancellationToken ct)
@@ -29,28 +28,34 @@ public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
             {
                 return new ChangeAndTranslationResult.NoActionNeeded();
             }
-            
+
             if (sourceEntry == null)
             {
                 throw new ApplicationException("original entry not found");
             }
 
-            await using var transaction =  await context.BeginTransactionAsync(ct);
-            
+            await using var transaction = await context.BeginTransactionAsync(ct);
+
             try
             {
-                var changeAndTranslationResult = request.TargetLanguage switch
+                var result = await languageTranslator.Translate(sourceEntry.Word, request.TargetLanguage, ct);
+
+                var changeAndTranslationResult = result switch
                 {
-                    Language.English => await TranslateByEnglishTranslationFlow(request, ct, sourceEntry, user),
-                    _ => await TranslateByGeorgianTranslationFlow(request, ct, sourceEntry, user)
+                    TranslationResult.Success s => await UpdateVocabularyEntryAndChangeCurrentLanguage(
+                        request, sourceEntry, s.Definition,
+                        s.AdditionalInfo, s.Example, user, ct),
+                    TranslationResult.Failure => new ChangeAndTranslationResult.TranslationFailure(),
+                    TranslationResult.PromptLengthExceeded => new ChangeAndTranslationResult.PromptLengthExceeded(),
+                    _ => throw new ArgumentOutOfRangeException()
                 };
-                
+
                 var otherVocabulary = await context.VocabularyEntries
                     .Where(entry => entry.UserId == request.User.Id
                                     && entry.Language == sourceEntry.Language
                                     && entry.Word.Equals(sourceEntry.Word.ToLowerInvariant()))
                     .ToListAsync(ct);
-                
+
                 context.VocabularyEntries.RemoveRange(otherVocabulary);
 
                 await transaction.CommitAsync(ct);
@@ -62,49 +67,6 @@ public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
                 await transaction.RollbackAsync(ct);
                 throw;
             }
-        }
-
-        private async Task<ChangeAndTranslationResult> TranslateByGeorgianTranslationFlow(
-            TranslateAndDeleteVocabulary request,
-            CancellationToken ct, VocabularyEntry sourceEntry,
-            User user)
-        {
-            var result = await parsingUniversalTranslator.TranslateAsync(sourceEntry.Word, request.TargetLanguage, ct);
-            return result switch
-            {
-                TranslationResult.Success s =>
-                    await UpdateVocabularyEntryAndChangeCurrentLanguage(request,
-                        sourceEntry,
-                        s.Definition,
-                        s.AdditionalInfo,
-                        s.Example,
-                        user, ct),
-                TranslationResult.Failure => new ChangeAndTranslationResult.TranslationFailure(),
-                _ => throw new ArgumentOutOfRangeException()
-            };
-        }
-
-        private async Task<ChangeAndTranslationResult> TranslateByEnglishTranslationFlow(TranslateAndDeleteVocabulary request,
-            CancellationToken ct, VocabularyEntry sourceEntry, User user)
-        {
-            var parsingTranslationResult = await parsingEnglishTranslator.TranslateAsync(sourceEntry.Word, ct);
-            if (parsingTranslationResult is TranslationResult.Success success)
-            {
-                return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry,
-                    success.Definition, success.AdditionalInfo,
-                    success.Example, user, ct);
-            }
-            
-            var result = await aiTranslationService.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
-            return result switch
-            {
-                TranslationResult.Success s => await UpdateVocabularyEntryAndChangeCurrentLanguage(
-                    request, sourceEntry, s.Definition,
-                    s.AdditionalInfo, s.Example, user, ct),
-                TranslationResult.Failure => new ChangeAndTranslationResult.TranslationFailure(),
-                TranslationResult.PromptLengthExceeded => new ChangeAndTranslationResult.PromptLengthExceeded(),
-                _ => throw new ArgumentOutOfRangeException()
-            };
         }
 
         private async Task<ChangeAndTranslationResult> UpdateVocabularyEntryAndChangeCurrentLanguage(
@@ -123,16 +85,13 @@ public class TranslateAndDeleteVocabulary: IRequest<ChangeAndTranslationResult>
             sourceEntry.Example = example;
             sourceEntry.UpdatedAtUtc = updatedAtUtc;
             sourceEntry.Language = request.TargetLanguage;
-            
+
             context.VocabularyEntries.Update(sourceEntry);
-            
+
             user.Settings.CurrentLanguage = request.TargetLanguage;
             context.UsersSettings.Update(user.Settings);
-            
-            await context.SaveChangesAsync(ct);
 
-            // var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = user.VocabularyEntries.Count };
-            // await _achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
+            await context.SaveChangesAsync(ct);
 
             return new ChangeAndTranslationResult.TranslationSuccess(
                 definition,
