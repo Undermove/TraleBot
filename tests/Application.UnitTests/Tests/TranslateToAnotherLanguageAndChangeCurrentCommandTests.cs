@@ -1,4 +1,5 @@
 using Application.Common.Interfaces.TranslationService;
+using Application.Translation;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
 using Application.VocabularyEntries.Commands;
@@ -11,9 +12,7 @@ namespace Application.UnitTests.Tests;
 
 public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : CommandTestsBase
 {
-    private Mock<IParsingEnglishTranslator> _translationServicesMock = null!;
-    private Mock<IParsingUniversalTranslator> _universalTranslationServicesMock = null!;
-    private Mock<IAiTranslationService> _aiTranslationServicesMock = null!;
+    private Mock<ILanguageTranslator> _aiTranslationServicesMock = null!;
     private User _existingUser = null!;
     private VocabularyEntry _existingVocabularyEntry = null!;
     private TranslateToAnotherLanguageAndChangeCurrentLanguage.Handler _createVocabularyEntryCommandHandler = null!;
@@ -22,9 +21,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
     public async Task SetUp()
     {
         MockRepository mockRepository = new MockRepository(MockBehavior.Strict);
-        _translationServicesMock = mockRepository.Create<IParsingEnglishTranslator>();
-        _universalTranslationServicesMock = mockRepository.Create<IParsingUniversalTranslator>();
-        _aiTranslationServicesMock = mockRepository.Create<IAiTranslationService>();
+        _aiTranslationServicesMock = mockRepository.Create<ILanguageTranslator>();
 
         _existingUser = Create.User().WithPremiumAccountType().WithCurrentLanguage(Language.English).Build();
         _existingVocabularyEntry = Create.VocabularyEntry()
@@ -38,7 +35,9 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
         Context.VocabularyEntries.Add(_existingVocabularyEntry);
         await Context.SaveChangesAsync();
         
-        _createVocabularyEntryCommandHandler = new TranslateToAnotherLanguageAndChangeCurrentLanguage.Handler(Context,  _universalTranslationServicesMock.Object, _translationServicesMock.Object, _aiTranslationServicesMock.Object);
+        _createVocabularyEntryCommandHandler = new TranslateToAnotherLanguageAndChangeCurrentLanguage.Handler(
+            Context, 
+            _aiTranslationServicesMock.Object);
     }
     
     [Test]
@@ -47,8 +46,8 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
         const string? expectedWord = "недостаточность";
         const string expectedDefinition = "ნაკლებობა";
         const string expectedExample = "რეალურად, 20 წლის წინ ჩვენ ვცხოვრობდით მსოფლიოში, სადაც პრობლემა";
-        _universalTranslationServicesMock
-            .Setup(service => service.TranslateAsync(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
+        _aiTranslationServicesMock
+            .Setup(service => service.Translate(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateToAnotherLanguageAndChangeCurrentLanguage
@@ -78,8 +77,8 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
         const string? expectedWord = "недостаточность";
         const string expectedDefinition = "ნაკლებობა";
         const string expectedExample = "რეალურად, 20 წლის წინ ჩვენ ვცხოვრობდით მსოფლიოში, სადაც პრობლემა";
-        _universalTranslationServicesMock
-            .Setup(service => service.TranslateAsync(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
+        _aiTranslationServicesMock
+            .Setup(service => service.Translate(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
         
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateToAnotherLanguageAndChangeCurrentLanguage

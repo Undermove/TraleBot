@@ -1,5 +1,6 @@
 using Application.Common;
 using Application.Common.Interfaces.TranslationService;
+using Application.Translation;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,11 +13,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
     public required Language TargetLanguage { get; init; }
     public required Guid VocabularyEntryId { get; init; }
 
-    public class Handler(
-        ITraleDbContext context,
-        IParsingUniversalTranslator parsingUniversalTranslator,
-        IParsingEnglishTranslator parsingEnglishTranslator,
-        IAiTranslationService aiTranslationService)
+    public class Handler(ITraleDbContext context, ILanguageTranslator languageTranslator)
         : IRequestHandler<TranslateToAnotherLanguageAndChangeCurrentLanguage, ChangeAndTranslationResult>
     {
         public async Task<ChangeAndTranslationResult> Handle(TranslateToAnotherLanguageAndChangeCurrentLanguage request, CancellationToken ct)
@@ -49,46 +46,8 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
                     duplicate.Example,
                     duplicate.Id);
             }
-            
-            return request.TargetLanguage switch
-            {
-                Language.English => await TranslateByEnglishTranslationFlow(request, ct, sourceEntry, user),
-                _ => await TranslateByGeorgianTranslationFlow(request, ct, sourceEntry, user)
-            }; 
-        }
 
-        private async Task<ChangeAndTranslationResult> TranslateByGeorgianTranslationFlow(
-            TranslateToAnotherLanguageAndChangeCurrentLanguage request,
-            CancellationToken ct, VocabularyEntry sourceEntry,
-            User user)
-        {
-            var result = await parsingUniversalTranslator.TranslateAsync(sourceEntry.Word, request.TargetLanguage, ct);
-            return result switch
-            {
-                TranslationResult.Success s =>
-                    await UpdateVocabularyEntryAndChangeCurrentLanguage(request,
-                        sourceEntry,
-                        s.Definition,
-                        s.AdditionalInfo,
-                        s.Example,
-                        user, ct),
-                TranslationResult.Failure => new ChangeAndTranslationResult.TranslationFailure(),
-                _ => throw new ArgumentOutOfRangeException()
-            };
-        }
-
-        private async Task<ChangeAndTranslationResult> TranslateByEnglishTranslationFlow(TranslateToAnotherLanguageAndChangeCurrentLanguage request,
-            CancellationToken ct, VocabularyEntry sourceEntry, User user)
-        {
-            var parsingTranslationResult = await parsingEnglishTranslator.TranslateAsync(sourceEntry.Word, ct);
-            if (parsingTranslationResult is TranslationResult.Success success)
-            {
-                return await UpdateVocabularyEntryAndChangeCurrentLanguage(request, sourceEntry,
-                    success.Definition, success.AdditionalInfo,
-                    success.Example, user, ct);
-            }
-            
-            var result = await aiTranslationService.TranslateAsync(sourceEntry.Word, user.Settings.CurrentLanguage, ct);
+            var result = await languageTranslator.Translate(sourceEntry.Word, request.TargetLanguage, ct);
             return result switch
             {
                 TranslationResult.Success s => await UpdateVocabularyEntryAndChangeCurrentLanguage(
@@ -123,10 +82,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
             context.UsersSettings.Update(user.Settings);
             
             await context.SaveChangesAsync(ct);
-
-            // var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = user.VocabularyEntries.Count };
-            // await _achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
-
+            
             return new ChangeAndTranslationResult.TranslationSuccess(
                 definition,
                 additionalInfo,

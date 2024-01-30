@@ -41,5 +41,6 @@ public static class CommandNames
     public const string ChangeTranslationLanguageIcon = "🌐";
     public const string ChangeCurrentLanguageMenu = "/changelanguagemenu";
     public const string ChangeCurrentLanguage = "/changelanguage";
+    public const string ChangeCurrentLanguageAndDeleteVocabulary = "/chadl";
     public const string SetInitialLanguage = "/setinitiallanguage";
 }
