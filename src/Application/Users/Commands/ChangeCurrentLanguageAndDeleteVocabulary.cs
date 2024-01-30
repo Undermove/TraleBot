@@ -5,18 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Users.Commands;
 
-public class ChangeCurrentLanguageFreeUser : IRequest<ChangeLanguageFreeUserResult>
+public class ChangeCurrentLanguageAndDeleteVocabulary : IRequest<ChangeCurrentLanguageAndDeleteVocabularyResult>
 {
     public required User User { get; set; }
     public required Language TargetLanguage { get; set; }
     
-    public class Handler(ITraleDbContext context) : IRequestHandler<ChangeCurrentLanguageFreeUser, ChangeLanguageFreeUserResult>
+    public class Handler(ITraleDbContext context) : IRequestHandler<ChangeCurrentLanguageAndDeleteVocabulary, ChangeCurrentLanguageAndDeleteVocabularyResult>
     {
-        public async Task<ChangeLanguageFreeUserResult> Handle(ChangeCurrentLanguageFreeUser request, CancellationToken ct)
+        public async Task<ChangeCurrentLanguageAndDeleteVocabularyResult> Handle(ChangeCurrentLanguageAndDeleteVocabulary request, CancellationToken ct)
         {
             if (request.User.IsActivePremium())
             {
-                return new ChangeLanguageFreeUserResult.NoActionNeeded();
+                return new ChangeCurrentLanguageAndDeleteVocabularyResult.NoActionNeeded();
             }
             
             await using var transaction = await context.BeginTransactionAsync(ct);
@@ -37,13 +37,13 @@ public class ChangeCurrentLanguageFreeUser : IRequest<ChangeLanguageFreeUserResu
                 throw;
             }
             
-            return new ChangeLanguageFreeUserResult.Success(request.TargetLanguage);
+            return new ChangeCurrentLanguageAndDeleteVocabularyResult.Success(request.TargetLanguage);
         }
     }
 }
 
-public abstract record ChangeLanguageFreeUserResult
+public abstract record ChangeCurrentLanguageAndDeleteVocabularyResult
 {
-    public record Success(Language CurrentLanguage) : ChangeLanguageFreeUserResult;
-    public record NoActionNeeded() : ChangeLanguageFreeUserResult;
+    public record Success(Language CurrentLanguage) : ChangeCurrentLanguageAndDeleteVocabularyResult;
+    public record NoActionNeeded() : ChangeCurrentLanguageAndDeleteVocabularyResult;
 }

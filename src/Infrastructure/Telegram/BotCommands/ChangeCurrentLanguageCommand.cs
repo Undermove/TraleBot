@@ -1,6 +1,5 @@
 using Application.Users.Commands;
 using Domain.Entities;
-using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
@@ -61,7 +60,7 @@ public class ChangeCurrentLanguageCommand(ITelegramBotClient client, IMediator m
                 {
                     InlineKeyboardButton.WithCallbackData(
                         $"Удалить и переключиться на {premiumRequired.TargetLanguage.GetLanguageFlag()}",
-                        new TranslateAndDeleteVocabularyCallback
+                        new ChangeLanguageAndDeleteVocabularyCallback
                         {
                             TargetLanguage = premiumRequired.TargetLanguage,
                         }.Serialize())
