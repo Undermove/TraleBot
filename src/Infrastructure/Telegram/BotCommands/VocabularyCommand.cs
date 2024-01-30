@@ -9,17 +9,8 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class VocabularyCommand : IBotCommand
+public class VocabularyCommand(IMediator mediator, ITelegramBotClient client) : IBotCommand
 {
-    private readonly IMediator _mediator;
-    private readonly ITelegramBotClient _client;
-
-    public VocabularyCommand(IMediator mediator, ITelegramBotClient client)
-    {
-        _mediator = mediator;
-        _client = client;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -29,15 +20,15 @@ public class VocabularyCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var result =  await _mediator.Send(new GetVocabularyEntriesList {UserId = request.User!.Id}, token);
+        var result =  await mediator.Send(new GetVocabularyEntriesList {UserId = request.User!.Id}, token);
 
         if (!result.VocabularyEntriesPages.Any())
         {
-            await _client.SendTextMessageAsync(request.UserTelegramId, "📖Словарь пока пуст", cancellationToken: token);
+            await client.SendTextMessageAsync(request.UserTelegramId, "📖Словарь пока пуст", cancellationToken: token);
             return;
         }
 
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId, 
             @$"📖Слов в твоём словаре {request.User.Settings.CurrentLanguage.GetLanguageFlag()}: {result.VocabularyWordsCount}
 
@@ -56,10 +47,10 @@ public class VocabularyCommand : IBotCommand
                     $"{GetMedalType(entry)} {entry.Word} – {entry.Definition}");
             var vocabularyPageView = String.Join(Environment.NewLine, vocabularyEntryView);
             
-            await _client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, parseMode: ParseMode.Html, cancellationToken: token);    
+            await client.SendTextMessageAsync(request.UserTelegramId, vocabularyPageView, parseMode: ParseMode.Html, cancellationToken: token);    
         }
         
-        await _client.SendTextMessageAsync(
+        await client.SendTextMessageAsync(
             request.UserTelegramId,
             $"{CommandNames.MenuIcon} Меню",
             replyMarkup: MenuKeyboard.GetMenuKeyboard(request.User.Settings.CurrentLanguage),
