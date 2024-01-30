@@ -33,10 +33,14 @@ public class ChangeCurrentLanguageAndDeleteVocabularyCommand(ITelegramBotClient 
         });
     }
 
-    private Task HandleSuccess(TelegramRequest request, Language currentLanguage, CancellationToken token)
+    private async Task HandleSuccess(TelegramRequest request, Language currentLanguage, CancellationToken token)
     {
         // need to send message with keyboard to change language
-        return client.EditMessageReplyMarkupAsync(
+        await client.EditMessageTextAsync(request.UserTelegramId, 
+            request.MessageId, 
+            "👌 Язык успешно изменён.",
+            cancellationToken: token);
+        await client.EditMessageReplyMarkupAsync(
             request.UserTelegramId,
             request.MessageId,
             replyMarkup: MenuKeyboard.GetMenuKeyboard(currentLanguage),
