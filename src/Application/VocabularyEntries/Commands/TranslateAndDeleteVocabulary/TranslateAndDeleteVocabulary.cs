@@ -57,9 +57,9 @@ public class TranslateAndDeleteVocabulary : IRequest<ChangeAndTranslationResult>
                     .ToListAsync(ct);
 
                 context.VocabularyEntries.RemoveRange(otherVocabulary);
-
+                await context.SaveChangesAsync(ct);
+                
                 await transaction.CommitAsync(ct);
-
                 return changeAndTranslationResult;
             }
             catch (Exception)
