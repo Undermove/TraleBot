@@ -46,9 +46,9 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
     {
         await client.SendTextMessageAsync(
             request.UserTelegramId, 
-text: $@"Бесплатный аккаунт позволяет содержать только один словарь. 
+text: $@"Бесплатный аккаунт позволяет вести словарь только на одном языке. 
 
-При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage.GetLanguageFlag()} будет удалён. Чтобы иметь несколько словарей, подключи PRO-подписку.",
+При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage.GetLanguageFlag()} будет удалён. Чтобы иметь несколько словарей на разных языках, подключи ⭐️ Премиум-аккаунт в меню.",
             replyMarkup: new InlineKeyboardMarkup(new[]
             {
                 new[]
