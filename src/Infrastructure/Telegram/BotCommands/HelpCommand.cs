@@ -23,9 +23,9 @@ public class HelpCommand : IBotCommand
     {
         await _client.SendTextMessageAsync(
             request.UserTelegramId,
-            $"❓Если возникли какие-либо проблемы, не стесняйся писать:" +
-            $"\r\n🤖Разработчику бота @Undermove1" +
-            $"\r\n💬Или в чат поддержки https://t.me/TraleBotSupport",
+@"❓Если возникли какие-либо проблемы, не стесняйся писать:
+
+💬В чат поддержки https://t.me/TraleBotSupport",
             cancellationToken: token);
     }
 }

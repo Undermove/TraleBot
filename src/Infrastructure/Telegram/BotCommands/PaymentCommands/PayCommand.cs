@@ -25,7 +25,7 @@ public class PayCommand(ITelegramBotClient client) : IBotCommand
         });
         
         await client.SendTextMessageAsync(request.UserTelegramId,
-            "⭐ Премиум аккаунт позволяет вести несколько словарей без удаления.",
+            "⭐ Премиум-аккаунт позволяет одновременно вести словари на нескольких языках без удаления.",
             replyMarkup: keyboard,
             cancellationToken: token);
     }

@@ -38,7 +38,7 @@ public class SetInitialLanguage(IMediator mediator, ITelegramBotClient client) :
             request.UserTelegramId,
             request.MessageId,
 @$"
-Отлично я буду переводить слова с {initialLanguageSet.InitialLanguage.GetLanguageFlag()} на русский и обратно
+Отлично! Буду переводить слова с {initialLanguageSet.InitialLanguage.GetLanguageFlag()} на русский и обратно. Это значит, что вводить слово для перевода можно как на русском, так и на {initialLanguageSet.InitialLanguage.GetLanguageFlag()} языке.
 
 Ты можешь переключить язык в любой момент в меню.
 ", 
