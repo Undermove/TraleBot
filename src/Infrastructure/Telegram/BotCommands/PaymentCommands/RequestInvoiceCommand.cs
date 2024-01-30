@@ -6,27 +6,19 @@ using Telegram.Bot.Types.Payments;
 
 namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 
-public class RequestInvoiceCommand : IBotCommand
+public class RequestInvoiceCommand(
+    ITelegramBotClient client,
+    BotConfiguration configuration,
+    ILoggerFactory logger)
+    : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    private readonly BotConfiguration _configuration;
-    private readonly ILogger _logger;
+    private readonly ILogger _logger = logger.CreateLogger(typeof(PayCommand));
     private static readonly Dictionary<SubscriptionTerm, LabeledPrice> Prices = new()
     {
         {SubscriptionTerm.Month, new("Месяц за 2,49€", 249)},
         {SubscriptionTerm.ThreeMonth, new("3 месяца за 3,99€", 389)},
         {SubscriptionTerm.Year, new("Год за 5,99€", 599)}
     };
-
-    public RequestInvoiceCommand(
-        ITelegramBotClient client, 
-        BotConfiguration configuration, 
-        ILoggerFactory logger)
-    {
-        _client = client;
-        _configuration = configuration;
-        _logger = logger.CreateLogger(typeof(PayCommand));
-    }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
@@ -41,12 +33,12 @@ public class RequestInvoiceCommand : IBotCommand
 
         var subscriptionTerm = Enum.Parse<SubscriptionTerm>(request.Text.Split(' ')[1]);
 
-        await _client.SendInvoiceAsync(
+        await client.SendInvoiceAsync(
             request.UserTelegramId,
             Prices[subscriptionTerm].Label,
             "Премиум аккаунт",
             subscriptionTerm.ToString(),
-            _configuration.PaymentProviderToken,
+            configuration.PaymentProviderToken,
             "EUR",
             new List<LabeledPrice>
             {
