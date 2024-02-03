@@ -64,7 +64,7 @@ text: $@"Бесплатный аккаунт позволяет вести сл�
                 },
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Посмотреть Premium", CommandNames.Pay)
+                    InlineKeyboardButton.WithCallbackData("Подробнее о Премиуме", CommandNames.Pay)
                 }
             }),
             cancellationToken: token);

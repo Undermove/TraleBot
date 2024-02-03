@@ -68,7 +68,7 @@ public class ChangeCurrentLanguageCommand(ITelegramBotClient client, IMediator m
                 },
                 new[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Посмотреть Premium", CommandNames.Pay)
+                    InlineKeyboardButton.WithCallbackData("Подробнее о Премиуме", CommandNames.Pay)
                 }
             }),
             cancellationToken: token);

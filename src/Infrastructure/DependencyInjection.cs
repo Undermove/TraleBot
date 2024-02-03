@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, HelpCommand>();
+        services.AddScoped<IBotCommand, HowToCommand>();
         services.AddScoped<IBotCommand, MenuCommand>();
         services.AddScoped<IBotCommand, CloseMenuCommand>();
         services.AddScoped<IBotCommand, AcceptCheckoutCommand>();

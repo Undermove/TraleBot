@@ -9,6 +9,8 @@ public static class CommandNames
     public const string Menu = "/menu";
     public const string MenuIcon = "📋";
     public const string CloseMenu = "❌";
+    public const string HowTo = "/howto";
+    public const string HowToIcon = "📌";
     
     // quiz commands
     public const string Quiz = "/quiz";
