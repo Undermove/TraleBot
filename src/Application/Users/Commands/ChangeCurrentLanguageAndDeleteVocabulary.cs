@@ -23,8 +23,9 @@ public class ChangeCurrentLanguageAndDeleteVocabulary : IRequest<ChangeCurrentLa
             try
             {
                 var otherVocabulary = await context.VocabularyEntries
+                    .Where(entry => entry.UserId == request.User.Id)
                     .ToListAsync(ct);
-
+                
                 context.VocabularyEntries.RemoveRange(otherVocabulary);
             
                 request.User.Settings.CurrentLanguage = request.TargetLanguage;
