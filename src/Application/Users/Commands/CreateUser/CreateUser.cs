@@ -18,9 +18,17 @@ public class CreateUser : IRequest<CreateUserResult>
                 cancellationToken: cancellationToken);
             if (user != null)
             {
+                if (user.IsActive)
+                {
+                    return new CreateUserResult.UserExists(user);
+                }
+
+                user.IsActive = true;
+                await dbContext.SaveChangesAsync(cancellationToken);
+
                 return new CreateUserResult.UserExists(user);
             }
-            
+
             user = new User
             {
                 Id = Guid.NewGuid(),
@@ -30,7 +38,7 @@ public class CreateUser : IRequest<CreateUserResult>
                 InitialLanguageSet = false,
                 IsActive = true
             };
-            
+
             var settings = new UserSettings
             {
                 Id = Guid.NewGuid(),
@@ -38,11 +46,11 @@ public class CreateUser : IRequest<CreateUserResult>
                 User = user,
                 CurrentLanguage = Language.English
             };
-            
+
             user.UserSettingsId = settings.Id;
 
             var transaction = await dbContext.BeginTransactionAsync(cancellationToken);
-            
+
             dbContext.Users.Add(user);
             dbContext.UsersSettings.Add(settings);
 
