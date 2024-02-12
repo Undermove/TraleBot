@@ -1,17 +1,18 @@
 using Application.Common;
+using Application.Users.Commands.CreateUser;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Users.Commands.CreateUser;
+namespace Application.Users.Commands;
 
-public class CreateUser : IRequest<CreateUserResult>
+public class DeactivateUser : IRequest<CreateUserResult>
 {
     public long TelegramId { get; set; }
-
-    public class Handler(ITraleDbContext dbContext) : IRequestHandler<CreateUser, CreateUserResult>
+    
+    public class Handler(ITraleDbContext dbContext) : IRequestHandler<DeactivateUser, CreateUserResult>
     {
-        public async Task<CreateUserResult> Handle(CreateUser request, CancellationToken cancellationToken)
+        public async Task<CreateUserResult> Handle(DeactivateUser request, CancellationToken cancellationToken)
         {
             User? user = await dbContext.Users.FirstOrDefaultAsync(
                 user => user.TelegramId == request.TelegramId,
@@ -28,7 +29,7 @@ public class CreateUser : IRequest<CreateUserResult>
                 RegisteredAtUtc = DateTime.UtcNow,
                 AccountType = UserAccountType.Free,
                 InitialLanguageSet = false,
-                IsActive = true
+                IsActive = false
             };
             
             var settings = new UserSettings
@@ -53,9 +54,9 @@ public class CreateUser : IRequest<CreateUserResult>
     }
 }
 
-public abstract record CreateUserResult
+public abstract record DisableUserResult
 {
-    public sealed record UserCreated(User User) : CreateUserResult;
+    public sealed record Success(User User) : DisableUserResult;
 
-    public sealed record UserExists(User User) : CreateUserResult;
+    public sealed record Fail(User User) : DisableUserResult;
 }
