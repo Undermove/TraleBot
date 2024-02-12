@@ -1,55 +1,29 @@
 using Application.Common;
-using Application.Users.Commands.CreateUser;
 using Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Users.Commands;
 
-public class DeactivateUser : IRequest<CreateUserResult>
+public class DeactivateUser : IRequest<DisableUserResult>
 {
-    public long TelegramId { get; set; }
+    public Guid UserId { get; set; }
     
-    public class Handler(ITraleDbContext dbContext) : IRequestHandler<DeactivateUser, CreateUserResult>
+    public class Handler(ITraleDbContext dbContext) : IRequestHandler<DeactivateUser, DisableUserResult>
     {
-        public async Task<CreateUserResult> Handle(DeactivateUser request, CancellationToken cancellationToken)
+        public async Task<DisableUserResult> Handle(DeactivateUser request, CancellationToken ct)
         {
-            User? user = await dbContext.Users.FirstOrDefaultAsync(
-                user => user.TelegramId == request.TelegramId,
-                cancellationToken: cancellationToken);
-            if (user != null)
+            object?[] keyValues = { request.UserId };
+            var user = await dbContext.Users.FindAsync(keyValues: keyValues, ct);
+
+            if (user == null)
             {
-                return new CreateUserResult.UserExists(user);
+                return new DisableUserResult.Fail();
             }
             
-            user = new User
-            {
-                Id = Guid.NewGuid(),
-                TelegramId = request.TelegramId,
-                RegisteredAtUtc = DateTime.UtcNow,
-                AccountType = UserAccountType.Free,
-                InitialLanguageSet = false,
-                IsActive = false
-            };
+            user.IsActive = false;
             
-            var settings = new UserSettings
-            {
-                Id = Guid.NewGuid(),
-                UserId = user.Id,
-                User = user,
-                CurrentLanguage = Language.English
-            };
-            
-            user.UserSettingsId = settings.Id;
-
-            var transaction = await dbContext.BeginTransactionAsync(cancellationToken);
-            
-            dbContext.Users.Add(user);
-            dbContext.UsersSettings.Add(settings);
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-            return new CreateUserResult.UserCreated(user);
+            await dbContext.SaveChangesAsync(ct);
+            return new DisableUserResult.Success(user);
         }
     }
 }
@@ -58,5 +32,5 @@ public abstract record DisableUserResult
 {
     public sealed record Success(User User) : DisableUserResult;
 
-    public sealed record Fail(User User) : DisableUserResult;
+    public sealed record Fail : DisableUserResult;
 }

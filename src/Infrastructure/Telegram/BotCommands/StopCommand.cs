@@ -19,9 +19,11 @@ public class StopCommand(IMediator mediator, ILogger<StopCommand> logger)
     {
         if (request.User == null)
         {
-            logger.LogInformation("Trying to deactivate non existed user  {UserTelegramId} disabled", request.UserTelegramId);    
+            logger.LogInformation("Trying to deactivate non existed user  {UserTelegramId} disabled", request.UserTelegramId);
+            return;
         }
-        await mediator.Send(new DeactivateUser {TelegramId = request.UserTelegramId}, token);
+        
+        await mediator.Send(new DeactivateUser {UserId = request.User.Id}, token);
         logger.LogInformation("User {UserTelegramId} disabled", request.UserTelegramId);
     }
 }
