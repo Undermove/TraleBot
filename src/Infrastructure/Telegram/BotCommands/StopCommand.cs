@@ -1,36 +1,29 @@
-using Application.Users.Commands.CreateUser;
+using Application.Users.Commands;
 using Infrastructure.Telegram.Models;
 using MediatR;
-using Telegram.Bot;
+using Microsoft.Extensions.Logging;
+using Telegram.Bot.Types.Enums;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class StopCommand : IBotCommand
+public class StopCommand(IMediator mediator, ILogger<StopCommand> logger)
+    : IBotCommand
 {
-    private readonly ITelegramBotClient _client;
-    private readonly IMediator _mediator;
-
-    public StopCommand(ITelegramBotClient client, IMediator mediator)
-    {
-        _client = client;
-        _mediator = mediator;
-    }
-
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Start));
+        return Task.FromResult(commandPayload.Equals(CommandNames.Stop) && request.RequestType == UpdateType.MyChatMember);
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        await _mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"Привет, {request.UserName}! Меня зовут Trale. От английского translate and learn. Остроумно, да? 🙂" +
-            "\r\n🇬🇧Я помогаю учить английский. Напиши мне незнакомое слово, а я найду его перевод и занесу в словарь. " +
-            "\r\n🔄Можешь писать на русском и на английском. Перевожу в обе стороны 🤩" +
-            "\r\nОтправь мне /quiz, чтобы пройти квиз по словам за последнюю неделю.",
-            cancellationToken: token);
+        if (request.User == null)
+        {
+            logger.LogInformation("Trying to deactivate non existed user  {UserTelegramId} disabled", request.UserTelegramId);
+            return;
+        }
+        
+        await mediator.Send(new DeactivateUser {UserId = request.User.Id}, token);
+        logger.LogInformation("User {UserTelegramId} disabled", request.UserTelegramId);
     }
 }
