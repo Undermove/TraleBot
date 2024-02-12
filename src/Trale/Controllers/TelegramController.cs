@@ -23,6 +23,7 @@ public class TelegramController(
     {
         if (token == configuration.WebhookToken)
         {
+            _logger.LogInformation("Request type: {RequestType}", request.Type);
             return dialogProcessor.ProcessCommand(request, cancellationToken);
         }
         
