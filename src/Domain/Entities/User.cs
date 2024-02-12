@@ -12,6 +12,7 @@ public class User
     public DateTime RegisteredAtUtc { get; set; }
     public Guid UserSettingsId { get; set; }
     public required bool InitialLanguageSet { get; set; }
+    public bool IsActive { get; set; }
     public virtual UserSettings Settings { get; set; }
     public virtual ICollection<VocabularyEntry> VocabularyEntries { get; set; }
     public virtual ICollection<Quiz> Quizzes { get; set; }
