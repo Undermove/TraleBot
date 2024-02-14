@@ -19,7 +19,7 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator) : IBotC
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var user = request.User;
-        if (request.User == null)
+        if (request.User is not { IsActive: true })
         {
             var userCreatedResultType = await mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
             user = userCreatedResultType switch

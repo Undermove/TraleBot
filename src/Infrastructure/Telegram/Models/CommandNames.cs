@@ -4,6 +4,7 @@ public static class CommandNames
 {
     // common commands
     public const string Start = "/start";
+    public const string Stop = "/stopbot";
     public const string Help = "/help";
     public const string HelpIcon = "🆘";
     public const string Menu = "/menu";
