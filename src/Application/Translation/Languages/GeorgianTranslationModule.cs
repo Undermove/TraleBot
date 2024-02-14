@@ -42,3 +42,11 @@ public class GeorgianTranslationModule(
         return parsingResult;
     }
 }
+
+public static class GeorgianTranscriptionExtension
+{
+    public static string GetTranscription(string wordToTranscribe)
+    {
+        return "sakheli";
+    }
+}
