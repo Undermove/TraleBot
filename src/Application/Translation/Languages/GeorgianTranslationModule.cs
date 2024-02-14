@@ -1,3 +1,4 @@
+using System.Text;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -84,7 +85,11 @@ public static class GeorgianTranscriptionExtension
 
     public static string GetTranscription(string wordToTranscribe)
     {
-        return string.Join("",
-            wordToTranscribe.Select(c => Transcription.GetValueOrDefault(c.ToString(), c.ToString())));
+        var sb = new StringBuilder();
+        return sb.AppendJoin("",
+                wordToTranscribe
+                    .Select(c => Transcription.GetValueOrDefault(c.ToString(), c.ToString()))
+                )
+            .ToString();
     }
 }
