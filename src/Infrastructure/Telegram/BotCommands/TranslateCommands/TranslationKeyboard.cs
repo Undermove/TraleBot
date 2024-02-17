@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
@@ -86,6 +87,30 @@ public static class TranslationKeyboard
         return client.SendTextMessageAsync(
             request.UserTelegramId,
             "Возможно отсутствует определение. Введи его в формате: слово - определение",
+            cancellationToken: token);
+    }
+    
+    public static async Task HandlePremiumRequired(
+        this ITelegramBotClient client,
+        TelegramRequest request,
+        Language currentLanguage,
+        Language targetLanguage,
+        CancellationToken token)
+    {
+        await client.SendTextMessageAsync(
+            request.UserTelegramId, 
+            text: """
+                  Бесплатный аккаунт позволяет вести словарь только на одном языке.
+
+                  Чтобы иметь несколько словарей на разных языках, подключи ⭐️ Премиум-аккаунт в меню.
+                  """,
+            replyMarkup: new InlineKeyboardMarkup(new[]
+            {
+                new[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Подробнее о Премиуме", CommandNames.Pay)
+                }
+            }),
             cancellationToken: token);
     }
     

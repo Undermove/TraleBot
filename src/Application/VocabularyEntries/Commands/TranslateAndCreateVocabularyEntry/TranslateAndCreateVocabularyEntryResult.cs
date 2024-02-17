@@ -1,3 +1,5 @@
+using Domain.Entities;
+
 namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 
 public abstract record CreateVocabularyEntryResult
@@ -19,4 +21,6 @@ public abstract record CreateVocabularyEntryResult
     public sealed record PromptLengthExceeded: CreateVocabularyEntryResult;
 
     public sealed record EmojiDetected: CreateVocabularyEntryResult;
+
+    public sealed record PremiumRequired(Language SourceLanguage, Language TargetLanguage) : CreateVocabularyEntryResult;
 }
