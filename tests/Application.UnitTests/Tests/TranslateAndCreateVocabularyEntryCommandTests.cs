@@ -32,7 +32,7 @@ public class TranslateAndCreateVocabularyEntryCommandTests : CommandTestsBase
                 It.IsAny<VocabularyCountTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _existingUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        _existingUser = Create.User().WithPremiumAccountType().WithCurrentLanguage(Language.English).Build();
         Context.Users.Add(_existingUser);
         await Context.SaveChangesAsync();
         
@@ -99,7 +99,7 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
     [Test]
     public async Task ShouldTranslateEnglishWordEvenIfCurrentLanguageIsGeorgian()
     {
-        var userWithCurrentLanguageGeorgian = Create.User().WithCurrentLanguage(Language.Georgian).Build();
+        var userWithCurrentLanguageGeorgian = Create.User().WithPremiumAccountType().WithCurrentLanguage(Language.Georgian).Build();
         Context.Users.Add(userWithCurrentLanguageGeorgian);
         await Context.SaveChangesAsync();
         const string? expectedWord = "plate";
