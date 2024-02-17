@@ -1,4 +1,5 @@
 using System.Text;
+using Application.Common.Extensions;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,30 @@ public class GeorgianTranslationModule(
     private readonly ILogger _logger = loggerFactory.CreateLogger(nameof(GeorgianTranslationModule));
 
     public async Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct)
+    {
+        TranslationResult parsingResult = await GetTranscription(wordToTranslate, ct);
+
+        if (parsingResult is not TranslationResult.Success result)
+        {
+            return parsingResult;
+        }
+        
+        var transcription = wordToTranslate.DetectLanguage() == Language.Georgian
+            ? GeorgianTranscriptionExtension.GetTranscription(wordToTranslate)
+            : GeorgianTranscriptionExtension.GetTranscription(result.Definition);
+            
+        parsingResult = result with
+        {
+            AdditionalInfo = $"""
+                              {result.AdditionalInfo}
+                              Транскрипция: [{transcription}]
+                              """ 
+        };
+
+        return parsingResult;
+    }
+
+    private async Task<TranslationResult> GetTranscription(string wordToTranslate, CancellationToken ct)
     {
         TranslationResult parsingResult = new TranslationResult.Failure();
         try
