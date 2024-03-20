@@ -17,7 +17,7 @@ public class GeorgianTranslationModule(
 
     public async Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct)
     {
-        TranslationResult parsingResult = await GetTranscription(wordToTranslate, ct);
+        TranslationResult parsingResult = await GetTranslation(wordToTranslate, ct);
 
         if (parsingResult is not TranslationResult.Success result)
         {
@@ -39,7 +39,7 @@ public class GeorgianTranslationModule(
         return parsingResult;
     }
 
-    private async Task<TranslationResult> GetTranscription(string wordToTranslate, CancellationToken ct)
+    private async Task<TranslationResult> GetTranslation(string wordToTranslate, CancellationToken ct)
     {
         TranslationResult parsingResult = new TranslationResult.Failure();
         try

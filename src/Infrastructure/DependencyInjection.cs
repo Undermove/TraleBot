@@ -36,13 +36,6 @@ public static class DependencyInjection
         services.AddHttpClient();
 
         services.AddSingleton<IPrometheusResolver, PrometheusResolver>();
-        
-        var botConfig = configuration.GetSection(BotConfiguration.Configuration).Get<BotConfiguration>();
-        if (botConfig == null)
-        {
-            throw new ConfigurationException(nameof(BotConfiguration));
-        }
-        
         services.AddOpenTelemetry()
             .WithMetrics(builder =>
             {
@@ -50,6 +43,11 @@ public static class DependencyInjection
                 builder.AddMeter("Microsoft.AspNetCore.Hosting", "Microsoft.AspNetCore.Server.Kestrel");
             });
         
+        var botConfig = configuration.GetSection(BotConfiguration.Configuration).Get<BotConfiguration>();
+        if (botConfig == null)
+        {
+            throw new ConfigurationException(nameof(BotConfiguration));
+        }
         services.AddSingleton(botConfig);
         services.AddHttpClient("telegram_bot_client")
             .AddTypedClient<ITelegramBotClient>((httpClient, _) =>

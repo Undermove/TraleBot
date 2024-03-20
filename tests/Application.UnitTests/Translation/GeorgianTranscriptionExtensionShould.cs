@@ -5,13 +5,12 @@ namespace Application.UnitTests.Translation;
 
 public class GeorgianTranscriptionExtensionShould
 {
-    [Test]
-    public void ReturnTranscription_WhenGeorgianCharactersPassed()
+    [TestCase("სახელი", "sakheli")]
+    [TestCase("ჩემით", "chemit")]
+    [TestCase("მოდი ვნახოთ", "modi vnakhot")]
+    public void ReturnTranscription_WhenGeorgianCharactersPassed(string word, string expectedTranscription)
     {
         // Arrange
-        var word = "სახელი";
-        var expectedTranscription = "sakheli";
-
         var result = GeorgianTranscriptionExtension.GetTranscription(word);
 
         result.ShouldBe(expectedTranscription);
