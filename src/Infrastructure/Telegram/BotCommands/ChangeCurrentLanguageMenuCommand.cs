@@ -25,10 +25,9 @@ public class ChangeCurrentLanguageMenuCommand : IBotCommand
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[]
-            {
+            [
                 InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"{CommandNames.ChangeCurrentLanguage} {Language.English}")
-            },
+            ],
             new []
             {
                 InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"{CommandNames.ChangeCurrentLanguage} {Language.Georgian}")

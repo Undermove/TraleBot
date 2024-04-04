@@ -28,8 +28,8 @@ public class TranslateManuallyCommand(ITelegramBotClient client, IMediator media
 
         await (result switch
         {
-            ManualTranslationResult.EntrySaved success => client.HandleSuccess(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, null, token),
-            ManualTranslationResult.EntryAlreadyExists exists => client.HandleTranslationExists(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, null, token),
+            ManualTranslationResult.EntrySaved success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, null, token),
+            ManualTranslationResult.EntryAlreadyExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, null, token),
             ManualTranslationResult.EmojiNotAllowed => client.HandleEmojiDetected(request, token),
             ManualTranslationResult.DefinitionIsNotSet => client.HandleDefinitionIsNotSet(request, token),
             _ => throw new ArgumentOutOfRangeException(nameof(result))

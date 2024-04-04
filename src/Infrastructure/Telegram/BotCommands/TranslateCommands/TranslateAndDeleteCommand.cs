@@ -27,7 +27,7 @@ public class TranslateAndDeleteVocabularyCommand(ITelegramBotClient client, IMed
         
         await (result switch
         {
-            ChangeAndTranslationResult.TranslationSuccess success => client.HandleSuccess(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
+            ChangeAndTranslationResult.TranslationSuccess success => client.UpdateTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
             ChangeAndTranslationResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             ChangeAndTranslationResult.TranslationFailure => client.HandleFailure(request, token),
             ChangeAndTranslationResult.NoActionNeeded => HandleNoActionNeeded(request, token),

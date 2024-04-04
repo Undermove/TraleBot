@@ -56,16 +56,15 @@ public class ChangeCurrentLanguageCommand(ITelegramBotClient client, IMediator m
 При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage.GetLanguageFlag()} будет удалён. Чтобы иметь несколько словарей на разных языках, подключи ⭐️ Премиум-аккаунт в меню.",
             replyMarkup: new InlineKeyboardMarkup(new[]
             {
-                new[]
-                {
+                [
                     InlineKeyboardButton.WithCallbackData(
                         $"Удалить и переключиться на {premiumRequired.TargetLanguage.GetLanguageFlag()}",
                         new ChangeLanguageAndDeleteVocabularyCallback
                         {
                             TargetLanguage = premiumRequired.TargetLanguage,
                         }.Serialize())
-                        
-                },
+
+                ],
                 new[]
                 {
                     InlineKeyboardButton.WithCallbackData("Подробнее о Премиуме", CommandNames.Pay)

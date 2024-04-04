@@ -30,8 +30,8 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
 
         await (result switch
         {
-            ChangeAndTranslationResult.TranslationExists exists => client.HandleTranslationExists(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token),
-            ChangeAndTranslationResult.TranslationSuccess success => client.HandleSuccess(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
+            ChangeAndTranslationResult.TranslationExists exists => client.UpdateExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token),
+            ChangeAndTranslationResult.TranslationSuccess success => client.UpdateTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
             ChangeAndTranslationResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             ChangeAndTranslationResult.PremiumRequired premiumRequired => HandlePremiumRequired(request, premiumRequired, token),
             ChangeAndTranslationResult.TranslationFailure => client.HandleFailure(request, token),
@@ -51,8 +51,7 @@ text: $@"Бесплатный аккаунт позволяет вести сл�
 При переключении на другой язык, текущий словарь {premiumRequired.CurrentLanguage.GetLanguageFlag()} будет удалён. Чтобы иметь несколько словарей на разных языках, подключи ⭐️ Премиум-аккаунт в меню.",
             replyMarkup: new InlineKeyboardMarkup(new[]
             {
-                new[]
-                {
+                [
                     InlineKeyboardButton.WithCallbackData(
                         $"Удалить и перевести на {premiumRequired.TargetLanguage.GetLanguageFlag()}",
                         new TranslateAndDeleteVocabularyCallback
@@ -60,8 +59,8 @@ text: $@"Бесплатный аккаунт позволяет вести сл�
                             TargetLanguage = premiumRequired.TargetLanguage,
                             VocabularyEntryId = premiumRequired.VocabularyEntryId
                         }.Serialize())
-                        
-                },
+
+                ],
                 new[]
                 {
                     InlineKeyboardButton.WithCallbackData("Подробнее о Премиуме", CommandNames.Pay)
