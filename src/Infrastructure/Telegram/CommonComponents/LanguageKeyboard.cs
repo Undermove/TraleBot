@@ -10,10 +10,9 @@ public static class LanguageKeyboard
     {
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"{callbackData} {Language.English}"),
-            },
+            [
+                InlineKeyboardButton.WithCallbackData("🇬🇧 Английский", $"{callbackData} {Language.English}")
+            ],
             new []
             {
                 InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", $"{callbackData} {Language.Georgian}"),

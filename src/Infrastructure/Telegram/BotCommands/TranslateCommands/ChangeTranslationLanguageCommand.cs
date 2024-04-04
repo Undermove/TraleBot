@@ -21,15 +21,14 @@ public class ChangeTranslationLanguageCommand(ITelegramBotClient client) : IBotC
         
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[]
-            {
+            [
                 InlineKeyboardButton.WithCallbackData("🇬🇧 Английский",
                     new TranslateToAnotherLanguageCallback
                     {
                         TargetLanguage = Language.English,
                         VocabularyEntryId = Guid.Parse((ReadOnlySpan<char>)vocabularyEntryId)
                     }.Serialize())
-            },
+            ],
             new []
             {
                 InlineKeyboardButton.WithCallbackData("🇬🇪 Грузинский", new TranslateToAnotherLanguageCallback

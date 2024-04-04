@@ -135,23 +135,20 @@ public static class TranslationKeyboard
 
         if (request.User!.Settings.CurrentLanguage == Language.English)
         {
-            replyMarkup.Add(new[]
-            {
+            replyMarkup.Add([
                 InlineKeyboardButton.WithUrl("Перевод Wooordhunt", $"https://wooordhunt.ru/word/{request.Text}"),
                 InlineKeyboardButton.WithUrl("Перевод Reverso Context",
                     $"https://context.reverso.net/translation/russian-english/{request.Text}")
-            });
+            ]);
         }
         
-        replyMarkup.Add(new[]
-        {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeTranslationLanguage} {vocabularyEntryId}"),
-        });
+        replyMarkup.Add([
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeTranslationLanguage} {vocabularyEntryId}")
+        ]);
         
-        replyMarkup.Add(new[]
-        {
+        replyMarkup.Add([
             InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
-        });
+        ]);
         
         var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
