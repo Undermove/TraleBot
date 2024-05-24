@@ -1,0 +1,344 @@
+/* Основные стили */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Ограничение размеров изображений */
+img {
+    max-width: 100%;
+    height: auto;
+    max-height: 500px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Стили для Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    background-color: #f8f8f8;
+}
+
+header .logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+header nav a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #333;
+}
+
+header .cta {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+/* Стили для Hero Section */
+#hero {
+    text-align: center;
+    padding: 50px 20px;
+    background-color: #007bff;
+    color: white;
+}
+
+#hero h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+#hero p {
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+#hero .cta {
+    padding: 10px 20px;
+    background-color: white;
+    color: #007bff;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+#hero img {
+    margin-top: 20px;
+}
+
+/* Стили для скриншотов */
+.screenshots {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.screenshots img {
+    max-width: 30%;
+    height: auto;
+    border-radius: 10px;
+}
+
+/* Стили для Features Section */
+#features {
+    padding: 60px 20px;
+    background-color: #f8f8f8;
+    text-align: center;
+}
+
+#features h2 {
+    font-size: 36px;
+    margin-bottom: 40px;
+}
+
+.features-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Изменено на центрирование */
+}
+
+.feature {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 40px;
+    text-align: center;
+    margin-left: auto; /* Добавлено для центрирования */
+    margin-right: auto; /* Добавлено для центрирования */
+}
+
+.feature img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+}
+
+.feature h3 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.feature p {
+    font-size: 16px;
+    color: #555;
+}
+
+/* Стили для How It Works Section */
+#how-it-works {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+#how-it-works h2 {
+    font-size: 36px;
+    margin-bottom: 40px;
+}
+
+#how-it-works ol {
+    list-style: none;
+    padding: 0;
+}
+
+#how-it-works li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#how-it-works li h3 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+#how-it-works li p {
+    font-size: 16px;
+    color: #555;
+}
+
+/* Стили для Testimonials Section */
+#testimonials {
+    padding: 60px 20px;
+    background-color: #f8f8f8;
+    text-align: center;
+}
+
+#testimonials h2 {
+    font-size: 36px;
+    margin-bottom: 40px;
+}
+
+.testimonials-slider {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+
+.testimonial {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.testimonial p {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+.testimonial img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+.testimonial h3 {
+    font-size: 18px;
+    margin-bottom: 0;
+}
+
+/* Стили для Registration Section */
+#registration {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+#registration h2 {
+    font-size: 36px;
+    margin-bottom: 40px;
+}
+
+#registration form {
+    display: inline-block;
+    max-width: 500px;
+    width: 100%;
+}
+
+#registration input {
+    width: calc(100% - 30px);
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#registration .cta {
+    display: inline-block;
+    width: 100%;
+    padding: 15px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+/* Стили для Contact Section */
+#contact {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+#contact h2 {
+    font-size: 36px;
+    margin-bottom: 40px;
+}
+
+#contact p {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+#contact form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+#contact input, #contact textarea {
+    width: calc(100% - 30px);
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#contact textarea {
+    height: 150px;
+    resize: none;
+}
+
+#contact .cta {
+    padding: 15px 30px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+/* Стили для Footer */
+footer {
+    padding: 20px;
+    background-color: #f8f8f8;
+    text-align: center;
+}
+
+footer p {
+    font-size: 14px;
+    color: #555;
+}
+
+footer a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #007bff;
+}
+
+/* Адаптивные стили */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    header nav {
+        margin-top: 10px;
+    }
+
+    header .cta {
+        margin-top: 10px;
+    }
+
+    #hero h1 {
+        font-size: 28px;
+    }
+
+    #hero p {
+        font-size: 18px;
+    }
+
+    #features .features-container {
+        flex-direction: column;
+    }
+
+    #how-it-works li {
+        flex-direction: column;
+    }
+
+    .screenshots {
+        flex-direction: column;
+    }
+
+    .screenshots img {
+        max-width: 80%;
+        margin-bottom: 20px;
+    }
+}
