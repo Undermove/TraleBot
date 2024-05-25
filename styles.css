@@ -12,7 +12,7 @@ img {
     height: auto;
     max-height: 500px;
     display: block;
-    margin: 0;
+    margin: 0 auto;
 }
 
 /* Стили для Header */
@@ -102,7 +102,7 @@ header .cta {
 .features-container {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center; /* Изменено на центрирование */
+    justify-content: center;
 }
 
 .feature {
@@ -198,7 +198,7 @@ header .cta {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    margin-bottom: 10px;
+    margin: 0 auto 10px auto; /* Центрирование изображения */
 }
 
 .testimonial h3 {
