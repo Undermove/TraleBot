@@ -69,6 +69,12 @@ header .cta {
 }
 
 @media (max-width: 768px) {
+    header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
     header nav {
         display: none;
         flex-direction: column;
@@ -89,7 +95,7 @@ header .cta {
     }
 
     header .cta {
-        margin-top: 10px;
+        display: none;
     }
 }
 
@@ -358,8 +364,17 @@ footer a {
 /* Адаптивные стили */
 @media (max-width: 768px) {
     header {
-        flex-direction: column;
-        text-align: center;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    header .logo {
+        order: 1;
+    }
+
+    header .burger-menu {
+        order: 2;
     }
 
     header nav {
@@ -382,7 +397,7 @@ footer a {
     }
 
     header .cta {
-        margin-top: 10px;
+        display: none;
     }
 }
 
