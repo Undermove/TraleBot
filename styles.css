@@ -342,3 +342,36 @@ footer a {
         margin-bottom: 40px;
     }
 }
+
+/* Slick Customization */
+.slick-prev, .slick-next {
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+
+.slick-prev {
+    left: 10px;
+}
+
+.slick-next {
+    right: 10px;
+}
+
+.slick-slide {
+    opacity: 0.5;
+    transition: opacity 0.5s;
+}
+
+.slick-current {
+    opacity: 1 !important;
+}
+
+.slick-slide img {
+    display: block;
+    margin: 0 auto;
+}
+
+.slick-dots li button:before {
+    color: white;
+}
