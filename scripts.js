@@ -1,7 +1,7 @@
 $(document).ready(function(){
     $('.screenshots').slick({
         dots: true,
-        infinite: false,
+        infinite: true, // Включаем бесконечную прокрутку
         speed: 300,
         slidesToShow: 1,
         centerMode: true,

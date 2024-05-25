@@ -79,10 +79,13 @@ header .cta {
     justify-content: center;
     gap: 20px;
     margin-bottom: 20px;
+    max-width: 80%; /* Задать максимальную ширину для слайдера */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .screenshots img {
-    max-width: 30%;
+    max-width: 100%;
     height: auto;
     border-radius: 10px;
 }
@@ -351,11 +354,11 @@ footer a {
 }
 
 .slick-prev {
-    left: 10px;
+    left: 10px; /* Подвинуть ближе к скриншотам */
 }
 
 .slick-next {
-    right: 10px;
+    right: 10px; /* Подвинуть ближе к скриншотам */
 }
 
 .slick-slide {
@@ -374,4 +377,9 @@ footer a {
 
 .slick-dots li button:before {
     color: white;
+}
+
+.screenshots .slick-slide {
+    max-width: 500px; /* Устанавливаем максимальную ширину для слайдов */
+    margin: 0 10px; /* Добавляем отступ для слайдов */
 }
