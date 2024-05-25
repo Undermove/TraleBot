@@ -9,3 +9,13 @@ $(document).ready(function(){
         adaptiveHeight: true
     });
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    const burgerMenu = document.querySelector('.burger-menu');
+    const navMenu = document.querySelector('header nav');
+
+    burgerMenu.addEventListener('click', function() {
+        navMenu.classList.toggle('active');
+    });
+});
+

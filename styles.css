@@ -22,6 +22,7 @@ header {
     align-items: center;
     padding: 20px 30px;
     background-color: #f8f8f8;
+    position: relative;
 }
 
 header .logo {
@@ -50,6 +51,46 @@ header .cta {
     color: white;
     text-decoration: none;
     border-radius: 5px;
+}
+
+/* Стили для Burger Menu */
+.burger-menu {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.burger-menu span {
+    height: 3px;
+    background: #333;
+    margin: 5px 0;
+    width: 25px;
+    border-radius: 3px;
+}
+
+@media (max-width: 768px) {
+    header nav {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background-color: #f8f8f8;
+        border-radius: 5px;
+        padding: 10px 20px;
+    }
+
+    header nav.active {
+        display: flex;
+    }
+
+    header .burger-menu {
+        display: flex;
+    }
+
+    header .cta {
+        margin-top: 10px;
+    }
 }
 
 /* Стили для Hero Section */
@@ -322,36 +363,26 @@ footer a {
     }
 
     header nav {
-        margin-top: 10px;
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background-color: #f8f8f8;
+        border-radius: 5px;
+        padding: 10px 20px;
+    }
+
+    header nav.active {
+        display: flex;
+    }
+
+    header .burger-menu {
+        display: flex;
     }
 
     header .cta {
         margin-top: 10px;
-    }
-
-    #hero h1 {
-        font-size: 28px;
-    }
-
-    #hero p {
-        font-size: 18px;
-    }
-
-    #features .features-container {
-        flex-direction: column;
-    }
-
-    #how-it-works li {
-        flex-direction: column;
-    }
-
-    .screenshots {
-        flex-direction: column;
-    }
-
-    .screenshots img {
-        max-width: 80%;
-        margin-bottom: 40px;
     }
 }
 
