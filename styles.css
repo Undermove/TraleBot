@@ -190,6 +190,7 @@ header .cta {
 }
 
 /* Стили для How It Works Section */
+/* Стили для How It Works Section */
 #how-it-works {
     padding: 60px 20px;
     text-align: center;
@@ -200,24 +201,32 @@ header .cta {
     margin-bottom: 40px;
 }
 
-#how-it-works ol {
-    list-style: none;
-    padding: 0;
-}
-
-#how-it-works li {
+.steps {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
 }
 
-#how-it-works li h3 {
+.step {
+    width: 100%;
+    max-width: 300px;
+    text-align: center;
+}
+
+.step img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 20px;
+    border-radius: 10px; /* Скругление углов изображений */
+}
+
+.step h3 {
     font-size: 24px;
     margin-bottom: 10px;
 }
 
-#how-it-works li p {
+.step p {
     font-size: 16px;
     color: #555;
 }
