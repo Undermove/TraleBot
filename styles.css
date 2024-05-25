@@ -25,8 +25,17 @@ header {
 }
 
 header .logo {
+    display: flex;
+    align-items: center;
     font-size: 24px;
     font-weight: bold;
+}
+
+header .logo img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px; /* Отступ между логотипом и названием */
 }
 
 header nav a {
@@ -113,8 +122,6 @@ header .cta {
     max-width: 300px;
     margin-bottom: 40px;
     text-align: center;
-    margin-left: auto; /* Добавлено для центрирования */
-    margin-right: auto; /* Добавлено для центрирования */
 }
 
 .feature img {
