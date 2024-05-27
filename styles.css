@@ -138,6 +138,7 @@ header .cta {
     max-width: 80%; /* Задать максимальную ширину для слайдера */
     margin-left: auto;
     margin-right: auto;
+    max-width: 800px;
 }
 
 .screenshots img {
@@ -161,6 +162,8 @@ header .cta {
 .features-container {
     display: flex;
     flex-wrap: wrap;
+    max-width: 800px;
+    margin: 0 auto;
     justify-content: center;
 }
 
@@ -190,10 +193,11 @@ header .cta {
 }
 
 /* Стили для How It Works Section */
-/* Стили для How It Works Section */
 #how-it-works {
     padding: 60px 20px;
     text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 #how-it-works h2 {
@@ -247,6 +251,8 @@ header .cta {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-around;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .testimonial {
