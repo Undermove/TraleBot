@@ -63,8 +63,8 @@ public class CreateManualTranslation : IRequest<ManualTranslationResult>
             var vocabularyEntry = new VocabularyEntry
             {
                 Id = entryId,
-                Word = request.Word!.ToLowerInvariant(),
-                Definition = definition.ToLowerInvariant(),
+                Word = request.Word!.Trim().ToLowerInvariant(),
+                Definition = definition.Trim().ToLowerInvariant(),
                 AdditionalInfo = additionalInfo.ToLowerInvariant(),
                 Example = "",
                 UserId = request.UserId,

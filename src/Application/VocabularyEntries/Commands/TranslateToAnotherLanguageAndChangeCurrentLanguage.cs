@@ -69,8 +69,8 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
             CancellationToken ct)
         {
             var updatedAtUtc = DateTime.UtcNow;
-            sourceEntry.Word = sourceEntry.Word.ToLowerInvariant();
-            sourceEntry.Definition = definition.ToLowerInvariant();
+            sourceEntry.Word = sourceEntry.Word.Trim().ToLowerInvariant();
+            sourceEntry.Definition = definition.Trim().ToLowerInvariant();
             sourceEntry.AdditionalInfo = additionalInfo.ToLowerInvariant();
             sourceEntry.Example = example;
             sourceEntry.UpdatedAtUtc = updatedAtUtc;

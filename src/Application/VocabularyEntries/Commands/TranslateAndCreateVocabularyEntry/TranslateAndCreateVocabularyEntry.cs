@@ -81,8 +81,8 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
             var vocabularyEntry = new VocabularyEntry
             {
                 Id = entryId,
-                Word = request.Word.ToLowerInvariant(),
-                Definition = definition.ToLowerInvariant(),
+                Word = request.Word.Trim().ToLowerInvariant(),
+                Definition = definition.Trim().ToLowerInvariant(),
                 AdditionalInfo = additionalInfo.ToLowerInvariant(),
                 Example = example,
                 UserId = request.UserId,
