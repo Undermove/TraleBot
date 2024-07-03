@@ -106,6 +106,8 @@ metadata:
   name: tralebot-ingress
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   tls:
     - hosts:
@@ -115,6 +117,13 @@ spec:
     - host: tralebot.com
       http:
         paths:
+          - path: /.well-known/acme-challenge/
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: tralebot-service
+                port:
+                  number: 80
           - path: /
             pathType: Prefix
             backend:
