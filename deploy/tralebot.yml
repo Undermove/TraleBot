@@ -116,7 +116,7 @@ spec:
       http:
         paths:
           - path: /.well-known/acme-challenge/
-            pathType: ImplementationSpecific
+            pathType: Exact
             backend:
               service:
                 name: tralebot-service
