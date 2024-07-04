@@ -106,8 +106,6 @@ metadata:
   name: tralebot-ingress
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   tls:
     - hosts:
