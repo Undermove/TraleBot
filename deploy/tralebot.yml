@@ -115,13 +115,6 @@ spec:
     - host: tralebot.com
       http:
         paths:
-          - path: /.well-known/acme-challenge/
-            pathType: Exact
-            backend:
-              service:
-                name: tralebot-service
-                port:
-                  number: 80
           - path: /
             pathType: Prefix
             backend:
