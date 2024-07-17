@@ -12,19 +12,19 @@
         <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.12" />
         <PackageReference Include="Google.Cloud.Translation.V2" Version="3.4.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.3">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.7">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.7.0-rc.1" />
-        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.7.0" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
         <PackageReference Include="Prometheus.Client" Version="5.2.0" />
         <PackageReference Include="Prometheus.Client.AspNetCore" Version="5.0.0" />
         <PackageReference Include="Prometheus.Client.HttpRequestDurations" Version="3.6.0" />
         <PackageReference Include="Telegram.Bot" Version="19.0.0" />
-        <PackageReference Include="HtmlAgilityPack" Version="1.11.60" />
+        <PackageReference Include="HtmlAgilityPack" Version="1.11.61" />
     </ItemGroup>
 
     <ItemGroup>
