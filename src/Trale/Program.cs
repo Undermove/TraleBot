@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Persistence;
+using Trale.Common;
 using Trale.HostedServices;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,6 +56,8 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred while migrating or initializing the database");
     }
 }
+
+app.UseMiddleware<ExceptionsMiddleware>();
 
 app.MapControllers();
 await app.RunAsync();
