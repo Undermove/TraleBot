@@ -9,7 +9,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.12" />
         <PackageReference Include="Google.Cloud.Translation.V2" Version="3.4.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.7">
@@ -18,6 +17,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+        <PackageReference Include="OpenAI" Version="2.0.0" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.7.0-rc.1" />
         <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
         <PackageReference Include="Prometheus.Client" Version="5.2.0" />
