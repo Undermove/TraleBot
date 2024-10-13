@@ -39,6 +39,10 @@ public static class DependencyInjection
         services.AddOpenTelemetry()
             .WithMetrics(builder =>
             {
+                builder.AddAspNetCoreInstrumentation();
+                builder.AddHttpClientInstrumentation();
+                builder.AddRuntimeInstrumentation();
+                //builder.AddProcessInstrumentation();
                 builder.AddPrometheusExporter();
                 builder.AddMeter("Microsoft.AspNetCore.Hosting", "Microsoft.AspNetCore.Server.Kestrel");
             });
