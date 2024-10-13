@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Application.Common.Interfaces.TranslationService;
 using Domain.Entities;
 using Microsoft.Extensions.Options;
@@ -37,31 +38,37 @@ public class OpenAiAzureTranslationService : IAiTranslationService
             new AssistantChatMessage("Definition: нет худа без добра; AdditionalTranslations:; Example: Even though he had lost the match, he had gained in experience and was now more confident. Every cloud has a silver lining."),
             new UserChatMessage(requestWord)
         ];
-
-        var response = await _chatClient.CompleteChatAsync(chatMessages, cancellationToken: ct);
+        // Формируем JSON-схему с требуемыми полями
+        var jsonSchema = BinaryData.FromString(
+            """
+            {
+                "type": "object",
+                "properties": {
+                    "Definition": { "type": "string" },
+                    "AdditionalTranslations": { "type": "string" },
+                    "Example": { "type": "string" }
+                },
+                "required": ["Definition", "AdditionalTranslations", "Example"],
+                "additionalProperties": false
+            }
+            """);
+        var response = await _chatClient.CompleteChatAsync(
+            chatMessages,
+            new ChatCompletionOptions
+            {
+                ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat("translation", jsonSchema, "en", true),
+                MaxOutputTokenCount = 300
+            }, cancellationToken: ct);
         
-        const string definitionFieldName = "Definition: ";
-        const string additionalTranslationsFieldName = "AdditionalTranslations: ";
-        const string exampleFieldName = "Example: ";
-        
-        var splitResponse = response.Value.Content[0].Text.Split(";");
+        var openAiJsonResponse = JsonSerializer.Deserialize<OpenAiJsonResponse>(response.Value.Content[0].Text);
 
-        if (!splitResponse.Any(s => s.Contains(definitionFieldName)))
+        if (openAiJsonResponse == null)
         {
             return new TranslationResult.Failure();
         }
         
-        var definition = GetField(splitResponse, definitionFieldName);
-        var additionalInfo = GetField(splitResponse, additionalTranslationsFieldName);
-        var example = GetField(splitResponse, exampleFieldName);
-
-        return new TranslationResult.Success(definition, additionalInfo, example);
+        return new TranslationResult.Success(openAiJsonResponse.Definition, openAiJsonResponse.AdditionalTranslations, openAiJsonResponse.Example);
     }
-
-    private static string GetField(string[] splitResponse, string fieldName)
-    {
-        return splitResponse
-            .SingleOrDefault(s => s.Contains(fieldName))?
-            .Replace(fieldName, "").Trim() ?? "";
-    }
+    
+    private record OpenAiJsonResponse(string Definition, string AdditionalTranslations, string Example);
 }
