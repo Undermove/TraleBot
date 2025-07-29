@@ -13,7 +13,8 @@ public class TelegramDialogProcessor(
     IEnumerable<IBotCommand> commands,
     ILoggerFactory logger,
     ITelegramBotClient telegramBotClient,
-    IMediator mediator)
+    IMediator mediator,
+    IIdempotencyService idempotencyService)
     : IDialogProcessor
 {
     private readonly List<IBotCommand> _commands = commands.ToList();
@@ -21,9 +22,29 @@ public class TelegramDialogProcessor(
 
     public async Task ProcessCommand<T>(T request, CancellationToken token)
     {
+        if (request is not Update update)
+        {
+            throw new ArgumentException("Can't cast message to Telegram Update");
+        }
+
         var telegramRequest = await MapToTelegramRequest(request, token);
 
-        _logger.LogDebug("Incoming request {TelegramRequestText}", telegramRequest.Text);
+        _logger.LogDebug("Incoming request {TelegramRequestText} with UpdateId: {UpdateId}", telegramRequest.Text, update.Id);
+        
+        // Try to mark as processing - this will fail if already processed (race condition protection)
+        var canProcess = await idempotencyService.TryMarkRequestAsProcessedAsync(
+            update.Id,
+            telegramRequest.UserTelegramId,
+            update.Type.ToString(),
+            telegramRequest.Text,
+            token);
+
+        if (!canProcess)
+        {
+            _logger.LogInformation("Skipping duplicate request with UpdateId: {UpdateId}", update.Id);
+            return;
+        }
+
         try
         {
             foreach (var command in _commands)
