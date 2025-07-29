@@ -24,6 +24,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<QuizQuestion> QuizQuestions { get; set; } = null!;
     public DbSet<Achievement> Achievements { get; set; } = null!;
     public DbSet<ShareableQuiz> ShareableQuizzes { get; set; } = null!;
+    public DbSet<ProcessedUpdate> ProcessedUpdates { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -39,6 +40,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new InvoiceConfiguration());
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());
         modelBuilder.ApplyConfiguration(new ShareableQuizConfiguration());
+        modelBuilder.ApplyConfiguration(new ProcessedUpdateConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

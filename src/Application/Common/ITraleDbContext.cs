@@ -15,6 +15,7 @@ public interface ITraleDbContext
     DbSet<QuizQuestion> QuizQuestions { get; }
     DbSet<Achievement> Achievements { get; }
     DbSet<ShareableQuiz> ShareableQuizzes { get; }
+    DbSet<ProcessedUpdate> ProcessedUpdates { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);
