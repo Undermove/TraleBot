@@ -6,42 +6,46 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services;
 
-public class IdempotencyService : IIdempotencyService
+public class IdempotencyService(ITraleDbContext context, ILogger<IdempotencyService> logger)
+    : IIdempotencyService
 {
-    private readonly ITraleDbContext _context;
-    private readonly ILogger<IdempotencyService> _logger;
-    
-    public IdempotencyService(ITraleDbContext context, ILogger<IdempotencyService> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
-
     public async Task<bool> IsRequestProcessedAsync(int updateId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var exists = await _context.ProcessedUpdates
+            var exists = await context.ProcessedUpdates
                 .AnyAsync(x => x.UpdateId == updateId, cancellationToken);
             
             if (exists)
             {
-                _logger.LogInformation("Duplicate request detected for UpdateId: {UpdateId}", updateId);
+                logger.LogInformation("Duplicate request detected for UpdateId: {UpdateId}", updateId);
             }
             
             return exists;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking if request is processed for UpdateId: {UpdateId}", updateId);
-            return false; // On error, allow processing to prevent blocking
+            logger.LogError(ex, "Error checking if request is processed for UpdateId: {UpdateId}", updateId);
+            return false;
         }
     }
 
-    public async Task MarkRequestAsProcessedAsync(int updateId, long userTelegramId, string requestType, string text, CancellationToken cancellationToken = default)
+    public async Task<bool> TryMarkRequestAsProcessedAsync(int updateId, long userTelegramId, string requestType, string text, CancellationToken cancellationToken = default)
     {
+        using var transaction = await context.BeginTransactionAsync(cancellationToken);
         try
         {
+            // Double-check inside transaction
+            var exists = await context.ProcessedUpdates
+                .AnyAsync(x => x.UpdateId == updateId, cancellationToken);
+            
+            if (exists)
+            {
+                logger.LogInformation("Request already processed (race condition avoided) for UpdateId: {UpdateId}", updateId);
+                await transaction.RollbackAsync(cancellationToken);
+                return false; // Already processed
+            }
+
             var processedUpdate = new ProcessedUpdate
             {
                 UpdateId = updateId,
@@ -51,16 +55,38 @@ public class IdempotencyService : IIdempotencyService
                 Text = text.Length > 1000 ? text[..1000] : text
             };
 
-            _context.ProcessedUpdates.Add(processedUpdate);
-            await _context.SaveChangesAsync(cancellationToken);
+            context.ProcessedUpdates.Add(processedUpdate);
+            await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             
-            _logger.LogDebug("Marked request as processed for UpdateId: {UpdateId}", updateId);
+            logger.LogDebug("Marked request as processed for UpdateId: {UpdateId}", updateId);
+            return true; // Successfully marked as processed
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // Handle unique constraint violation - another thread already processed this
+            logger.LogInformation("Request already processed (unique constraint) for UpdateId: {UpdateId}", updateId);
+            await transaction.RollbackAsync(cancellationToken);
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error marking request as processed for UpdateId: {UpdateId}", updateId);
-            // Don't throw - this shouldn't break the main flow
+            logger.LogError(ex, "Error marking request as processed for UpdateId: {UpdateId}", updateId);
+            await transaction.RollbackAsync(cancellationToken);
+            return false;
         }
+    }
+
+    public async Task MarkRequestAsProcessedAsync(int updateId, long userTelegramId, string requestType, string text, CancellationToken cancellationToken = default)
+    {
+        await TryMarkRequestAsProcessedAsync(updateId, userTelegramId, requestType, text, cancellationToken);
+    }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        // PostgreSQL unique constraint violation
+        return ex.InnerException?.Message?.Contains("23505") == true ||
+               ex.InnerException?.Message?.Contains("duplicate key") == true;
     }
 
     public async Task CleanupOldRecordsAsync(CancellationToken cancellationToken = default)
@@ -69,21 +95,21 @@ public class IdempotencyService : IIdempotencyService
         {
             var cutoffDate = DateTime.UtcNow.AddDays(-7); // Keep records for 7 days
             
-            var oldRecords = await _context.ProcessedUpdates
+            var oldRecords = await context.ProcessedUpdates
                 .Where(x => x.ProcessedAt < cutoffDate)
                 .ToListAsync(cancellationToken);
 
             if (oldRecords.Any())
             {
-                _context.ProcessedUpdates.RemoveRange(oldRecords);
-                await _context.SaveChangesAsync(cancellationToken);
+                context.ProcessedUpdates.RemoveRange(oldRecords);
+                await context.SaveChangesAsync(cancellationToken);
                 
-                _logger.LogInformation("Cleaned up {Count} old processed update records", oldRecords.Count);
+                logger.LogInformation("Cleaned up {Count} old processed update records", oldRecords.Count);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during cleanup of old processed update records");
+            logger.LogError(ex, "Error during cleanup of old processed update records");
             // Don't throw - cleanup is not critical
         }
     }

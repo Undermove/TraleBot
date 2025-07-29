@@ -27,17 +27,24 @@ public class TelegramDialogProcessor(
             throw new ArgumentException("Can't cast message to Telegram Update");
         }
 
-        // Check for duplicate requests using Telegram's update_id
-        if (await idempotencyService.IsRequestProcessedAsync(update.Id, token))
+        var telegramRequest = await MapToTelegramRequest(request, token);
+
+        _logger.LogDebug("Incoming request {TelegramRequestText} with UpdateId: {UpdateId}", telegramRequest.Text, update.Id);
+        
+        // Try to mark as processing - this will fail if already processed (race condition protection)
+        var canProcess = await idempotencyService.TryMarkRequestAsProcessedAsync(
+            update.Id,
+            telegramRequest.UserTelegramId,
+            update.Type.ToString(),
+            telegramRequest.Text,
+            token);
+
+        if (!canProcess)
         {
             _logger.LogInformation("Skipping duplicate request with UpdateId: {UpdateId}", update.Id);
             return;
         }
 
-        var telegramRequest = await MapToTelegramRequest(request, token);
-
-        _logger.LogDebug("Incoming request {TelegramRequestText} with UpdateId: {UpdateId}", telegramRequest.Text, update.Id);
-        
         try
         {
             foreach (var command in _commands)
@@ -56,38 +63,14 @@ public class TelegramDialogProcessor(
                 
                 _logger.LogInformation("Command with text {RequestText} handled by {CommandName} ", telegramRequest.Text, typeName);
                 
-                // Mark as processed after successful execution
-                await idempotencyService.MarkRequestAsProcessedAsync(
-                    update.Id, 
-                    telegramRequest.UserTelegramId, 
-                    update.Type.ToString(), 
-                    telegramRequest.Text, 
-                    token);
-                
                 return;
             }
             
             _logger.LogDebug("Command {CommandName} have no handlers", telegramRequest.Text);
-            
-            // Mark as processed even if no handler found to prevent reprocessing
-            await idempotencyService.MarkRequestAsProcessedAsync(
-                update.Id, 
-                telegramRequest.UserTelegramId, 
-                update.Type.ToString(), 
-                telegramRequest.Text, 
-                token);
         }
         catch (Exception e)
         {
             await SendMessageAboutErrorToUser(token, telegramRequest, e);
-            
-            // Still mark as processed to prevent reprocessing failed requests
-            await idempotencyService.MarkRequestAsProcessedAsync(
-                update.Id, 
-                telegramRequest.UserTelegramId, 
-                update.Type.ToString(), 
-                telegramRequest.Text, 
-                token);
         }
     }
 
