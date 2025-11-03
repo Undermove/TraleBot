@@ -46,4 +46,17 @@ public static class CommandNames
     public const string ChangeCurrentLanguage = "/changelanguage";
     public const string ChangeCurrentLanguageAndDeleteVocabulary = "/chadl";
     public const string SetInitialLanguage = "/setinitiallanguage";
+    
+    // georgian verb learning commands
+    public const string StartVerbLearning = "/startverblearning";
+    public const string StartVerbLearningIcon = "🎓";
+    public const string VerbPrefixes = "/verbprefixes";
+    public const string VerbPrefixesIcon = "🧠";
+    public const string ReviewHardVerbs = "/reviewhardverbs";
+    public const string ReviewHardVerbsIcon = "🔁";
+    public const string VerbProgress = "/verbprogress";
+    public const string VerbProgressIcon = "📈";
+    public const string SubmitVerbAnswer = "/submitverbaswer";
+    public const string NextVerbCard = "/nextverbcard";
+    public const string NextVerbCardIcon = "▶️";
 }

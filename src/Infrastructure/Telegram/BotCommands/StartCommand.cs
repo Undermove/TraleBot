@@ -13,7 +13,7 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator) : IBotC
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Start));
+        return Task.FromResult(commandPayload.Equals(CommandNames.Start, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)

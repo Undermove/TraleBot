@@ -19,6 +19,7 @@ public class User
     public virtual ICollection<Invoice> Invoices { get; set; }
     public virtual ICollection<Achievement> Achievements { get; set; }
     public virtual ICollection<ShareableQuiz> ShareableQuizzes { get; set; }
+    public virtual ICollection<StudentVerbProgress> VerbProgress { get; set; }
     
     public bool IsActivePremium()
     {

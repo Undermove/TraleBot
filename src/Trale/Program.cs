@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Text.Json.Serialization;
+using System.Threading;
 using Application;
 using Infrastructure;
 using Infrastructure.Monitoring;
@@ -50,6 +52,11 @@ using (var scope = app.Services.CreateScope())
     {
         var botDbContext = services.GetRequiredService<TraleDbContext>();
         await botDbContext.Database.MigrateAsync();
+        
+        // Load Georgian verbs data
+        var loaderService = services.GetRequiredService<Infrastructure.GeorgianVerbs.IVerbDataLoaderService>();
+        var verbsJsonPath = Path.Combine(AppContext.BaseDirectory, "geogian-verbs.json");
+        await loaderService.LoadVerbDataAsync(verbsJsonPath, botDbContext, CancellationToken.None);
     }
     catch (Exception ex)
     {

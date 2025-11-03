@@ -2,6 +2,8 @@ using System.Reflection;
 using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
+using Application.GeorgianVerbs;
+using Application.GeorgianVerbs.Services;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -22,6 +24,8 @@ public static class DependencyInjection
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();
         services.AddScoped<ITranslationModule, GeorgianTranslationModule>();
+        
+        services.AddScoped<IVerbSrsService, VerbSrsService>();
         
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();

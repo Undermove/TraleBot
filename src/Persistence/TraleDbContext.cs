@@ -25,6 +25,9 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<Achievement> Achievements { get; set; } = null!;
     public DbSet<ShareableQuiz> ShareableQuizzes { get; set; } = null!;
     public DbSet<ProcessedUpdate> ProcessedUpdates { get; set; } = null!;
+    public DbSet<GeorgianVerb> GeorgianVerbs { get; set; } = null!;
+    public DbSet<VerbCard> VerbCards { get; set; } = null!;
+    public DbSet<StudentVerbProgress> StudentVerbProgress { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -41,6 +44,9 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new AchievementConfiguration());
         modelBuilder.ApplyConfiguration(new ShareableQuizConfiguration());
         modelBuilder.ApplyConfiguration(new ProcessedUpdateConfiguration());
+        modelBuilder.ApplyConfiguration(new GeorgianVerbConfiguration());
+        modelBuilder.ApplyConfiguration(new VerbCardConfiguration());
+        modelBuilder.ApplyConfiguration(new StudentVerbProgressConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -2,12 +2,14 @@ using Application.Common;
 using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.TranslationService;
+using Infrastructure.GeorgianVerbs;
 using Infrastructure.Monitoring;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.BotCommands.TranslateCommands;
+using Infrastructure.Telegram.BotCommands.VerbLearning;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Telegram.Services;
 using Infrastructure.Services;
@@ -93,6 +95,18 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand>();
         services.AddScoped<IBotCommand, TranslateManuallyCommand>();
         services.AddScoped<IBotCommand, TranslateCommand>();
+        
+        // Georgian verbs learning commands
+        services.AddScoped<IBotCommand, StartVerbLearningCommand>();
+        services.AddScoped<IBotCommand, VerbPrefixesCommand>();
+        services.AddScoped<IBotCommand, SubmitVerbAnswerBotCommand>();
+        services.AddScoped<IBotCommand, NextVerbCardCommand>();
+        services.AddScoped<IBotCommand, VerbProgressCommand>();
+        services.AddScoped<IBotCommand, ReviewHardVerbsCommand>();
+        
+        // Georgian verbs data loader
+        services.AddScoped<IVerbDataLoaderService, VerbDataLoaderService>();
+        
         return services;
     }
 }

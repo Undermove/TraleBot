@@ -16,6 +16,9 @@ public interface ITraleDbContext
     DbSet<Achievement> Achievements { get; }
     DbSet<ShareableQuiz> ShareableQuizzes { get; }
     DbSet<ProcessedUpdate> ProcessedUpdates { get; }
+    DbSet<GeorgianVerb> GeorgianVerbs { get; }
+    DbSet<VerbCard> VerbCards { get; }
+    DbSet<StudentVerbProgress> StudentVerbProgress { get; }
     
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);
