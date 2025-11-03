@@ -93,6 +93,8 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand>();
         services.AddScoped<IBotCommand, TranslateManuallyCommand>();
         services.AddScoped<IBotCommand, TranslateCommand>();
+        services.AddScoped<IBotCommand, GeorgianLevelsMenuCommand>();
+        services.AddScoped<IBotCommand, GeorgianLevelCommand>();
         return services;
     }
 }

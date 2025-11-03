@@ -46,4 +46,12 @@ public static class CommandNames
     public const string ChangeCurrentLanguage = "/changelanguage";
     public const string ChangeCurrentLanguageAndDeleteVocabulary = "/chadl";
     public const string SetInitialLanguage = "/setinitiallanguage";
+    
+    // georgian language learning commands
+    public const string GeorgianLevelsMenu = "/georgianlevelsmenu";
+    public const string GeorgianA1 = "/georgiaa1";
+    public const string GeorgianA2 = "/georgiaa2";
+    public const string GeorgianB1 = "/georgiab1";
+    public const string GeorgianB2 = "/georgiab2";
+    public const string GeorgianC1 = "/georgiac1";
 }
