@@ -29,13 +29,13 @@ public static class MenuKeyboard
             }
         };
         
-        // Add Georgian language learning button only for Georgian language
+        // Add Georgian repetition modules button only for Georgian language
         if (currentLanguage == Language.Georgian)
         {
             buttons.Add(new[]
             {
-                InlineKeyboardButton.WithCallbackData("🇬🇪 Учить грузинский от A1 до С2", 
-                    CommandNames.GeorgianLevelsMenu)
+                InlineKeyboardButton.WithCallbackData("📦 Модули повторения", 
+                    CommandNames.GeorgianRepetitionModules)
             });
         }
         

@@ -47,11 +47,20 @@ public static class CommandNames
     public const string ChangeCurrentLanguageAndDeleteVocabulary = "/chadl";
     public const string SetInitialLanguage = "/setinitiallanguage";
     
-    // georgian language learning commands
-    public const string GeorgianLevelsMenu = "/georgianlevelsmenu";
-    public const string GeorgianA1 = "/georgiaa1";
-    public const string GeorgianA2 = "/georgiaa2";
-    public const string GeorgianB1 = "/georgiab1";
-    public const string GeorgianB2 = "/georgiab2";
-    public const string GeorgianC1 = "/georgiac1";
+    // georgian language learning commands - repetition modules
+    public const string GeorgianRepetitionModules = "/georgianrepetitionmodules";
+    public const string GeorgianVerbsOfMovement = "/georgianverbsofmovement";
+    public const string GeorgianPronouns = "/georgianpronouns";
+    
+    // Georgian verbs of movement lessons
+    public const string GeorgianVerbsLesson1 = "/georgianverbslesson1";
+    public const string GeorgianVerbsLesson2 = "/georgianverbslesson2";
+    public const string GeorgianVerbsLesson3 = "/georgianverbslesson3";
+    public const string GeorgianVerbsLesson4 = "/georgianverbslesson4";
+    public const string GeorgianVerbsLesson5 = "/georgianverbslesson5";
+    public const string GeorgianVerbsLesson6 = "/georgianverbslesson6";
+    public const string GeorgianVerbsLesson7 = "/georgianverbslesson7";
+    public const string GeorgianVerbsLesson8 = "/georgianverbslesson8";
+    public const string GeorgianVerbsLesson9 = "/georgianverbslesson9";
+    public const string GeorgianVerbsLesson10 = "/georgianverbslesson10";
 }
