@@ -31,19 +31,29 @@ public class GeorgianVerbsLessonCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var (lessonTitle, lessonDescription) = GetLessonContent(request.Text);
+        var (lessonTitle, lessonDescription, showPracticeButton) = GetLessonContent(request.Text);
 
-        var keyboard = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
+        var buttons = new List<InlineKeyboardButton[]>();
+        
+        // Add practice button for lesson 1
+        if (showPracticeButton)
         {
-            new[]
+            buttons.Add(new[]
             {
-                InlineKeyboardButton.WithCallbackData("⬅️ Назад к урокам", CommandNames.GeorgianVerbsOfMovement)
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData("🏠 В главное меню", "/menu")
-            }
+                InlineKeyboardButton.WithCallbackData("▶️ Начать практику", CommandNames.GeorgianVerbsQuizStart1)
+            });
+        }
+        
+        buttons.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData("⬅️ Назад к урокам", CommandNames.GeorgianVerbsOfMovement)
         });
+        buttons.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData("🏠 В главное меню", "/menu")
+        });
+
+        var keyboard = new InlineKeyboardMarkup(buttons.ToArray());
 
         await _client.EditMessageTextAsync(
             request.UserTelegramId,
@@ -53,18 +63,22 @@ public class GeorgianVerbsLessonCommand : IBotCommand
             cancellationToken: token);
     }
 
-    private (string Title, string Description) GetLessonContent(string command)
+    private (string Title, string Description, bool ShowPracticeButton) GetLessonContent(string command)
     {
         return command switch
         {
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson1, StringComparison.InvariantCultureIgnoreCase) =>
-                ("Урок 1. Знакомство с глаголами движения",
-                "На этом уроке вы изучите:\n" +
-                "• Основные глаголы движения в грузинском языке\n" +
-                "• Различие между совершенным и несовершенным видом\n" +
-                "• Использование глаголов в повседневной речи\n" +
-                "• Практические примеры с переводом\n\n" +
-                "Это идеальное начало для понимания грузинских глаголов движения!"),
+                ("🚶 Урок 1: Знакомство с глаголами движения",
+                "🎯 Цель: выучить значения основных глаголов — идти, приходить, возвращаться, входить, выходить и т.д.\n\n" +
+                "📘 Теория: Базовые глаголы движения\n" +
+                "წასვლა — идти, уходить\n" +
+                "მოსვლა — приходить\n" +
+                "დაბრუნება — возвращаться\n" +
+                "შესვლა — входить\n" +
+                "გასვლა — выходить\n" +
+                "ასვლა — подниматься\n" +
+                "ჩასვლა — спускаться\n" +
+                "გადასვლა — переходить", true),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson2, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 2. Приставки направления",
@@ -73,7 +87,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Приставки направления (в-, из-, к-, через-)\n" +
                 "• Как приставки влияют на спряжение\n" +
                 "• Практические упражнения\n\n" +
-                "Приставки - ключ к понимаю глаголов движения!"),
+                "Приставки - ключ к понимаю глаголов движения!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson3, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 3. Спряжение настоящего времени",
@@ -82,7 +96,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Личные формы (я, ты, он/она, мы, вы, они)\n" +
                 "• Согласование с существительными\n" +
                 "• Типичные ошибки и как их избежать\n\n" +
-                "Овладейте настоящим временем!"),
+                "Овладейте настоящим временем!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson4, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 4. Закрепление настоящего времени",
@@ -91,7 +105,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Решите диалоги с глаголами движения\n" +
                 "• Практикуетесь в переводе с русского на грузинский\n" +
                 "• Проверите свои знания\n\n" +
-                "Пора закрепить полученные знания!"),
+                "Пора закрепить полученные знания!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson5, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 5. Прошедшее время (основы)",
@@ -100,7 +114,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Различие между простым и сложным прошедшим\n" +
                 "• Образование форм прошедшего времени\n" +
                 "• Примеры в контексте\n\n" +
-                "Перейдем к рассказам о прошлом!"),
+                "Перейдем к рассказам о прошлом!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson6, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 6. Склонения прошедшего времени",
@@ -109,7 +123,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Все личные формы\n" +
                 "• Правила согласования\n" +
                 "• Отработка на примерах\n\n" +
-                "Все грани прошедшего времени!"),
+                "Все грани прошедшего времени!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson7, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 7. Закрепление прошедшего",
@@ -118,7 +132,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Переводите предложения и тексты\n" +
                 "• Создаете собственные примеры\n" +
                 "• Проверяете понимание\n\n" +
-                "Практикуемся в прошедшем времени!"),
+                "Практикуемся в прошедшем времени!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson8, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 8. Будущее время (основы)",
@@ -127,7 +141,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Способы образования будущего\n" +
                 "• Различие между будущим простым и сложным\n" +
                 "• Примеры использования\n\n" +
-                "Погляделаем в будущее!"),
+                "Погляделаем в будущее!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson9, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 9. Склонения будущего времени",
@@ -136,7 +150,7 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Все личные формы\n" +
                 "• Правильное использование в диалогах\n" +
                 "• Практические задания\n\n" +
-                "Все о будущем времени глаголов!"),
+                "Все о будущем времени глаголов!", false),
 
             _ when command.StartsWith(CommandNames.GeorgianVerbsLesson10, StringComparison.InvariantCultureIgnoreCase) =>
                 ("Урок 10. Итоговое закрепление",
@@ -145,9 +159,9 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 "• Решите комплексные упражнения\n" +
                 "• Практикуете диалоги и переводы\n" +
                 "• Проверяете полное понимание материала\n\n" +
-                "Вы готовы к использованию глаголов движения в реальных ситуациях!"),
+                "Вы готовы к использованию глаголов движения в реальных ситуациях!", false),
 
-            _ => ("Урок", "Содержание урока")
+            _ => ("Урок", "Содержание урока", false)
         };
     }
 }

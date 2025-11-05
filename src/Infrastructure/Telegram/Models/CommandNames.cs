@@ -63,4 +63,8 @@ public static class CommandNames
     public const string GeorgianVerbsLesson8 = "/georgianverbslesson8";
     public const string GeorgianVerbsLesson9 = "/georgianverbslesson9";
     public const string GeorgianVerbsLesson10 = "/georgianverbslesson10";
+    
+    // Georgian verbs quiz commands
+    public const string GeorgianVerbsQuizStart1 = "/georgianverbsquizstart1";
+    public const string GeorgianVerbsQuizAnswer = "/georgianverbsquizanswer";
 }

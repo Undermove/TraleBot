@@ -1,0 +1,541 @@
+{
+  "lesson_id": "motion-1",
+  "title": "Знакомство с глаголами движения",
+  "lexicon": [
+    {"lemma": "წასვლა", "ru": "идти, уходить", "pair": "მოსვლა"},
+    {"lemma": "მოსვლა", "ru": "приходить", "pair": "წასვლა"},
+    {"lemma": "მისვლა", "ru": "дойти, прибыть", "pair": null},
+    {"lemma": "დაბრუნება", "ru": "возвращаться", "pair": null},
+    {"lemma": "შესვლა", "ru": "входить (внутрь)", "pair": "გასვლა"},
+    {"lemma": "გასვლა", "ru": "выходить (наружу)", "pair": "შესვლა"},
+    {"lemma": "אסვლა", "ru": "подниматься (вверх)", "pair": "ჩასვლა"},
+    {"lemma": "ჩასვლა", "ru": "спускаться (вниз)", "pair": "ასვლა"},
+    {"lemma": "გადასვლა", "ru": "переходить (через/на другую сторону)", "pair": null}
+  ],
+  "templates": [
+    "choose_translation_geo",
+    "choose_translation_rus",
+    "cloze_wish",
+    "cloze_like",
+    "pair_opposites"
+  ],
+  "questions": [
+    {
+      "id": "q_geo_away_01",
+      "lemma": "წასვლა",
+      "template": "choose_translation_geo",
+      "question": "„წასვლა“ — это...",
+      "options": ["идти/уходить", "приходить", "возвращаться"],
+      "answer_index": 0,
+      "explanation": "წასვლა — идти, уходить.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_geo_away_02",
+      "lemma": "წასვლა",
+      "template": "choose_translation_geo",
+      "question": "Выбери перевод слова „წასვლა“:",
+      "options": ["дойти/прибыть", "входить", "идти/уходить"],
+      "answer_index": 2,
+      "explanation": "Значение — идти/уходить.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_away_01",
+      "lemma": "წასვლა",
+      "template": "choose_translation_rus",
+      "question": "«идти/уходить» по-грузински?",
+      "options": ["მოსვლა", "წასვლა", "გადასვლა"],
+      "answer_index": 1,
+      "explanation": "„идти/уходить“ =წასვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_away_01",
+      "lemma": "წასვლა",
+      "template": "cloze_wish",
+      "prompt": "Мне нужно «уйти домой»: მინდა სახლში ___",
+      "options": ["წასვლა", "მოსვლა", "დაბრუნება"],
+      "answer_index": 0,
+      "explanation": "мინდა + წასვლა — хочу уйти/пойти.",
+      "tags": ["pattern","context_home"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_like_away_01",
+      "lemma": "წასვლა",
+      "template": "cloze_like",
+      "prompt": "«Я люблю уходить на прогулку»: მიყვარს ___ სეირნობაზე",
+      "options": ["წასვლა", "შესვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "мიყვარს + действие (отглаг. сущ.).",
+      "tags": ["pattern"],
+      "difficulty": 2
+    },
+
+    {
+      "id": "q_geo_come_01",
+      "lemma": "მოსვლა",
+      "template": "choose_translation_geo",
+      "question": "„მოსვლა“ — это...",
+      "options": ["приходить", "идти/уходить", "входить"],
+      "answer_index": 0,
+      "explanation": "მოსვლა — приходить.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_come_01",
+      "lemma": "მოსვლა",
+      "template": "choose_translation_rus",
+      "question": "«приходить» по-грузински?",
+      "options": ["მოსვლა", "მისვლა", "დაბრუნება"],
+      "answer_index": 0,
+      "explanation": "„приходить“ = მოსვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_come_01",
+      "lemma": "მოსვლა",
+      "template": "cloze_wish",
+      "prompt": "«Он хочет прийти ко мне»: მას უნდა ჩემთან ___",
+      "options": ["მოსვლა", "წასვლა", "შესვლა"],
+      "answer_index": 0,
+      "explanation": "ჩემთან მოსვლა — прийти ко мне.",
+      "tags": ["pattern","person_he"],
+      "difficulty": 2
+    },
+
+    {
+      "id": "q_geo_arrive_01",
+      "lemma": "მისვლა",
+      "template": "choose_translation_geo",
+      "question": "„მისვლა“ — это...",
+      "options": ["дойти/прибыть", "возвращаться", "выходить"],
+      "answer_index": 0,
+      "explanation": "მისვლა — прибыть к цели.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_arrive_01",
+      "lemma": "მისვლა",
+      "template": "choose_translation_rus",
+      "question": "«дойти/прибыть» по-грузински?",
+      "options": ["მისვლა", "მოსვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "„прибыть“ = მისვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_arrive_01",
+      "lemma": "მისვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу добраться до школы»: მინდა სკოლამდე ___",
+      "options": ["მისვლა", "წასვლა", "გასვლა"],
+      "answer_index": 0,
+      "explanation": "სკოლამდე მისვლა — дойти до школы.",
+      "tags": ["pattern","place_school"],
+      "difficulty": 2
+    },
+
+    {
+      "id": "q_geo_return_01",
+      "lemma": "დაბრუნება",
+      "template": "choose_translation_geo",
+      "question": "„დაბრუნება“ — это...",
+      "options": ["возвращаться", "входить", "переходить"],
+      "answer_index": 0,
+      "explanation": "დაბრუნება — возвращаться.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_return_01",
+      "lemma": "დაბრუნება",
+      "template": "choose_translation_rus",
+      "question": "«возвращаться» по-грузински?",
+      "options": ["დაბრუნება", "გასვლა", "შესვლა"],
+      "answer_index": 0,
+      "explanation": "„возвращаться“ = დაბრუნება.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_return_01",
+      "lemma": "დაბრუნება",
+      "template": "cloze_wish",
+      "prompt": "«Хочу вернуться домой»: მინდა სახლში ___",
+      "options": ["დაბრუნება", "წასვლა", "მისვლა"],
+      "answer_index": 0,
+      "explanation": "სახლში დაბრუნება — вернуться домой.",
+      "tags": ["pattern","context_home"],
+      "difficulty": 1
+    },
+
+    {
+      "id": "q_geo_enter_01",
+      "lemma": "შესვლა",
+      "template": "choose_translation_geo",
+      "question": "„შესვლა“ — это...",
+      "options": ["входить (внутрь)", "выходить (наружу)", "спускаться"],
+      "answer_index": 0,
+      "explanation": "შესვლა — вход внутрь.",
+      "tags": ["meaning","opposite_pair"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_enter_01",
+      "lemma": "შესვლა",
+      "template": "choose_translation_rus",
+      "question": "«войти (в комнату)» по-грузински?",
+      "options": ["შესვლა", "გასვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "„войти“ = შესვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_enter_01",
+      "lemma": "შესვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу войти в комнату»: მინდა ოთახში ___",
+      "options": ["შესვლა", "გასვლა", "ჩასვლა"],
+      "answer_index": 0,
+      "explanation": "ოთახში შესვლა — войти в комнату.",
+      "tags": ["pattern","room"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_pair_enter_exit_01",
+      "lemma": "შესვლა",
+      "template": "pair_opposites",
+      "question": "Найди противоположность: შესვლა ↔︎ ?",
+      "options": ["გასვლა", "დაბრუნება", "ჩასვლა"],
+      "answer_index": 0,
+      "explanation": "შესვლა (вход) ↔︎ გასვლა (выход).",
+      "tags": ["opposite_pair"],
+      "difficulty": 1
+    },
+
+    {
+      "id": "q_geo_exit_01",
+      "lemma": "გასვლა",
+      "template": "choose_translation_geo",
+      "question": "„გასვლა“ — это...",
+      "options": ["выходить (наружу)", "входить (внутрь)", "подниматься"],
+      "answer_index": 0,
+      "explanation": "გასვლა — выйти наружу.",
+      "tags": ["meaning","opposite_pair"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_exit_01",
+      "lemma": "გასვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу выйти наружу»: მინდა ___ გარეთ",
+      "options": ["გასვლა", "შესვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "გარეთ გასვლა — выйти наружу.",
+      "tags": ["pattern","outside"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_pair_exit_enter_01",
+      "lemma": "გასვლა",
+      "template": "pair_opposites",
+      "question": "Найди противоположность: გასვლა ↔︎ ?",
+      "options": ["შესვლა", "გადასვლა", "წასვლა"],
+      "answer_index": 0,
+      "explanation": "გასვლა (выход) ↔︎ შესვლა (вход).",
+      "tags": ["opposite_pair"],
+      "difficulty": 1
+    },
+
+    {
+      "id": "q_geo_up_01",
+      "lemma": "ასვლა",
+      "template": "choose_translation_geo",
+      "question": "„ასვლა“ — это...",
+      "options": ["подниматься (вверх)", "спускаться (вниз)", "переходить"],
+      "answer_index": 0,
+      "explanation": "ასვლა — движение вверх.",
+      "tags": ["meaning","vertical"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_like_up_01",
+      "lemma": "ასვლა",
+      "template": "cloze_like",
+      "prompt": "«Люблю подниматься в горы»: მიყვარს ___ მთაზე",
+      "options": ["ასვლა", "ჩასვლა", "გასვლა"],
+      "answer_index": 0,
+      "explanation": "мიყვარს ასვლა — люблю подниматься.",
+      "tags": ["pattern","mountain"],
+      "difficulty": 2
+    },
+    {
+      "id": "q_pair_up_down_01",
+      "lemma": "ასვლა",
+      "template": "pair_opposites",
+      "question": "Противоположность: ასვლა ↔︎ ?",
+      "options": ["ჩასვლა", "შესვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "асвла (вверх) ↔︎ ч’асвла (вниз).",
+      "tags": ["opposite_pair","vertical"],
+      "difficulty": 1
+    },
+
+    {
+      "id": "q_geo_down_01",
+      "lemma": "ჩასვლა",
+      "template": "choose_translation_geo",
+      "question": "„ჩასვლა“ — это...",
+      "options": ["спускаться (вниз)", "подниматься", "входить"],
+      "answer_index": 0,
+      "explanation": "ჩასვლა — движение вниз.",
+      "tags": ["meaning","vertical"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_down_01",
+      "lemma": "ჩასვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу спуститься на первый этаж»: მინდა პირველ სართულზე ___",
+      "options": ["ჩასვლა", "ასვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "სართულზე ჩასვლა — спуститься на этаж.",
+      "tags": ["pattern","building"],
+      "difficulty": 2
+    },
+
+    {
+      "id": "q_geo_cross_01",
+      "lemma": "გადასვლა",
+      "template": "choose_translation_geo",
+      "question": "„გადასვლა“ — это...",
+      "options": ["переходить (через/на другую сторону)", "входить", "выходить"],
+      "answer_index": 0,
+      "explanation": "გადასვლა — переходить (через улицу, на др. сторону).",
+      "tags": ["meaning","path"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_cross_01",
+      "lemma": "გადასვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу перейти улицу»: მინდა ___ ქუჩა",
+      "options": ["გადასვლა", "გასვლა", "შესვლა"],
+      "answer_index": 0,
+      "explanation": "ქუჩა გადასვლა — перейти улицу.",
+      "tags": ["pattern","street"],
+      "difficulty": 1
+    },
+
+    /* Дополнительные варианты для разнообразия генерации */
+
+    {
+      "id": "q_ru_enter_02",
+      "lemma": "შესვლა",
+      "template": "choose_translation_rus",
+      "question": "Как по-грузински «войти внутрь»?",
+      "options": ["შესვლა", "გასვლა", "ჩასვლა"],
+      "answer_index": 0,
+      "explanation": "внутрь = შესვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_exit_02",
+      "lemma": "გასვლა",
+      "template": "choose_translation_rus",
+      "question": "Как по-грузински «выйти наружу»?",
+      "options": ["გადასვლა", "გასვლა", "შესვლა"],
+      "answer_index": 1,
+      "explanation": "наружу = გასვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_up_02",
+      "lemma": "ასვლა",
+      "template": "choose_translation_rus",
+      "question": "«подниматься» по-грузински?",
+      "options": ["ჩასვლა", "ასვლა", "მისვლა"],
+      "answer_index": 1,
+      "explanation": "подниматься = ასვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_down_02",
+      "lemma": "ჩასვლა",
+      "template": "choose_translation_rus",
+      "question": "«спускаться» по-грузински?",
+      "options": ["ჩასვლა", "გადასვლა", "შესვლა"],
+      "answer_index": 0,
+      "explanation": "спускаться = ჩასვლა.",
+      "tags": ["mapping"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_return_02",
+      "lemma": "დაბრუნება",
+      "template": "choose_translation_rus",
+      "question": "Как по-грузински «вернуться домой» (как действие)?",
+      "options": ["სახლში დაბრუნება", "სახლში გასვლა", "სახლში შესვლა"],
+      "answer_index": 0,
+      "explanation": "სახლში დაბრუნება — вернуться домой.",
+      "tags": ["mapping","context_home"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_like_enter_02",
+      "lemma": "შესვლა",
+      "template": "cloze_like",
+      "prompt": "«Мне нравится входить в кабинет»: მიყვარს ___ კაბინეტში",
+      "options": ["შესვლა", "გასვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "კაბინეტში შესვლა — войти в кабинет.",
+      "tags": ["pattern","office"],
+      "difficulty": 2
+    },
+    {
+      "id": "q_like_exit_02",
+      "lemma": "გასვლა",
+      "template": "cloze_like",
+      "prompt": "«Люблю выходить на балкон»: მიყვარს ___ აივანზე",
+      "options": ["გასვლა", "შესვლა", "ჩასვლა"],
+      "answer_index": 0,
+      "explanation": "айвани (балкон) — выходить = გასვლა.",
+      "tags": ["pattern","home"],
+      "difficulty": 2
+    },
+    {
+      "id": "q_like_cross_02",
+      "lemma": "გადასვლა",
+      "template": "cloze_like",
+      "prompt": "«Иногда перехожу мост»: ხანდახან ___ ხიდი",
+      "options": ["გადასვლა", "გასვლა", "შესვლა"],
+      "answer_index": 0,
+      "explanation": "ხიდი (мост) переходить = გადასვლა.",
+      "tags": ["pattern","street"],
+      "difficulty": 2
+    },
+    {
+      "id": "q_pair_come_go_01",
+      "lemma": "მოსვლა",
+      "template": "pair_opposites",
+      "question": "Противопоставь: მოსვლა ↔︎ ?",
+      "options": ["წასვლა", "გადასვლა", "ჩასვლა"],
+      "answer_index": 0,
+      "explanation": "мოსვლა (приходить) ↔︎ წასვლა (уходить).",
+      "tags": ["opposite_pair"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_pair_up_down_02",
+      "lemma": "ჩასვლა",
+      "template": "pair_opposites",
+      "question": "Противоположность: ჩასვლა ↔︎ ?",
+      "options": ["ასვლა", "გასვლა", "შესვლა"],
+      "answer_index": 0,
+      "explanation": "ჩასვლა (вниз) ↔︎ ასვლა (вверх).",
+      "tags": ["opposite_pair","vertical"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_geo_home_mix_01",
+      "lemma": "დაბრუნება",
+      "template": "choose_translation_geo",
+      "question": "Как перевести: „სახლში დაბრუნება“?",
+      "options": ["вернуться домой", "войти в дом", "выйти из дома"],
+      "answer_index": 0,
+      "explanation": "სახლში დაბრუნება = вернуться домой.",
+      "tags": ["context_home"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_geo_street_mix_01",
+      "lemma": "გადასვლა",
+      "template": "choose_translation_geo",
+      "question": "„ქუჩა გადასვლა“ — это...",
+      "options": ["перейти улицу", "выйти на улицу", "идти по улице"],
+      "answer_index": 0,
+      "explanation": "ქუჩა გადასვლა — перейти улицу.",
+      "tags": ["street"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_mountain_mix_01",
+      "lemma": "ასვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу подняться на гору»: მინდა მთაზე ___",
+      "options": ["ასვლა", "ჩასვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "мთაზე ასვლა — подняться на гору.",
+      "tags": ["mountain"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_wish_room_mix_01",
+      "lemma": "შესვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу войти в аудиторию»: მინდა აუდიტორიაში ___",
+      "options": ["შესვლა", "გასვლა", "ჩასვლა"],
+      "answer_index": 0,
+      "explanation": "аудитория — вход: შესვლა.",
+      "tags": ["school"],
+      "difficulty": 2
+    },
+    {
+      "id": "q_wish_outside_mix_01",
+      "lemma": "გასვლა",
+      "template": "cloze_wish",
+      "prompt": "«Хочу выйти на улицу»: მინდა ქუჩაში ___",
+      "options": ["გასვლა", "შესვლა", "გადასვლა"],
+      "answer_index": 0,
+      "explanation": "выйти на улицу — ქუჩაში გასვლა.",
+      "tags": ["street"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_arrive_02",
+      "lemma": "მისვლა",
+      "template": "choose_translation_rus",
+      "question": "Как по-грузински «добраться до центра» (как действие)?",
+      "options": ["ცენტრამდე მისვლა", "ცენტრში შესვლა", "ცენტრიდან გასვლა"],
+      "answer_index": 0,
+      "explanation": "центрамде მისვა — добраться до центра.",
+      "tags": ["city"],
+      "difficulty": 2
+    },
+    {
+      "id": "q_ru_come_02",
+      "lemma": "მოსვლა",
+      "template": "choose_translation_rus",
+      "question": "«прийти ко мне» (действие) — правильно?",
+      "options": ["ჩემთან მოსვლა", "ჩემთან წასვლა", "ჩემთან გასვლა"],
+      "answer_index": 0,
+      "explanation": "„ко мне“ — მოსვლა.",
+      "tags": ["mapping","person_me"],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ru_go_02",
+      "lemma": "წასვლა",
+      "template": "choose_translation_rus",
+      "question": "«уйти из офиса» (как действие) — это...",
+      "options": ["ოფისიდან გასვლა", "ოფისიდან დაბრუნება", "ოფისში შესვლა"],
+      "answer_index": 0,
+      "explanation": "из офиса выйти/уйти — ოფისიდან გასვლა/წასვლა.",
+      "tags": ["office","outside"],
+      "difficulty": 2
+    }
+  ]
+}

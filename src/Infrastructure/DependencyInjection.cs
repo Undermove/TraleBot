@@ -64,6 +64,10 @@ public static class DependencyInjection
         services.AddScoped<IUserNotificationService, TelegramNotificationService>();
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         
+        // Georgian quiz services
+        services.AddSingleton<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
+        services.AddSingleton<IGeorgianQuestionsLoader, GeorgianQuestionsLoader>();
+        
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, StopCommand>();
@@ -96,6 +100,8 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, GeorgianRepetitionModulesCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsOfMovementCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsLessonCommand>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizAnswerCommand>();
         return services;
     }
 }
