@@ -26,7 +26,7 @@ public class GeorgianVerbsQuizAnswerCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var session = _quizSessionService.GetSession(request.UserTelegramId);
+        var session = await _quizSessionService.GetSessionAsync(request.UserTelegramId);
         if (session == null)
         {
             await _client.EditMessageTextAsync(
@@ -79,7 +79,7 @@ public class GeorgianVerbsQuizAnswerCommand : IBotCommand
             }
         }
 
-        _quizSessionService.UpdateSession(session);
+        await _quizSessionService.UpdateSessionAsync(session);
 
         var buttons = new List<InlineKeyboardButton[]>();
 
@@ -111,7 +111,7 @@ public class GeorgianVerbsQuizAnswerCommand : IBotCommand
     private async Task SendNextQuestion(long userTelegramId, int messageId, GeorgianQuizSessionState session, CancellationToken token)
     {
         session.CurrentQuestionIndex++;
-        _quizSessionService.UpdateSession(session);
+        await _quizSessionService.UpdateSessionAsync(session);
 
         var currentQuestion = session.Questions[session.CurrentQuestionIndex];
         var questionNumber = session.CurrentQuestionIndex + 1;
@@ -171,7 +171,7 @@ public class GeorgianVerbsQuizAnswerCommand : IBotCommand
             }
         };
 
-        _quizSessionService.EndSession(userTelegramId);
+        await _quizSessionService.EndSessionAsync(userTelegramId);
 
         await _client.EditMessageTextAsync(
             userTelegramId,

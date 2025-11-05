@@ -45,7 +45,7 @@ public class GeorgianVerbsQuizCommand : IBotCommand
         }
 
         // Start quiz session
-        _quizSessionService.StartQuizSession(request.UserTelegramId, lessonId, questions);
+        await _quizSessionService.StartQuizSessionAsync(request.UserTelegramId, lessonId, questions);
 
         // Show first question
         await SendQuestion(request.UserTelegramId, request.MessageId, token);
@@ -53,7 +53,7 @@ public class GeorgianVerbsQuizCommand : IBotCommand
 
     private async Task SendQuestion(long userTelegramId, int messageId, CancellationToken token)
     {
-        var session = _quizSessionService.GetSession(userTelegramId);
+        var session = await _quizSessionService.GetSessionAsync(userTelegramId);
         if (session == null)
             return;
 

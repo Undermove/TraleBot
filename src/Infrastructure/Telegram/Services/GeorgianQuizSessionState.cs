@@ -21,4 +21,19 @@ public class QuizQuestionData
     public List<string> Options { get; set; } = new();
     public int AnswerIndex { get; set; }
     public string Explanation { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Shuffles the answer options while keeping track of the correct answer.
+    /// </summary>
+    public void ShuffleOptions(Random random)
+    {
+        if (Options.Count <= 1)
+            return;
+
+        var correctAnswer = Options[AnswerIndex];
+        var shuffledOptions = Options.OrderBy(_ => random.Next()).ToList();
+        
+        Options = shuffledOptions;
+        AnswerIndex = Options.IndexOf(correctAnswer);
+    }
 }

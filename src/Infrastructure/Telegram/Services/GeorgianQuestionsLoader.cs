@@ -40,7 +40,15 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
         var shuffled = _cachedQuestions.OrderBy(_ => random.Next()).ToList();
         
         // Возвращаем 12 случайных вопросов
-        return shuffled.Take(12).ToList();
+        var selectedQuestions = shuffled.Take(12).ToList();
+        
+        // Shuffle answer options for each question
+        foreach (var question in selectedQuestions)
+        {
+            question.ShuffleOptions(random);
+        }
+        
+        return selectedQuestions;
     }
 
     private List<QuizQuestionData> LoadAllQuestions()

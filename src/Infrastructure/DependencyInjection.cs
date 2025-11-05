@@ -65,7 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         
         // Georgian quiz services
-        services.AddSingleton<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
+        services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
         services.AddSingleton<IGeorgianQuestionsLoader, GeorgianQuestionsLoader>();
         
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();

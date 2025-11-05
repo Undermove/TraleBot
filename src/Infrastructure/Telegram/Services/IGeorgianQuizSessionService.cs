@@ -2,9 +2,12 @@ namespace Infrastructure.Telegram.Services;
 
 public interface IGeorgianQuizSessionService
 {
-    void StartQuizSession(long userId, int lessonId, List<QuizQuestionData> questions);
+    Task StartQuizSessionAsync(long userId, int lessonId, List<QuizQuestionData> questions);
+    Task<GeorgianQuizSessionState?> GetSessionAsync(long userId);
+    Task UpdateSessionAsync(GeorgianQuizSessionState state);
+    Task EndSessionAsync(long userId);
+    Task<bool> HasActiveSessionAsync(long userId);
+    
+    // Synchronous overloads for backward compatibility
     GeorgianQuizSessionState? GetSession(long userId);
-    void UpdateSession(GeorgianQuizSessionState state);
-    void EndSession(long userId);
-    bool HasActiveSession(long userId);
 }
