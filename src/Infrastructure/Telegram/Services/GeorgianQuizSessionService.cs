@@ -91,6 +91,7 @@ public class GeorgianQuizSessionService : IGeorgianQuizSessionService
         session.CurrentQuestionIndex = state.CurrentQuestionIndex;
         session.CorrectAnswersCount = state.CorrectAnswersCount;
         session.IncorrectAnswersCount = state.IncorrectAnswersCount;
+        // Persist only weak verbs (lemmas)
         session.WeakVerbsJson = JsonSerializer.Serialize(state.WeakVerbs);
         session.UpdatedAtUtc = DateTime.UtcNow;
 

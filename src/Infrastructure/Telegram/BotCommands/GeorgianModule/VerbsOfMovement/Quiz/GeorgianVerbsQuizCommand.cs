@@ -71,7 +71,7 @@ public class GeorgianVerbsQuizCommand : IBotCommand
             {
                 InlineKeyboardButton.WithCallbackData(
                     currentQuestion.Options[i],
-                    $"{CommandNames.GeorgianVerbsQuizAnswer}:{session.CurrentQuestionIndex}:{i}")
+                    $"{CommandNames.GeorgianVerbsQuizAnswer}:{i}")
             });
         }
 

@@ -68,5 +68,12 @@ public static class CommandNames
     public const string GeorgianVerbsQuizStart1 = "/georgianverbsquizstart1";
     public const string GeorgianVerbsQuizStart2 = "/georgianverbsquizstart2";
     public const string GeorgianVerbsQuizStart3 = "/georgianverbsquizstart3";
+    public const string GeorgianVerbsQuizStart4 = "/georgianverbsquizstart4";
+    public const string GeorgianVerbsQuizStart5 = "/georgianverbsquizstart5";
+    public const string GeorgianVerbsQuizStart6 = "/georgianverbsquizstart6";
+    public const string GeorgianVerbsQuizStart7 = "/georgianverbsquizstart7";
+    public const string GeorgianVerbsQuizStart8 = "/georgianverbsquizstart8";
+    public const string GeorgianVerbsQuizStart9 = "/georgianverbsquizstart9";
+    public const string GeorgianVerbsQuizStart10 = "/georgianverbsquizstart10";
     public const string GeorgianVerbsQuizAnswer = "/georgianverbsquizanswer";
 }

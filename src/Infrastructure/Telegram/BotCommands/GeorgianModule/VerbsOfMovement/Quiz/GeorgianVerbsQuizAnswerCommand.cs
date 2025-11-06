@@ -144,28 +144,34 @@ public class GeorgianVerbsQuizAnswerCommand : IBotCommand
     private async Task ShowResults(long userTelegramId, int messageId, GeorgianQuizSessionState session, CancellationToken token)
     {
         var totalQuestions = session.Questions.Count;
-        var accuracy = session.CorrectAnswersCount + session.IncorrectAnswersCount > 0
+        var accuracy = totalQuestions > 0
             ? Math.Round(100.0 * session.CorrectAnswersCount / totalQuestions, 0)
             : 0;
 
-        var lessonName = session.LessonId switch
+        var shortTitle = session.LessonId switch
         {
-            1 => "глаголами движения",
-            2 => "приставками направления",
-            3 => "спряжением глаголов движения",
-            _ => "материалом"
+            1 => "Знакомство с глаголами движения",
+            2 => "Приставки направления",
+            3 => "Спряжение настоящего времени",
+            4 => "Закрепление настоящего времени",
+            5 => "Прошедшее время (основы)",
+            6 => "Склонения прошедшего времени",
+            7 => "Закрепление прошедшего",
+            8 => "Будущее время (основы)",
+            9 => "Склонения будущего времени",
+            10 => "Итоговое закрепление",
+            _ => "Материал"
         };
 
-        var resultsText = $"✅ Отлично!\n" +
-                         $"Ты прошёл первое знакомство с {lessonName}.\n\n" +
-                         $"📈 Точность: {accuracy}%\n";
+        var weakVerbs = session.WeakVerbs;
+        var weakText = weakVerbs.Count > 0 ? string.Join(", ", weakVerbs) : "—";
 
-        if (session.WeakVerbs.Count > 0)
-        {
-            resultsText += $"🧠 Слабые: {string.Join(", ", session.WeakVerbs)}\n";
-        }
-
-        resultsText += $"⏭ Следующий шаг: Возвращайся завтра чтобы повторить эту секцию";
+        var resultsText =
+            $"✅ Отлично!\n" +
+            $"Ты прошёл урок {session.LessonId} — {shortTitle}.\n\n" +
+            $"📊 Точность: {accuracy}%\n" +
+            $"💡 Слабые места: {weakText}\n\n" +
+            $"⏭ Следующий шаг: вернись завтра, чтобы закрепить и получить новые контексты.";
 
         var buttons = new[]
         {

@@ -86,7 +86,8 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                                  : questionElement.TryGetProperty("prompt", out var p) ? p.GetString() ?? string.Empty : string.Empty,
                         Explanation = questionElement.TryGetProperty("explanation", out var e) ? e.GetString() ?? string.Empty : string.Empty,
                         AnswerIndex = questionElement.GetProperty("answer_index").GetInt32(),
-                        Options = new()
+                        Options = new(),
+                        Tags = new()
                     };
 
                     if (questionElement.TryGetProperty("options", out var optionsArray))
@@ -94,6 +95,18 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                         foreach (var option in optionsArray.EnumerateArray())
                         {
                             question.Options.Add(option.GetString() ?? string.Empty);
+                        }
+                    }
+
+                    if (questionElement.TryGetProperty("tags", out var tagsArray) && tagsArray.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var tag in tagsArray.EnumerateArray())
+                        {
+                            var tagStr = tag.GetString();
+                            if (!string.IsNullOrWhiteSpace(tagStr))
+                            {
+                                question.Tags.Add(tagStr!);
+                            }
                         }
                     }
 

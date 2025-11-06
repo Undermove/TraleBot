@@ -21,6 +21,7 @@ public class QuizQuestionData
     public List<string> Options { get; set; } = new();
     public int AnswerIndex { get; set; }
     public string Explanation { get; set; } = string.Empty;
+    public List<string> Tags { get; set; } = new();
 
     /// <summary>
     /// Shuffles the answer options while keeping track of the correct answer.
