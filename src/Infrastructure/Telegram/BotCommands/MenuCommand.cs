@@ -3,6 +3,7 @@ using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 
 namespace Infrastructure.Telegram.BotCommands;
 
@@ -26,10 +27,26 @@ public class MenuCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        await _client.SendTextMessageAsync(
-            request.UserTelegramId,
-            $"{CommandNames.MenuIcon} Меню",
-            replyMarkup: MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage),
-            cancellationToken: token);
+        var keyboard = MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage);
+        
+        // If request comes from a callback (button click), edit existing message
+        if (request.RequestType == UpdateType.CallbackQuery)
+        {
+            await _client.EditMessageTextAsync(
+                request.UserTelegramId,
+                request.MessageId,
+                $"{CommandNames.MenuIcon} Меню",
+                replyMarkup: keyboard,
+                cancellationToken: token);
+        }
+        // If request comes as text message (/menu command), send new message
+        else
+        {
+            await _client.SendTextMessageAsync(
+                request.UserTelegramId,
+                $"{CommandNames.MenuIcon} Меню",
+                replyMarkup: keyboard,
+                cancellationToken: token);
+        }
     }
 }
