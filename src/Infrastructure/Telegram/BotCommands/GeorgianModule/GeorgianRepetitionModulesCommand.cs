@@ -2,7 +2,7 @@ using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.GeorgianModule;
 
 public class GeorgianRepetitionModulesCommand : IBotCommand
 {

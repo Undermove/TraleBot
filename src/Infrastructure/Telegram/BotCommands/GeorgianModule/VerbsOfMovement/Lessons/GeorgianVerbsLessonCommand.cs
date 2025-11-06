@@ -2,7 +2,7 @@ using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.GeorgianModule.VerbsOfMovement.Lessons;
 
 public class GeorgianVerbsLessonCommand : IBotCommand
 {
@@ -91,8 +91,8 @@ public class GeorgianVerbsLessonCommand : IBotCommand
                 ("🚀 Урок 2. Приставки направления",
                 "🎯 Цель: понимать движение по приставке (внутрь/наружу/вверх/вниз/к/от/через)\n\n" +
                 "📘 Теория: Приставки направления\n" +
-                "მივ- — к цели (мив-დივар, мив-ида)\n" +
-                "მო- — к говорящему (мо-дис, мо-видa)\n" +
+                "მივ- — к цели (мив-дивар, мив-ида)\n" +
+                "მო- — к говорящему (мо-dис, мо-видa)\n" +
                 "წა- — от говорящего (ца-видa — ушёл)\n" +
                 "შე- — внутрь (ше-видa — вошёл)\n" +
                 "გა- — наружу (га-видa — вышел)\n" +

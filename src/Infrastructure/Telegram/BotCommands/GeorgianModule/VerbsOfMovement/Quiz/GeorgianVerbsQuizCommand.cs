@@ -3,7 +3,7 @@ using Infrastructure.Telegram.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace Infrastructure.Telegram.BotCommands;
+namespace Infrastructure.Telegram.BotCommands.GeorgianModule.VerbsOfMovement.Quiz;
 
 public class GeorgianVerbsQuizCommand : IBotCommand
 {
