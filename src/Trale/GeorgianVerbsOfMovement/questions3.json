@@ -1,0 +1,115 @@
+{
+  "lesson_id": "motion-3",
+  "title": "Спряжение глаголов движения — настоящее время",
+  "version": "1.0.0",
+  "intro": {
+    "theory_md": "**Настоящее время (Present Series) у глаголов движения**: приставка + დივ/დიხ/დის + личное окончание. \\n**მი-** — от говорящего (мне куда-то), **მო-** — к говорящему (ко мне). \\nТакже: **შე-** (внутрь), **გა-** (наружу), **ა-** (вверх), **ჩა-** (вниз), **გად-** (через).",
+    "tips": [
+      "მე часто даёт -ვ-…-ვარ (например, *მივდივარ*, *მოვდივარ*).",
+      "2л. ед. — *-იხარ* (например, *მიდიხარ*, *მოდიხარ*).",
+      "3л. ед. — *-ის* (*მიდის*, *მოდის*, *შედის*, *გამოდის*).",
+      "Мы/вы — формы на *-ვართ / -იხართ*, они — на *-იან / -დებიან* (для *ბრუნდება* — *ბრუნდებიან*).",
+      "Оппозиции: **შე** ↔ **გა**, **ა** ↔ **ჩა**, **მო** ↔ **მი**."
+    ]
+  },
+  "lexicon": [
+    { "lemma": "მიდის", "ru": "идёт (движется от говорящего/к цели)", "pair": "მოდის", "root_hint": "მი- (от говорящего), основа დ- / დი-" },
+    { "lemma": "მოდის", "ru": "приходит (к говорящему)", "pair": "მიდის", "root_hint": "მო- (к говорящему), основа დ- / დი-" },
+    { "lemma": "შედის", "ru": "входит (внутрь)", "pair": "გამოდის", "root_hint": "შე- внутрь + დ-основа" },
+    { "lemma": "გამოდის", "ru": "выходит (наружу)", "pair": "შედის", "root_hint": "გა- наружу + დ-основа" },
+    { "lemma": "ადის", "ru": "поднимается (вверх)", "pair": "ჩადის", "root_hint": "ა- вверх + დ-основа" },
+    { "lemma": "ჩადის", "ru": "спускается (вниз)", "pair": "ადის", "root_hint": "ჩა- вниз + დ-основа" },
+    { "lemma": "გადადის", "ru": "переходит (через)", "pair": null, "root_hint": "გად- через + დ-основа" },
+    { "lemma": "ბრუნდება", "ru": "возвращается", "pair": null, "root_hint": "რეფлексивный: ვბრუნდები/ბრუნდები/ბრუნდება/…/ბრუნდებიან" }
+  ],
+  "templates": [
+    "choose_translation_geo",
+    "choose_translation_rus",
+    "cloze_wish",
+    "cloze_like",
+    "pair_opposites"
+  ],
+  "questions": [
+    { "id": "m3-q001", "lemma": "მიდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «я иду домой сейчас».", "options": ["მივდივარ სახლში ახლა", "მოდიხარ სახლში ახლა", "მოდის სახლში ახლა", "მიდიხართ სახლში ახლა"], "answer_index": 0, "explanation": "„მე“ + идти (მი-) → *მივდივარ*.", "tags": ["prs","prs-1sg","motion-go","context-now"], "difficulty": 1 },
+    { "id": "m3-q002", "lemma": "მოდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «ты приходишь?»", "options": ["მოდიხარ?", "მიდიხარ?", "მოდის?", "მოდიან?"], "answer_index": 0, "tags": ["prs","prs-2sg","motion-come","question"], "difficulty": 1 },
+    { "id": "m3-q003", "lemma": "მიდис", "template": "choose_translation_geo", "question": "Выбери грузинский: «он идёт в офис».", "options": ["ის მიდის ოფისში", "ის მოდის ოფისში", "ის შედის ოფისში", "ის გამოდის ოფისიდან"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-go"], "difficulty": 1 },
+    { "id": "m3-q004", "lemma": "მოდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «мы приходим к дому».", "options": ["ჩვენ მოვდივართ სახლთან", "ჩვენ მივდივართ სახლთან", "ჩვენ მოდიხართ სახლთან", "ჩვენ მოდიან სახლთან"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-come"], "difficulty": 1 },
+    { "id": "m3-q005", "lemma": "მიდис", "template": "choose_translation_geo", "question": "Выбери грузинский: «вы идёте в университет?»", "options": ["მიდიხართ უნივერსიტეტში?", "მოდიხართ უნივერსიტეტში?", "მიდიხარ უნივერსიტეტში?", "მოდიხარ უნივერსიტეტში?"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-go","question"], "difficulty": 1 },
+    { "id": "m3-q006", "lemma": "მოდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «они приходят вечером».", "options": ["ისინი მოდიან საღამოს", "ისინი მიდიან საღამოს", "ისინი მოდის საღამოს", "ისინი მოდიხართ საღამოს"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-come","time-evening"], "difficulty": 1 },
+
+    { "id": "m3-q007", "lemma": "შედის", "template": "choose_translation_rus", "question": "«შევდივარ აუდიტორიაში» — это:", "options": ["я вхожу в аудиторию", "я выхожу из аудитории", "я прихожу в аудиторию", "я иду мимо аудитории"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-enter"], "difficulty": 1 },
+    { "id": "m3-q008", "lemma": "გამოდის", "template": "choose_translation_rus", "question": "«გამოდიხარ ოფისიდან?» — это:", "options": ["ты входишь в офис?", "ты выходишь из офиса?", "ты поднимаешься в офис?", "ты переходишь через офис?"], "answer_index": 1, "tags": ["prs","prs-2sg","motion-exit","question"], "difficulty": 1 },
+    { "id": "m3-q009", "lemma": "ადის", "template": "choose_translation_rus", "question": "«ავდივართ მეხუთე სართულზე» — это:", "options": ["мы поднимаемся на пятый этаж", "мы спускаемся на пятый этаж", "мы выходим на пятый этаж", "мы входим на пятый этаж"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-up"], "difficulty": 1 },
+    { "id": "m3-q010", "lemma": "ჩადის", "template": "choose_translation_rus", "question": "«ჩადიან ლობიში» — это:", "options": ["они спускаются в лобби", "они поднимаются в лобби", "они выходят из лобби", "они входят в лобби"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-down"], "difficulty": 1 },
+    { "id": "m3-q011", "lemma": "გადადის", "template": "choose_translation_rus", "question": "«ის გადადის ქუჩას» — это:", "options": ["он переходит улицу", "он идёт по улице", "он выходит на улицу", "он входит на улицу"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-cross"], "difficulty": 2 },
+    { "id": "m3-q012", "lemma": "ბრუნდება", "template": "choose_translation_rus", "question": "«ვბრუნდებით მალე» — это:", "options": ["мы скоро возвращаемся", "они скоро возвращаются", "я скоро возвращаюсь", "вы скоро возвращаетесь"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-return","time-soon"], "difficulty": 2 },
+
+    { "id": "m3-q013", "lemma": "მიდис", "template": "cloze_like", "prompt": "ახლა ___ მაღაზიაში. (идти, მე)", "options": ["მივდივარ", "მოდიხარ", "მიდის", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-go","context-now"], "difficulty": 1 },
+    { "id": "m3-q014", "lemma": "მოდის", "template": "cloze_like", "prompt": "ის ___ აქ, დაელოდე. (приходить, ის)", "options": ["მოდის", "მიდის", "მოდიხარ", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-come","near-speaker"], "difficulty": 1 },
+    { "id": "m3-q015", "lemma": "შედის", "template": "cloze_like", "prompt": "ახლა ლექცია იწყება — სტუდენტი ___ დარბაზში. (входить, ის)", "options": ["შედის", "გამოდის", "მოდის", "მიდის"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-enter","context-now"], "difficulty": 2 },
+    { "id": "m3-q016", "lemma": "გამოდის", "template": "cloze_like", "prompt": "უკვე გვიანაა — ჩვენ ___ შენობისგან. (выходить, ჩვენ)", "options": ["გამოვდივართ", "შევდივართ", "მოვდივართ", "მივდივართ"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-exit","time-late"], "difficulty": 2 },
+    { "id": "m3-q017", "lemma": "ადის", "template": "cloze_like", "prompt": "შენ რომელ სართულზე ___ დღეს? (подниматься, შენ)", "options": ["ადიხარ", "ავდივარ", "ადის", "ადიხართ"], "answer_index": 0, "tags": ["prs","prs-2sg","motion-up","question"], "difficulty": 2 },
+    { "id": "m3-q018", "lemma": "ჩადის", "template": "cloze_like", "prompt": "ისინი პარკინგზე ___ და ტაქსით მიდიან. (спускаться, ისინი)", "options": ["ჩადიან", "ჩადის", "ჩადიხარ", "ჩადიხართ"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-down","context"], "difficulty": 2 },
+
+    { "id": "m3-q019", "lemma": "გადადის", "template": "cloze_wish", "prompt": "ახლა მანქანები არ არის — მე ___ ქუჩას. (переходить, მე)", "options": ["გადავდივარ", "გადის", "გადიხარ", "გადიან"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-cross","context-now"], "difficulty": 2 },
+    { "id": "m3-q020", "lemma": "ბრუნდება", "template": "cloze_wish", "prompt": "კონცერტი მთავრდება — თქვენ მალე ___ სახლში? (возвращаться, თქვენ)", "options": ["ბრუნდებით", "ვბრუნდებით", "ბრუნდებიან", "ბრუნდება"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-return","question"], "difficulty": 2 },
+    { "id": "m3-q021", "lemma": "მიდис", "template": "cloze_wish", "prompt": "ახლა არ ___ — ხვალ. (идти, მე)", "options": ["მივდივარ", "მიდიხარ", "მიდის", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-1sg","negation-habit","time"], "difficulty": 2 },
+    { "id": "m3-q022", "lemma": "მოდის", "template": "cloze_wish", "prompt": "უკვე სახლთან ვართ და ახლა ___ . (приходить, ჩვენ)", "options": ["მოვდივართ", "მივდივართ", "მოდიხართ", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-1pl","near-speaker"], "difficulty": 2 },
+
+    { "id": "m3-q023", "lemma": "შედис/გამოდის", "template": "pair_opposites", "question": "Выбери противоположное по направлению: «შევდივარ» — ?", "options": ["გამოვდივარ", "მივდივარ", "მოვდივარ", "გადავდივარ"], "answer_index": 0, "tags": ["pairs","direction","into-out"], "difficulty": 1 },
+    { "id": "m3-q024", "lemma": "მოდის/მიდის", "template": "pair_opposites", "question": "Выбери противоположное: «მოვდივართ» — ?", "options": ["მივდივართ", "შევდივართ", "გადავდივართ", "ჩავდივართ"], "answer_index": 0, "tags": ["pairs","direction","to-from-speaker"], "difficulty": 1 },
+    { "id": "m3-q025", "lemma": "ადის/ჩადის", "template": "pair_opposites", "question": "Выбери противоположное: «ადიხარ» — ?", "options": ["ჩადიხარ", "შევდივარ", "გამოდის", "გადადიხარ"], "answer_index": 0, "tags": ["pairs","direction","up-down"], "difficulty": 1 },
+    { "id": "m3-q026", "lemma": "გადადის", "template": "pair_opposites", "question": "Что противопоставить «გადავდივარ» (перехожу)?", "options": ["(нет строгого антипода)", "შევდივარ", "გამოვდივარ", "მოვდივარ"], "answer_index": 0, "tags": ["pairs","direction","cross"], "difficulty": 2 },
+
+    { "id": "m3-q027", "lemma": "მიდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «ты идёшь сейчас в магазин?»", "options": ["ახლა მიდიხარ მაღაზიაში?", "ახლა მოდიხარ მაღაზიაში?", "ახლა მიდიხართ მაღაზიაში?", "ახლა მოდიან მაღაზიაში?"], "answer_index": 0, "tags": ["prs","prs-2sg","motion-go","question","context-now"], "difficulty": 1 },
+    { "id": "m3-q028", "lemma": "მოდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «он уже приходит к нам»", "options": ["ის უკვე მოდის ჩვენთან", "ის უკვე მიდის ჩვენთან", "ის უკვე შედის ჩვენთან", "ის უკვე გამოდის ჩვენთან"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-come","near-speaker"], "difficulty": 1 },
+    { "id": "m3-q029", "lemma": "შედის", "template": "choose_translation_geo", "question": "Выбери грузинский: «мы входим в зал»", "options": ["შევდივართ დარბაზში", "შედიხართ დარბაზში", "შევდივარ დარბაზში", "შედიან დარბაზში"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-enter"], "difficulty": 1 },
+    { "id": "m3-q030", "lemma": "გამოდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «они выходят из здания»", "options": ["ისინი გამოდიან შენობიდან", "ისინი შედიან შენობაში", "ისინი მოდიან შენობიდან", "ისინი მიდიან შენობიდან"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-exit","case-from"], "difficulty": 2 },
+
+    { "id": "m3-q031", "lemma": "ადის", "template": "choose_translation_rus", "question": "«ადიხართ ლიფტით?» — это:", "options": ["вы поднимаетесь на лифте?", "вы спускаетесь на лифте?", "вы входите в лифт?", "вы выходите из лифта?"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-up","instrument"], "difficulty": 2 },
+    { "id": "m3-q032", "lemma": "ჩადის", "template": "choose_translation_rus", "question": "«ჩავდივართ სარდაფში» — это:", "options": ["мы спускаемся в подвал", "мы поднимаемся в подвал", "мы выходим из подвала", "мы входим в подвал"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-down"], "difficulty": 1 },
+    { "id": "m3-q033", "lemma": "გადადის", "template": "choose_translation_rus", "question": "«გადადიხარ ხიდზე?» — это:", "options": ["ты переходишь на мост?", "ты переходишь через мост?", "ты входишь на мост?", "ты выходишь с моста?"], "answer_index": 1, "explanation": "через = „გად-“; „ხიდზე“ — на мост (локатив).", "tags": ["prs","prs-2sg","motion-cross","question"], "difficulty": 2 },
+    { "id": "m3-q034", "lemma": "ბრუნდება", "template": "choose_translation_rus", "question": "«ბრუნდებიან ხვალ» — это:", "options": ["они возвращаются завтра", "мы возвращаемся завтра", "вы возвращаетесь завтра", "я возвращаюсь завтра"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-return","time-tomorrow"], "difficulty": 1 },
+
+    { "id": "m3-q035", "lemma": "მიდис", "template": "cloze_like", "prompt": "დღეს მე ადრე ___ უნივერსიტეტში. (идти, მე)", "options": ["მივდივარ", "მოდიხარ", "მიდის", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-go","time-today"], "difficulty": 1 },
+    { "id": "m3-q036", "lemma": "მოდის", "template": "cloze_like", "prompt": "კოლეგა ___ ოფისში სამ წუთში. (приходить, ის)", "options": ["მოდის", "მიდის", "მოდიხარ", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-come","time-soon"], "difficulty": 1 },
+    { "id": "m3-q037", "lemma": "შედის", "template": "cloze_like", "prompt": "დარბაზი ცარიელია, მაგრამ ლექტორი უკვე ___ . (входить, ის)", "options": ["შედის", "გამოდის", "მოდის", "მიდის"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-enter"], "difficulty": 2 },
+    { "id": "m3-q038", "lemma": "გამოდის", "template": "cloze_like", "prompt": "ბიბლიოთეკა იკეტება — სტუდენტები ნელ-ნელა ___ . (выходить, ისინი)", "options": ["გამოდიან", "შედიან", "მოდიან", "მიდიან"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-exit","context"], "difficulty": 2 },
+    { "id": "m3-q039", "lemma": "ადის", "template": "cloze_wish", "prompt": "ლიფტი არ მუშაობს — თქვენ ფეხით ___ ? (подниматься, თქვენ)", "options": ["ადიხართ", "ავდივართ", "ადის", "ადიხარ"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-up","question"], "difficulty": 2 },
+    { "id": "m3-q040", "lemma": "ჩადის", "template": "cloze_wish", "prompt": "ბარგით ვართ — ჩვენ ნელა ___ ქვემოთ. (спускаться, ჩვენ)", "options": ["ჩავდივართ", "ჩადიხართ", "ჩადის", "ჩადიან"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-down","manner"], "difficulty": 2 },
+
+    { "id": "m3-q041", "lemma": "გადადის", "template": "cloze_like", "prompt": "საგზაო მოძრაობა შეჩერებულია — ახლა უსაფრთხოდ ___ ქუჩას. (переходить, მე)", "options": ["გადავდივარ", "გადიხარ", "გადის", "გადადიხართ"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-cross","safety"], "difficulty": 2 },
+    { "id": "m3-q042", "lemma": "ბრუნდება", "template": "cloze_like", "prompt": "კინო მთავრდება ცხრის ნახევარზე — ისინი მაშინვე ___ . (возвращаться, ისინი)", "options": ["ბრუნდებიან", "ვბრუნდებით", "ბრუნდებით", "ბრუნდება"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-return","time"], "difficulty": 1 },
+    { "id": "m3-q043", "lemma": "მიდис", "template": "choose_translation_geo", "question": "Выбери грузинский: «мы идём к морю»", "options": ["მივდივართ ზღვასთან", "მოვდივართ ზღვასთან", "შევდივართ ზღვასთან", "გამოვდივართ ზღვასთან"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-go","goal"], "difficulty": 1 },
+    { "id": "m3-q044", "lemma": "მოდის", "template": "choose_translation_geo", "question": "Выбери грузинский: «вы приходите ко мне?»", "options": ["მოდიხართ ჩემთან?", "მიდიხართ ჩემთან?", "მოდიხარ ჩემთან?", "მოდიან ჩემთან?"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-come","question"], "difficulty": 1 },
+
+    { "id": "m3-q045", "lemma": "შედის", "template": "choose_translation_rus", "question": "«შედიხარ კლასში?» — это:", "options": ["ты входишь в класс?", "ты выходишь из класса?", "ты поднимаешься в класс?", "ты переходишь через класс?"], "answer_index": 0, "tags": ["prs","prs-2sg","motion-enter","question"], "difficulty": 1 },
+    { "id": "m3-q046", "lemma": "გამოდის", "template": "choose_translation_rus", "question": "«გამოდიხართ დარბაზიდან» — это:", "options": ["вы выходите из зала", "вы входите в зал", "вы спускаетесь в зал", "вы поднимаетесь в зал"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-exit","case-from"], "difficulty": 1 },
+    { "id": "m3-q047", "lemma": "ადის", "template": "choose_translation_rus", "question": "«ადიან ნელა» — это:", "options": ["они поднимаются медленно", "они спускаются медленно", "они входят медленно", "они выходят медленно"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-up","manner"], "difficulty": 1 },
+    { "id": "m3-q048", "lemma": "ჩადის", "template": "choose_translation_rus", "question": "«ჩადიხართ ქვემოთ?» — это:", "options": ["вы спускаетесь вниз?", "вы поднимаетесь вниз?", "вы входите вниз?", "вы выходите вниз?"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-down","question"], "difficulty": 1 },
+
+    { "id": "m3-q049", "lemma": "გადადis", "template": "cloze_like", "prompt": "ხიდი მოკლეა — შენ მალე ___ . (переходить, შენ)", "options": ["გადადიხარ", "გადავდივარ", "გადადის", "გადადიხართ"], "answer_index": 0, "tags": ["prs","prs-2sg","motion-cross","time-soon"], "difficulty": 2 },
+    { "id": "m3-q050", "lemma": "ბრუნდება", "template": "cloze_like", "prompt": "ჩვენ ფილმის შემდეგ სახლში ___ . (возвращаться, ჩვენ)", "options": ["ვბრუნდებით", "ბრუნდებით", "ბრუნდებიან", "ვბრუნდები"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-return","after-event"], "difficulty": 1 },
+    { "id": "m3-q051", "lemma": "მიდիս", "template": "cloze_wish", "prompt": "ახლა ოფისში არა — ბარში ___ . (идти, მე)", "options": ["მივდივარ", "მიდიხარ", "მიდის", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-go","context"], "difficulty": 1 },
+    { "id": "m3-q052", "lemma": "მოდის", "template": "cloze_wish", "prompt": "კურიერი მალე ___ კარებთან. (приходить, ის)", "options": ["მოდის", "მიდის", "მოდიან", "მოდიხარ"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-come","courier"], "difficulty": 1 },
+
+    { "id": "m3-q053", "lemma": "შედის/გამოდის", "template": "pair_opposites", "question": "Подбери антипару: «შედიხართ» — ?", "options": ["გამოდიხართ", "მოდიხართ", "ადიხართ", "ჩადიხართ"], "answer_index": 0, "tags": ["pairs","direction","into-out"], "difficulty": 1 },
+    { "id": "m3-q054", "lemma": "მოდის/მიდის", "template": "pair_opposites", "question": "Подбери антипару: «მოდიან» — ?", "options": ["მიდიან", "შედიან", "გამოდიან", "გადადიან"], "answer_index": 0, "tags": ["pairs","direction","to-from-speaker"], "difficulty": 1 },
+    { "id": "m3-q055", "lemma": "ადის/ჩადის", "template": "pair_opposites", "question": "Подбери антипару: «ავდივართ» — ?", "options": ["ჩავდივართ", "შევდივართ", "გამოვდივართ", "მოვდივართ"], "answer_index": 0, "tags": ["pairs","direction","up-down"], "difficulty": 1 },
+    { "id": "m3-q056", "lemma": "გადადis", "template": "pair_opposites", "question": "Чему противопоставить «გადადიხარ» в плане направления?", "options": ["(нет строгого антипода)", "შედიხარ", "გამოდიხარ", "მოდიხარ"], "answer_index": 0, "tags": ["pairs","direction","cross"], "difficulty": 2 },
+
+    { "id": "m3-q057", "lemma": "ბრუნდება", "template": "choose_translation_geo", "question": "Выбери грузинский: «я возвращаюсь домой пешком».", "options": ["ვბრუნდები სახლში ფეხით", "ბრუნდები სახლში ფეხით", "ბრუნდება სახლში ფეხით", "ბრუნდებით სახლში ფეხით"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-return","instrument"], "difficulty": 2 },
+    { "id": "m3-q058", "lemma": "ბრუნდება", "template": "choose_translation_rus", "question": "«ბრუნდებით ახლა?» — это:", "options": ["вы возвращаетесь сейчас?", "мы возвращаемся сейчас?", "они возвращаются сейчас?", "я возвращаюсь сейчас?"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-return","question","context-now"], "difficulty": 1 },
+    { "id": "m3-q059", "lemma": "მოდის", "template": "cloze_like", "prompt": "დამირეკე, როცა ___ შენთან. (приходить, მე)", "options": ["მოვდივარ", "მოდიხარ", "მოდის", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-come","phone"], "difficulty": 2 },
+    { "id": "m3-q060", "lemma": "მიდის", "template": "cloze_like", "prompt": "ის არასდროს ___ გვიან ლექციაზე. (идти/приходить, ის — «опаздывает» контекстно отриц.)", "options": ["მოდის", "მიდის", "შედის", "გამოდის"], "answer_index": 0, "explanation": "В значении «приходит». Для «не опаздывает» естественно *არ მოდის გვიან*.", "tags": ["prs","prs-3sg","habit","negation"], "difficulty": 3 }
+  ],
+  "metadata": {
+    "author": "TraleBot Generator",
+    "created_at": "2025-11-06",
+    "targets": ["A1-A2","verbs_of_motion","present_series"],
+    "srs": {
+      "face_tags": ["prs-1sg","prs-2sg","prs-3sg","prs-1pl","prs-2pl","prs-3pl"],
+      "direction_tags": ["motion-go","motion-come","motion-enter","motion-exit","motion-up","motion-down","motion-cross","motion-return"]
+    }
+  }
+}

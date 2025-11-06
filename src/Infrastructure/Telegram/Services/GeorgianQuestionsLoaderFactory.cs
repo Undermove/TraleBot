@@ -17,6 +17,7 @@ public class GeorgianQuestionsLoaderFactory : IGeorgianQuestionsLoaderFactory
         {
             1 => "questions.json",
             2 => "questions2.json",
+            3 => "questions3.json",
             _ => throw new ArgumentException($"Unsupported lesson number: {lessonNumber}")
         };
 

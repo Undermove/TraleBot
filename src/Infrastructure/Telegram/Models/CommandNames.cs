@@ -67,5 +67,6 @@ public static class CommandNames
     // Georgian verbs quiz commands
     public const string GeorgianVerbsQuizStart1 = "/georgianverbsquizstart1";
     public const string GeorgianVerbsQuizStart2 = "/georgianverbsquizstart2";
+    public const string GeorgianVerbsQuizStart3 = "/georgianverbsquizstart3";
     public const string GeorgianVerbsQuizAnswer = "/georgianverbsquizanswer";
 }

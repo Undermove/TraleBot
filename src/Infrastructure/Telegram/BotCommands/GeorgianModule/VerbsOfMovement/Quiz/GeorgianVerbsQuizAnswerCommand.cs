@@ -152,6 +152,7 @@ public class GeorgianVerbsQuizAnswerCommand : IBotCommand
         {
             1 => "глаголами движения",
             2 => "приставками направления",
+            3 => "спряжением глаголов движения",
             _ => "материалом"
         };
 

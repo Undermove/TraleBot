@@ -107,6 +107,7 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, GeorgianVerbsLessonCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand2>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand3>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizAnswerCommand>();
         return services;
     }

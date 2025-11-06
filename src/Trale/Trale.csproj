@@ -34,5 +34,8 @@
       <Content Update="questions2.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="GeorgianVerbsOfMovement\questions3.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 </Project>

@@ -84,7 +84,7 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                         Lemma = questionElement.GetProperty("lemma").GetString() ?? string.Empty,
                         Question = questionElement.TryGetProperty("question", out var q) ? q.GetString() ?? string.Empty 
                                  : questionElement.TryGetProperty("prompt", out var p) ? p.GetString() ?? string.Empty : string.Empty,
-                        Explanation = questionElement.GetProperty("explanation").GetString() ?? string.Empty,
+                        Explanation = questionElement.TryGetProperty("explanation", out var e) ? e.GetString() ?? string.Empty : string.Empty,
                         AnswerIndex = questionElement.GetProperty("answer_index").GetInt32(),
                         Options = new()
                     };
