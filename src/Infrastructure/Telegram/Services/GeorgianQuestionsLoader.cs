@@ -18,11 +18,11 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
         // Try to find questions file in multiple locations
         var contentRoots = new[]
         {
-            Path.Combine(AppContext.BaseDirectory, _fileName),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "Trale", _fileName),
-            Path.Combine(Environment.CurrentDirectory, _fileName),
-            Path.Combine(Environment.CurrentDirectory, "..", "..", "Trale", _fileName),
-            Path.Combine(AppContext.BaseDirectory, "src", "Trale", _fileName),
+            Path.Combine(AppContext.BaseDirectory, "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "Trale", "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(Environment.CurrentDirectory, "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(Environment.CurrentDirectory, "..", "..", "Trale", "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(AppContext.BaseDirectory, "src", "Trale", "GeorgianVerbsOfMovement", _fileName),
         };
 
         _questionsFilePath = contentRoots.FirstOrDefault(File.Exists) ?? _fileName;
