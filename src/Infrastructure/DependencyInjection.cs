@@ -67,6 +67,7 @@ public static class DependencyInjection
         // Georgian quiz services
         services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
         services.AddSingleton<IGeorgianQuestionsLoader, GeorgianQuestionsLoader>();
+        services.AddSingleton<IGeorgianQuestionsLoaderFactory, GeorgianQuestionsLoaderFactory>();
         
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
@@ -101,6 +102,7 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, GeorgianVerbsOfMovementCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsLessonCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand2>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizAnswerCommand>();
         return services;
     }

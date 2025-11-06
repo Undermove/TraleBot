@@ -8,25 +8,27 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
     private readonly string _questionsFilePath;
     private List<QuizQuestionData>? _cachedQuestions;
     private readonly ILogger<GeorgianQuestionsLoader> _logger;
+    private readonly string _fileName;
 
-    public GeorgianQuestionsLoader(ILogger<GeorgianQuestionsLoader> logger)
+    public GeorgianQuestionsLoader(ILogger<GeorgianQuestionsLoader> logger, string fileName = "questions.json")
     {
         _logger = logger;
+        _fileName = fileName;
         
-        // Try to find questions.json in multiple locations
+        // Try to find questions file in multiple locations
         var contentRoots = new[]
         {
-            Path.Combine(AppContext.BaseDirectory, "questions.json"),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "Trale", "questions.json"),
-            Path.Combine(Environment.CurrentDirectory, "questions.json"),
-            Path.Combine(Environment.CurrentDirectory, "..", "..", "Trale", "questions.json"),
-            Path.Combine(AppContext.BaseDirectory, "src", "Trale", "questions.json"),
+            Path.Combine(AppContext.BaseDirectory, _fileName),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "Trale", _fileName),
+            Path.Combine(Environment.CurrentDirectory, _fileName),
+            Path.Combine(Environment.CurrentDirectory, "..", "..", "Trale", _fileName),
+            Path.Combine(AppContext.BaseDirectory, "src", "Trale", _fileName),
         };
 
-        _questionsFilePath = contentRoots.FirstOrDefault(File.Exists) ?? "questions.json";
+        _questionsFilePath = contentRoots.FirstOrDefault(File.Exists) ?? _fileName;
         
-        _logger.LogInformation("Questions loader initialized. Path: {Path}, Exists: {Exists}", 
-            _questionsFilePath, File.Exists(_questionsFilePath));
+        _logger.LogInformation("Questions loader initialized with file {FileName}. Path: {Path}, Exists: {Exists}", 
+            _fileName, _questionsFilePath, File.Exists(_questionsFilePath));
     }
 
     public List<QuizQuestionData> LoadQuestionsForLesson(int lessonId)
@@ -57,7 +59,7 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
         {
             if (!File.Exists(_questionsFilePath))
             {
-                _logger.LogWarning("Questions file not found at: {Path}", _questionsFilePath);
+                _logger.LogWarning("Questions file {FileName} not found at: {Path}", _fileName, _questionsFilePath);
                 _logger.LogWarning("Current directory: {CurrentDirectory}, Base directory: {BaseDirectory}", 
                     Environment.CurrentDirectory, AppContext.BaseDirectory);
                 return new();

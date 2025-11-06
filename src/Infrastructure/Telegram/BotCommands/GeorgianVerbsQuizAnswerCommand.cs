@@ -148,8 +148,15 @@ public class GeorgianVerbsQuizAnswerCommand : IBotCommand
             ? Math.Round(100.0 * session.CorrectAnswersCount / totalQuestions, 0)
             : 0;
 
+        var lessonName = session.LessonId switch
+        {
+            1 => "глаголами движения",
+            2 => "приставками направления",
+            _ => "материалом"
+        };
+
         var resultsText = $"✅ Отлично!\n" +
-                         $"Ты прошёл первое знакомство с глаголами движения.\n\n" +
+                         $"Ты прошёл первое знакомство с {lessonName}.\n\n" +
                          $"📈 Точность: {accuracy}%\n";
 
         if (session.WeakVerbs.Count > 0)
