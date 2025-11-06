@@ -1,0 +1,163 @@
+{
+  "lesson_id": "motion-4",
+  "title": "Закрепление настоящего времени",
+  "version": "1.0.0",
+  "intro": {
+    "theory_md": "**Закрепление настоящего времени (Present Series)**: приставка + დივ/დიხ/დის + личное окончание. \\n**Основные пары**: მი- ↔ მო- (направление), შე- ↔ გა- (в/из), ა- ↔ ჩა- (вверх/вниз). \\nФормы: 1л.ед. -ვ-…-ვარ, 2л.ед. -იხარ, 3л.ед. -ის, 1л.мн. -ვართ, 2л.мн. -იხართ, 3л.мн. -იან.",
+    "tips": [
+      "Проверьте направление: მი- (от говорящего) vs მო- (к говорящему).",
+      "Не путайте შე- (вход внутрь) и გა- (выход наружу).",
+      "Вертикальные: ა- (вверх) vs ჩა- (вниз).",
+      "Помните пары противоположностей для контекста."
+    ]
+  },
+  "lexicon": [
+    { "lemma": "მიდის", "ru": "идёт/идёшь (от говорящего)", "pair": "მოდის", "root_hint": "მი- + დ-основа" },
+    { "lemma": "მოდის", "ru": "приходит/приходишь (к говорящему)", "pair": "მიდის", "root_hint": "მო- + დ-основа" },
+    { "lemma": "შედის", "ru": "входит/входишь (внутрь)", "pair": "გამოდის", "root_hint": "შე- + დ-основа" },
+    { "lemma": "გამოდის", "ru": "выходит/выходишь (наружу)", "pair": "შედის", "root_hint": "გა- + დ-основа" },
+    { "lemma": "ადის", "ru": "поднимается/поднимаешься", "pair": "ჩადის", "root_hint": "ა- + დ-основа" },
+    { "lemma": "ჩადის", "ru": "спускается/спускаешься", "pair": "ადის", "root_hint": "ჩა- + დ-основа" },
+    { "lemma": "გედედის", "ru": "переходит/переходишь (через)", "pair": null, "root_hint": "გად- + დ-основа" },
+    { "lemma": "ბრუნდება", "ru": "возвращается/возвращаешься", "pair": null, "root_hint": "რეფлексивный глагол" }
+  ],
+  "templates": [
+    "choose_translation_geo",
+    "choose_translation_rus",
+    "cloze_wish",
+    "cloze_like",
+    "pair_opposites"
+  ],
+  "questions": [
+    {
+      "id": "m4-q001",
+      "lemma": "მიდის",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Ты идёшь на работу сейчас?»",
+      "options": ["მიდიხარ სამსახურეში ახლა?", "მოდიხარ სამსახურეში ახლა?", "მიდის სამსახურეში ახლა?", "შედიხარ სამსახურეში ახლა?"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-2sg", "motion-go", "context-now", "question"],
+      "difficulty": 1
+    },
+    {
+      "id": "m4-q002",
+      "lemma": "მოდის",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Мы приходим домой в семь часов».",
+      "options": ["მოვდივართ სახლში შვიდ საათზე", "მივდივართ სახლში შვიდ საათზე", "მოდიხართ სახლში შვიდ საათზე", "ბრუნდებით სახლში შვიდ საათზე"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-1pl", "motion-come", "time-specific"],
+      "difficulty": 1
+    },
+    {
+      "id": "m4-q003",
+      "lemma": "შედის",
+      "template": "choose_translation_rus",
+      "question": "«შევდივართ აუდიტორიაში» — это:",
+      "options": ["мы входим в аудиторию", "мы выходим из аудитории", "мы прищумлись в аудитории", "мы идём мимо аудитории"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-1pl", "motion-enter", "context"],
+      "difficulty": 1
+    },
+    {
+      "id": "m4-q004",
+      "lemma": "გამოდის",
+      "template": "choose_translation_rus",
+      "question": "«ის ყოველ დღეს გამოდის ოფისიდან ხუთ წუთში» — это:",
+      "options": ["он каждый день выходит из офиса в пять часов", "он каждый день входит в офис в пять часов", "он каждый день приходит в офис в пять часов", "он каждый день идёт мимо офиса"],
+      "answer_index": 0,
+      "explanation": "გამოდის = выходит; ოფისიდან = из офиса; ხუთ წუთში = в пять часов",
+      "tags": ["prs", "prs-3sg", "motion-exit", "habit", "time-specific"],
+      "difficulty": 2
+    },
+    {
+      "id": "m4-q005",
+      "lemma": "ადის",
+      "template": "cloze_wish",
+      "prompt": "ლიფტი გატეხილია — შენ ფეხით ___ მეექვსე სართულზე? (подниматься, შენ)",
+      "options": ["ადიხარ", "ავდივარ", "ადის", "ადიხართ"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-2sg", "motion-up", "question", "context"],
+      "difficulty": 2
+    },
+    {
+      "id": "m4-q006",
+      "lemma": "ჩადის",
+      "template": "cloze_wish",
+      "prompt": "კინო დაიწყო — ისინი მალე ___ თეატრში ქვემოთ. (спускаться, ისინი)",
+      "options": ["ჩადიან", "ჩადის", "ჩავდივართ", "ჩადიხართ"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-3pl", "motion-down", "context"],
+      "difficulty": 1
+    },
+    {
+      "id": "m4-q007",
+      "lemma": "გადადის",
+      "template": "cloze_like",
+      "prompt": "გარეთ დიდი მოძრაობაა — თქვენ უსაფრთხოდ ___ ქუჩას? (переходить, თქვენ)",
+      "options": ["გადიხართ", "გადიხარ", "გადის", "გადიან"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-2pl", "motion-cross", "safety", "question"],
+      "difficulty": 2
+    },
+    {
+      "id": "m4-q008",
+      "lemma": "ბრუნდება",
+      "template": "cloze_like",
+      "prompt": "ღამე გვიანდება — თქვენ წინ ___ სახლში? (возвращаться, თქვენ)",
+      "options": ["ბრუნდებით", "ვბრუნდებით", "ბრუნდებიან", "ბრუნდება"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-2pl", "motion-return", "time-late"],
+      "difficulty": 1
+    },
+    {
+      "id": "m4-q009",
+      "lemma": "მოდის",
+      "template": "pair_opposites",
+      "question": "Выбери противоположное по направлению: «მოვდივართ» — ?",
+      "options": ["მივდივართ", "შევდივართ", "გამოვდივართ", "ჩავდივართ"],
+      "answer_index": 0,
+      "explanation": "მო- (к говорящему) ↔ მი- (от говорящего)",
+      "tags": ["pairs", "direction", "prs", "prs-1pl"],
+      "difficulty": 1
+    },
+    {
+      "id": "m4-q010",
+      "lemma": "შედის",
+      "template": "pair_opposites",
+      "question": "Противоположность: «შედიხარ» — ?",
+      "options": ["გამოდიხარ", "მოდიხარ", "მიდიხარ", "ბრუნდება"],
+      "answer_index": 0,
+      "explanation": "შე- (внутрь) ↔ გა- (наружу)",
+      "tags": ["pairs", "direction", "prs", "prs-2sg"],
+      "difficulty": 1
+    },
+    {
+      "id": "m4-q011",
+      "lemma": "ადის",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Они поднимаются в горы каждый уик-энд».",
+      "options": ["ისინი ადიან მთაზე ყოველი შაბათ-კვირა", "ისინი ჩადიან მთაზე ყოველი შაბათ-კვირა", "ისინი მოდიან მთაზე ყოველი შაბათ-კვირა", "ისინი იმოძრავებენ მთაზე ყოველი შაბათ-კვირა"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-3pl", "motion-up", "habit"],
+      "difficulty": 2
+    },
+    {
+      "id": "m4-q012",
+      "lemma": "მიდის",
+      "template": "choose_translation_rus",
+      "question": "«მივდივარ საკაფე თან გაკვეთილის შემდეგ» — это:",
+      "options": ["я иду в кафе после урока", "я приходу в кафе после урока", "я входу в кафе после урока", "я возвращаюсь в кафе после урока"],
+      "answer_index": 0,
+      "tags": ["prs", "prs-1sg", "motion-go", "time-after", "habit"],
+      "difficulty": 2
+    }
+  ],
+  "metadata": {
+    "targets": ["A1-A2", "verbs_of_motion", "present"],
+    "srs": {
+      "face_tags": ["prs-1sg", "prs-2sg", "prs-3sg", "prs-1pl", "prs-2pl", "prs-3pl"],
+      "direction_tags": ["motion-go", "motion-come", "motion-enter", "motion-exit", "motion-up", "motion-down", "motion-cross", "motion-return"]
+    }
+  }
+}

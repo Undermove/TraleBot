@@ -1,0 +1,173 @@
+{
+  "lesson_id": "motion-10",
+  "title": "Итоговое закрепление",
+  "version": "1.0.0",
+  "intro": {
+    "theory_md": "**Итоговое закрепление глаголов движения**: настоящее, прошедшее и будущее время. \\n**Кратко**: Present (მივდივარ, მოდის, შედიხარ), Past (წავედი, მოვიდა, შევიდა), Future (წავიდებ, მოდის, შევის). \\n**Ключевые направления**: მი-/მო- (от/к), შე-/გა- (в/из), ა-/ჩა- (вверх/вниз), გად- (через).",
+    "tips": [
+      "Проверяйте время глагола (present, past, future) по форме",
+      "Запомните приставки для направлений: всё зависит от মো-/მი-/შე-/გა-/ა-/ჩა-/გად-",
+      "Используйте падежи: -იდან (из), -ში (в), -ზე (на), -თან (к)",
+      "Помните: каждое время имеет свой суффикс или окончание"
+    ]
+  },
+  "lexicon": [
+    { "lemma": "მიდის", "ru": "идёт (настоящ.), ушёл (прош.), пойду (будущ.)", "pair": "მოდის", "root_hint": "მი- + tempo-form" },
+    { "lemma": "მოდის", "ru": "приходит (настоящ.), пришёл (прош.), приду (будущ.)", "pair": "მიდის", "root_hint": "მო- + tempo-form" },
+    { "lemma": "შედის", "ru": "входит (настоящ.), вошёл (прош.), войду (будущ.)", "pair": "გამოდის", "root_hint": "შე- + tempo-form" },
+    { "lemma": "გამოდის", "ru": "выходит (настоящ.), вышел (прош.), выйду (будущ.)", "pair": "შედის", "root_hint": "გა- + tempo-form" },
+    { "lemma": "ადის", "ru": "поднимается (настоящ.), поднялся (прош.), поднимусь (будущ.)", "pair": "ჩადის", "root_hint": "ა- + tempo-form" },
+    { "lemma": "ჩადის", "ru": "спускается (настоящ.), спустился (прош.), спущусь (будущ.)", "pair": "ადის", "root_hint": "ჩა- + tempo-form" },
+    { "lemma": "გდდის", "ru": "переходит (настоящ.), перешёл (прош.), перейду (будущ.)", "pair": null, "root_hint": "გად- + tempo-form" },
+    { "lemma": "ბრუნდება", "ru": "возвращается (настоящ.), вернулся (прош.), вернусь (будущ.)", "pair": null, "root_hint": "რეფლექსივი" }
+  ],
+  "templates": [
+    "choose_translation_geo",
+    "choose_translation_rus",
+    "cloze_wish",
+    "cloze_like",
+    "pair_opposites"
+  ],
+  "questions": [
+    {
+      "id": "m10-q001",
+      "lemma": "მიდის",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Я каждый день иду на работу в восемь часов».",
+      "options": ["მე ყოველ დღეს მივდივარ სამსახურეში რვა საათზე", "მე ყოველ დღეს წავედი სამსახურეში რვა საათზე", "მე მომავალ კვირას წავიდებ სამსახურეში", "მე ხვალი წავიდებ სამსახურეში"],
+      "answer_index": 0,
+      "explanation": "მივდივარ = present 1л.ед. (я иду); ყოველ დღეს = каждый день (привычка/настоящее)",
+      "tags": ["prs", "prs-1sg", "motion-go", "habit", "time-specific"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q002",
+      "lemma": "მოვიდა",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Вчера ты пришёл ко мне в семь часов».",
+      "options": ["გუშინ მოვედი ჩემთან შვიდ საათზე", "გუშინ მოვიდა ჩემთან შვიდ საათზე", "ხვალი მოვიდები ჩემთან შვიდ საათზე", "დღეს მოდიხარ ჩემთან"],
+      "answer_index": 0,
+      "explanation": "მოვედი = past 2л.ед. (ты пришёл); გუშინ = вчера",
+      "tags": ["pst", "pst-2sg", "motion-come", "time-yesterday", "time-specific"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q003",
+      "lemma": "შედის",
+      "template": "choose_translation_rus",
+      "question": "«ის შევის აუდიტორიაში დილის ცხრაზე» — это:",
+      "options": ["он войдёт в аудиторию в девять утра", "он вошёл в аудиторию в девять утра", "он входит в аудиторию в девять утра", "он входил в аудиторию"],
+      "answer_index": 0,
+      "explanation": "შევის = future 3л.ед. (он войдёт); დილის ცხრაზე = в девять утра",
+      "tags": ["fut", "fut-3sg", "motion-enter", "time-tomorrow", "time-specific"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q004",
+      "lemma": "გამოდის",
+      "template": "choose_translation_rus",
+      "question": "«ისინი გამოდიან ოფისიდან თითოეული დღე ხუთზე» — это:",
+      "options": ["они выходят из офиса каждый день в пять часов", "они вышли из офиса вчера в пять часов", "они выходили из офиса", "они выйдут из офиса завтра"],
+      "answer_index": 0,
+      "explanation": "გამოდიან = present 3л.мн. (они выходят); თითოეული დღე = каждый день",
+      "tags": ["prs", "prs-3pl", "motion-exit", "habit", "case-from"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q005",
+      "lemma": "ადის",
+      "template": "cloze_like",
+      "prompt": "მე ___ ფეხით მთაზე ყოველი შაბათი. (подниматься, present, მე)",
+      "options": ["ავდივარ", "ავიდა", "ავიდებ", "აი"],
+      "answer_index": 0,
+      "explanation": "ავდივარ = present 1л.ед. (я поднимаюсь); ყოველი შაბათი = каждую субботу (привычка)",
+      "tags": ["prs", "prs-1sg", "motion-up", "habit"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q006",
+      "lemma": "ჩავიდა",
+      "template": "cloze_like",
+      "prompt": "გუშინ გვიან საღამოს თქვენ ___ სიმუქი მეტროში. (спускаться, past, თქვენ)",
+      "options": ["ჩავედით", "ჩავიდითობით", "ჩაიდებთ", "ჩა"],
+      "answer_index": 0,
+      "explanation": "ჩავედით = past 2л.мн. (вы спустились); გუშინ = вчера",
+      "tags": ["pst", "pst-2pl", "motion-down", "time-yesterday"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q007",
+      "lemma": "გადავიდა",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Завтра мы перейдём улицу осторожно».",
+      "options": ["ხვალი გადავიდებთ ქუჩას ფრთხილად", "ხვალი გადავედით ქუჩას ფრთხილად", "გუშინ გადავედით ქუჩა", "ყოველ დღეს გადავიდებთ ქუჩა"],
+      "answer_index": 0,
+      "explanation": "გადავიდებთ = future 1л.мн. (мы перейдём); ხვალი = завтра",
+      "tags": ["fut", "fut-1pl", "motion-cross", "time-tomorrow", "manner"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q008",
+      "lemma": "ბრუნდება",
+      "template": "choose_translation_rus",
+      "question": "«ხვალი ისინი დაბრუნდებიან სახლში ღამის ცხრაზე» — это:",
+      "options": ["завтра они вернутся домой в девять вечера", "они возвращаются домой каждый день", "вчера они вернулись домой", "сегодня они вернулись"],
+      "answer_index": 0,
+      "explanation": "დაბრუნდებიან = future 3л.мн. (они вернутся); ხვალი = завтра; ღამის ცხრაზე = в девять вечера",
+      "tags": ["fut", "fut-3pl", "motion-return", "time-tomorrow", "time-specific"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q009",
+      "lemma": "მოდის",
+      "template": "pair_opposites",
+      "question": "Противоположность (все времена): «მივდივარ» (present) — ?",
+      "options": ["მოვდივარ (present)", "მივიდა (past)", "მივიდებ (future)", "შევდივარ (present)"],
+      "answer_index": 0,
+      "explanation": "მი- (от) ↔ მო- (к) в present и всех временах",
+      "tags": ["prs", "pairs", "direction"],
+      "difficulty": 1
+    },
+    {
+      "id": "m10-q010",
+      "lemma": "შედის",
+      "template": "choose_translation_rus",
+      "question": "«გუშინ ის შევიდა ოთახში და დაჯდა, ხოლო დღეს მოდის დილით» — это:",
+      "options": ["вчера он вошёл в комнату и сидел, а сегодня приходит утром", "вчера он входит в комнату и встаёт", "вчера он войдёт в комнату", "сегодня он выходит"],
+      "answer_index": 0,
+      "explanation": "შევიდა = past 3л.ед.; მოდის = present 3л.ед.",
+      "tags": ["pst", "pst-3sg", "prs", "prs-3sg", "motion-enter", "motion-come", "time-yesterday", "sequence"],
+      "difficulty": 2
+    },
+    {
+      "id": "m10-q011",
+      "lemma": "ავიდა",
+      "template": "cloze_wish",
+      "prompt": "ხვალი გეგმა: დილის 8-ზე ___ მთაზე, შემდეგ 10-ზე ვნახავთ ხედს. (подниматься, future, ჩვენ)",
+      "options": ["ავიდებთ", "ავიდით", "ავთ", "აი"],
+      "answer_index": 0,
+      "explanation": "ავიდებთ = future 1л.мн. (мы поднимемся); გეგმა = план",
+      "tags": ["fut", "fut-1pl", "motion-up", "plan", "time-tomorrow"],
+      "difficulty": 2
+    },
+    {
+      "id": "m10-q012",
+      "lemma": "წავიდა",
+      "template": "choose_translation_rus",
+      "question": "«ყოველ დღეს წავხვევთ სკოლაში, გუშინ წავედითო, და ხვალი წავიდებთ ისევ» — это:",
+      "options": ["каждый день мы ходим в школу, вчера мы ходили, и завтра пойдём снова", "каждый день мы ходим в школу, вчера мы идём, завтра идём", "всегда мы уходили в школу", "сегодня мы идём в школу"],
+      "answer_index": 0,
+      "explanation": "წამხვევთ = present 1л.мн.; წავედით = past 1л.мн.; წავიდებთ = future 1л.мн.",
+      "tags": ["prs", "prs-1pl", "pst", "pst-1pl", "fut", "fut-1pl", "motion-go", "habit", "time-sequence"],
+      "difficulty": 2
+    }
+  ],
+  "metadata": {
+    "targets": ["A1-A2", "verbs_of_motion", "exam", "review"],
+    "srs": {
+      "face_tags": ["prs-1sg", "prs-2sg", "prs-3sg", "prs-1pl", "prs-2pl", "prs-3pl", "pst-1sg", "pst-2sg", "pst-3sg", "pst-1pl", "pst-2pl", "pst-3pl", "fut-1sg", "fut-2sg", "fut-3sg", "fut-1pl", "fut-2pl", "fut-3pl"],
+      "direction_tags": ["motion-go", "motion-come", "motion-enter", "motion-exit", "motion-up", "motion-down", "motion-cross", "motion-return"],
+      "time_tags": ["time-today", "time-yesterday", "time-tomorrow", "habit", "exam"]
+    }
+  }
+}
