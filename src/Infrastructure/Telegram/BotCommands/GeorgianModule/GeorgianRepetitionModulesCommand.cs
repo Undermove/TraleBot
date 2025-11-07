@@ -24,18 +24,15 @@ public class GeorgianRepetitionModulesCommand : IBotCommand
     {
         var keyboard = new InlineKeyboardMarkup(new InlineKeyboardButton[][]
         {
-            new[]
-            {
+            [
                 InlineKeyboardButton.WithCallbackData("🚶 Глаголы движения", CommandNames.GeorgianVerbsOfMovement)
-            },
-            new[]
-            {
+            ],
+            [
                 InlineKeyboardButton.WithCallbackData("👤 Местоимения", CommandNames.GeorgianPronouns)
-            },
-            new[]
-            {
+            ],
+            [
                 InlineKeyboardButton.WithCallbackData("❌ Назад в меню", "/menu")
-            }
+            ]
         });
 
         await _client.EditMessageTextAsync(
