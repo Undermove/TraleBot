@@ -19,7 +19,7 @@
     { "lemma": "გამოდის", "ru": "выходит (наружу)", "pair": "შედის", "root_hint": "გა- наружу + დ-основа" },
     { "lemma": "ადის", "ru": "поднимается (вверх)", "pair": "ჩადის", "root_hint": "ა- вверх + დ-основа" },
     { "lemma": "ჩადის", "ru": "спускается (вниз)", "pair": "ადის", "root_hint": "ჩა- вниз + დ-основа" },
-    { "lemma": "გადადის", "ru": "переходит (через)", "pair": null, "root_hint": "გად- через + დ-основа" },
+    { "lemma": "გადავიდის", "ru": "переходит (через)", "pair": null, "root_hint": "გად- через + დ-основа" },
     { "lemma": "ბრუნდება", "ru": "возвращается", "pair": null, "root_hint": "რეფлексивный: ვბრუნდები/ბრუნდები/ბრუნდება/…/ბრუნდებიან" }
   ],
   "templates": [
@@ -88,7 +88,7 @@
     { "id": "m3-q047", "lemma": "ადის", "template": "choose_translation_rus", "question": "«ადიან ნელა» — это:", "options": ["они поднимаются медленно", "они спускаются медленно", "они входят медленно", "они выходят медленно"], "answer_index": 0, "tags": ["prs","prs-3pl","motion-up","manner"], "difficulty": 1 },
     { "id": "m3-q048", "lemma": "ჩადის", "template": "choose_translation_rus", "question": "«ჩადიხართ ქვემოთ?» — это:", "options": ["вы спускаетесь вниз?", "вы поднимаетесь вниз?", "вы входите вниз?", "вы выходите вниз?"], "answer_index": 0, "tags": ["prs","prs-2pl","motion-down","question"], "difficulty": 1 },
 
-    { "id": "m3-q049", "lemma": "გადადis", "template": "cloze_like", "prompt": "ხიდი მოკლეა — შენ მალე ___ . (переходить, შენ)", "options": ["გადადიხარ", "გადავდივარ", "გადადის", "გადადიხართ"], "answer_index": 0, "tags": ["prs","prs-2sg","motion-cross","time-soon"], "difficulty": 2 },
+    { "id": "m3-q049", "lemma": "გადადის", "template": "cloze_like", "prompt": "ხიდი მოკლეა — შენ მალე ___ . (переходить, შენ)", "options": ["გადადიხარ", "გადავდივარ", "გადადის", "გადადიხართ"], "answer_index": 0, "tags": ["prs","prs-2sg","motion-cross","time-soon"], "difficulty": 2 },
     { "id": "m3-q050", "lemma": "ბრუნდება", "template": "cloze_like", "prompt": "ჩვენ ფილმის შემდეგ სახლში ___ . (возвращаться, ჩვენ)", "options": ["ვბრუნდებით", "ბრუნდებით", "ბრუნდებიან", "ვბრუნდები"], "answer_index": 0, "tags": ["prs","prs-1pl","motion-return","after-event"], "difficulty": 1 },
     { "id": "m3-q051", "lemma": "მიდիս", "template": "cloze_wish", "prompt": "ახლა ოფისში არა — ბარში ___ . (идти, მე)", "options": ["მივდივარ", "მიდიხარ", "მიდის", "მოდიან"], "answer_index": 0, "tags": ["prs","prs-1sg","motion-go","context"], "difficulty": 1 },
     { "id": "m3-q052", "lemma": "მოდის", "template": "cloze_wish", "prompt": "კურიერი მალე ___ კარებთან. (приходить, ის)", "options": ["მოდის", "მიდის", "მოდიან", "მოდიხარ"], "answer_index": 0, "tags": ["prs","prs-3sg","motion-come","courier"], "difficulty": 1 },
