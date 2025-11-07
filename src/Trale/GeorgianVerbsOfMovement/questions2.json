@@ -1,0 +1,118 @@
+{
+  "lesson_id": "motion-2",
+  "title": "Приставки направления",
+  "lexicon": [
+    { "lemma": "მივ", "ru": "к цели", "pair": "წა" },
+    { "lemma": "მო",  "ru": "к говорящему", "pair": "წა" },
+    { "lemma": "წა",  "ru": "от говорящего", "pair": "მო" },
+    { "lemma": "შე",  "ru": "внутрь", "pair": "გა" },
+    { "lemma": "გა",  "ru": "наружу", "pair": "შე" },
+    { "lemma": "ა",   "ru": "вверх", "pair": "ჩა" },
+    { "lemma": "ჩა",  "ru": "вниз", "pair": "ა" },
+    { "lemma": "გად", "ru": "через / на другую сторону", "pair": null }
+  ],
+  "templates": [
+    "choose_translation_geo",
+    "choose_translation_rus",
+    "pair_opposites",
+    "cloze_wish",
+    "cloze_like"
+  ],
+  "questions": [
+    { "id":"q_mean_miv_01","lemma":"მივ","template":"choose_translation_geo","question":"„მივ-“ — это…","options":["движение к цели","к говорящему","от говорящего"],"answer_index":0,"explanation":"მივ- указывает на движение к цели (мივ-დივар — иду куда-то).","tags":["meaning","to_goal"],"difficulty":1 },
+    { "id":"q_mean_mo_01","lemma":"მო","template":"choose_translation_geo","question":"„მო-“ — это…","options":["к говорящему","от говорящего","через"],"answer_index":0,"explanation":"мо- — движение к говорящему (модис — идёт ко мне).","tags":["meaning","to_speaker"],"difficulty":1 },
+    { "id":"q_mean_tsa_01","lemma":"წა","template":"choose_translation_geo","question":"„წა-“ — это…","options":["от говорящего","к говорящему","вверх"],"answer_index":0,"explanation":"წა- — уход/движение от говорящего (цавიდა — ушёл).","tags":["meaning","from_speaker"],"difficulty":1 },
+    { "id":"q_mean_she_01","lemma":"შე","template":"choose_translation_geo","question":"„შე-“ — это…","options":["внутрь","наружу","вниз"],"answer_index":0,"explanation":"ше- — внутрь (шевида — вошёл).","tags":["meaning","into"],"difficulty":1 },
+    { "id":"q_mean_ga_01","lemma":"გა","template":"choose_translation_geo","question":"„გა-“ — это…","options":["наружу","внутрь","через"],"answer_index":0,"explanation":"га- — наружу (гавида — вышел).","tags":["meaning","out"],"difficulty":1 },
+    { "id":"q_mean_a_01","lemma":"ა","template":"choose_translation_geo","question":"„ა-“ — это…","options":["вверх","вниз","внутрь"],"answer_index":0,"explanation":"а- — вверх (авида — поднялся).","tags":["meaning","up"],"difficulty":1 },
+    { "id":"q_mean_cha_01","lemma":"ჩა","template":"choose_translation_geo","question":"„ჩა-“ — это…","options":["вниз","вверх","наружу"],"answer_index":0,"explanation":"ча- — вниз (чавида — спустился).","tags":["meaning","down"],"difficulty":1 },
+    { "id":"q_mean_gad_01","lemma":"გად","template":"choose_translation_geo","question":"„გად-“ — это…","options":["через / на другую сторону","к говорящему","вверх"],"answer_index":0,"explanation":"гад- — через (гадевида — перешёл).","tags":["meaning","across"],"difficulty":1 },
+
+    { "id":"q_pair_mo_tsa_01","lemma":"მო","template":"pair_opposites","question":"Противоположность „მო-“ (к говорящему):","options":["წა-","შე-","გა-"],"answer_index":0,"explanation":"мო- ↔ წა- (к ↔ от).","tags":["pair","to_speaker"],"difficulty":1 },
+    { "id":"q_pair_she_ga_01","lemma":"შე","template":"pair_opposites","question":"Противоположность „შე-“ (внутрь):","options":["გა-","ა-","ჩა-"],"answer_index":0,"explanation":"ше- ↔ га- (внутрь ↔ наружу).","tags":["pair","into_out"],"difficulty":1 },
+    { "id":"q_pair_a_cha_01","lemma":"ა","template":"pair_opposites","question":"Противоположность „ა-“ (вверх):","options":["ჩა-","გა-","შე-"],"answer_index":0,"explanation":"а- ↔ ча- (вверх ↔ вниз).","tags":["pair","up_down"],"difficulty":1 },
+    { "id":"q_pair_miv_tsa_01","lemma":"მივ","template":"pair_opposites","question":"Что противоположно „მივ-“ (к цели)?","options":["წა-","მო-","გად-"],"answer_index":0,"explanation":"მივ- (к цели) ↔ წა- (прочь/отсюда).","tags":["pair","to_goal"],"difficulty":2 },
+
+    { "id":"q_ctx_in_room_01","lemma":"შე","template":"cloze_wish","prompt":"«Хочу войти в комнату»: მინდა ოთახში ___","options":["შესვლა","გასვლა","გადასვლა"],"answer_index":0,"explanation":"ოთახში შესვლა — войти внутрь комнаты.","tags":["cloze","into","room"],"difficulty":1 },
+    { "id":"q_ctx_outside_01","lemma":"გა","template":"cloze_wish","prompt":"«Хочу выйти наружу»: მინდა ___ გარეთ","options":["გასვლა","შესვლა","გადასვლა"],"answer_index":0,"explanation":"გარეთ გასვლა — выйти наружу.","tags":["cloze","out"],"difficulty":1 },
+    { "id":"q_ctx_up_roof_01","lemma":"ა","template":"cloze_wish","prompt":"«Хочу подняться на крышу»: მინდა სახურავზე ___","options":["ასვლა","ჩასვლა","გადასვლა"],"answer_index":0,"explanation":"асвла — подниматься (вверх).","tags":["cloze","up","building"],"difficulty":1 },
+    { "id":"q_ctx_down_floor_01","lemma":"ჩა","template":"cloze_wish","prompt":"«Хочу спуститься на первый этаж»: მინდა პირველ სართულზე ___","options":["ჩასვლა","ასვლა","შესვლა"],"answer_index":0,"explanation":"ჩასვლა — спуститься.","tags":["cloze","down","building"],"difficulty":1 },
+    { "id":"q_ctx_to_me_01","lemma":"მო","template":"cloze_wish","prompt":"«Он идёт ко мне»: ის ___ ჩემთან","options":["მოდის","მიდის","წასვლა"],"answer_index":0,"explanation":"модис — идёт ко мне (мო-).","tags":["cloze","to_speaker"],"difficulty":1 },
+    { "id":"q_ctx_from_me_01","lemma":"წა","template":"cloze_wish","prompt":"«Он уходит от меня»: ის ___ ჩემგან","options":["წასვლა","მოსვლა","გადასვლა"],"answer_index":0,"explanation":"წასვლა — уходить прочь.","tags":["cloze","from_speaker"],"difficulty":1 },
+    { "id":"q_ctx_across_street_01","lemma":"გად","template":"cloze_wish","prompt":"«Хочу перейти улицу»: მინდა ___ ქუჩა","options":["გადასვლა","გასვლა","შესვლა"],"answer_index":0,"explanation":"გადასვლა — перейти через улицу.","tags":["cloze","across","street"],"difficulty":1 },
+
+    { "id":"q_sent_miv_shop_01","lemma":"მივ","template":"choose_translation_rus","question":"„მე მივდივარ მაღაზიაში“ — перевод:","options":["Я иду в магазин","Я выхожу из магазина","Я прихожу в магазин"],"answer_index":0,"explanation":"мივდივар — движение к цели.","tags":["sentence","to_goal"],"difficulty":1 },
+    { "id":"q_sent_mo_me_01","lemma":"მო","template":"choose_translation_rus","question":"„ის მოდის ჩემთან“ — это…","options":["Он идёт ко мне","Он уходит от меня","Он идёт наверх"],"answer_index":0,"explanation":"мо- — к говорящему.","tags":["sentence","to_speaker"],"difficulty":1 },
+    { "id":"q_sent_ga_out_01","lemma":"გა","template":"choose_translation_rus","question":"„ის გავიდა გარეთ“ — это…","options":["Он вышел наружу","Он вошёл внутрь","Он перешёл улицу"],"answer_index":0,"explanation":"гавида — вышел.","tags":["sentence","out"],"difficulty":1 },
+    { "id":"q_sent_she_in_01","lemma":"შე","template":"choose_translation_rus","question":"„ის შევიდა ოთახში“ — это…","options":["Он вошёл в комнату","Он вышел из комнаты","Он прошёл мимо комнаты"],"answer_index":0,"explanation":"шевида — вошёл внутрь.","tags":["sentence","into"],"difficulty":1 },
+    { "id":"q_sent_a_up_01","lemma":"ა","template":"choose_translation_rus","question":"„ის ავიდა მთაზე“ — это…","options":["Он поднялся на гору","Он спустился с горы","Он вошёл в гору"],"answer_index":0,"explanation":"авида — поднялся (вверх).","tags":["sentence","up"],"difficulty":1 },
+    { "id":"q_sent_cha_down_01","lemma":"ჩა","template":"choose_translation_rus","question":"„ის ჩავიდა პირველ სართულზე“ — это…","options":["Он спустился на первый этаж","Он поднялся","Он вышел"],"answer_index":0,"explanation":"чавида — спустился (вниз).","tags":["sentence","down"],"difficulty":1 },
+    { "id":"q_sent_gad_cross_01","lemma":"გად","template":"choose_translation_rus","question":"„ის გადავიდა ქუჩა“ — это…","options":["Он перешёл улицу","Он прошёл по улице","Он вернулся на улицу"],"answer_index":0,"explanation":"гадевида — перешёл (через).","tags":["sentence","across"],"difficulty":1 },
+    { "id":"q_sent_tsa_from_01","lemma":"წა","template":"choose_translation_rus","question":"„ის წავიდა სახლიდან“ — это…","options":["Он ушёл из дома","Он пришёл домой","Он вошёл в дом"],"answer_index":0,"explanation":"цавида — ушёл прочь (от).","tags":["sentence","from_speaker"],"difficulty":1 },
+
+    { "id":"q_mean_miv_02","lemma":"მივ","template":"choose_translation_geo","question":"Что означает приставка „მივ-“ в форме „მივიდა“?","options":["дошёл/прибыл к цели","ушёл прочь","пришёл ко мне"],"answer_index":0,"explanation":"„мвида“ — дошёл до цели.","tags":["meaning","to_goal"],"difficulty":2 },
+    { "id":"q_mean_mo_02","lemma":"მო","template":"choose_translation_geo","question":"Что означает „მოვიდა“?","options":["пришёл сюда (ко мне)","ушёл от меня","поднялся"],"answer_index":0,"explanation":"мо- → к говорящему.","tags":["meaning","to_speaker"],"difficulty":2 },
+    { "id":"q_mean_tsa_02","lemma":"წა","template":"choose_translation_geo","question":"„წავიდა“ — это…","options":["ушёл (отсюда)","пришёл ко мне","перешёл"],"answer_index":0,"explanation":"წა- — от говорящего.","tags":["meaning","from_speaker"],"difficulty":2 },
+    { "id":"q_mean_she_02","lemma":"შე","template":"choose_translation_geo","question":"„შევიდა“ — это…","options":["вошёл внутрь","вышел наружу","поднялся"],"answer_index":0,"explanation":"ше- — внутрь.","tags":["meaning","into"],"difficulty":2 },
+    { "id":"q_mean_ga_02","lemma":"გა","template":"choose_translation_geo","question":"„გავიდა“ — это…","options":["вышел наружу","вошёл внутрь","перешёл"],"answer_index":0,"explanation":"га- — наружу.","tags":["meaning","out"],"difficulty":2 },
+    { "id":"q_mean_a_02","lemma":"ა","template":"choose_translation_geo","question":"„ავიდა“ — это…","options":["поднялся","спустился","перешёл"],"answer_index":0,"explanation":"а- — вверх.","tags":["meaning","up"],"difficulty":2 },
+    { "id":"q_mean_cha_02","lemma":"ჩა","template":"choose_translation_geo","question":"„ჩავიდა“ — это…","options":["спустился","поднялся","вышел"],"answer_index":0,"explanation":"ча- — вниз.","tags":["meaning","down"],"difficulty":2 },
+    { "id":"q_mean_gad_02","lemma":"გად","template":"choose_translation_geo","question":"„გადავი მიდის ქუჩაზე“ (обобщённо „გად-“):","options":["движение через/на другую сторону","к говорящему","внутрь"],"answer_index":0,"explanation":"гад- = через.","tags":["meaning","across"],"difficulty":2 },
+
+    { "id":"q_pair_miv_tsa_02","lemma":"მივ","template":"pair_opposites","question":"Выбери антоним направления к „მივ-“:","options":["წა-","მო-","გად-"],"answer_index":0,"explanation":"к цели ↔ от говорящего.","tags":["pair"],"difficulty":2 },
+    { "id":"q_pair_she_ga_02","lemma":"შე","template":"pair_opposites","question":"Противоположность „შე-“:","options":["გა-","წა-","მივ-"],"answer_index":0,"explanation":"внутрь ↔ наружу.","tags":["pair"],"difficulty":2 },
+    { "id":"q_pair_a_cha_02","lemma":"ა","template":"pair_opposites","question":"Противоположность „ა-“:","options":["ჩა-","შე-","გა-"],"answer_index":0,"explanation":"вверх ↔ вниз.","tags":["pair"],"difficulty":2 },
+    { "id":"q_pair_mo_tsa_02","lemma":"მო","template":"pair_opposites","question":"Что противоположно движению „к говорящему“ (მო-)?","options":["წა-","გად-","ა-"],"answer_index":0,"explanation":"к ↔ от.","tags":["pair"],"difficulty":2 },
+
+    { "id":"q_like_into_01","lemma":"შე","template":"cloze_like","prompt":"«Люблю входить в библиотеку»: მიყვარს ___ ბიბლიოთეკაში","options":["შესვლა","გასვლა","გადასვლა"],"answer_index":0,"explanation":"в библиотеку войти — შესვლა.","tags":["like","into"],"difficulty":2 },
+    { "id":"q_like_out_01","lemma":"გა","template":"cloze_like","prompt":"«Люблю выходить на балкон»: მიყვარს ___ აივანზე","options":["გასვლა","შესვლა","ჩასვლა"],"answer_index":0,"explanation":"на балкон выйти — გასვლა.","tags":["like","out","home"],"difficulty":2 },
+    { "id":"q_like_up_01","lemma":"ა","template":"cloze_like","prompt":"«Люблю подниматься в горы»: მიყვარს ___ მთაზე","options":["ასვლა","ჩასვლა","გადასვლა"],"answer_index":0,"explanation":"в горы подниматься — ასვლა.","tags":["like","up","mountain"],"difficulty":2 },
+    { "id":"q_like_down_01","lemma":"ჩა","template":"cloze_like","prompt":"«Люблю спускаться к морю вечером»: მიყვარს საღამოს ზღვაზე ___","options":["ჩასვლა","ასვლა","შესვლა"],"answer_index":0,"explanation":"спускаться — ჩასვლა.","tags":["like","down","sea"],"difficulty":2 },
+    { "id":"q_like_across_01","lemma":"გად","template":"cloze_like","prompt":"«Иногда перехожу мост»: ხანდახან ___ ხიდი","options":["გადასვლა","გასვლა","შესვლა"],"answer_index":0,"explanation":"перейти мост — გადასვლა ხიდი.","tags":["like","across","street"],"difficulty":2 },
+
+    { "id":"q_ctx_bank_in_01","lemma":"შე","template":"choose_translation_rus","question":"„მე შევედი ბანკში“ — это…","options":["Я вошёл в банк","Я вышел из банка","Я перешёл к банку"],"answer_index":0,"explanation":"шеведи — вошёл.","tags":["context","bank","into"],"difficulty":2 },
+    { "id":"q_ctx_bank_out_01","lemma":"გა","template":"choose_translation_rus","question":"„მე გავედი ბანკიდან“ — это…","options":["Я вышёл из банка","Я вошёл в банк","Я поднялся к банку"],"answer_index":0,"explanation":"гаведи банкидан — вышел из банка.","tags":["context","bank","out"],"difficulty":2 },
+    { "id":"q_ctx_metro_down_01","lemma":"ჩა","template":"choose_translation_rus","question":"„ის ჩავიდა მეტროში“ — это…","options":["Он спустился в метро","Он поднялся в метро","Он вошёл в метро и вышел"],"answer_index":0,"explanation":"чавида — спустился.","tags":["context","metro","down"],"difficulty":2 },
+    { "id":"q_ctx_lift_up_01","lemma":"ა","template":"choose_translation_rus","question":"„ის ავიდა ლიფტით“ — это…","options":["Он поднялся на лифте","Он спустился на лифте","Он вышел на лифте"],"answer_index":0,"explanation":"авида — поднялся.","tags":["context","lift","up"],"difficulty":2 },
+    { "id":"q_ctx_street_cross_01","lemma":"გად","template":"choose_translation_rus","question":"„ის გადავიდა ქუჩა უსაფრთხოდ“ — это…","options":["Он безопасно перешёл улицу","Он вышел на улицу","Он повернул на улицу"],"answer_index":0,"explanation":"перешёл через — გად-.","tags":["context","street","across"],"difficulty":2 },
+    { "id":"q_ctx_from_home_01","lemma":"წა","template":"choose_translation_rus","question":"„ის წავიდა სახლიდან ადრე“ — это…","options":["Он рано ушёл из дома","Он рано пришёл домой","Он рано вошёл в дом"],"answer_index":0,"explanation":"ушёл из дома — წა-.","tags":["context","home","from"],"difficulty":2 },
+    { "id":"q_ctx_to_me_call_01","lemma":"მო","template":"choose_translation_rus","question":"„მოდი ჩემთან!“ — это…","options":["Иди ко мне!","Иди от меня!","Перейди ко мне!"],"answer_index":0,"explanation":"императив с мо- — к говорящему.","tags":["context","imperative","to_speaker"],"difficulty":1 },
+    { "id":"q_ctx_to_goal_call_01","lemma":"მივ","template":"choose_translation_rus","question":"„მივიდეთ წვეულებაზე?“ — это…","options":["Пойдём на вечеринку?","Пойдём ко мне?","Пойдём оттуда?"],"answer_index":0,"explanation":"„давай пойдём к цели“ — მივ-.","tags":["context","to_goal"],"difficulty":2 },
+
+    { "id":"q_mix_choose_01","lemma":"შე","template":"choose_translation_geo","question":"Выбери подходящее для «войти внутрь»:","options":["შესვლა","გასვლა","ჩასვლა"],"answer_index":0,"explanation":"внутрь — ше-.","tags":["mix","into"],"difficulty":1 },
+    { "id":"q_mix_choose_02","lemma":"გა","template":"choose_translation_geo","question":"Выбери подходящее для «выйти наружу»:","options":["გასვლა","შესვლა","გადასვლა"],"answer_index":0,"explanation":"наружу — га-.","tags":["mix","out"],"difficulty":1 },
+    { "id":"q_mix_choose_03","lemma":"გად","template":"choose_translation_geo","question":"Выбери для «перейти через дорогу»:","options":["გადასვლა","გასვლა","შესვლა"],"answer_index":0,"explanation":"через — გად-.","tags":["mix","across"],"difficulty":1 },
+    { "id":"q_mix_choose_04","lemma":"ა","template":"choose_translation_geo","question":"Выбери для «подняться наверх»:","options":["ასვლა","ჩასვლა","გასვლა"],"answer_index":0,"explanation":"вверх — а-.","tags":["mix","up"],"difficulty":1 },
+    { "id":"q_mix_choose_05","lemma":"ჩა","template":"choose_translation_geo","question":"Выбери для «спуститься вниз»:","options":["ჩასვლა","ასვლა","შესვლა"],"answer_index":0,"explanation":"вниз — ча-.","tags":["mix","down"],"difficulty":1 },
+    { "id":"q_mix_choose_06","lemma":"მო","template":"choose_translation_geo","question":"Выбери для «идти ко мне»:","options":["მოსვლა","წასვლა","გადასვლა"],"answer_index":0,"explanation":"к говорящему — мо-.","tags":["mix","to_speaker"],"difficulty":1 },
+    { "id":"q_mix_choose_07","lemma":"წა","template":"choose_translation_geo","question":"Выбери для «уйти отсюда»:","options":["წასვლა","მოსვლა","შესვლა"],"answer_index":0,"explanation":"от говорящего — წა-.","tags":["mix","from_speaker"],"difficulty":1 },
+
+    { "id":"q_like_city_center_01","lemma":"მივ","template":"cloze_like","prompt":"«Люблю идти в центр города»: მიყვარს ცენტრში ___","options":["მივ जाना/მივვლა","მოსვლა","გასვლა"],"answer_index":0,"explanation":"в центр (к цели) — მი-вла (здесь допустим упрощённый ответ „მივვლა“ для распознавания шаблона).","tags":["like","to_goal","city"],"difficulty":3 },
+    { "id":"q_like_market_from_01","lemma":"წა","template":"cloze_like","prompt":"«Часто ухожу с рынка рано»: ხშირად ბაზრიდან ___ ადრე","options":["წასვლა","მოსვლა","გადასვლა"],"answer_index":0,"explanation":"уходить с рынка — წასვლა.","tags":["like","from_speaker","market"],"difficulty":2 },
+    { "id":"q_like_visit_me_01","lemma":"მო","template":"cloze_like","prompt":"«Друзья любят приходить ко мне»: მეგობრებს უყვართ ჩემთან ___","options":["მოსვლა","წასვლა","შესვლა"],"answer_index":0,"explanation":"к говорящему — мо-.","tags":["like","to_speaker","friends"],"difficulty":2 },
+
+    { "id":"q_sent_combo_01","lemma":"შე","template":"choose_translation_rus","question":"„შევედი ოთახში და გავედი გარეთ“ — это…","options":["Я вошёл в комнату и вышел наружу","Я вышел из комнаты и вошёл внутрь","Я перешёл комнату"],"answer_index":0,"explanation":"ше- внутрь + га- наружу.","tags":["combo","into_out"],"difficulty":2 },
+    { "id":"q_sent_combo_02","lemma":"ა","template":"choose_translation_rus","question":"„ავედი ბილიკზე და ჩავედი ქვემოთ“ — это…","options":["Я поднялся на тропу и спустился вниз","Я спустился на тропу и вышел наружу","Я перешёл тропу"],"answer_index":0,"explanation":"а- вверх + ча- вниз.","tags":["combo","up_down"],"difficulty":2 },
+    { "id":"q_sent_combo_03","lemma":"მო","template":"choose_translation_rus","question":"„მოვიდა ჩემთან და წავიდა უკან“ — это…","options":["Он пришёл ко мне и ушёл обратно","Он ушёл от меня и пришёл обратно","Он перешёл и вошёл"],"answer_index":0,"explanation":"мо- к говорящему, затем წა- от говорящего.","tags":["combo","to_from"],"difficulty":2 },
+
+    { "id":"q_trick_in_out_01","lemma":"გა","template":"choose_translation_geo","question":"Что ближе по смыслу к „выйти наружу“?","options":["გასვლა","შესვლა","გადასვლა"],"answer_index":0,"explanation":"наружу — га-.","tags":["trick","out"],"difficulty":1 },
+    { "id":"q_trick_to_me_01","lemma":"მო","template":"choose_translation_geo","question":"Что ближе к «движению по направлению к говорящему»?","options":["მოსვლა","წასვლა","შესვლა"],"answer_index":0,"explanation":"к говорящему — мо-.","tags":["trick","to_speaker"],"difficulty":1 },
+    { "id":"q_trick_across_01","lemma":"გად","template":"choose_translation_geo","question":"Где нужен „გად-“?","options":["перейти реку","войти в реку","выйти из реки"],"answer_index":0,"explanation":"через реку — გად-.","tags":["trick","across","river"],"difficulty":2 },
+
+    { "id":"q_ctx_airport_01","lemma":"გად","template":"choose_translation_geo","question":"„გადაფრინდა“ — это…","options":["перелетел","вылетел наружу","пришёл"],"answer_index":0,"explanation":"гад- + лететь = перелететь (через).","tags":["airport","across"],"difficulty":2 },
+    { "id":"q_ctx_bridge_01","lemma":"გად","template":"choose_translation_rus","question":"„მან გადადგა ხიდი“ — это…","options":["Он пересёк мост","Он вышел с моста","Он зашёл на мост"],"answer_index":0,"explanation":"пересёк/прошёл через — გად-.","tags":["bridge","across"],"difficulty":3 },
+    { "id":"q_ctx_shop_in_01","lemma":"შე","template":"choose_translation_rus","question":"„ჩვენ შევედით მაღაზიაში“ — это…","options":["Мы вошли в магазин","Мы вышли из магазина","Мы перешли магазин"],"answer_index":0,"explanation":"внутрь магазина — ше-.","tags":["shop","into"],"difficulty":1 },
+    { "id":"q_ctx_shop_out_01","lemma":"გა","template":"choose_translation_rus","question":"„ჩვენ გამოვედით მაღაზიიდან“ — это…","options":["Мы вышли из магазина","Мы вошли в магазин","Мы перешли к магазину"],"answer_index":0,"explanation":"вышли наружу — га-.","tags":["shop","out"],"difficulty":1 },
+    { "id":"q_ctx_hill_up_01","lemma":"ა","template":"choose_translation_rus","question":"„ის ავიდა გორაზე“ — это…","options":["Он поднялся на холм","Он спустился с холма","Он перешёл холм"],"answer_index":0,"explanation":"а- вверх.","tags":["hill","up"],"difficulty":1 },
+    { "id":"q_ctx_hill_down_01","lemma":"ჩა","template":"choose_translation_rus","question":"„ის ჩაინძრა ყურეში“ (условно): направление?","options":["вниз/внутрь","вверх","наружу"],"answer_index":0,"explanation":"позиционируем как движение вниз/внутрь контекста.","tags":["down","into"],"difficulty":3 },
+
+    { "id":"q_micro_map_01","lemma":"მივ","template":"choose_translation_rus","question":"Куда ведёт приставка „მივ-“?","options":["к цели","к говорящему","внутрь"],"answer_index":0,"explanation":"к цели.","tags":["recap","to_goal"],"difficulty":1 },
+    { "id":"q_micro_map_02","lemma":"მო","template":"choose_translation_rus","question":"Куда ведёт „მო-“?","options":["к говорящему","от говорящего","через"],"answer_index":0,"explanation":"к говорящему.","tags":["recap","to_speaker"],"difficulty":1 },
+    { "id":"q_micro_map_03","lemma":"წა","template":"choose_translation_rus","question":"„წა-“ — это…","options":["от говорящего","вверх","наружу"],"answer_index":0,"explanation":"от говорящего/прочь.","tags":["recap","from_speaker"],"difficulty":1 },
+    { "id":"q_micro_map_04","lemma":"შე","template":"choose_translation_rus","question":"„შე-“ — это…","options":["внутрь","вниз","к цели"],"answer_index":0,"explanation":"внутрь.","tags":["recap","into"],"difficulty":1 },
+    { "id":"q_micro_map_05","lemma":"გა","template":"choose_translation_rus","question":"„გა-“ — это…","options":["наружу","к говорящему","через"],"answer_index":0,"explanation":"наружу.","tags":["recap","out"],"difficulty":1 },
+    { "id":"q_micro_map_06","lemma":"ა","template":"choose_translation_rus","question":"„ა-“ — это…","options":["вверх","через","от"],"answer_index":0,"explanation":"вверх.","tags":["recap","up"],"difficulty":1 },
+    { "id":"q_micro_map_07","lemma":"ჩა","template":"choose_translation_rus","question":"„ჩა-“ — это…","options":["вниз","внутрь","к цели"],"answer_index":0,"explanation":"вниз.","tags":["recap","down"],"difficulty":1 },
+    { "id":"q_micro_map_08","lemma":"გად","template":"choose_translation_rus","question":"„გად-“ — это…","options":["через/на другую сторону","внутрь","к говорящему"],"answer_index":0,"explanation":"через.","tags":["recap","across"],"difficulty":1 }
+  ]
+}

@@ -8,32 +8,49 @@ public static class MenuKeyboard
 {
     public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage)
     {
-        var keyboard = new InlineKeyboardMarkup(new[]
+        var buttons = new List<InlineKeyboardButton[]>
         {
-            [
-                InlineKeyboardButton.WithCallbackData($"Сменить язык словаря: {GetLanguageFlag(currentLanguage)}",
-                    $"{CommandNames.ChangeCurrentLanguageMenu}")
-            ],
-            [
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.QuizIcon} Закрепить слова")
-            ],
-            [
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.VocabularyIcon} Мой словарь")
-            ],
-            [
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.AchievementsIcon} Достижения")
-            ],
-            [
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.HowToIcon} Как пользоваться", CommandNames.HowTo)
-            ],
             new[]
             {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.PayIcon} Премиум"),
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.HelpIcon} Поддержка")
+                InlineKeyboardButton.WithCallbackData($"Сменить язык словаря: {GetLanguageFlag(currentLanguage)}",
+                    $"{CommandNames.ChangeCurrentLanguageMenu}")
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.QuizIcon} Закрепить слова")
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.VocabularyIcon} Мой словарь")
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.AchievementsIcon} Достижения")
             }
+        };
+        
+        // Add Georgian repetition modules button only for Georgian language
+        if (currentLanguage == Language.Georgian)
+        {
+            buttons.Add(new[]
+            {
+                InlineKeyboardButton.WithCallbackData("📦 Модули повторения", 
+                    CommandNames.GeorgianRepetitionModules)
+            });
+        }
+        
+        buttons.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.HowToIcon} Как пользоваться", CommandNames.HowTo)
         });
         
-
+        buttons.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.PayIcon} Премиум"),
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.HelpIcon} Поддержка")
+        });
+        
+        var keyboard = new InlineKeyboardMarkup(buttons);
         return keyboard;
     }
 

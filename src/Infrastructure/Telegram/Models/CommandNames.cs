@@ -46,4 +46,34 @@ public static class CommandNames
     public const string ChangeCurrentLanguage = "/changelanguage";
     public const string ChangeCurrentLanguageAndDeleteVocabulary = "/chadl";
     public const string SetInitialLanguage = "/setinitiallanguage";
+    
+    // georgian language learning commands - repetition modules
+    public const string GeorgianRepetitionModules = "/georgianrepetitionmodules";
+    public const string GeorgianVerbsOfMovement = "/georgianverbsofmovement";
+    public const string GeorgianPronouns = "/georgianpronouns";
+    
+    // Georgian verbs of movement lessons
+    public const string GeorgianVerbsLesson1 = "/georgianverbslesson1";
+    public const string GeorgianVerbsLesson2 = "/georgianverbslesson2";
+    public const string GeorgianVerbsLesson3 = "/georgianverbslesson3";
+    public const string GeorgianVerbsLesson4 = "/georgianverbslesson4";
+    public const string GeorgianVerbsLesson5 = "/georgianverbslesson5";
+    public const string GeorgianVerbsLesson6 = "/georgianverbslesson6";
+    public const string GeorgianVerbsLesson7 = "/georgianverbslesson7";
+    public const string GeorgianVerbsLesson8 = "/georgianverbslesson8";
+    public const string GeorgianVerbsLesson9 = "/georgianverbslesson9";
+    public const string GeorgianVerbsLesson10 = "/georgianverbslesson10";
+    
+    // Georgian verbs quiz commands
+    public const string GeorgianVerbsQuizStart1 = "/georgianverbsquizstart1";
+    public const string GeorgianVerbsQuizStart2 = "/georgianverbsquizstart2";
+    public const string GeorgianVerbsQuizStart3 = "/georgianverbsquizstart3";
+    public const string GeorgianVerbsQuizStart4 = "/georgianverbsquizstart4";
+    public const string GeorgianVerbsQuizStart5 = "/georgianverbsquizstart5";
+    public const string GeorgianVerbsQuizStart6 = "/georgianverbsquizstart6";
+    public const string GeorgianVerbsQuizStart7 = "/georgianverbsquizstart7";
+    public const string GeorgianVerbsQuizStart8 = "/georgianverbsquizstart8";
+    public const string GeorgianVerbsQuizStart9 = "/georgianverbsquizstart9";
+    public const string GeorgianVerbsQuizStart10 = "/georgianverbsquizstart10";
+    public const string GeorgianVerbsQuizAnswer = "/georgianverbsquizanswer";
 }

@@ -1,0 +1,126 @@
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+
+namespace Infrastructure.Telegram.Services;
+
+public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
+{
+    private readonly string _questionsFilePath;
+    private List<QuizQuestionData>? _cachedQuestions;
+    private readonly ILogger<GeorgianQuestionsLoader> _logger;
+    private readonly string _fileName;
+
+    public GeorgianQuestionsLoader(ILogger<GeorgianQuestionsLoader> logger, string fileName = "questions.json")
+    {
+        _logger = logger;
+        _fileName = fileName;
+        
+        // Try to find questions file in multiple locations
+        var contentRoots = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "Trale", "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(Environment.CurrentDirectory, "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(Environment.CurrentDirectory, "..", "..", "Trale", "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(AppContext.BaseDirectory, "src", "Trale", "GeorgianVerbsOfMovement", _fileName),
+        };
+
+        _questionsFilePath = contentRoots.FirstOrDefault(File.Exists) ?? _fileName;
+        
+        _logger.LogInformation("Questions loader initialized with file {FileName}. Path: {Path}, Exists: {Exists}", 
+            _fileName, _questionsFilePath, File.Exists(_questionsFilePath));
+    }
+
+    public List<QuizQuestionData> LoadQuestionsForLesson(int lessonId)
+    {
+        if (_cachedQuestions == null)
+        {
+            _cachedQuestions = LoadAllQuestions();
+        }
+
+        var random = new Random();
+        var shuffled = _cachedQuestions.OrderBy(_ => random.Next()).ToList();
+        
+        // Возвращаем 12 случайных вопросов
+        var selectedQuestions = shuffled.Take(12).ToList();
+        
+        // Shuffle answer options for each question
+        foreach (var question in selectedQuestions)
+        {
+            question.ShuffleOptions(random);
+        }
+        
+        return selectedQuestions;
+    }
+
+    private List<QuizQuestionData> LoadAllQuestions()
+    {
+        try
+        {
+            if (!File.Exists(_questionsFilePath))
+            {
+                _logger.LogWarning("Questions file {FileName} not found at: {Path}", _fileName, _questionsFilePath);
+                _logger.LogWarning("Current directory: {CurrentDirectory}, Base directory: {BaseDirectory}", 
+                    Environment.CurrentDirectory, AppContext.BaseDirectory);
+                return new();
+            }
+
+            var json = File.ReadAllText(_questionsFilePath);
+            
+            // Parse JSON with comment handling enabled
+            var jsonOptions = new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip };
+            using var document = JsonDocument.Parse(json, jsonOptions);
+            var root = document.RootElement;
+
+            var questions = new List<QuizQuestionData>();
+
+            if (root.TryGetProperty("questions", out var questionsArray))
+            {
+                foreach (var questionElement in questionsArray.EnumerateArray())
+                {
+                    var question = new QuizQuestionData
+                    {
+                        Id = questionElement.GetProperty("id").GetString() ?? string.Empty,
+                        Lemma = questionElement.GetProperty("lemma").GetString() ?? string.Empty,
+                        Question = questionElement.TryGetProperty("question", out var q) ? q.GetString() ?? string.Empty 
+                                 : questionElement.TryGetProperty("prompt", out var p) ? p.GetString() ?? string.Empty : string.Empty,
+                        Explanation = questionElement.TryGetProperty("explanation", out var e) ? e.GetString() ?? string.Empty : string.Empty,
+                        AnswerIndex = questionElement.GetProperty("answer_index").GetInt32(),
+                        Options = new(),
+                        Tags = new()
+                    };
+
+                    if (questionElement.TryGetProperty("options", out var optionsArray))
+                    {
+                        foreach (var option in optionsArray.EnumerateArray())
+                        {
+                            question.Options.Add(option.GetString() ?? string.Empty);
+                        }
+                    }
+
+                    if (questionElement.TryGetProperty("tags", out var tagsArray) && tagsArray.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var tag in tagsArray.EnumerateArray())
+                        {
+                            var tagStr = tag.GetString();
+                            if (!string.IsNullOrWhiteSpace(tagStr))
+                            {
+                                question.Tags.Add(tagStr!);
+                            }
+                        }
+                    }
+
+                    questions.Add(question);
+                }
+            }
+
+            _logger.LogInformation("Loaded {QuestionCount} questions from {Path}", questions.Count, _questionsFilePath);
+            return questions;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading questions from {Path}", _questionsFilePath);
+            return new();
+        }
+    }
+}

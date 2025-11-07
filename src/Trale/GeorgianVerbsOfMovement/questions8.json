@@ -1,0 +1,171 @@
+{
+  "lesson_id": "motion-8",
+  "title": "Будущее время (основы)",
+  "version": "1.0.0",
+  "intro": {
+    "theory_md": "**Будущее время (Future I Series) — базовые формы**: ვ-...-ე-ბ (1л.ед.), ი-...-ე-ბ (2л.ед.), ...-ე-ბ (3л.). \\n**Примеры**: მივდივებ (я пойду), მოდივებ (ты придёшь), მიდის (он пойдёт). \\n**Различие от present**: future имеет суффикс -ებ-, present имеет -დივ/დიხ/დის.",
+    "tips": [
+      "Не путайте настоящее და-დივ, ი-დიხ (каждый день) и будущее -დივებ, -დებ",
+      "1л.ед. future: -ვ-...-ე-ბ (მივდივებ = я пойду)",
+      "3л.ед. future часто выглядит как -ი-ს-ა-ბ or -დ-ე-ბ",
+      "В контексте: ხვალი = завтра, გეგმა = план, ნება = хочу (+ future)"
+    ]
+  },
+  "lexicon": [
+    { "lemma": "წავიდა", "ru": "пойду/пойдёшь/пойдёт (будущ.)", "pair": "მოვიდა", "root_hint": "წა- + будущ." },
+    { "lemma": "მოვიდა", "ru": "приду/придёшь/придёт (будущ.)", "pair": "წავიდა", "root_hint": "მო- + будущ." },
+    { "lemma": "შევიდა", "ru": "войду/войдёшь/войдёт (будущ.)", "pair": "გავიდა", "root_hint": "შე- + будущ." },
+    { "lemma": "გავიდა", "ru": "выйду/выйдешь/выйдет (будущ.)", "pair": "შევიდა", "root_hint": "გა- + будущ." },
+    { "lemma": "ავიდა", "ru": "поднимусь/поднимешься/поднимется (будущ.)", "pair": "ჩავიდა", "root_hint": "ა- + будущ." },
+    { "lemma": "ჩავიდა", "ru": "спущусь/спустишься/спустится (будущ.)", "pair": "ავიდა", "root_hint": "ჩა- + будущ." }
+  ],
+  "templates": [
+    "choose_translation_geo",
+    "choose_translation_rus",
+    "cloze_wish",
+    "cloze_like",
+    "pair_opposites"
+  ],
+  "questions": [
+    {
+      "id": "m8-q001",
+      "lemma": "წავიდა",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Завтра я пойду в парк».",
+      "options": ["ხვალი წავიდებ პარკში", "ხვალი წავედი პარკში", "ხვალი წამიდის პარკში", "დღეს წავიდებ პარკში"],
+      "answer_index": 0,
+      "explanation": "წავიდებ = 1л.ед. future (я пойду); ხვალი = завтра; პარკში = в парк",
+      "tags": ["fut", "fut-1sg", "motion-go", "time-tomorrow", "plan"],
+      "difficulty": 1
+    },
+    {
+      "id": "m8-q002",
+      "lemma": "მოვიდა",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Ты придёшь ко мне на выходных?»",
+      "options": ["მოდივებ ჩემთან გამოდეგეს?", "მოვიდებ ჩემთან გამოდეგეს?", "მოვედი ჩემთან გამოდეგეს?", "მოდიხარ ჩემთან ყოველდღე?"],
+      "answer_index": 0,
+      "explanation": "მოვიდებ/მოდივებ = 2л.ед. future (ты придёшь); გამოდეგეს = на выходных",
+      "tags": ["fut", "fut-2sg", "motion-come", "time-weekend", "question"],
+      "difficulty": 1
+    },
+    {
+      "id": "m8-q003",
+      "lemma": "შევიდა",
+      "template": "choose_translation_rus",
+      "question": "«ის შევის ოთახში ხვალი» — это:",
+      "options": ["он войдёт в комнату завтра", "он вошёл в комнату завтра", "он входит в комнату завтра", "она входила в комнату"],
+      "answer_index": 0,
+      "explanation": "შევის = 3л.ед. future (он/она войдёт); ხვალი = завтра",
+      "tags": ["fut", "fut-3sg", "motion-enter", "time-tomorrow"],
+      "difficulty": 1
+    },
+    {
+      "id": "m8-q004",
+      "lemma": "გავიდა",
+      "template": "choose_translation_rus",
+      "question": "«ხვალი გასა ნია ოფისიდან და წავა სახლში» — это:",
+      "options": ["завтра она выйдет из офиса и пойдёт домой", "вчера она выходила из офиса и ходила домой", "завтра она входит в офис и приходит домой", "они выходили из офиса"],
+      "answer_index": 0,
+      "explanation": "გამოს = 3л.ед. future (она выйдет); ოფისიდან = из офиса; წავა = 3л.ед. future (пойдёт)",
+      "tags": ["fut", "fut-3sg", "motion-exit", "motion-go", "time-tomorrow"],
+      "difficulty": 2
+    },
+    {
+      "id": "m8-q005",
+      "lemma": "ავიდა",
+      "template": "cloze_wish",
+      "prompt": "ხვალი ღეკი ძალიან ცხელი იქნება — მე ფეხით ___ მთაზე დილით. (подниматься, მე)",
+      "options": ["ავიდებ", "აიდებ", "ამი", "აი"],
+      "answer_index": 0,
+      "explanation": "ავიდებ = 1л.ед. future (я поднимусь); დილით = утром (с инструменталем)",
+      "tags": ["fut", "fut-1sg", "motion-up", "time-tomorrow", "plan"],
+      "difficulty": 2
+    },
+    {
+      "id": "m8-q006",
+      "lemma": "ჩავიდა",
+      "template": "cloze_like",
+      "prompt": "თუ ღელი მუშაობდება მეტროში — თქვენ ფეხით ___ გრადობებს აქ. (спускаться, თქვენ)",
+      "options": ["ჩავიდებთ", "ჩაიდებთ", "ჩა", "ჩი"],
+      "answer_index": 0,
+      "explanation": "ჩავიდებთ = 1л.мн. future (мы спустимся); თუ = если",
+      "tags": ["fut", "fut-1pl", "motion-down", "condition"],
+      "difficulty": 2
+    },
+    {
+      "id": "m8-q007",
+      "lemma": "წავიდა",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «В конце недели мы пойдём в кино».",
+      "options": ["კვირის ბოლოს წავიდებთ კინოში", "კვირის დღეს წავითებ კინოში", "გუშინ წავითებთ კინოთეატრიდან", "კვირის თავში წავა კინოთეატრში"],
+      "answer_index": 0,
+      "explanation": "წავიდებთ = 1л.мн. future (мы пойдём); კვირის ბოლოს = в конце недели",
+      "tags": ["fut", "fut-1pl", "motion-go", "time-schedule", "plan"],
+      "difficulty": 1
+    },
+    {
+      "id": "m8-q008",
+      "lemma": "მოვიდა",
+      "template": "pair_opposites",
+      "question": "Противоположность будущего времени: «წავიდებ» — ?",
+      "options": ["მოვიდებ", "შევის", "გამოს", "ჩაიდებ"],
+      "answer_index": 0,
+      "explanation": "წა- (от) ↔ მო- (к) в future",
+      "tags": ["fut", "fut-1sg", "pairs", "direction"],
+      "difficulty": 1
+    },
+    {
+      "id": "m8-q009",
+      "lemma": "შევიდა",
+      "template": "choose_translation_rus",
+      "question": "«ხვალი ის შევის ბიბლიოთეკაში წიგნი ეძებს» — это:",
+      "options": ["завтра он войдёт в библиотеку и будет искать книгу", "вчера он вошёл в библиотеку и искал книгу", "завтра он входит в библиотеку и ищет книгу", "они входили в библиотеку"],
+      "answer_index": 0,
+      "explanation": "შევის = 3л.ед. future (он войдёт); ხვალი = завтра; ბიბლიოთეკაში = в библиотеку",
+      "tags": ["fut", "fut-3sg", "motion-enter", "time-tomorrow", "plan"],
+      "difficulty": 2
+    },
+    {
+      "id": "m8-q010",
+      "lemma": "გავიდა",
+      "template": "cloze_like",
+      "prompt": "ოფიცი იკეტება პირველი საათზე — აღარ ___ აქ გვიან. (выходить, ჩვენ)",
+      "options": ["გამოვიდებთ", "გამიდებთ", "გა", "გამო"],
+      "answer_index": 0,
+      "explanation": "გამოვიდებთ = 1л.мн. future (мы выйдем); აქ = отсюда; გვიან = поздно",
+      "tags": ["fut", "fut-1pl", "motion-exit", "context"],
+      "difficulty": 2
+    },
+    {
+      "id": "m8-q011",
+      "lemma": "ავიდა",
+      "template": "choose_translation_geo",
+      "question": "Выбери грузинский: «Они поднимутся на гору завтра рано».",
+      "options": ["ისინი ავიდებიან მთაზე ხვალი ადრე", "ისინი ავიდა მთიდან ხვალი ადრე", "ისინი აიდებიან მთამდე ხვალი", "ისინი ხვალი აველი აა"],
+      "answer_index": 0,
+      "explanation": "ავიდებიან = 3л.мн. future (они поднимутся); ხვალი = завтра; ადრე = рано",
+      "tags": ["fut", "fut-3pl", "motion-up", "time-tomorrow", "time-early"],
+      "difficulty": 1
+    },
+    {
+      "id": "m8-q012",
+      "lemma": "მოვიდა",
+      "template": "choose_translation_rus",
+      "question": "«ხვალი მეგობარი მოდის თან დილით» — это:",
+      "options": ["завтра друг придёт ко мне утром", "вчера друг пришёл ко мне утром", "завтра друг приходит ко мне каждое утро", "сегодня друг пришёл"],
+      "answer_index": 0,
+      "explanation": "მოდის — future (с present формой); ხვალი = завтра; დილით = утром",
+      "tags": ["fut", "fut-3sg", "motion-come", "time-tomorrow", "time-morning"],
+      "difficulty": 1
+    }
+  ],
+  "metadata": {
+    "targets": ["A1-A2", "verbs_of_motion", "future"],
+    "srs": {
+      "face_tags": ["fut-1sg", "fut-2sg", "fut-3sg", "fut-1pl", "fut-2pl", "fut-3pl"],
+      "direction_tags": ["motion-go", "motion-come", "motion-enter", "motion-exit", "motion-up", "motion-down"],
+      "time_tags": ["time-tomorrow", "time-schedule", "plan"]
+    }
+  }
+}

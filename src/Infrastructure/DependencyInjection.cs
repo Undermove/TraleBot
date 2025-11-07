@@ -5,6 +5,10 @@ using Application.Common.Interfaces.TranslationService;
 using Infrastructure.Monitoring;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
+using Infrastructure.Telegram.BotCommands.GeorgianModule;
+using Infrastructure.Telegram.BotCommands.GeorgianModule.VerbsOfMovement;
+using Infrastructure.Telegram.BotCommands.GeorgianModule.VerbsOfMovement.Lessons;
+using Infrastructure.Telegram.BotCommands.GeorgianModule.VerbsOfMovement.Quiz;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.BotCommands.TranslateCommands;
@@ -64,6 +68,12 @@ public static class DependencyInjection
         services.AddScoped<IUserNotificationService, TelegramNotificationService>();
         services.AddScoped<IIdempotencyService, IdempotencyService>();
         
+        // Georgian quiz services
+        services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
+        services.AddSingleton<IGeorgianQuestionsLoader, GeorgianQuestionsLoader>();
+        services.AddSingleton<IGeorgianQuestionsLoaderFactory, GeorgianQuestionsLoaderFactory>();
+        // SRS service removed per request
+        
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, StopCommand>();
@@ -93,6 +103,20 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand>();
         services.AddScoped<IBotCommand, TranslateManuallyCommand>();
         services.AddScoped<IBotCommand, TranslateCommand>();
+        services.AddScoped<IBotCommand, GeorgianRepetitionModulesCommand>();
+        services.AddScoped<IBotCommand, GeorgianVerbsOfMovementCommand>();
+        services.AddScoped<IBotCommand, GeorgianVerbsLessonCommand>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand2>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand3>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand4>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand5>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand6>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand7>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand8>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand9>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand10>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizAnswerCommand>();
         return services;
     }
 }
