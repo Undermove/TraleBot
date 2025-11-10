@@ -12,12 +12,42 @@
     ]
   },
   "lexicon": [
-    { "lemma": "წასვლა", "ru": "идти/уходить (инф.)", "pair": "მოსვლა", "root_hint": "წა- (от); прош. წავიდა" },
-    { "lemma": "მოსვლა", "ru": "приходить (инф.)", "pair": "წასვლა", "root_hint": "მო- (к); прош. მოვიდა" },
-    { "lemma": "შესვლა", "ru": "входить (инф.)", "pair": "გასვლა", "root_hint": "შე- (в); прош. შევიდა" },
-    { "lemma": "გასვლა", "ru": "выходить (инф.)", "pair": "შესვლა", "root_hint": "გა- (из); прош. გავიდა" },
-    { "lemma": "ასვლა", "ru": "подниматься (инф.)", "pair": "ჩასვლა", "root_hint": "ა- (вверх); прош. ავიდა" },
-    { "lemma": "ჩასვლა", "ru": "спускаться (инф.)", "pair": "ასვლა", "root_hint": "ჩა- (вниз); прош. ჩავიდა" }
+    {
+      "lemma": "წასვლა",
+      "ru": "идти/уходить (инф.)",
+      "pair": "მოსვლა",
+      "root_hint": "წა- (от); прош. წავიდა"
+    },
+    {
+      "lemma": "მოსვლა",
+      "ru": "приходить (инф.)",
+      "pair": "წასვლა",
+      "root_hint": "მო- (к); прош. მოვიდა"
+    },
+    {
+      "lemma": "შესვლა",
+      "ru": "входить (инф.)",
+      "pair": "გასვლა",
+      "root_hint": "შე- (в); прош. შევიდა"
+    },
+    {
+      "lemma": "გასვლა",
+      "ru": "выходить (инф.)",
+      "pair": "შესვლა",
+      "root_hint": "გა- (из); прош. გავიდა"
+    },
+    {
+      "lemma": "ასვლა",
+      "ru": "подниматься (инф.)",
+      "pair": "ჩასვლა",
+      "root_hint": "ა- (вверх); прош. ავიდა"
+    },
+    {
+      "lemma": "ჩასვლა",
+      "ru": "спускаться (инф.)",
+      "pair": "ასვლა",
+      "root_hint": "ჩა- (вниз); прош. ჩავიდა"
+    }
   ],
   "templates": [
     "choose_translation_geo",
@@ -32,10 +62,20 @@
       "lemma": "წავიდა",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «Я вчера ушёл домой в пять часов».",
-      "options": ["მე გუშინ წავედი სახლში ხუთ საათზე", "მე გუშინ წავიდა სახლში ხუთ საათზე", "მე გუშინ წავედი სახლიდან ხუთ საათზე", "მე დღეს წავედი სახლში ხუთ საათზე"],
+      "options": [
+        "მე გუშინ წავედი სახლში ხუთ საათზე",
+        "მე გუშინ წავიდა სახლში ხუთ საათზე",
+        "მე გუშინ წავედი სახლიდან ხუთ საათზე",
+        "მე დღეს წავედი სახლში ხუთ საათზე"
+      ],
       "answer_index": 0,
       "explanation": "წავედი — прош. 1л.ед. (я ушёл); გუშინ = вчера",
-      "tags": ["pst", "pst-1sg", "motion-go", "time-yesterday"],
+      "tags": [
+        "pst",
+        "pst-1sg",
+        "motion-go",
+        "time-yesterday"
+      ],
       "difficulty": 1
     },
     {
@@ -43,10 +83,20 @@
       "lemma": "მოვიდა",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «Ты пришёл сюда рано».",
-      "options": ["შენ მოვედი აქ ადრე", "შენ მოვიდა აქ ადრე", "შენ მოვედი აქ რატომ", "შენ მოვიდი აქ ადრე"],
+      "options": [
+        "შენ მოვედი აქ ადრე",
+        "შენ მოვიდა აქ ადრე",
+        "შენ მოვედი აქ რატომ",
+        "შენ მოვიდი აქ ადრე"
+      ],
       "answer_index": 0,
       "explanation": "მოვედი — прош. 2л.ед. (ты пришёл); აქ = здесь; ადრე = рано",
-      "tags": ["pst", "pst-2sg", "motion-come", "manner"],
+      "tags": [
+        "pst",
+        "pst-2sg",
+        "motion-come",
+        "manner"
+      ],
       "difficulty": 1
     },
     {
@@ -54,10 +104,20 @@
       "lemma": "შევიდა",
       "template": "choose_translation_rus",
       "question": "«ის შევიდა ოთახში და დაჯდა» — это:",
-      "options": ["он вошёл в комнату и сел", "он выходит из комнаты и сидит", "он входит в комнату и встаёт", "он вышел из комнаты и лежит"],
+      "options": [
+        "он вошёл в комнату и сел",
+        "он выходит из комнаты и сидит",
+        "он входит в комнату и встаёт",
+        "он вышел из комнаты и лежит"
+      ],
       "answer_index": 0,
       "explanation": "შევიდა — прош. 3л.ед. (он/она вошёл/вошла)",
-      "tags": ["pst", "pst-3sg", "motion-enter", "sequence"],
+      "tags": [
+        "pst",
+        "pst-3sg",
+        "motion-enter",
+        "sequence"
+      ],
       "difficulty": 1
     },
     {
@@ -65,10 +125,20 @@
       "lemma": "გავიდა",
       "template": "choose_translation_rus",
       "question": "«მე სწრაფად გავედი ოფისიდან» — это:",
-      "options": ["я быстро вышел из офиса", "я быстро вошёл в офис", "я быстро прошёл мимо офиса", "я быстро входу в офис"],
+      "options": [
+        "я быстро вышел из офиса",
+        "я быстро вошёл в офис",
+        "я быстро прошёл мимо офиса",
+        "я быстро входу в офис"
+      ],
       "answer_index": 0,
       "explanation": "გავედი — прош. 1л.ед. (я вышел); სწრაფად = быстро",
-      "tags": ["pst", "pst-1sg", "motion-exit", "manner"],
+      "tags": [
+        "pst",
+        "pst-1sg",
+        "motion-exit",
+        "manner"
+      ],
       "difficulty": 1
     },
     {
@@ -76,10 +146,20 @@
       "lemma": "ავიდა",
       "template": "cloze_wish",
       "prompt": "ხილი ტკივილა ფეხი, მაგრამ ის ___ ლიფტით. (подниматься, ის)",
-      "options": ["ავიდა", "ახ", "აა", "აი"],
+      "options": [
+        "ავიდა",
+        "ახ",
+        "აა",
+        "აი"
+      ],
       "answer_index": 0,
       "explanation": "ავიდა — прош. 3л.ед. (он поднялся)",
-      "tags": ["pst", "pst-3sg", "motion-up", "condition"],
+      "tags": [
+        "pst",
+        "pst-3sg",
+        "motion-up",
+        "condition"
+      ],
       "difficulty": 2
     },
     {
@@ -87,10 +167,20 @@
       "lemma": "ჩავიდა",
       "template": "cloze_wish",
       "prompt": "ღამე ძალიან გვიანა გახდა — თქვენ ___ სიჩუმით. (спускаться, თქვენ)",
-      "options": ["ჩავედით", "ჩავიდით", "ჩაიდით", "ჩა"],
+      "options": [
+        "ჩავედით",
+        "ჩავიდით",
+        "ჩაიდით",
+        "ჩა"
+      ],
       "answer_index": 0,
       "explanation": "ჩავედით — прош. 2л.мн. (вы спустились); სიჩუმით = тихо",
-      "tags": ["pst", "pst-2pl", "motion-down", "time-late"],
+      "tags": [
+        "pst",
+        "pst-2pl",
+        "motion-down",
+        "time-late"
+      ],
       "difficulty": 2
     },
     {
@@ -98,21 +188,41 @@
       "lemma": "წავიდა",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «Мы вчера ушли в парк».",
-      "options": ["ჩვენ გუშინ წავედით პარკში", "ჩვენ გუშინ წავიდა პარკში", "ჩვენ გუშინ წაიდით პარკში", "ჩვენ გუშინ წავედი პარკში"],
+      "options": [
+        "ჩვენ გუშინ წავედით პარკში",
+        "ჩვენ გუშინ წავიდა პარკში",
+        "ჩვენ გუშინ წაიდით პარკში",
+        "ჩვენ გუშინ წავედი პარკში"
+      ],
       "answer_index": 0,
       "explanation": "წავედით — прош. 1л.мн. (мы ушли)",
-      "tags": ["pst", "pst-1pl", "motion-go", "time-yesterday"],
+      "tags": [
+        "pst",
+        "pst-1pl",
+        "motion-go",
+        "time-yesterday"
+      ],
       "difficulty": 1
     },
     {
       "id": "m5-q008",
       "lemma": "მოვიდა",
       "template": "choose_translation_rus",
-      "question": "«ისინი მოვედით ჩემთან ყვლიადა» — это:",
-      "options": ["они пришли ко мне летом", "они приходят ко мне летом", "они придут ко мне летом", "они ходили ко мне летом"],
+      "question": "«ისინი მოვიდნენ ჩემთან ზაფრანი» — это:",
+      "options": [
+        "они пришли ко мне летом",
+        "они приходят ко мне летом",
+        "они придут ко мне летом",
+        "они ходили ко мне летом"
+      ],
       "answer_index": 0,
-      "explanation": "მოვედით — прош. 3л.мн. (они пришли); ყვლიადა = летом",
-      "tags": ["pst", "pst-3pl", "motion-come", "time-season"],
+      "explanation": "მოვიდნენ — прош. 3л.мн. (они пришли); ზაფრანი = летом",
+      "tags": [
+        "pst",
+        "pst-3pl",
+        "motion-come",
+        "time-season"
+      ],
       "difficulty": 2
     },
     {
@@ -120,10 +230,20 @@
       "lemma": "შესვლა",
       "template": "pair_opposites",
       "question": "Противоположность прош. времени: «შევიდა» — ?",
-      "options": ["გავიდა", "წავიდა", "მოვიდა", "ჩავიდა"],
+      "options": [
+        "გავიდა",
+        "წავიდა",
+        "მოვიდა",
+        "ჩავიდა"
+      ],
       "answer_index": 0,
       "explanation": "შევიდა (вошёл) ↔ გავიდა (вышел)",
-      "tags": ["pst", "pst-3sg", "pairs", "direction"],
+      "tags": [
+        "pst",
+        "pst-3sg",
+        "pairs",
+        "direction"
+      ],
       "difficulty": 1
     },
     {
@@ -131,10 +251,20 @@
       "lemma": "ასვლა",
       "template": "pair_opposites",
       "question": "Противоположность: «ავიდა» — ?",
-      "options": ["ჩავიდა", "შევიდა", "გავიდა", "წავიდა"],
+      "options": [
+        "ჩავიდა",
+        "შევიდა",
+        "გავიდა",
+        "წავიდა"
+      ],
       "answer_index": 0,
       "explanation": "ავიდა (поднялся) ↔ ჩავიდა (спустился)",
-      "tags": ["pst", "pst-3sg", "pairs", "direction"],
+      "tags": [
+        "pst",
+        "pst-3sg",
+        "pairs",
+        "direction"
+      ],
       "difficulty": 1
     },
     {
@@ -142,29 +272,68 @@
       "lemma": "წავიდა",
       "template": "cloze_like",
       "prompt": "ის ხილი გადასვლა ___ ქუჩა უსაფრთხოდ. (переходить, ის)",
-      "options": ["გადავიდა", "გად", "გაუვიდა", "გადი"],
+      "options": [
+        "გადავიდა",
+        "გად",
+        "გაუვიდა",
+        "გადი"
+      ],
       "answer_index": 0,
       "explanation": "გადავიდა — прош. 1л.ед. (я перешёл) / 3л.ед. (он перешёл)",
-      "tags": ["pst", "pst-3sg", "motion-cross", "safety"],
+      "tags": [
+        "pst",
+        "pst-3sg",
+        "motion-cross",
+        "safety"
+      ],
       "difficulty": 2
     },
     {
       "id": "m5-q012",
       "lemma": "მოსვლა",
       "template": "choose_translation_rus",
-      "question": "«გუშინ ხელმისაწვდომი საღამოს ___ ჩემთან» — выбери რ სწორი ფორმა:",
-      "options": ["მოვედი", "მოდის", "მოვიდა", "მოდა"],
+      "question": "«გუშინ ღამის საღამოს ___ ჩემთან» — выбери სწორი ფორმა:",
+      "options": [
+        "მოვედი",
+        "მოდის",
+        "მოვიდა",
+        "მოდა"
+      ],
       "answer_index": 0,
       "explanation": "მოვედი — прош. 3л.ед. (он пришёл); გუშინ = вчера; საღამოს = вечером",
-      "tags": ["pst", "pst-3sg", "motion-come", "time-yesterday"],
+      "tags": [
+        "pst",
+        "pst-3sg",
+        "motion-come",
+        "time-yesterday"
+      ],
       "difficulty": 2
     }
   ],
   "metadata": {
-    "targets": ["A1-A2", "verbs_of_motion", "past"],
+    "targets": [
+      "A1-A2",
+      "verbs_of_motion",
+      "past"
+    ],
     "srs": {
-      "face_tags": ["pst-1sg", "pst-2sg", "pst-3sg", "pst-1pl", "pst-2pl", "pst-3pl"],
-      "direction_tags": ["motion-go", "motion-come", "motion-enter", "motion-exit", "motion-up", "motion-down", "motion-cross"]
+      "face_tags": [
+        "pst-1sg",
+        "pst-2sg",
+        "pst-3sg",
+        "pst-1pl",
+        "pst-2pl",
+        "pst-3pl"
+      ],
+      "direction_tags": [
+        "motion-go",
+        "motion-come",
+        "motion-enter",
+        "motion-exit",
+        "motion-up",
+        "motion-down",
+        "motion-cross"
+      ]
     }
   }
 }

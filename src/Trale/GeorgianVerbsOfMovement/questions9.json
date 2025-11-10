@@ -12,13 +12,48 @@
     ]
   },
   "lexicon": [
-    { "lemma": "წავიდა", "ru": "пойду/пойдёшь/пойдёт/… (будущ.)", "pair": "მოვიდა", "root_hint": "წა- + future" },
-    { "lemma": "მოვიდა", "ru": "приду/придёшь/придёт/… (будущ.)", "pair": "წავიდა", "root_hint": "მო- + future" },
-    { "lemma": "შევიდა", "ru": "войду/… (будущ.)", "pair": "გამოვიდა", "root_hint": "შე- + future" },
-    { "lemma": "გამოვიდა", "ru": "выйду/… (будущ.)", "pair": "შევიდა", "root_hint": "გა- + future" },
-    { "lemma": "ავიდა", "ru": "поднимусь/… (будущ.)", "pair": "ჩავიდა", "root_hint": "ა- + future" },
-    { "lemma": "ჩავიდა", "ru": "спущусь/… (будущ.)", "pair": "ავიდა", "root_hint": "ჩა- + future" },
-    { "lemma": "გადავიდა", "ru": "перейду/… (будущ.)", "pair": null, "root_hint": "გად- + future" }
+    {
+      "lemma": "წავიდა",
+      "ru": "пойду/пойдёшь/пойдёт/… (будущ.)",
+      "pair": "მოვიდა",
+      "root_hint": "წა- + future"
+    },
+    {
+      "lemma": "მოვიდა",
+      "ru": "приду/придёшь/придёт/… (будущ.)",
+      "pair": "წავიდა",
+      "root_hint": "მო- + future"
+    },
+    {
+      "lemma": "შევიდა",
+      "ru": "войду/… (будущ.)",
+      "pair": "გამოვიდა",
+      "root_hint": "შე- + future"
+    },
+    {
+      "lemma": "გამოვიდა",
+      "ru": "выйду/… (будущ.)",
+      "pair": "შევიდა",
+      "root_hint": "გა- + future"
+    },
+    {
+      "lemma": "ავიდა",
+      "ru": "поднимусь/… (будущ.)",
+      "pair": "ჩავიდა",
+      "root_hint": "ა- + future"
+    },
+    {
+      "lemma": "ჩავიდა",
+      "ru": "спущусь/… (будущ.)",
+      "pair": "ავიდა",
+      "root_hint": "ჩა- + future"
+    },
+    {
+      "lemma": "გადავიდა",
+      "ru": "перейду/… (будущ.)",
+      "pair": null,
+      "root_hint": "გად- + future"
+    }
   ],
   "templates": [
     "choose_translation_geo",
@@ -33,10 +68,21 @@
       "lemma": "წავიდა",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «Я пойду в университет в девять часов завтра».",
-      "options": ["მე წავიდებ უნივერსიტეტში ცხრა საათზე ხვალი", "მე წავითებ უნივერსიტეტიდან ცხრა საათზე", "მე წავიდი უნივერსიტეტში გუშინ", "მე წამიდის უნივერსიტეტში ხვალი"],
+      "options": [
+        "მე წავიდებ უნივერსიტეტში ცხრა საათზე ხვალი",
+        "მე წავითებ უნივერსიტეტიდან ცხრა საათზე",
+        "მე წავიდი უნივერსიტეტში გუშინ",
+        "მე წამიდის უნივერსიტეტში ხვალი"
+      ],
       "answer_index": 0,
       "explanation": "წავიდებ = 1л.ед. future (я пойду); ხვალი = завтра; ცხრა საათზე = в девять часов",
-      "tags": ["fut", "fut-1sg", "motion-go", "time-tomorrow", "time-specific"],
+      "tags": [
+        "fut",
+        "fut-1sg",
+        "motion-go",
+        "time-tomorrow",
+        "time-specific"
+      ],
       "difficulty": 1
     },
     {
@@ -44,21 +90,42 @@
       "lemma": "მოვიდა",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «Ты придёшь ко мне в субботу?»",
-      "options": ["შენ მოვიდები ჩემთან შაბათით?", "შენ მოვიდებ ჩემთან გამოდეგეს?", "შენ მოვიდი ჩემთან დღეს?", "თქვენ მოვიდებთ ჩემთან?"],
+      "options": [
+        "შენ მოვიდები ჩემთან შაბათით?",
+        "შენ მოვიდებ ჩემთან გამოდეგეს?",
+        "შენ მოვიდი ჩემთან დღეს?",
+        "თქვენ მოვიდებთ ჩემთან?"
+      ],
       "answer_index": 0,
       "explanation": "მოვიდები = 2л.ед. future (ты придёшь); შაბათით = в субботу",
-      "tags": ["fut", "fut-2sg", "motion-come", "time-schedule", "question"],
+      "tags": [
+        "fut",
+        "fut-2sg",
+        "motion-come",
+        "time-schedule",
+        "question"
+      ],
       "difficulty": 1
     },
     {
       "id": "m9-q003",
       "lemma": "შევიდა",
       "template": "choose_translation_rus",
-      "question": "«მხოლოდ ის შევის დარბაზში, ხოლო მე ისჯოძი გარეთ» — это:",
-      "options": ["только он войдёт в зал, а я буду ждать снаружи", "только он вошёл в зал, и я жду снаружи", "только он входит в зал, и я жду внутри", "они войдут в зал"],
+      "question": "«მხოლოდ ის შევის დარბაზში, ხოლო მე ელი გარეთ» — это:",
+      "options": [
+        "только он войдёт в зал, а я буду ждать снаружи",
+        "только он вошёл в зал, и я жду снаружи",
+        "только он входит в зал, и я жду внутри",
+        "они войдут в зал"
+      ],
       "answer_index": 0,
       "explanation": "შევის = 3л.ед. future (он войдёт); დარბაზში = в зал; გარეთ = снаружи",
-      "tags": ["fut", "fut-3sg", "motion-enter", "contrast"],
+      "tags": [
+        "fut",
+        "fut-3sg",
+        "motion-enter",
+        "contrast"
+      ],
       "difficulty": 2
     },
     {
@@ -66,10 +133,21 @@
       "lemma": "გამოვიდა",
       "template": "choose_translation_rus",
       "question": "«ხვალი გამოს ოფისიდან დილის სამი საათზე» — это:",
-      "options": ["завтра она выйдет из офиса в три часа утра", "завтра она выходит из офиса в три часа", "вчера она вышла из офиса в три часа", "они выйдут из офиса"],
+      "options": [
+        "завтра она выйдет из офиса в три часа утра",
+        "завтра она выходит из офиса в три часа",
+        "вчера она вышла из офиса в три часа",
+        "они выйдут из офиса"
+      ],
       "answer_index": 0,
       "explanation": "გამოს = 3л.ед. future (она выйдет); დილის სამი საათზე = в три часа утра",
-      "tags": ["fut", "fut-3sg", "motion-exit", "time-tomorrow", "time-specific"],
+      "tags": [
+        "fut",
+        "fut-3sg",
+        "motion-exit",
+        "time-tomorrow",
+        "time-specific"
+      ],
       "difficulty": 2
     },
     {
@@ -77,10 +155,22 @@
       "lemma": "ავიდა",
       "template": "cloze_wish",
       "prompt": "გეგმა არის: დილის 7-ზე ___ მთაზე, თან 10-ზე ბაზე ვიქნებით. (подниматься, მე)",
-      "options": ["ავიდებ", "ავიდი", "აი", "ავ"],
+      "options": [
+        "ავიდებ",
+        "ავიდი",
+        "აი",
+        "ავ"
+      ],
       "answer_index": 0,
       "explanation": "ავიდებ = 1л.ед. future (я поднимусь); გეგმა = план; დილის 7-ზე = в 7 утра",
-      "tags": ["fut", "fut-1sg", "motion-up", "time-tomorrow", "plan", "schedule"],
+      "tags": [
+        "fut",
+        "fut-1sg",
+        "motion-up",
+        "time-tomorrow",
+        "plan",
+        "schedule"
+      ],
       "difficulty": 2
     },
     {
@@ -88,10 +178,21 @@
       "lemma": "ჩავიდა",
       "template": "cloze_like",
       "prompt": "ღრმა კიბე და ხუთი კიბის სართული — თქვენ ნელა ___ ქვემოთ? (спускаться, თქვენ)",
-      "options": ["ჩავიდებთ", "ჩაიდებთ", "ჩა", "ჩი"],
+      "options": [
+        "ჩავიდებთ",
+        "ჩაიდებთ",
+        "ჩა",
+        "ჩი"
+      ],
       "answer_index": 0,
       "explanation": "ჩავიდებთ = 1л.мн. future (мы спустимся); ქვემოთ = вниз",
-      "tags": ["fut", "fut-1pl", "motion-down", "question", "manner"],
+      "tags": [
+        "fut",
+        "fut-1pl",
+        "motion-down",
+        "question",
+        "manner"
+      ],
       "difficulty": 2
     },
     {
@@ -99,10 +200,22 @@
       "lemma": "წავიდა",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «Вы завтра пойдёте в театр вечером?»",
-      "options": ["თქვენ წავიდებთ თეატრში ხვალი საღამოს?", "თქვენ წავიდეთ თეატრიდან ხვალი?", "თქვენ წავითებთ თეატრში ხვალი დილით?", "თქვენ წავიდი თეატრში გუშინ?"],
+      "options": [
+        "თქვენ წავიდებთ თეატრში ხვალი საღამოს?",
+        "თქვენ წავიდეთ თეატრიდან ხვალი?",
+        "თქვენ წავითებთ თეატრში ხვალი დილით?",
+        "თქვენ წავიდი თეატრში გუშინ?"
+      ],
       "answer_index": 0,
       "explanation": "წავიდებთ = 1л.мн. future (вы пойдёте); ხვალი = завтра; საღამოს = вечером",
-      "tags": ["fut", "fut-2pl", "motion-go", "time-tomorrow", "time-evening", "question"],
+      "tags": [
+        "fut",
+        "fut-2pl",
+        "motion-go",
+        "time-tomorrow",
+        "time-evening",
+        "question"
+      ],
       "difficulty": 1
     },
     {
@@ -110,10 +223,20 @@
       "lemma": "მოვიდა",
       "template": "pair_opposites",
       "question": "Противоположность: «წავიდებთ» (мы пойдём) — ?",
-      "options": ["მოვიდებთ", "შევიდებთ", "გამოვიდებთ", "ჩავიდებთ"],
+      "options": [
+        "მოვიდებთ",
+        "შევიდებთ",
+        "გამოვიდებთ",
+        "ჩავიდებთ"
+      ],
       "answer_index": 0,
       "explanation": "წა- (от) ↔ მო- (к)",
-      "tags": ["fut", "fut-1pl", "pairs", "direction"],
+      "tags": [
+        "fut",
+        "fut-1pl",
+        "pairs",
+        "direction"
+      ],
       "difficulty": 1
     },
     {
@@ -121,21 +244,43 @@
       "lemma": "შევიდა",
       "template": "choose_translation_rus",
       "question": "«ხვალი ისინი შეიდებიან ბიბლიოთეკაში სამი საათზე» — это:",
-      "options": ["завтра они войдут в библиотеку в три часа", "вчера они входили в библиотеку", "завтра они входят в библиотеку", "сегодня они войдут"],
+      "options": [
+        "завтра они войдут в библиотеку в три часа",
+        "вчера они входили в библиотеку",
+        "завтра они входят в библиотеку",
+        "сегодня они войдут"
+      ],
       "answer_index": 0,
       "explanation": "შეიდებიან = 3л.мн. future (они войдут); ხვალი = завтра; სამი საათზე = в три часа",
-      "tags": ["fut", "fut-3pl", "motion-enter", "time-tomorrow", "time-specific"],
+      "tags": [
+        "fut",
+        "fut-3pl",
+        "motion-enter",
+        "time-tomorrow",
+        "time-specific"
+      ],
       "difficulty": 1
     },
     {
       "id": "m9-q010",
       "lemma": "გამოვიდა",
       "template": "cloze_like",
-      "prompt": "კინო მთავრდება 9 საათზე — ჩვენ ___ სიხში დაუყოვნებლივ. (выходить, ჩვენ)",
-      "options": ["გამოვიდებთ", "გამოიდებთ", "გა", "გამო"],
+      "prompt": "კინო მთავრდება 9 საათზე — ჩვენ ___ სიკთეში დაუყოვნებლივ. (выходить, ჩვენ)",
+      "options": [
+        "გამოვიდებთ",
+        "გამოიდებთ",
+        "გა",
+        "გამო"
+      ],
       "answer_index": 0,
       "explanation": "გამოვიდებთ = 1л.мн. future (мы выйдем); დაუყოვნებლივ = немедленно",
-      "tags": ["fut", "fut-1pl", "motion-exit", "time-specific", "manner"],
+      "tags": [
+        "fut",
+        "fut-1pl",
+        "motion-exit",
+        "time-specific",
+        "manner"
+      ],
       "difficulty": 2
     },
     {
@@ -143,10 +288,21 @@
       "lemma": "ავიდა",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «Они поднимутся на крышу завтра днём».",
-      "options": ["ისინი ავიდებიან სახურავზე ხვალი დღის შუაზე", "ისინი ავიდა მთაზე ხვალი", "ისინი აიდებიან სახურავიდან ხვალი", "ისინი ხვალი აველი"],
+      "options": [
+        "ისინი ავიდებიან სახურავზე ხვალი დღის შუაზე",
+        "ისინი ავიდა მთაზე ხვალი",
+        "ისინი აიდებიან სახურავიდან ხვალი",
+        "ისინი ხვალი აველი"
+      ],
       "answer_index": 0,
       "explanation": "ავიდებიან = 3л.мн. future (они поднимутся); სახურავზე = на крышу; დღის შუაზე = днём (в полдень)",
-      "tags": ["fut", "fut-3pl", "motion-up", "time-tomorrow", "time-midday"],
+      "tags": [
+        "fut",
+        "fut-3pl",
+        "motion-up",
+        "time-tomorrow",
+        "time-midday"
+      ],
       "difficulty": 2
     },
     {
@@ -154,19 +310,54 @@
       "lemma": "გადავიდა",
       "template": "choose_translation_rus",
       "question": "«ხვალი ის გადაიდის ქუჩას უსაფრთხოდ შუაღამის შემდეგ» — это:",
-      "options": ["завтра он перейдёт улицу безопасно после полуночи", "вчера он перешёл улицу безопасно", "завтра он переходит улицу безопасно", "они перейдут"],
+      "options": [
+        "завтра он перейдёт улицу безопасно после полуночи",
+        "вчера он перешёл улицу безопасно",
+        "завтра он переходит улицу безопасно",
+        "они перейдут"
+      ],
       "answer_index": 0,
       "explanation": "გადაიდის = 3л.ед. future (он перейдёт); უსაფრთხოდ = безопасно",
-      "tags": ["fut", "fut-3sg", "motion-cross", "time-tomorrow", "manner"],
+      "tags": [
+        "fut",
+        "fut-3sg",
+        "motion-cross",
+        "time-tomorrow",
+        "manner"
+      ],
       "difficulty": 2
     }
   ],
   "metadata": {
-    "targets": ["A1-A2", "verbs_of_motion", "future"],
+    "targets": [
+      "A1-A2",
+      "verbs_of_motion",
+      "future"
+    ],
     "srs": {
-      "face_tags": ["fut-1sg", "fut-2sg", "fut-3sg", "fut-1pl", "fut-2pl", "fut-3pl"],
-      "direction_tags": ["motion-go", "motion-come", "motion-enter", "motion-exit", "motion-up", "motion-down", "motion-cross"],
-      "time_tags": ["time-tomorrow", "time-schedule", "time-specific", "arrangement"]
+      "face_tags": [
+        "fut-1sg",
+        "fut-2sg",
+        "fut-3sg",
+        "fut-1pl",
+        "fut-2pl",
+        "fut-3pl"
+      ],
+      "direction_tags": [
+        "motion-go",
+        "motion-come",
+        "motion-enter",
+        "motion-exit",
+        "motion-up",
+        "motion-down",
+        "motion-cross"
+      ],
+      "time_tags": [
+        "time-tomorrow",
+        "time-schedule",
+        "time-specific",
+        "arrangement"
+      ]
     }
   }
 }
