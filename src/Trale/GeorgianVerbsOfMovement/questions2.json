@@ -41,6 +41,11 @@
       "lemma": "გად",
       "ru": "через / на другую сторону",
       "pair": null
+    },
+    {
+      "lemma": "და",
+      "ru": "проходить мимо",
+      "pair": null
     }
   ],
   "templates": [
@@ -1539,6 +1544,96 @@
       "tags": [
         "recap",
         "across"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "q_mean_da_01",
+      "lemma": "და",
+      "template": "choose_translation_geo",
+      "question": "„და-“ — это…",
+      "options": [
+        "проходить мимо",
+        "к говорящему",
+        "внутрь"
+      ],
+      "answer_index": 0,
+      "explanation": "და- — проходить мимо (დადის — проходит).",
+      "tags": [
+        "meaning",
+        "pass_by"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "q_mean_da_02",
+      "lemma": "და",
+      "template": "choose_translation_geo",
+      "question": "Что означает „დადის“?",
+      "options": [
+        "проходит мимо",
+        "приходит",
+        "уходит"
+      ],
+      "answer_index": 0,
+      "explanation": "დადის — проходит мимо (და-).",
+      "tags": [
+        "meaning",
+        "pass_by"
+      ],
+      "difficulty": 2
+    },
+    {
+      "id": "q_sent_da_street_01",
+      "lemma": "და",
+      "template": "choose_translation_rus",
+      "question": "„ის დადის ქუჩაზე“ — это…",
+      "options": [
+        "Он проходит по улице",
+        "Он переходит улицу",
+        "Он уходит с улицы"
+      ],
+      "answer_index": 0,
+      "explanation": "დადის — проходит мимо.",
+      "tags": [
+        "sentence",
+        "pass_by"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "q_ctx_pass_by_01",
+      "lemma": "და",
+      "template": "cloze_wish",
+      "prompt": "«Он просто проходит мимо»: ის უბრალოდ ___",
+      "options": [
+        "დადის",
+        "მოდის",
+        "წასვლა"
+      ],
+      "answer_index": 0,
+      "explanation": "დადის — проходит мимо.",
+      "tags": [
+        "cloze",
+        "pass_by"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "q_micro_map_09",
+      "lemma": "და",
+      "template": "choose_translation_rus",
+      "question": "„და-“ — это…",
+      "options": [
+        "проходить мимо",
+        "к цели",
+        "наружу"
+      ],
+      "answer_index": 0,
+      "explanation": "проходить мимо.",
+      "tags": [
+        "recap",
+        "pass_by"
       ],
       "difficulty": 1
     }
