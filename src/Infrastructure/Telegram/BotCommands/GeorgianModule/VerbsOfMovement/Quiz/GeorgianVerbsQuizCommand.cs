@@ -14,17 +14,17 @@ public class GeorgianVerbsQuizCommand : IBotCommand
     public GeorgianVerbsQuizCommand(
         ITelegramBotClient client,
         IGeorgianQuizSessionService quizSessionService,
-        IGeorgianQuestionsLoader questionsLoader)
+        IGeorgianQuestionsLoaderFactory loaderFactory)
     {
         _client = client;
         _quizSessionService = quizSessionService;
-        _questionsLoader = questionsLoader;
+        _questionsLoader = loaderFactory.CreateForLesson(1);
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         return Task.FromResult(
-            request.Text.StartsWith(CommandNames.GeorgianVerbsQuizStart1, StringComparison.InvariantCultureIgnoreCase));
+            request.Text.Equals(CommandNames.GeorgianVerbsQuizStart1, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
