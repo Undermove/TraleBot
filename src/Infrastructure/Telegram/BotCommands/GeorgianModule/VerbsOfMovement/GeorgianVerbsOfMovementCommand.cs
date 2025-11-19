@@ -62,7 +62,11 @@ public class GeorgianVerbsOfMovementCommand : IBotCommand
             },
             new[]
             {
-                InlineKeyboardButton.WithCallbackData("📖 Урок 10. Итоговое закрепление", CommandNames.GeorgianVerbsLesson10)
+                InlineKeyboardButton.WithCallbackData("📖 Урок 10. Закрепление настоящего прошедшего и будущего", CommandNames.GeorgianVerbsLesson10)
+            },
+            new[]
+            {
+                InlineKeyboardButton.WithCallbackData("📖 Урок 11. Глаголы движения в прошедшем несовершённом времени", CommandNames.GeorgianVerbsLesson11)
             },
             new[]
             {

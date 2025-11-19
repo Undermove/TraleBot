@@ -5,31 +5,31 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.GeorgianModule.VerbsOfMovement.Quiz;
 
-public class GeorgianVerbsQuizCommand10 : IBotCommand
+public class GeorgianVerbsQuizCommand11 : IBotCommand
 {
     private readonly ITelegramBotClient _client;
     private readonly IGeorgianQuizSessionService _quizSessionService;
     private readonly IGeorgianQuestionsLoader _questionsLoader;
 
-    public GeorgianVerbsQuizCommand10(
+    public GeorgianVerbsQuizCommand11(
         ITelegramBotClient client,
         IGeorgianQuizSessionService quizSessionService,
         IGeorgianQuestionsLoaderFactory loaderFactory)
     {
         _client = client;
         _quizSessionService = quizSessionService;
-        _questionsLoader = loaderFactory.CreateForLesson(10);
+        _questionsLoader = loaderFactory.CreateForLesson(11);
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         return Task.FromResult(
-            request.Text.Equals(CommandNames.GeorgianVerbsQuizStart10, StringComparison.InvariantCultureIgnoreCase));
+            request.Text.Equals(CommandNames.GeorgianVerbsQuizStart11, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var lessonId = 10;
+        var lessonId = 11;
         var questions = _questionsLoader.LoadQuestionsForLesson(lessonId);
         if (questions.Count == 0)
         {

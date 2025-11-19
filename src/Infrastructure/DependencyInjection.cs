@@ -70,7 +70,6 @@ public static class DependencyInjection
         
         // Georgian quiz services
         services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
-        services.AddSingleton<IGeorgianQuestionsLoader, GeorgianQuestionsLoader>();
         services.AddSingleton<IGeorgianQuestionsLoaderFactory, GeorgianQuestionsLoaderFactory>();
         // SRS service removed per request
         
@@ -116,6 +115,7 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand8>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand9>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand10>();
+        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand11>();
         services.AddScoped<IBotCommand, GeorgianVerbsQuizAnswerCommand>();
         return services;
     }

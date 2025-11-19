@@ -24,7 +24,7 @@ public class GeorgianVerbsQuizCommand2 : IBotCommand
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         return Task.FromResult(
-            request.Text.StartsWith(CommandNames.GeorgianVerbsQuizStart2, StringComparison.InvariantCultureIgnoreCase));
+            request.Text.Equals(CommandNames.GeorgianVerbsQuizStart2, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
