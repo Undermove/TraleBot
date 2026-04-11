@@ -97,6 +97,12 @@ spec:
                 secretKeyRef:
                   name: tralebot-secrets
                   key: TRALEBOT_SERVER_HOST
+            # Mini-app feature flag. Set to "true" to light up the Kutya mini-app
+            # chat menu button for Telegram users. While false, the SPA still builds
+            # and is served at the host root (landing page for public visitors),
+            # but the bot doesn't set any chat menu button — prod users see no change.
+            - name: BotConfiguration__MiniAppEnabled
+              value: "false"
 
 ---
 

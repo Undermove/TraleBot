@@ -1,0 +1,178 @@
+import React, { useEffect, useState } from 'react'
+import { CatalogDto, ProgressState, Screen } from './types'
+import { defaultProgress, progressFromDto } from './progress'
+import { api } from './api'
+import Dashboard from './screens/Dashboard'
+import ModuleMap from './screens/ModuleMap'
+import LessonTheory from './screens/LessonTheory'
+import Practice from './screens/Practice'
+import Result from './screens/Result'
+import Profile from './screens/Profile'
+import VocabularyList from './screens/VocabularyList'
+import VocabularyPractice from './screens/VocabularyPractice'
+import LandingScreen from './screens/LandingScreen'
+import Mascot from './components/Mascot'
+
+function isInsideTelegram(): boolean {
+  const tg = (window as any).Telegram?.WebApp
+  return Boolean(tg?.initData && tg.initData.length > 0)
+}
+
+export default function App() {
+  const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
+  const [progress, setProgress] = useState<ProgressState>(defaultProgress)
+  const [catalog, setCatalog] = useState<CatalogDto | null>(null)
+  const [authenticated, setAuthenticated] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [insideTelegram] = useState(() => isInsideTelegram())
+
+  // Load catalog + progress from backend on mount
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([api.content(), api.me().catch(() => null)])
+      .then(([catalogData, meData]) => {
+        if (cancelled) return
+        setCatalog(catalogData)
+        if (meData?.authenticated && meData.progress) {
+          setAuthenticated(true)
+          setProgress(progressFromDto(meData.progress))
+        }
+        setScreen({ kind: 'dashboard' })
+      })
+      .catch(() => {
+        if (cancelled) return
+        setLoadError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Telegram BackButton integration
+  useEffect(() => {
+    const tg = (window as any).Telegram?.WebApp
+    if (!tg?.BackButton) return
+    const canBack = screen.kind !== 'dashboard' && screen.kind !== 'loading'
+    if (canBack) {
+      tg.BackButton.show()
+    } else {
+      tg.BackButton.hide()
+    }
+    const handler = () => {
+      if (
+        screen.kind === 'module' ||
+        screen.kind === 'profile' ||
+        screen.kind === 'vocabulary-list'
+      ) {
+        setScreen({ kind: 'dashboard' })
+      } else if (screen.kind === 'lesson-theory') {
+        setScreen({ kind: 'module', moduleId: screen.moduleId })
+      } else if (screen.kind === 'practice') {
+        setScreen({ kind: 'lesson-theory', moduleId: screen.moduleId, lessonId: screen.lessonId })
+      } else if (screen.kind === 'vocabulary-quiz') {
+        setScreen({ kind: 'vocabulary-list' })
+      } else if (screen.kind === 'result') {
+        if (screen.moduleId === 'vocabulary') {
+          setScreen({ kind: 'vocabulary-list' })
+        } else {
+          setScreen({ kind: 'module', moduleId: screen.moduleId })
+        }
+      }
+    }
+    tg.BackButton.onClick(handler)
+    return () => {
+      try {
+        tg.BackButton.offClick(handler)
+      } catch {}
+    }
+  }, [screen])
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col min-h-full items-center justify-center gap-4 p-6 text-center">
+        <Mascot mood="sleep" size={120} />
+        <div className="font-extrabold text-lg">Бомбора не дозвонился до сервера</div>
+        <div className="text-dog-muted">Проверь соединение и попробуй открыть ещё раз.</div>
+      </div>
+    )
+  }
+
+  if (!catalog || screen.kind === 'loading') {
+    return (
+      <div className="flex flex-col min-h-full items-center justify-center gap-4">
+        <Mascot mood="think" size={120} />
+        <div className="text-dog-muted">Бомбора раскладывает карточки...</div>
+      </div>
+    )
+  }
+
+  // Public visitors (no Telegram initData) get the landing page — this is the
+  // same SPA but with a different root view. The mini-app content is only
+  // active for users who actually opened the app from inside Telegram.
+  if (!insideTelegram) {
+    return <LandingScreen botUsername={catalog.botUsername} />
+  }
+
+  switch (screen.kind) {
+    case 'dashboard':
+      return <Dashboard catalog={catalog} progress={progress} navigate={setScreen} />
+    case 'module':
+      return <ModuleMap catalog={catalog} moduleId={screen.moduleId} progress={progress} navigate={setScreen} />
+    case 'lesson-theory':
+      return (
+        <LessonTheory
+          catalog={catalog}
+          moduleId={screen.moduleId}
+          lessonId={screen.lessonId}
+          progress={progress}
+          navigate={setScreen}
+        />
+      )
+    case 'practice':
+      return (
+        <Practice
+          moduleId={screen.moduleId}
+          lessonId={screen.lessonId}
+          progress={progress}
+          setProgress={setProgress}
+          authenticated={authenticated}
+          navigate={setScreen}
+        />
+      )
+    case 'result':
+      return (
+        <Result
+          moduleId={screen.moduleId}
+          lessonId={screen.lessonId}
+          correct={screen.correct}
+          total={screen.total}
+          xpEarned={screen.xpEarned}
+          navigate={setScreen}
+        />
+      )
+    case 'profile':
+      return (
+        <Profile
+          catalog={catalog}
+          progress={progress}
+          setProgress={setProgress}
+          navigate={setScreen}
+        />
+      )
+    case 'vocabulary-list':
+      return <VocabularyList progress={progress} navigate={setScreen} />
+    case 'vocabulary-quiz':
+      return (
+        <VocabularyPractice
+          mode={screen.mode}
+          wordIds={screen.wordIds}
+          progress={progress}
+          setProgress={setProgress}
+          authenticated={authenticated}
+          navigate={setScreen}
+        />
+      )
+    default:
+      return <Dashboard catalog={catalog} progress={progress} navigate={setScreen} />
+  }
+}
