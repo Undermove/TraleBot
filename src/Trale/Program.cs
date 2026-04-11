@@ -32,8 +32,9 @@ builder.Services
 
 builder.Services.AddApplication();
 builder.Services.AddPersistence(configuration);
-        
+
 builder.Services.AddInfrastructure(configuration);
+builder.Services.AddSingleton<Trale.MiniApp.IMiniAppContentProvider, Trale.MiniApp.MiniAppContentProvider>();
 builder.Services.AddHostedService<CreateWebhook>();
 builder.Services.AddHostedService<IdempotencyCleanupService>();
 
@@ -59,6 +60,9 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseMiddleware<ExceptionsMiddleware>();
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.MapControllers();
 await app.RunAsync();
