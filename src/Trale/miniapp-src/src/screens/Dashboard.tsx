@@ -6,6 +6,7 @@ import { CatalogDto, ProgressState, Screen } from '../types'
 interface Props {
   catalog: CatalogDto
   progress: ProgressState
+  todayLessons: number
   navigate: (s: Screen) => void
 }
 
@@ -17,7 +18,7 @@ interface Props {
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, navigate }: Props) {
   return (
     <div className="flex flex-col min-h-full bg-cream">
       {/* ══ Kilim signature strip ══ */}
@@ -28,33 +29,59 @@ export default function Dashboard({ catalog, progress, navigate }: Props) {
       {/* ══ Stats bar ══ */}
       <div className="px-5 pt-4 pb-2 flex items-center justify-between">
         <div className="mn-eyebrow">блокнот</div>
-        <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate({ kind: 'profile' })}
+          className="flex items-center gap-3 active:opacity-80 transition-opacity"
+        >
           <StatPill value={progress.streak} label="дн" color="ruby" />
           <StatPill value={progress.xp} label="опыт" color="navy" />
-        </div>
+        </button>
       </div>
 
-      {/* ══ Hero — dynamic greeting + lesson of the day ══ */}
-      <section className="px-5 pt-4 pb-6 pb-in">
+      {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
+      <section className="px-5 pt-3 pb-4">
         {(() => {
-          const { greeting, mascotMood, suggestion } = computeHero(catalog, progress)
+          const { greeting, mascotMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
+          const bowlFill = Math.min(3, todayLessons)
           return (
             <>
-              <div className="flex items-end gap-3">
-                <div className="shrink-0 -mb-2">
-                  <Mascot mood={mascotMood} size={148} />
+              {/* Bombora card — tappable → profile */}
+              <button
+                onClick={() => navigate({ kind: 'profile' })}
+                className="w-full flex items-center gap-3 text-left active:opacity-80 transition-opacity"
+              >
+                <div className="shrink-0 relative">
+                  <Mascot mood={mascotMood} size={80} />
+                  {/* Bowl indicator */}
+                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className={`w-2.5 h-2.5 rounded-full border border-jewelInk/30 transition-all ${
+                          i < bowlFill ? 'bg-gold border-gold' : 'bg-cream-deep'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 pb-3">
-                  <div className="font-geo text-[14px] text-jewelInk-mid leading-none mb-2 font-semibold">
+                <div className="flex-1 min-w-0">
+                  <div className="font-geo text-[11px] text-jewelInk-mid leading-none mb-1 font-semibold">
                     {greeting.geo}
                   </div>
-                  <h1 className="font-sans font-extrabold text-[28px] leading-[1.05] text-jewelInk tracking-tight">
+                  <div className="font-sans font-extrabold text-[20px] leading-[1.1] text-jewelInk tracking-tight">
                     {greeting.line1}
-                    <br />
-                    <span className="text-ruby">{greeting.line2}</span>
-                  </h1>
+                  </div>
+                  <div className="font-sans text-[13px] text-ruby font-bold leading-tight">
+                    {greeting.line2}
+                  </div>
+                  <div className="mt-1 font-sans text-[11px] text-jewelInk-mid">
+                    {satietyText}
+                  </div>
                 </div>
-              </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-jewelInk-hint">
+                  <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
 
               {suggestion && (
                 <button
@@ -278,15 +305,17 @@ export default function Dashboard({ catalog, progress, navigate }: Props) {
   )
 }
 
-/**
- * Compute dynamic hero: greeting, mascot mood, and a "lesson of the day" suggestion.
- */
+type SatietyLevel = 'hungry' | 'snack' | 'fed' | 'full' | 'sleeping'
+
 function computeHero(
   catalog: CatalogDto,
-  progress: ProgressState
+  progress: ProgressState,
+  todayLessons: number
 ): {
   greeting: { geo: string; line1: string; line2: string }
-  mascotMood: 'happy' | 'cheer' | 'think' | 'guide'
+  mascotMood: 'happy' | 'cheer' | 'think' | 'guide' | 'sleep'
+  satiety: SatietyLevel
+  satietyText: string
   suggestion: {
     eyebrow: string
     title: string
@@ -326,52 +355,57 @@ function computeHero(
       )
     : -1
 
-  // Dynamic greeting
+  // Tamagotchi satiety
+  let satiety: SatietyLevel
+  let satietyText: string
+
+  if (daysSincePlayed > 2) {
+    satiety = 'sleeping'
+    satietyText = 'zzz...'
+  } else if (todayLessons === 0) {
+    satiety = 'hungry'
+    satietyText = 'покорми знаниями!'
+  } else if (todayLessons === 1) {
+    satiety = 'snack'
+    satietyText = 'ещё немножко?'
+  } else if (todayLessons === 2) {
+    satiety = 'fed'
+    satietyText = 'კარგი! хорошо!'
+  } else {
+    satiety = 'full'
+    satietyText = 'მშვენივრად!'
+  }
+
+  // Dynamic greeting tied to satiety
   let greeting: { geo: string; line1: string; line2: string }
-  let mascotMood: 'happy' | 'cheer' | 'think' | 'guide'
+  let mascotMood: 'happy' | 'cheer' | 'think' | 'guide' | 'sleep'
 
   if (totalDone === 0) {
-    greeting = {
-      geo: 'გამარჯობა!',
-      line1: 'Привет!',
-      line2: 'Давай начнём'
-    }
+    greeting = { geo: 'გამარჯობა!', line1: 'Привет!', line2: 'Давай начнём' }
     mascotMood = 'cheer'
-  } else if (allDone) {
-    greeting = {
-      geo: 'ყოჩაღ!',
-      line1: 'Все уроки пройдены!',
-      line2: 'Повторяем и растём'
-    }
+    satiety = 'hungry'
+    satietyText = 'покорми знаниями!'
+  } else if (satiety === 'sleeping') {
+    greeting = { geo: 'მოგესალმებით!', line1: 'Давно не виделись!', line2: 'Разбуди Бомбору' }
+    mascotMood = 'sleep'
+  } else if (allDone && satiety === 'full') {
+    greeting = { geo: 'ყოჩაღ!', line1: 'Бомбора сыта!', line2: 'Все уроки пройдены' }
     mascotMood = 'cheer'
-  } else if (daysSincePlayed > 2) {
-    greeting = {
-      geo: 'მოგესალმებით!',
-      line1: 'Давно не виделись!',
-      line2: 'Давай продолжим'
-    }
-    mascotMood = 'think'
-  } else if (daysSincePlayed === 1) {
-    greeting = {
-      geo: 'მოგესალმებით!',
-      line1: 'Вчера было хорошо',
-      line2: 'Сегодня ещё лучше'
-    }
+  } else if (satiety === 'full') {
+    greeting = { geo: 'შესანიშნავია!', line1: 'Бомбора довольна!', line2: 'Отличный день' }
+    mascotMood = 'cheer'
+  } else if (satiety === 'fed') {
+    greeting = { geo: 'კარგი!', line1: 'Бомбора сыта', line2: 'Ещё чуть-чуть?' }
+    mascotMood = 'happy'
+  } else if (satiety === 'snack') {
+    greeting = { geo: 'მადლობა!', line1: 'Неплохо!', line2: 'Бомбора хочет ещё' }
     mascotMood = 'happy'
   } else if (progress.streak >= 3) {
-    greeting = {
-      geo: 'შესანიშნავია!',
-      line1: `${progress.streak} дней подряд!`,
-      line2: 'Так держать'
-    }
-    mascotMood = 'cheer'
+    greeting = { geo: 'შესანიშნავია!', line1: `${progress.streak} дней подряд!`, line2: 'Покорми Бомбору' }
+    mascotMood = 'think'
   } else {
-    greeting = {
-      geo: 'გამარჯობა!',
-      line1: 'Хорошо идёшь',
-      line2: 'Продолжаем'
-    }
-    mascotMood = 'happy'
+    greeting = { geo: 'გამარჯობა!', line1: 'Бомбора голодна', line2: 'Покорми знаниями' }
+    mascotMood = 'think'
   }
 
   // Suggestion
@@ -383,14 +417,28 @@ function computeHero(
   } | null = null
 
   if (nextModule && nextLesson) {
-    suggestion = {
-      eyebrow: 'урок дня',
-      title: nextLesson.title,
-      subtitle: `${nextModule.title} · урок ${nextLesson.id}`,
-      screen: {
-        kind: 'lesson-theory',
-        moduleId: nextModule.id,
-        lessonId: nextLesson.id
+    if (todayLessons > 0 && satiety !== 'hungry') {
+      // User already did lessons today — celebrate, then suggest more
+      suggestion = {
+        eyebrow: 'молодец! ещё?',
+        title: nextLesson.title,
+        subtitle: `${nextModule.title} · урок ${nextLesson.id}`,
+        screen: {
+          kind: 'lesson-theory',
+          moduleId: nextModule.id,
+          lessonId: nextLesson.id
+        }
+      }
+    } else {
+      suggestion = {
+        eyebrow: satiety === 'hungry' || satiety === 'sleeping' ? 'покормить бомбору' : 'урок дня',
+        title: nextLesson.title,
+        subtitle: `${nextModule.title} · урок ${nextLesson.id}`,
+        screen: {
+          kind: 'lesson-theory',
+          moduleId: nextModule.id,
+          lessonId: nextLesson.id
+        }
       }
     }
   } else if (allDone) {
@@ -402,7 +450,7 @@ function computeHero(
     }
   }
 
-  return { greeting, mascotMood, suggestion }
+  return { greeting, mascotMood, satiety, satietyText, suggestion }
 }
 
 function StatPill({
