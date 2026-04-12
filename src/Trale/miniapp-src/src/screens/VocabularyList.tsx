@@ -110,7 +110,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
           <Mascot mood="sleep" size={120} />
           <div className="font-extrabold text-lg">Открывай через Telegram</div>
           <div className="text-dog-muted">
-            Чтобы Бомбора узнал твой словарь, зайди в мини-аб через кнопку «🐶 Бомбора» в боте.
+            Чтобы Бомбора узнал твой словарь, зайди в мини-апп через кнопку «🐶 Бомбора» в боте.
           </div>
           <Button variant="ghost" onClick={() => navigate({ kind: 'dashboard' })}>
             На главную
