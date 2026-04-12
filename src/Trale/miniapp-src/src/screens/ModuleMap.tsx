@@ -38,7 +38,9 @@ export default function ModuleMap({
   const firstIncomplete = lessons.find((l) => !completed.has(l.id))?.id ?? -1
 
   const geoLabels: Record<string, string> = {
+    'alphabet-progressive': 'ანბანი',
     'alphabet': 'ანბანი',
+    'numbers': 'რიცხვები',
     'verbs-of-movement': 'ზმნები',
     'cases': 'ბრუნვები',
     'pronouns': 'ნაცვალსახელები',
@@ -53,7 +55,9 @@ export default function ModuleMap({
   const geoLabel = geoLabels[module.id] ?? module.title
 
   const accentMap: Record<string, 'navy' | 'ruby' | 'gold'> = {
+    'alphabet-progressive': 'navy',
     'alphabet': 'navy',
+    'numbers': 'gold',
     'verbs-of-movement': 'ruby',
     'cases': 'navy',
     'pronouns': 'ruby',

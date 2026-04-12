@@ -1,12 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import { CatalogDto, ProgressState, Screen } from '../types'
+import { UserLevel } from './Onboarding'
 
 interface Props {
   catalog: CatalogDto
   progress: ProgressState
   todayLessons: number
+  userLevel: UserLevel
   navigate: (s: Screen) => void
 }
 
@@ -18,7 +20,8 @@ interface Props {
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, todayLessons, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, userLevel, navigate }: Props) {
+  const [showAllSections, setShowAllSections] = useState(userLevel === 'intermediate')
   return (
     <div className="flex flex-col min-h-full bg-cream">
       {/* ══ Kilim signature strip ══ */}
@@ -117,27 +120,35 @@ export default function Dashboard({ catalog, progress, todayLessons, navigate }:
 
       {/* ══ Module sections ══ */}
       {(() => {
-        const grammarIds = ['alphabet', 'verbs-of-movement', 'cases', 'pronouns', 'present-tense']
+        const alphabetIds = ['alphabet-progressive', 'alphabet']
+        const grammarIds = ['numbers', 'verbs-of-movement', 'cases', 'pronouns', 'present-tense']
         const vocabIds = ['cafe', 'taxi', 'doctor', 'shopping', 'intro', 'emergency']
 
+        const alphaModules = catalog.modules.filter((m) => alphabetIds.includes(m.id))
         const grammar = catalog.modules.filter((m) => grammarIds.includes(m.id))
         const vocab = catalog.modules.filter((m) => vocabIds.includes(m.id))
         const myVocab = catalog.modules.filter((m) => m.id === 'my-vocabulary')
 
+        const isBeginner = userLevel === 'beginner' && !showAllSections
+
         const sections = [
-          { label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const },
-          { label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const },
-          { label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
+          { key: 'alphabet', label: isBeginner ? 'начни отсюда' : 'алфавит', geoLabel: 'ანბანი', modules: alphaModules, accent: 'navy' as const, collapsed: false },
+          { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const, collapsed: isBeginner },
+          { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const, collapsed: isBeginner },
+          { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const, collapsed: isBeginner },
         ]
 
         const moduleIcons: Record<string, string> = {
-          'alphabet': 'ა', 'verbs-of-movement': 'ზ', 'cases': 'ბ', 'pronouns': 'მ',
+          'alphabet-progressive': 'ა', 'alphabet': 'ა', 'numbers': '①',
+          'verbs-of-movement': 'ზ', 'cases': 'ბ', 'pronouns': 'მ',
           'present-tense': 'დ', 'cafe': 'ყ', 'taxi': 'ტ', 'doctor': 'ე',
           'shopping': 'ხ', 'intro': 'გ', 'emergency': 'ს', 'my-vocabulary': 'ლ',
         }
 
         const moduleGeoLabels: Record<string, string> = {
-          'alphabet': 'ანბანი', 'verbs-of-movement': 'ზმნები', 'cases': 'ბრუნვები',
+          'alphabet-progressive': 'ანბანი', 'alphabet': 'ანბანი',
+          'numbers': 'რიცხვები',
+          'verbs-of-movement': 'ზმნები', 'cases': 'ბრუნვები',
           'pronouns': 'ნაცვალსახელები', 'present-tense': 'აწმყო', 'cafe': 'კაფე',
           'taxi': 'ტაქსი', 'doctor': 'ექიმი', 'shopping': 'მაღაზია',
           'intro': 'გაცნობა', 'emergency': 'დახმარება', 'my-vocabulary': 'ლექსიკონი',
@@ -152,10 +163,28 @@ export default function Dashboard({ catalog, progress, todayLessons, navigate }:
 
         let globalIdx = 0
 
-        return sections.map((section) => {
+        return (
+          <>
+          {sections.map((section) => {
           if (section.modules.length === 0) return null
+
+          if (section.collapsed) {
+            return (
+              <div key={section.key} className="px-5 pt-2 pb-1">
+                <button
+                  onClick={() => setShowAllSections(true)}
+                  className="w-full flex items-center gap-3 py-3 active:opacity-70 transition-opacity"
+                >
+                  <div className="mn-eyebrow text-jewelInk-mid">{section.label}</div>
+                  <div className="flex-1 h-px bg-jewelInk/10" />
+                  <span className="font-sans text-[12px] font-bold text-navy">показать все →</span>
+                </button>
+              </div>
+            )
+          }
+
           return (
-            <div key={section.label}>
+            <div key={section.key}>
               {/* Section header */}
               <div className="px-5 pt-4 pb-3 flex items-center gap-3">
                 <div className="mn-eyebrow">{section.label}</div>
@@ -261,7 +290,9 @@ export default function Dashboard({ catalog, progress, todayLessons, navigate }:
               </section>
             </div>
           )
-        })
+        })}
+          </>
+        )
       })()}
 
       {/* ══ Profile button — smaller tile ══ */}
@@ -361,16 +392,16 @@ function computeHero(
 
   if (daysSincePlayed > 2) {
     satiety = 'sleeping'
-    satietyText = 'zzz...'
+    satietyText = 'скучает по тебе'
   } else if (todayLessons === 0) {
     satiety = 'hungry'
-    satietyText = 'покорми знаниями!'
+    satietyText = 'ждёт приключений'
   } else if (todayLessons === 1) {
     satiety = 'snack'
-    satietyText = 'ещё немножко?'
+    satietyText = 'разогревается'
   } else if (todayLessons === 2) {
     satiety = 'fed'
-    satietyText = 'კარგი! хорошо!'
+    satietyText = 'в ударе!'
   } else {
     satiety = 'full'
     satietyText = 'მშვენივრად!'
@@ -384,28 +415,28 @@ function computeHero(
     greeting = { geo: 'გამარჯობა!', line1: 'Привет!', line2: 'Давай начнём' }
     mascotMood = 'cheer'
     satiety = 'hungry'
-    satietyText = 'покорми знаниями!'
+    satietyText = 'готова к знакомству'
   } else if (satiety === 'sleeping') {
-    greeting = { geo: 'მოგესალმებით!', line1: 'Давно не виделись!', line2: 'Разбуди Бомбору' }
+    greeting = { geo: 'მოგესალმებით!', line1: 'О, привет!', line2: 'Бомбора соскучилась' }
     mascotMood = 'sleep'
   } else if (allDone && satiety === 'full') {
-    greeting = { geo: 'ყოჩაღ!', line1: 'Бомбора сыта!', line2: 'Все уроки пройдены' }
+    greeting = { geo: 'ყოჩაღ!', line1: 'Все пройдено!', line2: 'Бомбора гордится' }
     mascotMood = 'cheer'
   } else if (satiety === 'full') {
-    greeting = { geo: 'შესანიშნავია!', line1: 'Бомбора довольна!', line2: 'Отличный день' }
+    greeting = { geo: 'შესანიშნავია!', line1: 'Какой день!', line2: 'Бомбора в восторге' }
     mascotMood = 'cheer'
   } else if (satiety === 'fed') {
-    greeting = { geo: 'კარგი!', line1: 'Бомбора сыта', line2: 'Ещё чуть-чуть?' }
+    greeting = { geo: 'კარგი!', line1: 'Отлично идём!', line2: 'Хочешь ещё?' }
     mascotMood = 'happy'
   } else if (satiety === 'snack') {
-    greeting = { geo: 'მადლობა!', line1: 'Неплохо!', line2: 'Бомбора хочет ещё' }
+    greeting = { geo: 'მადლობა!', line1: 'Хорошее начало!', line2: 'Продолжим?' }
     mascotMood = 'happy'
   } else if (progress.streak >= 3) {
-    greeting = { geo: 'შესანიშნავია!', line1: `${progress.streak} дней подряд!`, line2: 'Покорми Бомбору' }
-    mascotMood = 'think'
+    greeting = { geo: 'შესანიშნავია!', line1: `${progress.streak} дней подряд!`, line2: 'Не останавливайся' }
+    mascotMood = 'guide'
   } else {
-    greeting = { geo: 'გამარჯობა!', line1: 'Бомбора голодна', line2: 'Покорми знаниями' }
-    mascotMood = 'think'
+    greeting = { geo: 'გამარჯობა!', line1: 'Бомбора ждёт!', line2: 'Погнали учиться' }
+    mascotMood = 'guide'
   }
 
   // Suggestion
@@ -431,7 +462,7 @@ function computeHero(
       }
     } else {
       suggestion = {
-        eyebrow: satiety === 'hungry' || satiety === 'sleeping' ? 'покормить бомбору' : 'урок дня',
+        eyebrow: satiety === 'hungry' || satiety === 'sleeping' ? 'начать урок' : 'следующий урок',
         title: nextLesson.title,
         subtitle: `${nextModule.title} · урок ${nextLesson.id}`,
         screen: {

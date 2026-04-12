@@ -136,7 +136,24 @@ export default function Profile({ catalog, progress, navigate }: Props) {
           })}
         </div>
 
-        <div className="mt-8 text-center">
+        {/* Change level */}
+        <div className="mt-8">
+          <button
+            onClick={() => navigate({ kind: 'onboarding' })}
+            className="jewel-tile jewel-pressable w-full text-left px-4 py-4"
+          >
+            <div className="relative z-[1]">
+              <div className="font-sans text-[15px] font-bold text-jewelInk">
+                Выбрать свой уровень
+              </div>
+              <div className="font-sans text-[12px] text-jewelInk-mid mt-0.5">
+                Если пропустили этот шаг или хотите изменить
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <div className="mt-6 text-center">
           <div className="mn-eyebrow text-jewelInk-mid">
             учись в своём темпе — блокнот ждёт
           </div>

@@ -24,6 +24,12 @@ public class MiniAppUserProgress
     public DateTime? HeartsUpdatedAtUtc { get; set; }
 
     /// <summary>
+    /// User's self-reported level: "beginner" or "intermediate".
+    /// Null means onboarding not completed yet.
+    /// </summary>
+    public string? Level { get; set; }
+
+    /// <summary>
     /// JSON map of moduleId -> int[] of completed lesson ids.
     /// </summary>
     public string CompletedLessonsJson { get; set; } = "{}";

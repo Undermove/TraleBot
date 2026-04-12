@@ -11,6 +11,7 @@ import Profile from './screens/Profile'
 import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
 import LandingScreen from './screens/LandingScreen'
+import Onboarding, { UserLevel } from './screens/Onboarding'
 import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
 
@@ -45,6 +46,7 @@ export default function App() {
   const [loadError, setLoadError] = useState(false)
   const [insideTelegram] = useState(() => isInsideTelegram())
   const [todayLessons, setTodayLessons] = useState(() => getTodayLessons())
+  const [userLevel, setUserLevel] = useState<UserLevel | null>(null)
 
   // Load catalog + progress from backend on mount
   useEffect(() => {
@@ -56,8 +58,12 @@ export default function App() {
         if (meData?.authenticated && meData.progress) {
           setAuthenticated(true)
           setProgress(progressFromDto(meData.progress))
+          if (meData.level === 'beginner' || meData.level === 'intermediate') {
+            setUserLevel(meData.level)
+          }
         }
-        setScreen({ kind: 'dashboard' })
+        const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
+        setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
       })
       .catch(() => {
         if (cancelled) return
@@ -159,8 +165,20 @@ export default function App() {
   }
 
   switch (screen.kind) {
+    case 'onboarding':
+      return (
+        <Onboarding
+          onSelect={(level) => {
+            setUserLevel(level)
+            if (authenticated) {
+              api.setLevel(level).catch(() => {})
+            }
+            navigate({ kind: 'dashboard' })
+          }}
+        />
+      )
     case 'dashboard':
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} navigate={navigate} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} navigate={navigate} />
     case 'module':
       return <ModuleMap catalog={catalog} moduleId={screen.moduleId} progress={progress} navigate={navigate} />
     case 'lesson-theory':
@@ -219,6 +237,6 @@ export default function App() {
         />
       )
     default:
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} navigate={navigate} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} navigate={navigate} />
   }
 }

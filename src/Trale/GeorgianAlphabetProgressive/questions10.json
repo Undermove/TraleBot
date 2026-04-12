@@ -1,0 +1,29 @@
+{
+  "lesson_id": "alpha-full-3",
+  "title": "Читаем всё — все 33 буквы",
+  "lexicon": [
+    {"lemma": "სახლი", "ru": "дом"},
+    {"lemma": "ძაღლი", "ru": "собака"},
+    {"lemma": "წიგნი", "ru": "книга"}
+  ],
+  "questions": [
+    {"id": "af3_q01", "lemma": "სახლი", "question": "Прочитай «სახლი»:", "options": ["дом", "собака", "книга"], "answer_index": 0, "explanation": "სახლი — дом.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q02", "lemma": "ძაღლი", "question": "Прочитай «ძაღლი»:", "options": ["собака", "кошка", "лев"], "answer_index": 0, "explanation": "ძაღლი — собака.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q03", "lemma": "წიგნი", "question": "Прочитай «წიგნი»:", "options": ["книга", "ручка", "стол"], "answer_index": 0, "explanation": "წიგნი — книга.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q04", "lemma": "ჩაი", "question": "Прочитай «ჩაი»:", "options": ["чай", "кофе", "вода"], "answer_index": 0, "explanation": "ჩაი — чай.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q05", "lemma": "ხაჭაპური", "question": "Прочитай «ხაჭაპური»:", "options": ["хачапури", "хинкали", "лобио"], "answer_index": 0, "explanation": "ხაჭაპური — хачапури.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q06", "lemma": "ღვინო", "question": "Прочитай «ღვინო»:", "options": ["вино", "пиво", "сок"], "answer_index": 0, "explanation": "ღვინო — вино.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q07", "lemma": "ყავა", "question": "Прочитай «ყავა»:", "options": ["кофе", "чай", "молоко"], "answer_index": 0, "explanation": "ყავა — кофе.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q08", "lemma": "ჭიქა", "question": "Прочитай «ჭიქა»:", "options": ["стакан", "тарелка", "ложка"], "answer_index": 0, "explanation": "ჭიქა — стакан.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q09", "lemma": "შავი", "question": "Прочитай «შავი»:", "options": ["чёрный", "белый", "красный"], "answer_index": 0, "explanation": "შავი — чёрный.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q10", "lemma": "ცა", "question": "Прочитай «ცა»:", "options": ["небо", "земля", "вода"], "answer_index": 0, "explanation": "ცა — небо.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q11", "lemma": "გამარჯობა", "question": "Прочитай «გამარჯობა»:", "options": ["здравствуй", "до свидания", "спасибо"], "answer_index": 0, "explanation": "გამარჯობა — здравствуй.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q12", "lemma": "მადლობა", "question": "Прочитай «მადლობა»:", "options": ["спасибо", "извините", "пожалуйста"], "answer_index": 0, "explanation": "მადლობა — спасибо.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q13", "lemma": "საქართველო", "question": "Прочитай «საქართველო»:", "options": ["Грузия", "Армения", "Турция"], "answer_index": 0, "explanation": "საქართველო — Грузия.", "tags": ["reading"], "difficulty": 2},
+    {"id": "af3_q14", "lemma": "თბილისი", "question": "Прочитай «თბილისი»:", "options": ["Тбилиси", "Батуми", "Кутаиси"], "answer_index": 0, "explanation": "თბილისი — Тбилиси.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q15", "lemma": "ჟურნალი", "question": "Прочитай «ჟურნალი»:", "options": ["журнал", "газета", "книга"], "answer_index": 0, "explanation": "ჟურნალი — журнал.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q16", "lemma": "ვაშლი", "question": "Прочитай «ვაშლი»:", "options": ["яблоко", "груша", "банан"], "answer_index": 0, "explanation": "ვაშლი — яблоко.", "tags": ["reading"], "difficulty": 1},
+    {"id": "af3_q17", "lemma": "ღამე", "question": "Прочитай «ღამე»:", "options": ["ночь", "день", "утро"], "answer_index": 0, "explanation": "ღამე — ночь. Буква ღ — гортанное «гх».", "tags": ["reading"], "difficulty": 2},
+    {"id": "af3_q18", "lemma": "ხინკალი", "question": "Прочитай «ხინკალი»:", "options": ["хинкали", "хачапури", "лобио"], "answer_index": 0, "explanation": "ხინკალი — хинкали.", "tags": ["reading"], "difficulty": 1}
+  ]
+}

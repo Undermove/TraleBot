@@ -79,6 +79,8 @@ public class MiniAppController : Controller
 
         var moduleMap = new Dictionary<string, (string dir, int maxLesson)>
         {
+            ["alphabet-progressive"] = ("GeorgianAlphabetProgressive", 10),
+            ["numbers"] = ("GeorgianNumbers", 4),
             ["cases"] = ("GeorgianCases", 8),
             ["pronouns"] = ("GeorgianPronouns", 5),
             ["present-tense"] = ("GeorgianPresentTense", 5),
@@ -124,8 +126,36 @@ public class MiniAppController : Controller
             authenticated = true,
             language = user.Settings.CurrentLanguage.ToString(),
             vocabularyCount = vocabCount,
+            level = progress.Level,
             progress = SerializeProgress(progress)
         });
+    }
+
+    public class SetLevelRequest
+    {
+        public string Level { get; set; } = string.Empty;
+    }
+
+    [HttpPost("level")]
+    public async Task<IActionResult> SetLevel([FromBody] SetLevelRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        if (request.Level != "beginner" && request.Level != "intermediate")
+        {
+            return BadRequest(new { error = "invalid_level" });
+        }
+
+        var progress = await LoadOrCreateProgressAsync(user, ct);
+        progress.Level = request.Level;
+        progress.UpdatedAtUtc = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(ct);
+
+        return Ok(new { level = progress.Level });
     }
 
     public class LessonCompleteRequest

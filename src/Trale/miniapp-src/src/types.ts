@@ -1,5 +1,6 @@
 export type Screen =
   | { kind: 'loading' }
+  | { kind: 'onboarding' }
   | { kind: 'dashboard' }
   | { kind: 'module'; moduleId: string }
   | { kind: 'lesson-theory'; moduleId: string; lessonId: number }

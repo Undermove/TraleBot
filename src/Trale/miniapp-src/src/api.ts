@@ -35,6 +35,7 @@ export interface MeResponse {
   authenticated: boolean
   language?: string
   vocabularyCount?: number
+  level?: string | null
   progress?: ProgressDto
 }
 
@@ -128,6 +129,12 @@ export const api = {
     }>('/api/miniapp/vocabulary/answer', {
       method: 'POST',
       body: JSON.stringify(payload)
+    }),
+
+  setLevel: (level: string) =>
+    request<{ level: string }>('/api/miniapp/level', {
+      method: 'POST',
+      body: JSON.stringify({ level })
     }),
 
   lessonQuestions: (moduleId: string, lessonId: number) =>
