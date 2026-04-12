@@ -39,18 +39,55 @@ export default function ModuleMap({ catalog, moduleId, progress, navigate }: Pro
           </div>
         </div>
 
-        <div className="relative flex flex-col items-center gap-4">
+        <div className="relative flex flex-col items-center">
+          {/* Dotted path connectors between lesson circles */}
+          {lessons.slice(0, -1).map((_, idx) => {
+            const prevDone = completed.has(lessons[idx].id)
+            const nextDone = completed.has(lessons[idx + 1].id)
+            const pathDone = prevDone && nextDone
+            const goesRight = idx % 2 === 0 // even→odd = left to right
+            return (
+              <div
+                key={`path-${idx}`}
+                className="absolute pointer-events-none"
+                style={{
+                  top: idx * 140 + 40,
+                  left: '50%',
+                  width: 96,
+                  height: 140,
+                  marginLeft: goesRight ? -48 : -48,
+                  zIndex: 0,
+                }}
+              >
+                <svg width="96" height="140" viewBox="0 0 96 140" fill="none">
+                  <path
+                    d={goesRight ? 'M 0 0 C 0 70, 96 70, 96 140' : 'M 96 0 C 96 70, 0 70, 0 140'}
+                    stroke={pathDone ? '#58CC02' : '#E5D5B0'}
+                    strokeWidth="3"
+                    strokeDasharray="8 8"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </svg>
+              </div>
+            )
+          })}
+
           {lessons.map((lesson, idx) => {
             const isDone = completed.has(lesson.id)
             const isCurrent = lesson.id === firstIncomplete
             const offset = idx % 2 === 0 ? '-translate-x-12' : 'translate-x-12'
             return (
-              <div key={lesson.id} className={`w-full flex justify-center ${offset}`}>
+              <div
+                key={lesson.id}
+                className={`relative w-full flex justify-center ${offset}`}
+                style={{ zIndex: 1, minHeight: 140 }}
+              >
                 <button
                   onClick={() =>
                     navigate({ kind: 'lesson-theory', moduleId, lessonId: lesson.id })
                   }
-                  className="group relative flex flex-col items-center"
+                  className="group relative flex flex-col items-center pt-2"
                 >
                   <div
                     className={`w-20 h-20 rounded-full flex items-center justify-center font-extrabold text-2xl shadow-card border-4 transition active:translate-y-1

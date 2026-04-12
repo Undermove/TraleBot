@@ -70,7 +70,7 @@ export default function VocabularyPractice({ mode, wordIds, progress, setProgres
         <Mascot mood="sleep" size={120} />
         <div className="text-dog-muted">
           {phase === 'auth-required'
-            ? 'Открой мини-аб через кнопку «🎓 Грузинский» в Telegram-боте.'
+            ? 'Открой мини-апп через кнопку «🎓 Грузинский» в Telegram-боте.'
             : 'Что-то сломалось. Попробуй ещё раз.'}
         </div>
         <Button variant="ghost" onClick={() => navigate({ kind: 'dashboard' })}>
