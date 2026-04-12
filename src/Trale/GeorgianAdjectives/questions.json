@@ -1,0 +1,204 @@
+{
+  "lesson_id": "adj-1",
+  "title": "Базовые прилагательные",
+  "lexicon": [
+    {"lemma": "დიდი", "ru": "большой"},
+    {"lemma": "პატარა", "ru": "маленький"},
+    {"lemma": "კარგი", "ru": "хороший"},
+    {"lemma": "ცუდი", "ru": "плохой"},
+    {"lemma": "ახალი", "ru": "новый"},
+    {"lemma": "ძველი", "ru": "старый"},
+    {"lemma": "ლამაზი", "ru": "красивый"},
+    {"lemma": "მახინჯი", "ru": "некрасивый"},
+    {"lemma": "ცხელი", "ru": "горячий"},
+    {"lemma": "ცივი", "ru": "холодный"},
+    {"lemma": "გრძელი", "ru": "длинный"},
+    {"lemma": "მოკლე", "ru": "короткий"},
+    {"lemma": "სწრაფი", "ru": "быстрый"},
+    {"lemma": "ნელი", "ru": "медленный"},
+    {"lemma": "ძვირი", "ru": "дорогой"},
+    {"lemma": "იაფი", "ru": "дешёвый"}
+  ],
+  "questions": [
+    {
+      "id": "adj1_q01",
+      "lemma": "დიდი",
+      "question": "Как переводится «დიდი»?",
+      "options": ["большой", "маленький", "длинный"],
+      "answer_index": 0,
+      "explanation": "დიდი — большой.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q02",
+      "lemma": "პატარა",
+      "question": "Как переводится «პატარა»?",
+      "options": ["маленький", "большой", "короткий"],
+      "answer_index": 0,
+      "explanation": "პატარა — маленький.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q03",
+      "lemma": "კარგი",
+      "question": "Как по-грузински «хороший»?",
+      "options": ["კარგი", "ცუდი", "ახალი"],
+      "answer_index": 0,
+      "explanation": "კარგი — хороший.",
+      "tags": ["recall"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q04",
+      "lemma": "ცუდი",
+      "question": "Как переводится «ცუდი»?",
+      "options": ["плохой", "хороший", "старый"],
+      "answer_index": 0,
+      "explanation": "ცუდი — плохой.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q05",
+      "lemma": "ახალი",
+      "question": "Выбери перевод слова «новый»:",
+      "options": ["ახალი", "ძველი", "კარგი"],
+      "answer_index": 0,
+      "explanation": "ახალი — новый. ძველი — старый.",
+      "tags": ["recall"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q06",
+      "lemma": "ძველი",
+      "question": "Что означает «ძველი»?",
+      "options": ["старый", "новый", "быстрый"],
+      "answer_index": 0,
+      "explanation": "ძველი — старый.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q07",
+      "lemma": "ლამაზი",
+      "question": "Как переводится «ლამაზი»?",
+      "options": ["красивый", "некрасивый", "хороший"],
+      "answer_index": 0,
+      "explanation": "ლამაზი — красивый.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q08",
+      "lemma": "მახინჯი",
+      "question": "Что означает «მახინჯი»?",
+      "options": ["некрасивый", "красивый", "большой"],
+      "answer_index": 0,
+      "explanation": "მახინჯი — некрасивый, уродливый.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q09",
+      "lemma": "ცხელი",
+      "question": "Как по-грузински «горячий»?",
+      "options": ["ცხელი", "ცივი", "ახალი"],
+      "answer_index": 0,
+      "explanation": "ცხელი — горячий. ცივი — холодный.",
+      "tags": ["recall"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q10",
+      "lemma": "ცივი",
+      "question": "Как переводится «ცივი»?",
+      "options": ["холодный", "горячий", "медленный"],
+      "answer_index": 0,
+      "explanation": "ცივი — холодный.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q11",
+      "lemma": "გრძელი",
+      "question": "Что означает «გრძელი»?",
+      "options": ["длинный", "короткий", "большой"],
+      "answer_index": 0,
+      "explanation": "გრძელი — длинный.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q12",
+      "lemma": "მოკლე",
+      "question": "Как по-грузински «короткий»?",
+      "options": ["მოკლე", "გრძელი", "ნელი"],
+      "answer_index": 0,
+      "explanation": "მოკლე — короткий.",
+      "tags": ["recall"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q13",
+      "lemma": "სწრაფი",
+      "question": "Как переводится «სწრაფი»?",
+      "options": ["быстрый", "медленный", "дорогой"],
+      "answer_index": 0,
+      "explanation": "სწრაფი — быстрый.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q14",
+      "lemma": "ნელი",
+      "question": "Что означает «ნელი»?",
+      "options": ["медленный", "быстрый", "холодный"],
+      "answer_index": 0,
+      "explanation": "ნელი — медленный.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q15",
+      "lemma": "ძვირი",
+      "question": "Как по-грузински «дорогой»?",
+      "options": ["ძვირი", "იაფი", "ახალი"],
+      "answer_index": 0,
+      "explanation": "ძვირი — дорогой. იაფი — дешёвый.",
+      "tags": ["recall"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q16",
+      "lemma": "იაფი",
+      "question": "Как переводится «იაფი»?",
+      "options": ["дешёвый", "дорогой", "новый"],
+      "answer_index": 0,
+      "explanation": "იაფი — дешёвый.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "adj1_q17",
+      "lemma": "დიდი",
+      "question": "Какое слово является антонимом к «დიდი»?",
+      "options": ["პატარა", "ძველი", "ცუდი"],
+      "answer_index": 0,
+      "explanation": "დიდი (большой) — პატარა (маленький). Это антонимы.",
+      "tags": ["antonym"],
+      "difficulty": 2
+    },
+    {
+      "id": "adj1_q18",
+      "lemma": "ცხელი",
+      "question": "Подбери антоним к «ცხელი»:",
+      "options": ["ცივი", "სწრაფი", "მოკლე"],
+      "answer_index": 0,
+      "explanation": "ცხელი (горячий) — ცივი (холодный).",
+      "tags": ["antonym"],
+      "difficulty": 2
+    }
+  ]
+}

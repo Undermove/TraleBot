@@ -121,7 +121,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       {/* ══ Module sections ══ */}
       {(() => {
         const alphabetIds = ['alphabet-progressive', 'alphabet']
-        const grammarIds = ['numbers', 'verbs-of-movement', 'cases', 'pronouns', 'present-tense']
+        const grammarIds = ['numbers', 'verbs-of-movement', 'cases', 'pronouns', 'present-tense', 'postpositions', 'adjectives']
         const vocabIds = ['cafe', 'taxi', 'doctor', 'shopping', 'intro', 'emergency']
 
         const alphaModules = catalog.modules.filter((m) => alphabetIds.includes(m.id))
@@ -140,6 +140,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
         const moduleIcons: Record<string, string> = {
           'alphabet-progressive': 'ა', 'alphabet': 'ა', 'numbers': '①',
+          'postpositions': 'შ', 'adjectives': 'ლ',
           'verbs-of-movement': 'ზ', 'cases': 'ბ', 'pronouns': 'მ',
           'present-tense': 'დ', 'cafe': 'ყ', 'taxi': 'ტ', 'doctor': 'ე',
           'shopping': 'ხ', 'intro': 'გ', 'emergency': 'ს', 'my-vocabulary': 'ლ',
@@ -147,7 +148,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
         const moduleGeoLabels: Record<string, string> = {
           'alphabet-progressive': 'ანბანი', 'alphabet': 'ანბანი',
-          'numbers': 'რიცხვები',
+          'numbers': 'რიცხვები', 'postpositions': 'თანდებულები', 'adjectives': 'ზედსართავები',
           'verbs-of-movement': 'ზმნები', 'cases': 'ბრუნვები',
           'pronouns': 'ნაცვალსახელები', 'present-tense': 'აწმყო', 'cafe': 'კაფე',
           'taxi': 'ტაქსი', 'doctor': 'ექიმი', 'shopping': 'მაღაზია',
