@@ -88,6 +88,12 @@
       <Content Update="GeorgianNumbers\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="GeorgianPostpositions\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianAdjectives\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Update="GeorgianPronouns\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

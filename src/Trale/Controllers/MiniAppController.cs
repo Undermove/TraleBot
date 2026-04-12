@@ -86,6 +86,8 @@ public class MiniAppController : Controller
         {
             ["alphabet-progressive"] = ("GeorgianAlphabetProgressive", 10),
             ["numbers"] = ("GeorgianNumbers", 4),
+            ["postpositions"] = ("GeorgianPostpositions", 5),
+            ["adjectives"] = ("GeorgianAdjectives", 5),
             ["cases"] = ("GeorgianCases", 8),
             ["pronouns"] = ("GeorgianPronouns", 5),
             ["present-tense"] = ("GeorgianPresentTense", 5),
