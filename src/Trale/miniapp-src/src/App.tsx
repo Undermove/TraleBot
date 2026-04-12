@@ -19,6 +19,24 @@ function isInsideTelegram(): boolean {
   return Boolean(tg?.initData && tg.initData.length > 0)
 }
 
+function getTodayLessons(): number {
+  try {
+    const raw = localStorage.getItem('bombora_today')
+    if (!raw) return 0
+    const { date, count } = JSON.parse(raw)
+    if (date === new Date().toISOString().slice(0, 10)) return count
+  } catch {}
+  return 0
+}
+
+function incrementTodayLessons(): number {
+  const today = new Date().toISOString().slice(0, 10)
+  const current = getTodayLessons()
+  const next = current + 1
+  localStorage.setItem('bombora_today', JSON.stringify({ date: today, count: next }))
+  return next
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
   const [progress, setProgress] = useState<ProgressState>(defaultProgress)
@@ -26,6 +44,7 @@ export default function App() {
   const [authenticated, setAuthenticated] = useState(false)
   const [loadError, setLoadError] = useState(false)
   const [insideTelegram] = useState(() => isInsideTelegram())
+  const [todayLessons, setTodayLessons] = useState(() => getTodayLessons())
 
   // Load catalog + progress from backend on mount
   useEffect(() => {
@@ -132,11 +151,18 @@ export default function App() {
     return <LandingScreen botUsername={catalog.botUsername} />
   }
 
+  function navigate(s: Screen) {
+    if (s.kind === 'result') {
+      setTodayLessons(incrementTodayLessons())
+    }
+    setScreen(s)
+  }
+
   switch (screen.kind) {
     case 'dashboard':
-      return <Dashboard catalog={catalog} progress={progress} navigate={setScreen} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} navigate={navigate} />
     case 'module':
-      return <ModuleMap catalog={catalog} moduleId={screen.moduleId} progress={progress} navigate={setScreen} />
+      return <ModuleMap catalog={catalog} moduleId={screen.moduleId} progress={progress} navigate={navigate} />
     case 'lesson-theory':
       return (
         <LessonTheory
@@ -144,7 +170,7 @@ export default function App() {
           moduleId={screen.moduleId}
           lessonId={screen.lessonId}
           progress={progress}
-          navigate={setScreen}
+          navigate={navigate}
         />
       )
     case 'practice':
@@ -155,7 +181,7 @@ export default function App() {
           progress={progress}
           setProgress={setProgress}
           authenticated={authenticated}
-          navigate={setScreen}
+          navigate={navigate}
         />
       )
     case 'result':
@@ -167,7 +193,7 @@ export default function App() {
           correct={screen.correct}
           total={screen.total}
           xpEarned={screen.xpEarned}
-          navigate={setScreen}
+          navigate={navigate}
         />
       )
     case 'profile':
@@ -176,11 +202,11 @@ export default function App() {
           catalog={catalog}
           progress={progress}
           setProgress={setProgress}
-          navigate={setScreen}
+          navigate={navigate}
         />
       )
     case 'vocabulary-list':
-      return <VocabularyList progress={progress} navigate={setScreen} />
+      return <VocabularyList progress={progress} navigate={navigate} />
     case 'vocabulary-quiz':
       return (
         <VocabularyPractice
@@ -189,10 +215,10 @@ export default function App() {
           progress={progress}
           setProgress={setProgress}
           authenticated={authenticated}
-          navigate={setScreen}
+          navigate={navigate}
         />
       )
     default:
-      return <Dashboard catalog={catalog} progress={progress} navigate={setScreen} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} navigate={navigate} />
   }
 }
