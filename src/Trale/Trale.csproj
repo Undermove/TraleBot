@@ -82,6 +82,12 @@
       <Content Update="GeorgianCases\questions8.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="GeorgianAlphabetProgressive\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianNumbers\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Update="GeorgianPronouns\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

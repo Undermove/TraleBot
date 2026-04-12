@@ -1,0 +1,198 @@
+{
+  "lesson_id": "numbers-1",
+  "title": "Числа 1-10 — რიცხვები",
+  "lexicon": [
+    {"lemma": "ერთი", "ru": "один (1)"},
+    {"lemma": "ორი", "ru": "два (2)"},
+    {"lemma": "სამი", "ru": "три (3)"},
+    {"lemma": "ოთხი", "ru": "четыре (4)"},
+    {"lemma": "ხუთი", "ru": "пять (5)"},
+    {"lemma": "ექვსი", "ru": "шесть (6)"},
+    {"lemma": "შვიდი", "ru": "семь (7)"},
+    {"lemma": "რვა", "ru": "восемь (8)"},
+    {"lemma": "ცხრა", "ru": "девять (9)"},
+    {"lemma": "ათი", "ru": "десять (10)"}
+  ],
+  "questions": [
+    {
+      "id": "num1_q01",
+      "lemma": "ერთი",
+      "question": "Как будет «один» по-грузински?",
+      "options": ["ერთი", "ორი", "სამი"],
+      "answer_index": 0,
+      "explanation": "«ერთი» — один. Это первое число, с которого начинают счёт.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q02",
+      "lemma": "ორი",
+      "question": "Что означает «ორი»?",
+      "options": ["два", "три", "один"],
+      "answer_index": 0,
+      "explanation": "«ორი» — два.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q03",
+      "lemma": "სამი",
+      "question": "Как будет «три» по-грузински?",
+      "options": ["სამი", "ოთხი", "ორი"],
+      "answer_index": 0,
+      "explanation": "«სამი» — три.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q04",
+      "lemma": "ოთხი",
+      "question": "Что означает «ოთხი»?",
+      "options": ["четыре", "пять", "шесть"],
+      "answer_index": 0,
+      "explanation": "«ოთხი» — четыре.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q05",
+      "lemma": "ხუთი",
+      "question": "Как сказать «пять» по-грузински?",
+      "options": ["ხუთი", "ექვსი", "ოთხი"],
+      "answer_index": 0,
+      "explanation": "«ხუთი» — пять.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q06",
+      "lemma": "ექვსი",
+      "question": "Что означает «ექვსი»?",
+      "options": ["шесть", "семь", "пять"],
+      "answer_index": 0,
+      "explanation": "«ექვსი» — шесть.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q07",
+      "lemma": "შვიდი",
+      "question": "Как будет «семь» по-грузински?",
+      "options": ["შვიდი", "რვა", "ექვსი"],
+      "answer_index": 0,
+      "explanation": "«შვიდი» — семь.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q08",
+      "lemma": "რვა",
+      "question": "Что означает «რვა»?",
+      "options": ["восемь", "девять", "семь"],
+      "answer_index": 0,
+      "explanation": "«რვა» — восемь. Самое короткое числительное в грузинском.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q09",
+      "lemma": "ცხრა",
+      "question": "Как будет «девять» по-грузински?",
+      "options": ["ცხრა", "ათი", "რვა"],
+      "answer_index": 0,
+      "explanation": "«ცხრა» — девять.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q10",
+      "lemma": "ათი",
+      "question": "Что означает «ათი»?",
+      "options": ["десять", "один", "девять"],
+      "answer_index": 0,
+      "explanation": "«ათი» — десять.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q11",
+      "lemma": "ხუთი",
+      "question": "Какое число по-грузински — «ხუთი»?",
+      "options": ["5", "6", "4"],
+      "answer_index": 0,
+      "explanation": "«ხუთი» — это число 5 (пять).",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q12",
+      "lemma": "სამი",
+      "question": "Выбери грузинское слово для числа 3:",
+      "options": ["სამი", "ხუთი", "ერთი"],
+      "answer_index": 0,
+      "explanation": "«სამი» — три (3).",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q13",
+      "lemma": "ორი",
+      "question": "ერთი + ერთი = ?",
+      "options": ["ორი", "სამი", "ოთხი"],
+      "answer_index": 0,
+      "explanation": "Один плюс один — «ორი» (два).",
+      "tags": ["math"],
+      "difficulty": 2
+    },
+    {
+      "id": "num1_q14",
+      "lemma": "ხუთი",
+      "question": "ორი + სამი = ?",
+      "options": ["ხუთი", "ოთხი", "ექვსი"],
+      "answer_index": 0,
+      "explanation": "Два плюс три — «ხუთი» (пять).",
+      "tags": ["math"],
+      "difficulty": 2
+    },
+    {
+      "id": "num1_q15",
+      "lemma": "ათი",
+      "question": "ექვსი + ოთხი = ?",
+      "options": ["ათი", "ცხრა", "რვა"],
+      "answer_index": 0,
+      "explanation": "Шесть плюс четыре — «ათი» (десять).",
+      "tags": ["math"],
+      "difficulty": 2
+    },
+    {
+      "id": "num1_q16",
+      "lemma": "რვა",
+      "question": "სამი + ხუთი = ?",
+      "options": ["რვა", "შვიდი", "ცხრა"],
+      "answer_index": 0,
+      "explanation": "Три плюс пять — «რვა» (восемь).",
+      "tags": ["math"],
+      "difficulty": 2
+    },
+    {
+      "id": "num1_q17",
+      "lemma": "ცხრა",
+      "question": "Какое число идёт после «რვა»?",
+      "options": ["ცხრა", "ათი", "შვიდი"],
+      "answer_index": 0,
+      "explanation": "После «რვა» (восемь) идёт «ცხრა» (девять).",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "num1_q18",
+      "lemma": "შვიდი",
+      "question": "ოთხი + სამი = ?",
+      "options": ["შვიდი", "ექვსი", "ხუთი"],
+      "answer_index": 0,
+      "explanation": "Четыре плюс три — «შვიდი» (семь).",
+      "tags": ["math"],
+      "difficulty": 2
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "lesson_id": "alpha-vowels-1",
+  "title": "Гласные грузинского алфавита",
+  "lexicon": ["ა", "ე", "ი", "ო", "უ"],
+  "questions": [
+    {
+      "id": "av1-q1",
+      "lemma": "ა",
+      "question": "Как звучит грузинская буква «ა»?",
+      "options": ["a", "e", "o"],
+      "answer_index": 0,
+      "explanation": "Буква «ა» читается как «a» — похожа на русскую «а».",
+      "tags": ["letter-to-sound"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q2",
+      "lemma": "ე",
+      "question": "Как звучит грузинская буква «ე»?",
+      "options": ["i", "e", "u"],
+      "answer_index": 1,
+      "explanation": "Буква «ე» читается как «e» — похожа на русскую «э».",
+      "tags": ["letter-to-sound"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q3",
+      "lemma": "ი",
+      "question": "Как звучит грузинская буква «ი»?",
+      "options": ["o", "a", "i"],
+      "answer_index": 2,
+      "explanation": "Буква «ი» читается как «i» — похожа на русскую «и».",
+      "tags": ["letter-to-sound"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q4",
+      "lemma": "ო",
+      "question": "Как звучит грузинская буква «ო»?",
+      "options": ["o", "u", "e"],
+      "answer_index": 0,
+      "explanation": "Буква «ო» читается как «o» — похожа на русскую «о».",
+      "tags": ["letter-to-sound"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q5",
+      "lemma": "უ",
+      "question": "Как звучит грузинская буква «უ»?",
+      "options": ["a", "i", "u"],
+      "answer_index": 2,
+      "explanation": "Буква «უ» читается как «u» — похожа на русскую «у».",
+      "tags": ["letter-to-sound"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q6",
+      "lemma": "ა",
+      "question": "Какая грузинская буква обозначает звук «a»?",
+      "options": ["ე", "ა", "ო"],
+      "answer_index": 1,
+      "explanation": "Звук «a» передаётся буквой «ა».",
+      "tags": ["sound-to-letter"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q7",
+      "lemma": "ე",
+      "question": "Какая грузинская буква обозначает звук «e»?",
+      "options": ["უ", "ი", "ე"],
+      "answer_index": 2,
+      "explanation": "Звук «e» передаётся буквой «ე».",
+      "tags": ["sound-to-letter"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q8",
+      "lemma": "ი",
+      "question": "Какая грузинская буква обозначает звук «i»?",
+      "options": ["ი", "ე", "ა"],
+      "answer_index": 0,
+      "explanation": "Звук «i» передаётся буквой «ი».",
+      "tags": ["sound-to-letter"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q9",
+      "lemma": "ო",
+      "question": "Какая грузинская буква обозначает звук «o»?",
+      "options": ["უ", "ო", "ა"],
+      "answer_index": 1,
+      "explanation": "Звук «o» передаётся буквой «ო».",
+      "tags": ["sound-to-letter"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q10",
+      "lemma": "უ",
+      "question": "Какая грузинская буква обозначает звук «u»?",
+      "options": ["ო", "ე", "უ"],
+      "answer_index": 2,
+      "explanation": "Звук «u» передаётся буквой «უ».",
+      "tags": ["sound-to-letter"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q11",
+      "lemma": "ა",
+      "question": "Какая буква звучит как русская «а»?",
+      "options": ["ი", "ა", "უ"],
+      "answer_index": 1,
+      "explanation": "Грузинская «ა» звучит как русская «а».",
+      "tags": ["recognition"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q12",
+      "lemma": "უ",
+      "question": "Какая буква звучит как русская «у»?",
+      "options": ["ო", "უ", "ე"],
+      "answer_index": 1,
+      "explanation": "Грузинская «უ» звучит как русская «у».",
+      "tags": ["recognition"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q13",
+      "lemma": "ი",
+      "question": "Какая буква звучит как русская «и»?",
+      "options": ["ე", "ო", "ი"],
+      "answer_index": 2,
+      "explanation": "Грузинская «ი» звучит как русская «и».",
+      "tags": ["recognition"],
+      "difficulty": 1
+    },
+    {
+      "id": "av1-q14",
+      "lemma": "აე",
+      "question": "Как читается слог «აე»?",
+      "options": ["ae", "oi", "ua"],
+      "answer_index": 0,
+      "explanation": "«ა» = a, «ე» = e, вместе читается «ae».",
+      "tags": ["syllable-reading"],
+      "difficulty": 2
+    },
+    {
+      "id": "av1-q15",
+      "lemma": "ოი",
+      "question": "Как читается слог «ოი»?",
+      "options": ["ua", "oi", "ae"],
+      "answer_index": 1,
+      "explanation": "«ო» = o, «ი» = i, вместе читается «oi».",
+      "tags": ["syllable-reading"],
+      "difficulty": 2
+    },
+    {
+      "id": "av1-q16",
+      "lemma": "უა",
+      "question": "Как читается слог «უა»?",
+      "options": ["ei", "ao", "ua"],
+      "answer_index": 2,
+      "explanation": "«უ» = u, «ა» = a, вместе читается «ua».",
+      "tags": ["syllable-reading"],
+      "difficulty": 2
+    },
+    {
+      "id": "av1-q17",
+      "lemma": "ეო",
+      "question": "Как читается слог «ეო»?",
+      "options": ["eo", "iu", "ai"],
+      "answer_index": 0,
+      "explanation": "«ე» = e, «ო» = o, вместе читается «eo».",
+      "tags": ["syllable-reading"],
+      "difficulty": 2
+    },
+    {
+      "id": "av1-q18",
+      "lemma": "იუ",
+      "question": "Как читается слог «იუ»?",
+      "options": ["ao", "iu", "ea"],
+      "answer_index": 1,
+      "explanation": "«ი» = i, «უ» = u, вместе читается «iu».",
+      "tags": ["syllable-reading"],
+      "difficulty": 2
+    }
+  ]
+}
