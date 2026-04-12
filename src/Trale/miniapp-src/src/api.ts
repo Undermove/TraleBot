@@ -131,6 +131,19 @@ export const api = {
       body: JSON.stringify(payload)
     }),
 
+  translateWord: (word: string) =>
+    request<{
+      status: 'success' | 'exists' | 'failure'
+      word?: string
+      definition?: string
+      additionalInfo?: string
+      example?: string
+      vocabularyEntryId?: string
+    }>('/api/miniapp/translate', {
+      method: 'POST',
+      body: JSON.stringify({ word })
+    }),
+
   setLevel: (level: string) =>
     request<{ level: string }>('/api/miniapp/level', {
       method: 'POST',

@@ -11,6 +11,7 @@ interface Props {
 }
 
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
+type TranslateState = 'idle' | 'translating' | 'success' | 'error'
 type Filter = 'all' | 'new' | 'weak' | 'mastered'
 
 export default function VocabularyList({ progress, navigate }: Props) {
@@ -20,6 +21,9 @@ export default function VocabularyList({ progress, navigate }: Props) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [translateInput, setTranslateInput] = useState('')
+  const [translateState, setTranslateState] = useState<TranslateState>('idle')
+  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -92,6 +96,37 @@ export default function VocabularyList({ progress, navigate }: Props) {
       navigate({ kind: 'vocabulary-quiz', mode, wordIds: Array.from(selected) })
     } else {
       navigate({ kind: 'vocabulary-quiz', mode })
+    }
+  }
+
+  async function translateWord() {
+    const word = translateInput.trim()
+    if (!word) return
+    setTranslateState('translating')
+    setTranslateResult(null)
+    try {
+      const r = await api.translateWord(word)
+      if (r.status === 'success' || r.status === 'exists') {
+        setTranslateResult({
+          word: r.word ?? word,
+          definition: r.definition ?? '',
+          additionalInfo: r.additionalInfo ?? '',
+          example: r.example ?? ''
+        })
+        setTranslateState('success')
+        setTranslateInput('')
+        // Refresh vocabulary list
+        if (r.status === 'success') {
+          api.vocabulary().then((v) => {
+            setItems(v.items.length > 0 ? v.items : v.starterItems)
+            setIsStarterMode(v.items.length === 0)
+          }).catch(() => {})
+        }
+      } else {
+        setTranslateState('error')
+      }
+    } catch {
+      setTranslateState('error')
     }
   }
 
@@ -191,10 +226,54 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
             <div className="font-sans text-[13px] text-jewelInk-mid mt-1 leading-snug">
               {isStarterMode
-                ? 'Начни с базового набора от Бомборы. Свои слова добавляй через чат.'
+                ? 'Начни с базового набора от Бомборы или добавь свои слова ниже.'
                 : 'Отметь слова или выбери готовый набор снизу.'}
             </div>
           </div>
+        </div>
+
+        {/* Translate bar */}
+        <div className="mb-4">
+          <div className="mn-eyebrow mb-2">добавить слово</div>
+          <div className="flex gap-2">
+            <input
+              className="flex-1 bg-cream-tile border-[1.5px] border-jewelInk rounded-xl px-4 py-3 font-sans text-[15px] font-semibold text-jewelInk outline-none focus:border-navy transition-colors"
+              style={{ boxShadow: '2px 2px 0 #15100A' }}
+              placeholder="слово на русском или грузинском"
+              value={translateInput}
+              onChange={(e) => { setTranslateInput(e.target.value); setTranslateState('idle') }}
+              onKeyDown={(e) => { if (e.key === 'Enter') translateWord() }}
+              disabled={translateState === 'translating'}
+            />
+            <button
+              onClick={translateWord}
+              disabled={!translateInput.trim() || translateState === 'translating'}
+              className="shrink-0 px-4 py-3 bg-navy border-[1.5px] border-jewelInk rounded-xl font-sans text-[14px] font-bold text-cream disabled:opacity-40 active:translate-x-0.5 active:translate-y-0.5 transition-all"
+              style={{ boxShadow: '2px 2px 0 #15100A' }}
+            >
+              {translateState === 'translating' ? '...' : '→'}
+            </button>
+          </div>
+          {translateState === 'success' && translateResult && (
+            <div className="mt-3 jewel-tile px-4 py-3">
+              <div className="relative z-[1]">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-sans text-[16px] font-extrabold text-navy">{translateResult.word}</span>
+                  <span className="font-sans text-[14px] text-jewelInk">— {translateResult.definition}</span>
+                </div>
+                {translateResult.additionalInfo && (
+                  <div className="font-sans text-[12px] text-jewelInk-mid mt-1">{translateResult.additionalInfo}</div>
+                )}
+                {translateResult.example && (
+                  <div className="font-sans text-[12px] text-jewelInk-mid mt-1 italic">{translateResult.example}</div>
+                )}
+                <div className="font-sans text-[11px] text-gold-deep font-bold mt-1.5">✓ добавлено в словарь</div>
+              </div>
+            </div>
+          )}
+          {translateState === 'error' && (
+            <div className="mt-2 font-sans text-[12px] text-ruby">Не удалось перевести. Попробуй другое слово.</div>
+          )}
         </div>
 
         {!isStarterMode && (

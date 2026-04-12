@@ -5,8 +5,10 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
+using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Telegram;
+using MediatR;
 using Infrastructure.Telegram.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,17 +28,20 @@ public class MiniAppController : Controller
     private readonly ITraleDbContext _dbContext;
     private readonly BotConfiguration _botConfig;
     private readonly IMiniAppContentProvider _content;
+    private readonly IMediator _mediator;
 
     public MiniAppController(
         IGeorgianQuestionsLoaderFactory questionsLoaderFactory,
         ITraleDbContext dbContext,
         BotConfiguration botConfig,
-        IMiniAppContentProvider content)
+        IMiniAppContentProvider content,
+        IMediator mediator)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
         _dbContext = dbContext;
         _botConfig = botConfig;
         _content = content;
+        _mediator = mediator;
     }
 
     [HttpGet("ping")]
@@ -609,6 +614,58 @@ public class MiniAppController : Controller
             return (e.Word, e.Definition);
         }
         return (e.Definition, e.Word);
+    }
+
+    public class TranslateWordRequest
+    {
+        public string Word { get; set; } = string.Empty;
+    }
+
+    [HttpPost("translate")]
+    public async Task<IActionResult> TranslateWord([FromBody] TranslateWordRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Word) || request.Word.Trim().Length > 40)
+        {
+            return BadRequest(new { error = "invalid_word" });
+        }
+
+        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntry
+        {
+            UserId = user.Id,
+            Word = request.Word.Trim()
+        }, ct);
+
+        return result switch
+        {
+            CreateVocabularyEntryResult.TranslationSuccess s => Ok(new
+            {
+                status = "success",
+                word = request.Word.Trim().ToLowerInvariant(),
+                definition = s.Definition,
+                additionalInfo = s.AdditionalInfo,
+                example = s.Example,
+                vocabularyEntryId = s.VocabularyEntryId
+            }),
+            CreateVocabularyEntryResult.TranslationExists e => Ok(new
+            {
+                status = "exists",
+                word = request.Word.Trim().ToLowerInvariant(),
+                definition = e.Definition,
+                additionalInfo = e.AdditionalInfo,
+                example = e.Example,
+                vocabularyEntryId = e.VocabularyEntryId
+            }),
+            CreateVocabularyEntryResult.TranslationFailure => Ok(new { status = "failure" }),
+            CreateVocabularyEntryResult.PromptLengthExceeded => BadRequest(new { status = "too_long" }),
+            CreateVocabularyEntryResult.EmojiDetected => BadRequest(new { status = "emoji" }),
+            _ => Ok(new { status = "failure" })
+        };
     }
 
     private async Task<User> ResolveUserAsync(CancellationToken ct)
