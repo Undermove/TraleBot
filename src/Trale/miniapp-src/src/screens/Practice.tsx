@@ -89,9 +89,32 @@ export default function Practice({
           Вопросы не загрузились
         </div>
         <div className="font-sans text-[14px] text-jewelInk-mid max-w-[300px]">
-          Попробуй вернуться на страницу урока и открыть практику ещё раз.
+          Проверь соединение и попробуй ещё раз.
         </div>
-        <div className="w-full max-w-[280px] mt-2">
+        <div className="w-full max-w-[280px] mt-2 flex flex-col gap-3">
+          <Button
+            variant="primary"
+            onClick={() => {
+              setPhase('loading')
+              api.lessonQuestions(moduleId, lessonId)
+                .then((data) => {
+                  if (!Array.isArray(data) || data.length === 0) {
+                    setPhase('error')
+                    return
+                  }
+                  setQuestions(
+                    data.slice(0, 10).map((d) => ({
+                      id: d.id, lemma: d.lemma ?? '', question: d.question,
+                      options: d.options, answerIndex: d.answerIndex, explanation: d.explanation
+                    }))
+                  )
+                  setPhase('answering')
+                })
+                .catch(() => setPhase('error'))
+            }}
+          >
+            попробовать ещё раз
+          </Button>
           <Button
             variant="ghost"
             onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}

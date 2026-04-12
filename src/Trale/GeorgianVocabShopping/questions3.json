@@ -1,0 +1,201 @@
+{
+  "lesson_id": "shopping-3",
+  "title": "Числа и цены: от одного до десяти, лари, тетри",
+  "lexicon": [
+    "ერთი — один",
+    "ორი — два",
+    "სამი — три",
+    "ოთხი — четыре",
+    "ხუთი — пять",
+    "ექვსი — шесть",
+    "შვიდი — семь",
+    "რვა — восемь",
+    "ცხრა — девять",
+    "ათი — десять",
+    "ლარი — лари (грузинская валюта)",
+    "თეთრი — тетри (1/100 лари)",
+    "რამდენი ღირს — сколько стоит"
+  ],
+  "questions": [
+    {
+      "id": "shop3-q1",
+      "lemma": "ერთი",
+      "question": "Как переводится «ერთი»?",
+      "options": ["Один", "Два", "Три"],
+      "answer_index": 0,
+      "explanation": "ერთი — это «один».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q2",
+      "lemma": "ორი",
+      "question": "Как переводится «ორი»?",
+      "options": ["Один", "Два", "Четыре"],
+      "answer_index": 1,
+      "explanation": "ორი — это «два».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q3",
+      "lemma": "სამი",
+      "question": "Как переводится «სამი»?",
+      "options": ["Пять", "Два", "Три"],
+      "answer_index": 2,
+      "explanation": "სამი — это «три».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q4",
+      "lemma": "ოთხი",
+      "question": "Как переводится «ოთხი»?",
+      "options": ["Четыре", "Шесть", "Восемь"],
+      "answer_index": 0,
+      "explanation": "ოთხი — это «четыре».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q5",
+      "lemma": "ხუთი",
+      "question": "Как переводится «ხუთი»?",
+      "options": ["Три", "Пять", "Семь"],
+      "answer_index": 1,
+      "explanation": "ხუთი — это «пять».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q6",
+      "lemma": "ექვსი",
+      "question": "Как переводится «ექვსი»?",
+      "options": ["Четыре", "Девять", "Шесть"],
+      "answer_index": 2,
+      "explanation": "ექვსი — это «шесть».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q7",
+      "lemma": "შვიდი",
+      "question": "Как переводится «შვიდი»?",
+      "options": ["Семь", "Восемь", "Десять"],
+      "answer_index": 0,
+      "explanation": "შვიდი — это «семь».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q8",
+      "lemma": "რვა",
+      "question": "Как переводится «რვა»?",
+      "options": ["Шесть", "Восемь", "Девять"],
+      "answer_index": 1,
+      "explanation": "რვა — это «восемь».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q9",
+      "lemma": "ცხრა",
+      "question": "Как переводится «ცხრა»?",
+      "options": ["Семь", "Десять", "Девять"],
+      "answer_index": 2,
+      "explanation": "ცხრა — это «девять».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q10",
+      "lemma": "ათი",
+      "question": "Как переводится «ათი»?",
+      "options": ["Десять", "Восемь", "Пять"],
+      "answer_index": 0,
+      "explanation": "ათი — это «десять».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q11",
+      "lemma": "ლარი",
+      "question": "Как переводится «ლარი»?",
+      "options": ["Тетри", "Лари", "Рубль"],
+      "answer_index": 1,
+      "explanation": "ლარი — это «лари», основная денежная единица Грузии.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q12",
+      "lemma": "თეთრი",
+      "question": "Как переводится «თეთრი»?",
+      "options": ["Лари", "Копейка", "Тетри"],
+      "answer_index": 2,
+      "explanation": "თეთრი — это «тетри», разменная монета (1/100 лари).",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q13",
+      "lemma": "რამდენი ღირს",
+      "question": "Как переводится «რამდენი ღირს»?",
+      "options": ["Сколько стоит", "Дайте мне", "Очень дорого"],
+      "answer_index": 0,
+      "explanation": "რამდენი ღირს — это «сколько стоит».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop3-q14",
+      "lemma": "ხუთი",
+      "question": "Как будет «пять» по-грузински?",
+      "options": ["ოთხი", "ხუთი", "ექვსი"],
+      "answer_index": 1,
+      "explanation": "Пять по-грузински — ხუთი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop3-q15",
+      "lemma": "რვა",
+      "question": "Как будет «восемь» по-грузински?",
+      "options": ["შვიდი", "ცხრა", "რვა"],
+      "answer_index": 2,
+      "explanation": "Восемь по-грузински — რვა.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop3-q16",
+      "lemma": "სამი",
+      "question": "Как будет «три» по-грузински?",
+      "options": ["სამი", "ორი", "ოთხი"],
+      "answer_index": 0,
+      "explanation": "Три по-грузински — სამი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop3-q17",
+      "lemma": "ათი",
+      "question": "Как будет «десять» по-грузински?",
+      "options": ["ცხრა", "ათი", "ერთი"],
+      "answer_index": 1,
+      "explanation": "Десять по-грузински — ათი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop3-q18",
+      "lemma": "ლარი",
+      "question": "Как называется грузинская валюта?",
+      "options": ["თეთრი", "მარილი", "ლარი"],
+      "answer_index": 2,
+      "explanation": "ლარი (лари) — основная денежная единица Грузии. თეთრი (тетри) — разменная монета.",
+      "tags": ["logic"],
+      "difficulty": 2
+    }
+  ]
+}

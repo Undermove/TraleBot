@@ -1,0 +1,195 @@
+{
+  "lesson_id": "taxi-2",
+  "title": "Направления",
+  "lexicon": [
+    {"lemma": "მარცხენა", "ru": "левый, налево"},
+    {"lemma": "მარჯვენა", "ru": "правый, направо"},
+    {"lemma": "პირდაპირ", "ru": "прямо"},
+    {"lemma": "მოუხვიე", "ru": "поверни"},
+    {"lemma": "გააჩერე", "ru": "останови здесь"},
+    {"lemma": "შორს", "ru": "далеко"},
+    {"lemma": "ახლოს", "ru": "близко"}
+  ],
+  "questions": [
+    {
+      "id": "taxi2_q01",
+      "lemma": "მარცხენა",
+      "question": "Как по-грузински «налево»?",
+      "options": ["მარჯვენა", "მარცხენა", "პირდაპირ"],
+      "answer_index": 1,
+      "explanation": "«Налево» — მარცხენა.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q02",
+      "lemma": "მარცხენა",
+      "question": "Что означает «მარცხენა»?",
+      "options": ["прямо", "направо", "налево"],
+      "answer_index": 2,
+      "explanation": "მარცხენა — налево, левый.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q03",
+      "lemma": "მარჯვენა",
+      "question": "Как по-грузински «направо»?",
+      "options": ["მარჯვენა", "მარცხენა", "შორს"],
+      "answer_index": 0,
+      "explanation": "«Направо» — მარჯვენა.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q04",
+      "lemma": "მარჯვენა",
+      "question": "Что означает «მარჯვენა»?",
+      "options": ["налево", "направо", "далеко"],
+      "answer_index": 1,
+      "explanation": "მარჯვენა — направо, правый.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q05",
+      "lemma": "პირდაპირ",
+      "question": "Как по-грузински «прямо»?",
+      "options": ["ახლოს", "პირდაპირ", "მოუხვიე"],
+      "answer_index": 1,
+      "explanation": "«Прямо» — პირდაპირ.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q06",
+      "lemma": "პირდაპირ",
+      "question": "Что означает «პირდაპირ»?",
+      "options": ["близко", "поверни", "прямо"],
+      "answer_index": 2,
+      "explanation": "პირდაპირ — прямо.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q07",
+      "lemma": "მოუხვიე",
+      "question": "Как по-грузински «поверни»?",
+      "options": ["გააჩერე", "მოუხვიე", "პირდაპირ"],
+      "answer_index": 1,
+      "explanation": "«Поверни» — მოუხვიე.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q08",
+      "lemma": "მოუხვიე",
+      "question": "Что означает «მოუხვიე»?",
+      "options": ["останови", "поверни", "прямо"],
+      "answer_index": 1,
+      "explanation": "მოუხვიე — поверни.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q09",
+      "lemma": "გააჩერე",
+      "question": "Как сказать таксисту «останови здесь»?",
+      "options": ["მოუხვიე", "პირდაპირ", "გააჩერე"],
+      "answer_index": 2,
+      "explanation": "«Останови здесь» — გააჩერე.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q10",
+      "lemma": "გააჩერე",
+      "question": "Что означает «გააჩერე»?",
+      "options": ["останови", "поверни", "налево"],
+      "answer_index": 0,
+      "explanation": "გააჩერე — останови (здесь).",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q11",
+      "lemma": "შორს",
+      "question": "Как по-грузински «далеко»?",
+      "options": ["ახლოს", "შორს", "პირდაპირ"],
+      "answer_index": 1,
+      "explanation": "«Далеко» — შორს.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q12",
+      "lemma": "შორს",
+      "question": "Что означает «შორს»?",
+      "options": ["близко", "далеко", "прямо"],
+      "answer_index": 1,
+      "explanation": "შორს — далеко.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q13",
+      "lemma": "ახლოს",
+      "question": "Как по-грузински «близко»?",
+      "options": ["შორს", "ახლოს", "მარცხენა"],
+      "answer_index": 1,
+      "explanation": "«Близко» — ახლოს.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q14",
+      "lemma": "ახლოს",
+      "question": "Что означает «ახლოს»?",
+      "options": ["далеко", "направо", "близко"],
+      "answer_index": 2,
+      "explanation": "ახლოს — близко.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi2_q15",
+      "lemma": "მოუხვიე",
+      "question": "Вы в такси. Нужно повернуть налево. Что скажете?",
+      "options": ["გააჩერე მარცხენა", "მოუხვიე მარცხენა", "პირდაპირ მარცხენა"],
+      "answer_index": 1,
+      "explanation": "«Поверни налево» — მოუხვიე მარცხენა.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi2_q16",
+      "lemma": "შორს",
+      "question": "Что является антонимом к «ახლოს»?",
+      "options": ["პირდაპირ", "შორს", "მარჯვენა"],
+      "answer_index": 1,
+      "explanation": "ახლოს (близко) — антоним შორს (далеко).",
+      "tags": ["antonym"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi2_q17",
+      "lemma": "მარცხენა",
+      "question": "Что является антонимом к «მარჯვენა»?",
+      "options": ["პირდაპირ", "შორს", "მარცხენა"],
+      "answer_index": 2,
+      "explanation": "მარჯვენა (направо) — антоним მარცხენა (налево).",
+      "tags": ["antonym"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi2_q18",
+      "lemma": "გააჩერე",
+      "question": "Вы приехали на место. Что скажете водителю?",
+      "options": ["მოუხვიე", "პირდაპირ", "გააჩერე"],
+      "answer_index": 2,
+      "explanation": "Чтобы остановить такси — გააჩერე.",
+      "tags": ["context"],
+      "difficulty": 2
+    }
+  ]
+}

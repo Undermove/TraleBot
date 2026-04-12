@@ -74,17 +74,30 @@ public class MiniAppController : Controller
                 return NotFound(new { error = "Unknown lesson" });
             }
             var loader = _questionsLoaderFactory.CreateForLesson(lessonId);
-            var questions = loader.LoadQuestionsForLesson(lessonId);
-            var dto = questions.Select(q => new
+            return Ok(MapQuestions(loader, lessonId));
+        }
+
+        var moduleMap = new Dictionary<string, (string dir, int maxLesson)>
+        {
+            ["cases"] = ("GeorgianCases", 8),
+            ["pronouns"] = ("GeorgianPronouns", 5),
+            ["present-tense"] = ("GeorgianPresentTense", 5),
+            ["cafe"] = ("GeorgianVocabCafe", 5),
+            ["taxi"] = ("GeorgianVocabTaxi", 5),
+            ["doctor"] = ("GeorgianVocabDoctor", 5),
+            ["shopping"] = ("GeorgianVocabShopping", 5),
+            ["intro"] = ("GeorgianVocabIntro", 5),
+            ["emergency"] = ("GeorgianVocabEmergency", 5),
+        };
+
+        if (moduleMap.TryGetValue(moduleId, out var info))
+        {
+            if (lessonId < 1 || lessonId > info.maxLesson)
             {
-                id = q.Id,
-                lemma = q.Lemma,
-                question = q.Question,
-                options = q.Options,
-                answerIndex = q.AnswerIndex,
-                explanation = q.Explanation
-            });
-            return Ok(dto);
+                return NotFound(new { error = "Unknown lesson" });
+            }
+            var loader = _questionsLoaderFactory.CreateForModuleLesson(info.dir, lessonId);
+            return Ok(MapQuestions(loader, lessonId));
         }
 
         return NotFound(new { error = "Unknown module" });
@@ -196,6 +209,19 @@ public class MiniAppController : Controller
         {
             xpEarned,
             progress = SerializeProgress(progress)
+        });
+    }
+
+    private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader, int lessonId)
+    {
+        return loader.LoadQuestionsForLesson(lessonId).Select(q => new
+        {
+            id = q.Id,
+            lemma = q.Lemma,
+            question = q.Question,
+            options = q.Options,
+            answerIndex = q.AnswerIndex,
+            explanation = q.Explanation
         });
     }
 

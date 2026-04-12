@@ -10,19 +10,19 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
     private readonly ILogger<GeorgianQuestionsLoader> _logger;
     private readonly string _fileName;
 
-    public GeorgianQuestionsLoader(ILogger<GeorgianQuestionsLoader> logger, string fileName = "questions.json")
+    public GeorgianQuestionsLoader(ILogger<GeorgianQuestionsLoader> logger, string fileName = "questions.json", string subdirectory = "GeorgianVerbsOfMovement")
     {
         _logger = logger;
         _fileName = fileName;
-        
+
         // Try to find questions file in multiple locations
         var contentRoots = new[]
         {
-            Path.Combine(AppContext.BaseDirectory, "GeorgianVerbsOfMovement", _fileName),
-            Path.Combine(AppContext.BaseDirectory, "..", "..", "Trale", "GeorgianVerbsOfMovement", _fileName),
-            Path.Combine(Environment.CurrentDirectory, "GeorgianVerbsOfMovement", _fileName),
-            Path.Combine(Environment.CurrentDirectory, "..", "..", "Trale", "GeorgianVerbsOfMovement", _fileName),
-            Path.Combine(AppContext.BaseDirectory, "src", "Trale", "GeorgianVerbsOfMovement", _fileName),
+            Path.Combine(AppContext.BaseDirectory, subdirectory, _fileName),
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "Trale", subdirectory, _fileName),
+            Path.Combine(Environment.CurrentDirectory, subdirectory, _fileName),
+            Path.Combine(Environment.CurrentDirectory, "..", "..", "Trale", subdirectory, _fileName),
+            Path.Combine(AppContext.BaseDirectory, "src", "Trale", subdirectory, _fileName),
         };
 
         _questionsFilePath = contentRoots.FirstOrDefault(File.Exists) ?? _fileName;

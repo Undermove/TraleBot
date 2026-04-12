@@ -1,0 +1,194 @@
+{
+  "lesson_id": "taxi-1",
+  "title": "Транспорт",
+  "lexicon": [
+    {"lemma": "ტაქსი", "ru": "такси"},
+    {"lemma": "ავტობუსი", "ru": "автобус"},
+    {"lemma": "მეტრო", "ru": "метро"},
+    {"lemma": "გაჩერება", "ru": "остановка"},
+    {"lemma": "სადგური", "ru": "станция, вокзал"},
+    {"lemma": "ბილეთი", "ru": "билет"}
+  ],
+  "questions": [
+    {
+      "id": "taxi1_q01",
+      "lemma": "ტაქსი",
+      "question": "Как по-грузински «такси»?",
+      "options": ["ავტობუსი", "ტაქსი", "მეტრო"],
+      "answer_index": 1,
+      "explanation": "«Такси» по-грузински — ტაქსი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q02",
+      "lemma": "ტაქსი",
+      "question": "Что означает «ტაქსი»?",
+      "options": ["автобус", "метро", "такси"],
+      "answer_index": 2,
+      "explanation": "ტაქსი — это такси.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q03",
+      "lemma": "ავტობუსი",
+      "question": "Как по-грузински «автобус»?",
+      "options": ["ავტობუსი", "ტაქსი", "ბილეთი"],
+      "answer_index": 0,
+      "explanation": "«Автобус» — ავტობუსი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q04",
+      "lemma": "ავტობუსი",
+      "question": "Что означает «ავტობუსი»?",
+      "options": ["остановка", "автобус", "билет"],
+      "answer_index": 1,
+      "explanation": "ავტობუსი — это автобус.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q05",
+      "lemma": "მეტრო",
+      "question": "Как по-грузински «метро»?",
+      "options": ["სადგური", "მეტრო", "გაჩერება"],
+      "answer_index": 1,
+      "explanation": "«Метро» — მეტრო.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q06",
+      "lemma": "მეტრო",
+      "question": "Что означает «მეტრო»?",
+      "options": ["метро", "станция", "такси"],
+      "answer_index": 0,
+      "explanation": "მეტრო — это метро.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q07",
+      "lemma": "გაჩერება",
+      "question": "Как по-грузински «остановка»?",
+      "options": ["ბილეთი", "გაჩერება", "სადგური"],
+      "answer_index": 1,
+      "explanation": "«Остановка» — გაჩერება.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q08",
+      "lemma": "გაჩერება",
+      "question": "Что означает «გაჩერება»?",
+      "options": ["станция", "билет", "остановка"],
+      "answer_index": 2,
+      "explanation": "გაჩერება — это остановка.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q09",
+      "lemma": "სადგური",
+      "question": "Как по-грузински «станция»?",
+      "options": ["სადგური", "გაჩერება", "მეტრო"],
+      "answer_index": 0,
+      "explanation": "«Станция» — სადგური.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q10",
+      "lemma": "სადგური",
+      "question": "Что означает «სადგური»?",
+      "options": ["остановка", "станция", "метро"],
+      "answer_index": 1,
+      "explanation": "სადგური — станция, вокзал.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q11",
+      "lemma": "ბილეთი",
+      "question": "Как по-грузински «билет»?",
+      "options": ["ტაქსი", "გაჩერება", "ბილეთი"],
+      "answer_index": 2,
+      "explanation": "«Билет» — ბილეთი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q12",
+      "lemma": "ბილეთი",
+      "question": "Что означает «ბილეთი»?",
+      "options": ["билет", "такси", "автобус"],
+      "answer_index": 0,
+      "explanation": "ბილეთი — это билет.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi1_q13",
+      "lemma": "ტაქსი",
+      "question": "Вы хотите вызвать такси. Какое слово нужно?",
+      "options": ["ბილეთი", "ტაქსი", "გაჩერება"],
+      "answer_index": 1,
+      "explanation": "Чтобы вызвать такси — ტაქსი.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi1_q14",
+      "lemma": "ბილეთი",
+      "question": "Что нужно купить, чтобы ехать на автобусе?",
+      "options": ["სადგური", "გაჩერება", "ბილეთი"],
+      "answer_index": 2,
+      "explanation": "Для поездки на автобусе нужен ბილეთი — билет.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi1_q15",
+      "lemma": "გაჩერება",
+      "question": "Где ждут автобус?",
+      "options": ["გაჩერება", "სადგური", "მეტრო"],
+      "answer_index": 0,
+      "explanation": "Автобус ждут на გაჩერება — остановке.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi1_q16",
+      "lemma": "სადგური",
+      "question": "Откуда отправляются поезда?",
+      "options": ["გაჩერება", "მეტრო", "სადგური"],
+      "answer_index": 2,
+      "explanation": "Поезда отправляются с სადგური — станции/вокзала.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi1_q17",
+      "lemma": "მეტრო",
+      "question": "Какой вид транспорта едет под землёй?",
+      "options": ["ავტობუსი", "ტაქსი", "მეტრო"],
+      "answer_index": 2,
+      "explanation": "Под землёй ходит მეტრო — метро.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi1_q18",
+      "lemma": "ავტობუსი",
+      "question": "Какой транспорт ходит по маршруту с остановками?",
+      "options": ["ტაქსი", "ავტობუსი", "მეტრო"],
+      "answer_index": 1,
+      "explanation": "По маршруту с остановками ходит ავტობუსი — автобус.",
+      "tags": ["context"],
+      "difficulty": 2
+    }
+  ]
+}

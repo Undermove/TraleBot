@@ -1,9 +1,10 @@
 import React from 'react'
 import Mascot from '../components/Mascot'
 import Button from '../components/Button'
-import { Screen } from '../types'
+import { CatalogDto, Screen } from '../types'
 
 interface Props {
+  catalog: CatalogDto
   moduleId: string
   lessonId: number
   correct: number
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function Result({
+  catalog,
   moduleId,
   lessonId,
   correct,
@@ -21,6 +23,10 @@ export default function Result({
   navigate
 }: Props) {
   const pct = Math.round((correct / total) * 100)
+
+  // Find next lesson for "Next Lesson" button
+  const module = catalog.modules.find((m) => m.id === moduleId)
+  const nextLesson = module?.lessons.find((l) => l.id === lessonId + 1) ?? null
   const isGreat = pct >= 80
   const isOK = pct >= 50 && !isGreat
 
@@ -90,7 +96,7 @@ export default function Result({
         {/* Stats — three jewel tiles */}
         <div className="w-full grid grid-cols-3 gap-3 mt-8">
           <StatTile label="верно" value={`${correct}/${total}`} accent="navy" />
-          <StatTile label="xp" value={`+${xpEarned}`} accent="ruby" />
+          <StatTile label="опыт" value={`+${xpEarned}`} accent="ruby" />
           <StatTile label="точность" value={`${pct}%`} accent="gold" />
         </div>
 
@@ -124,12 +130,23 @@ export default function Result({
           </>
         ) : (
           <>
-            <Button
-              variant="primary"
-              onClick={() => navigate({ kind: 'module', moduleId })}
-            >
-              к карте уроков →
-            </Button>
+            {isGreat && nextLesson ? (
+              <Button
+                variant="green"
+                onClick={() =>
+                  navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })
+                }
+              >
+                следующий урок →
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={() => navigate({ kind: 'module', moduleId })}
+              >
+                к карте уроков →
+              </Button>
+            )}
             <Button
               variant="ghost"
               onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}

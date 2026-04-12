@@ -80,6 +80,29 @@ Main configuration files:
 - `src/Trale/appsettings.local.json` - Local overrides (create from example)
 - `src/Trale/appsettings.example.json` - Configuration template
 
+## Mini-App (Бомбора)
+
+Frontend mini-app lives in `src/Trale/miniapp-src/` (React 18 + Vite + TypeScript + TailwindCSS).
+
+### After every frontend change:
+1. Run a quick UX review of affected screens — check layout, tap targets, text overflow, progress indicators
+2. Verify the change works on narrow screens (375px width)
+3. If adding new modules or screens — check they integrate properly into navigation, back button, and progress tracking
+4. Suggest UX improvements if you spot issues (grouping, flow, feedback, accessibility)
+
+### Design system: Minankari
+- Colors: cream, jewelInk, navy, ruby, gold
+- Font: Manrope + Noto Sans Georgian
+- Components: jewel-tile, jewel-btn, KilimProgress, LoaderLetter
+- No ethnic accent imitation in UI copy
+- Always «мини-апп», never «мини-аб»
+
+### Content modules
+- Questions stored in `src/Trale/Georgian*/questions*.json`
+- Theory in `src/Trale/MiniApp/MiniAppContentProvider.cs`
+- Routing in `src/Trale/Controllers/MiniAppController.cs`
+- Question loader: `GeorgianQuestionsLoader` with subdirectory parameter
+
 ## Testing Strategy
 
 - **Unit Tests**: Application layer business logic, domain entities, infrastructure parsers

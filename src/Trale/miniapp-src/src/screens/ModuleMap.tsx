@@ -37,15 +37,35 @@ export default function ModuleMap({
   const done = completed.size
   const firstIncomplete = lessons.find((l) => !completed.has(l.id))?.id ?? -1
 
-  const geoLabel =
-    module.id === 'alphabet'
-      ? 'ანბანი'
-      : module.id === 'verbs-of-movement'
-      ? 'ზმნები'
-      : module.title
+  const geoLabels: Record<string, string> = {
+    'alphabet': 'ანბანი',
+    'verbs-of-movement': 'ზმნები',
+    'cases': 'ბრუნვები',
+    'pronouns': 'ნაცვალსახელები',
+    'present-tense': 'აწმყო',
+    'cafe': 'კაფე',
+    'taxi': 'ტაქსი',
+    'doctor': 'ექიმი',
+    'shopping': 'მაღაზია',
+    'intro': 'გაცნობა',
+    'emergency': 'დახმარება',
+  }
+  const geoLabel = geoLabels[module.id] ?? module.title
 
-  const accent: 'navy' | 'ruby' | 'gold' =
-    module.id === 'alphabet' ? 'navy' : module.id === 'verbs-of-movement' ? 'ruby' : 'gold'
+  const accentMap: Record<string, 'navy' | 'ruby' | 'gold'> = {
+    'alphabet': 'navy',
+    'verbs-of-movement': 'ruby',
+    'cases': 'navy',
+    'pronouns': 'ruby',
+    'present-tense': 'navy',
+    'cafe': 'gold',
+    'taxi': 'ruby',
+    'doctor': 'ruby',
+    'shopping': 'gold',
+    'intro': 'navy',
+    'emergency': 'ruby',
+  }
+  const accent = accentMap[module.id] ?? 'gold'
 
   const accentBg =
     accent === 'navy' ? 'bg-navy' : accent === 'ruby' ? 'bg-ruby' : 'bg-gold'
@@ -55,6 +75,18 @@ export default function ModuleMap({
       : accent === 'ruby'
       ? 'text-ruby'
       : 'text-gold-deep'
+
+  const accentHex =
+    accent === 'navy' ? '#1B5FB0' : accent === 'ruby' ? '#E01A3C' : '#F5B820'
+  const accentWashHex =
+    accent === 'navy' ? '#C9DBF0' : accent === 'ruby' ? '#F7D4DB' : '#F9EAC1'
+
+  // Path layout constants
+  const CIRCLE_SIZE = 56
+  const ROW_GAP = 28 // vertical gap between circle centers beyond circle size
+  const STEP_Y = CIRCLE_SIZE + ROW_GAP
+  const SIDE_OFFSET = 52 // how far left/right circles shift from center
+  const totalHeight = (lessons.length - 1) * STEP_Y + CIRCLE_SIZE
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
@@ -95,15 +127,102 @@ export default function ModuleMap({
           </div>
         </div>
 
-        {/* Lesson list */}
+        {/* Journey path map */}
         <div className="mn-eyebrow mb-3">уроки</div>
-        <ol className="flex flex-col gap-2.5">
+        <div
+          className="relative mx-auto"
+          style={{
+            height: totalHeight,
+            maxWidth: 340,
+            width: '100%'
+          }}
+        >
+          {/* SVG connecting lines */}
+          <svg
+            className="absolute inset-0 pointer-events-none"
+            width="100%"
+            height={totalHeight}
+            viewBox={`0 0 340 ${totalHeight}`}
+            preserveAspectRatio="xMidYMid meet"
+            fill="none"
+          >
+            {lessons.map((_, idx) => {
+              if (idx === lessons.length - 1) return null
+              const isEven = idx % 2 === 0
+              const nextIsEven = (idx + 1) % 2 === 0
+              const centerX = 170
+              const x1 = centerX + (isEven ? -SIDE_OFFSET : SIDE_OFFSET)
+              const y1 = idx * STEP_Y + CIRCLE_SIZE / 2
+              const x2 = centerX + (nextIsEven ? -SIDE_OFFSET : SIDE_OFFSET)
+              const y2 = (idx + 1) * STEP_Y + CIRCLE_SIZE / 2
+
+              // Quadratic bezier for a gentle curve
+              const cpX = (x1 + x2) / 2
+              const cpY = (y1 + y2) / 2
+
+              const nextIsDone = completed.has(lessons[idx + 1].id)
+              const currentIsDone = completed.has(lessons[idx].id)
+              const segmentDone = currentIsDone && nextIsDone
+              const segmentColor = segmentDone ? accentHex : '#B5A68B'
+
+              return (
+                <path
+                  key={`line-${idx}`}
+                  d={`M ${x1} ${y1} Q ${cpX} ${y1 + (y2 - y1) * 0.15} ${cpX} ${cpY} Q ${cpX} ${y2 - (y2 - y1) * 0.15} ${x2} ${y2}`}
+                  stroke={segmentColor}
+                  strokeWidth="2.5"
+                  strokeDasharray="6 5"
+                  strokeLinecap="round"
+                  opacity={segmentDone ? 0.7 : 0.4}
+                />
+              )
+            })}
+          </svg>
+
+          {/* Lesson circles + labels */}
           {lessons.map((lesson, idx) => {
             const isDone = completed.has(lesson.id)
             const isCurrent = lesson.id === firstIncomplete
+            const isEven = idx % 2 === 0
+            const topY = idx * STEP_Y
+
+            // Circle positioning: even = left of center, odd = right
+            const circleLeft = isEven
+              ? `calc(50% - ${SIDE_OFFSET + CIRCLE_SIZE / 2}px)`
+              : `calc(50% + ${SIDE_OFFSET - CIRCLE_SIZE / 2}px)`
+
+            // Label on opposite side of circle
+            const labelOnRight = isEven
+            const labelStyle: React.CSSProperties = labelOnRight
+              ? {
+                  left: `calc(50% - ${SIDE_OFFSET - CIRCLE_SIZE / 2 - 14}px)`,
+                  right: 0,
+                  textAlign: 'left' as const
+                }
+              : {
+                  left: 0,
+                  right: `calc(50% - ${SIDE_OFFSET - CIRCLE_SIZE / 2 - 14}px)`,
+                  textAlign: 'right' as const
+                }
+
+            const circleBg = isDone
+              ? 'bg-navy'
+              : isCurrent
+              ? accentBg
+              : 'bg-cream-deep'
+
+            const circleBorder = isDone || isCurrent
+              ? 'border-jewelInk'
+              : 'border-jewelInk/50'
+
+            const circleShadow =
+              isDone || isCurrent
+                ? '2px 2px 0 #15100A'
+                : '1px 1px 0 rgba(21,16,10,0.25)'
 
             return (
-              <li key={lesson.id}>
+              <div key={lesson.id} className="absolute" style={{ top: topY, left: 0, right: 0, height: CIRCLE_SIZE }}>
+                {/* Tappable circle */}
                 <button
                   onClick={() =>
                     navigate({
@@ -112,71 +231,77 @@ export default function ModuleMap({
                       lessonId: lesson.id
                     })
                   }
-                  className="jewel-tile jewel-pressable w-full text-left px-4 py-4 flex items-center gap-3.5"
+                  className={`absolute ${circleBg} border-[1.5px] ${circleBorder} rounded-full flex items-center justify-center transition-transform active:scale-95`}
+                  style={{
+                    width: CIRCLE_SIZE,
+                    height: CIRCLE_SIZE,
+                    top: 0,
+                    left: circleLeft,
+                    boxShadow: circleShadow,
+                    WebkitTapHighlightColor: 'transparent'
+                  }}
                 >
-                  {/* Lesson number medallion */}
-                  <div className="shrink-0 relative z-[1]">
-                    <div
-                      className={`w-12 h-12 rounded-xl border-[1.5px] border-jewelInk flex items-center justify-center ${
-                        isDone
-                          ? 'bg-navy'
-                          : isCurrent
-                          ? 'bg-gold'
-                          : 'bg-cream-deep'
+                  {isDone ? (
+                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none">
+                      <path
+                        d="M4 10 L8 14 L16 5"
+                        stroke="#FBF6EC"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : (
+                    <span
+                      className={`font-sans text-[20px] font-extrabold tabular-nums leading-none ${
+                        isCurrent ? 'text-jewelInk' : 'text-jewelInk/60'
                       }`}
-                      style={{ boxShadow: '2px 2px 0 #15100A' }}
                     >
-                      {isDone ? (
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                          <path
-                            d="M4 10 L8 14 L16 5"
-                            stroke="#FBF6EC"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      ) : (
-                        <span
-                          className={`font-sans text-[18px] font-extrabold tabular-nums leading-none ${
-                            isCurrent ? 'text-jewelInk' : 'text-jewelInk-mid'
-                          }`}
-                        >
-                          {lesson.id}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 min-w-0 relative z-[1]">
-                    <div className="font-sans text-[16px] font-bold text-jewelInk leading-tight">
-                      {lesson.title}
-                    </div>
-                    <div className="font-sans text-[12px] text-jewelInk-mid mt-0.5 leading-snug line-clamp-1">
-                      {lesson.short}
-                    </div>
-                  </div>
-
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="shrink-0 text-navy relative z-[1]"
-                  >
-                    <path
-                      d="M8 5 L16 12 L8 19"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
+                      {lesson.id}
+                    </span>
+                  )}
                 </button>
-              </li>
+
+                {/* Label next to circle */}
+                <button
+                  onClick={() =>
+                    navigate({
+                      kind: 'lesson-theory',
+                      moduleId,
+                      lessonId: lesson.id
+                    })
+                  }
+                  className="absolute flex flex-col justify-center"
+                  style={{
+                    top: 0,
+                    height: CIRCLE_SIZE,
+                    ...labelStyle,
+                    WebkitTapHighlightColor: 'transparent'
+                  }}
+                >
+                  <div
+                    className={`font-sans text-[14px] font-bold leading-tight ${
+                      isDone
+                        ? 'text-jewelInk'
+                        : isCurrent
+                        ? 'text-jewelInk'
+                        : 'text-jewelInk-mid'
+                    }`}
+                  >
+                    {lesson.title}
+                  </div>
+                  <div
+                    className={`font-sans text-[11px] leading-snug mt-0.5 line-clamp-1 ${
+                      isDone || isCurrent ? 'text-jewelInk-mid' : 'text-jewelInk-hint'
+                    }`}
+                  >
+                    {lesson.short}
+                  </div>
+                </button>
+              </div>
             )
           })}
-        </ol>
+        </div>
 
         <div className="mt-8 text-center">
           <div className="mn-eyebrow text-jewelInk-mid">

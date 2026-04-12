@@ -300,6 +300,30 @@ export default function VocabularyPractice({
         className="flex-1 px-5 pt-6"
         style={{ paddingBottom: 'calc(var(--safe-b) + 110px)' }}
       >
+        {/* Round indicator */}
+        {(() => {
+          const wordsPerRound = Math.max(1, Math.floor(total / 4))
+          const currentRound = Math.min(4, Math.floor(index / wordsPerRound) + 1)
+          return (
+            <div className="flex items-center gap-2 mb-3">
+              {[1, 2, 3, 4].map((r) => (
+                <div
+                  key={r}
+                  className={`h-1.5 flex-1 rounded-full transition-all ${
+                    r < currentRound
+                      ? 'bg-navy'
+                      : r === currentRound
+                      ? 'bg-gold'
+                      : 'bg-cream-deep border border-jewelInk/15'
+                  }`}
+                />
+              ))}
+              <span className="font-sans text-[11px] font-bold text-jewelInk-mid ml-1">
+                раунд {currentRound}/4
+              </span>
+            </div>
+          )
+        })()}
         <div className="mn-eyebrow mb-2">{current.roundLabel}</div>
 
         {current.type === 'multi-choice' && current.direction === 'ge-to-ru' ? (
