@@ -1,0 +1,197 @@
+{
+  "lesson_id": "shopping-1",
+  "title": "Еда: мясо, рыба, овощи, фрукты и базовые продукты",
+  "lexicon": [
+    "ხორცი — мясо",
+    "თევზი — рыба",
+    "ბოსტნეული — овощи",
+    "ხილი — фрукты",
+    "რძე — молоко",
+    "კვერცხი — яйцо",
+    "კარაქი — масло (сливочное)",
+    "შაქარი — сахар",
+    "მარილი — соль"
+  ],
+  "questions": [
+    {
+      "id": "shop1-q1",
+      "lemma": "ხორცი",
+      "question": "Как переводится «ხორცი»?",
+      "options": ["Мясо", "Рыба", "Молоко"],
+      "answer_index": 0,
+      "explanation": "ხორცი — это «мясо».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q2",
+      "lemma": "თევზი",
+      "question": "Как переводится «თევზი»?",
+      "options": ["Овощи", "Рыба", "Яйцо"],
+      "answer_index": 1,
+      "explanation": "თევზი — это «рыба».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q3",
+      "lemma": "ბოსტნეული",
+      "question": "Как переводится «ბოსტნეული»?",
+      "options": ["Фрукты", "Сахар", "Овощи"],
+      "answer_index": 2,
+      "explanation": "ბოსტნეული — это «овощи».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q4",
+      "lemma": "ხილი",
+      "question": "Как переводится «ხილი»?",
+      "options": ["Фрукты", "Масло", "Соль"],
+      "answer_index": 0,
+      "explanation": "ხილი — это «фрукты».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q5",
+      "lemma": "რძე",
+      "question": "Как переводится «რძე»?",
+      "options": ["Сахар", "Молоко", "Мясо"],
+      "answer_index": 1,
+      "explanation": "რძე — это «молоко».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q6",
+      "lemma": "კვერცხი",
+      "question": "Как переводится «კვერცხი»?",
+      "options": ["Рыба", "Соль", "Яйцо"],
+      "answer_index": 2,
+      "explanation": "კვერცხი — это «яйцо».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q7",
+      "lemma": "კარაქი",
+      "question": "Как переводится «კარაქი»?",
+      "options": ["Масло", "Сахар", "Овощи"],
+      "answer_index": 0,
+      "explanation": "კარაქი — это «сливочное масло».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q8",
+      "lemma": "შაქარი",
+      "question": "Как переводится «შაქარი»?",
+      "options": ["Молоко", "Сахар", "Фрукты"],
+      "answer_index": 1,
+      "explanation": "შაქარი — это «сахар».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q9",
+      "lemma": "მარილი",
+      "question": "Как переводится «მარილი»?",
+      "options": ["Мясо", "Яйцо", "Соль"],
+      "answer_index": 2,
+      "explanation": "მარილი — это «соль».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q10",
+      "lemma": "ხორცი",
+      "question": "Как будет «мясо» по-грузински?",
+      "options": ["თევზი", "ხორცი", "კარაქი"],
+      "answer_index": 1,
+      "explanation": "Мясо по-грузински — ხორცი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop1-q11",
+      "lemma": "თევზი",
+      "question": "Как будет «рыба» по-грузински?",
+      "options": ["თევზი", "ხილი", "რძე"],
+      "answer_index": 0,
+      "explanation": "Рыба по-грузински — თევზი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop1-q12",
+      "lemma": "რძე",
+      "question": "Как будет «молоко» по-грузински?",
+      "options": ["მარილი", "შაქარი", "რძე"],
+      "answer_index": 2,
+      "explanation": "Молоко по-грузински — რძე.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop1-q13",
+      "lemma": "კვერცხი",
+      "question": "Как будет «яйцо» по-грузински?",
+      "options": ["კვერცხი", "ხორცი", "ბოსტნეული"],
+      "answer_index": 0,
+      "explanation": "Яйцо по-грузински — კვერცხი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop1-q14",
+      "lemma": "მარილი",
+      "question": "Как будет «соль» по-грузински?",
+      "options": ["შაქარი", "მარილი", "კარაქი"],
+      "answer_index": 1,
+      "explanation": "Соль по-грузински — მარილი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop1-q15",
+      "lemma": "ხორცი",
+      "question": "Что из этого НЕ является продуктом животного происхождения?",
+      "options": ["ხორცი", "კვერცხი", "ბოსტნეული"],
+      "answer_index": 2,
+      "explanation": "ბოსტნეული — «овощи», это растительный продукт. ხორცი (мясо) и კვერცხი (яйцо) — животного происхождения.",
+      "tags": ["logic"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop1-q16",
+      "lemma": "შაქარი",
+      "question": "Какое слово означает «сахар»?",
+      "options": ["მარილი", "კარაქი", "შაქარი"],
+      "answer_index": 2,
+      "explanation": "შაქარი — «сахар». მარილი — «соль», კარაქი — «масло».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "shop1-q17",
+      "lemma": "კარაქი",
+      "question": "Как будет «масло» (сливочное) по-грузински?",
+      "options": ["რძე", "კარაქი", "ხილი"],
+      "answer_index": 1,
+      "explanation": "Сливочное масло — კარაქი.",
+      "tags": ["reverse"],
+      "difficulty": 2
+    },
+    {
+      "id": "shop1-q18",
+      "lemma": "ხილი",
+      "question": "Что из этого означает «фрукты»?",
+      "options": ["ბოსტნეული", "თევზი", "ხილი"],
+      "answer_index": 2,
+      "explanation": "ხილი — «фрукты». ბოსტნეული — «овощи», თევზი — «рыба».",
+      "tags": ["meaning"],
+      "difficulty": 1
+    }
+  ]
+}

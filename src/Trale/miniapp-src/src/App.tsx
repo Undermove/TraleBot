@@ -161,6 +161,7 @@ export default function App() {
     case 'result':
       return (
         <Result
+          catalog={catalog}
           moduleId={screen.moduleId}
           lessonId={screen.lessonId}
           correct={screen.correct}

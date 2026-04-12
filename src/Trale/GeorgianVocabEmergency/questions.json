@@ -1,0 +1,187 @@
+{
+  "lesson_id": "emergency-1",
+  "title": "Ключевые слова",
+  "lexicon": ["დახმარება", "პოლიცია", "საავადმყოფო", "ხანძარი", "საშიშროება", "ქურდი"],
+  "questions": [
+    {
+      "id": "emrg1-01",
+      "lemma": "დახმარება",
+      "question": "Как переводится «დახმარება»?",
+      "options": ["помощь", "полиция", "опасность"],
+      "answer_index": 0,
+      "explanation": "«დახმარება» — помощь",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-02",
+      "lemma": "პოლიცია",
+      "question": "Как переводится «პოლიცია»?",
+      "options": ["больница", "полиция", "пожар"],
+      "answer_index": 1,
+      "explanation": "«პოლიცია» — полиция",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-03",
+      "lemma": "საავადმყოფო",
+      "question": "Как переводится «საავადმყოფო»?",
+      "options": ["вор", "помощь", "больница"],
+      "answer_index": 2,
+      "explanation": "«საავადმყოფო» — больница",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-04",
+      "lemma": "ხანძარი",
+      "question": "Как переводится «ხანძარი»?",
+      "options": ["пожар", "полиция", "опасность"],
+      "answer_index": 0,
+      "explanation": "«ხანძარი» — пожар",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-05",
+      "lemma": "საშიშროება",
+      "question": "Как переводится «საშიშროება»?",
+      "options": ["больница", "помощь", "опасность"],
+      "answer_index": 2,
+      "explanation": "«საშიშროება» — опасность",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-06",
+      "lemma": "ქურდი",
+      "question": "Как переводится «ქურდი»?",
+      "options": ["вор", "пожар", "полиция"],
+      "answer_index": 0,
+      "explanation": "«ქურდი» — вор",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-07",
+      "lemma": "დახმარება",
+      "question": "Как будет «помощь» по-грузински?",
+      "options": ["საშიშროება", "დახმარება", "ხანძარი"],
+      "answer_index": 1,
+      "explanation": "Помощь — «დახმარება»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-08",
+      "lemma": "პოლიცია",
+      "question": "Как будет «полиция» по-грузински?",
+      "options": ["პოლიცია", "ქურდი", "საავადმყოფო"],
+      "answer_index": 0,
+      "explanation": "Полиция — «პოლიცია»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-09",
+      "lemma": "საავადმყოფო",
+      "question": "Как будет «больница» по-грузински?",
+      "options": ["ხანძარი", "საშიშროება", "საავადმყოფო"],
+      "answer_index": 2,
+      "explanation": "Больница — «საავადმყოფო»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-10",
+      "lemma": "ხანძარი",
+      "question": "Как будет «пожар» по-грузински?",
+      "options": ["პოლიცია", "ხანძარი", "დახმარება"],
+      "answer_index": 1,
+      "explanation": "Пожар — «ხანძარი»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-11",
+      "lemma": "საშიშროება",
+      "question": "Как будет «опасность» по-грузински?",
+      "options": ["საშიშროება", "ქურდი", "პოლიცია"],
+      "answer_index": 0,
+      "explanation": "Опасность — «საშიშროება»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-12",
+      "lemma": "ქურდი",
+      "question": "Как будет «вор» по-грузински?",
+      "options": ["დახმარება", "საავადმყოფო", "ქურდი"],
+      "answer_index": 2,
+      "explanation": "Вор — «ქურდი»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg1-13",
+      "lemma": "დახმარება",
+      "question": "Вы попали в беду. Какое слово вам нужно?",
+      "options": ["ხანძარი", "დახმარება", "ქურდი"],
+      "answer_index": 1,
+      "explanation": "«დახმარება» — помощь, именно это слово нужно в беде",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg1-14",
+      "lemma": "ხანძარი",
+      "question": "В здании горит огонь. Что это?",
+      "options": ["საშიშროება", "პოლიცია", "ხანძარი"],
+      "answer_index": 2,
+      "explanation": "«ხანძარი» — пожар",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg1-15",
+      "lemma": "საავადმყოფო",
+      "question": "Человеку стало плохо. Куда его везут?",
+      "options": ["საავადმყოფო", "პოლიცია", "საშიშროება"],
+      "answer_index": 0,
+      "explanation": "«საავადმყოფო» — больница",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg1-16",
+      "lemma": "ქურდი",
+      "question": "Кто-то украл вашу сумку. Кто это?",
+      "options": ["ხანძარი", "დახმარება", "ქურდი"],
+      "answer_index": 2,
+      "explanation": "«ქურდი» — вор",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg1-17",
+      "lemma": "პოლიცია",
+      "question": "Произошло преступление. Кого вызвать?",
+      "options": ["საავადმყოფო", "პოლიცია", "საშიშროება"],
+      "answer_index": 1,
+      "explanation": "«პოლიცია» — полиция",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg1-18",
+      "lemma": "საშიშროება",
+      "question": "Знак с восклицательным знаком предупреждает о чём?",
+      "options": ["დახმარება", "საშიშროება", "პოლიცია"],
+      "answer_index": 1,
+      "explanation": "«საშიშროება» — опасность",
+      "tags": ["context"],
+      "difficulty": 2
+    }
+  ]
+}

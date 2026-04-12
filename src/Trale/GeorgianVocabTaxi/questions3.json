@@ -1,0 +1,196 @@
+{
+  "lesson_id": "taxi-3",
+  "title": "Места в городе",
+  "lexicon": [
+    {"lemma": "ქუჩა", "ru": "улица"},
+    {"lemma": "მოედანი", "ru": "площадь"},
+    {"lemma": "ხიდი", "ru": "мост"},
+    {"lemma": "ეკლესია", "ru": "церковь"},
+    {"lemma": "მუზეუმი", "ru": "музей"},
+    {"lemma": "პარკი", "ru": "парк"},
+    {"lemma": "აფთიაქი", "ru": "аптека"},
+    {"lemma": "საავადმყოფო", "ru": "больница"}
+  ],
+  "questions": [
+    {
+      "id": "taxi3_q01",
+      "lemma": "ქუჩა",
+      "question": "Как по-грузински «улица»?",
+      "options": ["მოედანი", "ქუჩა", "ხიდი"],
+      "answer_index": 1,
+      "explanation": "«Улица» — ქუჩა.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q02",
+      "lemma": "ქუჩა",
+      "question": "Что означает «ქუჩა»?",
+      "options": ["площадь", "мост", "улица"],
+      "answer_index": 2,
+      "explanation": "ქუჩა — улица.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q03",
+      "lemma": "მოედანი",
+      "question": "Как по-грузински «площадь»?",
+      "options": ["მოედანი", "პარკი", "ქუჩა"],
+      "answer_index": 0,
+      "explanation": "«Площадь» — მოედანი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q04",
+      "lemma": "მოედანი",
+      "question": "Что означает «მოედანი»?",
+      "options": ["парк", "площадь", "церковь"],
+      "answer_index": 1,
+      "explanation": "მოედანი — площадь.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q05",
+      "lemma": "ხიდი",
+      "question": "Как по-грузински «мост»?",
+      "options": ["ეკლესია", "ხიდი", "აფთიაქი"],
+      "answer_index": 1,
+      "explanation": "«Мост» — ხიდი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q06",
+      "lemma": "ხიდი",
+      "question": "Что означает «ხიდი»?",
+      "options": ["мост", "улица", "музей"],
+      "answer_index": 0,
+      "explanation": "ხიდი — мост.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q07",
+      "lemma": "ეკლესია",
+      "question": "Как по-грузински «церковь»?",
+      "options": ["მუზეუმი", "საავადმყოფო", "ეკლესია"],
+      "answer_index": 2,
+      "explanation": "«Церковь» — ეკლესია.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q08",
+      "lemma": "ეკლესია",
+      "question": "Что означает «ეკლესია»?",
+      "options": ["больница", "церковь", "аптека"],
+      "answer_index": 1,
+      "explanation": "ეკლესია — церковь.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q09",
+      "lemma": "მუზეუმი",
+      "question": "Как по-грузински «музей»?",
+      "options": ["მუზეუმი", "პარკი", "მოედანი"],
+      "answer_index": 0,
+      "explanation": "«Музей» — მუზეუმი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q10",
+      "lemma": "მუზეუმი",
+      "question": "Что означает «მუზეუმი»?",
+      "options": ["парк", "музей", "площадь"],
+      "answer_index": 1,
+      "explanation": "მუზეუმი — музей.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q11",
+      "lemma": "პარკი",
+      "question": "Как по-грузински «парк»?",
+      "options": ["ქუჩა", "პარკი", "ხიდი"],
+      "answer_index": 1,
+      "explanation": "«Парк» — პარკი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q12",
+      "lemma": "პარკი",
+      "question": "Что означает «პარკი»?",
+      "options": ["улица", "мост", "парк"],
+      "answer_index": 2,
+      "explanation": "პარკი — парк.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q13",
+      "lemma": "აფთიაქი",
+      "question": "Как по-грузински «аптека»?",
+      "options": ["საავადმყოფო", "აფთიაქი", "ეკლესია"],
+      "answer_index": 1,
+      "explanation": "«Аптека» — აფთიაქი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q14",
+      "lemma": "აფთიაქი",
+      "question": "Что означает «აფთიაქი»?",
+      "options": ["больница", "аптека", "церковь"],
+      "answer_index": 1,
+      "explanation": "აფთიაქი — аптека.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q15",
+      "lemma": "საავადმყოფო",
+      "question": "Как по-грузински «больница»?",
+      "options": ["აფთიაქი", "ეკლესია", "საავადმყოფო"],
+      "answer_index": 2,
+      "explanation": "«Больница» — საავადმყოფო.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q16",
+      "lemma": "საავადმყოფო",
+      "question": "Что означает «საავადმყოფო»?",
+      "options": ["больница", "аптека", "музей"],
+      "answer_index": 0,
+      "explanation": "საავადმყოფო — больница.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi3_q17",
+      "lemma": "აფთიაქი",
+      "question": "Вам нужно купить лекарство. Куда пойдёте?",
+      "options": ["საავადმყოფო", "აფთიაქი", "მუზეუმი"],
+      "answer_index": 1,
+      "explanation": "За лекарством идут в აფთიაქი — аптеку.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "taxi3_q18",
+      "lemma": "ხიდი",
+      "question": "Как перейти через реку?",
+      "options": ["ქუჩა", "მოედანი", "ხიდი"],
+      "answer_index": 2,
+      "explanation": "Через реку переходят по ხიდი — мосту.",
+      "tags": ["context"],
+      "difficulty": 2
+    }
+  ]
+}

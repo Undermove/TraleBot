@@ -1,0 +1,196 @@
+{
+  "lesson_id": "doctor-1",
+  "title": "Части тела — სხეულის ნაწილები",
+  "lexicon": [
+    {"lemma": "თავი", "ru": "голова"},
+    {"lemma": "ხელი", "ru": "рука"},
+    {"lemma": "ფეხი", "ru": "нога/стопа"},
+    {"lemma": "მუცელი", "ru": "живот"},
+    {"lemma": "ზურგი", "ru": "спина"},
+    {"lemma": "თვალი", "ru": "глаз"},
+    {"lemma": "ყური", "ru": "ухо"},
+    {"lemma": "კბილი", "ru": "зуб"}
+  ],
+  "questions": [
+    {
+      "id": "doc1_q01",
+      "lemma": "თავი",
+      "question": "Как по-грузински «голова»?",
+      "options": ["თავი", "ხელი", "ფეხი"],
+      "answer_index": 0,
+      "explanation": "Голова — თავი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q02",
+      "lemma": "ხელი",
+      "question": "Как по-грузински «рука»?",
+      "options": ["ფეხი", "ხელი", "ზურგი"],
+      "answer_index": 1,
+      "explanation": "Рука — ხელი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q03",
+      "lemma": "ფეხი",
+      "question": "Что означает «ფეხი»?",
+      "options": ["рука", "спина", "нога"],
+      "answer_index": 2,
+      "explanation": "ფეხი — нога/стопа.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q04",
+      "lemma": "მუცელი",
+      "question": "Как по-грузински «живот»?",
+      "options": ["მუცელი", "ზურგი", "თავი"],
+      "answer_index": 0,
+      "explanation": "Живот — მუცელი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q05",
+      "lemma": "ზურგი",
+      "question": "Что означает «ზურგი»?",
+      "options": ["голова", "спина", "ухо"],
+      "answer_index": 1,
+      "explanation": "ზურგი — спина.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q06",
+      "lemma": "თვალი",
+      "question": "Как по-грузински «глаз»?",
+      "options": ["ყური", "კბილი", "თვალი"],
+      "answer_index": 2,
+      "explanation": "Глаз — თვალი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q07",
+      "lemma": "ყური",
+      "question": "Что означает «ყური»?",
+      "options": ["ухо", "зуб", "рука"],
+      "answer_index": 0,
+      "explanation": "ყური — ухо.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q08",
+      "lemma": "კბილი",
+      "question": "Как по-грузински «зуб»?",
+      "options": ["თვალი", "კბილი", "მუცელი"],
+      "answer_index": 1,
+      "explanation": "Зуб — კბილი.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q09",
+      "lemma": "თავი",
+      "question": "Выбери правильный перевод: «У меня болит голова» — «თავი მტკივა»:",
+      "options": ["თავი", "ხელი", "ფეხი"],
+      "answer_index": 0,
+      "explanation": "В предложении «თავი მტკივა» слово «თავი» означает «голова».",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q10",
+      "lemma": "ხელი",
+      "question": "Врач говорит: «აჩვენეთ ხელი» — что он просит показать?",
+      "options": ["спину", "руку", "ногу"],
+      "answer_index": 1,
+      "explanation": "«აჩვენეთ ხელი» — покажите руку. ხელი — рука.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q11",
+      "lemma": "ფეხი",
+      "question": "Какое слово пропущено? «... მტკივა» — «Нога болит».",
+      "options": ["ფეხი", "ზურგი", "თავი"],
+      "answer_index": 0,
+      "explanation": "ფეხი მტკივა — нога болит.",
+      "tags": ["fill_in"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q12",
+      "lemma": "მუცელი",
+      "question": "Пациент жалуется: «მუცელი მტკივა». Что у него болит?",
+      "options": ["голова", "живот", "спина"],
+      "answer_index": 1,
+      "explanation": "მუცელი მტკივა — болит живот.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q13",
+      "lemma": "ზურგი",
+      "question": "Какое слово пропущено? «... მტკივა» — «Спина болит».",
+      "options": ["კბილი", "ყური", "ზურგი"],
+      "answer_index": 2,
+      "explanation": "ზურგი მტკივა — спина болит.",
+      "tags": ["fill_in"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q14",
+      "lemma": "თვალი",
+      "question": "Какое слово лишнее в ряду: თვალი, ყური, წამალი?",
+      "options": ["თვალი", "ყური", "წამალი"],
+      "answer_index": 2,
+      "explanation": "წამალი — лекарство, а თვალი (глаз) и ყური (ухо) — части тела.",
+      "tags": ["logic"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q15",
+      "lemma": "კბილი",
+      "question": "К какому врачу идут, когда болит «კბილი»?",
+      "options": ["к стоматологу", "к окулисту", "к хирургу"],
+      "answer_index": 0,
+      "explanation": "კბილი — зуб. Когда болит зуб, идут к стоматологу.",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q16",
+      "lemma": "ყური",
+      "question": "Переведи: «ყური მტკივა».",
+      "options": ["Глаз болит", "Ухо болит", "Зуб болит"],
+      "answer_index": 1,
+      "explanation": "ყური მტკივა — ухо болит.",
+      "tags": ["translation"],
+      "difficulty": 2
+    },
+    {
+      "id": "doc1_q17",
+      "lemma": "თავი",
+      "question": "Какая часть тела — «თავი»?",
+      "options": ["нога", "живот", "голова"],
+      "answer_index": 2,
+      "explanation": "თავი — голова.",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "doc1_q18",
+      "lemma": "თვალი",
+      "question": "Переведи: «თვალი მტკივა».",
+      "options": ["Глаз болит", "Ухо болит", "Голова болит"],
+      "answer_index": 0,
+      "explanation": "თვალი მტკივა — глаз болит.",
+      "tags": ["translation"],
+      "difficulty": 2
+    }
+  ]
+}

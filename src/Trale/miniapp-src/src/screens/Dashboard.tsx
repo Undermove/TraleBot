@@ -30,7 +30,7 @@ export default function Dashboard({ catalog, progress, navigate }: Props) {
         <div className="mn-eyebrow">блокнот</div>
         <div className="flex items-center gap-3">
           <StatPill value={progress.streak} label="дн" color="ruby" />
-          <StatPill value={progress.xp} label="xp" color="navy" />
+          <StatPill value={progress.xp} label="опыт" color="navy" />
         </div>
       </div>
 
@@ -88,135 +88,154 @@ export default function Dashboard({ catalog, progress, navigate }: Props) {
         })()}
       </section>
 
-      {/* ══ Module section label ══ */}
-      <div className="px-5 pt-2 pb-3 flex items-center gap-3">
-        <div className="mn-eyebrow">разделы блокнота</div>
-        <div className="flex-1 h-px bg-jewelInk/15" />
-        <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
-          {catalog.modules.length}
-        </div>
-      </div>
+      {/* ══ Module sections ══ */}
+      {(() => {
+        const grammarIds = ['alphabet', 'verbs-of-movement', 'cases', 'pronouns', 'present-tense']
+        const vocabIds = ['cafe', 'taxi', 'doctor', 'shopping', 'intro', 'emergency']
 
-      {/* ══ Module tiles — board game pieces ══ */}
-      <section className="px-5 flex flex-col gap-4 pb-6">
-        {catalog.modules.map((m, idx) => {
-          const hasLessons = m.lessons.length > 0
-          const done = (progress.completedLessons[m.id] ?? []).length
-          const total = m.lessons.length
-          const pct = hasLessons ? Math.round((done / total) * 100) : 0
-          const isComplete = hasLessons && done === total
+        const grammar = catalog.modules.filter((m) => grammarIds.includes(m.id))
+        const vocab = catalog.modules.filter((m) => vocabIds.includes(m.id))
+        const myVocab = catalog.modules.filter((m) => m.id === 'my-vocabulary')
 
-          // Georgian numeral letters (historical Georgian numeric system)
-          // ა=1, ბ=2, გ=3, ... alphabetic order maps to numbers
-          const geoNumerals = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'ჱ', 'თ']
-          const geoNum = geoNumerals[idx] ?? '?'
+        const sections = [
+          { label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const },
+          { label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const },
+          { label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
+        ]
 
-          // Module icons = Georgian letters that tie into what's taught
-          // Alphabet → ა (first letter), Verbs → ზ (ზმნა "verb"), Vocabulary → ლ (ლექსიკონი)
-          const moduleIcon =
-            m.id === 'alphabet'
-              ? 'ა'
-              : m.id === 'verbs-of-movement'
-              ? 'ზ'
-              : m.id === 'my-vocabulary'
-              ? 'ლ'
-              : '?'
+        const moduleIcons: Record<string, string> = {
+          'alphabet': 'ა', 'verbs-of-movement': 'ზ', 'cases': 'ბ', 'pronouns': 'მ',
+          'present-tense': 'დ', 'cafe': 'ყ', 'taxi': 'ტ', 'doctor': 'ე',
+          'shopping': 'ხ', 'intro': 'გ', 'emergency': 'ს', 'my-vocabulary': 'ლ',
+        }
 
-          const moduleGeo =
-            m.id === 'alphabet'
-              ? 'ანბანი'
-              : m.id === 'verbs-of-movement'
-              ? 'ზმნები'
-              : m.id === 'my-vocabulary'
-              ? 'ლექსიკონი'
-              : ''
+        const moduleGeoLabels: Record<string, string> = {
+          'alphabet': 'ანბანი', 'verbs-of-movement': 'ზმნები', 'cases': 'ბრუნვები',
+          'pronouns': 'ნაცვალსახელები', 'present-tense': 'აწმყო', 'cafe': 'კაფე',
+          'taxi': 'ტაქსი', 'doctor': 'ექიმი', 'shopping': 'მაღაზია',
+          'intro': 'გაცნობა', 'emergency': 'დახმარება', 'my-vocabulary': 'ლექსიკონი',
+        }
 
-          // Each module gets one signature color from the jewel palette
-          const accent =
-            idx === 0 ? 'navy' : idx === 1 ? 'ruby' : 'gold'
-          const accentBg =
-            accent === 'navy' ? 'bg-navy' : accent === 'ruby' ? 'bg-ruby' : 'bg-gold'
-          const accentText =
-            accent === 'navy'
-              ? 'text-navy'
-              : accent === 'ruby'
-              ? 'text-ruby'
-              : 'text-gold-deep'
+        const moduleAccents: Record<string, 'navy' | 'ruby' | 'gold'> = {
+          'alphabet': 'navy', 'verbs-of-movement': 'ruby', 'cases': 'navy',
+          'pronouns': 'ruby', 'present-tense': 'navy', 'cafe': 'gold',
+          'taxi': 'ruby', 'doctor': 'ruby', 'shopping': 'gold',
+          'intro': 'navy', 'emergency': 'ruby', 'my-vocabulary': 'gold',
+        }
 
+        let globalIdx = 0
+
+        return sections.map((section) => {
+          if (section.modules.length === 0) return null
           return (
-            <button
-              key={m.id}
-              onClick={() => {
-                if (m.id === 'my-vocabulary') navigate({ kind: 'vocabulary-list' })
-                else navigate({ kind: 'module', moduleId: m.id })
-              }}
-              className="jewel-tile jewel-pressable text-left px-5 py-5 pb-in"
-              style={{ animationDelay: `${120 + idx * 70}ms` }}
-            >
-              <div className="flex items-start gap-4 relative z-[1]">
-                {/* Georgian letter icon in colored medallion */}
-                <div className="shrink-0 relative">
-                  <div
-                    className={`w-14 h-14 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center`}
-                    style={{ boxShadow: '2px 2px 0 #15100A' }}
-                  >
-                    <span className="font-geo text-[28px] font-extrabold text-cream leading-none">
-                      {moduleIcon}
-                    </span>
-                  </div>
-                  {/* Georgian numeral badge */}
-                  <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-cream border-[1.5px] border-jewelInk flex items-center justify-center">
-                    <span
-                      className={`font-geo text-[11px] font-bold ${accentText} leading-none`}
-                    >
-                      {geoNum}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Body */}
-                <div className="flex-1 min-w-0 pt-1">
-                  <div className="font-geo text-[11px] text-jewelInk-mid font-semibold uppercase tracking-wide">
-                    {moduleGeo}
-                  </div>
-                  <h2 className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight mt-0.5 tracking-tight">
-                    {m.title}
-                  </h2>
-                  <p className="font-sans text-[13px] text-jewelInk-mid mt-1.5 leading-snug line-clamp-2">
-                    {m.description}
-                  </p>
+            <div key={section.label}>
+              {/* Section header */}
+              <div className="px-5 pt-4 pb-3 flex items-center gap-3">
+                <div className="mn-eyebrow">{section.label}</div>
+                <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
+                <div className="flex-1 h-px bg-jewelInk/15" />
+                <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
+                  {section.modules.length}
                 </div>
               </div>
 
-              {/* Footer row: kilim zigzag progress or status */}
-              {hasLessons ? (
-                <div className="mt-4 relative z-[1]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="mn-eyebrow">
-                      {isComplete ? (
-                        <span className="text-gold-deep">пройдено</span>
-                      ) : (
-                        'маршрут'
-                      )}
-                    </span>
-                    <span className="font-sans text-[11px] font-bold text-jewelInk tabular-nums">
-                      <span className={accentText}>{done}</span>
-                      <span className="text-jewelInk-hint"> / {total}</span>
-                    </span>
-                  </div>
-                  <KilimProgress done={done} total={total} accent={accent} />
-                </div>
-              ) : (
-                <div className="mt-3 relative z-[1]">
-                  <span className="mn-eyebrow text-jewelInk-mid">
-                    твои слова · квизы на выбор
-                  </span>
-                </div>
-              )}
-            </button>
+              {/* Module tiles */}
+              <section className="px-5 flex flex-col gap-3 pb-2">
+                {section.modules.map((m) => {
+                  const currentIdx = globalIdx++
+                  const hasLessons = m.lessons.length > 0
+                  const done = (progress.completedLessons[m.id] ?? []).length
+                  const total = m.lessons.length
+                  const isComplete = hasLessons && done === total
+
+                  const geoNumerals = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'ჱ', 'თ', 'ი', 'კ', 'ლ']
+                  const geoNum = geoNumerals[currentIdx] ?? '?'
+                  const icon = moduleIcons[m.id] ?? '?'
+                  const moduleGeo = moduleGeoLabels[m.id] ?? ''
+                  const accent = moduleAccents[m.id] ?? section.accent
+                  const accentBg = accent === 'navy' ? 'bg-navy' : accent === 'ruby' ? 'bg-ruby' : 'bg-gold'
+                  const accentText = accent === 'navy' ? 'text-navy' : accent === 'ruby' ? 'text-ruby' : 'text-gold-deep'
+
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => {
+                        if (m.id === 'my-vocabulary') navigate({ kind: 'vocabulary-list' })
+                        else navigate({ kind: 'module', moduleId: m.id })
+                      }}
+                      className="jewel-tile jewel-pressable text-left px-4 py-4"
+                      style={{ animationDelay: `${120 + currentIdx * 50}ms` }}
+                    >
+                      <div className="flex items-center gap-3.5 relative z-[1]">
+                        {/* Icon medallion */}
+                        <div className="shrink-0 relative">
+                          <div
+                            className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center`}
+                            style={{ boxShadow: '2px 2px 0 #15100A' }}
+                          >
+                            <span className="font-geo text-[24px] font-extrabold text-cream leading-none">
+                              {icon}
+                            </span>
+                          </div>
+                          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cream border-[1.5px] border-jewelInk flex items-center justify-center">
+                            <span className={`font-geo text-[9px] font-bold ${accentText} leading-none`}>
+                              {geoNum}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline gap-2">
+                            <h2 className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight tracking-tight truncate">
+                              {m.title}
+                            </h2>
+                            {moduleGeo && (
+                              <span className="font-geo text-[10px] text-jewelInk-hint font-semibold shrink-0">
+                                {moduleGeo}
+                              </span>
+                            )}
+                          </div>
+                          {hasLessons ? (
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <div className="flex-1 h-1.5 bg-cream-deep rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${accentBg}`}
+                                  style={{ width: `${total > 0 ? Math.round((done / total) * 100) : 0}%` }}
+                                />
+                              </div>
+                              <span className="font-sans text-[11px] font-bold tabular-nums shrink-0">
+                                {isComplete ? (
+                                  <span className="text-gold-deep">✓</span>
+                                ) : (
+                                  <>
+                                    <span className={accentText}>{done}</span>
+                                    <span className="text-jewelInk-hint">/{total}</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="mt-1">
+                              <span className="font-sans text-[12px] text-jewelInk-mid">
+                                твои слова · квизы на выбор
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-jewelInk-hint relative z-[1]">
+                          <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    </button>
+                  )
+                })}
+              </section>
+            </div>
           )
-        })}
-      </section>
+        })
+      })()}
 
       {/* ══ Profile button — smaller tile ══ */}
       <div className="px-5 pb-6">

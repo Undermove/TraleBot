@@ -1,0 +1,187 @@
+{
+  "lesson_id": "emergency-2",
+  "title": "Потери и находки",
+  "lexicon": ["დაკარგული", "ნაპოვნი", "პასპორტი", "ტელეფონი", "საფულე", "ჩანთა"],
+  "questions": [
+    {
+      "id": "emrg2-01",
+      "lemma": "დაკარგული",
+      "question": "Как переводится «დაკარგული»?",
+      "options": ["потерянный", "найденный", "украденный"],
+      "answer_index": 0,
+      "explanation": "«დაკარგული» — потерянный",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-02",
+      "lemma": "ნაპოვნი",
+      "question": "Как переводится «ნაპოვნი»?",
+      "options": ["потерянный", "забытый", "найденный"],
+      "answer_index": 2,
+      "explanation": "«ნაპოვნი» — найденный",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-03",
+      "lemma": "პასპორტი",
+      "question": "Как переводится «პასპორტი»?",
+      "options": ["кошелёк", "паспорт", "телефон"],
+      "answer_index": 1,
+      "explanation": "«პასპორტი» — паспорт",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-04",
+      "lemma": "ტელეფონი",
+      "question": "Как переводится «ტელეფონი»?",
+      "options": ["телефон", "документ", "сумка"],
+      "answer_index": 0,
+      "explanation": "«ტელეფონი» — телефон",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-05",
+      "lemma": "საფულე",
+      "question": "Как переводится «საფულე»?",
+      "options": ["паспорт", "ключ", "кошелёк"],
+      "answer_index": 2,
+      "explanation": "«საფულე» — кошелёк",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-06",
+      "lemma": "ჩანთა",
+      "question": "Как переводится «ჩანთა»?",
+      "options": ["сумка", "кошелёк", "телефон"],
+      "answer_index": 0,
+      "explanation": "«ჩანთა» — сумка",
+      "tags": ["meaning"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-07",
+      "lemma": "დაკარგული",
+      "question": "Как будет «потерянный» по-грузински?",
+      "options": ["ნაპოვნი", "დაკარგული", "პასპორტი"],
+      "answer_index": 1,
+      "explanation": "Потерянный — «დაკარგული»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-08",
+      "lemma": "ნაპოვნი",
+      "question": "Как будет «найденный» по-грузински?",
+      "options": ["ნაპოვნი", "დაკარგული", "საფულე"],
+      "answer_index": 0,
+      "explanation": "Найденный — «ნაპოვნი»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-09",
+      "lemma": "პასპორტი",
+      "question": "Как будет «паспорт» по-грузински?",
+      "options": ["ტელეფონი", "ჩანთა", "პასპორტი"],
+      "answer_index": 2,
+      "explanation": "Паспорт — «პასპორტი»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-10",
+      "lemma": "ტელეფონი",
+      "question": "Как будет «телефон» по-грузински?",
+      "options": ["საფულე", "ტელეფონი", "ნაპოვნი"],
+      "answer_index": 1,
+      "explanation": "Телефон — «ტელეფონი»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-11",
+      "lemma": "საფულე",
+      "question": "Как будет «кошелёк» по-грузински?",
+      "options": ["საფულე", "ჩანთა", "პასპორტი"],
+      "answer_index": 0,
+      "explanation": "Кошелёк — «საფულე»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-12",
+      "lemma": "ჩანთა",
+      "question": "Как будет «сумка» по-грузински?",
+      "options": ["ტელეფონი", "დაკარგული", "ჩანთა"],
+      "answer_index": 2,
+      "explanation": "Сумка — «ჩანთა»",
+      "tags": ["translation"],
+      "difficulty": 1
+    },
+    {
+      "id": "emrg2-13",
+      "lemma": "პასპორტი",
+      "question": "Что вы предъявляете на границе?",
+      "options": ["საფულე", "პასპორტი", "ჩანთა"],
+      "answer_index": 1,
+      "explanation": "«პასპორტი» — паспорт, его предъявляют на границе",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg2-14",
+      "lemma": "საფულე",
+      "question": "Где вы храните деньги и карточки?",
+      "options": ["პასპორტი", "ტელეფონი", "საფულე"],
+      "answer_index": 2,
+      "explanation": "«საფულე» — кошелёк",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg2-15",
+      "lemma": "დაკარგული",
+      "question": "Вы не можете найти свой кошелёк. Он...",
+      "options": ["ნაპოვნი", "დაკარგული", "საფულე"],
+      "answer_index": 1,
+      "explanation": "«დაკარგული» — потерянный",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg2-16",
+      "lemma": "ნაპოვნი",
+      "question": "Кто-то вернул вам сумку. Она была...",
+      "options": ["დაკარგული", "ნაპოვნი", "ჩანთა"],
+      "answer_index": 1,
+      "explanation": "«ნაპოვნი» — найденный",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg2-17",
+      "lemma": "ტელეფონი",
+      "question": "Чем вы позвоните в полицию?",
+      "options": ["ტელეფონი", "პასპორტი", "საფულე"],
+      "answer_index": 0,
+      "explanation": "«ტელეფონი» — телефон",
+      "tags": ["context"],
+      "difficulty": 2
+    },
+    {
+      "id": "emrg2-18",
+      "lemma": "ჩანთა",
+      "question": "Куда вы складываете вещи в дорогу?",
+      "options": ["საფულე", "პასპორტი", "ჩანთა"],
+      "answer_index": 2,
+      "explanation": "«ჩანთა» — сумка",
+      "tags": ["context"],
+      "difficulty": 2
+    }
+  ]
+}

@@ -77,13 +77,26 @@ public class MiniAppController : Controller
             return Ok(MapQuestions(loader, lessonId));
         }
 
-        if (moduleId == "cases")
+        var moduleMap = new Dictionary<string, (string dir, int maxLesson)>
         {
-            if (lessonId < 1 || lessonId > 8)
+            ["cases"] = ("GeorgianCases", 8),
+            ["pronouns"] = ("GeorgianPronouns", 5),
+            ["present-tense"] = ("GeorgianPresentTense", 5),
+            ["cafe"] = ("GeorgianVocabCafe", 5),
+            ["taxi"] = ("GeorgianVocabTaxi", 5),
+            ["doctor"] = ("GeorgianVocabDoctor", 5),
+            ["shopping"] = ("GeorgianVocabShopping", 5),
+            ["intro"] = ("GeorgianVocabIntro", 5),
+            ["emergency"] = ("GeorgianVocabEmergency", 5),
+        };
+
+        if (moduleMap.TryGetValue(moduleId, out var info))
+        {
+            if (lessonId < 1 || lessonId > info.maxLesson)
             {
                 return NotFound(new { error = "Unknown lesson" });
             }
-            var loader = _questionsLoaderFactory.CreateForModuleLesson("GeorgianCases", lessonId);
+            var loader = _questionsLoaderFactory.CreateForModuleLesson(info.dir, lessonId);
             return Ok(MapQuestions(loader, lessonId));
         }
 
