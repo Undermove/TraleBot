@@ -30,20 +30,12 @@ public class CreateWebhook : IHostedService
             dropPendingUpdates: false,
             cancellationToken: cancellationToken);
 
-        // Mini-app chat menu button is feature-flagged. When disabled in config, we don't
-        // touch the existing menu button at all — prod users continue to see whatever
-        // they saw before. When enabled, we point the chat menu button to the SPA root,
-        // which auto-detects Telegram WebApp initData and shows the app (or the landing page otherwise).
-        if (_config.MiniAppEnabled)
-        {
-            await _telegramBotClient.SetChatMenuButtonAsync(
-                menuButton: new MenuButtonWebApp
-                {
-                    Text = "🐶 Бомбора",
-                    WebApp = new WebAppInfo { Url = $"{_config.HostAddress}/" }
-                },
-                cancellationToken: cancellationToken);
-        }
+        // Mini-app is accessible from the /menu inline keyboard (WebApp button),
+        // not from the chat menu button. Reset to the standard commands menu
+        // so the button next to the text input shows the command list, not a WebApp.
+        await _telegramBotClient.SetChatMenuButtonAsync(
+            menuButton: new MenuButtonCommands(),
+            cancellationToken: cancellationToken);
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)

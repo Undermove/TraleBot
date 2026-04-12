@@ -12,6 +12,7 @@ import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
 import LandingScreen from './screens/LandingScreen'
 import Mascot from './components/Mascot'
+import LoaderLetter from './components/LoaderLetter'
 
 function isInsideTelegram(): boolean {
   const tg = (window as any).Telegram?.WebApp
@@ -89,19 +90,37 @@ export default function App() {
 
   if (loadError) {
     return (
-      <div className="flex flex-col min-h-full items-center justify-center gap-4 p-6 text-center">
-        <Mascot mood="sleep" size={120} />
-        <div className="font-extrabold text-lg">Бомбора не дозвонился до сервера</div>
-        <div className="text-dog-muted">Проверь соединение и попробуй открыть ещё раз.</div>
+      <div
+        className="flex flex-col items-center justify-center gap-4 p-6 text-center bg-cream"
+        style={{
+          minHeight: '100dvh',
+          paddingTop: 'calc(var(--safe-t) + 24px)',
+          paddingBottom: 'calc(var(--safe-b) + 24px)'
+        }}
+      >
+        <Mascot mood="sleep" size={140} />
+        <div className="mn-eyebrow">связь потерялась</div>
+        <div className="font-sans text-[22px] font-bold text-jewelInk">
+          Бомбора не дозвонился
+        </div>
+        <div className="font-sans text-[14px] text-jewelInk-mid max-w-[280px]">
+          Проверь соединение и попробуй открыть блокнот ещё раз.
+        </div>
       </div>
     )
   }
 
   if (!catalog || screen.kind === 'loading') {
     return (
-      <div className="flex flex-col min-h-full items-center justify-center gap-4">
-        <Mascot mood="think" size={120} />
-        <div className="text-dog-muted">Бомбора раскладывает карточки...</div>
+      <div
+        className="flex flex-col items-center justify-center bg-cream"
+        style={{
+          minHeight: '100dvh',
+          paddingTop: 'var(--safe-t)',
+          paddingBottom: 'var(--safe-b)'
+        }}
+      >
+        <LoaderLetter />
       </div>
     )
   }

@@ -5,44 +5,72 @@ interface Props {
   progress: ProgressState
   onBack?: () => void
   title?: string
+  eyebrow?: string
 }
 
-export default function Header({ progress, onBack, title }: Props) {
+/**
+ * Minanka header — kilim signature on top, back button + title row,
+ * stats pills below. No italic. No decoration beyond the kilim strip.
+ */
+export default function Header({ progress, onBack, title, eyebrow }: Props) {
   return (
-    <div
-      className="sticky top-0 z-10 bg-dog-bg/95 backdrop-blur px-4 pb-3 border-b border-dog-line"
-      style={{ paddingTop: 'calc(var(--safe-t) + 12px)' }}
-    >
-      <div className="flex items-center gap-2">
+    <div className="sticky top-0 z-30 bg-cream/95 backdrop-blur-sm">
+      {/* Kilim signature — appears on every screen that uses Header */}
+      <div style={{ paddingTop: 'var(--safe-t)' }}>
+        <div className="mn-kilim" />
+      </div>
+
+      <div className="px-5 py-3 flex items-center gap-3">
         {onBack ? (
           <button
             onClick={onBack}
-            className="w-9 h-9 rounded-full bg-white shadow-card flex items-center justify-center text-lg font-bold text-dog-ink active:translate-y-0.5"
+            className="shrink-0 w-11 h-11 rounded-xl bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-75"
+            style={{ boxShadow: '2px 2px 0 #15100A' }}
             aria-label="Назад"
           >
-            ‹
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M10 3 L4 8 L10 13"
+                stroke="#15100A"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         ) : (
-          <div className="w-9" />
+          <div className="w-11 shrink-0" />
         )}
-        <div className="flex-1 text-center font-extrabold text-dog-ink truncate">
-          {title ?? 'Бомбора учит грузинский'}
-        </div>
-        <div className="w-9" />
-      </div>
-      <div className="flex gap-2 mt-2 text-xs">
-        <Stat icon="🔥" label={`${progress.streak} дн.`} />
-        <Stat icon="⭐" label={`${progress.xp} XP`} />
-      </div>
-    </div>
-  )
-}
 
-function Stat({ icon, label }: { icon: string; label: string }) {
-  return (
-    <div className="bg-white rounded-full px-2.5 py-1 shadow-card flex items-center gap-1.5">
-      <span>{icon}</span>
-      <span className="font-extrabold text-dog-ink">{label}</span>
+        <div className="flex-1 text-center min-w-0">
+          {eyebrow && (
+            <div className="mn-eyebrow text-navy mb-0.5 truncate">{eyebrow}</div>
+          )}
+          <div className="font-sans text-[18px] font-extrabold text-jewelInk leading-tight truncate">
+            {title ?? 'Бомбора'}
+          </div>
+        </div>
+
+        {/* Compact stats on the right */}
+        <div className="shrink-0 flex flex-col items-end gap-0.5">
+          <div className="flex items-baseline gap-1">
+            <span className="font-sans text-[14px] font-extrabold text-ruby tabular-nums leading-none">
+              {progress.streak}
+            </span>
+            <span className="font-sans text-[9px] font-bold text-jewelInk-mid uppercase tracking-wider">
+              дн
+            </span>
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-sans text-[14px] font-extrabold text-navy tabular-nums leading-none">
+              {progress.xp}
+            </span>
+            <span className="font-sans text-[9px] font-bold text-jewelInk-mid uppercase tracking-wider">
+              xp
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

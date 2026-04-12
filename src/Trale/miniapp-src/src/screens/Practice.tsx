@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import Header from '../components/Header'
-import Mascot from '../components/Mascot'
 import Button from '../components/Button'
+import LoaderLetter from '../components/LoaderLetter'
 import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
 import { api } from '../api'
@@ -17,7 +16,14 @@ interface Props {
 
 type Phase = 'loading' | 'answering' | 'checked' | 'error'
 
-export default function Practice({ moduleId, lessonId, progress, setProgress, authenticated, navigate }: Props) {
+export default function Practice({
+  moduleId,
+  lessonId,
+  progress,
+  setProgress,
+  authenticated,
+  navigate
+}: Props) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('loading')
@@ -55,34 +61,42 @@ export default function Practice({ moduleId, lessonId, progress, setProgress, au
 
   if (phase === 'loading') {
     return (
-      <div className="flex flex-col min-h-full">
-        <Header progress={progress} title={`Урок ${lessonId} — Практика`} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <Mascot mood="think" size={120} />
-          <div className="text-dog-muted">Бомбора достаёт карточки...</div>
-        </div>
+      <div
+        className="flex flex-col items-center justify-center bg-cream"
+        style={{
+          minHeight: '100dvh',
+          paddingTop: 'var(--safe-t)',
+          paddingBottom: 'var(--safe-b)'
+        }}
+      >
+        <LoaderLetter label="карточки..." />
       </div>
     )
   }
 
   if (phase === 'error') {
     return (
-      <div className="flex flex-col min-h-full">
-        <Header
-          progress={progress}
-          onBack={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
-          title={`Урок ${lessonId}`}
-        />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-5">
-          <Mascot mood="sleep" size={120} />
-          <div className="text-center text-dog-muted">
-            Не получилось загрузить вопросы. Попробуй позже.
-          </div>
+      <div
+        className="flex flex-col items-center justify-center bg-cream px-6 text-center gap-5"
+        style={{
+          minHeight: '100dvh',
+          paddingTop: 'calc(var(--safe-t) + 24px)',
+          paddingBottom: 'calc(var(--safe-b) + 24px)'
+        }}
+      >
+        <div className="mn-eyebrow">страница не раскрылась</div>
+        <div className="font-sans text-[20px] font-extrabold text-jewelInk">
+          Вопросы не загрузились
+        </div>
+        <div className="font-sans text-[14px] text-jewelInk-mid max-w-[300px]">
+          Попробуй вернуться на страницу урока и открыть практику ещё раз.
+        </div>
+        <div className="w-full max-w-[280px] mt-2">
           <Button
             variant="ghost"
             onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
           >
-            Назад
+            ← назад
           </Button>
         </div>
       </div>
@@ -159,55 +173,111 @@ export default function Practice({ moduleId, lessonId, progress, setProgress, au
   }
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex flex-col min-h-full bg-cream">
+      {/* Top: close + progress */}
       <div
-        className="sticky top-0 z-10 bg-dog-bg/95 backdrop-blur px-4 pb-3 border-b border-dog-line"
-        style={{ paddingTop: 'calc(var(--safe-t) + 12px)' }}
+        className="sticky top-0 z-30 bg-cream/95 backdrop-blur-sm"
+        style={{ paddingTop: 'var(--safe-t)' }}
       >
-        <div className="flex items-center gap-2">
+        <div className="mn-kilim" />
+        <div className="px-5 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
-            className="w-9 h-9 rounded-full bg-white shadow-card flex items-center justify-center text-lg font-bold text-dog-ink active:translate-y-0.5"
+            className="shrink-0 w-11 h-11 rounded-xl bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-75"
+            style={{ boxShadow: '2px 2px 0 #15100A' }}
             aria-label="Закрыть"
           >
-            ✕
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path
+                d="M3 3 L13 13 M13 3 L3 13"
+                stroke="#15100A"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            </svg>
           </button>
-          <div className="flex-1 h-3 rounded-full bg-dog-line overflow-hidden">
+
+          <div
+            className="flex-1 h-3 bg-cream-deep border-[1.5px] border-jewelInk rounded-full overflow-hidden"
+            style={{ boxShadow: 'inset 1px 1px 0 rgba(21,16,10,0.1)' }}
+          >
             <div
-              className="h-full bg-dog-green rounded-full transition-all duration-300"
+              className="h-full bg-navy transition-all duration-300"
               style={{ width: `${pct}%` }}
             />
           </div>
-          <div className="w-9" />
+
+          <div className="shrink-0 font-sans text-[13px] font-bold text-jewelInk tabular-nums min-w-[38px] text-right">
+            <span>{questionNumber}</span>
+            <span className="text-jewelInk-hint">/{total}</span>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 p-5 anim-slide">
-        <div className="text-dog-muted text-xs font-extrabold uppercase tracking-wider">
-          Вопрос {questionNumber} из {total}
-        </div>
-        <div className="mt-2 text-xl font-extrabold leading-tight">{current.question}</div>
+      {/* Question + options */}
+      <div
+        className="flex-1 px-5 pt-6"
+        style={{ paddingBottom: 'calc(var(--safe-b) + 110px)' }}
+      >
+        <div className="mn-eyebrow mb-2">вопрос № {questionNumber}</div>
+        <h2 className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
+          {current.question}
+        </h2>
 
-        <div className="mt-5 flex flex-col gap-3">
+        <div className="mt-6 flex flex-col gap-3">
           {current.options.map((opt, i) => {
             const isSelected = i === selected
             const isAnswer = i === current.answerIndex
-            let cls = 'bg-white border-2 border-dog-line'
+
+            let tileClasses =
+              'bg-cream-tile border-jewelInk text-jewelInk'
+            let shadowStyle = '3px 3px 0 #15100A'
+
             if (phase === 'answering' && isSelected) {
-              cls = 'bg-dog-accent/10 border-2 border-dog-accent'
+              tileClasses = 'bg-navy border-jewelInk text-cream'
             }
             if (phase === 'checked') {
-              if (isAnswer) cls = 'bg-dog-green/20 border-2 border-dog-green'
-              else if (isSelected) cls = 'bg-dog-red/20 border-2 border-dog-red'
+              if (isAnswer) {
+                tileClasses = 'bg-navy border-jewelInk text-cream'
+              } else if (isSelected) {
+                tileClasses = 'bg-ruby border-jewelInk text-cream'
+                shadowStyle = '1px 1px 0 #15100A'
+              } else {
+                tileClasses = 'bg-cream-tile border-jewelInk/25 text-jewelInk/40'
+                shadowStyle = 'none'
+              }
             }
+
             return (
               <button
                 key={i}
                 disabled={phase === 'checked'}
                 onClick={() => setSelected(i)}
-                className={`w-full text-left rounded-2xl px-4 py-4 font-semibold text-[15px] transition ${cls}`}
+                className={`w-full text-left px-4 py-4 border-[1.5px] rounded-xl font-sans text-[15px] font-semibold transition-all duration-75 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-3 ${tileClasses}`}
+                style={{ boxShadow: shadowStyle }}
               >
-                {opt}
+                <span
+                  className={`shrink-0 w-7 h-7 rounded-md border-[1.5px] flex items-center justify-center font-sans text-[12px] font-extrabold uppercase ${
+                    phase === 'checked' && isAnswer
+                      ? 'bg-cream text-ruby border-cream'
+                      : 'bg-cream-deep text-jewelInk border-jewelInk/30'
+                  }`}
+                >
+                  {String.fromCharCode(97 + i)}
+                </span>
+                <span className="flex-1">{opt}</span>
+                {phase === 'checked' && isAnswer && (
+                  <svg width="18" height="18" viewBox="0 0 18 18" className="text-cream shrink-0">
+                    <path
+                      d="M3 9 L7 13 L15 4"
+                      stroke="currentColor"
+                      strokeWidth="2.8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
               </button>
             )
           })}
@@ -215,31 +285,38 @@ export default function Practice({ moduleId, lessonId, progress, setProgress, au
 
         {phase === 'checked' && (
           <div
-            className={`mt-5 rounded-2xl p-4 ${
-              isCorrect ? 'bg-dog-green/15' : 'bg-dog-red/15'
+            className={`mt-6 p-4 border-[1.5px] rounded-xl relative ${
+              isCorrect
+                ? 'bg-navy border-jewelInk text-cream'
+                : 'bg-ruby border-jewelInk text-cream'
             }`}
+            style={{ boxShadow: '2px 2px 0 #15100A' }}
           >
-            <div className="font-extrabold">
-              {isCorrect ? '✓ Правильно!' : '✗ Не совсем'}
+            <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
+              {isCorrect ? 'верно' : 'ещё раз'}
             </div>
-            {current.explanation && (
-              <div className="text-sm mt-1 text-dog-ink/80">{current.explanation}</div>
-            )}
+            <div className="font-sans text-[14px] leading-snug">
+              {current.explanation ||
+                (isCorrect
+                  ? 'Хорошо запомнил — так держать.'
+                  : 'Запомни правильный вариант и идём дальше.')}
+            </div>
           </div>
         )}
       </div>
 
+      {/* Action bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto px-4 pt-4 bg-dog-bg/95 backdrop-blur border-t border-dog-line"
+        className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto px-5 pt-4 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15 z-20"
         style={{ paddingBottom: 'calc(var(--safe-b) + 16px)' }}
       >
         {phase === 'answering' ? (
-          <Button variant="green" disabled={selected === null} onClick={check}>
-            Проверить
+          <Button variant="primary" disabled={selected === null} onClick={check}>
+            проверить
           </Button>
         ) : (
           <Button variant={isCorrect ? 'green' : 'primary'} onClick={next}>
-            {index + 1 >= total ? 'Завершить' : 'Продолжить'}
+            {index + 1 >= total ? 'итог →' : 'дальше →'}
           </Button>
         )}
       </div>
