@@ -100,20 +100,27 @@ public class MiniAppContentProvider : IMiniAppContentProvider
         {
             Modules = new List<ModuleDto>
             {
+                // Phase 1: Alphabet
                 BuildAlphabetProgressiveModule(),
+                // Phase 2: Survival
+                BuildIntroModule(),
+                // Phase 2.5: Numbers
                 BuildNumbersModule(),
-                BuildVerbsOfMovementModule(),
-                BuildCasesModule(),
+                // Phase 3: Basic Grammar
                 BuildPronounsModule(),
                 BuildPresentTenseModule(),
+                BuildCasesModule(),
                 BuildPostpositionsModule(),
                 BuildAdjectivesModule(),
+                // Phase 4: Thematic Vocabulary
                 BuildCafeModule(),
+                BuildShoppingModule(),
                 BuildTaxiModule(),
                 BuildDoctorModule(),
-                BuildShoppingModule(),
-                BuildIntroModule(),
                 BuildEmergencyModule(),
+                // Phase 5: Advanced Verbs
+                BuildVerbsOfMovementModule(),
+                // Personal
                 BuildMyVocabularyModule()
             }
         };
