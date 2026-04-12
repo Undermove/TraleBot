@@ -135,7 +135,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           { key: 'alphabet', label: isBeginner ? 'начни отсюда' : 'алфавит', geoLabel: 'ანბანი', modules: alphaModules, accent: 'navy' as const, collapsed: false },
           { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const, collapsed: isBeginner },
           { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const, collapsed: isBeginner },
-          { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const, collapsed: isBeginner },
+          { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const, collapsed: false },
         ]
 
         const moduleIcons: Record<string, string> = {
@@ -254,11 +254,8 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                           </div>
                           {hasLessons ? (
                             <div className="flex items-center gap-2 mt-1.5">
-                              <div className="flex-1 h-1.5 bg-cream-deep rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${accentBg}`}
-                                  style={{ width: `${total > 0 ? Math.round((done / total) * 100) : 0}%` }}
-                                />
+                              <div className="flex-1">
+                                <KilimProgress done={done} total={total} accent={accent} />
                               </div>
                               <span className="font-sans text-[11px] font-bold tabular-nums shrink-0">
                                 {isComplete ? (
