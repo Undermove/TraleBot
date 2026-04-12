@@ -429,7 +429,41 @@ public class MiniAppController : Controller
             };
         }).ToList();
 
-        return Ok(new { questions = userQuestions });
+        // Word pairs + distractor pools for frontend-built rounds
+        // (GE→RU multi-choice, type-in both directions)
+        var wordPairs = selected.Select(entry =>
+        {
+            var (ge, ru) = GetSides(entry);
+            return new
+            {
+                wordId = entry.Id,
+                georgian = ge,
+                russian = ru
+            };
+        }).ToList();
+
+        var allGeorgian = allEntries
+            .Select(e => GetSides(e).georgian)
+            .Concat(starterWords)
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Distinct()
+            .ToList();
+
+        var starterRussian = _content.GetStarterVocabulary().Select(s => s.Definition).ToList();
+        var allRussian = allEntries
+            .Select(e => GetSides(e).russian)
+            .Concat(starterRussian)
+            .Where(w => !string.IsNullOrWhiteSpace(w))
+            .Distinct()
+            .ToList();
+
+        return Ok(new
+        {
+            questions = userQuestions,
+            wordPairs,
+            allGeorgian,
+            allRussian
+        });
     }
 
     public class VocabularyAnswerRequest

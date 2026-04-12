@@ -11,11 +11,13 @@ public class MenuCommand : IBotCommand
 {
     private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
+    private readonly BotConfiguration _botConfig;
 
-    public MenuCommand(ITelegramBotClient client, IMediator mediator)
+    public MenuCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig)
     {
         _client = client;
         _mediator = mediator;
+        _botConfig = botConfig;
     }
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
@@ -27,7 +29,10 @@ public class MenuCommand : IBotCommand
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var keyboard = MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage);
+        var miniAppUrl = _botConfig.MiniAppEnabled && !string.IsNullOrEmpty(_botConfig.HostAddress)
+            ? $"{_botConfig.HostAddress}/"
+            : null;
+        var keyboard = MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage, miniAppUrl);
         
         // If request comes from a callback (button click), edit existing message
         if (request.RequestType == UpdateType.CallbackQuery)

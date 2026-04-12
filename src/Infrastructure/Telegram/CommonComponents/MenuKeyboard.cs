@@ -1,12 +1,13 @@
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.CommonComponents;
 
 public static class MenuKeyboard
 {
-    public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage)
+    public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage, string miniAppUrl = null)
     {
         var buttons = new List<InlineKeyboardButton[]>
         {
@@ -39,6 +40,16 @@ public static class MenuKeyboard
             });
         }
         
+        // Mini-app button — opens Бомбора in a WebApp overlay
+        if (!string.IsNullOrEmpty(miniAppUrl))
+        {
+            buttons.Add(new[]
+            {
+                InlineKeyboardButton.WithWebApp("🐶 Бомбора — учить грузинский",
+                    new WebAppInfo { Url = miniAppUrl })
+            });
+        }
+
         buttons.Add(new[]
         {
             InlineKeyboardButton.WithCallbackData($"{CommandNames.HowToIcon} Как пользоваться", CommandNames.HowTo)

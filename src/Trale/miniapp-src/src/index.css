@@ -5,16 +5,28 @@
 :root {
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
+  --paper: #F4EBD4;
+  --paper-dark: #E8DCB8;
+  --ink: #1A1612;
+  --ink-soft: #3B2F25;
+  --wine: #A03A2C;
+  --moss: #4A6B3A;
+  --saffron: #C9923A;
+  --sky: #7A9CB8;
 }
 
-html, body {
+html,
+body {
   height: 100%;
-  background: #FFF6E5;
-  font-family: 'Nunito', system-ui, sans-serif;
-  color: #2E2E3A;
+  background-color: #FBF6EC; /* cream */
+  font-family: 'Manrope', 'Noto Sans Georgian', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: #15100A; /* jewelInk */
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
   overflow-x: hidden;
+  font-feature-settings: 'ss01', 'cv11', 'kern';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -27,34 +39,409 @@ body {
   min-height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
+  position: relative;
 }
+
 
 button {
   font-family: inherit;
   user-select: none;
+  color: inherit;
 }
 
-@keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+input,
+textarea {
+  font-family: inherit;
 }
-.anim-pop { animation: pop 300ms ease-out; }
+
+h1, h2, h3, h4 {
+  font-family: 'Fraunces', 'Noto Serif Georgian', Georgia, serif;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'wght' 500;
+  letter-spacing: -0.02em;
+  color: #2A1F18;
+}
+
+/* Picture Book display utility — round, soft, confident */
+.pb-display {
+  font-family: 'Fraunces', 'Noto Serif Georgian', Georgia, serif;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'wght' 500;
+  letter-spacing: -0.025em;
+  line-height: 0.95;
+  color: #2A1F18;
+}
+
+.pb-eyebrow {
+  font-family: 'Figtree', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: #7A6654; /* warm-600 */
+}
+
+.pb-body {
+  font-family: 'Figtree', sans-serif;
+  font-weight: 400;
+  line-height: 1.55;
+  color: #3B2D23; /* warm-800 */
+}
+
+/* Utility: hand-drawn underline using wavy SVG */
+.ink-underline {
+  position: relative;
+  display: inline-block;
+}
+.ink-underline::after {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  bottom: -6px;
+  height: 6px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M0 3 Q 10 0 20 3 T 40 3 T 60 3 T 80 3 T 100 3' stroke='%23A03A2C' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 80px 6px;
+}
+
+.ink-strike {
+  position: relative;
+}
+.ink-strike::after {
+  content: '';
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 50%;
+  height: 2px;
+  background: var(--ink);
+  transform: rotate(-2deg);
+  border-radius: 1px;
+}
+
+/* Stamp — slightly rotated, double border, imperfect */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  font-family: 'Fraunces', serif;
+  font-variation-settings: 'opsz' 144, 'wght' 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 11px;
+  position: relative;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+.stamp::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px dashed currentColor;
+  opacity: 0.35;
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+/* Rotate modifiers */
+.rotate-xs { transform: rotate(-1.5deg); }
+.rotate-xs-r { transform: rotate(1.5deg); }
+.rotate-sm { transform: rotate(-3deg); }
+.rotate-sm-r { transform: rotate(3deg); }
+
+/* Card backgrounds that feel like paper slipped over the page */
+.sketch-card {
+  background: linear-gradient(180deg, #FBF4DE 0%, #F4EBD4 100%);
+  border: 1px solid rgba(60, 47, 37, 0.18);
+  box-shadow: 2px 3px 0 rgba(26, 22, 18, 0.08), 0 6px 18px rgba(26, 22, 18, 0.05);
+  border-radius: 3px;
+  position: relative;
+}
+.sketch-card.tilt-l { transform: rotate(-0.6deg); }
+.sketch-card.tilt-r { transform: rotate(0.6deg); }
+
+/* Corner marks for index-card feel */
+.corner-marks::before,
+.corner-marks::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(26, 22, 18, 0.3);
+  pointer-events: none;
+}
+.corner-marks::before {
+  top: 6px;
+  left: 6px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.corner-marks::after {
+  bottom: 6px;
+  right: 6px;
+  border-left: 0;
+  border-top: 0;
+}
+
+/* Dashed journal divider */
+.ink-dash {
+  display: block;
+  height: 1px;
+  background-image: linear-gradient(to right, currentColor 50%, transparent 50%);
+  background-size: 8px 1px;
+  opacity: 0.4;
+}
+
+/* Animations */
+@keyframes stamp-in {
+  0% { transform: scale(1.8) rotate(-8deg); opacity: 0; }
+  60% { transform: scale(0.92) rotate(-2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-1.5deg); opacity: 1; }
+}
+.anim-stamp { animation: stamp-in 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+
+@keyframes stamp-in-r {
+  0% { transform: scale(1.8) rotate(8deg); opacity: 0; }
+  60% { transform: scale(0.92) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(1.5deg); opacity: 1; }
+}
+.anim-stamp-r { animation: stamp-in-r 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+
+@keyframes draw {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+.anim-draw path,
+.anim-draw line,
+.anim-draw circle {
+  stroke-dasharray: 1000;
+  animation: draw 900ms ease-out forwards;
+}
+
+@keyframes page-in {
+  0% { transform: translateY(18px) rotate(-0.5deg); opacity: 0; }
+  100% { transform: translateY(0) rotate(0); opacity: 1; }
+}
+.anim-page { animation: page-in 360ms ease-out both; }
 
 @keyframes wag {
-  0%, 100% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
+  0%, 100% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
 }
-.anim-wag { animation: wag 2s ease-in-out infinite; transform-origin: 50% 100%; }
+.anim-wag { animation: wag 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
 
 @keyframes confetti {
-  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(120vh) rotate(720deg); opacity: 0; }
+  0% { transform: translateY(-20%) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(120vh) rotate(540deg); opacity: 0; }
 }
-.confetti { animation: confetti 1.6s ease-in forwards; }
+.confetti { animation: confetti 1.8s ease-in forwards; }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+@keyframes slow-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-.anim-slide { animation: slideUp 280ms ease-out; }
+.anim-fade { animation: slow-fade 600ms ease-out both; }
+
+/* Number counters and display treatments */
+.display-xl {
+  font-family: 'Fraunces', 'Noto Serif Georgian', serif;
+  font-variation-settings: 'opsz' 144, 'SOFT' 20, 'wght' 400;
+  font-size: clamp(44px, 12vw, 64px);
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+}
+
+.display-lg {
+  font-family: 'Fraunces', 'Noto Serif Georgian', serif;
+  font-variation-settings: 'opsz' 144, 'wght' 500;
+  font-size: clamp(30px, 8vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.hand-note {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  color: var(--wine);
+  line-height: 1.1;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+
+.eyebrow {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: 'opsz' 144, 'wght' 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 11px;
+  color: var(--wine);
+}
+
+.serif-caption {
+  font-style: italic;
+  font-variation-settings: 'opsz' 144, 'SOFT' 100;
+  color: var(--ink-soft);
+}
+
+/* Scrollbar — nearly invisible, paper feel */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Focus states */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid #E86B4E;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Picture Book: page-in transition */
+@keyframes pb-in {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.pb-in { animation: pb-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.pb-in-1 { animation-delay: 60ms; }
+.pb-in-2 { animation-delay: 120ms; }
+.pb-in-3 { animation-delay: 180ms; }
+.pb-in-4 { animation-delay: 240ms; }
+.pb-in-5 { animation-delay: 300ms; }
+
+@keyframes pb-breath {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.pb-breath { animation: pb-breath 4s ease-in-out infinite; }
+
+/* ════════════ Minanka / jewel utilities ════════════ */
+
+/* Jewel tile: solid cream, double-layer border (ink + gold hairline), offset shadow */
+.jewel-tile {
+  background: #FDFAEF;
+  border: 1.5px solid #15100A;
+  box-shadow: 3px 3px 0 #15100A;
+  border-radius: 14px;
+  position: relative;
+}
+.jewel-tile::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(245, 184, 32, 0.5);
+  border-radius: 11px;
+  pointer-events: none;
+}
+
+/* Pressable state */
+.jewel-pressable {
+  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+}
+.jewel-pressable:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #15100A;
+}
+
+/* Jewel button — solid fill + ink border + offset shadow (board game piece) */
+.jewel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  min-height: 56px;
+  border: 1.5px solid #15100A;
+  border-radius: 12px;
+  font-family: 'Manrope', 'Noto Sans Georgian', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  box-shadow: 3px 3px 0 #15100A;
+  transition: transform 80ms ease-out, box-shadow 80ms ease-out;
+  user-select: none;
+  position: relative;
+}
+.jewel-btn::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(245, 184, 32, 0.6);
+  border-radius: 9px;
+  pointer-events: none;
+}
+.jewel-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #15100A;
+}
+.jewel-btn:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.jewel-btn-navy {
+  background: #1B5FB0;
+  color: #FBF6EC;
+}
+.jewel-btn-ruby {
+  background: #E01A3C;
+  color: #FBF6EC;
+}
+.jewel-btn-cream {
+  background: #FDFAEF;
+  color: #15100A;
+}
+.jewel-btn-gold {
+  background: #F5B820;
+  color: #15100A;
+}
+
+/* Eyebrow text utility */
+.mn-eyebrow {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  color: #5A4735;
+}
+
+/* Display number — big Georgian letter-as-number */
+.mn-geo-numeral {
+  font-family: 'Noto Sans Georgian', 'Manrope', sans-serif;
+  font-weight: 700;
+  font-feature-settings: 'ss01';
+}
+
+/* Loader letter — Georgian character that breathes while loading.
+   The user sees this many times and subconsciously memorizes its shape,
+   which gets "revealed" later when they reach that letter in the Alphabet module. */
+@keyframes mn-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.82; }
+}
+.mn-loader-letter {
+  font-family: 'Noto Sans Georgian', 'Manrope', sans-serif;
+  font-weight: 800;
+  animation: mn-breathe 1.6s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: center;
+}
+
+/* Reveal pulse — used when "old acquaintance" stamps appear */
+@keyframes mn-reveal {
+  0% { transform: scale(0.6) rotate(-8deg); opacity: 0; }
+  65% { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.mn-reveal { animation: mn-reveal 520ms cubic-bezier(0.2, 1.3, 0.3, 1) both; }
+
+/* Kilim border strip — tiny geometric motif repeated horizontally as a product signature */
+.mn-kilim {
+  height: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 8' preserveAspectRatio='xMidYMid meet'%3E%3Cg fill='none' stroke='%231B5FB0' stroke-width='1.2'%3E%3Cpath d='M0 4 L4 0 L8 4 L4 8 Z'/%3E%3Cpath d='M8 4 L12 0 L16 4 L12 8 Z' stroke='%23E01A3C'/%3E%3Cpath d='M16 4 L20 0 L24 4 L20 8 Z' stroke='%23F5B820'/%3E%3Cpath d='M24 4 L28 0 L32 4 L28 8 Z'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 32px 8px;
+}

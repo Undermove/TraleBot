@@ -74,8 +74,17 @@ export interface VocabularyQuizQuestion {
   isStarter: boolean
 }
 
+export interface VocabularyWordPair {
+  wordId: string
+  georgian: string
+  russian: string
+}
+
 export interface VocabularyQuizResponse {
   questions: VocabularyQuizQuestion[]
+  wordPairs?: VocabularyWordPair[]
+  allGeorgian?: string[]
+  allRussian?: string[]
 }
 
 export type VocabularyQuizMode = 'all' | 'new' | 'weak' | 'custom' | 'starter'
