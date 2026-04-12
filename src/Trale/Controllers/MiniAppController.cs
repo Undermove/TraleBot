@@ -74,17 +74,17 @@ public class MiniAppController : Controller
                 return NotFound(new { error = "Unknown lesson" });
             }
             var loader = _questionsLoaderFactory.CreateForLesson(lessonId);
-            var questions = loader.LoadQuestionsForLesson(lessonId);
-            var dto = questions.Select(q => new
+            return Ok(MapQuestions(loader, lessonId));
+        }
+
+        if (moduleId == "cases")
+        {
+            if (lessonId < 1 || lessonId > 8)
             {
-                id = q.Id,
-                lemma = q.Lemma,
-                question = q.Question,
-                options = q.Options,
-                answerIndex = q.AnswerIndex,
-                explanation = q.Explanation
-            });
-            return Ok(dto);
+                return NotFound(new { error = "Unknown lesson" });
+            }
+            var loader = _questionsLoaderFactory.CreateForModuleLesson("GeorgianCases", lessonId);
+            return Ok(MapQuestions(loader, lessonId));
         }
 
         return NotFound(new { error = "Unknown module" });
@@ -196,6 +196,19 @@ public class MiniAppController : Controller
         {
             xpEarned,
             progress = SerializeProgress(progress)
+        });
+    }
+
+    private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader, int lessonId)
+    {
+        return loader.LoadQuestionsForLesson(lessonId).Select(q => new
+        {
+            id = q.Id,
+            lemma = q.Lemma,
+            question = q.Question,
+            options = q.Options,
+            answerIndex = q.AnswerIndex,
+            explanation = q.Explanation
         });
     }
 

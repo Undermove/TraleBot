@@ -85,38 +85,29 @@
 
 ## Ближайшая итерация (следующий заход)
 
-Порядок примерный, приоритеты корректируются по ходу.
+### ~~1. Применить Minankari к main~~ ✅ Готово
+Все 9 экранов переведены на Minankari. Коммит `63c9b4e` в ветке `feature/lesson-path-design`.
 
-### 1. Применить Minankari к main
-Текущий main содержит sketchbook-версию дизайна. Переложить на Minankari: KilimProgress вместо обычных рельс, jewel-tiles вместо rounded-card, Manrope вместо Nunito, правильные цвета, обновлённый Бомбора. Все экраны: Dashboard, ModuleMap, LessonTheory, Practice, VocabularyPractice, Result, Profile, VocabularyList, LandingScreen.
+### ~~2. Починить «мини-аб» → «мини-апп»~~ ✅ Готово
+Починено в коммите `c4c2942`.
 
-Критично:
-- Проверить что все кнопки кликаются (после квизов по словарю в sketchbook-версии был баг с некликабельными кнопками — z-index + pointer-events + pointer-events: none на декорах)
-- `min-h-[100dvh]` вместо `min-h-full` на loader/error экранах (иначе коллапсируют)
-- Все `fixed bottom-0` bar-ы имеют `paddingBottom: calc(var(--safe-b) + 16px)`
-- Все sticky headers имеют `paddingTop: calc(var(--safe-t) + 12px)`
+### ~~3. Модуль «Падежи»~~ ✅ Готово
+8 уроков, 18-20 вопросов на урок, теория + multi-choice квизы:
 
-### 2. Починить «мини-аб» → «мини-апп»
-В двух местах (`VocabularyList.tsx`, `VocabularyPractice.tsx`) остался старый спелл. Глобальный grep + фикс.
+1. Именительный падеж — სახელობითი
+2. Эргативный падеж — მოთხრობითი
+3. Дательный падеж — მიცემითი
+4. Родительный падеж — ნათესაობითი
+5. Творительный падеж — მოქმედებითი
+6. Обстоятельственный падеж — ვითარებითი
+7. Звательный падеж — წოდებითი
+8. Итоговое повторение — все 7 падежей
 
-### 3. Первый новый модуль: Падежи
-
-Это главная грамматическая дыра после глаголов движения. 8-10 уроков:
-
-1. Именительный падеж — основы
-2. Эргативный падеж (необходим для прошедшего совершённого времени, критично для грузинского)
-3. Дательный падеж
-4. Родительный падеж
-5. Творительный падеж
-6. Местный падеж
-7. Звательный падеж
-8. Итоговое повторение — падежи в контексте
-
-Контент: теория в существующем формате `paragraph/list/example`, упражнения как multi-choice. Квесты хранятся в `src/Trale/MiniApp/MiniAppContentProvider.cs` рядом с Verbs of Movement.
+Контент: `src/Trale/GeorgianCases/questions*.json` (8 файлов), теория в `MiniAppContentProvider.BuildCasesModule()`, роутинг в `MiniAppController` через `CreateForModuleLesson("GeorgianCases", lessonId)`.
 
 ### 4. Включить флаг и выпустить мини-апп
 
-Когда Minankari готова и падежи добавлены, flip `BotConfiguration__MiniAppEnabled=true` в `deploy/tralebot.yml`. На следующем рестарте пода `SetChatMenuButton` появится у всех юзеров.
+Когда всё протестировано, flip `BotConfiguration__MiniAppEnabled=true` в `deploy/tralebot.yml`. На следующем рестарте пода `SetChatMenuButton` появится у всех юзеров.
 
 ## Среднесрочное (1-2 месяца)
 
@@ -244,6 +235,7 @@
 - **2026-04-11** Учебный loader: буква ქ (первая буква слова ქართული), reveal-момент планируется при прохождении алфавитного урока.
 - **2026-04-11** Один шрифт — Manrope + Noto Sans Georgian fallback. Отвергнуто: multi-font mix (Fraunces + Caveat + Figtree + Noto Serif Georgian) — слишком много шрифтов на один экран.
 - **2026-04-11** Один акцент per элемент, не перемешиваются. Ранее пробовали 5 цветов (wine + moss + saffron + sky + ink) — было шумно.
+- **2026-04-12** Добавлен модуль «Падежи» — 8 уроков, все 7 грузинских падежей. Вместо «Местный падеж» (которого нет в груз��нском) — «Обстоятельственный» (ვითარებითი, суффикс -ად). Рефакторнут `GeorgianQuestionsLoader` чтобы принимать subdirectory — теперь вопросы для любого модуля лежат в своей папке (`GeorgianCases/`, `GeorgianVerbsOfMovement/`).
 
 ## Как работать с этим файлом
 

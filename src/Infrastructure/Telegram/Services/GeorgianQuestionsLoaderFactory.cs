@@ -13,23 +13,13 @@ public class GeorgianQuestionsLoaderFactory : IGeorgianQuestionsLoaderFactory
 
     public IGeorgianQuestionsLoader CreateForLesson(int lessonNumber)
     {
-        var fileName = lessonNumber switch
-        {
-            1 => "questions.json",
-            2 => "questions2.json",
-            3 => "questions3.json",
-            4 => "questions4.json",
-            5 => "questions5.json",
-            6 => "questions6.json",
-            7 => "questions7.json",
-            8 => "questions8.json",
-            9 => "questions9.json",
-            10 => "questions10.json",
-            11 => "questions11.json",
-            _ => throw new ArgumentException($"Unsupported lesson number: {lessonNumber}")
-        };
+        return CreateForModuleLesson("GeorgianVerbsOfMovement", lessonNumber);
+    }
 
+    public IGeorgianQuestionsLoader CreateForModuleLesson(string subdirectory, int lessonNumber)
+    {
+        var fileName = lessonNumber == 1 ? "questions.json" : $"questions{lessonNumber}.json";
         var logger = _loggerFactory.CreateLogger<GeorgianQuestionsLoader>();
-        return new GeorgianQuestionsLoader(logger, fileName);
+        return new GeorgianQuestionsLoader(logger, fileName, subdirectory);
     }
 }
