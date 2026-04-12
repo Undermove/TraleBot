@@ -120,21 +120,24 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
       {/* ══ Module sections ══ */}
       {(() => {
-        const alphabetIds = ['alphabet-progressive', 'alphabet']
-        const grammarIds = ['numbers', 'verbs-of-movement', 'cases', 'pronouns', 'present-tense', 'postpositions', 'adjectives']
-        const vocabIds = ['cafe', 'taxi', 'doctor', 'shopping', 'intro', 'emergency']
+        const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
+        const grammarIds = ['pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives']
+        const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
+        const advancedIds = ['verbs-of-movement']
 
-        const alphaModules = catalog.modules.filter((m) => alphabetIds.includes(m.id))
+        const basics = catalog.modules.filter((m) => basicsIds.includes(m.id))
         const grammar = catalog.modules.filter((m) => grammarIds.includes(m.id))
         const vocab = catalog.modules.filter((m) => vocabIds.includes(m.id))
+        const advanced = catalog.modules.filter((m) => advancedIds.includes(m.id))
         const myVocab = catalog.modules.filter((m) => m.id === 'my-vocabulary')
 
         const isBeginner = userLevel === 'beginner' && !showAllSections
 
         const sections = [
-          { key: 'alphabet', label: isBeginner ? 'начни отсюда' : 'алфавит', geoLabel: 'ანბანი', modules: alphaModules, accent: 'navy' as const, collapsed: false },
+          { key: 'basics', label: isBeginner ? 'начни отсюда' : 'основы', geoLabel: 'საფუძვლები', modules: basics, accent: 'navy' as const, collapsed: false },
           { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const, collapsed: isBeginner },
           { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const, collapsed: isBeginner },
+          { key: 'advanced', label: 'продвинутое', geoLabel: 'გაღრმავება', modules: advanced, accent: 'ruby' as const, collapsed: isBeginner },
           { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const, collapsed: false },
         ]
 

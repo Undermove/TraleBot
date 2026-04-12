@@ -1,186 +1,303 @@
 {
   "lesson_id": "alpha-easy-2",
   "title": "Первые слова: читаем по-грузински",
-  "lexicon": ["დედა", "მამა", "ბაბა", "ბინა", "დიდი", "ადამი", "მადე", "ბანანი"],
+  "lexicon": [
+    "დედა",
+    "მამა",
+    "ბაბა",
+    "ბინა",
+    "დიდი",
+    "ადამი",
+    "მადე",
+    "ბანანი"
+  ],
   "questions": [
     {
       "id": "ae2-q1",
       "lemma": "დედა",
       "question": "Как читается слово «დედა»?",
-      "options": ["deda", "mama", "baba"],
+      "options": [
+        "дэда",
+        "мама",
+        "баба"
+      ],
       "answer_index": 0,
-      "explanation": "«დედა» читается «deda» и означает «мама».",
-      "tags": ["word-reading"],
+      "explanation": "«დედა» читается «дэда» и означает «мама».",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q2",
       "lemma": "მამა",
       "question": "Как читается слово «მამა»?",
-      "options": ["deda", "baba", "mama"],
+      "options": [
+        "дэда",
+        "баба",
+        "мама"
+      ],
       "answer_index": 2,
-      "explanation": "«მამა» читается «mama» и означает «папа».",
-      "tags": ["word-reading"],
+      "explanation": "«მამა» читается «мама» и означает «папа».",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q3",
       "lemma": "ბაბა",
       "question": "Как читается слово «ბაბა»?",
-      "options": ["baba", "dada", "nana"],
+      "options": [
+        "баба",
+        "дада",
+        "нана"
+      ],
       "answer_index": 0,
-      "explanation": "«ბაბა» читается «baba» и означает «дедушка».",
-      "tags": ["word-reading"],
+      "explanation": "«ბაბა» читается «баба» и означает «дедушка».",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q4",
       "lemma": "ბინა",
       "question": "Как читается слово «ბინა»?",
-      "options": ["mina", "bina", "dina"],
+      "options": [
+        "мина",
+        "бина",
+        "дина"
+      ],
       "answer_index": 1,
-      "explanation": "«ბინა» читается «bina» и означает «квартира».",
-      "tags": ["word-reading"],
+      "explanation": "«ბინა» читается «бина» и означает «квартира».",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q5",
       "lemma": "დიდი",
       "question": "Как читается слово «დიდი»?",
-      "options": ["didi", "bibi", "mini"],
+      "options": [
+        "диди",
+        "биби",
+        "мини"
+      ],
       "answer_index": 0,
-      "explanation": "«დიდი» читается «didi» и означает «большой».",
-      "tags": ["word-reading"],
+      "explanation": "«დიდი» читается «диди» и означает «большой».",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q6",
       "lemma": "ბანანი",
       "question": "Как читается слово «ბანანი»?",
-      "options": ["madani", "banani", "nanami"],
+      "options": [
+        "мадани",
+        "банани",
+        "нанами"
+      ],
       "answer_index": 1,
-      "explanation": "«ბანანი» читается «banani» и означает «банан».",
-      "tags": ["word-reading"],
+      "explanation": "«ბანანი» читается «банани» и означает «банан».",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q7",
       "lemma": "დედა",
       "question": "Что означает «დედა»?",
-      "options": ["папа", "мама", "дедушка"],
+      "options": [
+        "папа",
+        "мама",
+        "дедушка"
+      ],
       "answer_index": 1,
       "explanation": "«დედა» (deda) — это «мама» по-грузински.",
-      "tags": ["meaning"],
+      "tags": [
+        "meaning"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q8",
       "lemma": "მამა",
       "question": "Что означает «მამა»?",
-      "options": ["мама", "дедушка", "папа"],
+      "options": [
+        "мама",
+        "дедушка",
+        "папа"
+      ],
       "answer_index": 2,
       "explanation": "«მამა» (mama) — это «папа» по-грузински. Не путайте с русским «мама»!",
-      "tags": ["meaning"],
+      "tags": [
+        "meaning"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q9",
       "lemma": "ბაბა",
       "question": "Что означает «ბაბა»?",
-      "options": ["дедушка", "папа", "квартира"],
+      "options": [
+        "дедушка",
+        "папа",
+        "квартира"
+      ],
       "answer_index": 0,
       "explanation": "«ბაბა» (baba) — это «дедушка» по-грузински.",
-      "tags": ["meaning"],
+      "tags": [
+        "meaning"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q10",
       "lemma": "ბინა",
       "question": "Что означает «ბინა»?",
-      "options": ["банан", "большой", "квартира"],
+      "options": [
+        "банан",
+        "большой",
+        "квартира"
+      ],
       "answer_index": 2,
       "explanation": "«ბინა» (bina) — это «квартира» по-грузински.",
-      "tags": ["meaning"],
+      "tags": [
+        "meaning"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q11",
       "lemma": "დიდი",
       "question": "Что означает «დიდი»?",
-      "options": ["маленький", "большой", "старый"],
+      "options": [
+        "маленький",
+        "большой",
+        "старый"
+      ],
       "answer_index": 1,
       "explanation": "«დიდი» (didi) — это «большой» по-грузински.",
-      "tags": ["meaning"],
+      "tags": [
+        "meaning"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q12",
       "lemma": "ბანანი",
       "question": "Что означает «ბანანი»?",
-      "options": ["банан", "квартира", "дедушка"],
+      "options": [
+        "банан",
+        "квартира",
+        "дедушка"
+      ],
       "answer_index": 0,
       "explanation": "«ბანანი» (banani) — это «банан» по-грузински.",
-      "tags": ["meaning"],
+      "tags": [
+        "meaning"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q13",
       "lemma": "დედა",
       "question": "Как написать «мама» по-грузински?",
-      "options": ["მამა", "ბაბა", "დედა"],
+      "options": [
+        "მამა",
+        "ბაბა",
+        "დედა"
+      ],
       "answer_index": 2,
       "explanation": "«Мама» по-грузински — «დედა» (deda).",
-      "tags": ["translation"],
+      "tags": [
+        "translation"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q14",
       "lemma": "მამა",
       "question": "Как написать «папа» по-грузински?",
-      "options": ["მამა", "დედა", "ბაბა"],
+      "options": [
+        "მამა",
+        "დედა",
+        "ბაბა"
+      ],
       "answer_index": 0,
       "explanation": "«Папа» по-грузински — «მამა» (mama). Ложный друг переводчика!",
-      "tags": ["translation"],
+      "tags": [
+        "translation"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q15",
       "lemma": "ადამი",
       "question": "Как читается слово «ადამი»?",
-      "options": ["adami", "amadi", "adimi"],
+      "options": [
+        "адами",
+        "амади",
+        "адими"
+      ],
       "answer_index": 0,
-      "explanation": "«ადამი» читается «adami» — имя Адам по-грузински.",
-      "tags": ["word-reading"],
+      "explanation": "«ადამი» читается «адами» — имя Адам по-грузински.",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q16",
       "lemma": "მადე",
       "question": "Как читается слово «მადე»?",
-      "options": ["made", "meda", "dema"],
+      "options": [
+        "мадэ",
+        "мэда",
+        "дэма"
+      ],
       "answer_index": 0,
-      "explanation": "«მადე» читается «made».",
-      "tags": ["word-reading"],
+      "explanation": "«მადე» читается «мадэ».",
+      "tags": [
+        "word-reading"
+      ],
       "difficulty": 2
     },
     {
       "id": "ae2-q17",
       "lemma": "დედა",
       "question": "С какой буквы начинается слово «დედა» (мама)?",
-      "options": ["მ", "ბ", "დ"],
+      "options": [
+        "მ",
+        "ბ",
+        "დ"
+      ],
       "answer_index": 2,
       "explanation": "«დედა» начинается с буквы «დ» (d).",
-      "tags": ["recognition"],
+      "tags": [
+        "recognition"
+      ],
       "difficulty": 1
     },
     {
       "id": "ae2-q18",
       "lemma": "ბანანი",
       "question": "Сколько букв «ნ» в слове «ბანანი» (банан)?",
-      "options": ["одна", "две", "три"],
+      "options": [
+        "одна",
+        "две",
+        "три"
+      ],
       "answer_index": 1,
       "explanation": "В слове «ბანანი» буква «ნ» встречается два раза: ბა-ნ-ა-ნ-ი.",
-      "tags": ["recognition"],
+      "tags": [
+        "recognition"
+      ],
       "difficulty": 2
     }
   ]
