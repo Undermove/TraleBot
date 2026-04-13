@@ -103,6 +103,20 @@ Frontend mini-app lives in `src/Trale/miniapp-src/` (React 18 + Vite + TypeScrip
 - Routing in `src/Trale/Controllers/MiniAppController.cs`
 - Question loader: `GeorgianQuestionsLoader` with subdirectory parameter
 
+## Agent-Driven Development
+
+Проект развивается четырьмя автономными агентами (промпты в `.claude/agents/`):
+- **Product** — генерирует идеи, приоритизирует backlog в ROADMAP.md
+- **Designer** — создаёт дизайн-спеки в `design-specs/` по задачам `[idea]`
+- **Developer** — реализует по спекам задачи `[designed]`
+- **Tech Lead** — ревьюит PR, дописывает тесты
+
+Пайплайн: `[idea]` → `[designing]` → `[designed]` → `[dev]` → `[review]` → `[done]`
+
+Ключевое правило: **Design-Driven** — никакая фича не реализуется без дизайн-спеки. Каждая фича содержит обучающий элемент (UI учит грузинскому).
+
+Подробности: ROADMAP.md → секция «Агентный пайплайн».
+
 ## Testing Strategy
 
 - **Unit Tests**: Application layer business logic, domain entities, infrastructure parsers

@@ -196,17 +196,24 @@ public class MiniAppController : Controller
 
         var progress = await LoadOrCreateProgressAsync(user, ct);
 
-        // XP calc: up to 20 XP for a 100% lesson, half XP for repeats
+        // XP calc: 100% = 20 XP first time, 10 XP repeat; <100% = 5 XP repeat, 0 first time
         var completed = ParseCompletedLessons(progress.CompletedLessonsJson);
         if (!completed.TryGetValue(request.ModuleId, out var lessons))
         {
             lessons = new List<int>();
         }
 
+        var isPerfect = request.Correct == request.Total;
         var wasFirst = request.LessonId > 0 && !lessons.Contains(request.LessonId);
-        var correctRatio = Math.Clamp((double)request.Correct / request.Total, 0, 1);
-        var baseXp = (int)Math.Round(correctRatio * 20);
-        var xpEarned = wasFirst ? baseXp : Math.Max(1, baseXp / 2);
+        int xpEarned;
+        if (isPerfect)
+        {
+            xpEarned = wasFirst ? 20 : 10;
+        }
+        else
+        {
+            xpEarned = wasFirst ? 0 : 5;
+        }
 
         progress.Xp += xpEarned;
 
@@ -234,8 +241,8 @@ public class MiniAppController : Controller
         }
         progress.LastPlayedAtUtc = DateTime.UtcNow;
 
-        // Record completion — only for real module lessons (skip "vocabulary" pseudo-module)
-        if (request.LessonId > 0 && request.ModuleId != "vocabulary")
+        // Record completion — only on 100% correct, skip "vocabulary" pseudo-module
+        if (isPerfect && request.LessonId > 0 && request.ModuleId != "vocabulary")
         {
             if (!lessons.Contains(request.LessonId))
             {
