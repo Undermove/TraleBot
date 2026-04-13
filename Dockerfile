@@ -9,7 +9,7 @@ COPY src/Trale/miniapp-src/ ./
 RUN npm run build
 
 # Stage 2: build the .NET solution, pulling in the freshly built static assets
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 COPY . ./
 COPY /src/Trale/appsettings.json .
@@ -19,7 +19,7 @@ COPY --from=webapp-build /build/src/Trale/wwwroot ./src/Trale/wwwroot
 RUN dotnet publish src/Trale/Trale.csproj -c Release -o output
 
 # Stage 3: runtime — ASP.NET Core serves the API + the SPA bundle from wwwroot
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/output .
 EXPOSE 1402
