@@ -123,7 +123,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
         const grammarIds = ['pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives']
         const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
-        const advancedIds = ['verbs-of-movement']
+        const advancedIds = ['verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist', 'pronoun-declension', 'conditionals', 'verbs-of-movement']
 
         const basics = catalog.modules.filter((m) => basicsIds.includes(m.id))
         const grammar = catalog.modules.filter((m) => grammarIds.includes(m.id))
@@ -144,6 +144,8 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         const moduleIcons: Record<string, string> = {
           'alphabet-progressive': 'ა', 'alphabet': 'ა', 'numbers': '①',
           'postpositions': 'შ', 'adjectives': 'ლ',
+          'verb-classes': 'ზ', 'version-vowels': 'უ', 'preverbs': 'და', 'imperfect': 'დ',
+          'aorist': 'მ', 'pronoun-declension': 'ი', 'conditionals': 'თ',
           'verbs-of-movement': 'ზ', 'cases': 'ბ', 'pronouns': 'მ',
           'present-tense': 'დ', 'cafe': 'ყ', 'taxi': 'ტ', 'doctor': 'ე',
           'shopping': 'ხ', 'intro': 'გ', 'emergency': 'ს', 'my-vocabulary': 'ლ',
@@ -152,6 +154,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         const moduleGeoLabels: Record<string, string> = {
           'alphabet-progressive': 'ანბანი', 'alphabet': 'ანბანი',
           'numbers': 'რიცხვები', 'postpositions': 'თანდებულები', 'adjectives': 'ზედსართავები',
+          'verb-classes': 'ზმნის კლასები', 'version-vowels': 'ვერსია', 'preverbs': 'პრევერბები',
+          'imperfect': 'უწყვეტელი', 'aorist': 'წყვეტილი', 'pronoun-declension': 'ბრუნვა',
+          'conditionals': 'პირობითი',
           'verbs-of-movement': 'ზმნები', 'cases': 'ბრუნვები',
           'pronouns': 'ნაცვალსახელები', 'present-tense': 'აწმყო', 'cafe': 'კაფე',
           'taxi': 'ტაქსი', 'doctor': 'ექიმი', 'shopping': 'მაღაზია',

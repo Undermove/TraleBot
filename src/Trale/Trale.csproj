@@ -94,6 +94,27 @@
       <Content Update="GeorgianAdjectives\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="GeorgianVerbClasses\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianVersionVowels\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianPreverbs\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianImperfect\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianAorist\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianPronounDeclension\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+      <Content Update="GeorgianConditionals\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Update="GeorgianPronouns\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
