@@ -1,0 +1,25 @@
+services:
+  bombora-agents:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bombora-agents
+    restart: unless-stopped
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - REPO_URL=${REPO_URL:-https://github.com/undermove/TraleBot.git}
+      - GIT_USER_NAME=${GIT_USER_NAME:-Bombora Agents}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-agents@tralebot.com}
+      - MAX_BUDGET_USD=${MAX_BUDGET_USD:-5}
+      - MAX_TURNS=${MAX_TURNS:-30}
+    volumes:
+      - agent-logs:/logs
+      - agent-workspace:/workspace
+    # Override cron schedule with env vars if needed
+
+volumes:
+  agent-logs:
+    driver: local
+  agent-workspace:
+    driver: local

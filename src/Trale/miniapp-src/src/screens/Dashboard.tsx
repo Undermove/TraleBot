@@ -22,6 +22,22 @@ interface Props {
  */
 export default function Dashboard({ catalog, progress, todayLessons, userLevel, navigate }: Props) {
   const [showAllSections, setShowAllSections] = useState(userLevel === 'intermediate')
+
+  // Per-section collapse state (persisted in localStorage)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('bombora_collapsed')
+      return saved ? JSON.parse(saved) : {}
+    } catch { return {} }
+  })
+
+  function toggleSection(key: string) {
+    setCollapsedSections((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      try { localStorage.setItem('bombora_collapsed', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
   return (
     <div className="flex flex-col min-h-full bg-cream">
       {/* ══ Kilim signature strip ══ */}
@@ -174,6 +190,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           {sections.map((section) => {
           if (section.modules.length === 0) return null
 
+          // For beginners: collapsed sections show "show all" instead
           if (section.collapsed) {
             return (
               <div key={section.key} className="px-5 pt-2 pb-1">
@@ -189,19 +206,31 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
             )
           }
 
+          const isUserCollapsed = collapsedSections[section.key] === true
+
           return (
             <div key={section.key}>
-              {/* Section header */}
-              <div className="px-5 pt-4 pb-3 flex items-center gap-3">
+              {/* Section header — tappable to collapse/expand */}
+              <button
+                onClick={() => toggleSection(section.key)}
+                className="w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity"
+              >
                 <div className="mn-eyebrow">{section.label}</div>
                 <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
                 <div className="flex-1 h-px bg-jewelInk/15" />
                 <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
                   {section.modules.length}
                 </div>
-              </div>
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  className={`shrink-0 text-jewelInk-mid transition-transform ${isUserCollapsed ? '-rotate-90' : ''}`}
+                >
+                  <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
 
-              {/* Module tiles */}
+              {/* Module tiles — hidden when collapsed */}
+              {!isUserCollapsed && (
               <section className="px-5 flex flex-col gap-3 pb-2">
                 {section.modules.map((m) => {
                   const currentIdx = globalIdx++
@@ -291,6 +320,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                   )
                 })}
               </section>
+              )}
             </div>
           )
         })}

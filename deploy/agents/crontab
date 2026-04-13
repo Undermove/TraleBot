@@ -1,0 +1,14 @@
+# Бомбора Agent Schedule
+# Logs: /logs/{agent}.log
+#
+# Product Agent — раз в неделю (понедельник 09:00)
+0 9 * * 1 /scripts/run-agent.sh product >> /logs/agents.log 2>&1
+
+# Designer Agent — каждый день в 10:00
+0 10 * * * /scripts/run-agent.sh designer >> /logs/agents.log 2>&1
+
+# Developer Agent — каждый день в 14:00 (после дизайнера)
+0 14 * * * /scripts/run-agent.sh developer >> /logs/agents.log 2>&1
+
+# Tech Lead Agent — каждый день в 18:00 (после девелопера)
+0 18 * * * /scripts/run-agent.sh tech-lead >> /logs/agents.log 2>&1

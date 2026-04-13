@@ -143,7 +143,8 @@ export default function Practice({
   async function next() {
     if (index + 1 >= total) {
       const finalCorrect = correctCount
-      let xpEarned = Math.round((finalCorrect / total) * 20)
+      const isPerfect = finalCorrect === total
+      let xpEarned = isPerfect ? 20 : 0
 
       if (authenticated) {
         try {
@@ -156,28 +157,29 @@ export default function Practice({
           setProgress(progressFromDto(r.progress))
           xpEarned = r.xpEarned
         } catch {
-          setProgress({
-            ...progress,
-            xp: progress.xp + xpEarned,
-            completedLessons: {
+          // Offline fallback: only mark completed if 100%
+          const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
+          if (isPerfect) {
+            updatedProgress.completedLessons = {
               ...progress.completedLessons,
               [moduleId]: Array.from(
                 new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])
               ).sort((a, b) => a - b)
             }
-          })
+          }
+          setProgress(updatedProgress)
         }
       } else {
-        setProgress({
-          ...progress,
-          xp: progress.xp + xpEarned,
-          completedLessons: {
+        const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
+        if (isPerfect) {
+          updatedProgress.completedLessons = {
             ...progress.completedLessons,
             [moduleId]: Array.from(
               new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])
             ).sort((a, b) => a - b)
           }
-        })
+        }
+        setProgress(updatedProgress)
       }
 
       navigate({
