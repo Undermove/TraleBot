@@ -6,17 +6,19 @@ services:
     container_name: bombora-agents
     restart: unless-stopped
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Auth: подписка ИЛИ API-ключ
+      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # GitHub
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - REPO_URL=${REPO_URL:-https://github.com/undermove/TraleBot.git}
       - GIT_USER_NAME=${GIT_USER_NAME:-Bombora Agents}
       - GIT_USER_EMAIL=${GIT_USER_EMAIL:-agents@tralebot.com}
-      - MAX_BUDGET_USD=${MAX_BUDGET_USD:-5}
+      # Limits
       - MAX_TURNS=${MAX_TURNS:-30}
     volumes:
       - agent-logs:/logs
       - agent-workspace:/workspace
-    # Override cron schedule with env vars if needed
 
 volumes:
   agent-logs:

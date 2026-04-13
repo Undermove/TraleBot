@@ -35,6 +35,7 @@ builder.Services.AddPersistence(configuration);
 
 builder.Services.AddInfrastructure(configuration);
 builder.Services.AddSingleton<Trale.MiniApp.IMiniAppContentProvider, Trale.MiniApp.MiniAppContentProvider>();
+builder.Services.AddScoped<Trale.MiniApp.IProgressCalculator, Trale.MiniApp.ProgressCalculator>();
 builder.Services.AddHostedService<CreateWebhook>();
 builder.Services.AddHostedService<IdempotencyCleanupService>();
 

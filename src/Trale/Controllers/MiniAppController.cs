@@ -22,26 +22,28 @@ namespace Trale.Controllers;
 public class MiniAppController : Controller
 {
     private const string InitDataHeader = "X-Telegram-Init-Data";
-    private const int MaxVocabularyQuizQuestions = 15;
 
     private readonly IGeorgianQuestionsLoaderFactory _questionsLoaderFactory;
     private readonly ITraleDbContext _dbContext;
     private readonly BotConfiguration _botConfig;
     private readonly IMiniAppContentProvider _content;
     private readonly IMediator _mediator;
+    private readonly IProgressCalculator _progressCalculator;
 
     public MiniAppController(
         IGeorgianQuestionsLoaderFactory questionsLoaderFactory,
         ITraleDbContext dbContext,
         BotConfiguration botConfig,
         IMiniAppContentProvider content,
-        IMediator mediator)
+        IMediator mediator,
+        IProgressCalculator progressCalculator)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
         _dbContext = dbContext;
         _botConfig = botConfig;
         _content = content;
         _mediator = mediator;
+        _progressCalculator = progressCalculator;
     }
 
     [HttpGet("ping")]
@@ -82,37 +84,14 @@ public class MiniAppController : Controller
             return Ok(MapQuestions(loader, lessonId));
         }
 
-        var moduleMap = new Dictionary<string, (string dir, int maxLesson)>
+        var moduleDef = ModuleRegistry.Get(moduleId);
+        if (moduleDef != null)
         {
-            ["alphabet-progressive"] = ("GeorgianAlphabetProgressive", 10),
-            ["numbers"] = ("GeorgianNumbers", 4),
-            ["postpositions"] = ("GeorgianPostpositions", 5),
-            ["adjectives"] = ("GeorgianAdjectives", 5),
-            ["verb-classes"] = ("GeorgianVerbClasses", 5),
-            ["version-vowels"] = ("GeorgianVersionVowels", 5),
-            ["preverbs"] = ("GeorgianPreverbs", 5),
-            ["imperfect"] = ("GeorgianImperfect", 5),
-            ["aorist"] = ("GeorgianAorist", 5),
-            ["pronoun-declension"] = ("GeorgianPronounDeclension", 5),
-            ["conditionals"] = ("GeorgianConditionals", 5),
-            ["cases"] = ("GeorgianCases", 8),
-            ["pronouns"] = ("GeorgianPronouns", 5),
-            ["present-tense"] = ("GeorgianPresentTense", 5),
-            ["cafe"] = ("GeorgianVocabCafe", 5),
-            ["taxi"] = ("GeorgianVocabTaxi", 5),
-            ["doctor"] = ("GeorgianVocabDoctor", 5),
-            ["shopping"] = ("GeorgianVocabShopping", 5),
-            ["intro"] = ("GeorgianVocabIntro", 5),
-            ["emergency"] = ("GeorgianVocabEmergency", 5),
-        };
-
-        if (moduleMap.TryGetValue(moduleId, out var info))
-        {
-            if (lessonId < 1 || lessonId > info.maxLesson)
+            if (lessonId < 1 || lessonId > moduleDef.MaxLessons)
             {
                 return NotFound(new { error = "Unknown lesson" });
             }
-            var loader = _questionsLoaderFactory.CreateForModuleLesson(info.dir, lessonId);
+            var loader = _questionsLoaderFactory.CreateForModuleLesson(moduleDef.Directory, lessonId);
             return Ok(MapQuestions(loader, lessonId));
         }
 
@@ -141,7 +120,7 @@ public class MiniAppController : Controller
             language = user.Settings.CurrentLanguage.ToString(),
             vocabularyCount = vocabCount,
             level = progress.Level,
-            progress = SerializeProgress(progress)
+            progress = _progressCalculator.SerializeProgress(progress)
         });
     }
 
@@ -159,7 +138,7 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        if (request.Level != "beginner" && request.Level != "intermediate")
+        if (request.Level != LearningConstants.Levels.Beginner && request.Level != LearningConstants.Levels.Intermediate)
         {
             return BadRequest(new { error = "invalid_level" });
         }
@@ -195,71 +174,14 @@ public class MiniAppController : Controller
         }
 
         var progress = await LoadOrCreateProgressAsync(user, ct);
-
-        // XP calc: 100% = 20 XP first time, 10 XP repeat; <100% = 5 XP repeat, 0 first time
-        var completed = ParseCompletedLessons(progress.CompletedLessonsJson);
-        if (!completed.TryGetValue(request.ModuleId, out var lessons))
-        {
-            lessons = new List<int>();
-        }
-
-        var isPerfect = request.Correct == request.Total;
-        var wasFirst = request.LessonId > 0 && !lessons.Contains(request.LessonId);
-        int xpEarned;
-        if (isPerfect)
-        {
-            xpEarned = wasFirst ? 20 : 10;
-        }
-        else
-        {
-            xpEarned = wasFirst ? 0 : 5;
-        }
-
-        progress.Xp += xpEarned;
-
-        // Streak: update if new day
-        var todayUtc = DateTime.UtcNow.Date;
-        if (progress.LastPlayedAtUtc == null)
-        {
-            progress.Streak = 1;
-        }
-        else
-        {
-            var last = progress.LastPlayedAtUtc.Value.Date;
-            if (last == todayUtc)
-            {
-                // same day — keep streak
-            }
-            else if (last == todayUtc.AddDays(-1))
-            {
-                progress.Streak += 1;
-            }
-            else
-            {
-                progress.Streak = 1;
-            }
-        }
-        progress.LastPlayedAtUtc = DateTime.UtcNow;
-
-        // Record completion — only on 100% correct, skip "vocabulary" pseudo-module
-        if (isPerfect && request.LessonId > 0 && request.ModuleId != "vocabulary")
-        {
-            if (!lessons.Contains(request.LessonId))
-            {
-                lessons.Add(request.LessonId);
-                lessons.Sort();
-            }
-            completed[request.ModuleId] = lessons;
-            progress.CompletedLessonsJson = JsonSerializer.Serialize(completed);
-        }
-
-        progress.UpdatedAtUtc = DateTime.UtcNow;
+        var update = _progressCalculator.CalculateLessonCompletion(
+            progress, request.ModuleId, request.LessonId, request.Correct, request.Total);
         await _dbContext.SaveChangesAsync(ct);
 
         return Ok(new
         {
-            xpEarned,
-            progress = SerializeProgress(progress)
+            xpEarned = update.XpEarned,
+            progress = _progressCalculator.SerializeProgress(progress)
         });
     }
 
@@ -301,31 +223,6 @@ public class MiniAppController : Controller
         };
         _dbContext.MiniAppUserProgresses.Add(progress);
         return progress;
-    }
-
-    private static Dictionary<string, List<int>> ParseCompletedLessons(string json)
-    {
-        if (string.IsNullOrWhiteSpace(json)) return new();
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<string, List<int>>>(json) ?? new();
-        }
-        catch
-        {
-            return new();
-        }
-    }
-
-    private static object SerializeProgress(MiniAppUserProgress progress)
-    {
-        var completed = ParseCompletedLessons(progress.CompletedLessonsJson);
-        return new
-        {
-            xp = progress.Xp,
-            streak = progress.Streak,
-            lastPlayedAtUtc = progress.LastPlayedAtUtc,
-            completedLessons = completed
-        };
     }
 
     [HttpGet("vocabulary")]
@@ -398,7 +295,7 @@ public class MiniAppController : Controller
         }
 
         var random = new Random();
-        var requested = Math.Clamp(request.Count <= 0 ? 10 : request.Count, 1, MaxVocabularyQuizQuestions);
+        var requested = Math.Clamp(request.Count <= 0 ? 10 : request.Count, 1, LearningConstants.Quiz.MaxVocabularyQuestions);
 
         var allEntries = await _dbContext.VocabularyEntries
             .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
@@ -646,7 +543,7 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.Word) || request.Word.Trim().Length > 40)
+        if (string.IsNullOrWhiteSpace(request.Word) || request.Word.Trim().Length > LearningConstants.Vocabulary.MaxWordLength)
         {
             return BadRequest(new { error = "invalid_word" });
         }
