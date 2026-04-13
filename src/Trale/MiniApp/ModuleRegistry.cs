@@ -1,5 +1,5 @@
+using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Trale.MiniApp;
 
@@ -7,11 +7,11 @@ public record ModuleDefinition(string Id, string Directory, int MaxLessons);
 
 /// <summary>
 /// Single source of truth for module → question directory mapping.
-/// Eliminates magic strings scattered across controller and loaders.
+/// Uses FrozenDictionary (.NET 8+) for optimal read performance on static data.
 /// </summary>
 public static class ModuleRegistry
 {
-    private static readonly Dictionary<string, ModuleDefinition> Modules = new()
+    private static readonly FrozenDictionary<string, ModuleDefinition> Modules = new Dictionary<string, ModuleDefinition>
     {
         ["alphabet-progressive"] = new("alphabet-progressive", "GeorgianAlphabetProgressive", 10),
         ["numbers"] = new("numbers", "GeorgianNumbers", 4),
@@ -33,7 +33,7 @@ public static class ModuleRegistry
         ["shopping"] = new("shopping", "GeorgianVocabShopping", 5),
         ["intro"] = new("intro", "GeorgianVocabIntro", 5),
         ["emergency"] = new("emergency", "GeorgianVocabEmergency", 5),
-    };
+    }.ToFrozenDictionary();
 
     public static ModuleDefinition? Get(string moduleId)
     {
