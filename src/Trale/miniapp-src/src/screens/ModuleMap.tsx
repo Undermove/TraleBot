@@ -103,11 +103,11 @@ export default function ModuleMap({
   const accentWashHex =
     accent === 'navy' ? '#C9DBF0' : accent === 'ruby' ? '#F7D4DB' : '#F9EAC1'
 
-  // Path layout constants
-  const CIRCLE_SIZE = 56
-  const ROW_GAP = 28 // vertical gap between circle centers beyond circle size
+  // Path layout constants — adaptive for long modules
+  const CIRCLE_SIZE = lessons.length > 8 ? 48 : 56
+  const ROW_GAP = lessons.length > 8 ? 18 : 28
   const STEP_Y = CIRCLE_SIZE + ROW_GAP
-  const SIDE_OFFSET = 52 // how far left/right circles shift from center
+  const SIDE_OFFSET = lessons.length > 8 ? 44 : 52
   const totalHeight = (lessons.length - 1) * STEP_Y + CIRCLE_SIZE
 
   return (

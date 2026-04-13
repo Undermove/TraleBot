@@ -51,39 +51,36 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
               {/* Bombora card — tappable → profile */}
               <button
                 onClick={() => navigate({ kind: 'profile' })}
-                className="w-full flex items-center gap-3 text-left active:opacity-80 transition-opacity"
+                className="w-full flex flex-col items-center gap-2 text-center active:opacity-80 transition-opacity"
               >
-                <div className="shrink-0 relative">
-                  <Mascot mood={mascotMood} size={80} />
+                <div className="relative">
+                  <Mascot mood={mascotMood} size={120} />
                   {/* Bowl indicator */}
-                  <div className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
                     {[0, 1, 2].map((i) => (
                       <div
                         key={i}
-                        className={`w-2.5 h-2.5 rounded-full border border-jewelInk/30 transition-all ${
-                          i < bowlFill ? 'bg-gold border-gold' : 'bg-cream-deep'
+                        className={`w-3 h-3 rounded-full border-2 transition-all ${
+                          i < bowlFill ? 'bg-gold border-gold shadow-sm' : 'bg-cream-deep border-jewelInk/30'
                         }`}
                       />
                     ))}
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-geo text-[11px] text-jewelInk-mid leading-none mb-1 font-semibold">
+                <div>
+                  <div className="font-geo text-[12px] text-jewelInk-mid leading-none mb-1 font-semibold">
                     {greeting.geo}
                   </div>
-                  <div className="font-sans font-extrabold text-[20px] leading-[1.1] text-jewelInk tracking-tight">
+                  <div className="font-sans font-extrabold text-[22px] leading-[1.1] text-jewelInk tracking-tight">
                     {greeting.line1}
                   </div>
-                  <div className="font-sans text-[13px] text-ruby font-bold leading-tight">
+                  <div className="font-sans text-[14px] text-ruby font-bold leading-tight mt-0.5">
                     {greeting.line2}
                   </div>
-                  <div className="mt-1 font-sans text-[11px] text-jewelInk-mid">
+                  <div className="mt-1.5 font-sans text-[12px] text-jewelInk-mid">
                     {satietyText}
                   </div>
                 </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-jewelInk-hint">
-                  <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
               </button>
 
               {suggestion && (
@@ -502,7 +499,7 @@ function StatPill({
   const colorClass = color === 'navy' ? 'bg-navy' : 'bg-ruby'
   return (
     <div
-      className={`${colorClass} text-cream border-[1.5px] border-jewelInk rounded-full px-3 py-1 flex items-baseline gap-1.5`}
+      className={`${colorClass} text-cream border-[1.5px] border-jewelInk rounded-full px-4 py-2 flex items-baseline gap-1.5 min-h-[44px]`}
       style={{ boxShadow: '2px 2px 0 #15100A' }}
     >
       <span className="font-sans text-[15px] font-extrabold tabular-nums leading-none">
