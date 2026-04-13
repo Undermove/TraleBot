@@ -468,7 +468,7 @@ function FilterChip({
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg border-[1.5px] px-2 py-1.5 text-center font-sans text-[11px] font-bold uppercase tracking-wider transition-all duration-75 ${
+      className={`rounded-lg border-[1.5px] px-3 py-2.5 min-h-[44px] flex items-center justify-center text-center font-sans text-[11px] font-bold uppercase tracking-wider transition-all duration-75 ${
         active
           ? 'bg-navy text-cream border-jewelInk'
           : 'bg-cream-tile text-jewelInk-mid border-jewelInk/25'
