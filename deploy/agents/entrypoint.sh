@@ -5,7 +5,20 @@ echo "=== Бомбора Agent Runner ==="
 echo "Starting at $(date)"
 
 # Pass environment to cron jobs
-printenv | grep -E '^(ANTHROPIC_API_KEY|GITHUB_TOKEN|REPO_URL|GIT_USER_NAME|GIT_USER_EMAIL|MAX_BUDGET_USD|MAX_TURNS)=' > /etc/environment
+printenv | grep -E '^(ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN|GITHUB_TOKEN|REPO_URL|GIT_USER_NAME|GIT_USER_EMAIL|MAX_TURNS)=' > /etc/environment
+
+# Validate auth
+if [ -z "${CLAUDE_CODE_OAUTH_TOKEN}" ] && [ -z "${ANTHROPIC_API_KEY}" ]; then
+    echo "ERROR: Set CLAUDE_CODE_OAUTH_TOKEN (subscription) or ANTHROPIC_API_KEY (API)"
+    echo "For subscription: run 'claude setup-token' on your machine"
+    exit 1
+fi
+
+if [ -n "${CLAUDE_CODE_OAUTH_TOKEN}" ]; then
+    echo "Auth: subscription (OAuth token)"
+else
+    echo "Auth: API key"
+fi
 
 # Configure git
 git config --global user.name "${GIT_USER_NAME:-Bombora Agents}"

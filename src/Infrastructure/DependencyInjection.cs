@@ -31,6 +31,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
+        services.AddMemoryCache();
 
         services.Configure<OpenAiConfig>(configuration.GetSection(OpenAiConfig.Name));
         services.Configure<GoogleApiConfig>(configuration.GetSection(GoogleApiConfig.Name));
