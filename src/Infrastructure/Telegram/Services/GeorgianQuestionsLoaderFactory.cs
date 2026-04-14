@@ -16,7 +16,7 @@ public class GeorgianQuestionsLoaderFactory : IGeorgianQuestionsLoaderFactory
 
     public IGeorgianQuestionsLoader CreateForLesson(int lessonNumber)
     {
-        return CreateForModuleLesson("GeorgianVerbsOfMovement", lessonNumber);
+        return CreateForModuleLesson("Lessons/GeorgianVerbsOfMovement", lessonNumber);
     }
 
     public IGeorgianQuestionsLoader CreateForModuleLesson(string subdirectory, int lessonNumber)

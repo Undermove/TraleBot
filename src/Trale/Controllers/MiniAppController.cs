@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
+using Application.MiniApp.Commands;
+using Application.MiniApp.Queries;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Telegram;
@@ -26,24 +27,21 @@ public class MiniAppController : Controller
     private readonly IGeorgianQuestionsLoaderFactory _questionsLoaderFactory;
     private readonly ITraleDbContext _dbContext;
     private readonly BotConfiguration _botConfig;
-    private readonly IMiniAppContentProvider _content;
+    private readonly ITraleMiniAppContentProvider _content;
     private readonly IMediator _mediator;
-    private readonly IProgressCalculator _progressCalculator;
 
     public MiniAppController(
         IGeorgianQuestionsLoaderFactory questionsLoaderFactory,
         ITraleDbContext dbContext,
         BotConfiguration botConfig,
-        IMiniAppContentProvider content,
-        IMediator mediator,
-        IProgressCalculator progressCalculator)
+        ITraleMiniAppContentProvider content,
+        IMediator mediator)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
         _dbContext = dbContext;
         _botConfig = botConfig;
         _content = content;
         _mediator = mediator;
-        _progressCalculator = progressCalculator;
     }
 
     [HttpGet("ping")]
@@ -107,20 +105,18 @@ public class MiniAppController : Controller
             return Ok(new { authenticated = false });
         }
 
-        var progress = await LoadOrCreateProgressAsync(user, ct);
-        await _dbContext.SaveChangesAsync(ct);
-
-        var vocabCount = await _dbContext.VocabularyEntries
-            .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
-            .CountAsync(ct);
+        var result = await _mediator.Send(new GetMiniAppProfile
+        {
+            UserId = user.Id
+        }, ct);
 
         return Ok(new
         {
-            authenticated = true,
-            language = user.Settings.CurrentLanguage.ToString(),
-            vocabularyCount = vocabCount,
-            level = progress.Level,
-            progress = _progressCalculator.SerializeProgress(progress)
+            authenticated = result.Authenticated,
+            language = result.Language,
+            vocabularyCount = result.VocabularyCount,
+            level = result.Level,
+            progress = result.Progress
         });
     }
 
@@ -138,17 +134,18 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        if (request.Level != LearningConstants.Levels.Beginner && request.Level != LearningConstants.Levels.Intermediate)
+        var result = await _mediator.Send(new SetUserLevel
         {
-            return BadRequest(new { error = "invalid_level" });
-        }
+            UserId = user.Id,
+            Level = request.Level
+        }, ct);
 
-        var progress = await LoadOrCreateProgressAsync(user, ct);
-        progress.Level = request.Level;
-        progress.UpdatedAtUtc = DateTime.UtcNow;
-        await _dbContext.SaveChangesAsync(ct);
-
-        return Ok(new { level = progress.Level });
+        return result switch
+        {
+            SetUserLevelResult.Success s => Ok(new { level = s.Level }),
+            SetUserLevelResult.InvalidLevel => BadRequest(new { error = "invalid_level" }),
+            _ => BadRequest(new { error = "unknown" })
+        };
     }
 
     public class LessonCompleteRequest
@@ -168,21 +165,25 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.ModuleId) || request.Total <= 0)
+        var result = await _mediator.Send(new CompleteLessonProgress
         {
-            return BadRequest(new { error = "invalid_request" });
-        }
+            UserId = user.Id,
+            ModuleId = request.ModuleId,
+            LessonId = request.LessonId,
+            Correct = request.Correct,
+            Total = request.Total
+        }, ct);
 
-        var progress = await LoadOrCreateProgressAsync(user, ct);
-        var update = _progressCalculator.CalculateLessonCompletion(
-            progress, request.ModuleId, request.LessonId, request.Correct, request.Total);
-        await _dbContext.SaveChangesAsync(ct);
-
-        return Ok(new
+        return result switch
         {
-            xpEarned = update.XpEarned,
-            progress = _progressCalculator.SerializeProgress(progress)
-        });
+            CompleteLessonProgressResult.Success s => Ok(new
+            {
+                xpEarned = s.XpEarned,
+                progress = s.Progress
+            }),
+            CompleteLessonProgressResult.InvalidRequest => BadRequest(new { error = "invalid_request" }),
+            _ => BadRequest(new { error = "unknown" })
+        };
     }
 
     private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader, int lessonId)
@@ -198,33 +199,6 @@ public class MiniAppController : Controller
         });
     }
 
-    private async Task<MiniAppUserProgress> LoadOrCreateProgressAsync(User user, CancellationToken ct)
-    {
-        var progress = await _dbContext.MiniAppUserProgresses
-            .FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
-
-        if (progress != null)
-        {
-            return progress;
-        }
-
-        var now = DateTime.UtcNow;
-        progress = new MiniAppUserProgress
-        {
-            Id = Guid.NewGuid(),
-            UserId = user.Id,
-            Xp = 0,
-            Streak = 0,
-            Hearts = 0,
-            MaxHearts = 0,
-            CompletedLessonsJson = "{}",
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now
-        };
-        _dbContext.MiniAppUserProgresses.Add(progress);
-        return progress;
-    }
-
     [HttpGet("vocabulary")]
     public async Task<IActionResult> GetVocabulary(CancellationToken ct)
     {
@@ -234,47 +208,40 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        var entries = await _dbContext.VocabularyEntries
-            .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
-            .OrderByDescending(v => v.DateAddedUtc)
-            .ToListAsync(ct);
-
-        var items = entries.Select(e => new
+        var result = await _mediator.Send(new GetUserVocabulary
         {
-            id = e.Id.ToString(),
-            word = e.Word,
-            definition = e.Definition,
-            example = e.Example,
-            dateAddedUtc = e.DateAddedUtc,
-            successCount = e.SuccessAnswersCount,
-            successReverseCount = e.SuccessAnswersCountInReverseDirection,
-            failedCount = e.FailedAnswersCount,
-            mastery = e.GetMasteringLevel().ToString(),
-            isStarter = false
-        }).ToList<object>();
-
-        // If user's own vocabulary is empty, offer starter words so they can start practicing immediately.
-        var starters = _content.GetStarterVocabulary()
-            .Select(s => new
-            {
-                id = "starter-" + s.Word,
-                word = s.Word,
-                definition = s.Definition,
-                example = s.Example,
-                dateAddedUtc = (DateTime?)null,
-                successCount = 0,
-                successReverseCount = 0,
-                failedCount = 0,
-                mastery = MasteringLevel.NotMastered.ToString(),
-                isStarter = true
-            })
-            .ToList<object>();
+            UserId = user.Id
+        }, ct);
 
         return Ok(new
         {
-            language = user.Settings.CurrentLanguage.ToString(),
-            items,
-            starterItems = items.Count == 0 ? starters : new List<object>()
+            language = result.Language,
+            items = result.Items.Select(i => new
+            {
+                id = i.Id,
+                word = i.Word,
+                definition = i.Definition,
+                example = i.Example,
+                dateAddedUtc = i.DateAddedUtc,
+                successCount = i.SuccessCount,
+                successReverseCount = i.SuccessReverseCount,
+                failedCount = i.FailedCount,
+                mastery = i.Mastery,
+                isStarter = i.IsStarter
+            }),
+            starterItems = result.StarterItems.Select(i => new
+            {
+                id = i.Id,
+                word = i.Word,
+                definition = i.Definition,
+                example = i.Example,
+                dateAddedUtc = i.DateAddedUtc,
+                successCount = i.SuccessCount,
+                successReverseCount = i.SuccessReverseCount,
+                failedCount = i.FailedCount,
+                mastery = i.Mastery,
+                isStarter = i.IsStarter
+            })
         });
     }
 
@@ -294,149 +261,36 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        var random = new Random();
-        var requested = Math.Clamp(request.Count <= 0 ? 10 : request.Count, 1, LearningConstants.Quiz.MaxVocabularyQuestions);
-
-        var allEntries = await _dbContext.VocabularyEntries
-            .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
-            .ToListAsync(ct);
-
-        // Fallback path: user has no vocabulary — use starter words (no DB writes for these)
-        if (allEntries.Count == 0 || request.Mode == "starter")
+        var result = await _mediator.Send(new GenerateVocabularyQuiz
         {
-            var starter = _content.GetStarterVocabulary();
-            if (starter.Count == 0)
-            {
-                return Ok(new { questions = Array.Empty<object>() });
-            }
-
-            var selectedStarter = starter.OrderBy(_ => random.Next()).Take(requested).ToList();
-            var questions = selectedStarter.Select(entry =>
-            {
-                var questionText = $"Переведи «{entry.Definition}» на грузинский";
-                var correct = entry.Word;
-
-                var distractors = starter
-                    .Where(s => s.Word != entry.Word)
-                    .Select(s => s.Word)
-                    .Distinct()
-                    .OrderBy(_ => random.Next())
-                    .Take(3)
-                    .ToList();
-
-                var options = distractors.Append(correct).OrderBy(_ => random.Next()).ToList();
-                var answerIndex = options.IndexOf(correct);
-
-                return new
-                {
-                    id = "starter-" + entry.Word,
-                    wordId = (Guid?)null,
-                    lemma = entry.Word,
-                    question = questionText,
-                    options,
-                    answerIndex,
-                    explanation = string.IsNullOrWhiteSpace(entry.Example) ? string.Empty : entry.Example,
-                    direction = "ru-to-ge",
-                    isStarter = true
-                };
-            }).ToList();
-
-            return Ok(new { questions });
-        }
-
-        var pool = request.Mode switch
-        {
-            "all" => allEntries.ToList(),
-            "new" => allEntries.Where(e => e.SuccessAnswersCount == 0 && e.SuccessAnswersCountInReverseDirection == 0 && e.FailedAnswersCount == 0).ToList(),
-            "weak" => allEntries
-                .Where(e => e.GetMasteringLevel() != MasteringLevel.MasteredInBothDirections)
-                .OrderByDescending(e => e.FailedAnswersCount)
-                .ThenBy(e => e.SuccessAnswersCount + e.SuccessAnswersCountInReverseDirection)
-                .ToList(),
-            _ when request.WordIds.Count > 0 => allEntries.Where(e => request.WordIds.Contains(e.Id)).ToList(),
-            _ => allEntries.ToList()
-        };
-
-        if (pool.Count == 0)
-        {
-            return Ok(new { questions = Array.Empty<object>() });
-        }
-
-        var selected = pool.OrderBy(_ => random.Next()).Take(requested).ToList();
-
-        // Distractors come from user's other words first, topped up with the starter set
-        // so tiny vocabularies still get a meaningful multi-choice.
-        var starterWords = _content.GetStarterVocabulary().Select(s => s.Word).ToList();
-
-        var userQuestions = selected.Select(entry =>
-        {
-            var (georgian, russian) = GetSides(entry);
-            var questionText = $"Переведи «{russian}» на грузинский";
-            var correct = georgian;
-
-            var distractorPool = allEntries
-                .Where(e => e.Id != entry.Id)
-                .Select(e => GetSides(e).georgian)
-                .Concat(starterWords)
-                .Where(w => !string.IsNullOrWhiteSpace(w))
-                .Distinct()
-                .Where(s => s != correct)
-                .ToList();
-
-            var distractors = distractorPool.OrderBy(_ => random.Next()).Take(3).ToList();
-            while (distractors.Count < 3) distractors.Add("—");
-
-            var options = distractors.Append(correct).OrderBy(_ => random.Next()).ToList();
-            var answerIndex = options.IndexOf(correct);
-
-            return new
-            {
-                id = entry.Id.ToString(),
-                wordId = (Guid?)entry.Id,
-                lemma = georgian,
-                question = questionText,
-                options,
-                answerIndex,
-                explanation = string.IsNullOrWhiteSpace(entry.Example) ? string.Empty : entry.Example,
-                direction = "ru-to-ge",
-                isStarter = false
-            };
-        }).ToList();
-
-        // Word pairs + distractor pools for frontend-built rounds
-        // (GE→RU multi-choice, type-in both directions)
-        var wordPairs = selected.Select(entry =>
-        {
-            var (ge, ru) = GetSides(entry);
-            return new
-            {
-                wordId = entry.Id,
-                georgian = ge,
-                russian = ru
-            };
-        }).ToList();
-
-        var allGeorgian = allEntries
-            .Select(e => GetSides(e).georgian)
-            .Concat(starterWords)
-            .Where(w => !string.IsNullOrWhiteSpace(w))
-            .Distinct()
-            .ToList();
-
-        var starterRussian = _content.GetStarterVocabulary().Select(s => s.Definition).ToList();
-        var allRussian = allEntries
-            .Select(e => GetSides(e).russian)
-            .Concat(starterRussian)
-            .Where(w => !string.IsNullOrWhiteSpace(w))
-            .Distinct()
-            .ToList();
+            UserId = user.Id,
+            WordIds = request.WordIds,
+            Mode = request.Mode,
+            Count = request.Count
+        }, ct);
 
         return Ok(new
         {
-            questions = userQuestions,
-            wordPairs,
-            allGeorgian,
-            allRussian
+            questions = result.Questions.Select(q => new
+            {
+                id = q.Id,
+                wordId = q.WordId,
+                lemma = q.Lemma,
+                question = q.Question,
+                options = q.Options,
+                answerIndex = q.AnswerIndex,
+                explanation = q.Explanation,
+                direction = q.Direction,
+                isStarter = q.IsStarter
+            }),
+            wordPairs = result.WordPairs.Select(wp => new
+            {
+                wordId = wp.WordId,
+                georgian = wp.Georgian,
+                russian = wp.Russian
+            }),
+            allGeorgian = result.AllGeorgian,
+            allRussian = result.AllRussian
         });
     }
 
@@ -456,77 +310,28 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        // Starter words have no WordId — nothing to persist, just ack.
-        if (request.WordId == null || request.WordId == Guid.Empty)
+        var result = await _mediator.Send(new RecordVocabularyAnswer
         {
-            return Ok(new { skipped = true });
-        }
+            UserId = user.Id,
+            WordId = request.WordId,
+            Correct = request.Correct,
+            Direction = request.Direction
+        }, ct);
 
-        var entry = await _dbContext.VocabularyEntries
-            .FirstOrDefaultAsync(v => v.Id == request.WordId.Value && v.UserId == user.Id, ct);
-
-        if (entry == null)
+        return result switch
         {
-            return NotFound();
-        }
-
-        if (request.Correct)
-        {
-            // The quiz always asks the learner to produce the Georgian side.
-            // Whether that maps to Word or Definition depends on how the entry
-            // was originally stored, so match TraleBot's ScorePoint semantics:
-            //   answer == Definition → SuccessAnswersCount++
-            //   answer == Word        → SuccessAnswersCountInReverseDirection++
-            var (georgian, _) = GetSides(entry);
-            if (string.Equals(georgian, entry.Definition, StringComparison.InvariantCultureIgnoreCase))
+            RecordVocabularyAnswerResult.Success s => Ok(new
             {
-                entry.SuccessAnswersCount++;
-            }
-            else
-            {
-                entry.SuccessAnswersCountInReverseDirection++;
-            }
-        }
-        else
-        {
-            entry.FailedAnswersCount++;
-        }
-        entry.UpdatedAtUtc = DateTime.UtcNow;
-
-        await _dbContext.SaveChangesAsync(ct);
-
-        return Ok(new
-        {
-            id = entry.Id,
-            successCount = entry.SuccessAnswersCount,
-            successReverseCount = entry.SuccessAnswersCountInReverseDirection,
-            failedCount = entry.FailedAnswersCount,
-            mastery = entry.GetMasteringLevel().ToString()
-        });
-    }
-
-    private static bool ContainsGeorgian(string s)
-    {
-        if (string.IsNullOrEmpty(s)) return false;
-        foreach (var c in s)
-        {
-            if (c >= 0x10A0 && c <= 0x10FF) return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Returns (georgian, russian) sides of a vocabulary entry regardless of
-    /// which column holds which language — VocabularyEntry stores the user's
-    /// input direction, so Word can be either GE or RU.
-    /// </summary>
-    private static (string georgian, string russian) GetSides(VocabularyEntry e)
-    {
-        if (ContainsGeorgian(e.Word))
-        {
-            return (e.Word, e.Definition);
-        }
-        return (e.Definition, e.Word);
+                id = s.Id,
+                successCount = s.SuccessCount,
+                successReverseCount = s.SuccessReverseCount,
+                failedCount = s.FailedCount,
+                mastery = s.Mastery
+            }),
+            RecordVocabularyAnswerResult.Skipped => Ok(new { skipped = true }),
+            RecordVocabularyAnswerResult.NotFound => NotFound(),
+            _ => BadRequest()
+        };
     }
 
     public class TranslateWordRequest

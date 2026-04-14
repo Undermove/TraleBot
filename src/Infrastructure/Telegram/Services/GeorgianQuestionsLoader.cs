@@ -10,7 +10,7 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
     private readonly ILogger<GeorgianQuestionsLoader> _logger;
     private readonly string _fileName;
 
-    public GeorgianQuestionsLoader(ILogger<GeorgianQuestionsLoader> logger, string fileName = "questions.json", string subdirectory = "GeorgianVerbsOfMovement")
+    public GeorgianQuestionsLoader(ILogger<GeorgianQuestionsLoader> logger, string fileName = "questions.json", string subdirectory = "Lessons/GeorgianVerbsOfMovement")
     {
         _logger = logger;
         _fileName = fileName;
