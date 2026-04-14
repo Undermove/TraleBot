@@ -7,7 +7,12 @@ RUN apt-get update && apt-get install -y \
     cron \
     curl \
     jq \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# Default timezone (overridable via TZ env var)
+ENV TZ=Asia/Tbilisi
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
