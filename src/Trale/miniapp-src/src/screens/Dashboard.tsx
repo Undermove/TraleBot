@@ -21,7 +21,7 @@ interface Props {
  * product signature is a tiny kilim strip at the top.
  */
 export default function Dashboard({ catalog, progress, todayLessons, userLevel, navigate }: Props) {
-  const [showAllSections, setShowAllSections] = useState(userLevel === 'intermediate')
+  const isBeginner = userLevel === 'beginner'
 
   // Per-section collapse state (persisted in localStorage)
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
@@ -31,9 +31,10 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     } catch { return {} }
   })
 
-  function toggleSection(key: string) {
+  // Toggle using the current visual state so beginner defaults are respected
+  function toggleSection(key: string, currentlyCollapsed: boolean) {
     setCollapsedSections((prev) => {
-      const next = { ...prev, [key]: !prev[key] }
+      const next = { ...prev, [key]: !currentlyCollapsed }
       try { localStorage.setItem('bombora_collapsed', JSON.stringify(next)) } catch {}
       return next
     })
@@ -144,14 +145,12 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         const advanced = catalog.modules.filter((m) => advancedIds.includes(m.id))
         const myVocab = catalog.modules.filter((m) => m.id === 'my-vocabulary')
 
-        const isBeginner = userLevel === 'beginner' && !showAllSections
-
         const sections = [
-          { key: 'basics', label: isBeginner ? 'начни отсюда' : 'основы', geoLabel: 'საფუძვლები', modules: basics, accent: 'navy' as const, collapsed: false },
-          { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const, collapsed: isBeginner },
-          { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const, collapsed: isBeginner },
-          { key: 'advanced', label: 'продвинутое', geoLabel: 'გაღრმავება', modules: advanced, accent: 'ruby' as const, collapsed: isBeginner },
-          { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const, collapsed: false },
+          { key: 'basics', label: 'основы', geoLabel: 'საფუძვლები', modules: basics, accent: 'navy' as const },
+          { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const },
+          { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const },
+          { key: 'advanced', label: 'продвинутое', geoLabel: 'გაღრმავება', modules: advanced, accent: 'ruby' as const },
+          { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
         ]
 
         const moduleIcons: Record<string, string> = {
@@ -190,29 +189,16 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           {sections.map((section) => {
           if (section.modules.length === 0) return null
 
-          // For beginners: collapsed sections show "show all" instead
-          if (section.collapsed) {
-            return (
-              <div key={section.key} className="px-5 pt-2 pb-1">
-                <button
-                  onClick={() => setShowAllSections(true)}
-                  className="w-full flex items-center gap-3 py-3 active:opacity-70 transition-opacity"
-                >
-                  <div className="mn-eyebrow text-jewelInk-mid">{section.label}</div>
-                  <div className="flex-1 h-px bg-jewelInk/10" />
-                  <span className="font-sans text-[12px] font-bold text-navy">показать все →</span>
-                </button>
-              </div>
-            )
-          }
-
-          const isUserCollapsed = collapsedSections[section.key] === true
+          // Determine collapsed state: localStorage overrides beginner defaults
+          const hasUserInteracted = Object.prototype.hasOwnProperty.call(collapsedSections, section.key)
+          const defaultCollapsed = isBeginner && section.key !== 'basics' && section.key !== 'myvocab'
+          const isUserCollapsed = hasUserInteracted ? collapsedSections[section.key] === true : defaultCollapsed
 
           return (
             <div key={section.key}>
               {/* Section header — tappable to collapse/expand */}
               <button
-                onClick={() => toggleSection(section.key)}
+                onClick={() => toggleSection(section.key, isUserCollapsed)}
                 className="w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity"
               >
                 <div className="mn-eyebrow">{section.label}</div>
@@ -223,7 +209,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 </div>
                 <svg
                   width="12" height="12" viewBox="0 0 24 24" fill="none"
-                  className={`shrink-0 text-jewelInk-mid transition-transform ${isUserCollapsed ? '-rotate-90' : ''}`}
+                  className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${isUserCollapsed ? '-rotate-90' : ''}`}
                 >
                   <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
