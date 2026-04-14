@@ -98,7 +98,7 @@ Frontend mini-app lives in `src/Trale/miniapp-src/` (React 18 + Vite + TypeScrip
 - Always «мини-апп», never «мини-аб»
 
 ### Content modules
-- Questions stored in `src/Trale/Georgian*/questions*.json`
+- Questions stored in `src/Trale/Lessons/Georgian*/questions*.json`
 - Theory in `src/Trale/MiniApp/MiniAppContentProvider.cs`
 - Routing in `src/Trale/Controllers/MiniAppController.cs`
 - Question loader: `GeorgianQuestionsLoader` with subdirectory parameter

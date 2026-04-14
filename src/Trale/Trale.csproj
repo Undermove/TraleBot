@@ -34,109 +34,109 @@
       <Content Update="questions2.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions3.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions3.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions4.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions4.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions5.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions5.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions6.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions6.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions7.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions7.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions8.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions8.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions9.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions9.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbsOfMovement\questions10.json">
+      <Content Update="Lessons\GeorgianVerbsOfMovement\questions10.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions.json">
+      <Content Update="Lessons\GeorgianCases\questions.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions2.json">
+      <Content Update="Lessons\GeorgianCases\questions2.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions3.json">
+      <Content Update="Lessons\GeorgianCases\questions3.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions4.json">
+      <Content Update="Lessons\GeorgianCases\questions4.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions5.json">
+      <Content Update="Lessons\GeorgianCases\questions5.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions6.json">
+      <Content Update="Lessons\GeorgianCases\questions6.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions7.json">
+      <Content Update="Lessons\GeorgianCases\questions7.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianCases\questions8.json">
+      <Content Update="Lessons\GeorgianCases\questions8.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianAlphabetProgressive\**\*.json">
+      <Content Update="Lessons\GeorgianAlphabetProgressive\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianNumbers\**\*.json">
+      <Content Update="Lessons\GeorgianNumbers\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianPostpositions\**\*.json">
+      <Content Update="Lessons\GeorgianPostpositions\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianAdjectives\**\*.json">
+      <Content Update="Lessons\GeorgianAdjectives\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVerbClasses\**\*.json">
+      <Content Update="Lessons\GeorgianVerbClasses\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVersionVowels\**\*.json">
+      <Content Update="Lessons\GeorgianVersionVowels\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianPreverbs\**\*.json">
+      <Content Update="Lessons\GeorgianPreverbs\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianImperfect\**\*.json">
+      <Content Update="Lessons\GeorgianImperfect\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianAorist\**\*.json">
+      <Content Update="Lessons\GeorgianAorist\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianPronounDeclension\**\*.json">
+      <Content Update="Lessons\GeorgianPronounDeclension\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianConditionals\**\*.json">
+      <Content Update="Lessons\GeorgianConditionals\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianPronouns\**\*.json">
+      <Content Update="Lessons\GeorgianPronouns\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianPresentTense\**\*.json">
+      <Content Update="Lessons\GeorgianPresentTense\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVocabCafe\**\*.json">
+      <Content Update="Lessons\GeorgianVocabCafe\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVocabTaxi\**\*.json">
+      <Content Update="Lessons\GeorgianVocabTaxi\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVocabDoctor\**\*.json">
+      <Content Update="Lessons\GeorgianVocabDoctor\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVocabShopping\**\*.json">
+      <Content Update="Lessons\GeorgianVocabShopping\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVocabIntro\**\*.json">
+      <Content Update="Lessons\GeorgianVocabIntro\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
-      <Content Update="GeorgianVocabEmergency\**\*.json">
+      <Content Update="Lessons\GeorgianVocabEmergency\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
     </ItemGroup>

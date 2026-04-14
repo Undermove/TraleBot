@@ -14,6 +14,8 @@ services:
       - REPO_URL=${REPO_URL:-https://github.com/undermove/TraleBot.git}
       - GIT_USER_NAME=${GIT_USER_NAME:-Bombora Agents}
       - GIT_USER_EMAIL=${GIT_USER_EMAIL:-agents@tralebot.com}
+      # Timezone
+      - TZ=Asia/Tbilisi
       # Limits
       - MAX_TURNS=${MAX_TURNS:-30}
     volumes:

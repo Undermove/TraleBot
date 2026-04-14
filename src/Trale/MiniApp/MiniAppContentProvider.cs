@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Application.Common.Interfaces.MiniApp;
 
 namespace Trale.MiniApp;
 
@@ -8,7 +9,7 @@ namespace Trale.MiniApp;
 /// Serves catalog, theory and content for the Kutya Georgian mini-app.
 /// All content lives here so the front-end doesn't hard-code it.
 /// </summary>
-public class MiniAppContentProvider : IMiniAppContentProvider
+public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppContentProvider
 {
     private readonly CatalogDto _catalog;
     private readonly Dictionary<int, List<AlphabetLetterDto>> _alphabetLessonLetters;
@@ -1607,11 +1608,10 @@ public class MiniAppContentProvider : IMiniAppContentProvider
     }
 }
 
-public interface IMiniAppContentProvider
+public interface ITraleMiniAppContentProvider : IMiniAppContentProvider
 {
     CatalogDto GetCatalog();
     List<AlphabetQuizQuestionDto> GetAlphabetLessonQuestions(int lessonId);
-    List<StarterWordDto> GetStarterVocabulary();
 }
 
 public class CatalogDto
@@ -1682,18 +1682,4 @@ public class AlphabetQuizQuestionDto
     public string Explanation { get; set; } = string.Empty;
 }
 
-public class StarterWordDto
-{
-    public string Word { get; set; }
-    public string Definition { get; set; }
-    public string Example { get; set; }
-
-    public StarterWordDto() { }
-
-    public StarterWordDto(string word, string definition, string example)
-    {
-        Word = word;
-        Definition = definition;
-        Example = example;
-    }
-}
+// StarterWordDto is now in Application.Common.Interfaces.MiniApp
