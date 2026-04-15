@@ -81,6 +81,8 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, HowToCommand>();
         services.AddScoped<IBotCommand, MenuCommand>();
         services.AddScoped<IBotCommand, CloseMenuCommand>();
+        services.AddScoped<IBotCommand, AcceptStarsCheckoutCommand>();
+        services.AddScoped<IBotCommand, ActivateProOnStarsPaymentCommand>();
         services.AddScoped<IBotCommand, AcceptCheckoutCommand>();
         services.AddScoped<IBotCommand, PayCommand>();
         services.AddScoped<IBotCommand, RequestInvoiceCommand>();

@@ -45,7 +45,8 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 Language = user.Settings.CurrentLanguage.ToString(),
                 VocabularyCount = vocabCount,
                 Level = progress.Level,
-                Progress = progressCalculator.SerializeProgress(progress)
+                Progress = progressCalculator.SerializeProgress(progress),
+                IsPro = user.IsPro
             };
         }
     }
@@ -58,4 +59,5 @@ public class GetMiniAppProfileResult
     public int VocabularyCount { get; init; }
     public string Level { get; init; }
     public object Progress { get; init; }
+    public bool IsPro { get; init; }
 }

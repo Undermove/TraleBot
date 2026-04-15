@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
-import { CatalogDto, ModuleDto, ProgressState, Screen } from '../types'
+import ProBadge from '../components/ProBadge'
+import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
+import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
 interface Props {
@@ -9,6 +11,8 @@ interface Props {
   progress: ProgressState
   todayLessons: number
   userLevel: UserLevel
+  isPro: boolean
+  onPurchaseSuccess: () => void
   navigate: (s: Screen) => void
 }
 
@@ -51,8 +55,9 @@ function isSectionUnlocked(
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, todayLessons, userLevel, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, onPurchaseSuccess, navigate }: Props) {
   const isBeginner = userLevel === 'beginner'
+  const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
 
   // Section data — defined early so unlock logic can reference them
   const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
@@ -381,12 +386,22 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                         ? 300 + tileIdx * 60
                         : 120 + currentIdx * 50
 
+                      const isProLocked = !isPro && PRO_MODULE_IDS.has(m.id)
+                      const isVocabAtLimit = !isPro && m.id === 'my-vocabulary' && (progress.completedLessons['my-vocabulary']?.length ?? 0) >= 50
+
                       return (
                         <button
                           key={m.id}
                           onClick={() => {
-                            if (m.id === 'my-vocabulary') navigate({ kind: 'vocabulary-list' })
-                            else navigate({ kind: 'module', moduleId: m.id })
+                            if (isProLocked) {
+                              setPaywall({ trigger: 'module' })
+                            } else if (isVocabAtLimit) {
+                              setPaywall({ trigger: 'vocabulary_limit' })
+                            } else if (m.id === 'my-vocabulary') {
+                              navigate({ kind: 'vocabulary-list' })
+                            } else {
+                              navigate({ kind: 'module', moduleId: m.id })
+                            }
                           }}
                           className={`jewel-tile jewel-pressable text-left px-4 py-4${tileAnimClass}`}
                           style={{ animationDelay: `${tileAnimDelay}ms` }}
@@ -395,7 +410,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                             {/* Icon medallion */}
                             <div className="shrink-0 relative">
                               <div
-                                className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center`}
+                                className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center${isProLocked ? ' opacity-60' : ''}`}
                                 style={{ boxShadow: '2px 2px 0 #15100A' }}
                               >
                                 <span className="font-geo text-[24px] font-extrabold text-cream leading-none">
@@ -411,13 +426,18 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
                             {/* Body */}
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-baseline gap-2">
+                              <div className="flex items-center gap-2">
                                 <h2 className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight tracking-tight truncate">
                                   {m.title}
                                 </h2>
                                 {moduleGeo && (
                                   <span className="font-geo text-[10px] text-jewelInk-hint font-semibold shrink-0">
                                     {moduleGeo}
+                                  </span>
+                                )}
+                                {(isProLocked || isVocabAtLimit) && (
+                                  <span className="shrink-0 ml-auto">
+                                    <ProBadge />
                                   </span>
                                 )}
                               </div>
@@ -429,6 +449,8 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                                   <span className="font-sans text-[11px] font-bold tabular-nums shrink-0">
                                     {isComplete ? (
                                       <span className="text-gold-deep">✓</span>
+                                    ) : isProLocked ? (
+                                      <span className="text-jewelInk-hint">{total} уроков</span>
                                     ) : (
                                       <>
                                         <span className={accentText}>{done}</span>
@@ -440,7 +462,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                               ) : (
                                 <div className="mt-1">
                                   <span className="font-sans text-[12px] text-jewelInk-mid">
-                                    твои слова · квизы на выбор
+                                    {isVocabAtLimit ? '50 слов — лимит Free' : 'твои слова · квизы на выбор'}
                                   </span>
                                 </div>
                               )}
@@ -499,6 +521,18 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       </div>
 
       <div style={{ height: 'calc(var(--safe-b) + 12px)' }} />
+
+      {/* Pro Paywall */}
+      {paywall && (
+        <ProPaywall
+          trigger={paywall.trigger}
+          onClose={() => setPaywall(null)}
+          onPurchaseSuccess={() => {
+            setPaywall(null)
+            onPurchaseSuccess()
+          }}
+        />
+      )}
     </div>
   )
 }
