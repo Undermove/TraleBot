@@ -1,14 +1,10 @@
-# Бомбора Agent Schedule (время по Батуми, Asia/Tbilisi UTC+4)
-# Logs: /logs/{agent}.log
+# Бомбора Agent Pipeline (время по Батуми, Asia/Tbilisi UTC+4)
+# Все 4 агента последовательно на одной ветке, один PR в конце
 #
-# Product Agent — каждый день в 10:00
-0 10 * * * /scripts/run-agent.sh product >> /logs/agents.log 2>&1
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Designer Agent — каждый день в 12:00
-0 12 * * * /scripts/run-agent.sh designer >> /logs/agents.log 2>&1
+# Утренний прогон — 11:00
+0 11 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
 
-# Developer Agent — каждый день в 16:00
-0 16 * * * /scripts/run-agent.sh developer >> /logs/agents.log 2>&1
-
-# Tech Lead Agent — каждый день в 20:00
-0 20 * * * /scripts/run-agent.sh tech-lead >> /logs/agents.log 2>&1
+# Вечерний прогон — 19:00
+0 19 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'

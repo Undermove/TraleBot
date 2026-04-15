@@ -130,6 +130,11 @@ export default function Practice({
   const total = questions.length
   const questionNumber = index + 1
   const pct = Math.round((questionNumber / total) * 100)
+
+  // Georgian numerals 1-10 for passive learning
+  const geoNumerals = ['ერთი', 'ორი', 'სამი', 'ოთხი', 'ხუთი', 'ექვსი', 'შვიდი', 'რვა', 'ცხრა', 'ათი']
+  const geoQuestion = questionNumber <= 10 ? geoNumerals[questionNumber - 1] : null
+  const geoTotal = total <= 10 ? geoNumerals[total - 1] : null
   const isCorrect = selected !== null && selected === current.answerIndex
 
   function check() {
@@ -232,9 +237,16 @@ export default function Practice({
             />
           </div>
 
-          <div className="shrink-0 font-sans text-[13px] font-bold text-jewelInk tabular-nums min-w-[38px] text-right">
-            <span>{questionNumber}</span>
-            <span className="text-jewelInk-hint">/{total}</span>
+          <div className="shrink-0 text-right min-w-[60px]">
+            <div className="font-sans text-[13px] font-bold text-jewelInk tabular-nums">
+              <span>{questionNumber}</span>
+              <span className="text-jewelInk-hint">/{total}</span>
+            </div>
+            {geoQuestion && geoTotal && (
+              <div className="font-geo text-[10px] text-jewelInk-mid leading-none mt-0.5">
+                {geoQuestion} / {geoTotal}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -244,7 +256,9 @@ export default function Practice({
         className="flex-1 px-5 pt-6"
         style={{ paddingBottom: 'calc(var(--safe-b) + 110px)' }}
       >
-        <div className="mn-eyebrow mb-2">вопрос № {questionNumber}</div>
+        <div className="mn-eyebrow mb-2">
+          вопрос № {questionNumber}{geoQuestion ? ` · ${geoQuestion}` : ''}
+        </div>
         <h2 className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
           {current.question}
         </h2>

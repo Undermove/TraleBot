@@ -17,8 +17,11 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
 
+# Create non-root user (Claude Code refuses --dangerously-skip-permissions as root)
+RUN useradd -m -s /bin/bash agent
+
 # Create workspace
-RUN mkdir -p /workspace /logs /scripts
+RUN mkdir -p /workspace /logs /scripts && chown -R agent:agent /workspace /logs /scripts
 WORKDIR /workspace
 
 # Copy agent runner scripts

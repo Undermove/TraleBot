@@ -23,11 +23,12 @@ export default function Result({
   navigate
 }: Props) {
   const pct = Math.round((correct / total) * 100)
+  const isPerfect = correct === total
 
-  // Find next lesson for "Next Lesson" button
+  // Find next lesson for "Next Lesson" button — only on 100%
   const module = catalog.modules.find((m) => m.id === moduleId)
   const nextLesson = module?.lessons.find((l) => l.id === lessonId + 1) ?? null
-  const isGreat = pct >= 80
+  const isGreat = isPerfect
   const isOK = pct >= 50 && !isGreat
 
   const mood: 'cheer' | 'happy' | 'think' = isGreat ? 'cheer' : isOK ? 'happy' : 'think'
@@ -90,7 +91,9 @@ export default function Result({
         <div className="mt-2 font-sans text-[14px] text-jewelInk-mid">
           {moduleId === 'vocabulary'
             ? 'квиз по словарю завершён'
-            : `страница ${lessonId} закрыта`}
+            : isPerfect
+            ? `страница ${lessonId} закрыта`
+            : `страница ${lessonId} — нужно 100%`}
         </div>
 
         {/* Stats — three jewel tiles */}
@@ -106,10 +109,10 @@ export default function Result({
             {isGreat &&
               'Так держать. Блокнот пополняется с каждой страницей.'}
             {isOK &&
-              'Не всё с первого раза — это нормально. Повторение закрепит.'}
+              'Ответь правильно на все вопросы, чтобы закрыть страницу.'}
             {!isOK &&
               !isGreat &&
-              'Перечитай теорию и возвращайся без напряжения.'}
+              'Перечитай теорию и попробуй ответить на все вопросы.'}
           </p>
         </div>
       </div>
