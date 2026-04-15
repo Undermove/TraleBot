@@ -158,28 +158,38 @@ export default function Result({
         ) : (
           <>
             {isGreat && nextLesson ? (
-              <Button
-                variant="green"
-                onClick={() =>
-                  navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })
-                }
-              >
-                следующий урок →
-              </Button>
+              <>
+                <Button
+                  variant="green"
+                  onClick={() =>
+                    navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })
+                  }
+                >
+                  следующий урок →
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate({ kind: 'module', moduleId })}
+                >
+                  к карте уроков →
+                </Button>
+              </>
             ) : (
-              <Button
-                variant="primary"
-                onClick={() => navigate({ kind: 'module', moduleId })}
-              >
-                к карте уроков →
-              </Button>
+              <>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate({ kind: 'module', moduleId })}
+                >
+                  к карте уроков →
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}
+                >
+                  пройти ещё раз
+                </Button>
+              </>
             )}
-            <Button
-              variant="ghost"
-              onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}
-            >
-              пройти ещё раз
-            </Button>
           </>
         )}
       </div>
