@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
-import { CatalogDto, ProgressState, Screen } from '../types'
+import { CatalogDto, ModuleDto, ProgressState, Screen } from '../types'
 import { UserLevel } from './Onboarding'
 
 interface Props {
@@ -10,6 +10,37 @@ interface Props {
   todayLessons: number
   userLevel: UserLevel
   navigate: (s: Screen) => void
+}
+
+// Ordered unlock chain for beginners: each section unlocks when the previous is fully done
+const UNLOCK_CHAIN = ['basics', 'grammar', 'vocab', 'advanced']
+
+function getSectionProgress(
+  modules: ModuleDto[],
+  completedLessons: Record<string, number[]>
+): { total: number; done: number } {
+  let total = 0
+  let done = 0
+  for (const m of modules) {
+    total += m.lessons.length
+    done += (completedLessons[m.id] ?? []).length
+  }
+  return { total, done }
+}
+
+function isSectionUnlocked(
+  key: string,
+  sections: Array<{ key: string; modules: ModuleDto[] }>,
+  completedLessons: Record<string, number[]>
+): boolean {
+  if (key === 'basics' || key === 'myvocab') return true
+  const idx = UNLOCK_CHAIN.indexOf(key)
+  if (idx <= 0) return true
+  const prevKey = UNLOCK_CHAIN[idx - 1]
+  const prevSection = sections.find((s) => s.key === prevKey)
+  if (!prevSection) return true
+  const { total, done } = getSectionProgress(prevSection.modules, completedLessons)
+  return total > 0 && done >= total
 }
 
 /**
@@ -23,6 +54,29 @@ interface Props {
 export default function Dashboard({ catalog, progress, todayLessons, userLevel, navigate }: Props) {
   const isBeginner = userLevel === 'beginner'
 
+  // Section data — defined early so unlock logic can reference them
+  const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
+  const grammarIds = ['pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives']
+  const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
+  const advancedIds = [
+    'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
+    'pronoun-declension', 'conditionals', 'verbs-of-movement',
+  ]
+
+  const basics = catalog.modules.filter((m) => basicsIds.includes(m.id))
+  const grammar = catalog.modules.filter((m) => grammarIds.includes(m.id))
+  const vocab = catalog.modules.filter((m) => vocabIds.includes(m.id))
+  const advanced = catalog.modules.filter((m) => advancedIds.includes(m.id))
+  const myVocab = catalog.modules.filter((m) => m.id === 'my-vocabulary')
+
+  const sections = [
+    { key: 'basics', label: 'основы', geoLabel: 'საფუძვლები', modules: basics, accent: 'navy' as const },
+    { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const },
+    { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const },
+    { key: 'advanced', label: 'продвинутое', geoLabel: 'გაღრმავება', modules: advanced, accent: 'ruby' as const },
+    { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
+  ]
+
   // Per-section collapse state (persisted in localStorage)
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
     try {
@@ -30,6 +84,55 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       return saved ? JSON.parse(saved) : {}
     } catch { return {} }
   })
+
+  // Sections currently playing the one-time unlock animation
+  const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set())
+  // Temporary mascot cheer after unlock sequence (step 5: 500ms in, lasts 2s)
+  const [mascotCheering, setMascotCheering] = useState(false)
+
+  // Detect newly unlocked sections on mount — play the one-time animation sequence
+  useEffect(() => {
+    if (!isBeginner) return
+    try {
+      const saved = localStorage.getItem('bombora_unlocked_once')
+      const prevSeen = new Set<string>(saved ? JSON.parse(saved) : [])
+
+      const newlyUnlocked: string[] = []
+      for (const section of sections) {
+        if (section.key === 'basics' || section.key === 'myvocab') continue
+        if (
+          isSectionUnlocked(section.key, sections, progress.completedLessons) &&
+          !prevSeen.has(section.key)
+        ) {
+          newlyUnlocked.push(section.key)
+        }
+      }
+
+      if (newlyUnlocked.length > 0) {
+        // Persist so animation only plays once per section unlock
+        localStorage.setItem(
+          'bombora_unlocked_once',
+          JSON.stringify([...prevSeen, ...newlyUnlocked])
+        )
+        // Auto-expand newly unlocked sections so tiles are visible
+        setCollapsedSections((prev) => {
+          const next = { ...prev }
+          for (const key of newlyUnlocked) next[key] = false
+          try { localStorage.setItem('bombora_collapsed', JSON.stringify(next)) } catch {}
+          return next
+        })
+        setAnimatingSections(new Set(newlyUnlocked))
+        // Bombora cheers at 500ms (step 5 of animation sequence)
+        const cheerTimer = setTimeout(() => {
+          setMascotCheering(true)
+          setTimeout(() => setMascotCheering(false), 2000)
+        }, 500)
+        // Clear animation classes after 600ms (sequence complete)
+        const clearTimer = setTimeout(() => setAnimatingSections(new Set()), 600)
+        return () => { clearTimeout(cheerTimer); clearTimeout(clearTimer) }
+      }
+    } catch { /* ignore storage errors */ }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Toggle using the current visual state so beginner defaults are respected
   function toggleSection(key: string, currentlyCollapsed: boolean) {
@@ -39,6 +142,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       return next
     })
   }
+
   return (
     <div className="flex flex-col min-h-full bg-cream">
       {/* ══ Kilim signature strip ══ */}
@@ -61,7 +165,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
       <section className="px-5 pt-3 pb-4">
         {(() => {
-          const { greeting, mascotMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
+          const { greeting, mascotMood: baseMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
+          // Override mascot mood during unlock celebration
+          const mascotMood = mascotCheering ? 'cheer' : baseMood
           const bowlFill = Math.min(3, todayLessons)
           return (
             <>
@@ -134,25 +240,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
       {/* ══ Module sections ══ */}
       {(() => {
-        const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
-        const grammarIds = ['pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives']
-        const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
-        const advancedIds = ['verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist', 'pronoun-declension', 'conditionals', 'verbs-of-movement']
-
-        const basics = catalog.modules.filter((m) => basicsIds.includes(m.id))
-        const grammar = catalog.modules.filter((m) => grammarIds.includes(m.id))
-        const vocab = catalog.modules.filter((m) => vocabIds.includes(m.id))
-        const advanced = catalog.modules.filter((m) => advancedIds.includes(m.id))
-        const myVocab = catalog.modules.filter((m) => m.id === 'my-vocabulary')
-
-        const sections = [
-          { key: 'basics', label: 'основы', geoLabel: 'საფუძვლები', modules: basics, accent: 'navy' as const },
-          { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const },
-          { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const },
-          { key: 'advanced', label: 'продвинутое', geoLabel: 'გაღრმავება', modules: advanced, accent: 'ruby' as const },
-          { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
-        ]
-
         const moduleIcons: Record<string, string> = {
           'alphabet-progressive': 'ა', 'alphabet': 'ა', 'numbers': '①',
           'postpositions': 'შ', 'adjectives': 'ლ',
@@ -187,129 +274,190 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         return (
           <>
           {sections.map((section) => {
-          if (section.modules.length === 0) return null
+            if (section.modules.length === 0) return null
 
-          // Determine collapsed state: localStorage overrides beginner defaults
-          const hasUserInteracted = Object.prototype.hasOwnProperty.call(collapsedSections, section.key)
-          const defaultCollapsed = isBeginner && section.key !== 'basics' && section.key !== 'myvocab'
-          const isUserCollapsed = hasUserInteracted ? collapsedSections[section.key] === true : defaultCollapsed
+            // For beginners, check if this section is locked
+            const isLocked = isBeginner && !isSectionUnlocked(section.key, sections, progress.completedLessons)
+            const isAnimatingUnlock = animatingSections.has(section.key)
 
-          return (
-            <div key={section.key}>
-              {/* Section header — tappable to collapse/expand */}
-              <button
-                onClick={() => toggleSection(section.key, isUserCollapsed)}
-                className="w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity"
-              >
-                <div className="mn-eyebrow">{section.label}</div>
-                <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
-                <div className="flex-1 h-px bg-jewelInk/15" />
-                <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
-                  {section.modules.length}
-                </div>
-                <svg
-                  width="12" height="12" viewBox="0 0 24 24" fill="none"
-                  className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${isUserCollapsed ? '-rotate-90' : ''}`}
-                >
-                  <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
+            // Determine collapsed state: localStorage overrides beginner defaults
+            const hasUserInteracted = Object.prototype.hasOwnProperty.call(collapsedSections, section.key)
+            const defaultCollapsed = isBeginner && section.key !== 'basics' && section.key !== 'myvocab'
+            const isUserCollapsed = hasUserInteracted ? collapsedSections[section.key] === true : defaultCollapsed
 
-              {/* Module tiles — hidden when collapsed */}
-              {!isUserCollapsed && (
-              <section className="px-5 flex flex-col gap-3 pb-2">
-                {section.modules.map((m) => {
-                  const currentIdx = globalIdx++
-                  const hasLessons = m.lessons.length > 0
-                  const done = (progress.completedLessons[m.id] ?? []).length
-                  const total = m.lessons.length
-                  const isComplete = hasLessons && done === total
+            // Compute locked hint: show when previous section is ≥80% done
+            let lockedHint: string | null = null
+            if (isLocked) {
+              const chainIdx = UNLOCK_CHAIN.indexOf(section.key)
+              if (chainIdx > 0) {
+                const prevKey = UNLOCK_CHAIN[chainIdx - 1]
+                const prevSection = sections.find((s) => s.key === prevKey)
+                if (prevSection) {
+                  const { total, done } = getSectionProgress(prevSection.modules, progress.completedLessons)
+                  if (total > 0 && done / total >= 0.8) {
+                    const remaining = total - done
+                    lockedHint = remaining === 1
+                      ? 'ერთი გაკვეთილი — и раздел откроется'
+                      : `Ещё ${remaining} уроков до разблокировки`
+                  }
+                }
+              }
+            }
 
-                  const geoNumerals = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'ჱ', 'თ', 'ი', 'კ', 'ლ']
-                  const geoNum = geoNumerals[currentIdx] ?? '?'
-                  const icon = moduleIcons[m.id] ?? '?'
-                  const moduleGeo = moduleGeoLabels[m.id] ?? ''
-                  const accent = moduleAccents[m.id] ?? section.accent
-                  const accentBg = accent === 'navy' ? 'bg-navy' : accent === 'ruby' ? 'bg-ruby' : 'bg-gold'
-                  const accentText = accent === 'navy' ? 'text-navy' : accent === 'ruby' ? 'text-ruby' : 'text-gold-deep'
-
-                  return (
-                    <button
-                      key={m.id}
-                      onClick={() => {
-                        if (m.id === 'my-vocabulary') navigate({ kind: 'vocabulary-list' })
-                        else navigate({ kind: 'module', moduleId: m.id })
-                      }}
-                      className="jewel-tile jewel-pressable text-left px-4 py-4"
-                      style={{ animationDelay: `${120 + currentIdx * 50}ms` }}
+            return (
+              <div key={section.key}>
+                {/* Section header */}
+                {isLocked ? (
+                  /* Locked: visual-only, не реагирует на тапы */
+                  <div
+                    className="w-full px-5 pt-4 pb-3 flex items-center gap-3 opacity-60 transition-opacity duration-200"
+                    style={{ pointerEvents: 'none' }}
+                    role="button"
+                    aria-disabled="true"
+                    aria-label="Раздел заблокирован. Пройдите предыдущий раздел, чтобы открыть."
+                  >
+                    <div className="mn-eyebrow">{section.label}</div>
+                    <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
+                    <div className="flex-1 h-px bg-jewelInk/15" />
+                    {/* Lock icon — 12×12 padlock */}
+                    <svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      className="shrink-0 text-jewelInk-hint"
+                      aria-hidden="true"
                     >
-                      <div className="flex items-center gap-3.5 relative z-[1]">
-                        {/* Icon medallion */}
-                        <div className="shrink-0 relative">
-                          <div
-                            className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center`}
-                            style={{ boxShadow: '2px 2px 0 #15100A' }}
-                          >
-                            <span className="font-geo text-[24px] font-extrabold text-cream leading-none">
-                              {icon}
-                            </span>
-                          </div>
-                          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cream border-[1.5px] border-jewelInk flex items-center justify-center">
-                            <span className={`font-geo text-[9px] font-bold ${accentText} leading-none`}>
-                              {geoNum}
-                            </span>
-                          </div>
-                        </div>
+                      <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2.5" />
+                      <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                ) : (
+                  /* Unlocked — tappable to collapse/expand, gold pulse animation on first unlock */
+                  <button
+                    onClick={() => toggleSection(section.key, isUserCollapsed)}
+                    className={`w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity${isAnimatingUnlock ? ' unlock-pulse' : ''}`}
+                  >
+                    <div className="mn-eyebrow">{section.label}</div>
+                    <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
+                    <div className="flex-1 h-px bg-jewelInk/15" />
+                    <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
+                      {section.modules.length}
+                    </div>
+                    <svg
+                      width="12" height="12" viewBox="0 0 24 24" fill="none"
+                      className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${isUserCollapsed ? '-rotate-90' : ''}`}
+                    >
+                      <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
 
-                        {/* Body */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-baseline gap-2">
-                            <h2 className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight tracking-tight truncate">
-                              {m.title}
-                            </h2>
-                            {moduleGeo && (
-                              <span className="font-geo text-[10px] text-jewelInk-hint font-semibold shrink-0">
-                                {moduleGeo}
-                              </span>
-                            )}
-                          </div>
-                          {hasLessons ? (
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <div className="flex-1">
-                                <KilimProgress done={done} total={total} accent={accent} />
+                {/* Hint below locked header — appears when previous section is ≥80% done */}
+                {lockedHint && (
+                  <div className="font-sans text-[11px] text-jewelInk-hint px-5 pb-2">
+                    {lockedHint}
+                  </div>
+                )}
+
+                {/* Module tiles — hidden when locked or collapsed */}
+                {!isLocked && !isUserCollapsed && (
+                  <section className="px-5 flex flex-col gap-3 pb-2">
+                    {section.modules.map((m, tileIdx) => {
+                      const currentIdx = globalIdx++
+                      const hasLessons = m.lessons.length > 0
+                      const done = (progress.completedLessons[m.id] ?? []).length
+                      const total = m.lessons.length
+                      const isComplete = hasLessons && done === total
+
+                      const geoNumerals = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'ჱ', 'თ', 'ი', 'კ', 'ლ']
+                      const geoNum = geoNumerals[currentIdx] ?? '?'
+                      const icon = moduleIcons[m.id] ?? '?'
+                      const moduleGeo = moduleGeoLabels[m.id] ?? ''
+                      const accent = moduleAccents[m.id] ?? section.accent
+                      const accentBg = accent === 'navy' ? 'bg-navy' : accent === 'ruby' ? 'bg-ruby' : 'bg-gold'
+                      const accentText = accent === 'navy' ? 'text-navy' : accent === 'ruby' ? 'text-ruby' : 'text-gold-deep'
+
+                      // During unlock animation: stagger tiles from 300ms (spec step 4); otherwise normal entrance
+                      const tileAnimClass = isAnimatingUnlock ? ' tile-appear' : ''
+                      const tileAnimDelay = isAnimatingUnlock
+                        ? 300 + tileIdx * 60
+                        : 120 + currentIdx * 50
+
+                      return (
+                        <button
+                          key={m.id}
+                          onClick={() => {
+                            if (m.id === 'my-vocabulary') navigate({ kind: 'vocabulary-list' })
+                            else navigate({ kind: 'module', moduleId: m.id })
+                          }}
+                          className={`jewel-tile jewel-pressable text-left px-4 py-4${tileAnimClass}`}
+                          style={{ animationDelay: `${tileAnimDelay}ms` }}
+                        >
+                          <div className="flex items-center gap-3.5 relative z-[1]">
+                            {/* Icon medallion */}
+                            <div className="shrink-0 relative">
+                              <div
+                                className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center`}
+                                style={{ boxShadow: '2px 2px 0 #15100A' }}
+                              >
+                                <span className="font-geo text-[24px] font-extrabold text-cream leading-none">
+                                  {icon}
+                                </span>
                               </div>
-                              <span className="font-sans text-[11px] font-bold tabular-nums shrink-0">
-                                {isComplete ? (
-                                  <span className="text-gold-deep">✓</span>
-                                ) : (
-                                  <>
-                                    <span className={accentText}>{done}</span>
-                                    <span className="text-jewelInk-hint">/{total}</span>
-                                  </>
-                                )}
-                              </span>
+                              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cream border-[1.5px] border-jewelInk flex items-center justify-center">
+                                <span className={`font-geo text-[9px] font-bold ${accentText} leading-none`}>
+                                  {geoNum}
+                                </span>
+                              </div>
                             </div>
-                          ) : (
-                            <div className="mt-1">
-                              <span className="font-sans text-[12px] text-jewelInk-mid">
-                                твои слова · квизы на выбор
-                              </span>
-                            </div>
-                          )}
-                        </div>
 
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-jewelInk-hint relative z-[1]">
-                          <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                    </button>
-                  )
-                })}
-              </section>
-              )}
-            </div>
-          )
-        })}
+                            {/* Body */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-baseline gap-2">
+                                <h2 className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight tracking-tight truncate">
+                                  {m.title}
+                                </h2>
+                                {moduleGeo && (
+                                  <span className="font-geo text-[10px] text-jewelInk-hint font-semibold shrink-0">
+                                    {moduleGeo}
+                                  </span>
+                                )}
+                              </div>
+                              {hasLessons ? (
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <div className="flex-1">
+                                    <KilimProgress done={done} total={total} accent={accent} />
+                                  </div>
+                                  <span className="font-sans text-[11px] font-bold tabular-nums shrink-0">
+                                    {isComplete ? (
+                                      <span className="text-gold-deep">✓</span>
+                                    ) : (
+                                      <>
+                                        <span className={accentText}>{done}</span>
+                                        <span className="text-jewelInk-hint">/{total}</span>
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="mt-1">
+                                  <span className="font-sans text-[12px] text-jewelInk-mid">
+                                    твои слова · квизы на выбор
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-jewelInk-hint relative z-[1]">
+                              <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </section>
+                )}
+              </div>
+            )
+          })}
           </>
         )
       })()}
