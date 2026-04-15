@@ -6,7 +6,9 @@ import Dashboard from './screens/Dashboard'
 import ModuleMap from './screens/ModuleMap'
 import LessonTheory from './screens/LessonTheory'
 import Practice from './screens/Practice'
+import PracticeMistakes from './screens/PracticeMistakes'
 import Result from './screens/Result'
+import MistakesResult from './screens/MistakesResult'
 import Profile from './screens/Profile'
 import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
@@ -118,6 +120,10 @@ export default function App() {
         } else {
           setScreen({ kind: 'module', moduleId: screen.moduleId })
         }
+      } else if (screen.kind === 'practice-mistakes') {
+        setScreen({ kind: 'module', moduleId: screen.moduleId })
+      } else if (screen.kind === 'mistakes-result') {
+        setScreen({ kind: 'module', moduleId: screen.moduleId })
       }
     }
     tg.BackButton.onClick(handler)
@@ -266,6 +272,27 @@ export default function App() {
           correct={screen.correct}
           total={screen.total}
           xpEarned={screen.xpEarned}
+          wrongQuestions={screen.wrongQuestions}
+          navigate={navigate}
+        />
+      )
+    case 'practice-mistakes':
+      return (
+        <PracticeMistakes
+          moduleId={screen.moduleId}
+          lessonId={screen.lessonId}
+          wrongQuestions={screen.wrongQuestions}
+          navigate={navigate}
+        />
+      )
+    case 'mistakes-result':
+      return (
+        <MistakesResult
+          moduleId={screen.moduleId}
+          lessonId={screen.lessonId}
+          corrected={screen.corrected}
+          total={screen.total}
+          remainingWrong={screen.remainingWrong}
           navigate={navigate}
         />
       )

@@ -29,6 +29,7 @@ export default function Practice({
   const [phase, setPhase] = useState<Phase>('loading')
   const [selected, setSelected] = useState<number | null>(null)
   const [correctCount, setCorrectCount] = useState(0)
+  const [wrongQuestions, setWrongQuestions] = useState<QuizQuestion[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -142,6 +143,8 @@ export default function Practice({
     setPhase('checked')
     if (selected === current.answerIndex) {
       setCorrectCount((c) => c + 1)
+    } else {
+      setWrongQuestions((prev) => [...prev, current])
     }
   }
 
@@ -193,7 +196,8 @@ export default function Practice({
         lessonId,
         correct: finalCorrect,
         total,
-        xpEarned
+        xpEarned,
+        wrongQuestions
       })
       return
     }
