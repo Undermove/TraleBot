@@ -3,8 +3,12 @@
 #
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Утренний прогон — 11:00
-0 11 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
-
-# Вечерний прогон — 19:00
-0 19 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+# Ночные прогоны — каждый час с 1:00 до 8:00
+0 1 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+0 2 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+0 3 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+0 4 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+0 5 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+0 6 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+0 7 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+0 8 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
