@@ -433,6 +433,25 @@ input:focus-visible {
   transform-origin: center;
 }
 
+/* Progressive section unlock — opacity 0.6→1 (200ms) + gold pulse (500ms) */
+@keyframes unlock-pulse {
+  0%   { opacity: 0.6; box-shadow: 0 0 0 0 rgba(245, 184, 32, 0.6); }
+  40%  { opacity: 1; }
+  100% { opacity: 1; box-shadow: 0 0 16px 6px rgba(245, 184, 32, 0); }
+}
+.unlock-pulse {
+  animation: unlock-pulse 500ms ease-out both;
+}
+
+/* Tile appear — module tiles slide in from below during unlock sequence */
+@keyframes tile-appear {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.tile-appear {
+  animation: tile-appear 280ms ease-out both;
+}
+
 /* Reveal pulse — used when "old acquaintance" stamps appear */
 @keyframes mn-reveal {
   0% { transform: scale(0.6) rotate(-8deg); opacity: 0; }
