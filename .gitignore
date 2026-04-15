@@ -455,4 +455,8 @@ $RECYCLE.BIN/
 !.vscode/extensions.json
 
 # Agent secrets
+# Environment files with secrets
+.env
+.env.*
+!.env.example
 deploy/agents/.env
