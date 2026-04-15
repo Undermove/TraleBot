@@ -102,11 +102,54 @@ fi
 FILES_CHANGED=$(git diff --stat main)
 COMMITS=$(git log main..HEAD --oneline)
 
-# Build PR body from agent summaries
+# Generate short Russian summary for PR title and description
+echo ""
+echo ">>> Generating PR summary..."
+PR_SUMMARY_RAW=$(claude \
+    -p "Посмотри git diff main и саммари агентов ниже. Напиши:
+1. TITLE: короткий заголовок PR на русском (до 60 символов), описывающий что сделано (например: 'Разблокировка секций для новичков + квиз-числительные')
+2. SUMMARY: 2-5 пунктов списком на русском, каждый в одну строку, описывающих ключевые фичи/изменения. Без технических деталей — пиши как для продакт-менеджера.
+
+Саммари агентов:
+$(cat "${SUMMARY_FILE}")
+
+Формат ответа строго:
+TITLE: ...
+SUMMARY:
+- ...
+- ...
+" \
+    --dangerously-skip-permissions \
+    --max-turns 3 \
+    --output-format text \
+    2>&1) || true
+
+# Parse title and summary from Claude output
+PR_TITLE=$(echo "${PR_SUMMARY_RAW}" | grep "^TITLE:" | head -1 | sed 's/^TITLE: *//')
+PR_SHORT_SUMMARY=$(echo "${PR_SUMMARY_RAW}" | sed -n '/^SUMMARY:/,$ p' | tail -n +2 | head -10)
+
+# Fallback if parsing failed
+if [ -z "${PR_TITLE}" ]; then
+    PR_TITLE="Pipeline ${TIMESTAMP}"
+fi
+if [ -z "${PR_SHORT_SUMMARY}" ]; then
+    PR_SHORT_SUMMARY="_(автоматическое описание не сгенерировалось, см. детали ниже)_"
+fi
+
+# Build PR body
 PR_BODY=$(cat <<PREOF
 ## Что сделано
 
+${PR_SHORT_SUMMARY}
+
+---
+
+<details>
+<summary>Подробности от агентов</summary>
+
 $(cat "${SUMMARY_FILE}")
+
+</details>
 
 ## Коммиты
 
@@ -131,7 +174,7 @@ echo "Pushing branch and creating PR..."
 git push origin "${BRANCH}"
 
 gh pr create \
-    --title "Pipeline ${TIMESTAMP}" \
+    --title "${PR_TITLE}" \
     --body "${PR_BODY}" \
     --base main \
     --head "${BRANCH}"
