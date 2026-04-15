@@ -13,6 +13,9 @@ using MediatR;
 using Infrastructure.Telegram.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Telegram.Bot;
+using Telegram.Bot.Types.Payments;
 using Trale.MiniApp;
 using Trale.Services;
 
@@ -24,24 +27,33 @@ public class MiniAppController : Controller
 {
     private const string InitDataHeader = "X-Telegram-Init-Data";
 
+    private const string StarsProPayload = "Stars_Pro";
+    private const int StarsProPrice = 150;
+
     private readonly IGeorgianQuestionsLoaderFactory _questionsLoaderFactory;
     private readonly ITraleDbContext _dbContext;
     private readonly BotConfiguration _botConfig;
     private readonly ITraleMiniAppContentProvider _content;
     private readonly IMediator _mediator;
+    private readonly ITelegramBotClient _telegramBotClient;
+    private readonly ILogger<MiniAppController> _logger;
 
     public MiniAppController(
         IGeorgianQuestionsLoaderFactory questionsLoaderFactory,
         ITraleDbContext dbContext,
         BotConfiguration botConfig,
         ITraleMiniAppContentProvider content,
-        IMediator mediator)
+        IMediator mediator,
+        ITelegramBotClient telegramBotClient,
+        ILogger<MiniAppController> logger)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
         _dbContext = dbContext;
         _botConfig = botConfig;
         _content = content;
         _mediator = mediator;
+        _telegramBotClient = telegramBotClient;
+        _logger = logger;
     }
 
     [HttpGet("ping")]
@@ -116,8 +128,47 @@ public class MiniAppController : Controller
             language = result.Language,
             vocabularyCount = result.VocabularyCount,
             level = result.Level,
-            progress = result.Progress
+            progress = result.Progress,
+            isPro = result.IsPro
         });
+    }
+
+    [HttpPost("purchase")]
+    public async Task<IActionResult> Purchase(CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        if (user.IsPro)
+        {
+            return Ok(new { ok = true, alreadyPro = true });
+        }
+
+        try
+        {
+            await _telegramBotClient.SendInvoiceAsync(
+                chatId: user.TelegramId,
+                title: "Про-доступ — Бомбора",
+                description: "Все модули грузинского: грамматика, лексика, продвинутое. Словарь без ограничений.",
+                payload: StarsProPayload,
+                providerToken: "",
+                currency: "XTR",
+                prices: new[] { new LabeledPrice("Про-доступ", StarsProPrice) },
+                cancellationToken: ct);
+
+            _logger.LogInformation("Stars invoice sent to user {UserId} (TelegramId {TelegramId})",
+                user.Id, user.TelegramId);
+
+            return Ok(new { ok = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send Stars invoice to user {UserId}", user.Id);
+            return StatusCode(500, new { error = "invoice_failed" });
+        }
     }
 
     public class SetLevelRequest

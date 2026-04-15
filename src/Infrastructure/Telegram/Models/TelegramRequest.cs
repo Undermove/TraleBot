@@ -13,24 +13,28 @@ public class TelegramRequest
     public string UserName { get; }
     public UpdateType RequestType { get; }
     public string InvoicePayload { get; }
-    
+    public string? SuccessfulPaymentCurrency { get; }
+    public string? SuccessfulPaymentChargeId { get; }
+
     public TelegramRequest(Update request, User? user)
     {
-        UserTelegramId = request.Message?.From?.Id 
-                         ?? request.CallbackQuery?.From.Id 
-                         ?? request.MyChatMember?.From.Id 
-                         ?? request.PreCheckoutQuery?.From.Id 
+        UserTelegramId = request.Message?.From?.Id
+                         ?? request.CallbackQuery?.From.Id
+                         ?? request.MyChatMember?.From.Id
+                         ?? request.PreCheckoutQuery?.From.Id
                          ?? throw new ArgumentException("User TelegramId not found");
         MessageId = GetMessageId(request);
         Text = GetMessageText(request); // bad hack to skip empty message when bot reacts to his own message
-        UserName = request.Message?.Chat.FirstName 
-                   ?? request.CallbackQuery?.From.FirstName 
+        UserName = request.Message?.Chat.FirstName
+                   ?? request.CallbackQuery?.From.FirstName
                    ?? request.PreCheckoutQuery?.From.FirstName
                    ?? request.MyChatMember?.From.FirstName
                    ?? throw new ArgumentException("User Name not found");
         User = user;
         RequestType = request.Type;
         InvoicePayload = request.PreCheckoutQuery?.InvoicePayload ?? "";
+        SuccessfulPaymentCurrency = request.Message?.SuccessfulPayment?.Currency;
+        SuccessfulPaymentChargeId = request.Message?.SuccessfulPayment?.TelegramPaymentChargeId;
     }
 
     private static string GetMessageText(Update request)
@@ -39,7 +43,12 @@ public class TelegramRequest
         {
             return CommandNames.Stop;
         }
-        
+
+        if (request.Message?.SuccessfulPayment != null)
+        {
+            return $"successful_payment:{request.Message.SuccessfulPayment.Currency}";
+        }
+
         return request.Message?.Text
                ?? request.CallbackQuery?.Data
                ?? request.PreCheckoutQuery?.Id
