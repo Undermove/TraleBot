@@ -9,6 +9,7 @@ using Application.MiniApp.Queries;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Telegram;
+using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using MediatR;
 using Infrastructure.Telegram.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +28,6 @@ public class MiniAppController : Controller
 {
     private const string InitDataHeader = "X-Telegram-Init-Data";
 
-    private const string StarsProPayload = "Stars_Pro";
     private const int StarsProPrice = 150;
 
     private readonly IGeorgianQuestionsLoaderFactory _questionsLoaderFactory;
@@ -153,7 +153,7 @@ public class MiniAppController : Controller
                 chatId: user.TelegramId,
                 title: "Про-доступ — Бомбора",
                 description: "Все модули грузинского: грамматика, лексика, продвинутое. Словарь без ограничений.",
-                payload: StarsProPayload,
+                payload: AcceptStarsCheckoutCommand.StarsProPayload,
                 providerToken: "",
                 currency: "XTR",
                 prices: new[] { new LabeledPrice("Про-доступ", StarsProPrice) },

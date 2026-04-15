@@ -37,6 +37,7 @@ export interface MeResponse {
   vocabularyCount?: number
   level?: string | null
   progress?: ProgressDto
+  isPro?: boolean
 }
 
 export interface LessonCompleteResponse {
@@ -148,6 +149,11 @@ export const api = {
     request<{ level: string }>('/api/miniapp/level', {
       method: 'POST',
       body: JSON.stringify({ level })
+    }),
+
+  purchase: () =>
+    request<{ ok: boolean; alreadyPro?: boolean }>('/api/miniapp/purchase', {
+      method: 'POST'
     }),
 
   lessonQuestions: (moduleId: string, lessonId: number) =>

@@ -47,6 +47,8 @@ export default function App() {
   const [insideTelegram] = useState(() => isInsideTelegram())
   const [todayLessons, setTodayLessons] = useState(() => getTodayLessons())
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null)
+  const [isPro, setIsPro] = useState(false)
+  const [showProSuccessToast, setShowProSuccessToast] = useState(false)
 
   // Load catalog + progress from backend on mount
   useEffect(() => {
@@ -61,6 +63,7 @@ export default function App() {
           if (meData.level === 'beginner' || meData.level === 'intermediate') {
             setUserLevel(meData.level)
           }
+          setIsPro(meData.isPro ?? false)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
@@ -73,6 +76,18 @@ export default function App() {
       cancelled = true
     }
   }, [])
+
+  function handleProPurchaseSuccess() {
+    api.me().then((meData) => {
+      if (meData.isPro) {
+        setIsPro(true)
+        setShowProSuccessToast(true)
+        setTimeout(() => setShowProSuccessToast(false), 3500)
+      }
+    }).catch(() => {
+      // silently ignore; next app open will re-fetch
+    })
+  }
 
   // Telegram BackButton integration
   useEffect(() => {
@@ -164,6 +179,33 @@ export default function App() {
     setScreen(s)
   }
 
+  const proSuccessToast = showProSuccessToast && (
+    <div
+      className="fixed top-0 left-0 right-0 z-50 max-w-[480px] mx-auto"
+      style={{ paddingTop: 'var(--safe-t)' }}
+    >
+      <div
+        className="bg-gold border-b-2 border-jewelInk text-jewelInk px-5 py-3 flex flex-col items-center"
+        style={{
+          animation: 'toastSlideDown 250ms ease-out both',
+        }}
+      >
+        <div className="font-sans text-[15px] font-extrabold leading-tight">
+          ★ Добро пожаловать в Pro!
+        </div>
+        <div className="font-geo text-[11px] font-bold mt-0.5">
+          ყველა მოდული ღიაა
+        </div>
+      </div>
+      <style>{`
+        @keyframes toastSlideDown {
+          from { transform: translateY(-100%); opacity: 0; }
+          to   { transform: translateY(0);     opacity: 1; }
+        }
+      `}</style>
+    </div>
+  )
+
   switch (screen.kind) {
     case 'onboarding':
       return (
@@ -178,7 +220,20 @@ export default function App() {
         />
       )
     case 'dashboard':
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} navigate={navigate} />
+      return (
+        <>
+          {proSuccessToast}
+          <Dashboard
+            catalog={catalog}
+            progress={progress}
+            todayLessons={todayLessons}
+            userLevel={userLevel ?? 'beginner'}
+            isPro={isPro}
+            onPurchaseSuccess={handleProPurchaseSuccess}
+            navigate={navigate}
+          />
+        </>
+      )
     case 'module':
       return <ModuleMap catalog={catalog} moduleId={screen.moduleId} progress={progress} navigate={navigate} />
     case 'lesson-theory':
@@ -216,12 +271,17 @@ export default function App() {
       )
     case 'profile':
       return (
-        <Profile
-          catalog={catalog}
-          progress={progress}
-          setProgress={setProgress}
-          navigate={navigate}
-        />
+        <>
+          {proSuccessToast}
+          <Profile
+            catalog={catalog}
+            progress={progress}
+            setProgress={setProgress}
+            isPro={isPro}
+            onPurchaseSuccess={handleProPurchaseSuccess}
+            navigate={navigate}
+          />
+        </>
       )
     case 'vocabulary-list':
       return <VocabularyList progress={progress} navigate={navigate} />
@@ -237,6 +297,6 @@ export default function App() {
         />
       )
     default:
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} navigate={navigate} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
   }
 }
