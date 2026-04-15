@@ -102,18 +102,18 @@ fi
 FILES_CHANGED=$(git diff --stat main)
 COMMITS=$(git log main..HEAD --oneline)
 
-# Generate short Russian summary for PR title and description
+# Generate short English summary for PR title and description
 echo ""
 echo ">>> Generating PR summary..."
 PR_SUMMARY_RAW=$(claude \
-    -p "Посмотри git diff main и саммари агентов ниже. Напиши:
-1. TITLE: короткий заголовок PR на русском (до 60 символов), описывающий что сделано (например: 'Разблокировка секций для новичков + квиз-числительные')
-2. SUMMARY: 2-5 пунктов списком на русском, каждый в одну строку, описывающих ключевые фичи/изменения. Без технических деталей — пиши как для продакт-менеджера.
+    -p "Look at the git diff main and agent summaries below. Write:
+1. TITLE: short PR title in English (under 60 chars) describing what was done (e.g. 'Progressive section unlock for beginners + quiz numerals')
+2. SUMMARY: 2-5 bullet points in English, one line each, describing key features/changes. No technical details — write as if for a product manager.
 
-Саммари агентов:
+Agent summaries:
 $(cat "${SUMMARY_FILE}")
 
-Формат ответа строго:
+Response format strictly:
 TITLE: ...
 SUMMARY:
 - ...
