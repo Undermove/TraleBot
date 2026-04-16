@@ -41,6 +41,7 @@
 - [ ] Новые use cases — отдельные Command/Query + Handler
 - [ ] Нет бизнес-логики в контроллерах
 - [ ] Миграции корректны и обратимы
+- [ ] **Миграции сгенерированы через `dotnet ef migrations add`** (timestamp в формате `yyyyMMddHHmmss` с реальной датой/временем, есть Designer.cs И обновлён TraleDbContextModelSnapshot.cs). Хардкод-таймстампы типа `20260416100000` или отсутствие Designer.cs — отвергай PR и проси Developer перегенерировать.
 
 ### Код
 - [ ] Нет дублирования

@@ -1,5 +1,8 @@
+using Application.Common;
 using IntegrationTests.Fakes;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Persistence;
 using Telegram.Bot;
 using Testcontainers.PostgreSql;
 
@@ -27,6 +30,13 @@ public class TestBase
         _testServer = new TraleTestApplication(_postgresqlContainer.GetConnectionString());
         TelegramClientFake = _testServer.Services.GetService<ITelegramBotClient>() as TelegramClientFake ??
                              throw new InvalidOperationException();
+
+        // Ensure schema is up-to-date — apply EF migrations against the test container.
+        // Program.cs does this on real startup, but WebApplicationFactory may skip the
+        // initialization scope, so we run it explicitly here.
+        using var scope = _testServer.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<TraleDbContext>();
+        await dbContext.Database.MigrateAsync();
     }
 
     [OneTimeTearDown]

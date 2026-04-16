@@ -37,8 +37,14 @@
 - Следуй Clean Architecture: Domain → Application → Infrastructure → Trale
 - Новые use cases = отдельные Command/Query + Handler (CQRS)
 - Новые эндпоинты в `MiniAppController.cs` (или новый контроллер если другой домен)
-- Миграции: `dotnet ef migrations add {Name} --project src/Persistence --startup-project src/Trale`
-- Не трогай существующие миграции
+- **Миграции — ТОЛЬКО через CLI, НИКОГДА руками:**
+  ```bash
+  dotnet ef migrations add {DescriptiveName} \
+    --project src/Persistence/Persistence.csproj \
+    --startup-project src/Trale/Trale.csproj
+  ```
+  Это создаёт `.cs` + `.Designer.cs` + обновляет `TraleDbContextModelSnapshot.cs` — закоммить все три. Никогда не пиши файлы миграций руками с захардкоженным timestamp (типа `20260416100000`) — это вызовет коллизии порядка, когда параллельные ветки добавляют миграции, и AlterColumn сработает раньше AddColumn.
+- Не трогай существующие применённые миграции
 
 ### Frontend (React + TypeScript)
 - Компоненты в `src/Trale/miniapp-src/src/components/`

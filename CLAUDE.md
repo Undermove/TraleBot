@@ -71,7 +71,22 @@ dotnet test tests/IntegrationTests/
 ### Database
 - Entity Framework Core with PostgreSQL
 - Migrations in `src/Persistence/Migrations/`
-- Entities: User, VocabularyEntry, Quiz, QuizQuestion, Achievement, Invoice
+- Entities: User, VocabularyEntry, Quiz, QuizQuestion, Achievement, Invoice, Payment
+
+### Migrations — IMPORTANT
+
+**NEVER write migration files by hand.** Always generate them through the EF CLI so timestamps are accurate (UTC `yyyyMMddHHmmss`) and the model snapshot stays consistent.
+
+```bash
+# From repo root:
+dotnet ef migrations add <DescriptiveName> \
+  --project src/Persistence/Persistence.csproj \
+  --startup-project src/Trale/Trale.csproj
+```
+
+This generates three files (the migration `.cs`, its `.Designer.cs`, and an updated `TraleDbContextModelSnapshot.cs`). Commit all three. Manually written migrations cause timestamp collisions when multiple branches add migrations in parallel — earlier-timestamped migrations may try to alter columns that don't exist yet.
+
+If you discover a hand-written migration in a PR, regenerate it via `dotnet ef migrations add` (after `dotnet ef migrations remove` on the bad one).
 
 ## Configuration
 
