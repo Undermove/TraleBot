@@ -396,7 +396,7 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        var entry = await _dbContext.VocabularyEntries.FindAsync(id);
+        var entry = await _dbContext.VocabularyEntries.FindAsync([id], ct);
         if (entry == null)
         {
             return NotFound();
