@@ -182,8 +182,15 @@ export const api = {
     request<{ days: number; points: Array<{ date: string; count: number }> }>(
       `/api/admin/signups?days=${days}`
     ),
-  adminRecentUsers: (limit = 20) =>
-    request<{ users: AdminRecentUser[] }>(`/api/admin/recent-users?limit=${limit}`),
+  adminRecentUsers: (
+    opts: { limit?: number; search?: string; sort?: 'recent_signup' | 'recent_activity' } = {}
+  ) => {
+    const params = new URLSearchParams()
+    params.set('limit', String(opts.limit ?? 50))
+    if (opts.search) params.set('search', opts.search)
+    if (opts.sort) params.set('sort', opts.sort)
+    return request<{ users: AdminRecentUser[] }>(`/api/admin/recent-users?${params}`)
+  },
   adminUserDetail: (telegramId: number) =>
     request<AdminUserDetail>(`/api/admin/users/${telegramId}`),
   adminGrantPro: (telegramId: number, plan: string) =>
@@ -244,6 +251,7 @@ export interface AdminRecentUser {
   registeredAtUtc: string
   proPurchasedAtUtc: string | null
   vocabularyCount: number
+  lastActivityUtc: string | null
 }
 
 export interface AdminUserDetail {
