@@ -5,7 +5,7 @@ using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateManuallyCommand(ITelegramBotClient client, IMediator mediator) : IBotCommand
+public class TranslateManuallyCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig) : IBotCommand
 {
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
@@ -19,6 +19,7 @@ public class TranslateManuallyCommand(ITelegramBotClient client, IMediator media
         var word = split[0];
         var definition = split[1];
         
+        var isOwner = botConfig.OwnerTelegramId != 0 && request.UserTelegramId == botConfig.OwnerTelegramId;
         var result = await mediator.Send(new CreateManualTranslation
         {
             Word = word,
@@ -28,8 +29,8 @@ public class TranslateManuallyCommand(ITelegramBotClient client, IMediator media
 
         await (result switch
         {
-            ManualTranslationResult.EntrySaved success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, null, token),
-            ManualTranslationResult.EntryAlreadyExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, null, token),
+            ManualTranslationResult.EntrySaved success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, null, token, isOwner),
+            ManualTranslationResult.EntryAlreadyExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, null, token, isOwner),
             ManualTranslationResult.EmojiNotAllowed => client.HandleEmojiDetected(request, token),
             ManualTranslationResult.DefinitionIsNotSet => client.HandleDefinitionIsNotSet(request, token),
             _ => throw new ArgumentOutOfRangeException(nameof(result))

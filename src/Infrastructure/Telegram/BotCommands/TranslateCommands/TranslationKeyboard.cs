@@ -10,52 +10,57 @@ namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 public static class TranslationKeyboard
 {
     public static Task SendTranslation(this ITelegramBotClient client,
-        TelegramRequest request, 
+        TelegramRequest request,
         Guid vocabularyEntryId,
         string definition,
         string additionalInfo,
         string? example,
-        CancellationToken token)
+        CancellationToken token,
+        bool isOwner = false)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         return SendTranslation(
             client,
-            request, 
+            request,
             vocabularyEntryId,
             definition,
             additionalInfo,
             example,
             removeFromVocabularyText,
-            token);
+            token,
+            isOwner);
     }
-    
+
     public static Task UpdateTranslation(this ITelegramBotClient client,
-        TelegramRequest request, 
-        Guid vocabularyEntryId,
-        string definition,
-        string additionalInfo,
-        string? example,
-        CancellationToken token)
-    {
-        var removeFromVocabularyText = "❌ Не добавлять в словарь.";
-        return UpdateTranslation(
-            client,
-            request, 
-            vocabularyEntryId,
-            definition,
-            additionalInfo,
-            example,
-            removeFromVocabularyText,
-            token);
-    }
-    
-    public static Task SendExistedTranslation(this ITelegramBotClient client, 
         TelegramRequest request,
         Guid vocabularyEntryId,
         string definition,
         string additionalInfo,
         string? example,
-        CancellationToken token)
+        CancellationToken token,
+        bool isOwner = false)
+    {
+        var removeFromVocabularyText = "❌ Не добавлять в словарь.";
+        return UpdateTranslation(
+            client,
+            request,
+            vocabularyEntryId,
+            definition,
+            additionalInfo,
+            example,
+            removeFromVocabularyText,
+            token,
+            isOwner);
+    }
+
+    public static Task SendExistedTranslation(this ITelegramBotClient client,
+        TelegramRequest request,
+        Guid vocabularyEntryId,
+        string definition,
+        string additionalInfo,
+        string? example,
+        CancellationToken token,
+        bool isOwner = false)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return SendTranslation(
@@ -66,16 +71,18 @@ public static class TranslationKeyboard
             additionalInfo,
             example,
             removeFromVocabularyText,
-            token);
+            token,
+            isOwner);
     }
-    
-    public static Task UpdateExistedTranslation(this ITelegramBotClient client, 
+
+    public static Task UpdateExistedTranslation(this ITelegramBotClient client,
         TelegramRequest request,
         Guid vocabularyEntryId,
         string definition,
         string additionalInfo,
         string? example,
-        CancellationToken token)
+        CancellationToken token,
+        bool isOwner = false)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return UpdateTranslation(
@@ -86,7 +93,8 @@ public static class TranslationKeyboard
             additionalInfo,
             example,
             removeFromVocabularyText,
-            token);
+            token,
+            isOwner);
     }
     
     public static async Task HandleEmojiDetected(this ITelegramBotClient client,TelegramRequest request, CancellationToken token)
@@ -161,8 +169,9 @@ public static class TranslationKeyboard
         string definition,
         string additionalInfo,
         string? example,
-        string removeFromVocabularyText, 
-        CancellationToken token)
+        string removeFromVocabularyText,
+        CancellationToken token,
+        bool isOwner = false)
     {
         var replyMarkup = new List<InlineKeyboardButton[]>
         {
@@ -173,7 +182,7 @@ public static class TranslationKeyboard
             }
         };
 
-        if (request.User!.Settings.CurrentLanguage == Language.English)
+        if (isOwner && request.User!.Settings.CurrentLanguage == Language.English)
         {
             replyMarkup.Add([
                 InlineKeyboardButton.WithUrl("Перевод Wooordhunt", $"https://wooordhunt.ru/word/{request.Text}"),
@@ -208,8 +217,9 @@ public static class TranslationKeyboard
         string definition,
         string additionalInfo,
         string? example,
-        string removeFromVocabularyText, 
-        CancellationToken token)
+        string removeFromVocabularyText,
+        CancellationToken token,
+        bool isOwner = false)
     {
         var replyMarkup = new List<InlineKeyboardButton[]>
         {
@@ -220,7 +230,7 @@ public static class TranslationKeyboard
             }
         };
 
-        if (request.User!.Settings.CurrentLanguage == Language.English)
+        if (isOwner && request.User!.Settings.CurrentLanguage == Language.English)
         {
             replyMarkup.Add([
                 InlineKeyboardButton.WithUrl("Перевод Wooordhunt", $"https://wooordhunt.ru/word/{request.Text}"),

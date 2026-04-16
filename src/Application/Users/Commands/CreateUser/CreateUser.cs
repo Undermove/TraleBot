@@ -44,7 +44,7 @@ public class CreateUser : IRequest<CreateUserResult>
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
                 User = user,
-                CurrentLanguage = Language.English
+                CurrentLanguage = Language.Georgian
             };
 
             user.UserSettingsId = settings.Id;

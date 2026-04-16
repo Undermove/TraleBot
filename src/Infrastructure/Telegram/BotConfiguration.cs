@@ -15,4 +15,11 @@ public class BotConfiguration
     /// but Telegram users don't get the menu button — i.e. the feature is hidden from prod users.
     /// </summary>
     public bool MiniAppEnabled { get; init; }
+
+    /// <summary>
+    /// Telegram user ID of the bot owner. When set, this user gets access to owner-mode features
+    /// (language switching, English-mode, Wooordhunt/Reverso Context buttons).
+    /// Set via env var BOTCONFIGURATION__OWNERTELEGRAMID. Defaults to 0 (disabled).
+    /// </summary>
+    public long OwnerTelegramId { get; init; }
 }

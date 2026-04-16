@@ -11,7 +11,7 @@ public class UserSettingsConfiguration : IEntityTypeConfiguration<UserSettings>
         builder.HasKey(us => us.Id);
         builder
             .Property(us => us.CurrentLanguage)
-            .HasDefaultValue(Language.English)
+            .HasDefaultValue(Language.Georgian)
             .IsRequired();
     }
 }
