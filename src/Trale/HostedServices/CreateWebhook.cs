@@ -85,12 +85,14 @@ public class CreateWebhook : IHostedService
         }
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
+    public Task StopAsync(CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrEmpty(_config.HostAddress))
-        {
-            // set first parameter to true in critical situations
-            await _telegramBotClient.DeleteWebhookAsync(false, cancellationToken);
-        }
+        // Intentionally NOT calling DeleteWebhookAsync here. With multi-replica
+        // deployments and rolling updates, the shutdown of one pod would otherwise
+        // wipe the webhook URL while the other pod stays running but never re-runs
+        // its StartAsync — leaving Telegram with no delivery target and silently
+        // queueing updates. The next pod startup re-sets the webhook to the correct
+        // URL anyway, so deletion on shutdown serves no purpose in production.
+        return Task.CompletedTask;
     }
 }
