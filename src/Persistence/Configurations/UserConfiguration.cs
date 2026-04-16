@@ -20,5 +20,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasMany(u => u.VocabularyEntries)
             .WithOne(ve => ve.User)
             .HasForeignKey(ve => ve.UserId);
+        builder.Property(u => u.SubscriptionPlan).HasConversion<int?>();
     }
 }

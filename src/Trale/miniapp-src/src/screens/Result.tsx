@@ -1,7 +1,8 @@
 import React from 'react'
 import Mascot from '../components/Mascot'
 import Button from '../components/Button'
-import { CatalogDto, Screen } from '../types'
+import StampBadge from '../components/StampBadge'
+import { CatalogDto, QuizQuestion, Screen } from '../types'
 
 interface Props {
   catalog: CatalogDto
@@ -10,6 +11,7 @@ interface Props {
   correct: number
   total: number
   xpEarned: number
+  wrongQuestions?: QuizQuestion[]
   navigate: (s: Screen) => void
 }
 
@@ -20,6 +22,7 @@ export default function Result({
   correct,
   total,
   xpEarned,
+  wrongQuestions,
   navigate
 }: Props) {
   const pct = Math.round((correct / total) * 100)
@@ -29,14 +32,11 @@ export default function Result({
   const module = catalog.modules.find((m) => m.id === moduleId)
   const nextLesson = module?.lessons.find((l) => l.id === lessonId + 1) ?? null
   const isGreat = isPerfect
-  const isOK = pct >= 50 && !isGreat
+  const isOK = pct >= 80 && !isGreat
 
   const mood: 'cheer' | 'happy' | 'think' = isGreat ? 'cheer' : isOK ? 'happy' : 'think'
   const title = isGreat ? 'Отлично' : isOK ? 'Неплохо' : 'Ещё раз'
-
-  // Georgian stamp words — user learns by seeing them repeatedly
-  const stampGeo = isGreat ? 'მშვენივრად' : isOK ? 'კარგი' : 'ცადე'
-  const stampTrans = isGreat ? 'превосходно' : isOK ? 'хорошо' : 'попробуй'
+  const stampVariant: 'great' | 'ok' | 'retry' = isGreat ? 'great' : isOK ? 'ok' : 'retry'
 
   return (
     <div className="flex flex-col bg-cream" style={{ minHeight: '100dvh' }}>
@@ -66,22 +66,12 @@ export default function Result({
 
       <div
         className="relative z-[1] flex-1 flex flex-col items-center px-5 pt-8"
-        style={{ paddingBottom: 'calc(var(--safe-b) + 160px)' }}
+        style={{ paddingBottom: 'calc(var(--safe-b) + 240px)' }}
       >
-        {/* Mascot + stamp */}
-        <div className="relative mb-5">
+        {/* Mascot + stamp (stamp centered below mascot) */}
+        <div className="flex flex-col items-center mb-5 gap-3">
           <Mascot mood={mood} size={170} />
-          <div
-            className="absolute -top-1 -right-4 mn-reveal px-3 py-2 bg-cream border-[1.5px] border-jewelInk rounded-lg rotate-[6deg] text-center"
-            style={{ boxShadow: '2px 2px 0 #15100A' }}
-          >
-            <div className="font-geo text-[14px] font-extrabold text-ruby leading-none">
-              {stampGeo}
-            </div>
-            <div className="font-sans text-[8px] font-bold text-jewelInk-mid uppercase tracking-wider mt-0.5">
-              {stampTrans}
-            </div>
-          </div>
+          <StampBadge variant={stampVariant} />
         </div>
 
         <div className="mn-eyebrow mb-2">итог страницы</div>
@@ -131,31 +121,63 @@ export default function Result({
               на главную
             </Button>
           </>
-        ) : (
+        ) : wrongQuestions && wrongQuestions.length > 0 ? (
           <>
-            {isGreat && nextLesson ? (
+            <div className="flex flex-col items-stretch gap-0">
               <Button
                 variant="green"
                 onClick={() =>
-                  navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })
+                  navigate({ kind: 'practice-mistakes', moduleId, lessonId, wrongQuestions })
                 }
               >
-                следующий урок →
+                Повторить ошибки ({wrongQuestions.length})
               </Button>
-            ) : (
-              <Button
-                variant="primary"
-                onClick={() => navigate({ kind: 'module', moduleId })}
-              >
-                к карте уроков →
-              </Button>
-            )}
+              <div className="font-geo text-[10px] font-bold text-ruby/60 text-center mt-1.5 mb-3">
+                ჩემი შეცდომები
+              </div>
+            </div>
             <Button
               variant="ghost"
-              onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}
+              onClick={() => navigate({ kind: 'module', moduleId })}
             >
-              пройти ещё раз
+              к карте уроков →
             </Button>
+          </>
+        ) : (
+          <>
+            {isGreat && nextLesson ? (
+              <>
+                <Button
+                  variant="green"
+                  onClick={() =>
+                    navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })
+                  }
+                >
+                  следующий урок →
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate({ kind: 'module', moduleId })}
+                >
+                  к карте уроков →
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate({ kind: 'module', moduleId })}
+                >
+                  к карте уроков →
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}
+                >
+                  пройти ещё раз
+                </Button>
+              </>
+            )}
           </>
         )}
       </div>

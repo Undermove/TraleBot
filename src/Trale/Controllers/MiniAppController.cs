@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
+using Application.MiniApp;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
@@ -129,12 +130,38 @@ public class MiniAppController : Controller
             vocabularyCount = result.VocabularyCount,
             level = result.Level,
             progress = result.Progress,
-            isPro = result.IsPro
+            isPro = result.IsPro,
+            isTrialActive = result.IsTrialActive,
+            trialDaysLeft = result.TrialDaysLeft,
+            subscriptionPlan = result.SubscriptionPlan,
+            subscribedUntil = result.SubscribedUntil,
+            hasAccess = result.IsPro || result.IsTrialActive,
+            isOwner = result.IsOwner
         });
     }
 
+    [HttpGet("plans")]
+    public IActionResult GetPlans()
+    {
+        var plans = SubscriptionPlans.All.Select(p => new
+        {
+            id = p.Plan.ToString(),
+            payloadId = p.PayloadId,
+            stars = p.StarsPrice,
+            durationDays = p.DurationDays,
+            title = p.Title,
+            description = p.Description
+        });
+        return Ok(new { plans });
+    }
+
+    public class PurchaseRequest
+    {
+        public string Plan { get; set; } = string.Empty;
+    }
+
     [HttpPost("purchase")]
-    public async Task<IActionResult> Purchase(CancellationToken ct)
+    public async Task<IActionResult> Purchase([FromBody] PurchaseRequest req, CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -147,26 +174,38 @@ public class MiniAppController : Controller
             return Ok(new { ok = true, alreadyPro = true });
         }
 
+        if (!Enum.TryParse<SubscriptionPlan>(req.Plan, true, out var planEnum))
+        {
+            return BadRequest(new { error = "invalid_plan" });
+        }
+
+        var plan = SubscriptionPlans.ByPlan(planEnum);
+        if (plan == null)
+        {
+            return BadRequest(new { error = "invalid_plan" });
+        }
+
         try
         {
-            await _telegramBotClient.SendInvoiceAsync(
-                chatId: user.TelegramId,
-                title: "Про-доступ — Бомбора",
-                description: "Все модули грузинского: грамматика, лексика, продвинутое. Словарь без ограничений.",
-                payload: AcceptStarsCheckoutCommand.StarsProPayload,
+            // Create invoice link so that Telegram WebApp can open it natively inside the mini-app
+            // via Telegram.WebApp.openInvoice(url).
+            var link = await _telegramBotClient.CreateInvoiceLinkAsync(
+                title: $"Про-доступ — {plan.Title}",
+                description: plan.Description,
+                payload: plan.PayloadId,
                 providerToken: "",
                 currency: "XTR",
-                prices: new[] { new LabeledPrice("Про-доступ", StarsProPrice) },
+                prices: new[] { new LabeledPrice(plan.Title, plan.StarsPrice) },
                 cancellationToken: ct);
 
-            _logger.LogInformation("Stars invoice sent to user {UserId} (TelegramId {TelegramId})",
-                user.Id, user.TelegramId);
+            _logger.LogInformation("Stars invoice link created for user {UserId} plan {Plan}",
+                user.Id, plan.Plan);
 
-            return Ok(new { ok = true });
+            return Ok(new { ok = true, invoiceLink = link });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send Stars invoice to user {UserId}", user.Id);
+            _logger.LogError(ex, "Failed to create Stars invoice link for user {UserId}", user.Id);
             return StatusCode(500, new { error = "invoice_failed" });
         }
     }
@@ -272,6 +311,7 @@ public class MiniAppController : Controller
                 id = i.Id,
                 word = i.Word,
                 definition = i.Definition,
+                additionalInfo = i.AdditionalInfo,
                 example = i.Example,
                 dateAddedUtc = i.DateAddedUtc,
                 successCount = i.SuccessCount,
@@ -285,6 +325,7 @@ public class MiniAppController : Controller
                 id = i.Id,
                 word = i.Word,
                 definition = i.Definition,
+                additionalInfo = i.AdditionalInfo,
                 example = i.Example,
                 dateAddedUtc = i.DateAddedUtc,
                 successCount = i.SuccessCount,
@@ -383,6 +424,34 @@ public class MiniAppController : Controller
             RecordVocabularyAnswerResult.NotFound => NotFound(),
             _ => BadRequest()
         };
+    }
+
+    [HttpDelete("vocabulary/{id}")]
+    public async Task<IActionResult> DeleteVocabularyEntry(Guid id, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var entry = await _dbContext.VocabularyEntries.FindAsync([id], ct);
+        if (entry == null)
+        {
+            return NotFound();
+        }
+
+        if (entry.UserId != user.Id)
+        {
+            return Forbid();
+        }
+
+        await _mediator.Send(new Application.VocabularyEntries.Commands.RemoveVocabularyEntry
+        {
+            VocabularyEntryId = id
+        }, ct);
+
+        return NoContent();
     }
 
     public class TranslateWordRequest

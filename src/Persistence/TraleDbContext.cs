@@ -27,6 +27,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<ProcessedUpdate> ProcessedUpdates { get; set; } = null!;
     public DbSet<GeorgianQuizSession> GeorgianQuizSessions { get; set; } = null!;
     public DbSet<MiniAppUserProgress> MiniAppUserProgresses { get; set; } = null!;
+    public DbSet<Payment> Payments { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -45,6 +46,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new ProcessedUpdateConfiguration());
         modelBuilder.ApplyConfiguration(new GeorgianQuizSessionConfiguration());
         modelBuilder.ApplyConfiguration(new MiniAppUserProgressConfiguration());
+        modelBuilder.ApplyConfiguration(new PaymentConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

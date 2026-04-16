@@ -10,11 +10,12 @@ interface Props {
   progress: ProgressState
   setProgress: (p: ProgressState) => void
   isPro: boolean
+  isOwner?: boolean
   onPurchaseSuccess: () => void
   navigate: (s: Screen) => void
 }
 
-export default function Profile({ catalog, progress, isPro, onPurchaseSuccess, navigate }: Props) {
+export default function Profile({ catalog, progress, isPro, isOwner = false, onPurchaseSuccess, navigate }: Props) {
   const [showPaywall, setShowPaywall] = useState(false)
   const modules = catalog.modules
   const totalDone = Object.values(progress.completedLessons).reduce(
@@ -189,6 +190,9 @@ export default function Profile({ catalog, progress, isPro, onPurchaseSuccess, n
           })}
         </div>
 
+        {/* Debug tools (owner only) */}
+        {isOwner && <OwnerDebugPanel />}
+
         {/* Change level */}
         <div className="mt-8">
           <button
@@ -218,6 +222,89 @@ export default function Profile({ catalog, progress, isPro, onPurchaseSuccess, n
 
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+    </div>
+  )
+}
+
+function OwnerDebugPanel() {
+  const [toast, setToast] = useState<string | null>(null)
+
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 1500)
+  }
+
+  function clearKeys(keys: string[], label: string) {
+    for (const k of keys) localStorage.removeItem(k)
+    showToast(`${label} → cleared`)
+  }
+
+  function clearAllLocalStorage() {
+    if (!confirm('Очистить весь localStorage?')) return
+    localStorage.clear()
+    showToast('localStorage cleared')
+  }
+
+  function reload() {
+    location.reload()
+  }
+
+  const actions = [
+    {
+      label: 'Сбросить reveal ქ',
+      hint: 'Покажет оверлей буквы ქ снова',
+      fn: () => clearKeys(['bombora_kani_reveal_shown'], 'kani reveal'),
+    },
+    {
+      label: 'Сбросить unlock-анимации',
+      hint: 'Повторит анимацию открытия секций',
+      fn: () => clearKeys(['bombora_unlocked_once'], 'unlock'),
+    },
+    {
+      label: 'Очистить весь localStorage',
+      hint: 'Онбординг, прогресс UI, флаги',
+      fn: clearAllLocalStorage,
+    },
+    {
+      label: 'Reload мини-аппа',
+      hint: 'location.reload()',
+      fn: reload,
+    },
+  ]
+
+  return (
+    <div className="mt-8">
+      <div className="mn-eyebrow mb-3">debug (owner only)</div>
+      <div className="flex flex-col gap-2">
+        {actions.map((a) => (
+          <button
+            key={a.label}
+            onClick={a.fn}
+            className="jewel-tile jewel-pressable w-full text-left px-4 py-3"
+          >
+            <div className="relative z-[1] flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="font-sans text-[13px] font-bold text-jewelInk">
+                  {a.label}
+                </div>
+                <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
+                  {a.hint}
+                </div>
+              </div>
+              <span className="text-jewelInk-hint text-[12px] shrink-0">→</span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {toast && (
+        <div
+          className="fixed left-1/2 bottom-[80px] -translate-x-1/2 z-50 bg-jewelInk text-cream font-sans text-[13px] font-bold px-4 py-2 rounded-lg border-[1.5px] border-jewelInk"
+          style={{ boxShadow: '2px 2px 0 #15100A' }}
+        >
+          {toast}
+        </div>
+      )}
     </div>
   )
 }

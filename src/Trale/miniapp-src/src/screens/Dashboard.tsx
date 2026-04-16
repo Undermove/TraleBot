@@ -12,12 +12,23 @@ interface Props {
   todayLessons: number
   userLevel: UserLevel
   isPro: boolean
+  isTrialActive?: boolean
+  trialDaysLeft?: number
   onPurchaseSuccess: () => void
   navigate: (s: Screen) => void
 }
 
 // Ordered unlock chain for beginners: each section unlocks when the previous is fully done
 const UNLOCK_CHAIN = ['basics', 'grammar', 'vocab', 'advanced']
+
+function pluralDays(n: number): string {
+  const mod100 = n % 100
+  const mod10 = n % 10
+  if (mod100 >= 11 && mod100 <= 14) return 'дней'
+  if (mod10 === 1) return 'день'
+  if (mod10 >= 2 && mod10 <= 4) return 'дня'
+  return 'дней'
+}
 
 function getSectionProgress(
   modules: ModuleDto[],
@@ -55,8 +66,9 @@ function isSectionUnlocked(
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, onPurchaseSuccess, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, navigate }: Props) {
   const isBeginner = userLevel === 'beginner'
+  const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
 
   // Section data — defined early so unlock logic can reference them
@@ -278,11 +290,38 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
         return (
           <>
+          {/* Trial banner — visible while trial is active (not for Pro users) */}
+          {isTrialActive && !isPro && trialDaysLeft > 0 && (
+            <div className="px-5 pt-2 pb-1">
+              <div
+                className="jewel-tile px-4 py-3 flex items-center gap-3"
+                style={{ background: '#FBF6EC' }}
+              >
+                <div className="relative z-[1] text-[22px] leading-none shrink-0">⭐</div>
+                <div className="relative z-[1] flex-1 min-w-0">
+                  <div className="font-sans text-[13px] font-extrabold text-jewelInk leading-tight">
+                    Бесплатный период — {trialDaysLeft} {pluralDays(trialDaysLeft)} осталось
+                  </div>
+                  <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
+                    Все модули открыты — учи грузинский без ограничений
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPaywall({ trigger: 'module' })}
+                  className="relative z-[1] shrink-0 px-3 py-1.5 rounded-lg font-sans text-[11px] font-extrabold"
+                  style={{ background: '#F5B820', color: '#15100A', border: '1.5px solid #15100A' }}
+                >
+                  купить
+                </button>
+              </div>
+            </div>
+          )}
           {sections.map((section) => {
             if (section.modules.length === 0) return null
 
-            // For beginners, check if this section is locked
-            const isLocked = isBeginner && !isSectionUnlocked(section.key, sections, progress.completedLessons)
+            // Section-level locking is disabled — users can expand any section.
+            // Per-module gating (isProLocked) handles Pro/trial access below.
+            const isLocked = false
             const isAnimatingUnlock = animatingSections.has(section.key)
 
             // Determine collapsed state: localStorage overrides beginner defaults
@@ -386,8 +425,8 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                         ? 300 + tileIdx * 60
                         : 120 + currentIdx * 50
 
-                      const isProLocked = !isPro && PRO_MODULE_IDS.has(m.id)
-                      const isVocabAtLimit = !isPro && m.id === 'my-vocabulary' && (progress.completedLessons['my-vocabulary']?.length ?? 0) >= 50
+                      const isProLocked = !hasAccess && PRO_MODULE_IDS.has(m.id)
+                      const isVocabAtLimit = !hasAccess && m.id === 'my-vocabulary' && (progress.completedLessons['my-vocabulary']?.length ?? 0) >= 50
 
                       return (
                         <button

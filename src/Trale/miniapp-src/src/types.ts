@@ -12,6 +12,16 @@ export type Screen =
       correct: number
       total: number
       xpEarned: number
+      wrongQuestions?: QuizQuestion[]
+    }
+  | { kind: 'practice-mistakes'; moduleId: string; lessonId: number; wrongQuestions: QuizQuestion[] }
+  | {
+      kind: 'mistakes-result'
+      moduleId: string
+      lessonId: number
+      corrected: number
+      total: number
+      remainingWrong: QuizQuestion[]
     }
   | { kind: 'profile' }
   | { kind: 'vocabulary-list' }

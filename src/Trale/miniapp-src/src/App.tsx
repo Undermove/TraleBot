@@ -6,7 +6,9 @@ import Dashboard from './screens/Dashboard'
 import ModuleMap from './screens/ModuleMap'
 import LessonTheory from './screens/LessonTheory'
 import Practice from './screens/Practice'
+import PracticeMistakes from './screens/PracticeMistakes'
 import Result from './screens/Result'
+import MistakesResult from './screens/MistakesResult'
 import Profile from './screens/Profile'
 import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
@@ -48,6 +50,9 @@ export default function App() {
   const [todayLessons, setTodayLessons] = useState(() => getTodayLessons())
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null)
   const [isPro, setIsPro] = useState(false)
+  const [isTrialActive, setIsTrialActive] = useState(false)
+  const [trialDaysLeft, setTrialDaysLeft] = useState(0)
+  const [isOwner, setIsOwner] = useState(false)
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
 
   // Load catalog + progress from backend on mount
@@ -64,6 +69,9 @@ export default function App() {
             setUserLevel(meData.level)
           }
           setIsPro(meData.isPro ?? false)
+          setIsTrialActive((meData as any).isTrialActive ?? false)
+          setTrialDaysLeft((meData as any).trialDaysLeft ?? 0)
+          setIsOwner((meData as any).isOwner ?? false)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
@@ -118,6 +126,10 @@ export default function App() {
         } else {
           setScreen({ kind: 'module', moduleId: screen.moduleId })
         }
+      } else if (screen.kind === 'practice-mistakes') {
+        setScreen({ kind: 'module', moduleId: screen.moduleId })
+      } else if (screen.kind === 'mistakes-result') {
+        setScreen({ kind: 'module', moduleId: screen.moduleId })
       }
     }
     tg.BackButton.onClick(handler)
@@ -266,6 +278,27 @@ export default function App() {
           correct={screen.correct}
           total={screen.total}
           xpEarned={screen.xpEarned}
+          wrongQuestions={screen.wrongQuestions}
+          navigate={navigate}
+        />
+      )
+    case 'practice-mistakes':
+      return (
+        <PracticeMistakes
+          moduleId={screen.moduleId}
+          lessonId={screen.lessonId}
+          wrongQuestions={screen.wrongQuestions}
+          navigate={navigate}
+        />
+      )
+    case 'mistakes-result':
+      return (
+        <MistakesResult
+          moduleId={screen.moduleId}
+          lessonId={screen.lessonId}
+          corrected={screen.corrected}
+          total={screen.total}
+          remainingWrong={screen.remainingWrong}
           navigate={navigate}
         />
       )
@@ -278,6 +311,7 @@ export default function App() {
             progress={progress}
             setProgress={setProgress}
             isPro={isPro}
+            isOwner={isOwner}
             onPurchaseSuccess={handleProPurchaseSuccess}
             navigate={navigate}
           />
@@ -297,6 +331,6 @@ export default function App() {
         />
       )
     default:
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
   }
 }

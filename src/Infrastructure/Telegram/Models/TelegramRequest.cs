@@ -15,6 +15,8 @@ public class TelegramRequest
     public string InvoicePayload { get; }
     public string? SuccessfulPaymentCurrency { get; }
     public string? SuccessfulPaymentChargeId { get; }
+    public string? SuccessfulPaymentPayload { get; }
+    public int? SuccessfulPaymentAmount { get; }
 
     public TelegramRequest(Update request, User? user)
     {
@@ -35,6 +37,8 @@ public class TelegramRequest
         InvoicePayload = request.PreCheckoutQuery?.InvoicePayload ?? "";
         SuccessfulPaymentCurrency = request.Message?.SuccessfulPayment?.Currency;
         SuccessfulPaymentChargeId = request.Message?.SuccessfulPayment?.TelegramPaymentChargeId;
+        SuccessfulPaymentPayload = request.Message?.SuccessfulPayment?.InvoicePayload;
+        SuccessfulPaymentAmount = (int?)request.Message?.SuccessfulPayment?.TotalAmount;
     }
 
     private static string GetMessageText(Update request)

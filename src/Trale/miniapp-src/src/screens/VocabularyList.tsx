@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import LoaderLetter from '../components/LoaderLetter'
+import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
+import WordCard from '../components/WordCard'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
 
@@ -14,6 +16,11 @@ type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
 type TranslateState = 'idle' | 'translating' | 'success' | 'error'
 type Filter = 'all' | 'new' | 'weak' | 'mastered'
 
+interface Toast {
+  id: number
+  message: string
+}
+
 export default function VocabularyList({ progress, navigate }: Props) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [items, setItems] = useState<VocabularyItem[]>([])
@@ -24,6 +31,11 @@ export default function VocabularyList({ progress, navigate }: Props) {
   const [translateInput, setTranslateInput] = useState('')
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
   const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string } | null>(null)
+  const [activeLetter, setActiveLetter] = useState<string | null>(null)
+  const [cardItem, setCardItem] = useState<VocabularyItem | null>(null)
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set())
+  const [toasts, setToasts] = useState<Toast[]>([])
+  const toastCounter = useRef(0)
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +65,14 @@ export default function VocabularyList({ progress, navigate }: Props) {
     }
   }, [])
 
+  const disabledLetters = useMemo(() => {
+    return new Set(
+      GEORGIAN_ALPHABET.filter(
+        (letter) => !items.some((item) => sides(item).georgian.startsWith(letter))
+      )
+    )
+  }, [items])
+
   const filtered = useMemo(() => {
     const lowered = search.trim().toLowerCase()
     return items.filter((item) => {
@@ -70,13 +90,14 @@ export default function VocabularyList({ progress, navigate }: Props) {
       if (filter === 'mastered') {
         if (item.mastery === 'NotMastered') return false
       }
-      if (!lowered) return true
-      return (
+      if (lowered && !(
         item.word.toLowerCase().includes(lowered) ||
         item.definition.toLowerCase().includes(lowered)
-      )
+      )) return false
+      if (activeLetter && !sides(item).georgian.startsWith(activeLetter)) return false
+      return true
     })
-  }, [items, search, filter])
+  }, [items, search, filter, activeLetter])
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -85,6 +106,48 @@ export default function VocabularyList({ progress, navigate }: Props) {
       else next.add(id)
       return next
     })
+  }
+
+  function openCard(item: VocabularyItem) {
+    setCardItem(item)
+  }
+
+  function closeCard() {
+    setCardItem(null)
+  }
+
+  function showToast(message: string) {
+    const id = ++toastCounter.current
+    setToasts((prev) => [...prev, { id, message }])
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id))
+    }, 2500)
+  }
+
+  function handleDelete(id: string) {
+    // Find the word label for the toast
+    const item = items.find((i) => i.id === id)
+    const { georgian } = item ? sides(item) : { georgian: '' }
+
+    // Start exit animation
+    setRemovingIds((prev) => new Set([...prev, id]))
+
+    // Remove from list after animation
+    setTimeout(() => {
+      setItems((prev) => prev.filter((i) => i.id !== id))
+      setSelected((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+      setRemovingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }, 250)
+
+    showToast(`«${georgian}» удалено из словаря`)
   }
 
   function startQuiz(mode: VocabularyQuizMode) {
@@ -115,7 +178,6 @@ export default function VocabularyList({ progress, navigate }: Props) {
         })
         setTranslateState('success')
         setTranslateInput('')
-        // Refresh vocabulary list
         if (r.status === 'success') {
           api.vocabulary().then((v) => {
             setItems(v.items.length > 0 ? v.items : v.starterItems)
@@ -208,6 +270,19 @@ export default function VocabularyList({ progress, navigate }: Props) {
         eyebrow="ლექსიკონი"
         title="Мой словарь"
       />
+
+      {/* Toast notifications */}
+      <div className="fixed top-0 left-0 right-0 max-w-[480px] mx-auto z-[60] flex flex-col items-stretch px-4 pt-4 gap-2 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="bg-cream border-b-2 border-ruby rounded-xl px-4 py-3 font-sans text-[14px] font-semibold text-jewelInk shadow-md"
+            style={{ animation: 'slide-down-toast 250ms ease-out both' }}
+          >
+            {t.message}
+          </div>
+        ))}
+      </div>
 
       <div
         className="flex-1 px-5 pt-5 pb-in"
@@ -305,7 +380,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
 
             {/* Filter chips */}
-            <div className="grid grid-cols-4 gap-1.5 mb-5">
+            <div className="grid grid-cols-4 gap-1.5 mb-3">
               <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
                 все
               </FilterChip>
@@ -322,13 +397,32 @@ export default function VocabularyList({ progress, navigate }: Props) {
                 изучено
               </FilterChip>
             </div>
+
+            {/* Alphabet index */}
+            <div className="-mx-5 mb-4">
+              <AlphaIndex
+                activeLetter={activeLetter}
+                disabledLetters={disabledLetters}
+                onSelect={setActiveLetter}
+              />
+            </div>
           </>
+        )}
+
+        {/* Section divider when alpha filter is active */}
+        {activeLetter && (
+          <div key={activeLetter} className="flex items-center gap-3 mb-3 anim-fade">
+            <span className="font-geo text-[20px] font-bold text-jewelInk leading-none">{activeLetter}</span>
+            <div className="flex-1 h-px bg-jewelInk/15" />
+            <span className="mn-eyebrow">{filtered.length} {pluralizeWord(filtered.length)}</span>
+          </div>
         )}
 
         {/* Word list */}
         <div className="flex flex-col gap-2">
           {filtered.map((item, idx) => {
-            const isSelected = selected.has(item.id)
+            const isItemSelected = selected.has(item.id)
+            const isRemoving = removingIds.has(item.id)
             const { georgian, russian } = sides(item)
             const masteryColor =
               item.mastery === 'MasteredInBothDirections'
@@ -337,59 +431,92 @@ export default function VocabularyList({ progress, navigate }: Props) {
                 ? 'bg-navy'
                 : 'bg-jewelInk/15'
             return (
-              <button
+              <div
                 key={item.id}
-                onClick={() => !isStarterMode && toggle(item.id)}
-                className={`w-full text-left jewel-tile jewel-pressable px-4 py-3 flex items-center gap-3 ${
-                  isSelected ? '!bg-ruby/10' : ''
-                }`}
+                className={`jewel-tile flex items-center min-h-[56px] ${isItemSelected ? '!bg-ruby/10' : ''}`}
+                style={isRemoving ? {
+                  transform: 'translateX(-100%)',
+                  opacity: 0,
+                  transition: 'transform 250ms ease-out, opacity 250ms ease-out'
+                } : undefined}
+                role="listitem"
               >
-                <div className="relative z-[1] shrink-0 font-sans text-[10px] font-bold text-jewelInk-mid tabular-nums w-6">
-                  {String(idx + 1).padStart(2, '0')}
-                </div>
-
+                {/* Left zone: checkbox (only non-starter mode) */}
                 {!isStarterMode && (
-                  <div
-                    className={`relative z-[1] shrink-0 w-6 h-6 rounded-md border-[1.5px] flex items-center justify-center ${
-                      isSelected
-                        ? 'bg-ruby border-jewelInk'
-                        : 'bg-cream-deep border-jewelInk/40'
-                    }`}
+                  <button
+                    onClick={() => toggle(item.id)}
+                    className="shrink-0 w-[52px] flex items-center justify-center self-stretch"
+                    aria-label="Выбрать для квиза"
                   >
-                    {isSelected && (
-                      <svg width="12" height="12" viewBox="0 0 18 18" fill="none">
-                        <path
-                          d="M3 9 L7 13 L15 4"
-                          stroke="#FBF6EC"
-                          strokeWidth="2.8"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
-                  </div>
+                    <div className="relative z-[1] shrink-0 font-sans text-[10px] font-bold text-jewelInk-mid tabular-nums w-6 text-right mr-1">
+                      {String(idx + 1).padStart(2, '0')}
+                    </div>
+                    <div
+                      className={`relative z-[1] shrink-0 w-6 h-6 rounded-md border-[1.5px] flex items-center justify-center ${
+                        isItemSelected
+                          ? 'bg-ruby border-jewelInk'
+                          : 'bg-cream-deep border-jewelInk/40'
+                      }`}
+                    >
+                      {isItemSelected && (
+                        <svg width="12" height="12" viewBox="0 0 18 18" fill="none">
+                          <path
+                            d="M3 9 L7 13 L15 4"
+                            stroke="#FBF6EC"
+                            strokeWidth="2.8"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
                 )}
 
-                <div className="relative z-[1] flex-1 min-w-0">
-                  <div className="font-geo text-[18px] font-bold text-jewelInk leading-tight truncate">
-                    {georgian}
-                  </div>
-                  <div className="font-sans text-[12px] text-jewelInk-mid truncate leading-snug mt-0.5">
-                    {russian}
-                  </div>
-                </div>
+                {/* Right zone: word content → opens card */}
+                <button
+                  onClick={() => openCard(item)}
+                  className="flex-1 flex items-center gap-3 py-3 pr-4 min-h-[56px]"
+                  style={isStarterMode ? { paddingLeft: '1rem' } : undefined}
+                >
+                  {isStarterMode && (
+                    <div className="relative z-[1] shrink-0 font-sans text-[10px] font-bold text-jewelInk-mid tabular-nums w-6">
+                      {String(idx + 1).padStart(2, '0')}
+                    </div>
+                  )}
 
-                <div
-                  className={`relative z-[1] w-2.5 h-2.5 rounded-full shrink-0 ${masteryColor} border border-jewelInk/30`}
-                />
-              </button>
+                  <div className="relative z-[1] flex-1 min-w-0">
+                    <div className="font-geo text-[18px] font-bold text-jewelInk leading-tight truncate">
+                      {georgian}
+                    </div>
+                    <div className="font-sans text-[12px] text-jewelInk-mid truncate leading-snug mt-0.5">
+                      {russian}
+                    </div>
+                  </div>
+
+                  <div
+                    className={`relative z-[1] w-2.5 h-2.5 rounded-full shrink-0 ${masteryColor} border border-jewelInk/30`}
+                  />
+
+                  {/* Chevron hint */}
+                  <svg
+                    className="relative z-[1] shrink-0 text-jewelInk/30"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                  >
+                    <path d="M4.5 2.5 L7.5 6 L4.5 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </div>
             )
           })}
 
           {filtered.length === 0 && (
             <div className="py-10 text-center font-sans text-[14px] text-jewelInk-mid">
-              ничего не нашлось
+              {activeLetter ? 'нет слов по этому фильтру' : 'ничего не нашлось'}
             </div>
           )}
         </div>
@@ -427,6 +554,17 @@ export default function VocabularyList({ progress, navigate }: Props) {
           </div>
         )}
       </div>
+
+      {/* Word card bottom sheet */}
+      {cardItem && (
+        <WordCard
+          item={cardItem}
+          isSelected={selected.has(cardItem.id)}
+          onClose={closeCard}
+          onToggleSelect={toggle}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   )
 }

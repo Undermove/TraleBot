@@ -7,7 +7,7 @@ using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateAndDeleteVocabularyCommand(ITelegramBotClient client, IMediator mediator) : IBotCommand
+public class TranslateAndDeleteVocabularyCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig) : IBotCommand
 {
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
@@ -18,16 +18,17 @@ public class TranslateAndDeleteVocabularyCommand(ITelegramBotClient client, IMed
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var callback = request.Text.Deserialize<TranslateAndDeleteVocabularyCallback>();
+        var isOwner = botConfig.OwnerTelegramId != 0 && request.UserTelegramId == botConfig.OwnerTelegramId;
         var result = await mediator.Send(new TranslateAndDeleteVocabulary
         {
             User = request.User ?? throw new ApplicationException("User not registered"),
             TargetLanguage = callback.TargetLanguage,
             VocabularyEntryId = callback.VocabularyEntryId
         }, token);
-        
+
         await (result switch
         {
-            ChangeAndTranslationResult.TranslationSuccess success => client.UpdateTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
+            ChangeAndTranslationResult.TranslationSuccess success => client.UpdateTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token, isOwner),
             ChangeAndTranslationResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             ChangeAndTranslationResult.TranslationFailure => client.HandleFailure(request, token),
             ChangeAndTranslationResult.NoActionNeeded => HandleNoActionNeeded(request, token),
