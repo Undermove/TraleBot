@@ -71,6 +71,20 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
 
+  // Auto-open paywall when arrived via deep link "?paywall=1" — used by the
+  // bot's "💳 Оплатить подписку" button so users land straight on the sheet.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('paywall') === '1' && !isPro) {
+      setPaywall({ trigger: 'module' })
+      // Strip the query so a manual reload doesn't keep popping the paywall
+      const url = new URL(window.location.href)
+      url.searchParams.delete('paywall')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [isPro])
+
   // Section data — defined early so unlock logic can reference them
   const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
   const grammarIds = ['pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives']
