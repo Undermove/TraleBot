@@ -55,6 +55,11 @@ spec:
     metadata:
       labels:
         app: tralebot
+      annotations:
+        # Force a rolling restart on every deploy so env-only changes take effect.
+        # Without this, kubectl apply may keep the old pod running if only env values
+        # changed and the image tag happens to match an already-pulled image.
+        kubectl.kubernetes.io/restartedAt: "$RUN_NUMBER"
     spec:
       containers:
         - name: tralebot-container
