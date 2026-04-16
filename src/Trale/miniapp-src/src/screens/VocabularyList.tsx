@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import LoaderLetter from '../components/LoaderLetter'
+import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
 
@@ -24,6 +25,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
   const [translateInput, setTranslateInput] = useState('')
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
   const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string } | null>(null)
+  const [activeLetter, setActiveLetter] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +55,14 @@ export default function VocabularyList({ progress, navigate }: Props) {
     }
   }, [])
 
+  const disabledLetters = useMemo(() => {
+    return new Set(
+      GEORGIAN_ALPHABET.filter(
+        (letter) => !items.some((item) => sides(item).georgian.startsWith(letter))
+      )
+    )
+  }, [items])
+
   const filtered = useMemo(() => {
     const lowered = search.trim().toLowerCase()
     return items.filter((item) => {
@@ -70,13 +80,14 @@ export default function VocabularyList({ progress, navigate }: Props) {
       if (filter === 'mastered') {
         if (item.mastery === 'NotMastered') return false
       }
-      if (!lowered) return true
-      return (
+      if (lowered && !(
         item.word.toLowerCase().includes(lowered) ||
         item.definition.toLowerCase().includes(lowered)
-      )
+      )) return false
+      if (activeLetter && !sides(item).georgian.startsWith(activeLetter)) return false
+      return true
     })
-  }, [items, search, filter])
+  }, [items, search, filter, activeLetter])
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -305,7 +316,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
 
             {/* Filter chips */}
-            <div className="grid grid-cols-4 gap-1.5 mb-5">
+            <div className="grid grid-cols-4 gap-1.5 mb-3">
               <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
                 все
               </FilterChip>
@@ -322,7 +333,25 @@ export default function VocabularyList({ progress, navigate }: Props) {
                 изучено
               </FilterChip>
             </div>
+
+            {/* Alphabet index */}
+            <div className="-mx-5 mb-4">
+              <AlphaIndex
+                activeLetter={activeLetter}
+                disabledLetters={disabledLetters}
+                onSelect={setActiveLetter}
+              />
+            </div>
           </>
+        )}
+
+        {/* Section divider when alpha filter is active */}
+        {activeLetter && (
+          <div key={activeLetter} className="flex items-center gap-3 mb-3 anim-fade">
+            <span className="font-geo text-[20px] font-bold text-jewelInk leading-none">{activeLetter}</span>
+            <div className="flex-1 h-px bg-jewelInk/15" />
+            <span className="mn-eyebrow">{filtered.length} {pluralizeWord(filtered.length)}</span>
+          </div>
         )}
 
         {/* Word list */}
@@ -389,7 +418,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
 
           {filtered.length === 0 && (
             <div className="py-10 text-center font-sans text-[14px] text-jewelInk-mid">
-              ничего не нашлось
+              {activeLetter ? 'нет слов по этому фильтру' : 'ничего не нашлось'}
             </div>
           )}
         </div>
