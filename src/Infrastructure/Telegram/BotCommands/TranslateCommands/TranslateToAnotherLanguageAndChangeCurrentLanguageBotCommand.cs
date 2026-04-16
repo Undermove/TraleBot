@@ -9,7 +9,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITelegramBotClient client, IMediator mediator)
+public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig)
     : IBotCommand
 {
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
@@ -28,10 +28,11 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageBotCommand(ITeleg
             VocabularyEntryId = command.VocabularyEntryId
         }, token);
 
+        var isOwner = botConfig.OwnerTelegramId != 0 && request.UserTelegramId == botConfig.OwnerTelegramId;
         await (result switch
         {
-            ChangeAndTranslationResult.TranslationExists exists => client.UpdateExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token),
-            ChangeAndTranslationResult.TranslationSuccess success => client.UpdateTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token),
+            ChangeAndTranslationResult.TranslationExists exists => client.UpdateExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token, isOwner),
+            ChangeAndTranslationResult.TranslationSuccess success => client.UpdateTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token, isOwner),
             ChangeAndTranslationResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             ChangeAndTranslationResult.PremiumRequired premiumRequired => HandlePremiumRequired(request, premiumRequired, token),
             ChangeAndTranslationResult.TranslationFailure => client.HandleFailure(request, token),

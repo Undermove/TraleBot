@@ -32,7 +32,8 @@ public class MenuCommand : IBotCommand
         var miniAppUrl = _botConfig.MiniAppEnabled && !string.IsNullOrEmpty(_botConfig.HostAddress)
             ? $"{_botConfig.HostAddress}/"
             : null;
-        var keyboard = MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage, miniAppUrl);
+        var isOwner = _botConfig.OwnerTelegramId != 0 && request.UserTelegramId == _botConfig.OwnerTelegramId;
+        var keyboard = MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage, miniAppUrl, isOwner);
         
         // If request comes from a callback (button click), edit existing message
         if (request.RequestType == UpdateType.CallbackQuery)

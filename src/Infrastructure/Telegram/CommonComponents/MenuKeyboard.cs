@@ -7,28 +7,22 @@ namespace Infrastructure.Telegram.CommonComponents;
 
 public static class MenuKeyboard
 {
-    public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage, string miniAppUrl = null)
+    public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage, string miniAppUrl = null, bool isOwner = false)
     {
-        var buttons = new List<InlineKeyboardButton[]>
+        var buttons = new List<InlineKeyboardButton[]>();
+
+        if (isOwner)
         {
-            new[]
+            buttons.Add(new[]
             {
                 InlineKeyboardButton.WithCallbackData($"Сменить язык словаря: {GetLanguageFlag(currentLanguage)}",
                     $"{CommandNames.ChangeCurrentLanguageMenu}")
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.QuizIcon} Закрепить слова")
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.VocabularyIcon} Мой словарь")
-            },
-            new[]
-            {
-                InlineKeyboardButton.WithCallbackData($"{CommandNames.AchievementsIcon} Достижения")
-            }
-        };
+            });
+        }
+
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData($"{CommandNames.QuizIcon} Закрепить слова") });
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData($"{CommandNames.VocabularyIcon} Мой словарь") });
+        buttons.Add(new[] { InlineKeyboardButton.WithCallbackData($"{CommandNames.AchievementsIcon} Достижения") });
         
         // Add Georgian repetition modules button only for Georgian language
         if (currentLanguage == Language.Georgian)
