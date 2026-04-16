@@ -421,7 +421,7 @@ export default function LandingScreen({ botUsername }: Props) {
         </div>
 
         <div className="mt-8 font-sans text-[10px] font-bold text-jewelInk-hint uppercase tracking-widest">
-          ბომბორა · 2026
+          TraleBot · ბომბორა · 2026
         </div>
       </section>
 

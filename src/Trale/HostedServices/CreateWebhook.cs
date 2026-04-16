@@ -30,12 +30,25 @@ public class CreateWebhook : IHostedService
             dropPendingUpdates: false,
             cancellationToken: cancellationToken);
 
-        // Mini-app is accessible from the /menu inline keyboard (WebApp button),
-        // not from the chat menu button. Reset to the standard commands menu
-        // so the button next to the text input shows the command list, not a WebApp.
-        await _telegramBotClient.SetChatMenuButtonAsync(
-            menuButton: new MenuButtonCommands(),
-            cancellationToken: cancellationToken);
+        // Chat menu button (next to the text input) opens the TraleBot mini-app directly
+        // when the feature is enabled — so users always have one-tap access to the app.
+        // Falls back to standard commands menu when mini-app is disabled.
+        if (_config.MiniAppEnabled && !string.IsNullOrEmpty(_config.HostAddress))
+        {
+            await _telegramBotClient.SetChatMenuButtonAsync(
+                menuButton: new MenuButtonWebApp
+                {
+                    Text = "🚀 TraleBot",
+                    WebApp = new WebAppInfo { Url = $"{_config.HostAddress}/" }
+                },
+                cancellationToken: cancellationToken);
+        }
+        else
+        {
+            await _telegramBotClient.SetChatMenuButtonAsync(
+                menuButton: new MenuButtonCommands(),
+                cancellationToken: cancellationToken);
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)

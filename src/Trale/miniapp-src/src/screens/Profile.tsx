@@ -226,7 +226,7 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
             учись в своём темпе — блокнот ждёт
           </div>
           <div className="mt-4 font-sans text-[10px] font-bold text-jewelInk-hint uppercase tracking-widest">
-            ბომბორა · 2026
+            TraleBot · ბომბორა · 2026
           </div>
         </div>
       </div>

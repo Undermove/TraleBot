@@ -4,11 +4,12 @@ using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class StartCommand(ITelegramBotClient client, IMediator mediator) : IBotCommand
+public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig) : IBotCommand
 {
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
@@ -50,28 +51,47 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator) : IBotC
             return;
         }
 
-        var menuButton = new InlineKeyboardMarkup(new[]
+        var miniAppUrl = botConfig.MiniAppEnabled && !string.IsNullOrEmpty(botConfig.HostAddress)
+            ? $"{botConfig.HostAddress}/"
+            : null;
+
+        // Build keyboard: WebApp button (primary CTA) when mini-app is enabled, plus text menu fallback.
+        var rows = new List<InlineKeyboardButton[]>();
+        if (miniAppUrl != null)
         {
-            new[] { InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu) }
+            rows.Add(new[]
+            {
+                InlineKeyboardButton.WithWebApp(
+                    "🚀 Открыть TraleBot",
+                    new WebAppInfo { Url = miniAppUrl })
+            });
+        }
+        rows.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
         });
+        var keyboard = new InlineKeyboardMarkup(rows);
 
         if (isNewUser)
         {
+            var hasMiniApp = miniAppUrl != null;
+            var miniAppLine = hasMiniApp
+                ? "Жми «🚀 Открыть TraleBot» — попадёшь в приложение, где есть алфавит, грамматика, словарь и квизы. Тебя там встретит щенок Бомбора 🐶 — твой гид и маскот.\n\n"
+                : "";
+
             await client.SendTextMessageAsync(
                 request.UserTelegramId,
 $@"გამარჯობა, {request.UserName}! 👋
 
-Меня зовут TraleBot — я помогаю учить грузинский язык.
+Я — TraleBot, приложение для изучения грузинского языка прямо в Telegram.
 
 Только что ты узнал своё первое слово:
 გამარჯობა — «привет» по-грузински.
 
-Со мной ты можешь:
-• Переводить слова и пополнять словарь
-• Учиться через мини-апп «🐶 Бомбора»
+{miniAppLine}А ещё в чате со мной можно переводить слова — я добавлю их в твой словарь и сделаю по ним квизы. Просто напиши любое слово или фразу.
 
-Напиши мне любое слово или фразу — переведу и добавлю в словарь.",
-                replyMarkup: menuButton,
+Первые 30 дней — всё бесплатно.",
+                replyMarkup: keyboard,
                 cancellationToken: token);
         }
         else
@@ -80,8 +100,8 @@ $@"გამარჯობა, {request.UserName}! 👋
                 request.UserTelegramId,
 $@"გამარჯობა снова, {request.UserName}! 👋
 
-Напиши слово — переведу и добавлю в словарь.",
-                replyMarkup: menuButton,
+Напиши слово — переведу и добавлю в словарь. Или открой TraleBot, чтобы продолжить учиться.",
+                replyMarkup: keyboard,
                 cancellationToken: token);
         }
     }
