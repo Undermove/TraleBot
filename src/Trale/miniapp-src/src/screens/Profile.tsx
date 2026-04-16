@@ -201,6 +201,24 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
           <a href="/terms.html" target="_blank" rel="noopener" className="underline">Условия</a>
         </div>
 
+        {/* Admin entry (owner only) */}
+        {isOwner && (
+          <button
+            onClick={() => navigate({ kind: 'admin' })}
+            className="mt-6 jewel-tile jewel-pressable w-full text-left px-4 py-4"
+          >
+            <div className="relative z-[1] flex items-center justify-between gap-3">
+              <div>
+                <div className="font-sans text-[15px] font-bold text-jewelInk">📊 Админка</div>
+                <div className="font-sans text-[12px] text-jewelInk-mid mt-0.5">
+                  Аналитика по пользователям и выручке
+                </div>
+              </div>
+              <span className="text-jewelInk-hint text-[14px] shrink-0">→</span>
+            </div>
+          </button>
+        )}
+
         {/* Debug tools (owner only) */}
         {isOwner && <OwnerDebugPanel />}
 
