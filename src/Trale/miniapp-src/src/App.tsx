@@ -10,6 +10,7 @@ import PracticeMistakes from './screens/PracticeMistakes'
 import Result from './screens/Result'
 import MistakesResult from './screens/MistakesResult'
 import Profile from './screens/Profile'
+import AdminScreen from './screens/AdminScreen'
 import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
 import LandingScreen from './screens/LandingScreen'
@@ -317,6 +318,8 @@ export default function App() {
           />
         </>
       )
+    case 'admin':
+      return <AdminScreen progress={progress} navigate={navigate} />
     case 'vocabulary-list':
       return <VocabularyList progress={progress} navigate={navigate} />
     case 'vocabulary-quiz':

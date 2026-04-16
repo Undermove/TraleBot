@@ -174,6 +174,14 @@ export const api = {
       body: JSON.stringify({ chargeId: chargeId ?? null })
     }),
 
+  adminStats: () => request<AdminStats>('/api/admin/stats'),
+  adminSignups: (days = 30) =>
+    request<{ days: number; points: Array<{ date: string; count: number }> }>(
+      `/api/admin/signups?days=${days}`
+    ),
+  adminRecentUsers: (limit = 20) =>
+    request<{ users: AdminRecentUser[] }>(`/api/admin/recent-users?limit=${limit}`),
+
   lessonQuestions: (moduleId: string, lessonId: number) =>
     request<Array<{
       id: string
@@ -194,4 +202,32 @@ export const api = {
       throw new ApiError(resp.status, await resp.text().catch(() => ''))
     }
   }
+}
+
+export interface AdminStats {
+  totalUsers: number
+  activeUsers: number
+  proUsers: number
+  trialUsers: number
+  freeUsers: number
+  newUsersToday: number
+  newUsersWeek: number
+  newUsersMonth: number
+  totalRevenueStars: number
+  revenueWeekStars: number
+  totalPurchases: number
+  totalRefunds: number
+  totalVocabularyEntries: number
+  averageVocabularyPerUser: number
+  conversionPostTrialPct: number
+}
+
+export interface AdminRecentUser {
+  telegramId: number
+  isPro: boolean
+  plan: string | null
+  subscribedUntilUtc: string | null
+  registeredAtUtc: string
+  proPurchasedAtUtc: string | null
+  vocabularyCount: number
 }

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Application.Achievements.Services;
+using Application.Admin;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
 using Application.Quizzes.Services;
@@ -38,6 +39,12 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, EmeraldChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, MyselfVocabularyChecker>();
         services.AddTransient<IAchievementsService, AchievementsService>();
+
+        // Admin queries (services per ARCHITECTURE.md, no MediatR)
+        services.AddScoped<GetAdminStatsQuery>();
+        services.AddScoped<GetUserSignupsTimeseriesQuery>();
+        services.AddScoped<GetRecentUsersQuery>();
+
         return services;
     }
 }
