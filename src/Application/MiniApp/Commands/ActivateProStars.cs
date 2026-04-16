@@ -34,16 +34,17 @@ public class ActivateProStars : IRequest<ActivateProStarsResult>
 
             var planInfo = request.Payload != null ? SubscriptionPlans.ByPayload(request.Payload) : null;
             var now = DateTime.UtcNow;
+            var wasAlreadyPro = user.IsPro;
 
-            if (user.IsPro)
-            {
-                _logger.LogInformation("User {UserId} already has Pro, recording payment anyway",
-                    request.UserId);
-            }
-            else
+            if (!wasAlreadyPro)
             {
                 user.IsPro = true;
                 user.ProPurchasedAtUtc = now;
+            }
+            else
+            {
+                _logger.LogInformation("User {UserId} already has Pro, recording payment anyway",
+                    request.UserId);
             }
 
             if (planInfo != null)
@@ -91,7 +92,11 @@ public class ActivateProStars : IRequest<ActivateProStarsResult>
             _logger.LogInformation("Pro Stars activated for user {UserId} plan {Plan}",
                 request.UserId, planInfo?.Plan.ToString() ?? "legacy");
 
-            return user.IsPro && request.Payload == null ? ActivateProStarsResult.AlreadyPro : ActivateProStarsResult.Success;
+            // AlreadyPro only when user was already Pro AND no new payment payload arrived
+            // (extension payments still report Success).
+            return wasAlreadyPro && request.Payload == null
+                ? ActivateProStarsResult.AlreadyPro
+                : ActivateProStarsResult.Success;
         }
     }
 }

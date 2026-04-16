@@ -12,7 +12,7 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    [Migration("20260416052848_AddSubscriptionPlanAndPayments")]
+    [Migration("20260416120000_AddSubscriptionPlanAndPayments")]
     partial class AddSubscriptionPlanAndPayments
     {
         /// <inheritdoc />
