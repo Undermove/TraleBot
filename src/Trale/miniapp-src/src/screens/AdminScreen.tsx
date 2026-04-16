@@ -18,7 +18,7 @@ export default function AdminScreen({ progress, navigate }: Props) {
   const [users, setUsers] = useState<AdminRecentUser[]>([])
   const [days, setDays] = useState<7 | 30 | 90>(30)
   const [search, setSearch] = useState('')
-  const [sort, setSort] = useState<'recent_signup' | 'recent_activity'>('recent_activity')
+  const [sort, setSort] = useState<'recent_signup' | 'recent_activity' | 'vocab_count'>('recent_activity')
   const [usersLoading, setUsersLoading] = useState(false)
 
   // Initial load: stats + chart + first batch of users
@@ -155,6 +155,9 @@ export default function AdminScreen({ progress, navigate }: Props) {
               </div>
             </div>
 
+            {/* Broadcast & Grant — owner only one-off campaign tool */}
+            <BroadcastPanel />
+
             {/* Users with search + sort */}
             <div className="flex items-center justify-between mb-2">
               <div className="mn-eyebrow">Юзеры ({users.length})</div>
@@ -178,6 +181,16 @@ export default function AdminScreen({ progress, navigate }: Props) {
                   }`}
                 >
                   регистрация
+                </button>
+                <button
+                  onClick={() => setSort('vocab_count')}
+                  className={`px-2 py-1 rounded font-sans text-[10px] font-bold border-[1.5px] ${
+                    sort === 'vocab_count'
+                      ? 'bg-jewelInk text-cream border-jewelInk'
+                      : 'bg-cream text-jewelInk-mid border-jewelInk/25'
+                  }`}
+                >
+                  слова
                 </button>
               </div>
             </div>
@@ -217,6 +230,226 @@ export default function AdminScreen({ progress, navigate }: Props) {
 
 function fmt(n: number): string {
   return n.toLocaleString('ru-RU')
+}
+
+function BroadcastPanel() {
+  const [minVocab, setMinVocab] = useState(10)
+  const [useActivity, setUseActivity] = useState(false)
+  const [days, setDays] = useState(365)
+  const [grantPlan, setGrantPlan] = useState<string>('Lifetime')
+  const [includeMiniAppButton, setIncludeMiniAppButton] = useState(true)
+  const [message, setMessage] = useState('')
+  const [preview, setPreview] = useState<{ totalRecipients: number; sampleTelegramIds: number[] } | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<string | null>(null)
+
+  function segmentSummary() {
+    const parts: string[] = []
+    if (minVocab > 0) parts.push(`словарь ≥ ${minVocab}`)
+    if (useActivity) parts.push(`активные за ${days}д`)
+    if (parts.length === 0) parts.push('все юзеры')
+    return parts.join(' + ')
+  }
+
+  function buildBody(dryRun: boolean) {
+    return {
+      activeWithinDays: useActivity ? days : null,
+      minVocabularyCount: minVocab,
+      message,
+      grantPlan: grantPlan || null,
+      dryRun,
+      includeMiniAppButton
+    }
+  }
+
+  async function doPreview() {
+    setBusy(true)
+    setResult(null)
+    try {
+      const p = await api.adminBroadcastPreview({
+        activeWithinDays: useActivity ? days : null,
+        minVocab
+      })
+      setPreview(p)
+    } catch {
+      setResult('preview failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function doDryRun() {
+    if (!message.trim()) {
+      setResult('пустое сообщение')
+      return
+    }
+    setBusy(true)
+    setResult(null)
+    try {
+      const r = await api.adminBroadcast(buildBody(true))
+      setResult(`dry-run: получателей ${r.totalRecipients} (никому не отправлено)`)
+    } catch (e: any) {
+      setResult(`ошибка: ${e?.message ?? 'unknown'}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function doSend() {
+    if (!message.trim()) {
+      setResult('пустое сообщение')
+      return
+    }
+    if (!confirm(
+      `ОТПРАВИТЬ?\nСегмент: ${segmentSummary()}\n` +
+      (grantPlan ? `+ выдать Pro план: ${grantPlan}\n` : '') +
+      (includeMiniAppButton ? '+ кнопка «Открыть TraleBot» в сообщении\n' : '') +
+      `Сообщение длиной ${message.length} символов.\n\n` +
+      'Это РЕАЛЬНАЯ отправка через бота.'
+    )) return
+
+    setBusy(true)
+    setResult(null)
+    try {
+      const r = await api.adminBroadcast(buildBody(false))
+      setResult(`✓ отправлено ${r.sent}/${r.totalRecipients}, выдано Pro: ${r.granted}, ошибок: ${r.failed}`)
+    } catch (e: any) {
+      setResult(`ошибка: ${e?.message ?? 'unknown'}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mb-5">
+      <div className="mn-eyebrow mb-2">📢 Broadcast (one-off)</div>
+      <div className="jewel-tile px-4 py-4">
+        <div className="relative z-[1] flex flex-col gap-3">
+          {/* Min vocabulary filter — primary "wake dormant users" knob */}
+          <div className="flex gap-2 items-center">
+            <label className="font-sans text-[12px] text-jewelInk-mid">слов в словаре ≥</label>
+            <input
+              type="number"
+              min={0}
+              max={1000}
+              value={minVocab}
+              onChange={(e) => setMinVocab(parseInt(e.target.value) || 0)}
+              className="w-20 px-2 py-1 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] tabular-nums"
+            />
+          </div>
+
+          {/* Optional activity filter */}
+          <label className="flex gap-2 items-center">
+            <input
+              type="checkbox"
+              checked={useActivity}
+              onChange={(e) => setUseActivity(e.target.checked)}
+            />
+            <span className="font-sans text-[12px] text-jewelInk-mid">+ активные за</span>
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={days}
+              disabled={!useActivity}
+              onChange={(e) => setDays(parseInt(e.target.value) || 30)}
+              className="w-16 px-2 py-1 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] tabular-nums disabled:opacity-50"
+            />
+            <span className="font-sans text-[12px] text-jewelInk-mid">дней</span>
+          </label>
+
+          <div className="flex justify-between items-center">
+            <span className="font-sans text-[11px] text-jewelInk-mid">
+              сегмент: <strong className="text-jewelInk">{segmentSummary()}</strong>
+            </span>
+            <button
+              onClick={doPreview}
+              disabled={busy}
+              className="px-3 py-1 rounded font-sans text-[11px] font-bold border-[1.5px] border-jewelInk/40 active:opacity-70"
+            >
+              preview
+            </button>
+          </div>
+
+          {preview && (
+            <div className="font-sans text-[11px] text-jewelInk-mid">
+              получателей: <strong className="text-jewelInk">{preview.totalRecipients}</strong>
+              {preview.sampleTelegramIds.length > 0 && (
+                <div className="mt-1 truncate">
+                  пример: {preview.sampleTelegramIds.slice(0, 5).join(', ')}
+                  {preview.totalRecipients > 5 && ' …'}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label className="font-sans text-[12px] text-jewelInk-mid">выдать Pro план (опц.)</label>
+            <select
+              value={grantPlan}
+              onChange={(e) => setGrantPlan(e.target.value)}
+              className="w-full mt-1 px-2 py-1.5 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] bg-cream"
+            >
+              <option value="">— без granta —</option>
+              <option value="Month">1 месяц</option>
+              <option value="Quarter">3 месяца</option>
+              <option value="HalfYear">6 месяцев</option>
+              <option value="Year">1 год</option>
+              <option value="Lifetime">Навсегда</option>
+            </select>
+          </div>
+
+          <label className="flex gap-2 items-center">
+            <input
+              type="checkbox"
+              checked={includeMiniAppButton}
+              onChange={(e) => setIncludeMiniAppButton(e.target.checked)}
+            />
+            <span className="font-sans text-[12px] text-jewelInk-mid">кнопка «🚀 Открыть TraleBot» в сообщении</span>
+          </label>
+
+          <div>
+            <label className="font-sans text-[12px] text-jewelInk-mid">сообщение</label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={6}
+              maxLength={4000}
+              placeholder="Текст сообщения для рассылки…"
+              className="w-full mt-1 px-2 py-2 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] bg-cream text-jewelInk"
+            />
+            <div className="font-sans text-[10px] text-jewelInk-hint text-right mt-0.5">
+              {message.length} / 4000
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={doDryRun}
+              disabled={busy}
+              className="flex-1 font-sans text-[13px] font-bold py-2 rounded border-[1.5px] border-jewelInk/40 active:opacity-70"
+            >
+              dry-run
+            </button>
+            <button
+              onClick={doSend}
+              disabled={busy}
+              className="flex-1 font-sans text-[13px] font-extrabold text-cream py-2 rounded border-[1.5px] border-jewelInk active:opacity-70"
+              style={{ background: '#b54e5e', boxShadow: '0 2px 0 #15100A' }}
+            >
+              {busy ? '…' : 'РЕАЛЬНО ОТПРАВИТЬ'}
+            </button>
+          </div>
+
+          {result && (
+            <div className="font-sans text-[11px] text-jewelInk text-center">
+              {result}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function relativeTime(iso: string): string {

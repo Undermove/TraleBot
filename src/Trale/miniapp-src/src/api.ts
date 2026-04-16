@@ -203,6 +203,30 @@ export const api = {
       method: 'POST'
     }),
 
+  adminBroadcastPreview: (opts: { activeWithinDays?: number | null; minVocab?: number }) => {
+    const params = new URLSearchParams()
+    if (opts.activeWithinDays != null) params.set('activeWithinDays', String(opts.activeWithinDays))
+    if (opts.minVocab) params.set('minVocab', String(opts.minVocab))
+    return request<{ totalRecipients: number; sampleTelegramIds: number[] }>(
+      `/api/admin/broadcast/preview?${params}`
+    )
+  },
+  adminBroadcast: (body: {
+    activeWithinDays?: number | null
+    minVocabularyCount?: number
+    message: string
+    grantPlan: string | null
+    dryRun: boolean
+    includeMiniAppButton: boolean
+  }) =>
+    request<{ totalRecipients: number; sent: number; failed: number; granted: number; error?: string }>(
+      `/api/admin/broadcast`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body)
+      }
+    ),
+
   lessonQuestions: (moduleId: string, lessonId: number) =>
     request<Array<{
       id: string

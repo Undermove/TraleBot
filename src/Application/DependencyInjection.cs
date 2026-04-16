@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<GetUserDetailQuery>();
         services.AddScoped<GrantProService>();
         services.AddScoped<RevokeProService>();
+        services.AddScoped<BroadcastService>();
 
         return services;
     }

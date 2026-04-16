@@ -11,7 +11,8 @@ namespace Application.Admin;
 public enum RecentUsersSort
 {
     RecentSignup,
-    RecentActivity
+    RecentActivity,
+    VocabularyCount
 }
 
 /// <summary>
@@ -37,13 +38,17 @@ public class GetRecentUsersQuery(ITraleDbContext db)
             q = q.Where(u => u.TelegramId.ToString().Contains(search));
         }
 
-        // Pull a candidate set, then either order by signup OR enrich with activity
-        // and order by that. To keep it simple, fetch up to limit*5 candidates for
-        // activity sort, then trim after enrichment.
-        var fetchLimit = sort == RecentUsersSort.RecentActivity ? Math.Min(limit * 5, 500) : limit;
+        // For sorts that depend on enriched columns (activity / vocab count) we need
+        // a wider candidate window before trimming to `limit` after computing them.
+        var fetchLimit = sort == RecentUsersSort.RecentSignup ? limit : Math.Min(limit * 5, 500);
 
-        var candidates = await q
-            .OrderByDescending(u => u.RegisteredAtUtc)
+        // For VocabularyCount sort, prime the candidate window by vocab count
+        // straight from the DB so we don't accidentally trim the heaviest users.
+        var primedQuery = sort == RecentUsersSort.VocabularyCount
+            ? q.OrderByDescending(u => db.VocabularyEntries.Count(v => v.UserId == u.Id))
+            : q.OrderByDescending(u => u.RegisteredAtUtc);
+
+        var candidates = await primedQuery
             .Take(fetchLimit)
             .Select(u => new
             {
@@ -82,6 +87,10 @@ public class GetRecentUsersQuery(ITraleDbContext db)
         if (sort == RecentUsersSort.RecentActivity)
         {
             enriched = enriched.OrderByDescending(u => u.LastActivityUtc ?? DateTime.MinValue);
+        }
+        else if (sort == RecentUsersSort.VocabularyCount)
+        {
+            enriched = enriched.OrderByDescending(u => u.VocabularyCount);
         }
 
         return enriched.Take(limit).ToList();
