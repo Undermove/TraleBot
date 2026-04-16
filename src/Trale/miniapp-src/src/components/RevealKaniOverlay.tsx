@@ -88,8 +88,11 @@ export default function RevealKaniOverlay({ onClose }: Props) {
             </p>
           </div>
 
-          {/* Mini-tile: ქართული */}
-          <div className="jewel-tile px-4 py-3 text-center w-full">
+          {/* Mini-tile: ქართული — fades up after stamp (delay 350ms) */}
+          <div
+            className="jewel-tile px-4 py-3 text-center w-full"
+            style={{ animation: 'tile-appear 250ms ease 350ms both' }}
+          >
             <div className="relative z-[1]">
               <div className="font-geo text-[22px] font-bold text-jewelInk">
                 ქართული
@@ -100,10 +103,12 @@ export default function RevealKaniOverlay({ onClose }: Props) {
             </div>
           </div>
 
-          {/* CTA — full width, ≥44px height (jewel-btn default is 52px) */}
-          <Button variant="primary" onClick={handleClose}>
-            Запомню!
-          </Button>
+          {/* CTA — full width, ≥44px height (jewel-btn default is 52px); fades in last (delay 450ms) */}
+          <div style={{ animation: 'slow-fade 200ms ease 450ms both', width: '100%' }}>
+            <Button variant="primary" onClick={handleClose}>
+              Запомню!
+            </Button>
+          </div>
         </div>
 
         {/* Kilim stripe — bottom */}
