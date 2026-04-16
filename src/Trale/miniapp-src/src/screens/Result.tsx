@@ -1,7 +1,7 @@
 import React from 'react'
 import Mascot from '../components/Mascot'
 import Button from '../components/Button'
-import { CatalogDto, Screen } from '../types'
+import { CatalogDto, QuizQuestion, Screen } from '../types'
 
 interface Props {
   catalog: CatalogDto
@@ -10,6 +10,7 @@ interface Props {
   correct: number
   total: number
   xpEarned: number
+  wrongQuestions?: QuizQuestion[]
   navigate: (s: Screen) => void
 }
 
@@ -20,6 +21,7 @@ export default function Result({
   correct,
   total,
   xpEarned,
+  wrongQuestions,
   navigate
 }: Props) {
   const pct = Math.round((correct / total) * 100)
@@ -131,31 +133,63 @@ export default function Result({
               на главную
             </Button>
           </>
-        ) : (
+        ) : wrongQuestions && wrongQuestions.length > 0 ? (
           <>
-            {isGreat && nextLesson ? (
+            <div className="flex flex-col items-stretch gap-0">
               <Button
                 variant="green"
                 onClick={() =>
-                  navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })
+                  navigate({ kind: 'practice-mistakes', moduleId, lessonId, wrongQuestions })
                 }
               >
-                следующий урок →
+                Повторить ошибки ({wrongQuestions.length})
               </Button>
-            ) : (
-              <Button
-                variant="primary"
-                onClick={() => navigate({ kind: 'module', moduleId })}
-              >
-                к карте уроков →
-              </Button>
-            )}
+              <div className="font-geo text-[10px] font-bold text-ruby/60 text-center mt-1.5 mb-3">
+                ჩემი შეცდომები
+              </div>
+            </div>
             <Button
               variant="ghost"
-              onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}
+              onClick={() => navigate({ kind: 'module', moduleId })}
             >
-              пройти ещё раз
+              к карте уроков →
             </Button>
+          </>
+        ) : (
+          <>
+            {isGreat && nextLesson ? (
+              <>
+                <Button
+                  variant="green"
+                  onClick={() =>
+                    navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })
+                  }
+                >
+                  следующий урок →
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate({ kind: 'module', moduleId })}
+                >
+                  к карте уроков →
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate({ kind: 'module', moduleId })}
+                >
+                  к карте уроков →
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}
+                >
+                  пройти ещё раз
+                </Button>
+              </>
+            )}
           </>
         )}
       </div>
