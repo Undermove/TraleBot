@@ -205,17 +205,6 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           <RefundButton onRefunded={onPurchaseSuccess} />
         )}
 
-        {showPaywall && (
-          <ProPaywall
-            trigger="module"
-            onClose={() => setShowPaywall(false)}
-            onPurchaseSuccess={() => {
-              setShowPaywall(false)
-              onPurchaseSuccess()
-            }}
-          />
-        )}
-
         <style>{`
           @keyframes proBadgeAppear {
             from { transform: scale(0.5); opacity: 0; }
@@ -277,6 +266,19 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
 
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+
+      {/* Pro Paywall — rendered at root so fixed positioning isn't broken
+          by ancestor transform/contain on the scroll container. */}
+      {showPaywall && (
+        <ProPaywall
+          trigger="module"
+          onClose={() => setShowPaywall(false)}
+          onPurchaseSuccess={() => {
+            setShowPaywall(false)
+            onPurchaseSuccess()
+          }}
+        />
+      )}
     </div>
   )
 }
