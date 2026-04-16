@@ -2,7 +2,7 @@ import React from 'react'
 
 interface Props {
   children: React.ReactNode
-  color?: 'wine' | 'moss' | 'saffron' | 'sky' | 'ink'
+  color?: 'wine' | 'moss' | 'saffron' | 'sky' | 'ink' | 'ruby' | 'navy' | 'gold'
   tilt?: 'left' | 'right'
   animate?: boolean
   className?: string
@@ -18,16 +18,29 @@ export default function Stamp({
   animate = false,
   className = ''
 }: Props) {
-  const colorClass =
+  // Minankari-native colors
+  const minankariColorClass =
+    color === 'ruby'
+      ? 'text-ruby border-ruby'
+      : color === 'navy'
+      ? 'text-navy border-navy'
+      : color === 'gold'
+      ? 'text-gold-deep border-gold-deep'
+      : null
+
+  // Legacy color mapping → Minankari equivalents
+  const legacyColorClass =
     color === 'wine'
-      ? 'text-wine border-wine'
-      : color === 'moss'
-      ? 'text-moss border-moss'
+      ? 'text-ruby border-ruby'
       : color === 'saffron'
-      ? 'text-saffron-deep border-saffron-deep'
+      ? 'text-gold-deep border-gold-deep'
       : color === 'sky'
-      ? 'text-sky-deep border-sky-deep'
-      : 'text-ink border-ink'
+      ? 'text-navy border-navy'
+      : color === 'moss'
+      ? 'text-jewelInk border-jewelInk'
+      : 'text-jewelInk border-jewelInk'
+
+  const colorClass = minankariColorClass ?? legacyColorClass
 
   const tiltClass = tilt === 'left' ? 'rotate-xs' : 'rotate-xs-r'
   const animClass = animate ? (tilt === 'left' ? 'anim-stamp' : 'anim-stamp-r') : tiltClass

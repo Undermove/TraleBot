@@ -1,6 +1,7 @@
 import React from 'react'
 import Mascot from '../components/Mascot'
 import Button from '../components/Button'
+import StampBadge from '../components/StampBadge'
 import { CatalogDto, Screen } from '../types'
 
 interface Props {
@@ -29,14 +30,11 @@ export default function Result({
   const module = catalog.modules.find((m) => m.id === moduleId)
   const nextLesson = module?.lessons.find((l) => l.id === lessonId + 1) ?? null
   const isGreat = isPerfect
-  const isOK = pct >= 50 && !isGreat
+  const isOK = pct >= 80 && !isGreat
 
   const mood: 'cheer' | 'happy' | 'think' = isGreat ? 'cheer' : isOK ? 'happy' : 'think'
   const title = isGreat ? 'Отлично' : isOK ? 'Неплохо' : 'Ещё раз'
-
-  // Georgian stamp words — user learns by seeing them repeatedly
-  const stampGeo = isGreat ? 'მშვენივრად' : isOK ? 'კარგი' : 'ცადე'
-  const stampTrans = isGreat ? 'превосходно' : isOK ? 'хорошо' : 'попробуй'
+  const stampVariant: 'great' | 'ok' | 'retry' = isGreat ? 'great' : isOK ? 'ok' : 'retry'
 
   return (
     <div className="flex flex-col bg-cream" style={{ minHeight: '100dvh' }}>
@@ -71,17 +69,7 @@ export default function Result({
         {/* Mascot + stamp */}
         <div className="relative mb-5">
           <Mascot mood={mood} size={170} />
-          <div
-            className="absolute -top-1 -right-4 mn-reveal px-3 py-2 bg-cream border-[1.5px] border-jewelInk rounded-lg rotate-[6deg] text-center"
-            style={{ boxShadow: '2px 2px 0 #15100A' }}
-          >
-            <div className="font-geo text-[14px] font-extrabold text-ruby leading-none">
-              {stampGeo}
-            </div>
-            <div className="font-sans text-[8px] font-bold text-jewelInk-mid uppercase tracking-wider mt-0.5">
-              {stampTrans}
-            </div>
-          </div>
+          <StampBadge variant={stampVariant} className="absolute -top-1 -right-4" />
         </div>
 
         <div className="mn-eyebrow mb-2">итог страницы</div>
