@@ -168,6 +168,12 @@ export const api = {
       body: JSON.stringify({ plan })
     }),
 
+  refund: (chargeId?: string) =>
+    request<{ ok: boolean }>('/api/miniapp/refund', {
+      method: 'POST',
+      body: JSON.stringify({ chargeId: chargeId ?? null })
+    }),
+
   lessonQuestions: (moduleId: string, lessonId: number) =>
     request<Array<{
       id: string

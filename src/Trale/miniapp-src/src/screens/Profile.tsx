@@ -4,6 +4,7 @@ import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProPaywall from '../components/ProPaywall'
 import { CatalogDto, ProgressState, Screen } from '../types'
+import { api } from '../api'
 
 interface Props {
   catalog: CatalogDto
@@ -190,6 +191,16 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
           })}
         </div>
 
+        {/* Refund button for Pro users */}
+        {isPro && <RefundButton onRefunded={onPurchaseSuccess} />}
+
+        {/* Legal links */}
+        <div className="mt-6 flex justify-center gap-4 font-sans text-[12px] text-jewelInk-mid">
+          <a href="/privacy.html" target="_blank" rel="noopener" className="underline">Приватность</a>
+          <span className="text-jewelInk-hint">·</span>
+          <a href="/terms.html" target="_blank" rel="noopener" className="underline">Условия</a>
+        </div>
+
         {/* Debug tools (owner only) */}
         {isOwner && <OwnerDebugPanel />}
 
@@ -222,6 +233,79 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
 
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+    </div>
+  )
+}
+
+function RefundButton({ onRefunded }: { onRefunded: () => void }) {
+  const [state, setState] = useState<'idle' | 'confirming' | 'pending' | 'done' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+
+  async function doRefund() {
+    setState('pending')
+    setErrorMsg(null)
+    try {
+      await api.refund()
+      setState('done')
+      setTimeout(onRefunded, 1200)
+    } catch (e: any) {
+      setState('error')
+      setErrorMsg(e?.message ?? 'Не получилось')
+    }
+  }
+
+  if (state === 'done') {
+    return (
+      <div className="mt-6 jewel-tile px-4 py-3 text-center">
+        <div className="relative z-[1] font-sans text-[13px] font-bold text-jewelInk">
+          ✓ Возврат оформлен
+        </div>
+      </div>
+    )
+  }
+
+  if (state === 'confirming') {
+    return (
+      <div className="mt-6 jewel-tile px-4 py-4">
+        <div className="relative z-[1]">
+          <div className="font-sans text-[14px] font-bold text-jewelInk mb-1">
+            Вернуть звёзды?
+          </div>
+          <div className="font-sans text-[12px] text-jewelInk-mid mb-3">
+            Подписка будет отменена, звёзды вернутся в твой Telegram-кошелёк
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={doRefund}
+              className="flex-1 font-sans text-[13px] font-extrabold text-cream min-h-[40px] rounded border-[1.5px] border-jewelInk"
+              style={{ background: '#b54e5e', boxShadow: '0 2px 0 #15100A' }}
+            >
+              Вернуть
+            </button>
+            <button
+              onClick={() => setState('idle')}
+              className="flex-1 font-sans text-[13px] font-bold text-jewelInk min-h-[40px] rounded border-[1.5px] border-jewelInk/40"
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-6">
+      <button
+        onClick={() => setState('confirming')}
+        disabled={state === 'pending'}
+        className="w-full font-sans text-[13px] text-jewelInk-mid py-2 underline opacity-60 active:opacity-100 transition-opacity"
+      >
+        {state === 'pending' ? 'Оформляем возврат…' : 'Запросить возврат подписки'}
+      </button>
+      {errorMsg && (
+        <div className="mt-1 font-sans text-[11px] text-ruby text-center">{errorMsg}</div>
+      )}
     </div>
   )
 }

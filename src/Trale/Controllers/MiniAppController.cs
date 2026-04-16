@@ -9,6 +9,7 @@ using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
+using Infrastructure.Monitoring;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using MediatR;
@@ -37,6 +38,7 @@ public class MiniAppController : Controller
     private readonly ITraleMiniAppContentProvider _content;
     private readonly IMediator _mediator;
     private readonly ITelegramBotClient _telegramBotClient;
+    private readonly MonetizationMetrics _metrics;
     private readonly ILogger<MiniAppController> _logger;
 
     public MiniAppController(
@@ -46,6 +48,7 @@ public class MiniAppController : Controller
         ITraleMiniAppContentProvider content,
         IMediator mediator,
         ITelegramBotClient telegramBotClient,
+        MonetizationMetrics metrics,
         ILogger<MiniAppController> logger)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
@@ -54,6 +57,7 @@ public class MiniAppController : Controller
         _content = content;
         _mediator = mediator;
         _telegramBotClient = telegramBotClient;
+        _metrics = metrics;
         _logger = logger;
     }
 
@@ -160,6 +164,46 @@ public class MiniAppController : Controller
         public string Plan { get; set; } = string.Empty;
     }
 
+    public class RefundRequest
+    {
+        public string? ChargeId { get; set; }
+    }
+
+    [HttpPost("refund")]
+    public async Task<IActionResult> Refund([FromBody] RefundRequest req, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var result = await _mediator.Send(new RefundProStars
+        {
+            UserId = user.Id,
+            ChargeId = req.ChargeId
+        }, ct);
+
+        if (result == RefundProStarsResult.Success)
+        {
+            _metrics.RefundSucceeded.Add(1);
+        }
+        else
+        {
+            _metrics.RefundFailed.Add(1, new KeyValuePair<string, object?>("reason", result.ToString()));
+        }
+
+        return result switch
+        {
+            RefundProStarsResult.Success => Ok(new { ok = true }),
+            RefundProStarsResult.PaymentNotFound => NotFound(new { error = "payment_not_found" }),
+            RefundProStarsResult.AlreadyRefunded => BadRequest(new { error = "already_refunded" }),
+            RefundProStarsResult.RefundWindowExpired => BadRequest(new { error = "refund_window_expired" }),
+            RefundProStarsResult.TelegramError => StatusCode(502, new { error = "telegram_error" }),
+            _ => StatusCode(500, new { error = "unknown" })
+        };
+    }
+
     [HttpPost("purchase")]
     public async Task<IActionResult> Purchase([FromBody] PurchaseRequest req, CancellationToken ct)
     {
@@ -198,6 +242,8 @@ public class MiniAppController : Controller
                 prices: new[] { new LabeledPrice(plan.Title, plan.StarsPrice) },
                 cancellationToken: ct);
 
+            _metrics.InvoiceCreated.Add(1, new KeyValuePair<string, object?>("plan", plan.Plan.ToString()));
+
             _logger.LogInformation("Stars invoice link created for user {UserId} plan {Plan}",
                 user.Id, plan.Plan);
 
@@ -205,6 +251,7 @@ public class MiniAppController : Controller
         }
         catch (Exception ex)
         {
+            _metrics.PurchaseFailed.Add(1, new KeyValuePair<string, object?>("stage", "invoice_create"));
             _logger.LogError(ex, "Failed to create Stars invoice link for user {UserId}", user.Id);
             return StatusCode(500, new { error = "invoice_failed" });
         }
