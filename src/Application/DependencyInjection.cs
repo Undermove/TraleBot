@@ -2,6 +2,7 @@ using System.Reflection;
 using Application.Achievements.Services;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
+using Application.MiniApp.Queries;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -38,6 +39,10 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, EmeraldChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, MyselfVocabularyChecker>();
         services.AddTransient<IAchievementsService, AchievementsService>();
+
+        // MiniApp queries (services per ARCHITECTURE.md)
+        services.AddScoped<GetActivityDaysQuery>();
+
         return services;
     }
 }

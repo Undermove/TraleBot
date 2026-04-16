@@ -174,6 +174,9 @@ export const api = {
       body: JSON.stringify({ chargeId: chargeId ?? null })
     }),
 
+  activityDays: (days = 35) =>
+    request<{ dates: string[] }>(`/api/miniapp/activity-days?days=${days}`),
+
   lessonQuestions: (moduleId: string, lessonId: number) =>
     request<Array<{
       id: string
