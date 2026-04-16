@@ -2,6 +2,8 @@ using Application.Common;
 using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.TranslationService;
+using Application.MiniApp.Commands;
+using Infrastructure.Telegram.Services;
 using Infrastructure.Monitoring;
 using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
@@ -42,6 +44,7 @@ public static class DependencyInjection
         services.AddHttpClient();
 
         services.AddSingleton<IPrometheusResolver, PrometheusResolver>();
+        services.AddSingleton<MonetizationMetrics>();
         services.AddOpenTelemetry()
             .WithMetrics(builder =>
             {
@@ -51,6 +54,7 @@ public static class DependencyInjection
                 //builder.AddProcessInstrumentation();
                 builder.AddPrometheusExporter();
                 builder.AddMeter("Microsoft.AspNetCore.Hosting", "Microsoft.AspNetCore.Server.Kestrel");
+                builder.AddMeter(MonetizationMetrics.MeterName);
             });
         
         var botConfig = configuration.GetSection(BotConfiguration.Configuration).Get<BotConfiguration>();
@@ -68,6 +72,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUserNotificationService, TelegramNotificationService>();
         services.AddScoped<IIdempotencyService, IdempotencyService>();
+        services.AddScoped<ITelegramRefundClient, TelegramRefundClient>();
         
         // Georgian quiz services
         services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();

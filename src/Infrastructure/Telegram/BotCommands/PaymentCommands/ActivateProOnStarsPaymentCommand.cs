@@ -1,4 +1,5 @@
 using Application.MiniApp.Commands;
+using Infrastructure.Monitoring;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ namespace Infrastructure.Telegram.BotCommands.PaymentCommands;
 public class ActivateProOnStarsPaymentCommand(
     ITelegramBotClient client,
     IMediator mediator,
+    MonetizationMetrics metrics,
     ILoggerFactory loggerFactory) : IBotCommand
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<ActivateProOnStarsPaymentCommand>();
@@ -47,6 +49,8 @@ public class ActivateProOnStarsPaymentCommand(
         switch (result)
         {
             case ActivateProStarsResult.Success:
+                metrics.PurchaseSucceeded.Add(1, new KeyValuePair<string, object?>(
+                    "payload", request.SuccessfulPaymentPayload ?? "unknown"));
                 _logger.LogInformation("Pro activated via Stars for user {UserId}", request.User.Id);
                 await client.SendTextMessageAsync(
                     request.UserTelegramId,
