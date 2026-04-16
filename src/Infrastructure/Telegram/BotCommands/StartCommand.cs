@@ -52,7 +52,7 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConf
         }
 
         var miniAppUrl = botConfig.MiniAppEnabled && !string.IsNullOrEmpty(botConfig.HostAddress)
-            ? $"{botConfig.HostAddress}/"
+            ? $"{botConfig.NormalizedHost()}/"
             : null;
 
         // Build keyboard: WebApp button (primary CTA) when mini-app is enabled, plus text menu fallback.

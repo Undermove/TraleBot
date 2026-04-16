@@ -26,20 +26,24 @@ public class CreateWebhook : IHostedService
             return;
         }
 
-        await _telegramBotClient.SetWebhookAsync($"{_config.HostAddress}/telegram/{_config.WebhookToken}",
+        // Normalize HostAddress via the shared extension so all WebApp URLs
+        // get explicit https:// (Telegram requires it for setChatMenuButton).
+        var hostAddress = _config.NormalizedHost();
+
+        await _telegramBotClient.SetWebhookAsync($"{hostAddress}/telegram/{_config.WebhookToken}",
             dropPendingUpdates: false,
             cancellationToken: cancellationToken);
 
         // Chat menu button (next to the text input) opens the TraleBot mini-app directly
         // when the feature is enabled — so users always have one-tap access to the app.
         // Falls back to standard commands menu when mini-app is disabled.
-        if (_config.MiniAppEnabled && !string.IsNullOrEmpty(_config.HostAddress))
+        if (_config.MiniAppEnabled)
         {
             await _telegramBotClient.SetChatMenuButtonAsync(
                 menuButton: new MenuButtonWebApp
                 {
                     Text = "🚀 TraleBot",
-                    WebApp = new WebAppInfo { Url = $"{_config.HostAddress}/" }
+                    WebApp = new WebAppInfo { Url = $"{hostAddress}/" }
                 },
                 cancellationToken: cancellationToken);
         }

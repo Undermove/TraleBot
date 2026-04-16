@@ -27,7 +27,7 @@ public class TelegramMessageSender(
                 {
                     InlineKeyboardButton.WithWebApp(
                         "🚀 Открыть TraleBot",
-                        new WebAppInfo { Url = $"{config.HostAddress}/" })
+                        new WebAppInfo { Url = $"{config.NormalizedHost()}/" })
                 });
             }
 
