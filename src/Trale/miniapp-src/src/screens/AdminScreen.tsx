@@ -134,7 +134,11 @@ export default function AdminScreen({ progress, navigate }: Props) {
             <div className="mn-eyebrow mb-2">Последние юзеры ({users.length})</div>
             <div className="flex flex-col gap-2">
               {users.map((u) => (
-                <UserRow key={u.telegramId} u={u} />
+                <UserRow
+                  key={u.telegramId}
+                  u={u}
+                  onClick={() => navigate({ kind: 'admin-user', telegramId: u.telegramId })}
+                />
               ))}
             </div>
           </>
@@ -213,11 +217,14 @@ function SignupsChart({ points }: { points: { date: string; count: number }[] })
   )
 }
 
-function UserRow({ u }: { u: AdminRecentUser }) {
+function UserRow({ u, onClick }: { u: AdminRecentUser; onClick: () => void }) {
   const reg = new Date(u.registeredAtUtc)
   const regStr = reg.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
   return (
-    <div className="jewel-tile px-3 py-2 flex items-center gap-3">
+    <button
+      onClick={onClick}
+      className="jewel-tile jewel-pressable text-left px-3 py-2 flex items-center gap-3 w-full"
+    >
       <div className="relative z-[1] flex-1 min-w-0">
         <div className="font-sans text-[12px] font-extrabold text-jewelInk tabular-nums">
           {u.telegramId}
@@ -237,6 +244,7 @@ function UserRow({ u }: { u: AdminRecentUser }) {
           free
         </span>
       )}
-    </div>
+      <span className="relative z-[1] text-jewelInk-hint text-[12px] shrink-0">→</span>
+    </button>
   )
 }

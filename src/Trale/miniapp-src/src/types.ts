@@ -25,6 +25,7 @@ export type Screen =
     }
   | { kind: 'profile' }
   | { kind: 'admin' }
+  | { kind: 'admin-user'; telegramId: number }
   | { kind: 'vocabulary-list' }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
 

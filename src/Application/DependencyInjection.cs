@@ -44,6 +44,9 @@ public static class DependencyInjection
         services.AddScoped<GetAdminStatsQuery>();
         services.AddScoped<GetUserSignupsTimeseriesQuery>();
         services.AddScoped<GetRecentUsersQuery>();
+        services.AddScoped<GetUserDetailQuery>();
+        services.AddScoped<GrantProService>();
+        services.AddScoped<RevokeProService>();
 
         return services;
     }

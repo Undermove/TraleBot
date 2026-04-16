@@ -24,19 +24,28 @@ public class AdminController : Controller
     private readonly GetAdminStatsQuery _statsQuery;
     private readonly GetUserSignupsTimeseriesQuery _timeseriesQuery;
     private readonly GetRecentUsersQuery _recentUsersQuery;
+    private readonly GetUserDetailQuery _userDetailQuery;
+    private readonly GrantProService _grantPro;
+    private readonly RevokeProService _revokePro;
 
     public AdminController(
         ITraleDbContext dbContext,
         BotConfiguration botConfig,
         GetAdminStatsQuery statsQuery,
         GetUserSignupsTimeseriesQuery timeseriesQuery,
-        GetRecentUsersQuery recentUsersQuery)
+        GetRecentUsersQuery recentUsersQuery,
+        GetUserDetailQuery userDetailQuery,
+        GrantProService grantPro,
+        RevokeProService revokePro)
     {
         _dbContext = dbContext;
         _botConfig = botConfig;
         _statsQuery = statsQuery;
         _timeseriesQuery = timeseriesQuery;
         _recentUsersQuery = recentUsersQuery;
+        _userDetailQuery = userDetailQuery;
+        _grantPro = grantPro;
+        _revokePro = revokePro;
     }
 
     [HttpGet("stats")]
@@ -73,6 +82,42 @@ public class AdminController : Controller
 
         var users = await _recentUsersQuery.ExecuteAsync(limit, ct);
         return Ok(new { users });
+    }
+
+    [HttpGet("users/{telegramId:long}")]
+    public async Task<IActionResult> UserDetail(long telegramId, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var detail = await _userDetailQuery.ExecuteAsync(telegramId, ct);
+        if (detail == null) return NotFound();
+        return Ok(detail);
+    }
+
+    public class GrantProRequest
+    {
+        public string Plan { get; set; } = string.Empty;
+    }
+
+    [HttpPost("users/{telegramId:long}/grant-pro")]
+    public async Task<IActionResult> GrantPro(long telegramId, [FromBody] GrantProRequest req, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var result = await _grantPro.ExecuteAsync(telegramId, req.Plan, ct);
+        return result switch
+        {
+            GrantProResult.Success => Ok(new { ok = true }),
+            GrantProResult.UserNotFound => NotFound(new { error = "user_not_found" }),
+            GrantProResult.InvalidPlan => BadRequest(new { error = "invalid_plan" }),
+            _ => StatusCode(500)
+        };
+    }
+
+    [HttpPost("users/{telegramId:long}/revoke-pro")]
+    public async Task<IActionResult> RevokePro(long telegramId, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var ok = await _revokePro.ExecuteAsync(telegramId, ct);
+        return ok ? Ok(new { ok = true }) : NotFound(new { error = "user_not_found" });
     }
 
     /// <summary>

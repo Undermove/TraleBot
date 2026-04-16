@@ -181,6 +181,17 @@ export const api = {
     ),
   adminRecentUsers: (limit = 20) =>
     request<{ users: AdminRecentUser[] }>(`/api/admin/recent-users?limit=${limit}`),
+  adminUserDetail: (telegramId: number) =>
+    request<AdminUserDetail>(`/api/admin/users/${telegramId}`),
+  adminGrantPro: (telegramId: number, plan: string) =>
+    request<{ ok: boolean }>(`/api/admin/users/${telegramId}/grant-pro`, {
+      method: 'POST',
+      body: JSON.stringify({ plan })
+    }),
+  adminRevokePro: (telegramId: number) =>
+    request<{ ok: boolean }>(`/api/admin/users/${telegramId}/revoke-pro`, {
+      method: 'POST'
+    }),
 
   lessonQuestions: (moduleId: string, lessonId: number) =>
     request<Array<{
@@ -230,4 +241,29 @@ export interface AdminRecentUser {
   registeredAtUtc: string
   proPurchasedAtUtc: string | null
   vocabularyCount: number
+}
+
+export interface AdminUserDetail {
+  telegramId: number
+  userId: string
+  isPro: boolean
+  isActive: boolean
+  subscriptionPlan: string | null
+  subscribedUntilUtc: string | null
+  proPurchasedAtUtc: string | null
+  registeredAtUtc: string
+  currentLanguage: string
+  vocabularyCount: number
+  xp: number
+  streak: number
+  level: string
+  lastActivityUtc: string | null
+  payments: Array<{
+    chargeId: string
+    plan: string
+    amount: number
+    currency: string
+    purchasedAtUtc: string
+    refundedAtUtc: string | null
+  }>
 }
