@@ -27,12 +27,13 @@ git pull origin main
 git checkout -b "${BRANCH}"
 
 # Max turns per agent
-MAX_TURNS_PER_AGENT=(20 25 50 50)
+MAX_TURNS_PER_AGENT=(20 25 25 50 50)
 
-AGENTS=("product" "designer" "developer" "tech-lead")
-AGENT_LABELS=("Product" "Designer" "Developer" "Tech Lead")
+AGENTS=("product" "methodist" "designer" "developer" "tech-lead")
+AGENT_LABELS=("Product" "Methodist" "Designer" "Developer" "Tech Lead")
 INSTRUCTIONS=(
     "Read your role instructions from .claude/agents/product.md. Then execute your session workflow: analyze ROADMAP.md, open issues, open PRs. Generate 2-3 new ideas with learning elements. Update ROADMAP.md. Do NOT create a separate PR — just make changes locally, they will be committed after you finish. IMPORTANT: At the very end, output a section starting with '=== SUMMARY ===' followed by a concise markdown summary (3-7 bullet points) of what you did this session."
+    "Read your role instructions from .claude/agents/methodist.md. Then execute your session workflow: validate pedagogical structure of course modules (skip Alphabet and Numbers — owner is happy with them). Focus on 'Verbs of Movement' and later modules — owner reports they feel out of place and unclear. Check prerequisites, complexity progression, and order. Leave methodical notes in ROADMAP.md and file GitHub issues (label: methodist) for problems found. Do NOT edit code. Do NOT create a PR. IMPORTANT: At the very end, output '=== SUMMARY ===' with 3-7 bullet points summarizing your findings."
     "Read your role instructions from .claude/agents/designer.md. Then execute your session workflow: find the top [idea] task in ROADMAP.md, create a design spec in design-specs/, update the task status to [designed]. Do NOT create a separate PR — just make changes locally. IMPORTANT: At the very end, output a section starting with '=== SUMMARY ===' followed by a concise markdown summary (3-7 bullet points) of what you designed."
     "Read your role instructions from .claude/agents/developer.md. Then execute your session workflow: find the top [designed] task in ROADMAP.md, read its design spec from design-specs/, implement it, run tests. Update task status to [review]. Do NOT create a separate PR — just make changes locally. IMPORTANT: At the very end, output a section starting with '=== SUMMARY ===' followed by a concise markdown summary (3-7 bullet points) of what you implemented, what files changed, and test results."
     "Read your role instructions from .claude/agents/tech-lead.md. Review ALL changes on this branch (run git diff main). Check code quality, test coverage, design spec compliance. If you find issues — fix them directly. Run dotnet test. Update task status to [done] if everything passes. Do NOT create a separate PR — just make changes locally. IMPORTANT: At the very end, output a section starting with '=== SUMMARY ===' followed by a concise markdown summary (3-7 bullet points): what you reviewed, what passed, what you fixed."
