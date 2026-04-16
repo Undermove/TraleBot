@@ -73,14 +73,22 @@ public class AdminController : Controller
     }
 
     [HttpGet("recent-users")]
-    public async Task<IActionResult> RecentUsers([FromQuery] int limit = 20, CancellationToken ct = default)
+    public async Task<IActionResult> RecentUsers(
+        [FromQuery] int limit = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] string sort = "recent_signup",
+        CancellationToken ct = default)
     {
         if (!await IsOwnerAsync(ct))
         {
             return NotFound();
         }
 
-        var users = await _recentUsersQuery.ExecuteAsync(limit, ct);
+        var sortEnum = sort == "recent_activity"
+            ? RecentUsersSort.RecentActivity
+            : RecentUsersSort.RecentSignup;
+
+        var users = await _recentUsersQuery.ExecuteAsync(limit, search, sortEnum, ct);
         return Ok(new { users });
     }
 
