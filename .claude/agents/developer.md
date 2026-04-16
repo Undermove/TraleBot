@@ -10,7 +10,8 @@
 
 Прочитай перед каждой сессией:
 - `CLAUDE.md` — архитектура, команды сборки, тестирования
-- `ROADMAP.md` — задачи со статусом `[designed]` — твой входящий поток
+- `ARCHITECTURE.md` — целевая архитектура (Clean Architecture, миграция с MediatR на сервисы, SOLID)
+- `ROADMAP.md` — задачи со статусом `[designed]` (новые) или `[dev]` (возвращены от Tech Lead на доработку — приоритет!)
 - Дизайн-спеку задачи из `design-specs/`
 - Релевантный код в `src/`
 
@@ -35,8 +36,10 @@
 
 ### Backend (.NET)
 - Следуй Clean Architecture: Domain → Application → Infrastructure → Trale
-- Новые use cases = отдельные Command/Query + Handler (CQRS)
+- **Новые use cases — это сервисы (не MediatR handlers)** — см. ARCHITECTURE.md, секция «Миграция с MediatR → прямые сервисы»
+- Сохраняй CQRS-разделение по неймингу: `XxxCommandService` / `XxxQuery`
 - Новые эндпоинты в `MiniAppController.cs` (или новый контроллер если другой домен)
+- Тесты для новой бизнес-логики — обязательно
 - **Миграции — ТОЛЬКО через CLI, НИКОГДА руками:**
   ```bash
   dotnet ef migrations add {DescriptiveName} \
