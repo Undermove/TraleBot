@@ -125,7 +125,7 @@ const FAQ_ITEMS = [
   {
     question: 'Сколько стоит?',
     answer:
-      'Первые 30 дней — полный доступ ко всему контенту бесплатно. Дальше — подписка от 100 ⭐ в месяц или разовая покупка «Навсегда» за 1399 ⭐. Оплата через Telegram Stars.',
+      'Первые 30 дней — полный доступ ко всему контенту бесплатно. Дальше — подписка от 100 ⭐ в месяц до 849 ⭐ за год. Оплата через Telegram Stars.',
   },
   {
     question: 'Работает без интернета?',
@@ -414,14 +414,11 @@ export default function LandingScreen({ botUsername }: Props) {
 
         {/* Tariffs grid */}
         <div className="mn-eyebrow text-center mb-2">а потом</div>
-        <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className="grid grid-cols-2 gap-2 mb-3">
           <PriceTile title="1 месяц" stars={100} perMonth="100 ⭐/мес" />
           <PriceTile title="3 месяца" stars={249} perMonth="83 ⭐/мес" />
           <PriceTile title="6 месяцев" stars={449} perMonth="75 ⭐/мес" />
           <PriceTile title="1 год" stars={849} perMonth="71 ⭐/мес" highlight />
-        </div>
-        <div className="mb-3">
-          <PriceTile title="Навсегда" stars={1399} perMonth="разовая покупка" wide />
         </div>
         <div className="font-sans text-[11px] text-jewelInk-mid text-center max-w-[320px] mx-auto">
           Все цены в Telegram Stars (⭐). Платёж проходит внутри Telegram, карта не нужна.
