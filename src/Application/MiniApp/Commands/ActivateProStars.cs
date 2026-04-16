@@ -18,7 +18,10 @@ public class ActivateProStars : IRequest<ActivateProStarsResult>
     public int? Amount { get; init; }
     public string? Currency { get; init; }
 
-    public class Handler(ITraleDbContext dbContext, ILoggerFactory loggerFactory)
+    public class Handler(
+        ITraleDbContext dbContext,
+        ILoggerFactory loggerFactory,
+        TryActivateReferralService referralActivator)
         : IRequestHandler<ActivateProStars, ActivateProStarsResult>
     {
         private readonly ILogger _logger = loggerFactory.CreateLogger<Handler>();
@@ -91,6 +94,14 @@ public class ActivateProStars : IRequest<ActivateProStarsResult>
 
             _logger.LogInformation("Pro Stars activated for user {UserId} plan {Plan}",
                 request.UserId, planInfo?.Plan.ToString() ?? "legacy");
+
+            // Strongest activation signal: a paid purchase. Idempotent — no-op if no pending
+            // referral or already activated by lesson/vocab. Bypasses the cooldown check is fine
+            // because we still apply the per-referrer daily/yearly caps.
+            if (!string.IsNullOrEmpty(request.ChargeId))
+            {
+                await referralActivator.ExecuteAsync(request.UserId, "purchase", ct);
+            }
 
             // AlreadyPro only when user was already Pro AND no new payment payload arrived
             // (extension payments still report Success).

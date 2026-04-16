@@ -4,6 +4,7 @@ using Application.Common;
 using Application.Common.Extensions;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
+using Application.MiniApp.Commands;
 using Application.Translation;
 using Domain.Entities;
 using MediatR;
@@ -13,13 +14,19 @@ namespace Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEnt
 
 public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryResult>
 {
+    /// <summary>Threshold for the "vocab" referral activation trigger — referee must add at least
+    /// this many words before the referrer gets credit. Higher than 1 to defeat trivial fraud
+    /// (one-word "real engagement" was too easy to fake).</summary>
+    public const int VocabActivationThreshold = 5;
+
     public required Guid UserId { get; init; }
     public required string Word { get; init; }
 
     public class Handler(
         ILanguageTranslator languageTranslator,
         ITraleDbContext context,
-        IAchievementsService achievementService)
+        IAchievementsService achievementService,
+        TryActivateReferralService referralActivator)
         : IRequestHandler<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>
     {
         public async Task<CreateVocabularyEntryResult> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
@@ -95,8 +102,18 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
 
             await context.SaveChangesAsync(ct);
 
-            var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = user.VocabularyEntries.Count };
+            var newVocabCount = user.VocabularyEntries.Count + 1; // +1 for the entry just saved
+            var vocabularyCountTrigger = new VocabularyCountTrigger { VocabularyEntriesCount = newVocabCount };
             await achievementService.AssignAchievements(vocabularyCountTrigger, user.Id, ct);
+
+            // Activate referral on N-th vocab entry. We fire on every add past the threshold rather
+            // than only at exactly N — TryActivateReferralService is idempotent (no-ops if already
+            // activated), so duplicate calls are cheap and we don't lose activation if the first
+            // attempt fails (e.g., still inside the 1-hour cooldown).
+            if (newVocabCount >= VocabActivationThreshold)
+            {
+                await referralActivator.ExecuteAsync(request.UserId, "vocab_5", ct);
+            }
 
             return new CreateVocabularyEntryResult.TranslationSuccess(
                 definition,

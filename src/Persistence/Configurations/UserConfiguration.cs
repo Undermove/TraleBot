@@ -21,5 +21,10 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithOne(ve => ve.User)
             .HasForeignKey(ve => ve.UserId);
         builder.Property(u => u.SubscriptionPlan).HasConversion<int?>();
+
+        builder.HasOne(u => u.ReferredBy)
+            .WithMany()
+            .HasForeignKey(u => u.ReferredByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

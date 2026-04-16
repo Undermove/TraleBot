@@ -16,6 +16,10 @@ public class User
     public bool IsPro { get; set; }
     public DateTime? ProPurchasedAtUtc { get; set; }
     public SubscriptionPlan? SubscriptionPlan { get; set; }
+    /// <summary>Mirrors the referrer from the latest Referral row for fast lookups.
+    /// Source of truth is the Referrals table (see Referral entity).</summary>
+    public Guid? ReferredByUserId { get; set; }
+    public virtual User? ReferredBy { get; set; }
     public virtual UserSettings Settings { get; set; }
     public virtual ICollection<VocabularyEntry> VocabularyEntries { get; set; }
     public virtual ICollection<Quiz> Quizzes { get; set; }
@@ -23,6 +27,7 @@ public class User
     public virtual ICollection<Achievement> Achievements { get; set; }
     public virtual ICollection<ShareableQuiz> ShareableQuizzes { get; set; }
     public virtual ICollection<Payment> Payments { get; set; }
+    public virtual ICollection<Referral> ReferralsMade { get; set; }
     
     public bool IsActivePremium()
     {

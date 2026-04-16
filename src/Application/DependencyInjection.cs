@@ -3,6 +3,7 @@ using Application.Achievements.Services;
 using Application.Admin;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
+using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.Quizzes.Services;
 using Application.Translation;
@@ -52,6 +53,11 @@ public static class DependencyInjection
         services.AddScoped<GrantProService>();
         services.AddScoped<RevokeProService>();
         services.AddScoped<BroadcastService>();
+
+        // Referral services (per ARCHITECTURE.md, no MediatR)
+        services.AddScoped<RecordReferralLinkService>();
+        services.AddScoped<TryActivateReferralService>();
+        services.AddScoped<GetReferralInfoQuery>();
 
         return services;
     }

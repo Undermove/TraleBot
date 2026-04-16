@@ -17,7 +17,8 @@ public class CompleteLessonProgress : IRequest<CompleteLessonProgressResult>
 
     public class Handler(
         ITraleDbContext dbContext,
-        IProgressCalculator progressCalculator)
+        IProgressCalculator progressCalculator,
+        TryActivateReferralService referralActivator)
         : IRequestHandler<CompleteLessonProgress, CompleteLessonProgressResult>
     {
         public async Task<CompleteLessonProgressResult> Handle(CompleteLessonProgress request, CancellationToken ct)
@@ -31,6 +32,12 @@ public class CompleteLessonProgress : IRequest<CompleteLessonProgressResult>
             var update = progressCalculator.CalculateLessonCompletion(
                 progress, request.ModuleId, request.LessonId, request.Correct, request.Total);
             await dbContext.SaveChangesAsync(ct);
+
+            // Try to activate referral after a meaningful lesson completion (not vocab pseudo-module)
+            if (update.LessonCompleted && request.ModuleId != "vocabulary")
+            {
+                await referralActivator.ExecuteAsync(request.UserId, "first_lesson", ct);
+            }
 
             return new CompleteLessonProgressResult.Success(
                 update.XpEarned,

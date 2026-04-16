@@ -1,16 +1,26 @@
+using Application.MiniApp.Commands;
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.Models;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig) : IBotCommand
+public class StartCommand(
+    ITelegramBotClient client,
+    IMediator mediator,
+    BotConfiguration botConfig,
+    RecordReferralLinkService referralRecorder,
+    ILoggerFactory loggerFactory) : IBotCommand
 {
+    private const string ReferralPrefix = "ref_";
+    private readonly ILogger _logger = loggerFactory.CreateLogger<StartCommand>();
+
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -33,22 +43,39 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConf
         }
 
         var commandWithArgs = request.Text.Split(' ');
+        var hasReferralArg = false;
         if (ContainsArguments(commandWithArgs))
         {
-            var result = await mediator.Send(new CreateQuizFromShareableCommand
+            var arg = commandWithArgs[1];
+            if (arg.StartsWith(ReferralPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                UserId = request.User?.Id ?? user!.Id,
-                ShareableQuizId = Guid.Parse(commandWithArgs[1])
-            }, token);
-
-            await (result switch
+                // /start ref_<TelegramId> — record referral link, fall through to normal welcome.
+                hasReferralArg = true;
+                if (long.TryParse(arg.AsSpan(ReferralPrefix.Length), out var referrerTelegramId))
+                {
+                    var refResult = await referralRecorder.ExecuteAsync(user!.Id, referrerTelegramId, token);
+                    _logger.LogInformation(
+                        "Referral attempt from /start: user {User} referrer-tg {Referrer} → {Result}",
+                        user.Id, referrerTelegramId, refResult);
+                }
+            }
+            else
             {
-                CreateQuizFromShareableResult.SharedQuizCreated created => SendFirstQuestion(request, token, created),
-                CreateQuizFromShareableResult.NotEnoughQuestionsForSharedQuiz _ => Task.CompletedTask,
-                _ => throw new ArgumentOutOfRangeException(nameof(result))
-            });
+                var result = await mediator.Send(new CreateQuizFromShareableCommand
+                {
+                    UserId = request.User?.Id ?? user!.Id,
+                    ShareableQuizId = Guid.Parse(arg)
+                }, token);
 
-            return;
+                await (result switch
+                {
+                    CreateQuizFromShareableResult.SharedQuizCreated created => SendFirstQuestion(request, token, created),
+                    CreateQuizFromShareableResult.NotEnoughQuestionsForSharedQuiz _ => Task.CompletedTask,
+                    _ => throw new ArgumentOutOfRangeException(nameof(result))
+                });
+
+                return;
+            }
         }
 
         var miniAppUrl = botConfig.MiniAppEnabled && !string.IsNullOrEmpty(botConfig.HostAddress)
@@ -79,6 +106,13 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConf
                 ? "Жми «🚀 Открыть TraleBot» — попадёшь в приложение, где есть алфавит, грамматика, словарь и квизы. Тебя там встретит щенок Бомбора 🐶 — твой гид и маскот.\n\n"
                 : "";
 
+            // If they came in via a referral link, show the bonus trial — that's the hook
+            // that justified clicking. RecordReferralLinkService only credits valid links,
+            // but showing the bonus on any ref_X arg is fine: bad links just look like 60 days.
+            var trialLine = hasReferralArg
+                ? "Тебе ещё и бонус: 60 дней бесплатно вместо 30 — за то, что пришёл по приглашению. 🎁"
+                : "Первые 30 дней — всё бесплатно.";
+
             await client.SendTextMessageAsync(
                 request.UserTelegramId,
 $@"გამარჯობა, {request.UserName}! 👋
@@ -90,7 +124,7 @@ $@"გამარჯობა, {request.UserName}! 👋
 
 {miniAppLine}А ещё в чате со мной можно переводить слова — я добавлю их в твой словарь и сделаю по ним квизы. Просто напиши любое слово или фразу.
 
-Первые 30 дней — всё бесплатно.",
+{trialLine}",
                 replyMarkup: keyboard,
                 cancellationToken: token);
         }

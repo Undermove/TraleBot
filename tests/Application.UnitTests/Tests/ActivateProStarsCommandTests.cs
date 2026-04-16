@@ -13,7 +13,10 @@ public class ActivateProStarsCommandTests : CommandTestsBase
     [SetUp]
     public void SetUp()
     {
-        _sut = new ActivateProStars.Handler(Context, NullLoggerFactory.Instance);
+        _sut = new ActivateProStars.Handler(
+            Context,
+            NullLoggerFactory.Instance,
+            new TryActivateReferralService(Context, NullLoggerFactory.Instance));
     }
 
     [Test]

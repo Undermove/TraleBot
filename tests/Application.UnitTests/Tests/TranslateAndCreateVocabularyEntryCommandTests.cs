@@ -1,12 +1,14 @@
 using Application.Achievements.Services.Triggers;
 using Application.Common.Interfaces.Achievements;
 using Application.Common.Interfaces.TranslationService;
+using Application.MiniApp.Commands;
 using Application.Translation;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
 
@@ -39,7 +41,8 @@ public class TranslateAndCreateVocabularyEntryCommandTests : CommandTestsBase
         _createVocabularyEntryCommandHandler = new TranslateAndCreateVocabularyEntry.Handler(
             _languageTranslatorMock.Object,
             Context,
-            _achievementsService.Object);
+            _achievementsService.Object,
+            new TryActivateReferralService(Context, NullLoggerFactory.Instance));
     }
     
     [Test]
