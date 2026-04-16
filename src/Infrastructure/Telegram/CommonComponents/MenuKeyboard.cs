@@ -34,12 +34,12 @@ public static class MenuKeyboard
             });
         }
         
-        // Mini-app button — opens Бомбора in a WebApp overlay
+        // Mini-app button — opens TraleBot mini-app (Бомбора is the mascot inside) in a WebApp overlay
         if (!string.IsNullOrEmpty(miniAppUrl))
         {
             buttons.Add(new[]
             {
-                InlineKeyboardButton.WithWebApp("🐶 Бомбора — учить грузинский",
+                InlineKeyboardButton.WithWebApp("🚀 Открыть TraleBot",
                     new WebAppInfo { Url = miniAppUrl })
             });
         }
