@@ -50,6 +50,9 @@ export default function App() {
   const [todayLessons, setTodayLessons] = useState(() => getTodayLessons())
   const [userLevel, setUserLevel] = useState<UserLevel | null>(null)
   const [isPro, setIsPro] = useState(false)
+  const [isTrialActive, setIsTrialActive] = useState(false)
+  const [trialDaysLeft, setTrialDaysLeft] = useState(0)
+  const [isOwner, setIsOwner] = useState(false)
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
 
   // Load catalog + progress from backend on mount
@@ -66,6 +69,9 @@ export default function App() {
             setUserLevel(meData.level)
           }
           setIsPro(meData.isPro ?? false)
+          setIsTrialActive((meData as any).isTrialActive ?? false)
+          setTrialDaysLeft((meData as any).trialDaysLeft ?? 0)
+          setIsOwner((meData as any).isOwner ?? false)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
@@ -305,6 +311,7 @@ export default function App() {
             progress={progress}
             setProgress={setProgress}
             isPro={isPro}
+            isOwner={isOwner}
             onPurchaseSuccess={handleProPurchaseSuccess}
             navigate={navigate}
           />
@@ -324,6 +331,6 @@ export default function App() {
         />
       )
     default:
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
   }
 }

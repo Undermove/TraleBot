@@ -33,7 +33,16 @@ public class ActivateProOnStarsPaymentCommand(
             return;
         }
 
-        var result = await mediator.Send(new ActivateProStars { UserId = request.User.Id }, token);
+        var result = await mediator.Send(
+            new ActivateProStars
+            {
+                UserId = request.User.Id,
+                Payload = request.SuccessfulPaymentPayload,
+                ChargeId = request.SuccessfulPaymentChargeId,
+                Amount = request.SuccessfulPaymentAmount,
+                Currency = request.SuccessfulPaymentCurrency
+            },
+            token);
 
         switch (result)
         {

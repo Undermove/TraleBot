@@ -27,15 +27,22 @@ export default function LessonTheory({
 
   useEffect(() => {
     if (!theory) return
-    const hasQani = theory.blocks.some(
+    // Reveal-moment for letter ქ — fires on the lesson where it is first taught:
+    // - alphabet-progressive lesson 6 ("Тройки согласных" — first introduces ქ explicitly)
+    // - classic alphabet: lesson whose letters block contains ქ
+    const hasLettersBlockWithQ = theory.blocks.some(
       (b) => b.type === 'letters' && b.letters?.some((l) => l.letter === 'ქ')
     )
+    const isProgressiveQLesson =
+      moduleId === 'alphabet-progressive' && lessonId === 6
+    const shouldReveal = hasLettersBlockWithQ || isProgressiveQLesson
+
     const alreadyShown = localStorage.getItem('bombora_kani_reveal_shown')
-    if (hasQani && !alreadyShown) {
+    if (shouldReveal && !alreadyShown) {
       const timer = setTimeout(() => setShowReveal(true), 1500)
       return () => clearTimeout(timer)
     }
-  }, [theory])
+  }, [theory, moduleId, lessonId])
 
   if (!module || !lesson || !theory) {
     return (

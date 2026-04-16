@@ -152,9 +152,20 @@ export const api = {
       body: JSON.stringify({ level })
     }),
 
-  purchase: () =>
-    request<{ ok: boolean; alreadyPro?: boolean }>('/api/miniapp/purchase', {
-      method: 'POST'
+  plans: () =>
+    request<{ plans: Array<{
+      id: string
+      payloadId: string
+      stars: number
+      durationDays: number | null
+      title: string
+      description: string
+    }> }>('/api/miniapp/plans'),
+
+  purchase: (plan: string) =>
+    request<{ ok: boolean; alreadyPro?: boolean; invoiceLink?: string }>('/api/miniapp/purchase', {
+      method: 'POST',
+      body: JSON.stringify({ plan })
     }),
 
   lessonQuestions: (moduleId: string, lessonId: number) =>

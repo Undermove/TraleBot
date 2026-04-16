@@ -39,6 +39,17 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
                 .CountAsync(ct);
 
+            // 30-day free trial from registration
+            const int trialDays = 30;
+            var now = DateTime.UtcNow;
+            var trialEndsAt = user.RegisteredAtUtc.AddDays(trialDays);
+            var trialDaysLeft = (int)Math.Ceiling((trialEndsAt - now).TotalDays);
+            var isTrialActive = !user.IsPro && trialDaysLeft > 0;
+
+            // Owner has English fallback and debug tooling
+            const long ownerTelegramId = 309149393;
+            var isOwner = user.TelegramId == ownerTelegramId;
+
             return new GetMiniAppProfileResult
             {
                 Authenticated = true,
@@ -46,7 +57,12 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 VocabularyCount = vocabCount,
                 Level = progress.Level,
                 Progress = progressCalculator.SerializeProgress(progress),
-                IsPro = user.IsPro
+                IsPro = user.IsPro,
+                IsTrialActive = isTrialActive,
+                TrialDaysLeft = isTrialActive ? trialDaysLeft : 0,
+                SubscriptionPlan = user.SubscriptionPlan?.ToString(),
+                SubscribedUntil = user.SubscribedUntil,
+                IsOwner = isOwner
             };
         }
     }
@@ -60,4 +76,9 @@ public class GetMiniAppProfileResult
     public string Level { get; init; }
     public object Progress { get; init; }
     public bool IsPro { get; init; }
+    public bool IsTrialActive { get; init; }
+    public int TrialDaysLeft { get; init; }
+    public string? SubscriptionPlan { get; init; }
+    public DateTime? SubscribedUntil { get; init; }
+    public bool IsOwner { get; init; }
 }

@@ -8,7 +8,7 @@ interface StampBadgeProps {
 
 export default function StampBadge({ variant, animate = true, className = '' }: StampBadgeProps) {
   const geoWord = variant === 'great' ? 'მშვენივრად' : variant === 'ok' ? 'კარგი' : 'ცადე'
-  const translit = variant === 'great' ? 'mshvenivrad' : variant === 'ok' ? 'kargi' : 'tsade'
+  const translit = variant === 'great' ? 'Отлично' : variant === 'ok' ? 'Хорошо' : 'Попробуй'
 
   const bgClass = variant === 'great' ? 'bg-ruby' : variant === 'ok' ? 'bg-navy' : 'bg-gold'
   const textClass = variant === 'retry' ? 'text-jewelInk' : 'text-cream'
@@ -32,7 +32,7 @@ export default function StampBadge({ variant, animate = true, className = '' }: 
       <div className={`relative z-[1] font-geo text-[18px] font-extrabold leading-none ${textClass}`}>
         {geoWord}
       </div>
-      <div className={`relative z-[1] font-sans text-[9px] font-bold uppercase tracking-[0.08em] mt-1 opacity-60 ${textClass}`}>
+      <div className={`relative z-[1] font-sans text-[10px] font-bold tracking-wide mt-1 opacity-70 ${textClass}`}>
         {translit}
       </div>
     </div>

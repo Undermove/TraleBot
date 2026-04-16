@@ -66,12 +66,12 @@ export default function Result({
 
       <div
         className="relative z-[1] flex-1 flex flex-col items-center px-5 pt-8"
-        style={{ paddingBottom: 'calc(var(--safe-b) + 160px)' }}
+        style={{ paddingBottom: 'calc(var(--safe-b) + 240px)' }}
       >
-        {/* Mascot + stamp */}
-        <div className="relative mb-5">
+        {/* Mascot + stamp (stamp centered below mascot) */}
+        <div className="flex flex-col items-center mb-5 gap-3">
           <Mascot mood={mood} size={170} />
-          <StampBadge variant={stampVariant} className="absolute -top-1 -right-4" />
+          <StampBadge variant={stampVariant} />
         </div>
 
         <div className="mn-eyebrow mb-2">итог страницы</div>
