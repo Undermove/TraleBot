@@ -130,6 +130,7 @@ public class MiniAppController : Controller
         return Ok(new
         {
             authenticated = result.Authenticated,
+            telegramId = result.TelegramId,
             language = result.Language,
             vocabularyCount = result.VocabularyCount,
             level = result.Level,

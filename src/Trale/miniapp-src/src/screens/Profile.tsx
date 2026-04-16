@@ -11,6 +11,7 @@ interface Props {
   setProgress: (p: ProgressState) => void
   isPro: boolean
   isOwner?: boolean
+  telegramId?: number | null
   onPurchaseSuccess: () => void
   navigate: (s: Screen) => void
 }
@@ -47,7 +48,7 @@ function pickEncouragement(streak: number, totalLessons: number): string {
   return `Ты уже знаешь много. Бомбора гордится.`
 }
 
-export default function Profile({ catalog, progress, isPro, isOwner = false, onPurchaseSuccess, navigate }: Props) {
+export default function Profile({ catalog, progress, isPro, isOwner = false, telegramId, onPurchaseSuccess, navigate }: Props) {
   const [showPaywall, setShowPaywall] = useState(false)
   const [activityDates, setActivityDates] = useState<Set<string>>(new Set())
 
@@ -75,7 +76,15 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
       .activityDays(35)
       .then((r) => {
         if (cancelled) return
-        setActivityDates(new Set(r.dates))
+        // Backend now returns ISO UTC timestamps; convert to user's LOCAL date
+        // so playing at 02:00 local lights up today, not yesterday-UTC.
+        const local = new Set<string>()
+        for (const ts of r.dates) {
+          const d = new Date(ts)
+          if (isNaN(d.getTime())) continue
+          local.add(localDateKey(d))
+        }
+        setActivityDates(local)
       })
       .catch(() => {})
     return () => {
@@ -204,17 +213,6 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
           <RefundButton onRefunded={onPurchaseSuccess} />
         )}
 
-        {showPaywall && (
-          <ProPaywall
-            trigger="module"
-            onClose={() => setShowPaywall(false)}
-            onPurchaseSuccess={() => {
-              setShowPaywall(false)
-              onPurchaseSuccess()
-            }}
-          />
-        )}
-
         <style>{`
           @keyframes proBadgeAppear {
             from { transform: scale(0.5); opacity: 0; }
@@ -237,6 +235,9 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
             </div>
           </div>
         </button>
+
+        {/* Telegram ID for support — copyable */}
+        {telegramId != null && <TelegramIdCard telegramId={telegramId} />}
 
         {/* Legal */}
         <div className="mt-6 flex justify-center gap-4 font-sans text-[12px] text-jewelInk-mid">
@@ -273,8 +274,85 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
 
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+
+      {/* Pro Paywall — rendered at root so fixed positioning isn't broken
+          by ancestor transform/contain on the scroll container. */}
+      {showPaywall && (
+        <ProPaywall
+          trigger="module"
+          onClose={() => setShowPaywall(false)}
+          onPurchaseSuccess={() => {
+            setShowPaywall(false)
+            onPurchaseSuccess()
+          }}
+        />
+      )}
     </div>
   )
+}
+
+function TelegramIdCard({ telegramId }: { telegramId: number }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    const text = String(telegramId)
+    try {
+      // Telegram WebApp helper if available
+      const tg = (window as any).Telegram?.WebApp
+      if (tg?.HapticFeedback?.impactOccurred) tg.HapticFeedback.impactOccurred('light')
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text)
+      } else {
+        // Fallback for older webviews
+        const ta = document.createElement('textarea')
+        ta.value = text
+        ta.style.position = 'fixed'
+        ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Best effort
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <div className="mn-eyebrow mb-2">для техподдержки</div>
+      <button
+        onClick={copy}
+        className="jewel-tile jewel-pressable w-full text-left px-4 py-3"
+      >
+        <div className="relative z-[1] flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="font-sans text-[11px] text-jewelInk-mid mb-0.5">
+              Твой Telegram ID
+            </div>
+            <div className="font-sans text-[16px] font-extrabold text-jewelInk tabular-nums">
+              {telegramId}
+            </div>
+          </div>
+          <span className="font-sans text-[12px] font-bold text-jewelInk-mid shrink-0">
+            {copied ? '✓ скопировано' : '📋 копировать'}
+          </span>
+        </div>
+      </button>
+    </div>
+  )
+}
+
+// "yyyy-MM-dd" in the device's local timezone — used as the canonical key
+// for both stored activity timestamps and the heatmap cells.
+function localDateKey(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function plural(n: number, one: string, two: string, many: string): string {
@@ -294,10 +372,10 @@ function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; da
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(today.getDate() - i)
-    const iso = d.toISOString().slice(0, 10)
+    const key = localDateKey(d)
     cells.push({
-      date: iso,
-      active: activityDates.has(iso),
+      date: key,
+      active: activityDates.has(key),
       isToday: i === 0
     })
   }

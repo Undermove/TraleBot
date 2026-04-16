@@ -17,15 +17,18 @@ export default function AdminScreen({ progress, navigate }: Props) {
   const [signups, setSignups] = useState<{ date: string; count: number }[]>([])
   const [users, setUsers] = useState<AdminRecentUser[]>([])
   const [days, setDays] = useState<7 | 30 | 90>(30)
+  const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<'recent_signup' | 'recent_activity'>('recent_activity')
+  const [usersLoading, setUsersLoading] = useState(false)
 
+  // Initial load: stats + chart + first batch of users
   useEffect(() => {
     let cancelled = false
-    Promise.all([api.adminStats(), api.adminSignups(days), api.adminRecentUsers(20)])
-      .then(([s, sig, rec]) => {
+    Promise.all([api.adminStats(), api.adminSignups(days)])
+      .then(([s, sig]) => {
         if (cancelled) return
         setStats(s)
         setSignups(sig.points)
-        setUsers(rec.users)
         setPhase('ready')
       })
       .catch((e: any) => {
@@ -37,6 +40,28 @@ export default function AdminScreen({ progress, navigate }: Props) {
       cancelled = true
     }
   }, [days])
+
+  // Users list: reload when search or sort changes (debounced search)
+  useEffect(() => {
+    let cancelled = false
+    setUsersLoading(true)
+    const timer = setTimeout(() => {
+      api
+        .adminRecentUsers({ limit: 50, search: search || undefined, sort })
+        .then((rec) => {
+          if (cancelled) return
+          setUsers(rec.users)
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!cancelled) setUsersLoading(false)
+        })
+    }, search ? 250 : 0)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [search, sort])
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
@@ -130,8 +155,45 @@ export default function AdminScreen({ progress, navigate }: Props) {
               </div>
             </div>
 
-            {/* Recent users */}
-            <div className="mn-eyebrow mb-2">Последние юзеры ({users.length})</div>
+            {/* Users with search + sort */}
+            <div className="flex items-center justify-between mb-2">
+              <div className="mn-eyebrow">Юзеры ({users.length})</div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setSort('recent_activity')}
+                  className={`px-2 py-1 rounded font-sans text-[10px] font-bold border-[1.5px] ${
+                    sort === 'recent_activity'
+                      ? 'bg-jewelInk text-cream border-jewelInk'
+                      : 'bg-cream text-jewelInk-mid border-jewelInk/25'
+                  }`}
+                >
+                  активность
+                </button>
+                <button
+                  onClick={() => setSort('recent_signup')}
+                  className={`px-2 py-1 rounded font-sans text-[10px] font-bold border-[1.5px] ${
+                    sort === 'recent_signup'
+                      ? 'bg-jewelInk text-cream border-jewelInk'
+                      : 'bg-cream text-jewelInk-mid border-jewelInk/25'
+                  }`}
+                >
+                  регистрация
+                </button>
+              </div>
+            </div>
+            <input
+              type="search"
+              inputMode="numeric"
+              placeholder="Поиск по Telegram ID…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full mb-3 px-3 py-2 rounded border-[1.5px] border-jewelInk/40 bg-cream font-sans text-[13px] text-jewelInk placeholder:text-jewelInk-hint focus:outline-none focus:border-jewelInk"
+            />
+            {usersLoading && (
+              <div className="text-center font-sans text-[11px] text-jewelInk-mid mb-2">
+                Загружаем…
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               {users.map((u) => (
                 <UserRow
@@ -140,6 +202,11 @@ export default function AdminScreen({ progress, navigate }: Props) {
                   onClick={() => navigate({ kind: 'admin-user', telegramId: u.telegramId })}
                 />
               ))}
+              {!usersLoading && users.length === 0 && (
+                <div className="text-center font-sans text-[12px] text-jewelInk-mid py-6">
+                  ничего не найдено
+                </div>
+              )}
             </div>
           </>
         )}
@@ -150,6 +217,23 @@ export default function AdminScreen({ progress, navigate }: Props) {
 
 function fmt(n: number): string {
   return n.toLocaleString('ru-RU')
+}
+
+function relativeTime(iso: string): string {
+  const d = new Date(iso).getTime()
+  const diff = Date.now() - d
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'только что'
+  if (min < 60) return `${min}м назад`
+  const hours = Math.floor(min / 60)
+  if (hours < 24) return `${hours}ч назад`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}д назад`
+  const weeks = Math.floor(days / 7)
+  if (weeks < 5) return `${weeks}н назад`
+  const months = Math.floor(days / 30)
+  if (months < 12) return `${months}мес назад`
+  return `${Math.floor(days / 365)}г назад`
 }
 
 function Tile({
@@ -220,6 +304,7 @@ function SignupsChart({ points }: { points: { date: string; count: number }[] })
 function UserRow({ u, onClick }: { u: AdminRecentUser; onClick: () => void }) {
   const reg = new Date(u.registeredAtUtc)
   const regStr = reg.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  const activeStr = u.lastActivityUtc ? relativeTime(u.lastActivityUtc) : '—'
   return (
     <button
       onClick={onClick}
@@ -230,7 +315,7 @@ function UserRow({ u, onClick }: { u: AdminRecentUser; onClick: () => void }) {
           {u.telegramId}
         </div>
         <div className="font-sans text-[10px] text-jewelInk-mid">
-          рег: {regStr} · 📖 {u.vocabularyCount}
+          активн: {activeStr} · рег: {regStr} · 📖 {u.vocabularyCount}
         </div>
       </div>
       {u.isPro ? (

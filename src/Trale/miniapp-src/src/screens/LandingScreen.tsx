@@ -125,7 +125,7 @@ const FAQ_ITEMS = [
   {
     question: 'Сколько стоит?',
     answer:
-      'Алфавит, Глаголы движения и Мой словарь — бесплатно. Остальные модули открываются через Pro (разовая оплата через Telegram Stars).',
+      'Первые 30 дней — полный доступ ко всему контенту бесплатно. Дальше — подписка от 100 ⭐ в месяц или разовая покупка «Навсегда» за 1399 ⭐. Оплата через Telegram Stars.',
   },
   {
     question: 'Работает без интернета?',
@@ -380,6 +380,55 @@ export default function LandingScreen({ botUsername }: Props) {
         </div>
       </section>
 
+      {/* ══ Pricing ══ */}
+      <section className="px-5 pb-10">
+        <h2 className="font-sans text-[22px] font-extrabold text-jewelInk mb-2 text-center">
+          Сколько стоит
+        </h2>
+
+        {/* Free trial highlight */}
+        <div
+          className="jewel-tile px-5 py-5 mb-3 text-center relative overflow-hidden"
+          style={{ background: '#FBF6EC' }}
+        >
+          <div
+            className="absolute -top-2 -right-2 px-2 py-1 rounded font-sans text-[10px] font-extrabold uppercase tracking-wider border-[1.5px] border-jewelInk"
+            style={{ background: '#F5B820', color: '#15100A' }}
+          >
+            ★ free
+          </div>
+          <div className="relative z-[1]">
+            <div className="mn-eyebrow text-jewelInk-mid mb-2">первое знакомство</div>
+            <div className="font-sans text-[28px] font-extrabold text-jewelInk leading-tight">
+              30 дней — бесплатно
+            </div>
+            <div className="font-sans text-[13px] text-jewelInk-mid mt-2 max-w-[300px] mx-auto">
+              Полный доступ ко всему контенту. Без карт, без trial-trick'ов.
+              Просто открой бота и начни.
+            </div>
+            <div className="font-geo text-[12px] text-gold-deep font-bold mt-3">
+              უფასო · бесплатно
+            </div>
+          </div>
+        </div>
+
+        {/* Tariffs grid */}
+        <div className="mn-eyebrow text-center mb-2">а потом</div>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <PriceTile title="1 месяц" stars={100} perMonth="100 ⭐/мес" />
+          <PriceTile title="3 месяца" stars={249} perMonth="83 ⭐/мес" />
+          <PriceTile title="6 месяцев" stars={449} perMonth="75 ⭐/мес" />
+          <PriceTile title="1 год" stars={849} perMonth="71 ⭐/мес" highlight />
+        </div>
+        <div className="mb-3">
+          <PriceTile title="Навсегда" stars={1399} perMonth="разовая покупка" wide />
+        </div>
+        <div className="font-sans text-[11px] text-jewelInk-mid text-center max-w-[320px] mx-auto">
+          Все цены в Telegram Stars (⭐). Платёж проходит внутри Telegram, карта не нужна.
+          Возврат — 21 день, без вопросов.
+        </div>
+      </section>
+
       {/* ══ FAQ ══ */}
       <section className="px-5 pb-10">
         <h2 className="font-sans text-[22px] font-extrabold text-jewelInk mb-4 text-center">
@@ -433,6 +482,49 @@ export default function LandingScreen({ botUsername }: Props) {
 }
 
 // ── Sub-components ───────────────────────────────────────────────────────────
+
+function PriceTile({
+  title,
+  stars,
+  perMonth,
+  highlight,
+  wide,
+}: {
+  title: string
+  stars: number
+  perMonth: string
+  highlight?: boolean
+  wide?: boolean
+}) {
+  return (
+    <div
+      className={`jewel-tile px-4 py-3 relative ${wide ? 'flex items-center justify-between gap-4' : 'text-center'}`}
+      style={{
+        background: highlight ? '#FBF6EC' : undefined,
+        border: highlight ? '2px solid #15100A' : undefined,
+        boxShadow: highlight ? '0 3px 0 #15100A' : undefined,
+      }}
+    >
+      {highlight && (
+        <span
+          className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full font-sans text-[10px] font-extrabold uppercase tracking-wider border-[1.5px] border-jewelInk whitespace-nowrap"
+          style={{ background: '#F5B820', color: '#15100A' }}
+        >
+          выгодно
+        </span>
+      )}
+      <div className="relative z-[1] flex-1 min-w-0">
+        <div className="font-sans text-[13px] font-extrabold text-jewelInk">{title}</div>
+        <div className="font-sans text-[10px] text-jewelInk-mid mt-0.5">{perMonth}</div>
+      </div>
+      <div
+        className={`relative z-[1] font-sans font-extrabold text-jewelInk tabular-nums ${wide ? 'text-[24px]' : 'text-[20px] mt-1'}`}
+      >
+        {stars} ⭐
+      </div>
+    </div>
+  )
+}
 
 function WordTeaser({ geo, ru, level }: { geo: string; ru: string; level: string }) {
   return (
