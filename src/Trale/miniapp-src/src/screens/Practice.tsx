@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Button from '../components/Button'
 import GeorgianKeyboard from '../components/GeorgianKeyboard'
 import LoaderLetter from '../components/LoaderLetter'
@@ -34,8 +34,6 @@ export default function Practice({
   const [wrongQuestions, setWrongQuestions] = useState<QuizQuestion[]>([])
   // For shake animation on wrong type answer
   const [shakeInput, setShakeInput] = useState(false)
-
-  const inputRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -312,12 +310,11 @@ export default function Practice({
           <div className="mt-6">
             {/* Input display */}
             <div
-              ref={inputRef}
               className={`h-[56px] w-full border-[1.5px] rounded-xl flex items-center justify-center
                 px-4 relative transition-all duration-150
                 ${inputBg} ${inputBorder} ${inputText}
                 ${shakeInput ? 'anim-shake' : ''}`}
-              style={{ boxShadow: phase === 'checked' && isCorrect ? '2px 2px 0 #15100A' : '2px 2px 0 #15100A' }}
+              style={{ boxShadow: '2px 2px 0 #15100A' }}
             >
               {typedAnswer.length > 0 ? (
                 <span className="font-geo text-[22px] font-bold text-center">
@@ -452,20 +449,11 @@ export default function Practice({
       {isTypeQuestion ? (
         /* For type questions: keyboard + check button at bottom */
         <div className="sticky bottom-0 left-0 right-0 z-20" style={{ paddingBottom: 'var(--safe-b)' }}>
-          {phase === 'answering' && (
-            <GeorgianKeyboard
-              value={typedAnswer}
-              onChange={setTypedAnswer}
-              disabled={false}
-            />
-          )}
-          {phase === 'checked' && (
-            <GeorgianKeyboard
-              value={typedAnswer}
-              onChange={setTypedAnswer}
-              disabled={true}
-            />
-          )}
+          <GeorgianKeyboard
+            value={typedAnswer}
+            onChange={setTypedAnswer}
+            disabled={phase === 'checked'}
+          />
           <div className="px-5 pt-3 pb-4 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15">
             {phase === 'answering' ? (
               <Button variant="primary" disabled={typedAnswer.trim() === ''} onClick={check}>
