@@ -11,6 +11,7 @@ interface Props {
   setProgress: (p: ProgressState) => void
   isPro: boolean
   isOwner?: boolean
+  telegramId?: number | null
   onPurchaseSuccess: () => void
   navigate: (s: Screen) => void
 }
@@ -47,7 +48,7 @@ function pickEncouragement(streak: number, totalLessons: number): string {
   return `Ты уже знаешь много. Бомбора гордится.`
 }
 
-export default function Profile({ catalog, progress, isPro, isOwner = false, onPurchaseSuccess, navigate }: Props) {
+export default function Profile({ catalog, progress, isPro, isOwner = false, telegramId, onPurchaseSuccess, navigate }: Props) {
   const [showPaywall, setShowPaywall] = useState(false)
   const [activityDates, setActivityDates] = useState<Set<string>>(new Set())
 
@@ -238,6 +239,9 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
           </div>
         </button>
 
+        {/* Telegram ID for support — copyable */}
+        {telegramId != null && <TelegramIdCard telegramId={telegramId} />}
+
         {/* Legal */}
         <div className="mt-6 flex justify-center gap-4 font-sans text-[12px] text-jewelInk-mid">
           <a href="/privacy.html" target="_blank" rel="noopener" className="underline">Приватность</a>
@@ -273,6 +277,61 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, onP
 
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+    </div>
+  )
+}
+
+function TelegramIdCard({ telegramId }: { telegramId: number }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copy() {
+    const text = String(telegramId)
+    try {
+      // Telegram WebApp helper if available
+      const tg = (window as any).Telegram?.WebApp
+      if (tg?.HapticFeedback?.impactOccurred) tg.HapticFeedback.impactOccurred('light')
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text)
+      } else {
+        // Fallback for older webviews
+        const ta = document.createElement('textarea')
+        ta.value = text
+        ta.style.position = 'fixed'
+        ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      // Best effort
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <div className="mn-eyebrow mb-2">для техподдержки</div>
+      <button
+        onClick={copy}
+        className="jewel-tile jewel-pressable w-full text-left px-4 py-3"
+      >
+        <div className="relative z-[1] flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="font-sans text-[11px] text-jewelInk-mid mb-0.5">
+              Твой Telegram ID
+            </div>
+            <div className="font-sans text-[16px] font-extrabold text-jewelInk tabular-nums">
+              {telegramId}
+            </div>
+          </div>
+          <span className="font-sans text-[12px] font-bold text-jewelInk-mid shrink-0">
+            {copied ? '✓ скопировано' : '📋 копировать'}
+          </span>
+        </div>
+      </button>
     </div>
   )
 }

@@ -55,6 +55,7 @@ export default function App() {
   const [isTrialActive, setIsTrialActive] = useState(false)
   const [trialDaysLeft, setTrialDaysLeft] = useState(0)
   const [isOwner, setIsOwner] = useState(false)
+  const [telegramId, setTelegramId] = useState<number | null>(null)
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
 
   // Load catalog + progress from backend on mount
@@ -74,6 +75,7 @@ export default function App() {
           setIsTrialActive((meData as any).isTrialActive ?? false)
           setTrialDaysLeft((meData as any).trialDaysLeft ?? 0)
           setIsOwner((meData as any).isOwner ?? false)
+          setTelegramId((meData as any).telegramId ?? null)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
@@ -314,6 +316,7 @@ export default function App() {
             setProgress={setProgress}
             isPro={isPro}
             isOwner={isOwner}
+            telegramId={telegramId}
             onPurchaseSuccess={handleProPurchaseSuccess}
             navigate={navigate}
           />

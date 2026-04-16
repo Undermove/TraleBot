@@ -53,6 +53,7 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
             return new GetMiniAppProfileResult
             {
                 Authenticated = true,
+                TelegramId = user.TelegramId,
                 Language = user.Settings.CurrentLanguage.ToString(),
                 VocabularyCount = vocabCount,
                 Level = progress.Level,
@@ -71,6 +72,7 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
 public class GetMiniAppProfileResult
 {
     public bool Authenticated { get; init; }
+    public long TelegramId { get; init; }
     public string Language { get; init; }
     public int VocabularyCount { get; init; }
     public string Level { get; init; }
