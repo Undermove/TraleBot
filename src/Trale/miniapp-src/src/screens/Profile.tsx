@@ -76,7 +76,15 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
       .activityDays(35)
       .then((r) => {
         if (cancelled) return
-        setActivityDates(new Set(r.dates))
+        // Backend now returns ISO UTC timestamps; convert to user's LOCAL date
+        // so playing at 02:00 local lights up today, not yesterday-UTC.
+        const local = new Set<string>()
+        for (const ts of r.dates) {
+          const d = new Date(ts)
+          if (isNaN(d.getTime())) continue
+          local.add(localDateKey(d))
+        }
+        setActivityDates(local)
       })
       .catch(() => {})
     return () => {
@@ -338,6 +346,15 @@ function TelegramIdCard({ telegramId }: { telegramId: number }) {
   )
 }
 
+// "yyyy-MM-dd" in the device's local timezone — used as the canonical key
+// for both stored activity timestamps and the heatmap cells.
+function localDateKey(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 function plural(n: number, one: string, two: string, many: string): string {
   const mod100 = n % 100
   const mod10 = n % 10
@@ -355,10 +372,10 @@ function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; da
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(today.getDate() - i)
-    const iso = d.toISOString().slice(0, 10)
+    const key = localDateKey(d)
     cells.push({
-      date: iso,
-      active: activityDates.has(iso),
+      date: key,
+      active: activityDates.has(key),
       isToday: i === 0
     })
   }
