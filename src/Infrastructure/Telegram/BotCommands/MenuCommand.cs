@@ -30,7 +30,7 @@ public class MenuCommand : IBotCommand
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var miniAppUrl = _botConfig.MiniAppEnabled && !string.IsNullOrEmpty(_botConfig.HostAddress)
-            ? $"{_botConfig.HostAddress}/"
+            ? $"{_botConfig.NormalizedHost()}/"
             : null;
         var isOwner = _botConfig.OwnerTelegramId != 0 && request.UserTelegramId == _botConfig.OwnerTelegramId;
         var keyboard = MenuKeyboard.GetMenuKeyboard(request.User!.Settings.CurrentLanguage, miniAppUrl, isOwner);

@@ -47,7 +47,15 @@ kind: Deployment
 metadata:
   name: tralebot-deployment
 spec:
-  replicas: 1
+  replicas: 2
+  # Rolling update keeps the old pod running until the new one passes
+  # readiness checks. If the new build crashes on startup (e.g. bad config),
+  # K8s will fail the rollout and leave the old pod serving traffic — no outage.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: tralebot
@@ -56,9 +64,6 @@ spec:
       labels:
         app: tralebot
       annotations:
-        # Force a rolling restart on every deploy so env-only changes take effect.
-        # Without this, kubectl apply may keep the old pod running if only env values
-        # changed and the image tag happens to match an already-pulled image.
         kubectl.kubernetes.io/restartedAt: "$RUN_NUMBER"
     spec:
       containers:
@@ -66,6 +71,27 @@ spec:
           image: undermove/tralebot:$RUN_NUMBER
           ports:
             - containerPort: 1402
+          # Readiness probe gates traffic on /healthz — until it returns 200
+          # the pod isn't added to the Service. Combined with maxUnavailable: 0
+          # this means a crash-looping new pod can never replace a healthy old one.
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 1402
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Liveness probe restarts the pod if it stops responding (deadlock etc).
+          # More forgiving than readiness — only kicks in for already-running pods.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 1402
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
           env:
             - name: ConnectionStrings__TraleBotDb
               valueFrom:
