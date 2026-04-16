@@ -174,6 +174,25 @@ export const api = {
       body: JSON.stringify({ chargeId: chargeId ?? null })
     }),
 
+  adminStats: () => request<AdminStats>('/api/admin/stats'),
+  adminSignups: (days = 30) =>
+    request<{ days: number; points: Array<{ date: string; count: number }> }>(
+      `/api/admin/signups?days=${days}`
+    ),
+  adminRecentUsers: (limit = 20) =>
+    request<{ users: AdminRecentUser[] }>(`/api/admin/recent-users?limit=${limit}`),
+  adminUserDetail: (telegramId: number) =>
+    request<AdminUserDetail>(`/api/admin/users/${telegramId}`),
+  adminGrantPro: (telegramId: number, plan: string) =>
+    request<{ ok: boolean }>(`/api/admin/users/${telegramId}/grant-pro`, {
+      method: 'POST',
+      body: JSON.stringify({ plan })
+    }),
+  adminRevokePro: (telegramId: number) =>
+    request<{ ok: boolean }>(`/api/admin/users/${telegramId}/revoke-pro`, {
+      method: 'POST'
+    }),
+
   lessonQuestions: (moduleId: string, lessonId: number) =>
     request<Array<{
       id: string
@@ -194,4 +213,57 @@ export const api = {
       throw new ApiError(resp.status, await resp.text().catch(() => ''))
     }
   }
+}
+
+export interface AdminStats {
+  totalUsers: number
+  activeUsers: number
+  proUsers: number
+  trialUsers: number
+  freeUsers: number
+  newUsersToday: number
+  newUsersWeek: number
+  newUsersMonth: number
+  totalRevenueStars: number
+  revenueWeekStars: number
+  totalPurchases: number
+  totalRefunds: number
+  totalVocabularyEntries: number
+  averageVocabularyPerUser: number
+  conversionPostTrialPct: number
+}
+
+export interface AdminRecentUser {
+  telegramId: number
+  isPro: boolean
+  plan: string | null
+  subscribedUntilUtc: string | null
+  registeredAtUtc: string
+  proPurchasedAtUtc: string | null
+  vocabularyCount: number
+}
+
+export interface AdminUserDetail {
+  telegramId: number
+  userId: string
+  isPro: boolean
+  isActive: boolean
+  subscriptionPlan: string | null
+  subscribedUntilUtc: string | null
+  proPurchasedAtUtc: string | null
+  registeredAtUtc: string
+  currentLanguage: string
+  vocabularyCount: number
+  xp: number
+  streak: number
+  level: string
+  lastActivityUtc: string | null
+  payments: Array<{
+    chargeId: string
+    plan: string
+    amount: number
+    currency: string
+    purchasedAtUtc: string
+    refundedAtUtc: string | null
+  }>
 }
