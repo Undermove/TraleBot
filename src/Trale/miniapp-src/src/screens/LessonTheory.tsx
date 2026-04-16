@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
+import RevealKaniOverlay from '../components/RevealKaniOverlay'
 import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
 
 interface Props {
@@ -20,8 +21,23 @@ export default function LessonTheory({
 }: Props) {
   const module = catalog.modules.find((m) => m.id === moduleId)
   const lesson = module?.lessons.find((l) => l.id === lessonId)
+  const theory = lesson?.theory
 
-  if (!module || !lesson) {
+  const [showReveal, setShowReveal] = useState(false)
+
+  useEffect(() => {
+    if (!theory) return
+    const hasQani = theory.blocks.some(
+      (b) => b.type === 'letters' && b.letters?.some((l) => l.letter === 'ქ')
+    )
+    const alreadyShown = localStorage.getItem('bombora_kani_reveal_shown')
+    if (hasQani && !alreadyShown) {
+      const timer = setTimeout(() => setShowReveal(true), 1500)
+      return () => clearTimeout(timer)
+    }
+  }, [theory])
+
+  if (!module || !lesson || !theory) {
     return (
       <div className="flex flex-col min-h-full bg-cream">
         <Header
@@ -33,8 +49,6 @@ export default function LessonTheory({
       </div>
     )
   }
-
-  const theory = lesson.theory
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
@@ -87,6 +101,11 @@ export default function LessonTheory({
           к практике →
         </Button>
       </div>
+
+      {/* Reveal moment: letter ქ connection to ქართული (Georgian) */}
+      {showReveal && (
+        <RevealKaniOverlay onClose={() => setShowReveal(false)} />
+      )}
     </div>
   )
 }
