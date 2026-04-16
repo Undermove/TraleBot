@@ -49,11 +49,24 @@ public static class MenuKeyboard
             InlineKeyboardButton.WithCallbackData($"{CommandNames.HowToIcon} Как пользоваться", CommandNames.HowTo)
         });
         
-        buttons.Add(new[]
+        // "Buy subscription" — opens the mini-app directly to the paywall.
+        // Falls back to a callback if mini-app isn't available.
+        if (!string.IsNullOrEmpty(miniAppUrl))
         {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.PayIcon} Премиум"),
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.HelpIcon} Поддержка")
-        });
+            buttons.Add(new[]
+            {
+                InlineKeyboardButton.WithWebApp("💳 Оплатить подписку",
+                    new WebAppInfo { Url = $"{miniAppUrl}?paywall=1" }),
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.HelpIcon} Поддержка", CommandNames.Help)
+            });
+        }
+        else
+        {
+            buttons.Add(new[]
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.HelpIcon} Поддержка", CommandNames.Help)
+            });
+        }
         
         var keyboard = new InlineKeyboardMarkup(buttons);
         return keyboard;
