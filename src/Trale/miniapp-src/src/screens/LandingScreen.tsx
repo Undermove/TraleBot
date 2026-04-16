@@ -418,7 +418,7 @@ export default function LandingScreen({ botUsername }: Props) {
           <PriceTile title="1 месяц" stars={100} perMonth="100 ⭐/мес" />
           <PriceTile title="3 месяца" stars={249} perMonth="83 ⭐/мес" />
           <PriceTile title="6 месяцев" stars={449} perMonth="75 ⭐/мес" />
-          <PriceTile title="1 год" stars={949} perMonth="79 ⭐/мес" highlight />
+          <PriceTile title="1 год" stars={849} perMonth="71 ⭐/мес" highlight />
         </div>
         <div className="mb-3">
           <PriceTile title="Навсегда" stars={1399} perMonth="разовая покупка" wide />

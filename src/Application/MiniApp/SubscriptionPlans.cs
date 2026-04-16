@@ -17,7 +17,7 @@ public static class SubscriptionPlans
         new(SubscriptionPlan.Month,    "Stars_Pro_Month",    100,  30,   "1 месяц",   "Про-доступ на 30 дней"),
         new(SubscriptionPlan.Quarter,  "Stars_Pro_Quarter",  249,  90,   "3 месяца",  "Про-доступ на 3 месяца"),
         new(SubscriptionPlan.HalfYear, "Stars_Pro_HalfYear", 449,  180,  "6 месяцев", "Про-доступ на 6 месяцев"),
-        new(SubscriptionPlan.Year,     "Stars_Pro_Year",     949,  365,  "1 год",     "Про-доступ на год"),
+        new(SubscriptionPlan.Year,     "Stars_Pro_Year",     849,  365,  "1 год",     "Про-доступ на год"),
         new(SubscriptionPlan.Lifetime, "Stars_Pro_Lifetime", 1399, null, "Навсегда",  "Про-доступ навсегда"),
     };
 
