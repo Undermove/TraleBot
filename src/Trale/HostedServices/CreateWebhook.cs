@@ -49,6 +49,36 @@ public class CreateWebhook : IHostedService
                 menuButton: new MenuButtonCommands(),
                 cancellationToken: cancellationToken);
         }
+
+        // Bot profile metadata — visible in the bot's preview card in Telegram, in
+        // search results, and the /-commands menu. Setting these via API so we don't
+        // depend on manual BotFather config drifting from the code.
+        try
+        {
+            await _telegramBotClient.SetMyDescriptionAsync(
+                description:
+                    "Учи грузинский язык прямо в Telegram. Алфавит, грамматика, " +
+                    "падежи, глаголы, личный словарь и квизы. Первые 30 дней бесплатно. " +
+                    "Тебя встретит щенок Бомбора 🐶 — твой гид и маскот.",
+                cancellationToken: cancellationToken);
+
+            await _telegramBotClient.SetMyShortDescriptionAsync(
+                shortDescription: "TraleBot — учи грузинский язык в Telegram. ქართული ენა.",
+                cancellationToken: cancellationToken);
+
+            await _telegramBotClient.SetMyCommandsAsync(
+                commands: new[]
+                {
+                    new BotCommand { Command = "start", Description = "Открыть TraleBot" },
+                    new BotCommand { Command = "menu", Description = "Меню в чате" },
+                    new BotCommand { Command = "help", Description = "Поддержка" }
+                },
+                cancellationToken: cancellationToken);
+        }
+        catch
+        {
+            // Bot profile metadata is best-effort — don't fail startup if Telegram is flaky
+        }
     }
 
     public async Task StopAsync(CancellationToken cancellationToken)
