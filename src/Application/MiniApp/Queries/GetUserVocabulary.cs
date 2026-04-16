@@ -46,6 +46,7 @@ public class GetUserVocabulary : IRequest<GetUserVocabularyResult>
                 Id = e.Id.ToString(),
                 Word = e.Word,
                 Definition = e.Definition,
+                AdditionalInfo = e.AdditionalInfo,
                 Example = e.Example,
                 DateAddedUtc = e.DateAddedUtc,
                 SuccessCount = e.SuccessAnswersCount,
@@ -92,6 +93,7 @@ public class VocabularyItemDto
     public string Id { get; init; }
     public string Word { get; init; }
     public string Definition { get; init; }
+    public string AdditionalInfo { get; init; }
     public string Example { get; init; }
     public DateTime? DateAddedUtc { get; init; }
     public int SuccessCount { get; init; }

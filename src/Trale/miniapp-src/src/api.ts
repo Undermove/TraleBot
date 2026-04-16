@@ -49,6 +49,7 @@ export interface VocabularyItem {
   id: string
   word: string
   definition: string
+  additionalInfo?: string
   example: string
   dateAddedUtc: string | null
   successCount: number
@@ -164,5 +165,16 @@ export const api = {
       options: string[]
       answerIndex: number
       explanation: string
-    }>>(`/api/miniapp/modules/${moduleId}/lessons/${lessonId}/questions`)
+    }>>(`/api/miniapp/modules/${moduleId}/lessons/${lessonId}/questions`),
+
+  deleteVocabularyEntry: async (id: string): Promise<void> => {
+    const headers: Record<string, string> = {
+      'X-Telegram-Init-Data': getInitData(),
+      'Content-Type': 'application/json'
+    }
+    const resp = await fetch(`/api/miniapp/vocabulary/${id}`, { method: 'DELETE', headers })
+    if (!resp.ok) {
+      throw new ApiError(resp.status, await resp.text().catch(() => ''))
+    }
+  }
 }

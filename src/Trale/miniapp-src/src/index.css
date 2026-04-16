@@ -479,6 +479,12 @@ input:focus-visible {
   to { transform: translateY(60px); opacity: 0; }
 }
 
+/* Toast slide-down — for word-delete confirmation toasts */
+@keyframes slide-down-toast {
+  0% { transform: translateY(-100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
 /* Kilim border strip — tiny geometric motif repeated horizontally as a product signature */
 .mn-kilim {
   height: 8px;
