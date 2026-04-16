@@ -336,6 +336,22 @@ public class MiniAppController : Controller
         });
     }
 
+    [HttpGet("activity-days")]
+    public async Task<IActionResult> ActivityDays(
+        [FromQuery] int days,
+        [FromServices] Application.MiniApp.Queries.GetActivityDaysQuery query,
+        CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var dates = await query.ExecuteAsync(user.Id, days <= 0 ? 35 : days, ct);
+        return Ok(new { dates });
+    }
+
     [HttpGet("vocabulary")]
     public async Task<IActionResult> GetVocabulary(CancellationToken ct)
     {
