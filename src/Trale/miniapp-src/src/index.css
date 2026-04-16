@@ -485,6 +485,15 @@ input:focus-visible {
   100% { transform: translateY(0); opacity: 1; }
 }
 
+/* Day-of-week tooltip slide-in — Georgian day chip expand animation */
+@keyframes day-tooltip-in {
+  0%  { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.day-tooltip-in {
+  animation: day-tooltip-in 180ms ease-out both;
+}
+
 /* Kilim border strip — tiny geometric motif repeated horizontally as a product signature */
 .mn-kilim {
   height: 8px;

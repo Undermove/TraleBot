@@ -3,6 +3,7 @@ import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProBadge from '../components/ProBadge'
 import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
+import DayOfWeekChip from '../components/DayOfWeekChip'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
@@ -236,6 +237,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                   </div>
                 </div>
               </button>
+
+              {/* ── Georgian day of week chip ── */}
+              <div className="mt-2 flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+                <DayOfWeekChip />
+              </div>
 
               {suggestion && (
                 <button
