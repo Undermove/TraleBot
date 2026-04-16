@@ -35,7 +35,7 @@ export const GEORGIAN_DAYS: GeorgianDay[] = [
     geo: 'ხუთშაბათი',
     translit: 'khuth·sha·ba·ti',
     ru: 'четверг',
-    numberHint: 'ხუთ — часть числა ხუთი (пять)',
+    numberHint: 'ხუთ — часть числа ხუთი (пять)',
   },
   {
     geo: 'პარასკევი',

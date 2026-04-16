@@ -23,7 +23,7 @@ export default function DayOfWeekChip() {
     <div className="flex flex-col items-center gap-2">
       <button
         onClick={handleTap}
-        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-full border border-jewelInk/30
+        className={`flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-full border border-jewelInk/30
           transition-colors duration-150 active:bg-navy/10
           ${open ? 'opacity-80' : ''}`}
         aria-label={`«${day.geo}» — тап чтобы узнать перевод`}
