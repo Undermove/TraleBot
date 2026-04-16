@@ -14,7 +14,6 @@ interface Props {
 }
 
 export default function AlphaIndex({ activeLetter, disabledLetters, onSelect }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null)
   const activeRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -25,7 +24,6 @@ export default function AlphaIndex({ activeLetter, disabledLetters, onSelect }: 
 
   return (
     <div
-      ref={containerRef}
       className="flex flex-row gap-[6px] overflow-x-auto py-2 px-5"
       style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
     >
