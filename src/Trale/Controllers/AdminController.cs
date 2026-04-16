@@ -27,6 +27,7 @@ public class AdminController : Controller
     private readonly GetUserDetailQuery _userDetailQuery;
     private readonly GrantProService _grantPro;
     private readonly RevokeProService _revokePro;
+    private readonly BroadcastService _broadcast;
 
     public AdminController(
         ITraleDbContext dbContext,
@@ -36,7 +37,8 @@ public class AdminController : Controller
         GetRecentUsersQuery recentUsersQuery,
         GetUserDetailQuery userDetailQuery,
         GrantProService grantPro,
-        RevokeProService revokePro)
+        RevokeProService revokePro,
+        BroadcastService broadcast)
     {
         _dbContext = dbContext;
         _botConfig = botConfig;
@@ -46,6 +48,7 @@ public class AdminController : Controller
         _userDetailQuery = userDetailQuery;
         _grantPro = grantPro;
         _revokePro = revokePro;
+        _broadcast = broadcast;
     }
 
     [HttpGet("stats")]
@@ -84,9 +87,12 @@ public class AdminController : Controller
             return NotFound();
         }
 
-        var sortEnum = sort == "recent_activity"
-            ? RecentUsersSort.RecentActivity
-            : RecentUsersSort.RecentSignup;
+        var sortEnum = sort switch
+        {
+            "recent_activity" => RecentUsersSort.RecentActivity,
+            "vocab_count" => RecentUsersSort.VocabularyCount,
+            _ => RecentUsersSort.RecentSignup
+        };
 
         var users = await _recentUsersQuery.ExecuteAsync(limit, search, sortEnum, ct);
         return Ok(new { users });
@@ -126,6 +132,47 @@ public class AdminController : Controller
         if (!await IsOwnerAsync(ct)) return NotFound();
         var ok = await _revokePro.ExecuteAsync(telegramId, ct);
         return ok ? Ok(new { ok = true }) : NotFound(new { error = "user_not_found" });
+    }
+
+    [HttpGet("broadcast/preview")]
+    public async Task<IActionResult> BroadcastPreview(
+        [FromQuery] int? activeWithinDays,
+        [FromQuery] int minVocab = 0,
+        CancellationToken ct = default)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var segment = new BroadcastSegment
+        {
+            ActiveWithinDays = activeWithinDays,
+            MinVocabularyCount = minVocab
+        };
+        var preview = await _broadcast.PreviewAsync(segment, ct);
+        return Ok(preview);
+    }
+
+    public class BroadcastRequest
+    {
+        public int? ActiveWithinDays { get; set; }
+        public int MinVocabularyCount { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string? GrantPlan { get; set; }
+        public bool DryRun { get; set; } = true;
+        public bool IncludeMiniAppButton { get; set; } = true;
+    }
+
+    [HttpPost("broadcast")]
+    public async Task<IActionResult> Broadcast([FromBody] BroadcastRequest req, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var segment = new BroadcastSegment
+        {
+            ActiveWithinDays = req.ActiveWithinDays,
+            MinVocabularyCount = req.MinVocabularyCount
+        };
+        var result = await _broadcast.ExecuteAsync(
+            segment, req.Message, req.GrantPlan, req.DryRun, req.IncludeMiniAppButton, ct);
+        if (result.Error != null) return BadRequest(result);
+        return Ok(result);
     }
 
     /// <summary>
