@@ -272,6 +272,7 @@ public class MiniAppController : Controller
                 id = i.Id,
                 word = i.Word,
                 definition = i.Definition,
+                additionalInfo = i.AdditionalInfo,
                 example = i.Example,
                 dateAddedUtc = i.DateAddedUtc,
                 successCount = i.SuccessCount,
@@ -285,6 +286,7 @@ public class MiniAppController : Controller
                 id = i.Id,
                 word = i.Word,
                 definition = i.Definition,
+                additionalInfo = i.AdditionalInfo,
                 example = i.Example,
                 dateAddedUtc = i.DateAddedUtc,
                 successCount = i.SuccessCount,
@@ -383,6 +385,34 @@ public class MiniAppController : Controller
             RecordVocabularyAnswerResult.NotFound => NotFound(),
             _ => BadRequest()
         };
+    }
+
+    [HttpDelete("vocabulary/{id}")]
+    public async Task<IActionResult> DeleteVocabularyEntry(Guid id, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var entry = await _dbContext.VocabularyEntries.FindAsync(id);
+        if (entry == null)
+        {
+            return NotFound();
+        }
+
+        if (entry.UserId != user.Id)
+        {
+            return Forbid();
+        }
+
+        await _mediator.Send(new Application.VocabularyEntries.Commands.RemoveVocabularyEntry
+        {
+            VocabularyEntryId = id
+        }, ct);
+
+        return NoContent();
     }
 
     public class TranslateWordRequest
