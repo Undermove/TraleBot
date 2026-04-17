@@ -1,5 +1,5 @@
 import React from 'react'
-import { ProgressState, Screen } from '../types'
+import { ProgressState } from '../types'
 
 interface Props {
   progress: ProgressState

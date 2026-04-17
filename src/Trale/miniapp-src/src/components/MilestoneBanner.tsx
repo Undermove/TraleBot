@@ -35,17 +35,20 @@ export default function MilestoneBanner({ type, value, onDismiss }: Props) {
   const [hiding, setHiding] = useState(false)
 
   const config = type === 'xp' ? XP_MILESTONES[value] : STREAK_MILESTONES[value]
-  if (!config) return null
 
   function dismiss() {
     setHiding(true)
     setTimeout(onDismiss, 200)
   }
 
+  // All hooks must be called before any early returns (Rules of Hooks)
   useEffect(() => {
+    if (!config) return
     const timer = setTimeout(dismiss, config.duration)
     return () => clearTimeout(timer)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!config) return null
 
   return (
     <button
