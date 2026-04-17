@@ -485,6 +485,16 @@ input:focus-visible {
   100% { transform: translateY(0); opacity: 1; }
 }
 
+/* Cultural note card slide-down — TimeGreeting component */
+@keyframes mn-slide-down {
+  0%   { max-height: 0; opacity: 0; transform: translateY(-8px); }
+  100% { max-height: 200px; opacity: 1; transform: translateY(0); }
+}
+.mn-slide-down {
+  animation: mn-slide-down 280ms ease-out both;
+  overflow: hidden;
+}
+
 /* Kilim border strip — tiny geometric motif repeated horizontally as a product signature */
 .mn-kilim {
   height: 8px;

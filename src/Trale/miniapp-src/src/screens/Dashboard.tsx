@@ -3,6 +3,7 @@ import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProBadge from '../components/ProBadge'
 import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
+import TimeGreeting from '../components/TimeGreeting'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
@@ -222,9 +223,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                   </div>
                 </div>
                 <div>
-                  <div className="font-geo text-[12px] text-jewelInk-mid leading-none mb-1 font-semibold">
-                    {greeting.geo}
-                  </div>
+                  <TimeGreeting />
                   <div className="font-sans font-extrabold text-[22px] leading-[1.1] text-jewelInk tracking-tight">
                     {greeting.line1}
                   </div>
@@ -597,7 +596,7 @@ function computeHero(
   progress: ProgressState,
   todayLessons: number
 ): {
-  greeting: { geo: string; line1: string; line2: string }
+  greeting: { line1: string; line2: string }
   mascotMood: 'happy' | 'cheer' | 'think' | 'guide' | 'sleep'
   satiety: SatietyLevel
   satietyText: string
@@ -662,34 +661,34 @@ function computeHero(
   }
 
   // Dynamic greeting tied to satiety
-  let greeting: { geo: string; line1: string; line2: string }
+  let greeting: { line1: string; line2: string }
   let mascotMood: 'happy' | 'cheer' | 'think' | 'guide' | 'sleep'
 
   if (totalDone === 0) {
-    greeting = { geo: 'გამარჯობა!', line1: 'Привет!', line2: 'Давай начнём' }
+    greeting = { line1: 'Привет!', line2: 'Давай начнём' }
     mascotMood = 'cheer'
     satiety = 'hungry'
     satietyText = 'готова к знакомству'
   } else if (satiety === 'sleeping') {
-    greeting = { geo: 'მოგესალმებით!', line1: 'О, привет!', line2: 'Бомбора соскучилась' }
+    greeting = { line1: 'О, привет!', line2: 'Бомбора соскучилась' }
     mascotMood = 'sleep'
   } else if (allDone && satiety === 'full') {
-    greeting = { geo: 'ყოჩაღ!', line1: 'Все пройдено!', line2: 'Бомбора гордится' }
+    greeting = { line1: 'Все пройдено!', line2: 'Бомбора гордится' }
     mascotMood = 'cheer'
   } else if (satiety === 'full') {
-    greeting = { geo: 'შესანიშნავია!', line1: 'Какой день!', line2: 'Бомбора в восторге' }
+    greeting = { line1: 'Какой день!', line2: 'Бомбора в восторге' }
     mascotMood = 'cheer'
   } else if (satiety === 'fed') {
-    greeting = { geo: 'კარგი!', line1: 'Отлично идём!', line2: 'Хочешь ещё?' }
+    greeting = { line1: 'Отлично идём!', line2: 'Хочешь ещё?' }
     mascotMood = 'happy'
   } else if (satiety === 'snack') {
-    greeting = { geo: 'მადლობა!', line1: 'Хорошее начало!', line2: 'Продолжим?' }
+    greeting = { line1: 'Хорошее начало!', line2: 'Продолжим?' }
     mascotMood = 'happy'
   } else if (progress.streak >= 3) {
-    greeting = { geo: 'შესანიშნავია!', line1: `${progress.streak} дней подряд!`, line2: 'Не останавливайся' }
+    greeting = { line1: `${progress.streak} дней подряд!`, line2: 'Не останавливайся' }
     mascotMood = 'guide'
   } else {
-    greeting = { geo: 'გამარჯობა!', line1: 'Бомбора ждёт!', line2: 'Погнали учиться' }
+    greeting = { line1: 'Бомбора ждёт!', line2: 'Погнали учиться' }
     mascotMood = 'guide'
   }
 
