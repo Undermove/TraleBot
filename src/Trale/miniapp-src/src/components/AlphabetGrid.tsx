@@ -1,10 +1,8 @@
 import React from 'react'
 import { GEORGIAN_ALPHABET } from './AlphaIndex'
-import { AlphabetLetterDto } from '../types'
 
 interface AlphabetGridProps {
   learnedLetters: Set<string>
-  letterData: Map<string, AlphabetLetterDto>
   onLetterTap: (letter: string) => void
   goldFlash?: boolean
 }

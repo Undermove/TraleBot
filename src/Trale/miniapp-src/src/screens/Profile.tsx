@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import Mascot from '../components/Mascot'
 import ProPaywall from '../components/ProPaywall'
@@ -234,7 +234,6 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
             ) : (
               <AlphabetGrid
                 learnedLetters={learnedLetters}
-                letterData={letterData}
                 onLetterTap={setSelectedLetter}
                 goldFlash={showReveal}
               />

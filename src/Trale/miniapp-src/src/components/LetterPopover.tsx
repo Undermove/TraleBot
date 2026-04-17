@@ -19,7 +19,7 @@ export default function LetterPopover({ letter, data, isLearned, onClose }: Lett
 
   function handleClose() {
     setVisible(false)
-    setTimeout(onClose, 120)
+    setTimeout(onClose, 150)
   }
 
   return (
