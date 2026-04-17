@@ -22,7 +22,8 @@ export default function Onboarding({ onSelect }: Props) {
       >
         <Mascot mood="cheer" size={120} />
 
-        <div className="font-geo text-[14px] text-jewelInk-mid font-semibold mt-4">
+        <div className="mn-eyebrow text-jewelInk-hint mb-2 mt-4">TraleBot · ისწავლე ქართული</div>
+        <div className="font-geo text-[14px] text-jewelInk-mid font-semibold">
           გამარჯობა!
         </div>
         <h1 className="font-sans text-[28px] font-extrabold text-jewelInk text-center leading-tight mt-2 tracking-tight">

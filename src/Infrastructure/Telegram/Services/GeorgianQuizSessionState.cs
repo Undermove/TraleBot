@@ -22,6 +22,8 @@ public class QuizQuestionData
     public int AnswerIndex { get; set; }
     public string Explanation { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
+    /// <summary>"choice" (default) or "type" (user types answer on Georgian keyboard).</summary>
+    public string? QuestionType { get; set; }
 
     /// <summary>
     /// Shuffles the answer options while keeping track of the correct answer.

@@ -93,7 +93,9 @@ public class ProgressCalculator : IProgressCalculator
             xp = progress.Xp,
             streak = progress.Streak,
             lastPlayedAtUtc = progress.LastPlayedAtUtc,
-            completedLessons = completed
+            completedLessons = completed,
+            xpSpent = progress.XpSpent,
+            totalTreatsGiven = progress.TotalTreatsGiven
         };
     }
 

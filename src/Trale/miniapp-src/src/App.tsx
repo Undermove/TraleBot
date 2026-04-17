@@ -193,6 +193,10 @@ export default function App() {
       setTodayLessons(incrementTodayLessons())
     }
     setScreen(s)
+    // Telegram WebView may scroll a container other than window
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
   }
 
   const proSuccessToast = showProSuccessToast && (

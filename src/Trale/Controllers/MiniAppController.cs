@@ -7,6 +7,7 @@ using Application.Common;
 using Application.MiniApp;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
+using Application.MiniApp.Services;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Monitoring;
@@ -40,6 +41,7 @@ public class MiniAppController : Controller
     private readonly ITelegramBotClient _telegramBotClient;
     private readonly MonetizationMetrics _metrics;
     private readonly ILogger<MiniAppController> _logger;
+    private readonly FeedTreatService _feedTreatService;
 
     public MiniAppController(
         IGeorgianQuestionsLoaderFactory questionsLoaderFactory,
@@ -49,7 +51,8 @@ public class MiniAppController : Controller
         IMediator mediator,
         ITelegramBotClient telegramBotClient,
         MonetizationMetrics metrics,
-        ILogger<MiniAppController> logger)
+        ILogger<MiniAppController> logger,
+        FeedTreatService feedTreatService)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
         _dbContext = dbContext;
@@ -59,6 +62,7 @@ public class MiniAppController : Controller
         _telegramBotClient = telegramBotClient;
         _metrics = metrics;
         _logger = logger;
+        _feedTreatService = feedTreatService;
     }
 
     [HttpGet("ping")]
@@ -79,7 +83,7 @@ public class MiniAppController : Controller
     [HttpGet("modules/{moduleId}/lessons/{lessonId:int}/questions")]
     public IActionResult GetModuleLessonQuestions(string moduleId, int lessonId)
     {
-        if (moduleId == "alphabet")
+        if (moduleId is "alphabet" or "alphabet-progressive")
         {
             var alphabetQuestions = _content.GetAlphabetLessonQuestions(lessonId);
             if (alphabetQuestions.Count == 0)
@@ -258,6 +262,41 @@ public class MiniAppController : Controller
         }
     }
 
+    public class TreatRequest
+    {
+        /// <summary>
+        /// Index of the treat to purchase (0=Dzval/10xp, 1=Khorci/30xp, 2=Mtsvadi/60xp,
+        /// 3=Churchkhela/100xp, 4=Supra/200xp).
+        /// </summary>
+        public int TreatIndex { get; set; }
+    }
+
+    [HttpPost("treat")]
+    public async Task<IActionResult> FeedTreat([FromBody] TreatRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var response = await _feedTreatService.ExecuteAsync(user.Id, request.TreatIndex, ct);
+
+        return response.Result switch
+        {
+            FeedTreatResult.Success => Ok(new
+            {
+                ok = true,
+                xpSpent = response.XpSpent,
+                totalTreatsGiven = response.TotalTreatsGiven
+            }),
+            FeedTreatResult.NotEnoughXp => BadRequest(new { error = "not_enough_xp" }),
+            FeedTreatResult.InvalidTreatIndex => BadRequest(new { error = "invalid_treat_index" }),
+            FeedTreatResult.UserNotFound => Unauthorized(new { error = "user_not_found" }),
+            _ => StatusCode(500, new { error = "unknown" })
+        };
+    }
+
     public class SetLevelRequest
     {
         public string Level { get; set; } = string.Empty;
@@ -333,7 +372,8 @@ public class MiniAppController : Controller
             question = q.Question,
             options = q.Options,
             answerIndex = q.AnswerIndex,
-            explanation = q.Explanation
+            explanation = q.Explanation,
+            questionType = q.QuestionType ?? "choice"
         });
     }
 

@@ -55,36 +55,11 @@ textarea {
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Fraunces', 'Noto Serif Georgian', Georgia, serif;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'wght' 500;
+  font-family: 'Manrope', 'Noto Sans Georgian', -apple-system, system-ui, sans-serif;
   letter-spacing: -0.02em;
-  color: #2A1F18;
+  color: #15100A;
 }
 
-/* Picture Book display utility — round, soft, confident */
-.pb-display {
-  font-family: 'Fraunces', 'Noto Serif Georgian', Georgia, serif;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'wght' 500;
-  letter-spacing: -0.025em;
-  line-height: 0.95;
-  color: #2A1F18;
-}
-
-.pb-eyebrow {
-  font-family: 'Figtree', sans-serif;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 11px;
-  color: #7A6654; /* warm-600 */
-}
-
-.pb-body {
-  font-family: 'Figtree', sans-serif;
-  font-weight: 400;
-  line-height: 1.55;
-  color: #3B2D23; /* warm-800 */
-}
 
 /* Utility: hand-drawn underline using wavy SVG */
 .ink-underline {
@@ -248,43 +223,19 @@ h1, h2, h3, h4 {
 
 /* Number counters and display treatments */
 .display-xl {
-  font-family: 'Fraunces', 'Noto Serif Georgian', serif;
-  font-variation-settings: 'opsz' 144, 'SOFT' 20, 'wght' 400;
+  font-family: 'Manrope', 'Noto Sans Georgian', sans-serif;
+  font-weight: 800;
   font-size: clamp(44px, 12vw, 64px);
   line-height: 0.92;
   letter-spacing: -0.035em;
 }
 
 .display-lg {
-  font-family: 'Fraunces', 'Noto Serif Georgian', serif;
-  font-variation-settings: 'opsz' 144, 'wght' 500;
+  font-family: 'Manrope', 'Noto Sans Georgian', sans-serif;
+  font-weight: 700;
   font-size: clamp(30px, 8vw, 40px);
   line-height: 1;
   letter-spacing: -0.025em;
-}
-
-.hand-note {
-  font-family: 'Caveat', cursive;
-  font-size: 22px;
-  color: var(--wine);
-  line-height: 1.1;
-  transform: rotate(-2deg);
-  display: inline-block;
-}
-
-.eyebrow {
-  font-family: 'Fraunces', serif;
-  font-variation-settings: 'opsz' 144, 'wght' 600;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-size: 11px;
-  color: var(--wine);
-}
-
-.serif-caption {
-  font-style: italic;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100;
-  color: var(--ink-soft);
 }
 
 /* Scrollbar — nearly invisible, paper feel */
@@ -485,12 +436,92 @@ input:focus-visible {
   100% { transform: translateY(0); opacity: 1; }
 }
 
+/* Day-of-week tooltip slide-in — Georgian day chip expand animation */
+@keyframes day-tooltip-in {
+  0%  { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.day-tooltip-in {
+  animation: day-tooltip-in 180ms ease-out both;
+}
+
+/* ModulePhraseBanner — slide in from above, slide back up on dismiss */
+@keyframes phrase-slide-in {
+  0% { transform: translateY(-100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes phrase-slide-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+@keyframes phrase-countdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+@keyframes pulse-hint {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Cultural note card slide-down — TimeGreeting component */
+@keyframes mn-slide-down {
+  0%   { max-height: 0; opacity: 0; transform: translateY(-8px); }
+  100% { max-height: 200px; opacity: 1; transform: translateY(0); }
+}
+.mn-slide-down {
+  animation: mn-slide-down 280ms ease-out both;
+  overflow: hidden;
+}
+
 /* Kilim border strip — tiny geometric motif repeated horizontally as a product signature */
 .mn-kilim {
   height: 8px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 8' preserveAspectRatio='xMidYMid meet'%3E%3Cg fill='none' stroke='%231B5FB0' stroke-width='1.2'%3E%3Cpath d='M0 4 L4 0 L8 4 L4 8 Z'/%3E%3Cpath d='M8 4 L12 0 L16 4 L12 8 Z' stroke='%23E01A3C'/%3E%3Cpath d='M16 4 L20 0 L24 4 L20 8 Z' stroke='%23F5B820'/%3E%3Cpath d='M24 4 L28 0 L32 4 L28 8 Z'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-size: 32px 8px;
+}
+
+/* Georgian keyboard: shake animation for wrong answer in type exercises */
+@keyframes key-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+.anim-shake { animation: key-shake 300ms ease-in-out; }
+
+/* Georgian keyboard: blinking cursor underline in type input display */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink { animation: cursor-blink 1s step-end infinite; }
+
+/* Milestone banner — slide up from bottom */
+@keyframes milestone-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes milestone-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.milestone-slide-up {
+  animation: milestone-slide-up 200ms ease-out both;
+}
+.milestone-fade-out {
+  animation: milestone-fade-out 200ms ease-in both;
+}
+
+/* Gold flash — all alphabet tiles flash gold when user reaches 33/33 letters */
+@keyframes goldFlash {
+  0%   { background-color: #1B5FB0; }
+  40%  { background-color: #F5B820; }
+  100% { background-color: #1B5FB0; }
+}
+.gold-flash-anim {
+  animation: goldFlash 600ms ease-in-out both;
 }
 
 /* Full-viewport-width kilim strip — breaks out of max-width:480px container.

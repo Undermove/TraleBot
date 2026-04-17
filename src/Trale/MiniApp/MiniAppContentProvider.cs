@@ -31,20 +31,27 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             return new();
         }
 
-        var allLetters = _alphabetLessonLetters.Values.SelectMany(x => x).ToList();
+        // Only use letters from current + previous lessons as distractors — so the
+        // user never sees letters they haven't encountered yet.
+        var allLetters = _alphabetLessonLetters
+            .Where(kv => kv.Key <= lessonId)
+            .SelectMany(kv => kv.Value)
+            .ToList();
         var random = new Random();
         var questions = new List<AlphabetQuizQuestionDto>();
 
-        // Build 2 questions per letter in the lesson, mix directions.
+        // Build 3 questions per letter: choice (both directions) + type (keyboard).
         foreach (var letter in letters)
         {
-            // Question A: letter → translit
+            // Question A: letter → translit (choice)
             questions.Add(BuildLetterToTranslit(letter, allLetters, random));
-            // Question B: translit → letter
+            // Question B: translit → letter (choice)
             questions.Add(BuildTranslitToLetter(letter, allLetters, random));
+            // Question C: translit → type the letter (keyboard)
+            questions.Add(BuildTypeTheLetter(letter));
         }
 
-        return questions.OrderBy(_ => random.Next()).Take(Math.Min(10, questions.Count)).ToList();
+        return questions.OrderBy(_ => random.Next()).Take(Math.Min(12, questions.Count)).ToList();
     }
 
     public List<StarterWordDto> GetStarterVocabulary() => _starterVocabulary;
@@ -92,6 +99,19 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             Options = options,
             AnswerIndex = options.IndexOf(target.Letter),
             Explanation = $"«{target.Translit}» — это {target.Letter}. Пример: {target.ExampleGe} ({target.ExampleRu})"
+        };
+    }
+
+    private static AlphabetQuizQuestionDto BuildTypeTheLetter(AlphabetLetterDto target)
+    {
+        return new AlphabetQuizQuestionDto
+        {
+            Id = $"a-type-{target.Letter}",
+            Question = $"Напиши букву «{target.Translit}» на клавиатуре",
+            Options = new List<string> { target.Letter },
+            AnswerIndex = 0,
+            Explanation = $"«{target.Translit}» — это {target.Letter}. Пример: {target.ExampleGe} ({target.ExampleRu})",
+            QuestionType = "type"
         };
     }
 
@@ -1680,6 +1700,8 @@ public class AlphabetQuizQuestionDto
     public List<string> Options { get; set; } = new();
     public int AnswerIndex { get; set; }
     public string Explanation { get; set; } = string.Empty;
+    /// <summary>"choice" (default) or "type" (user types answer on Georgian keyboard).</summary>
+    public string QuestionType { get; set; } = "choice";
 }
 
 // StarterWordDto is now in Application.Common.Interfaces.MiniApp

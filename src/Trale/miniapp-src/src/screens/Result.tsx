@@ -2,6 +2,7 @@ import React from 'react'
 import Mascot from '../components/Mascot'
 import Button from '../components/Button'
 import StampBadge from '../components/StampBadge'
+import Header from '../components/Header'
 import { CatalogDto, QuizQuestion, Screen } from '../types'
 
 interface Props {
@@ -38,12 +39,17 @@ export default function Result({
   const title = isGreat ? 'Отлично' : isOK ? 'Неплохо' : 'Ещё раз'
   const stampVariant: 'great' | 'ok' | 'retry' = isGreat ? 'great' : isOK ? 'ok' : 'retry'
 
+  const backTarget: Screen = moduleId === 'vocabulary'
+    ? { kind: 'vocabulary-list' }
+    : { kind: 'module', moduleId }
+
   return (
     <div className="flex flex-col bg-cream" style={{ minHeight: '100dvh' }}>
-      {/* Kilim top strip */}
-      <div style={{ paddingTop: 'var(--safe-t)' }}>
-        <div className="mn-kilim" />
-      </div>
+      {/* Header floats over confetti layer */}
+      <Header
+        variant="result"
+        onBack={() => navigate(backTarget)}
+      />
 
       {/* Confetti only on great result */}
       {isGreat && (
@@ -65,8 +71,8 @@ export default function Result({
       )}
 
       <div
-        className="relative z-[1] flex-1 flex flex-col items-center px-5 pt-8"
-        style={{ paddingBottom: 'calc(var(--safe-b) + 240px)' }}
+        className="relative z-[1] flex-1 flex flex-col items-center px-5"
+        style={{ paddingTop: 'calc(var(--safe-t) + 84px)', paddingBottom: 'calc(var(--safe-b) + 240px)' }}
       >
         {/* Mascot + stamp (stamp centered below mascot) */}
         <div className="flex flex-col items-center mb-5 gap-3">
