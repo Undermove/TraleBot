@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Header from '../components/Header'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
+import ScriptHistoryButton from '../components/ScriptHistoryButton'
+import HistoryCarousel from '../components/HistoryCarousel'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -17,6 +19,7 @@ export default function ModuleMap({
   progress,
   navigate
 }: Props) {
+  const [historyOpen, setHistoryOpen] = useState(false)
   const module = catalog.modules.find((m) => m.id === moduleId)
   if (!module) {
     return (
@@ -152,6 +155,11 @@ export default function ModuleMap({
 
         {/* Module entry phrase — shown once per session */}
         <ModulePhraseBanner moduleId={moduleId} />
+
+        {/* Script history button — alphabet modules only */}
+        {(moduleId === 'alphabet-progressive' || moduleId === 'alphabet') && (
+          <ScriptHistoryButton onOpen={() => setHistoryOpen(true)} />
+        )}
 
         {/* Journey path map */}
         <div className="mn-eyebrow mb-3">уроки</div>
@@ -338,6 +346,11 @@ export default function ModuleMap({
 
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+
+      {/* Script history carousel — fullscreen overlay for alphabet modules */}
+      {historyOpen && (
+        <HistoryCarousel onClose={() => setHistoryOpen(false)} />
+      )}
     </div>
   )
 }

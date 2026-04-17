@@ -491,6 +491,28 @@ input:focus-visible {
 }
 .anim-shake { animation: key-shake 300ms ease-in-out; }
 
+/* HistoryCarousel — slide transitions between cards */
+@keyframes history-slide-exit-left {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(-100%); opacity: 0; }
+}
+@keyframes history-slide-exit-right {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+@keyframes history-slide-enter-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes history-slide-enter-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes history-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 /* Georgian keyboard: blinking cursor underline in type input display */
 @keyframes cursor-blink {
   0%, 100% { opacity: 1; }
