@@ -151,7 +151,7 @@ export default function ModuleMap({
         </div>
 
         {/* Module entry phrase — shown once per session */}
-        <ModulePhraseBanner moduleId={moduleId} accent={accent} />
+        <ModulePhraseBanner moduleId={moduleId} />
 
         {/* Journey path map */}
         <div className="mn-eyebrow mb-3">уроки</div>

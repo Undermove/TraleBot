@@ -112,7 +112,6 @@ type Phase = 'phrase' | 'translated' | 'dismissing' | 'dismissed'
 
 interface Props {
   moduleId: string
-  accent: 'navy' | 'ruby' | 'gold'
 }
 
 export default function ModulePhraseBanner({ moduleId }: Props) {
