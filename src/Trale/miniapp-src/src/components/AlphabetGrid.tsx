@@ -24,7 +24,7 @@ export default function AlphabetGrid({
             className={[
               'w-[44px] h-[44px]',
               'border-[1.5px] rounded-lg',
-              'font-geo text-[20px] font-extrabold',
+              'font-sans text-[20px] font-extrabold',
               'flex items-center justify-center',
               'transition-colors duration-300',
               isLearned

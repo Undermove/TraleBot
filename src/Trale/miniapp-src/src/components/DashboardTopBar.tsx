@@ -42,7 +42,7 @@ export default function DashboardTopBar({ progress, onNavigateProfile }: Props) 
         <div className="mn-kilim" />
       </div>
       <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-        <div className="mn-eyebrow">блокнот</div>
+        <div className="mn-eyebrow">TraleBot</div>
         <button
           onClick={onNavigateProfile}
           className="flex items-center gap-3 active:opacity-80 transition-opacity"

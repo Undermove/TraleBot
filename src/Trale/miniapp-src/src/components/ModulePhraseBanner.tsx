@@ -131,15 +131,14 @@ export default function ModulePhraseBanner({ moduleId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Auto-dismiss after 3 seconds
+  // Auto-dismiss after 3s — only if user hasn't tapped yet
   useEffect(() => {
-    if (phase === 'dismissed') return
+    if (phase !== 'phrase') return
     const t = setTimeout(() => {
-      setPhase(p => (p !== 'dismissing' && p !== 'dismissed' ? 'dismissing' : p))
+      setPhase(p => (p === 'phrase' ? 'dismissing' : p))
     }, 3000)
     return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [phase])
 
   // Complete dismissal after slide-up animation
   useEffect(() => {
@@ -188,13 +187,13 @@ export default function ModulePhraseBanner({ moduleId }: Props) {
           </div>
         </div>
 
-        {/* Hint — only visible before translation is revealed */}
+        {/* Hint — pulsing tap prompt so user knows the banner is interactive */}
         {phase === 'phrase' && (
           <div
             className="font-sans text-[11px] text-center mt-1"
-            style={{ color: 'rgba(21,16,10,0.5)' }}
+            style={{ color: 'rgba(21,16,10,0.5)', animation: 'pulse-hint 1.2s ease-in-out infinite' }}
           >
-            тап — узнай перевод
+            👆 тапни — узнай перевод
           </div>
         )}
 

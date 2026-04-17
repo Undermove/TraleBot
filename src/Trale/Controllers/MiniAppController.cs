@@ -83,7 +83,7 @@ public class MiniAppController : Controller
     [HttpGet("modules/{moduleId}/lessons/{lessonId:int}/questions")]
     public IActionResult GetModuleLessonQuestions(string moduleId, int lessonId)
     {
-        if (moduleId == "alphabet")
+        if (moduleId is "alphabet" or "alphabet-progressive")
         {
             var alphabetQuestions = _content.GetAlphabetLessonQuestions(lessonId);
             if (alphabetQuestions.Count == 0)

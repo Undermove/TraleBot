@@ -31,7 +31,12 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             return new();
         }
 
-        var allLetters = _alphabetLessonLetters.Values.SelectMany(x => x).ToList();
+        // Only use letters from current + previous lessons as distractors — so the
+        // user never sees letters they haven't encountered yet.
+        var allLetters = _alphabetLessonLetters
+            .Where(kv => kv.Key <= lessonId)
+            .SelectMany(kv => kv.Value)
+            .ToList();
         var random = new Random();
         var questions = new List<AlphabetQuizQuestionDto>();
 

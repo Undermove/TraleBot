@@ -458,6 +458,10 @@ input:focus-visible {
   from { width: 100%; }
   to { width: 0%; }
 }
+@keyframes pulse-hint {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
 
 /* Cultural note card slide-down — TimeGreeting component */
 @keyframes mn-slide-down {
