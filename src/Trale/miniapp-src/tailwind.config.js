@@ -136,6 +136,14 @@ export default {
         card: '4px',
         pill: '999px'
       },
+      fontSize: {
+        't1': ['24px', { lineHeight: '1.1', fontWeight: '800' }],
+        't2': ['18px', { lineHeight: '1.2', fontWeight: '800' }],
+        't3': ['16px', { lineHeight: '1.3', fontWeight: '700' }],
+        't4': ['13px', { lineHeight: '1.5', fontWeight: '600' }],
+        't5': ['11px', { lineHeight: '1.4', fontWeight: '700' }],
+        't6': ['9px',  { lineHeight: '1.3', fontWeight: '700' }],
+      },
       letterSpacing: {
         grand: '0.12em'
       }

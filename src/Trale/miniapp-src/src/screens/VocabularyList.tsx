@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import LoaderLetter from '../components/LoaderLetter'
+import Mascot from '../components/Mascot'
 import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
 import WordCard from '../components/WordCard'
 import { ProgressState, Screen } from '../types'
@@ -256,6 +257,46 @@ export default function VocabularyList({ progress, navigate }: Props) {
             <Button variant="ghost" onClick={() => navigate({ kind: 'dashboard' })}>
               ← на главную
             </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Empty state: vocabulary is loaded but completely empty (no starter items either)
+  if (phase === 'ready' && items.length === 0 && !isStarterMode) {
+    const isInTelegram = typeof window !== 'undefined' &&
+      Boolean((window as any).Telegram?.WebApp?.initData?.length)
+    return (
+      <div className="flex flex-col min-h-full bg-cream">
+        <Header
+          progress={progress}
+          onBack={() => navigate({ kind: 'dashboard' })}
+          eyebrow="ლექსიკონი"
+          title="Мой словарь"
+        />
+        <div className="flex-1 px-5 pt-6 pb-in" style={{ paddingBottom: 'calc(var(--safe-b) + 40px)' }}>
+          <div className="jewel-tile mx-0 px-6 py-8 text-center">
+            <div className="relative z-[1] flex flex-col items-center">
+              <Mascot mood="think" size={80} />
+              <div className="mt-4 font-geo text-t2 font-extrabold text-jewelInk leading-tight">
+                ლექსიკონი
+              </div>
+              <div className="font-sans text-t6 uppercase tracking-widest text-jewelInk-mid mt-1">
+                leksikoni
+              </div>
+              <p className="font-sans text-t4 text-jewelInk-mid leading-relaxed mt-4 max-w-[280px]">
+                Твои слова здесь ещё не появились. Попроси бота перевести любое слово — оно попадёт в словарь автоматически.
+              </p>
+              {isInTelegram && (
+                <a
+                  href="tg://resolve?domain=trale_bot"
+                  className="jewel-btn jewel-btn-cream w-full mt-6 block text-center"
+                >
+                  Открыть @trale_bot
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>

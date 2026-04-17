@@ -55,36 +55,11 @@ textarea {
 }
 
 h1, h2, h3, h4 {
-  font-family: 'Fraunces', 'Noto Serif Georgian', Georgia, serif;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'wght' 500;
+  font-family: 'Manrope', 'Noto Sans Georgian', -apple-system, system-ui, sans-serif;
   letter-spacing: -0.02em;
-  color: #2A1F18;
+  color: #15100A;
 }
 
-/* Picture Book display utility — round, soft, confident */
-.pb-display {
-  font-family: 'Fraunces', 'Noto Serif Georgian', Georgia, serif;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100, 'wght' 500;
-  letter-spacing: -0.025em;
-  line-height: 0.95;
-  color: #2A1F18;
-}
-
-.pb-eyebrow {
-  font-family: 'Figtree', sans-serif;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 11px;
-  color: #7A6654; /* warm-600 */
-}
-
-.pb-body {
-  font-family: 'Figtree', sans-serif;
-  font-weight: 400;
-  line-height: 1.55;
-  color: #3B2D23; /* warm-800 */
-}
 
 /* Utility: hand-drawn underline using wavy SVG */
 .ink-underline {
@@ -248,43 +223,19 @@ h1, h2, h3, h4 {
 
 /* Number counters and display treatments */
 .display-xl {
-  font-family: 'Fraunces', 'Noto Serif Georgian', serif;
-  font-variation-settings: 'opsz' 144, 'SOFT' 20, 'wght' 400;
+  font-family: 'Manrope', 'Noto Sans Georgian', sans-serif;
+  font-weight: 800;
   font-size: clamp(44px, 12vw, 64px);
   line-height: 0.92;
   letter-spacing: -0.035em;
 }
 
 .display-lg {
-  font-family: 'Fraunces', 'Noto Serif Georgian', serif;
-  font-variation-settings: 'opsz' 144, 'wght' 500;
+  font-family: 'Manrope', 'Noto Sans Georgian', sans-serif;
+  font-weight: 700;
   font-size: clamp(30px, 8vw, 40px);
   line-height: 1;
   letter-spacing: -0.025em;
-}
-
-.hand-note {
-  font-family: 'Caveat', cursive;
-  font-size: 22px;
-  color: var(--wine);
-  line-height: 1.1;
-  transform: rotate(-2deg);
-  display: inline-block;
-}
-
-.eyebrow {
-  font-family: 'Fraunces', serif;
-  font-variation-settings: 'opsz' 144, 'wght' 600;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-size: 11px;
-  color: var(--wine);
-}
-
-.serif-caption {
-  font-style: italic;
-  font-variation-settings: 'opsz' 144, 'SOFT' 100;
-  color: var(--ink-soft);
 }
 
 /* Scrollbar — nearly invisible, paper feel */
@@ -532,6 +483,22 @@ input:focus-visible {
   50% { opacity: 0; }
 }
 .cursor-blink { animation: cursor-blink 1s step-end infinite; }
+
+/* Milestone banner — slide up from bottom */
+@keyframes milestone-slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes milestone-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.milestone-slide-up {
+  animation: milestone-slide-up 200ms ease-out both;
+}
+.milestone-fade-out {
+  animation: milestone-fade-out 200ms ease-in both;
+}
 
 /* Full-viewport-width kilim strip — breaks out of max-width:480px container.
    Used only on LandingScreen where kilim must span the full browser window. */
