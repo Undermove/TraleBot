@@ -502,6 +502,23 @@ input:focus-visible {
   background-size: 32px 8px;
 }
 
+/* Georgian keyboard: shake animation for wrong answer in type exercises */
+@keyframes key-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+.anim-shake { animation: key-shake 300ms ease-in-out; }
+
+/* Georgian keyboard: blinking cursor underline in type input display */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.cursor-blink { animation: cursor-blink 1s step-end infinite; }
+
 /* Full-viewport-width kilim strip — breaks out of max-width:480px container.
    Used only on LandingScreen where kilim must span the full browser window. */
 .mn-kilim-full {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Button from '../components/Button'
+import GeorgianKeyboard from '../components/GeorgianKeyboard'
 import LoaderLetter from '../components/LoaderLetter'
 import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
@@ -28,8 +29,11 @@ export default function Practice({
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState<Phase>('loading')
   const [selected, setSelected] = useState<number | null>(null)
+  const [typedAnswer, setTypedAnswer] = useState('')
   const [correctCount, setCorrectCount] = useState(0)
   const [wrongQuestions, setWrongQuestions] = useState<QuizQuestion[]>([])
+  // For shake animation on wrong type answer
+  const [shakeInput, setShakeInput] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -48,7 +52,8 @@ export default function Practice({
             question: d.question,
             options: d.options,
             answerIndex: d.answerIndex,
-            explanation: d.explanation
+            explanation: d.explanation,
+            questionType: d.questionType
           }))
         )
         setPhase('answering')
@@ -106,7 +111,8 @@ export default function Practice({
                   setQuestions(
                     data.slice(0, 10).map((d) => ({
                       id: d.id, lemma: d.lemma ?? '', question: d.question,
-                      options: d.options, answerIndex: d.answerIndex, explanation: d.explanation
+                      options: d.options, answerIndex: d.answerIndex,
+                      explanation: d.explanation, questionType: d.questionType
                     }))
                   )
                   setPhase('answering')
@@ -132,19 +138,39 @@ export default function Practice({
   const questionNumber = index + 1
   const pct = Math.round((questionNumber / total) * 100)
 
+  const isTypeQuestion = current.questionType === 'type'
+
   // Georgian numerals 1-10 for passive learning
   const geoNumerals = ['ერთი', 'ორი', 'სამი', 'ოთხი', 'ხუთი', 'ექვსი', 'შვიდი', 'რვა', 'ცხრა', 'ათი']
   const geoQuestion = questionNumber <= 10 ? geoNumerals[questionNumber - 1] : null
   const geoTotal = total <= 10 ? geoNumerals[total - 1] : null
-  const isCorrect = selected !== null && selected === current.answerIndex
+
+  // Determine correctness based on question type
+  const correctAnswer = current.options[current.answerIndex] ?? ''
+  const isCorrect = isTypeQuestion
+    ? typedAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
+    : selected !== null && selected === current.answerIndex
 
   function check() {
-    if (selected === null) return
-    setPhase('checked')
-    if (selected === current.answerIndex) {
-      setCorrectCount((c) => c + 1)
+    if (isTypeQuestion) {
+      if (typedAnswer.trim() === '') return
+      setPhase('checked')
+      const correct = typedAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
+      if (correct) {
+        setCorrectCount((c) => c + 1)
+      } else {
+        setWrongQuestions((prev) => [...prev, current])
+        setShakeInput(true)
+        setTimeout(() => setShakeInput(false), 320)
+      }
     } else {
-      setWrongQuestions((prev) => [...prev, current])
+      if (selected === null) return
+      setPhase('checked')
+      if (selected === current.answerIndex) {
+        setCorrectCount((c) => c + 1)
+      } else {
+        setWrongQuestions((prev) => [...prev, current])
+      }
     }
   }
 
@@ -203,8 +229,18 @@ export default function Practice({
     }
     setIndex((i) => i + 1)
     setSelected(null)
+    setTypedAnswer('')
     setPhase('answering')
   }
+
+  // Input display styling for type questions
+  const inputBg = phase === 'checked'
+    ? isCorrect ? 'bg-navy' : 'bg-ruby/15'
+    : 'bg-cream-tile'
+  const inputText = phase === 'checked' && isCorrect ? 'text-cream' : 'text-jewelInk'
+  const inputBorder = phase === 'checked' && !isCorrect
+    ? 'border-ruby'
+    : 'border-jewelInk'
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
@@ -255,114 +291,198 @@ export default function Practice({
         </div>
       </div>
 
-      {/* Question + options */}
+      {/* Question + answer area */}
       <div
         className="flex-1 px-5 pt-6"
-        style={{ paddingBottom: 'calc(var(--safe-b) + 110px)' }}
+        style={{ paddingBottom: isTypeQuestion ? '16px' : 'calc(var(--safe-b) + 110px)' }}
       >
         <div className="mn-eyebrow mb-2">
-          вопрос № {questionNumber}{geoQuestion ? ` · ${geoQuestion}` : ''}
+          {isTypeQuestion
+            ? `напиши по-грузински · ${geoQuestion ?? questionNumber}`
+            : `вопрос № ${questionNumber}${geoQuestion ? ` · ${geoQuestion}` : ''}`}
         </div>
         <h2 className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
           {current.question}
         </h2>
 
-        <div className="mt-6 flex flex-col gap-3">
-          {current.options.map((opt, i) => {
-            const isSelected = i === selected
-            const isAnswer = i === current.answerIndex
-
-            let tileClasses =
-              'bg-cream-tile border-jewelInk text-jewelInk'
-            let shadowStyle = '3px 3px 0 #15100A'
-
-            if (phase === 'answering' && isSelected) {
-              tileClasses = 'bg-navy border-jewelInk text-cream'
-            }
-            if (phase === 'checked') {
-              if (isAnswer) {
-                tileClasses = 'bg-navy border-jewelInk text-cream'
-              } else if (isSelected) {
-                tileClasses = 'bg-ruby border-jewelInk text-cream'
-                shadowStyle = '1px 1px 0 #15100A'
-              } else {
-                tileClasses = 'bg-cream-tile border-jewelInk/25 text-jewelInk/40'
-                shadowStyle = 'none'
-              }
-            }
-
-            return (
-              <button
-                key={i}
-                disabled={phase === 'checked'}
-                onClick={() => setSelected(i)}
-                className={`w-full text-left px-4 py-4 border-[1.5px] rounded-xl font-sans text-[15px] font-semibold transition-all duration-75 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-3 ${tileClasses}`}
-                style={{ boxShadow: shadowStyle }}
-              >
-                <span
-                  className={`shrink-0 w-7 h-7 rounded-md border-[1.5px] flex items-center justify-center font-sans text-[12px] font-extrabold uppercase ${
-                    phase === 'checked' && isAnswer
-                      ? 'bg-cream text-ruby border-cream'
-                      : 'bg-cream-deep text-jewelInk border-jewelInk/30'
-                  }`}
-                >
-                  {String.fromCharCode(97 + i)}
+        {isTypeQuestion ? (
+          /* ── Type-answer mode ── */
+          <div className="mt-6">
+            {/* Input display */}
+            <div
+              className={`h-[56px] w-full border-[1.5px] rounded-xl flex items-center justify-center
+                px-4 relative transition-all duration-150
+                ${inputBg} ${inputBorder} ${inputText}
+                ${shakeInput ? 'anim-shake' : ''}`}
+              style={{ boxShadow: '2px 2px 0 #15100A' }}
+            >
+              {typedAnswer.length > 0 ? (
+                <span className="font-geo text-[22px] font-bold text-center">
+                  {typedAnswer}
                 </span>
-                <span className="flex-1">{opt}</span>
-                {phase === 'checked' && isAnswer && (
-                  <svg width="18" height="18" viewBox="0 0 18 18" className="text-cream shrink-0">
-                    <path
-                      d="M3 9 L7 13 L15 4"
-                      stroke="currentColor"
-                      strokeWidth="2.8"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                )}
-              </button>
-            )
-          })}
-        </div>
+              ) : (
+                <span className="font-geo text-[22px] font-bold text-jewelInk/30">
+                  ანბანი...
+                </span>
+              )}
+              {/* Gold blinking cursor — only while answering and value is present */}
+              {phase === 'answering' && (
+                <span
+                  className="absolute bottom-[10px] left-1/2 -translate-x-1/2 w-5 h-0.5 bg-gold cursor-blink"
+                  style={{ marginLeft: typedAnswer.length > 0 ? `${typedAnswer.length * 6}px` : '0' }}
+                />
+              )}
+              {/* Gold inner hairline on correct */}
+              {phase === 'checked' && isCorrect && (
+                <span className="absolute inset-[3px] border border-gold/50 rounded-[10px] pointer-events-none" />
+              )}
+            </div>
 
-        {phase === 'checked' && (
-          <div
-            className={`mt-6 p-4 border-[1.5px] rounded-xl relative ${
-              isCorrect
-                ? 'bg-navy border-jewelInk text-cream'
-                : 'bg-ruby border-jewelInk text-cream'
-            }`}
-            style={{ boxShadow: '2px 2px 0 #15100A' }}
-          >
-            <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
-              {isCorrect ? 'верно' : 'ещё раз'}
-            </div>
-            <div className="font-sans text-[14px] leading-snug">
-              {current.explanation ||
-                (isCorrect
-                  ? 'Хорошо запомнил — так держать.'
-                  : 'Запомни правильный вариант и идём дальше.')}
-            </div>
+            {/* Feedback banner */}
+            {phase === 'checked' && (
+              <div
+                className={`mt-4 p-4 border-[1.5px] rounded-xl relative ${
+                  isCorrect
+                    ? 'bg-navy border-jewelInk text-cream'
+                    : 'bg-ruby border-jewelInk text-cream'
+                }`}
+                style={{ boxShadow: '2px 2px 0 #15100A' }}
+              >
+                <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
+                  {isCorrect ? 'верно' : 'ещё раз'}
+                </div>
+                <div className="font-sans text-[14px] leading-snug">
+                  {isCorrect
+                    ? (current.explanation || 'Хорошо запомнил — так держать.')
+                    : `правильно: ${correctAnswer}`}
+                </div>
+              </div>
+            )}
           </div>
+        ) : (
+          /* ── Choice mode ── */
+          <>
+            <div className="mt-6 flex flex-col gap-3">
+              {current.options.map((opt, i) => {
+                const isSelected = i === selected
+                const isAnswer = i === current.answerIndex
+
+                let tileClasses =
+                  'bg-cream-tile border-jewelInk text-jewelInk'
+                let shadowStyle = '3px 3px 0 #15100A'
+
+                if (phase === 'answering' && isSelected) {
+                  tileClasses = 'bg-navy border-jewelInk text-cream'
+                }
+                if (phase === 'checked') {
+                  if (isAnswer) {
+                    tileClasses = 'bg-navy border-jewelInk text-cream'
+                  } else if (isSelected) {
+                    tileClasses = 'bg-ruby border-jewelInk text-cream'
+                    shadowStyle = '1px 1px 0 #15100A'
+                  } else {
+                    tileClasses = 'bg-cream-tile border-jewelInk/25 text-jewelInk/40'
+                    shadowStyle = 'none'
+                  }
+                }
+
+                return (
+                  <button
+                    key={i}
+                    disabled={phase === 'checked'}
+                    onClick={() => setSelected(i)}
+                    className={`w-full text-left px-4 py-4 border-[1.5px] rounded-xl font-sans text-[15px] font-semibold transition-all duration-75 active:translate-x-0.5 active:translate-y-0.5 flex items-center gap-3 ${tileClasses}`}
+                    style={{ boxShadow: shadowStyle }}
+                  >
+                    <span
+                      className={`shrink-0 w-7 h-7 rounded-md border-[1.5px] flex items-center justify-center font-sans text-[12px] font-extrabold uppercase ${
+                        phase === 'checked' && isAnswer
+                          ? 'bg-cream text-ruby border-cream'
+                          : 'bg-cream-deep text-jewelInk border-jewelInk/30'
+                      }`}
+                    >
+                      {String.fromCharCode(97 + i)}
+                    </span>
+                    <span className="flex-1">{opt}</span>
+                    {phase === 'checked' && isAnswer && (
+                      <svg width="18" height="18" viewBox="0 0 18 18" className="text-cream shrink-0">
+                        <path
+                          d="M3 9 L7 13 L15 4"
+                          stroke="currentColor"
+                          strokeWidth="2.8"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {phase === 'checked' && (
+              <div
+                className={`mt-6 p-4 border-[1.5px] rounded-xl relative ${
+                  isCorrect
+                    ? 'bg-navy border-jewelInk text-cream'
+                    : 'bg-ruby border-jewelInk text-cream'
+                }`}
+                style={{ boxShadow: '2px 2px 0 #15100A' }}
+              >
+                <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
+                  {isCorrect ? 'верно' : 'ещё раз'}
+                </div>
+                <div className="font-sans text-[14px] leading-snug">
+                  {current.explanation ||
+                    (isCorrect
+                      ? 'Хорошо запомнил — так держать.'
+                      : 'Запомни правильный вариант и идём дальше.')}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* Action bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto px-5 pt-4 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15 z-20"
-        style={{ paddingBottom: 'calc(var(--safe-b) + 16px)' }}
-      >
-        {phase === 'answering' ? (
-          <Button variant="primary" disabled={selected === null} onClick={check}>
-            проверить
-          </Button>
-        ) : (
-          <Button variant={isCorrect ? 'green' : 'primary'} onClick={next}>
-            {index + 1 >= total ? 'итог →' : 'дальше →'}
-          </Button>
-        )}
-      </div>
+      {isTypeQuestion ? (
+        /* For type questions: keyboard + check button at bottom */
+        <div className="sticky bottom-0 left-0 right-0 z-20" style={{ paddingBottom: 'var(--safe-b)' }}>
+          <GeorgianKeyboard
+            value={typedAnswer}
+            onChange={setTypedAnswer}
+            disabled={phase === 'checked'}
+          />
+          <div className="px-5 pt-3 pb-4 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15">
+            {phase === 'answering' ? (
+              <Button variant="primary" disabled={typedAnswer.trim() === ''} onClick={check}>
+                проверить
+              </Button>
+            ) : (
+              <Button variant={isCorrect ? 'green' : 'primary'} onClick={next}>
+                {index + 1 >= total ? 'итог →' : 'дальше →'}
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* For choice questions: standard fixed action bar */
+        <div
+          className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto px-5 pt-4 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15 z-20"
+          style={{ paddingBottom: 'calc(var(--safe-b) + 16px)' }}
+        >
+          {phase === 'answering' ? (
+            <Button variant="primary" disabled={selected === null} onClick={check}>
+              проверить
+            </Button>
+          ) : (
+            <Button variant={isCorrect ? 'green' : 'primary'} onClick={next}>
+              {index + 1 >= total ? 'итог →' : 'дальше →'}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
