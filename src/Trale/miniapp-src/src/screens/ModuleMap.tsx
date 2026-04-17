@@ -1,6 +1,7 @@
 import React from 'react'
 import Header from '../components/Header'
 import KilimProgress from '../components/KilimProgress'
+import ModulePhraseBanner from '../components/ModulePhraseBanner'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -148,6 +149,9 @@ export default function ModuleMap({
             <KilimProgress done={done} total={lessons.length} accent={accent} />
           </div>
         </div>
+
+        {/* Module entry phrase — shown once per session */}
+        <ModulePhraseBanner moduleId={moduleId} accent={accent} />
 
         {/* Journey path map */}
         <div className="mn-eyebrow mb-3">уроки</div>
