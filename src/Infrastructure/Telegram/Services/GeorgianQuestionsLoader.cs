@@ -98,6 +98,11 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                         }
                     }
 
+                    if (questionElement.TryGetProperty("question_type", out var qt))
+                    {
+                        question.QuestionType = qt.GetString();
+                    }
+
                     if (questionElement.TryGetProperty("tags", out var tagsArray) && tagsArray.ValueKind == JsonValueKind.Array)
                     {
                         foreach (var tag in tagsArray.EnumerateArray())

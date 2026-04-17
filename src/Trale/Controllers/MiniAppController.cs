@@ -372,7 +372,8 @@ public class MiniAppController : Controller
             question = q.Question,
             options = q.Options,
             answerIndex = q.AnswerIndex,
-            explanation = q.Explanation
+            explanation = q.Explanation,
+            questionType = q.QuestionType ?? "choice"
         });
     }
 
