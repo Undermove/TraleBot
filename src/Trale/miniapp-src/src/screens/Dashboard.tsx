@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProBadge from '../components/ProBadge'
 import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
+import DashboardTopBar from '../components/DashboardTopBar'
+import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
+
+const XP_THRESHOLDS = Object.keys(XP_MILESTONES).map(Number)
+const STREAK_THRESHOLDS = Object.keys(STREAK_MILESTONES).map(Number)
 
 interface Props {
   catalog: CatalogDto
@@ -121,6 +126,10 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   // Temporary mascot cheer after unlock sequence (step 5: 500ms in, lasts 2s)
   const [mascotCheering, setMascotCheering] = useState(false)
 
+  // Milestone banner — shown when XP or streak crosses a threshold for the first time
+  const [milestone, setMilestone] = useState<{ type: 'xp' | 'streak'; value: number } | null>(null)
+  const prevProgressRef = useRef<ProgressState | null>(null)
+
   // Detect newly unlocked sections on mount — play the one-time animation sequence
   useEffect(() => {
     if (!isBeginner) return
@@ -165,6 +174,36 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     } catch { /* ignore storage errors */ }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Detect milestone crossings — show banner once per threshold
+  useEffect(() => {
+    const prev = prevProgressRef.current
+    if (prev) {
+      // Check XP milestones
+      for (const threshold of XP_THRESHOLDS) {
+        if (prev.xp < threshold && progress.xp >= threshold) {
+          const key = `bombora_milestone_xp_${threshold}`
+          if (!localStorage.getItem(key)) {
+            localStorage.setItem(key, '1')
+            setMilestone({ type: 'xp', value: threshold })
+            break
+          }
+        }
+      }
+      // Check streak milestones
+      for (const threshold of STREAK_THRESHOLDS) {
+        if (prev.streak < threshold && progress.streak >= threshold) {
+          const key = `bombora_milestone_streak_${threshold}`
+          if (!localStorage.getItem(key)) {
+            localStorage.setItem(key, '1')
+            setMilestone({ type: 'streak', value: threshold })
+            break
+          }
+        }
+      }
+    }
+    prevProgressRef.current = progress
+  }, [progress.xp, progress.streak])
+
   // Toggle using the current visual state so beginner defaults are respected
   function toggleSection(key: string, currentlyCollapsed: boolean) {
     setCollapsedSections((prev) => {
@@ -176,22 +215,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
-      {/* ══ Kilim signature strip ══ */}
-      <div style={{ paddingTop: 'var(--safe-t)' }}>
-        <div className="mn-kilim" />
-      </div>
-
-      {/* ══ Stats bar ══ */}
-      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-        <div className="mn-eyebrow">блокнот</div>
-        <button
-          onClick={() => navigate({ kind: 'profile' })}
-          className="flex items-center gap-3 active:opacity-80 transition-opacity"
-        >
-          <StatPill value={progress.streak} label="дн" color="ruby" />
-          <StatPill value={progress.xp} label="опыт" color="navy" />
-        </button>
-      </div>
+      {/* ══ Kilim + stats bar ══ */}
+      <DashboardTopBar
+        progress={progress}
+        onNavigateProfile={() => navigate({ kind: 'profile' })}
+      />
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
       <section className="px-5 pt-3 pb-4">
@@ -586,6 +614,15 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           }}
         />
       )}
+
+      {/* Milestone banner — slides up from bottom on first XP/streak threshold */}
+      {milestone && (
+        <MilestoneBanner
+          type={milestone.type}
+          value={milestone.value}
+          onDismiss={() => setMilestone(null)}
+        />
+      )}
     </div>
   )
 }
@@ -745,12 +782,12 @@ function StatPill({
 }: {
   value: number
   label: string
-  color: 'navy' | 'ruby'
+  color: 'navy' | 'ruby' | 'xp'
 }) {
-  const colorClass = color === 'navy' ? 'bg-navy' : 'bg-ruby'
+  const colorClass = color === 'xp' ? 'bg-gold text-jewelInk' : color === 'ruby' ? 'bg-ruby text-cream' : 'bg-navy text-cream'
   return (
     <div
-      className={`${colorClass} text-cream border-[1.5px] border-jewelInk rounded-full px-4 py-2 flex items-baseline gap-1.5 min-h-[44px]`}
+      className={`${colorClass} border-[1.5px] border-jewelInk rounded-full px-4 py-2 flex items-baseline gap-1.5 min-h-[44px]`}
       style={{ boxShadow: '2px 2px 0 #15100A' }}
     >
       <span className="font-sans text-[15px] font-extrabold tabular-nums leading-none">
