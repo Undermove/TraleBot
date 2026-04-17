@@ -34,6 +34,17 @@ public class MiniAppUserProgress
     /// </summary>
     public string CompletedLessonsJson { get; set; } = "{}";
 
+    /// <summary>
+    /// Total XP spent on treats in the treat shop.
+    /// Available XP = Xp - XpSpent.
+    /// </summary>
+    public int XpSpent { get; set; }
+
+    /// <summary>
+    /// Total number of treats given to Bombora across all time.
+    /// </summary>
+    public int TotalTreatsGiven { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

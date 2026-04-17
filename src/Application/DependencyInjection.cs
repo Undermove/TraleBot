@@ -4,6 +4,7 @@ using Application.Admin;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
 using Application.MiniApp.Queries;
+using Application.MiniApp.Services;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -41,8 +42,9 @@ public static class DependencyInjection
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, MyselfVocabularyChecker>();
         services.AddTransient<IAchievementsService, AchievementsService>();
 
-        // MiniApp queries (services per ARCHITECTURE.md, no MediatR)
+        // MiniApp services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetActivityDaysQuery>();
+        services.AddScoped<FeedTreatService>();
 
         // Admin queries (services per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetAdminStatsQuery>();
