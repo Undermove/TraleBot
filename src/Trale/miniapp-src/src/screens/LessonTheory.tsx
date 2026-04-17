@@ -176,6 +176,36 @@ function TheoryBlock({ block }: { block: TheoryBlockDto }) {
     )
   }
 
+  if (block.type === 'sos') {
+    return (
+      <div className="jewel-tile px-4 py-4 relative min-h-[80px]">
+        <div
+          className="absolute -top-2 left-4 bg-cream px-2 py-0.5 border-[1.5px] border-jewelInk rounded-md"
+          style={{ boxShadow: '1px 1px 0 #15100A' }}
+        >
+          <span className="font-sans text-[9px] font-extrabold uppercase tracking-wider text-ruby">
+            ЗАПОМНИ
+          </span>
+        </div>
+        <div className="relative z-[1] pt-2">
+          <div className="font-geo text-[32px] font-extrabold text-ruby leading-tight">
+            {block.ge}
+          </div>
+          {block.translit && (
+            <div className="font-sans text-[11px] text-jewelInk/40 uppercase tracking-[0.15em] mt-2">
+              {block.translit}
+            </div>
+          )}
+          <div className="border-t border-dashed border-jewelInk/15 mt-2 pt-2">
+            <div className="font-sans text-[16px] font-bold text-jewelInk">
+              {block.ru}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (block.type === 'letters' && block.letters) {
     return (
       <div>
