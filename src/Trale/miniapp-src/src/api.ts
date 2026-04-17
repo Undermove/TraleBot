@@ -184,6 +184,10 @@ export const api = {
       invitedCount: number
       activatedCount: number
       bonusLabel: string
+      todayActivated: number
+      dailyLimit: number
+      yearActivated: number
+      yearlyLimit: number
     }>('/api/miniapp/referral'),
 
   adminStats: () => request<AdminStats>('/api/admin/stats'),

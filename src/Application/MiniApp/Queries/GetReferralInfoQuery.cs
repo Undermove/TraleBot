@@ -25,6 +25,17 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var activated = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == userId && r.ActivatedAtUtc != null, ct);
 
+        var todayActivated = await db.Referrals
+            .CountAsync(r => r.ReferrerUserId == userId
+                          && r.ActivatedAtUtc != null
+                          && r.ActivatedAtUtc >= DateTime.UtcNow.Date, ct);
+
+        var yearAgo = DateTime.UtcNow.AddDays(-365);
+        var yearActivated = await db.Referrals
+            .CountAsync(r => r.ReferrerUserId == userId
+                          && r.ActivatedAtUtc != null
+                          && r.ActivatedAtUtc >= yearAgo, ct);
+
         string bonusLabel;
         if (user.IsPro && user.SubscriptionPlan == SubscriptionPlan.Lifetime)
         {
@@ -44,7 +55,11 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             ReferrerTelegramId = user.TelegramId,
             InvitedCount = invited,
             ActivatedCount = activated,
-            BonusLabel = bonusLabel
+            BonusLabel = bonusLabel,
+            TodayActivated = todayActivated,
+            DailyLimit = TryActivateReferralService.DailyActivationCap,
+            YearActivated = yearActivated,
+            YearlyLimit = TryActivateReferralService.YearlyActivationCap
         };
     }
 }
@@ -55,4 +70,8 @@ public class GetReferralInfoResult
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
     public string BonusLabel { get; init; } = "";
+    public int TodayActivated { get; init; }
+    public int DailyLimit { get; init; }
+    public int YearActivated { get; init; }
+    public int YearlyLimit { get; init; }
 }

@@ -24,6 +24,9 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
     private const int DailyActivationCapPerReferrer = 5;
     private const int YearlyActivationCapPerReferrer = 12;
 
+    public const int DailyActivationCap = DailyActivationCapPerReferrer;
+    public const int YearlyActivationCap = YearlyActivationCapPerReferrer;
+
     public async Task<TryActivateReferralResult> ExecuteAsync(
         Referral referral, string trigger, CancellationToken ct)
     {

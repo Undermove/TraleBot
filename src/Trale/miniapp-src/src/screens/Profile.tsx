@@ -407,6 +407,10 @@ function ReferralCard() {
     invitedCount: number
     activatedCount: number
     bonusLabel: string
+    todayActivated: number
+    dailyLimit: number
+    yearActivated: number
+    yearlyLimit: number
   } | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -489,6 +493,11 @@ function ReferralCard() {
               Пригласил: {data.invitedCount} · активных: {data.activatedCount}
             </div>
           )}
+          <div className="mt-2 font-sans text-[10px] text-jewelInk-hint">
+            {data.todayActivated >= data.dailyLimit
+              ? 'Сегодня лимит достигнут, бонусы продолжатся завтра'
+              : `До ${data.dailyLimit} бонусов в день · до ${data.yearlyLimit} в год`}
+          </div>
         </div>
       </div>
     </div>
