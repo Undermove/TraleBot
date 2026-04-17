@@ -40,6 +40,7 @@ builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IMiniAppCont
 builder.Services.AddScoped<Application.Common.Interfaces.MiniApp.IProgressCalculator, Trale.MiniApp.ProgressCalculator>();
 builder.Services.AddHostedService<CreateWebhook>();
 builder.Services.AddHostedService<IdempotencyCleanupService>();
+builder.Services.AddHostedService<Trale.HostedServices.PendingReferralsWorker>();
 
 builder.WebHost.UseUrls("http://*:1402/");
 var app = builder.Build();

@@ -363,6 +363,36 @@ public class MiniAppController : Controller
         };
     }
 
+    [HttpGet("referral")]
+    public async Task<IActionResult> Referral(
+        [FromServices] Application.MiniApp.Queries.GetReferralInfoQuery query,
+        CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var info = await query.ExecuteAsync(user.Id, ct);
+        if (info == null)
+        {
+            return NotFound();
+        }
+
+        var link = $"https://t.me/{_botConfig.BotName}?start=ref_{info.ReferrerTelegramId}";
+        var shareText = "Учу грузинский в TraleBot 🇬🇪 — приходи, тебе дадут 60 дней триала вместо 30.";
+
+        return Ok(new
+        {
+            link,
+            shareText,
+            invitedCount = info.InvitedCount,
+            activatedCount = info.ActivatedCount,
+            bonusLabel = info.BonusLabel
+        });
+    }
+
     private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader, int lessonId)
     {
         return loader.LoadQuestionsForLesson(lessonId).Select(q => new

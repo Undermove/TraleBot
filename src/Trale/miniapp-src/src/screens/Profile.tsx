@@ -332,6 +332,9 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           </div>
         </button>
 
+        {/* Referral — invite friends, get bonus */}
+        <ReferralCard />
+
         {/* Telegram ID for support — copyable */}
         {telegramId != null && <TelegramIdCard telegramId={telegramId} />}
 
@@ -393,6 +396,101 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           onClose={() => setSelectedLetter(null)}
         />
       )}
+    </div>
+  )
+}
+
+function ReferralCard() {
+  const [data, setData] = useState<{
+    link: string
+    shareText: string
+    invitedCount: number
+    activatedCount: number
+    bonusLabel: string
+  } | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .referral()
+      .then((r) => { if (!cancelled) setData(r) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  if (!data) return null
+
+  async function copy() {
+    if (!data) return
+    try {
+      const tg = (window as any).Telegram?.WebApp
+      if (tg?.HapticFeedback?.impactOccurred) tg.HapticFeedback.impactOccurred('light')
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(data.link)
+      } else {
+        const ta = document.createElement('textarea')
+        ta.value = data.link
+        ta.style.position = 'fixed'
+        ta.style.left = '-9999px'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {}
+  }
+
+  function share() {
+    const tg = (window as any).Telegram?.WebApp
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
+      data!.link
+    )}&text=${encodeURIComponent(data!.shareText)}`
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(shareUrl)
+    } else {
+      window.open(shareUrl, '_blank', 'noopener')
+    }
+  }
+
+  return (
+    <div className="mt-6">
+      <div className="mn-eyebrow mb-2">пригласи друга</div>
+      <div className="jewel-tile px-4 py-4">
+        <div className="relative z-[1]">
+          <div className="font-sans text-[13px] text-jewelInk-mid mb-3 leading-snug">
+            Друг получит 60 дней триала вместо 30. Ты — {data.bonusLabel}, когда он
+            пройдёт первый урок или добавит 5 слов.
+          </div>
+          <div className="flex items-center gap-2 mb-3 jewel-tile px-3 py-2">
+            <div className="relative z-[1] flex-1 min-w-0 font-sans text-[12px] text-jewelInk truncate">
+              {data.link}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={share}
+              className="flex-1 font-sans text-[13px] font-extrabold text-jewelInk min-h-[40px] rounded border-[1.5px] border-jewelInk"
+              style={{ background: '#F5B820', boxShadow: '0 2px 0 #15100A' }}
+            >
+              Поделиться
+            </button>
+            <button
+              onClick={copy}
+              className="flex-1 font-sans text-[13px] font-bold text-jewelInk min-h-[40px] rounded border-[1.5px] border-jewelInk/40"
+            >
+              {copied ? '✓ скопировано' : 'Копировать'}
+            </button>
+          </div>
+          {data.invitedCount > 0 && (
+            <div className="mt-3 font-sans text-[11px] text-jewelInk-mid">
+              Пригласил: {data.invitedCount} · активных: {data.activatedCount}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

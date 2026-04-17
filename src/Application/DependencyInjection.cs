@@ -3,6 +3,7 @@ using Application.Achievements.Services;
 using Application.Admin;
 using Application.Achievements.Services.Checkers;
 using Application.Common.Interfaces.Achievements;
+using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
 using Application.Quizzes.Services;
@@ -45,6 +46,12 @@ public static class DependencyInjection
         // MiniApp services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetActivityDaysQuery>();
         services.AddScoped<FeedTreatService>();
+
+        // Referral services (per ARCHITECTURE.md, no MediatR)
+        services.AddScoped<RecordReferralLinkService>();
+        services.AddScoped<TryActivateReferralService>();
+        services.AddScoped<ProcessPendingReferralsService>();
+        services.AddScoped<GetReferralInfoQuery>();
 
         // Admin queries (services per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetAdminStatsQuery>();
