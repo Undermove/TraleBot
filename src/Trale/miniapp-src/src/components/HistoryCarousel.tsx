@@ -14,7 +14,7 @@ const TOTAL = 4
  */
 export default function HistoryCarousel({ onClose }: HistoryCarouselProps) {
   const [current, setCurrent] = useState(0)
-  const [prev, setPrev] = useState<number | null>(null)
+  const [prevSlide, setPrevSlide] = useState<number | null>(null)
   const [direction, setDirection] = useState<'next' | 'prev'>('next')
   const [transitioning, setTransitioning] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -23,18 +23,18 @@ export default function HistoryCarousel({ onClose }: HistoryCarouselProps) {
 
   const goTo = (idx: number, dir: 'next' | 'prev') => {
     if (transitioning) return
-    setPrev(current)
+    setPrevSlide(current)
     setCurrent(idx)
     setDirection(dir)
     setTransitioning(true)
     setTimeout(() => {
-      setPrev(null)
+      setPrevSlide(null)
       setTransitioning(false)
     }, 240)
   }
 
   const next = () => { if (current < TOTAL - 1) goTo(current + 1, 'next') }
-  const prev_ = () => { if (current > 0) goTo(current - 1, 'prev') }
+  const prev = () => { if (current > 0) goTo(current - 1, 'prev') }
 
   const handleClose = () => {
     setClosing(true)
@@ -47,7 +47,7 @@ export default function HistoryCarousel({ onClose }: HistoryCarouselProps) {
   const onTouchEnd = (e: React.TouchEvent) => {
     const delta = touchStart.current - e.changedTouches[0].clientX
     if (Math.abs(delta) > 40) {
-      delta > 0 ? next() : prev_()
+      delta > 0 ? next() : prev()
     }
   }
 
@@ -83,9 +83,9 @@ export default function HistoryCarousel({ onClose }: HistoryCarouselProps) {
       {/* Card area */}
       <div className="flex-1 relative overflow-hidden">
         {/* Outgoing card */}
-        {transitioning && prev !== null && (
+        {transitioning && prevSlide !== null && (
           <div
-            key={`prev-${prev}`}
+            key={`prev-${prevSlide}`}
             className="absolute inset-0 flex items-center justify-center px-4"
             style={{
               animation: `history-slide-exit-${direction === 'next' ? 'left' : 'right'} 220ms ease-in both`,
@@ -96,7 +96,7 @@ export default function HistoryCarousel({ onClose }: HistoryCarouselProps) {
               style={{ maxHeight: 'calc(100dvh - 220px)' }}
             >
               <div className="relative z-[1]">
-                {renderCardContent(prev)}
+                {renderCardContent(prevSlide)}
               </div>
             </div>
           </div>
@@ -128,8 +128,7 @@ export default function HistoryCarousel({ onClose }: HistoryCarouselProps) {
         {Array.from({ length: TOTAL }, (_, i) => (
           <div
             key={i}
-            className="w-2 h-2 rounded-full transition-colors duration-200"
-            style={{ background: i === current ? '#F5B820' : 'rgba(21,16,10,0.2)' }}
+            className={`w-2 h-2 rounded-full transition-colors duration-200 ${i === current ? 'bg-gold' : 'bg-jewelInk/20'}`}
           />
         ))}
       </div>
@@ -137,7 +136,7 @@ export default function HistoryCarousel({ onClose }: HistoryCarouselProps) {
       {/* Navigation buttons */}
       <div className="flex gap-3 px-5 pb-3" style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}>
         <button
-          onClick={prev_}
+          onClick={prev}
           disabled={current === 0}
           className="jewel-btn jewel-btn-cream flex-1"
           style={{ minHeight: 52 }}
@@ -225,8 +224,7 @@ function Card2() {
       <div className="flex gap-2 mt-1">
         {/* მხედრული — active */}
         <div
-          className="flex-1 rounded-xl px-2 py-3 flex flex-col items-center gap-1 border-[1.5px] border-navy"
-          style={{ background: '#C9DBF0' }}
+          className="flex-1 rounded-xl px-2 py-3 flex flex-col items-center gap-1 border-[1.5px] border-navy bg-navy-wash"
         >
           <div className="font-sans text-[10px] font-bold text-navy text-center leading-tight">
             მხედრული
@@ -243,8 +241,7 @@ function Card2() {
 
         {/* ასომთავრული */}
         <div
-          className="flex-1 rounded-xl px-2 py-3 flex flex-col items-center gap-1 border-[1.5px] border-jewelInk/30"
-          style={{ background: '#FDFAEF' }}
+          className="flex-1 rounded-xl px-2 py-3 flex flex-col items-center gap-1 border-[1.5px] border-jewelInk/30 bg-cream-tile"
         >
           <div className="font-sans text-[10px] font-bold text-jewelInk-mid text-center leading-tight">
             ასომთავ-<br/>რული
@@ -255,8 +252,7 @@ function Card2() {
 
         {/* ნუსხური */}
         <div
-          className="flex-1 rounded-xl px-2 py-3 flex flex-col items-center gap-1 border-[1.5px] border-jewelInk/30"
-          style={{ background: '#FDFAEF' }}
+          className="flex-1 rounded-xl px-2 py-3 flex flex-col items-center gap-1 border-[1.5px] border-jewelInk/30 bg-cream-tile"
         >
           <div className="font-sans text-[10px] font-bold text-jewelInk-mid text-center leading-tight">
             ნუსხური
@@ -343,11 +339,10 @@ function Card4() {
 
       {/* Stamp — ძველი მეგობარი */}
       <div
-        className="mt-2 px-4 py-2.5 border-[1.5px] border-ruby rounded-lg rotate-xs"
+        className="mt-2 px-4 py-2.5 border-[1.5px] border-ruby rounded-lg rotate-xs bg-cream-tile"
         style={{
           maxWidth: 200,
           boxShadow: '2px 2px 0 #15100A',
-          background: '#FDFAEF',
         }}
       >
         <div className="font-geo text-[16px] font-extrabold text-ruby leading-tight">
