@@ -115,7 +115,7 @@ const FAQ_ITEMS = [
   {
     question: 'Как это работает в Telegram?',
     answer:
-      'Бомбора — это мини-апп внутри бота @trale_bot. Открывается кнопкой «🐶 Бомбора» в меню бота.',
+      'TraleBot — мини-апп внутри Telegram для изучения грузинского. Бомбора — маскот-щенок, который ведёт тебя по урокам. Открывается кнопкой «🐶 Бомбора» в меню бота @trale_bot.',
   },
   {
     question: 'Есть ли жизни, стрики или штрафы?',
@@ -147,7 +147,7 @@ export default function LandingScreen({ botUsername }: Props) {
 
       {/* ══ Hero ══ */}
       <section className="px-6 pt-10 pb-8 text-center">
-        <div className="mn-eyebrow text-navy mb-3">ბომბორა · bombora</div>
+        <div className="mn-eyebrow text-navy mb-3">TraleBot · ისწავლე ქართული</div>
 
         <h1 className="font-sans text-[36px] font-extrabold text-jewelInk leading-[1.05] tracking-tight">
           Изучение{' '}

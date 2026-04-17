@@ -184,7 +184,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
       {/* ══ Stats bar ══ */}
       <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-        <div className="mn-eyebrow">блокнот</div>
+        <div className="mn-eyebrow">TraleBot</div>
         <button
           onClick={() => navigate({ kind: 'profile' })}
           className="flex items-center gap-3 active:opacity-80 transition-opacity"
