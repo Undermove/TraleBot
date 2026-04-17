@@ -494,6 +494,20 @@ input:focus-visible {
   animation: day-tooltip-in 180ms ease-out both;
 }
 
+/* ModulePhraseBanner — slide in from above, slide back up on dismiss */
+@keyframes phrase-slide-in {
+  0% { transform: translateY(-100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes phrase-slide-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+@keyframes phrase-countdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
 /* Kilim border strip — tiny geometric motif repeated horizontally as a product signature */
 .mn-kilim {
   height: 8px;
