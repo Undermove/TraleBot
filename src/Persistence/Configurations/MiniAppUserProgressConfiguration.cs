@@ -37,6 +37,14 @@ public class MiniAppUserProgressConfiguration : IEntityTypeConfiguration<MiniApp
             .HasColumnType("text")
             .HasDefaultValue("{}");
 
+        builder.Property(x => x.XpSpent)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(x => x.TotalTreatsGiven)
+            .IsRequired()
+            .HasDefaultValue(0);
+
         builder.Property(x => x.CreatedAtUtc).IsRequired();
         builder.Property(x => x.UpdatedAtUtc).IsRequired();
 
