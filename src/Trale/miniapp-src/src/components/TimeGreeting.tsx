@@ -49,9 +49,10 @@ interface TimeGreetingProps {
 export default function TimeGreeting({ className }: TimeGreetingProps) {
   const phrase = getTimePhrase()
 
-  const seen = sessionStorage.getItem('bombora_time_greeting_noted')
   const [noteVisible, setNoteVisible] = useState(false)
-  const [noteEverOpened, setNoteEverOpened] = useState(seen === phrase.geo)
+  const [noteEverOpened, setNoteEverOpened] = useState(
+    () => sessionStorage.getItem('bombora_time_greeting_noted') === phrase.geo
+  )
 
   function handleInfoTap(e: React.MouseEvent) {
     e.stopPropagation()
