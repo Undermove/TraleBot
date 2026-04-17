@@ -177,6 +177,21 @@ export const api = {
   activityDays: (days = 35) =>
     request<{ dates: string[] }>(`/api/miniapp/activity-days?days=${days}`),
 
+  referral: () =>
+    request<{
+      link: string
+      shareText: string
+      invitedCount: number
+      activatedCount: number
+      bonusLabel: string
+      todayActivated: number
+      dailyLimit: number
+      yearActivated: number
+      yearlyLimit: number
+      trialCapReached: boolean
+      trialLimit: number
+    }>('/api/miniapp/referral'),
+
   adminStats: () => request<AdminStats>('/api/admin/stats'),
   adminSignups: (days = 30) =>
     request<{ days: number; points: Array<{ date: string; count: number }> }>(

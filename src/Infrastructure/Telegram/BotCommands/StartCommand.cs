@@ -1,16 +1,26 @@
+using Application.MiniApp.Commands;
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.Models;
 using MediatR;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig) : IBotCommand
+public class StartCommand(
+    ITelegramBotClient client,
+    IMediator mediator,
+    BotConfiguration botConfig,
+    RecordReferralLinkService referralRecorder,
+    ILoggerFactory loggerFactory) : IBotCommand
 {
+    private const string ReferralPrefix = "ref_";
+    private readonly ILogger _logger = loggerFactory.CreateLogger<StartCommand>();
+
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
@@ -33,22 +43,38 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConf
         }
 
         var commandWithArgs = request.Text.Split(' ');
+        var hasReferralArg = false;
         if (ContainsArguments(commandWithArgs))
         {
-            var result = await mediator.Send(new CreateQuizFromShareableCommand
+            var arg = commandWithArgs[1];
+            if (arg.StartsWith(ReferralPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                UserId = request.User?.Id ?? user!.Id,
-                ShareableQuizId = Guid.Parse(commandWithArgs[1])
-            }, token);
-
-            await (result switch
+                hasReferralArg = true;
+                if (long.TryParse(arg.AsSpan(ReferralPrefix.Length), out var referrerTelegramId))
+                {
+                    var refResult = await referralRecorder.ExecuteAsync(user!.Id, referrerTelegramId, token);
+                    _logger.LogInformation(
+                        "Referral attempt from /start: user {User} referrer-tg {Referrer} → {Result}",
+                        user.Id, referrerTelegramId, refResult);
+                }
+            }
+            else
             {
-                CreateQuizFromShareableResult.SharedQuizCreated created => SendFirstQuestion(request, token, created),
-                CreateQuizFromShareableResult.NotEnoughQuestionsForSharedQuiz _ => Task.CompletedTask,
-                _ => throw new ArgumentOutOfRangeException(nameof(result))
-            });
+                var result = await mediator.Send(new CreateQuizFromShareableCommand
+                {
+                    UserId = request.User?.Id ?? user!.Id,
+                    ShareableQuizId = Guid.Parse(arg)
+                }, token);
 
-            return;
+                await (result switch
+                {
+                    CreateQuizFromShareableResult.SharedQuizCreated created => SendFirstQuestion(request, token, created),
+                    CreateQuizFromShareableResult.NotEnoughQuestionsForSharedQuiz _ => Task.CompletedTask,
+                    _ => throw new ArgumentOutOfRangeException(nameof(result))
+                });
+
+                return;
+            }
         }
 
         var miniAppUrl = botConfig.MiniAppEnabled && !string.IsNullOrEmpty(botConfig.HostAddress)
@@ -74,6 +100,10 @@ public class StartCommand(ITelegramBotClient client, IMediator mediator, BotConf
 
         if (isNewUser)
         {
+            var trialLine = hasReferralArg
+                ? "Т��бе ещё и бонус: 60 дней бесплатно вм��сто 30 — за то, что пришёл по приглашению. 🎁"
+                : "Первые 30 дней — ��сё бесплатно.";
+
             var hasMiniApp = miniAppUrl != null;
             var miniAppLine = hasMiniApp
                 ? "Жми «🚀 Открыть TraleBot» — попадёшь в приложение, где есть алфавит, грамматика, словарь и квизы. Тебя там встретит щенок Бомбора 🐶 — твой гид и маскот.\n\n"
@@ -90,7 +120,7 @@ $@"გამარჯობა, {request.UserName}! 👋
 
 {miniAppLine}А ещё в чате со мной можно переводить слова — я добавлю их в твой словарь и сделаю по ним квизы. Просто напиши любое слово или фразу.
 
-Первые 30 дней — всё бесплатно.",
+{trialLine}",
                 replyMarkup: keyboard,
                 cancellationToken: token);
         }
