@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Header from '../components/Header'
 import Mascot from '../components/Mascot'
 import ProPaywall from '../components/ProPaywall'
-import { CatalogDto, ProgressState, Screen } from '../types'
+import KilimProgress from '../components/KilimProgress'
+import AlphabetGrid from '../components/AlphabetGrid'
+import LetterPopover from '../components/LetterPopover'
+import { AlphabetLetterDto, CatalogDto, ProgressState, Screen } from '../types'
 import { api } from '../api'
 
 interface Props {
@@ -51,6 +54,9 @@ function pickEncouragement(streak: number, totalLessons: number): string {
 export default function Profile({ catalog, progress, isPro, isOwner = false, telegramId, onPurchaseSuccess, navigate }: Props) {
   const [showPaywall, setShowPaywall] = useState(false)
   const [activityDates, setActivityDates] = useState<Set<string>>(new Set())
+  const [selectedLetter, setSelectedLetter] = useState<string | null>(null)
+  const [showReveal, setShowReveal] = useState(false)
+  const [stampFadingOut, setStampFadingOut] = useState(false)
 
   const modules = catalog.modules
   const totalDone = Object.values(progress.completedLessons).reduce(
@@ -69,6 +75,41 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
       total: m.lessons.length
     }))
     .sort((a, b) => b.done - a.done)[0]
+
+  // Build learned letters set and letter data map from catalog + progress
+  const { learnedLetters, letterData } = useMemo(() => {
+    const alphabetModule = catalog.modules.find((m) => m.id === 'alphabet-progressive')
+    const completedIds = new Set(progress.completedLessons['alphabet-progressive'] ?? [])
+    const learned = new Set<string>()
+    const data = new Map<string, AlphabetLetterDto>()
+    for (const lesson of alphabetModule?.lessons ?? []) {
+      for (const block of lesson.theory.blocks) {
+        if (block.type === 'letters' && block.letters) {
+          for (const dto of block.letters) {
+            data.set(dto.letter, dto)
+            if (completedIds.has(lesson.id)) {
+              learned.add(dto.letter)
+            }
+          }
+        }
+      }
+    }
+    return { learnedLetters: learned, letterData: data }
+  }, [catalog, progress.completedLessons])
+
+  const learnedCount = learnedLetters.size
+
+  // Trigger 33/33 reveal animation once
+  useEffect(() => {
+    if (learnedCount === 33 && localStorage.getItem('bombora_alphabet_complete_shown') !== '1') {
+      localStorage.setItem('bombora_alphabet_complete_shown', '1')
+      setShowReveal(true)
+      setStampFadingOut(false)
+      const t1 = setTimeout(() => setStampFadingOut(true), 2000)
+      const t2 = setTimeout(() => setShowReveal(false), 2300)
+      return () => { clearTimeout(t1); clearTimeout(t2) }
+    }
+  }, [learnedCount])
 
   useEffect(() => {
     let cancelled = false
@@ -164,6 +205,62 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           <StatCard label="стрик" value={`${progress.streak}`} unit="дн" accent="ruby" />
           <StatCard label="опыт" value={`${progress.xp}`} unit="xp" accent="navy" />
           <StatCard label="всего" value={`${totalDone}`} unit="ур" accent="gold" />
+        </div>
+
+        {/* My Alphabet widget */}
+        <div className="mn-eyebrow mb-2">мой алфавит</div>
+        <div className="jewel-tile px-4 py-4 mb-5 relative overflow-hidden">
+          <div className="relative z-[1]">
+            {/* Counter */}
+            <div className="font-sans text-[15px] font-extrabold text-navy mb-3">
+              {learnedCount} / 33 буквы
+            </div>
+
+            {/* KilimProgress */}
+            <div className="mb-3">
+              <KilimProgress done={learnedCount} total={33} accent="navy" size="sm" />
+            </div>
+
+            {/* Grid or empty state */}
+            {learnedCount === 0 ? (
+              <div className="flex items-start gap-3">
+                <div className="shrink-0">
+                  <Mascot mood="guide" size={48} />
+                </div>
+                <div className="mn-eyebrow text-jewelInk-hint leading-relaxed">
+                  Начни модуль «Алфавит» — буквы откроются по мере уроков
+                </div>
+              </div>
+            ) : (
+              <AlphabetGrid
+                learnedLetters={learnedLetters}
+                letterData={letterData}
+                onLetterTap={setSelectedLetter}
+                goldFlash={showReveal}
+              />
+            )}
+          </div>
+
+          {/* 33/33 reveal stamp */}
+          {showReveal && (
+            <div
+              className="absolute inset-0 flex items-center justify-center z-[2]"
+              style={{
+                opacity: stampFadingOut ? 0 : 1,
+                transition: stampFadingOut ? 'opacity 300ms ease-in' : 'none'
+              }}
+            >
+              <div
+                className="bg-gold border-[1.5px] border-jewelInk rounded-lg px-4 py-2 text-center"
+                style={{ boxShadow: 'none' }}
+              >
+                <div className="font-geo text-[22px] text-jewelInk">მთელი ანბანი!</div>
+                <div className="font-sans text-[13px] text-jewelInk-mid mt-1">
+                  Ты знаешь весь грузинский алфавит
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Favorite module */}
@@ -285,6 +382,16 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
             setShowPaywall(false)
             onPurchaseSuccess()
           }}
+        />
+      )}
+
+      {/* Letter popover — rendered at root for correct fixed positioning */}
+      {selectedLetter !== null && (
+        <LetterPopover
+          letter={selectedLetter}
+          data={letterData.get(selectedLetter) ?? null}
+          isLearned={learnedLetters.has(selectedLetter)}
+          onClose={() => setSelectedLetter(null)}
         />
       )}
     </div>
@@ -535,6 +642,7 @@ function OwnerDebugPanel() {
   const actions = [
     { label: 'Сбросить reveal ქ', hint: 'Покажет оверлей буквы ქ снова', fn: () => clearKeys(['bombora_kani_reveal_shown'], 'kani reveal') },
     { label: 'Сбросить unlock-анимации', hint: 'Повторит анимацию открытия секций', fn: () => clearKeys(['bombora_unlocked_once'], 'unlock') },
+    { label: 'Сбросить алфавит 33/33', hint: 'Повторит анимацию завершения алфавита', fn: () => clearKeys(['bombora_alphabet_complete_shown'], 'alphabet complete') },
     { label: 'Очистить весь localStorage', hint: 'Онбординг, прогресс UI, флаги', fn: clearAllLocalStorage },
     { label: 'Reload мини-аппа', hint: 'location.reload()', fn: reload },
   ]

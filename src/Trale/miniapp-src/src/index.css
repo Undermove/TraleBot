@@ -493,6 +493,16 @@ input:focus-visible {
   background-size: 32px 8px;
 }
 
+/* Gold flash — all alphabet tiles flash gold when user reaches 33/33 letters */
+@keyframes goldFlash {
+  0%   { background-color: #1B5FB0; }
+  40%  { background-color: #F5B820; }
+  100% { background-color: #1B5FB0; }
+}
+.gold-flash-anim {
+  animation: goldFlash 600ms ease-in-out both;
+}
+
 /* Full-viewport-width kilim strip — breaks out of max-width:480px container.
    Used only on LandingScreen where kilim must span the full browser window. */
 .mn-kilim-full {
