@@ -188,6 +188,8 @@ export const api = {
       dailyLimit: number
       yearActivated: number
       yearlyLimit: number
+      trialCapReached: boolean
+      trialLimit: number
     }>('/api/miniapp/referral'),
 
   adminStats: () => request<AdminStats>('/api/admin/stats'),

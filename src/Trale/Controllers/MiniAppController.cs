@@ -393,7 +393,9 @@ public class MiniAppController : Controller
             todayActivated = info.TodayActivated,
             dailyLimit = info.DailyLimit,
             yearActivated = info.YearActivated,
-            yearlyLimit = info.YearlyLimit
+            yearlyLimit = info.YearlyLimit,
+            trialCapReached = info.TrialCapReached,
+            trialLimit = info.TrialLimit
         });
     }
 

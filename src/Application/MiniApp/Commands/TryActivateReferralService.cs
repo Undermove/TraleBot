@@ -23,6 +23,9 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
     private const int MinSecondsBetweenRegistrationAndActivation = 3600; // 1 hour
     private const int DailyActivationCapPerReferrer = 5;
     private const int YearlyActivationCapPerReferrer = 12;
+    /// <summary>Trial/free users can only earn this many activations total — ever.
+    /// 3 × 7 = 21 bonus days + 30 base trial ≈ 2 months free. After that, go Pro.</summary>
+    public const int TrialLifetimeActivationCap = 3;
 
     public const int DailyActivationCap = DailyActivationCapPerReferrer;
     public const int YearlyActivationCap = YearlyActivationCapPerReferrer;
@@ -65,6 +68,19 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
         var referrer = await db.Users.FirstOrDefaultAsync(u => u.Id == referral.ReferrerUserId, ct);
         if (referrer == null) return TryActivateReferralResult.ReferrerGone;
 
+        // Trial/free users have a hard lifetime cap on activations (≈2 months free total)
+        var isTrialOrFree = !referrer.IsPro;
+        if (isTrialOrFree)
+        {
+            var totalActivations = await db.Referrals
+                .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
+                              && r.ActivatedAtUtc != null, ct);
+            if (totalActivations >= TrialLifetimeActivationCap)
+            {
+                return TryActivateReferralResult.TrialCapReached;
+            }
+        }
+
         // Apply the referrer reward
         int days;
         if (referrer.IsPro && referrer.SubscriptionPlan == SubscriptionPlan.Lifetime)
@@ -102,5 +118,6 @@ public enum TryActivateReferralResult
     TooEarly,
     DailyCapReached,
     YearlyCapReached,
+    TrialCapReached,
     ReferrerGone
 }

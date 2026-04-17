@@ -411,6 +411,8 @@ function ReferralCard() {
     dailyLimit: number
     yearActivated: number
     yearlyLimit: number
+    trialCapReached: boolean
+    trialLimit: number
   } | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -494,9 +496,11 @@ function ReferralCard() {
             </div>
           )}
           <div className="mt-2 font-sans text-[10px] text-jewelInk-hint">
-            {data.todayActivated >= data.dailyLimit
-              ? 'Сегодня лимит достигнут, бонусы продолжатся завтра'
-              : `До ${data.dailyLimit} бонусов в день · до ${data.yearlyLimit} в год`}
+            {data.trialCapReached
+              ? 'Максимум бонусов получен. Оформи Pro — и получай +30 дней за каждого друга'
+              : data.todayActivated >= data.dailyLimit
+                ? 'Сегодня лимит достигнут, бонусы продолжатся завтра'
+                : `До ${data.dailyLimit} бонусов в день · до ${data.yearlyLimit} в год`}
           </div>
         </div>
       </div>

@@ -50,6 +50,8 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             bonusLabel = $"+{TryActivateReferralService.ReferrerTrialBonusDays} дней триала за каждого активного друга";
         }
 
+        var isTrialOrFree = !user.IsPro;
+
         return new GetReferralInfoResult
         {
             ReferrerTelegramId = user.TelegramId,
@@ -59,7 +61,9 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             TodayActivated = todayActivated,
             DailyLimit = TryActivateReferralService.DailyActivationCap,
             YearActivated = yearActivated,
-            YearlyLimit = TryActivateReferralService.YearlyActivationCap
+            YearlyLimit = TryActivateReferralService.YearlyActivationCap,
+            TrialCapReached = isTrialOrFree && activated >= TryActivateReferralService.TrialLifetimeActivationCap,
+            TrialLimit = TryActivateReferralService.TrialLifetimeActivationCap
         };
     }
 }
@@ -74,4 +78,6 @@ public class GetReferralInfoResult
     public int DailyLimit { get; init; }
     public int YearActivated { get; init; }
     public int YearlyLimit { get; init; }
+    public bool TrialCapReached { get; init; }
+    public int TrialLimit { get; init; }
 }
