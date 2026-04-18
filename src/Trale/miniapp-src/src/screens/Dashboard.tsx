@@ -7,11 +7,26 @@ import DashboardTopBar from '../components/DashboardTopBar'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import TreatShop from '../components/TreatShop'
 import FeedingAnimation from '../components/FeedingAnimation'
+import LaunchPathBar from '../components/LaunchPathBar'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
 const XP_THRESHOLDS = Object.keys(XP_MILESTONES).map(Number)
 const STREAK_THRESHOLDS = Object.keys(STREAK_MILESTONES).map(Number)
+
+// Ordered launch path modules shown in «старт» section
+const LAUNCH_MODULE_IDS = ['alphabet-progressive', 'numbers', 'intro', 'pronouns', 'present-tense']
+// Fixed Georgian numeral letters for the 5 launch tiles (ა=1 … ე=5)
+const LAUNCH_GEO_NUMERALS = ['ა', 'ბ', 'გ', 'დ', 'ე']
+
+function pluralDays(n: number): string {
+  const mod100 = n % 100
+  const mod10 = n % 10
+  if (mod100 >= 11 && mod100 <= 14) return 'дней'
+  if (mod10 === 1) return 'день'
+  if (mod10 >= 2 && mod10 <= 4) return 'дня'
+  return 'дней'
+}
 
 interface Props {
   catalog: CatalogDto
@@ -26,56 +41,14 @@ interface Props {
   navigate: (s: Screen) => void
 }
 
-// Ordered unlock chain for beginners: each section unlocks when the previous is fully done
-const UNLOCK_CHAIN = ['basics', 'grammar', 'vocab', 'advanced']
-
-function pluralDays(n: number): string {
-  const mod100 = n % 100
-  const mod10 = n % 10
-  if (mod100 >= 11 && mod100 <= 14) return 'дней'
-  if (mod10 === 1) return 'день'
-  if (mod10 >= 2 && mod10 <= 4) return 'дня'
-  return 'дней'
-}
-
-function getSectionProgress(
-  modules: ModuleDto[],
-  completedLessons: Record<string, number[]>
-): { total: number; done: number } {
-  let total = 0
-  let done = 0
-  for (const m of modules) {
-    total += m.lessons.length
-    done += (completedLessons[m.id] ?? []).length
-  }
-  return { total, done }
-}
-
-function isSectionUnlocked(
-  key: string,
-  sections: Array<{ key: string; modules: ModuleDto[] }>,
-  completedLessons: Record<string, number[]>
-): boolean {
-  if (key === 'basics' || key === 'myvocab') return true
-  const idx = UNLOCK_CHAIN.indexOf(key)
-  if (idx <= 0) return true
-  const prevKey = UNLOCK_CHAIN[idx - 1]
-  const prevSection = sections.find((s) => s.key === prevKey)
-  if (!prevSection) return true
-  const { total, done } = getSectionProgress(prevSection.modules, completedLessons)
-  return total > 0 && done >= total
-}
-
 /**
- * Dashboard — Minanka pilot.
+ * Dashboard — Minankari pilot.
  *
- * Board game tiles + Georgian enamel palette.
- * Learning-design: module numbers use Georgian numeral letters (ა=1, ბ=2, გ=3),
- * module icons use meaningful Georgian letters that tie into what's taught,
- * product signature is a tiny kilim strip at the top.
+ * 2-section layout:
+ *   «старт» — 5 fixed launch modules + LaunchPathBar + «Мой словарь»
+ *   «все темы» — all other active modules, collapsible (default: collapsed)
  */
-export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
-  const isBeginner = userLevel === 'beginner'
+export default function Dashboard({ catalog, progress, todayLessons, userLevel: _userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
   const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
 
@@ -93,41 +66,20 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     }
   }, [isPro])
 
-  // Section data — defined early so unlock logic can reference them
-  const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
-  const grammarIds = ['pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives']
-  const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
-  const advancedIds = [
-    'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
-    'pronoun-declension', 'conditionals', 'verbs-of-movement',
-  ]
-
-  const basics = catalog.modules.filter((m) => basicsIds.includes(m.id))
-  const grammar = catalog.modules.filter((m) => grammarIds.includes(m.id))
-  const vocab = catalog.modules.filter((m) => vocabIds.includes(m.id))
-  const advanced = catalog.modules.filter((m) => advancedIds.includes(m.id))
-  const myVocab = catalog.modules.filter((m) => m.id === 'my-vocabulary')
-
-  const sections = [
-    { key: 'basics', label: 'основы', geoLabel: 'საფუძვლები', modules: basics, accent: 'navy' as const },
-    { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const },
-    { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const },
-    { key: 'advanced', label: 'продвинутое', geoLabel: 'გაღრმავება', modules: advanced, accent: 'ruby' as const },
-    { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
-  ]
-
-  // Per-section collapse state (persisted in localStorage)
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+  // «все темы» collapse state (default: collapsed for all users)
+  const [allThemesCollapsed, setAllThemesCollapsed] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('bombora_collapsed')
-      return saved ? JSON.parse(saved) : {}
-    } catch { return {} }
+      return (localStorage.getItem('bombora_allthemes_collapsed') ?? 'true') === 'true'
+    } catch { return true }
   })
 
-  // Sections currently playing the one-time unlock animation
-  const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set())
-  // Temporary mascot cheer after unlock sequence (step 5: 500ms in, lasts 2s)
-  const [mascotCheering, setMascotCheering] = useState(false)
+  function toggleAllThemes() {
+    setAllThemesCollapsed((prev) => {
+      const next = !prev
+      try { localStorage.setItem('bombora_allthemes_collapsed', String(next)) } catch {}
+      return next
+    })
+  }
 
   // Milestone banner — shown when XP or streak crosses a threshold for the first time
   const [milestone, setMilestone] = useState<{ type: 'xp' | 'streak'; value: number } | null>(null)
@@ -137,50 +89,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   const [treatShopOpen, setTreatShopOpen] = useState(false)
   const [feedingAnimation, setFeedingAnimation] = useState<number | null>(null)
   const [feedToast, setFeedToast] = useState<string | null>(null)
-
-  // Detect newly unlocked sections on mount — play the one-time animation sequence
-  useEffect(() => {
-    if (!isBeginner) return
-    try {
-      const saved = localStorage.getItem('bombora_unlocked_once')
-      const prevSeen = new Set<string>(saved ? JSON.parse(saved) : [])
-
-      const newlyUnlocked: string[] = []
-      for (const section of sections) {
-        if (section.key === 'basics' || section.key === 'myvocab') continue
-        if (
-          isSectionUnlocked(section.key, sections, progress.completedLessons) &&
-          !prevSeen.has(section.key)
-        ) {
-          newlyUnlocked.push(section.key)
-        }
-      }
-
-      if (newlyUnlocked.length > 0) {
-        // Persist so animation only plays once per section unlock
-        localStorage.setItem(
-          'bombora_unlocked_once',
-          JSON.stringify([...prevSeen, ...newlyUnlocked])
-        )
-        // Auto-expand newly unlocked sections so tiles are visible
-        setCollapsedSections((prev) => {
-          const next = { ...prev }
-          for (const key of newlyUnlocked) next[key] = false
-          try { localStorage.setItem('bombora_collapsed', JSON.stringify(next)) } catch {}
-          return next
-        })
-        setAnimatingSections(new Set(newlyUnlocked))
-        // Bombora cheers at 500ms (step 5 of animation sequence)
-        const cheerTimer = setTimeout(() => {
-          setMascotCheering(true)
-          setTimeout(() => setMascotCheering(false), 2000)
-        }, 500)
-        // Clear animation classes after 600ms (sequence complete)
-        const clearTimer = setTimeout(() => setAnimatingSections(new Set()), 600)
-        return () => { clearTimeout(cheerTimer); clearTimeout(clearTimer) }
-      }
-    } catch { /* ignore storage errors */ }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detect milestone crossings — show banner once per threshold
   useEffect(() => {
@@ -212,15 +120,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     prevProgressRef.current = progress
   }, [progress.xp, progress.streak])
 
-  // Toggle using the current visual state so beginner defaults are respected
-  function toggleSection(key: string, currentlyCollapsed: boolean) {
-    setCollapsedSections((prev) => {
-      const next = { ...prev, [key]: !currentlyCollapsed }
-      try { localStorage.setItem('bombora_collapsed', JSON.stringify(next)) } catch {}
-      return next
-    })
-  }
-
   return (
     <div className="flex flex-col min-h-full bg-cream">
       {/* ══ Kilim + stats bar ══ */}
@@ -250,9 +149,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 : progress.lastTreatIndex >= 2
                   ? 2
                   : 1
-          // Priority: unlock celebration > sated (recently fed) > hungry > baseline
+          // Priority: sated (recently fed) > hungry > baseline
           const mascotMood: 'happy' | 'cheer' | 'think' | 'guide' | 'sleep' | 'hungry' | 'sated' =
-            mascotCheering ? 'cheer' : recentlyFed ? 'sated' : isHungry ? 'hungry' : baseMood
+            recentlyFed ? 'sated' : isHungry ? 'hungry' : baseMood
           // Single status line — chooses the most contextual message
           const statusLine = recentlyFed
             ? 'Бомбора доволен 💛'
@@ -372,239 +271,213 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           'intro': 'navy', 'emergency': 'ruby', 'my-vocabulary': 'gold',
         }
 
-        let globalIdx = 0
+        // Compute which launch modules are fully completed (for LaunchPathBar)
+        const completedModuleIds = LAUNCH_MODULE_IDS.filter((id) => {
+          const m = catalog.modules.find((mod) => mod.id === id)
+          return m && m.lessons.length > 0 && (progress.completedLessons[id]?.length ?? 0) >= m.lessons.length
+        })
+
+        // Launch path: ordered by LAUNCH_MODULE_IDS
+        const launchModules = LAUNCH_MODULE_IDS
+          .map((id) => catalog.modules.find((m) => m.id === id))
+          .filter((m): m is ModuleDto => m !== undefined)
+
+        const myVocabModule = catalog.modules.find((m) => m.id === 'my-vocabulary')
+
+        // «все темы»: all modules except launch path and my-vocabulary
+        const allThemesModules = catalog.modules.filter(
+          (m) => !LAUNCH_MODULE_IDS.includes(m.id) && m.id !== 'my-vocabulary'
+        )
+
+        // Shared tile renderer
+        function renderTile(m: ModuleDto, geoNum: string, animIdx: number) {
+          const hasLessons = m.lessons.length > 0
+          const done = (progress.completedLessons[m.id] ?? []).length
+          const total = m.lessons.length
+          const isComplete = hasLessons && done === total
+
+          const icon = moduleIcons[m.id] ?? '?'
+          const moduleGeo = moduleGeoLabels[m.id] ?? ''
+          const accent = moduleAccents[m.id] ?? 'navy'
+          const accentBg = accent === 'navy' ? 'bg-navy' : accent === 'ruby' ? 'bg-ruby' : 'bg-gold'
+          const accentText = accent === 'navy' ? 'text-navy' : accent === 'ruby' ? 'text-ruby' : 'text-gold-deep'
+
+          const isProLocked = !hasAccess && PRO_MODULE_IDS.has(m.id)
+          const isVocabAtLimit = !hasAccess && m.id === 'my-vocabulary' && (progress.completedLessons['my-vocabulary']?.length ?? 0) >= 50
+
+          return (
+            <button
+              key={m.id}
+              onClick={() => {
+                if (isProLocked) {
+                  setPaywall({ trigger: 'module' })
+                } else if (isVocabAtLimit) {
+                  setPaywall({ trigger: 'vocabulary_limit' })
+                } else if (m.id === 'my-vocabulary') {
+                  navigate({ kind: 'vocabulary-list' })
+                } else {
+                  navigate({ kind: 'module', moduleId: m.id })
+                }
+              }}
+              className="jewel-tile jewel-pressable text-left px-4 py-4"
+              style={{ animationDelay: `${120 + animIdx * 50}ms` }}
+            >
+              <div className="flex items-center gap-3.5 relative z-[1]">
+                {/* Icon medallion */}
+                <div className="shrink-0 relative">
+                  <div
+                    className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center${isProLocked ? ' opacity-60' : ''}`}
+                    style={{ boxShadow: '2px 2px 0 #15100A' }}
+                  >
+                    <span className="font-geo text-[24px] font-extrabold text-cream leading-none">
+                      {icon}
+                    </span>
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cream border-[1.5px] border-jewelInk flex items-center justify-center">
+                    <span className={`font-geo text-[9px] font-bold ${accentText} leading-none`}>
+                      {geoNum}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight tracking-tight truncate">
+                      {m.title}
+                    </h2>
+                    {moduleGeo && (
+                      <span className="font-geo text-[10px] text-jewelInk-hint font-semibold shrink-0">
+                        {moduleGeo}
+                      </span>
+                    )}
+                    {(isProLocked || isVocabAtLimit) && (
+                      <span className="shrink-0 ml-auto">
+                        <ProBadge />
+                      </span>
+                    )}
+                  </div>
+                  {hasLessons ? (
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex-1">
+                        <KilimProgress done={done} total={total} accent={accent} />
+                      </div>
+                      <span className="font-sans text-[11px] font-bold tabular-nums shrink-0">
+                        {isComplete ? (
+                          <span className="text-gold-deep">✓</span>
+                        ) : isProLocked ? (
+                          <span className="text-jewelInk-hint">{total} уроков</span>
+                        ) : (
+                          <>
+                            <span className={accentText}>{done}</span>
+                            <span className="text-jewelInk-hint">/{total}</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="mt-1">
+                      <span className="font-sans text-[12px] text-jewelInk-mid">
+                        {isVocabAtLimit ? '50 слов — лимит Free' : 'твои слова · квизы на выбор'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-jewelInk-hint relative z-[1]">
+                  <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </button>
+          )
+        }
+
+        const geoNumerals = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'ჱ', 'თ', 'ი', 'კ', 'ლ']
 
         return (
           <>
-          {/* Trial banner — visible while trial is active (not for Pro users) */}
-          {isTrialActive && !isPro && trialDaysLeft > 0 && (
-            <div className="px-5 pt-2 pb-1">
-              <div
-                className="jewel-tile px-4 py-3 flex items-center gap-3"
-                style={{ background: '#FBF6EC' }}
-              >
-                <div className="relative z-[1] text-[22px] leading-none shrink-0">⭐</div>
-                <div className="relative z-[1] flex-1 min-w-0">
-                  <div className="font-sans text-[13px] font-extrabold text-jewelInk leading-tight">
-                    Бесплатный период — {trialDaysLeft} {pluralDays(trialDaysLeft)} осталось
-                  </div>
-                  <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
-                    Все модули открыты — учи грузинский без ограничений
-                  </div>
-                </div>
-                <button
-                  onClick={() => setPaywall({ trigger: 'module' })}
-                  className="relative z-[1] shrink-0 px-3 py-1.5 rounded-lg font-sans text-[11px] font-extrabold"
-                  style={{ background: '#F5B820', color: '#15100A', border: '1.5px solid #15100A' }}
+            {/* Trial banner — visible while trial is active (not for Pro users) */}
+            {isTrialActive && !isPro && trialDaysLeft > 0 && (
+              <div className="px-5 pt-2 pb-1">
+                <div
+                  className="jewel-tile px-4 py-3 flex items-center gap-3"
+                  style={{ background: '#FBF6EC' }}
                 >
-                  купить
-                </button>
-              </div>
-            </div>
-          )}
-          {sections.map((section) => {
-            if (section.modules.length === 0) return null
-
-            // Section-level locking is disabled — users can expand any section.
-            // Per-module gating (isProLocked) handles Pro/trial access below.
-            const isLocked = false
-            const isAnimatingUnlock = animatingSections.has(section.key)
-
-            // Determine collapsed state: localStorage overrides beginner defaults
-            const hasUserInteracted = Object.prototype.hasOwnProperty.call(collapsedSections, section.key)
-            const defaultCollapsed = isBeginner && section.key !== 'basics' && section.key !== 'myvocab'
-            const isUserCollapsed = hasUserInteracted ? collapsedSections[section.key] === true : defaultCollapsed
-
-            // Compute locked hint: show when previous section is ≥80% done
-            let lockedHint: string | null = null
-            if (isLocked) {
-              const chainIdx = UNLOCK_CHAIN.indexOf(section.key)
-              if (chainIdx > 0) {
-                const prevKey = UNLOCK_CHAIN[chainIdx - 1]
-                const prevSection = sections.find((s) => s.key === prevKey)
-                if (prevSection) {
-                  const { total, done } = getSectionProgress(prevSection.modules, progress.completedLessons)
-                  if (total > 0 && done / total >= 0.8) {
-                    const remaining = total - done
-                    lockedHint = remaining === 1
-                      ? 'ერთი გაკვეთილი — и раздел откроется'
-                      : `Ещё ${remaining} уроков до разблокировки`
-                  }
-                }
-              }
-            }
-
-            return (
-              <div key={section.key}>
-                {/* Section header */}
-                {isLocked ? (
-                  /* Locked: visual-only, не реагирует на тапы */
-                  <div
-                    className="w-full px-5 pt-4 pb-3 flex items-center gap-3 opacity-60 transition-opacity duration-200"
-                    style={{ pointerEvents: 'none' }}
-                    role="button"
-                    aria-disabled="true"
-                    aria-label="Раздел заблокирован. Пройдите предыдущий раздел, чтобы открыть."
-                  >
-                    <div className="mn-eyebrow">{section.label}</div>
-                    <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
-                    <div className="flex-1 h-px bg-jewelInk/15" />
-                    {/* Lock icon — 12×12 padlock */}
-                    <svg
-                      width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      className="shrink-0 text-jewelInk-hint"
-                      aria-hidden="true"
-                    >
-                      <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2.5" />
-                      <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                ) : (
-                  /* Unlocked — tappable to collapse/expand, gold pulse animation on first unlock */
-                  <button
-                    onClick={() => toggleSection(section.key, isUserCollapsed)}
-                    className={`w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity${isAnimatingUnlock ? ' unlock-pulse' : ''}`}
-                  >
-                    <div className="mn-eyebrow">{section.label}</div>
-                    <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
-                    <div className="flex-1 h-px bg-jewelInk/15" />
-                    <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
-                      {section.modules.length}
+                  <div className="relative z-[1] text-[22px] leading-none shrink-0">⭐</div>
+                  <div className="relative z-[1] flex-1 min-w-0">
+                    <div className="font-sans text-[13px] font-extrabold text-jewelInk leading-tight">
+                      Бесплатный период — {trialDaysLeft} {pluralDays(trialDaysLeft)} осталось
                     </div>
-                    <svg
-                      width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${isUserCollapsed ? '-rotate-90' : ''}`}
-                    >
-                      <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                )}
-
-                {/* Hint below locked header — appears when previous section is ≥80% done */}
-                {lockedHint && (
-                  <div className="font-sans text-[11px] text-jewelInk-hint px-5 pb-2">
-                    {lockedHint}
+                    <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
+                      Все модули открыты — учи грузинский без ограничений
+                    </div>
                   </div>
-                )}
-
-                {/* Module tiles — hidden when locked or collapsed */}
-                {!isLocked && !isUserCollapsed && (
-                  <section className="px-5 flex flex-col gap-3 pb-2">
-                    {section.modules.map((m, tileIdx) => {
-                      const currentIdx = globalIdx++
-                      const hasLessons = m.lessons.length > 0
-                      const done = (progress.completedLessons[m.id] ?? []).length
-                      const total = m.lessons.length
-                      const isComplete = hasLessons && done === total
-
-                      const geoNumerals = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'ჱ', 'თ', 'ი', 'კ', 'ლ']
-                      const geoNum = geoNumerals[currentIdx] ?? '?'
-                      const icon = moduleIcons[m.id] ?? '?'
-                      const moduleGeo = moduleGeoLabels[m.id] ?? ''
-                      const accent = moduleAccents[m.id] ?? section.accent
-                      const accentBg = accent === 'navy' ? 'bg-navy' : accent === 'ruby' ? 'bg-ruby' : 'bg-gold'
-                      const accentText = accent === 'navy' ? 'text-navy' : accent === 'ruby' ? 'text-ruby' : 'text-gold-deep'
-
-                      // During unlock animation: stagger tiles from 300ms (spec step 4); otherwise normal entrance
-                      const tileAnimClass = isAnimatingUnlock ? ' tile-appear' : ''
-                      const tileAnimDelay = isAnimatingUnlock
-                        ? 300 + tileIdx * 60
-                        : 120 + currentIdx * 50
-
-                      const isProLocked = !hasAccess && PRO_MODULE_IDS.has(m.id)
-                      const isVocabAtLimit = !hasAccess && m.id === 'my-vocabulary' && (progress.completedLessons['my-vocabulary']?.length ?? 0) >= 50
-
-                      return (
-                        <button
-                          key={m.id}
-                          onClick={() => {
-                            if (isProLocked) {
-                              setPaywall({ trigger: 'module' })
-                            } else if (isVocabAtLimit) {
-                              setPaywall({ trigger: 'vocabulary_limit' })
-                            } else if (m.id === 'my-vocabulary') {
-                              navigate({ kind: 'vocabulary-list' })
-                            } else {
-                              navigate({ kind: 'module', moduleId: m.id })
-                            }
-                          }}
-                          className={`jewel-tile jewel-pressable text-left px-4 py-4${tileAnimClass}`}
-                          style={{ animationDelay: `${tileAnimDelay}ms` }}
-                        >
-                          <div className="flex items-center gap-3.5 relative z-[1]">
-                            {/* Icon medallion */}
-                            <div className="shrink-0 relative">
-                              <div
-                                className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center${isProLocked ? ' opacity-60' : ''}`}
-                                style={{ boxShadow: '2px 2px 0 #15100A' }}
-                              >
-                                <span className="font-geo text-[24px] font-extrabold text-cream leading-none">
-                                  {icon}
-                                </span>
-                              </div>
-                              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cream border-[1.5px] border-jewelInk flex items-center justify-center">
-                                <span className={`font-geo text-[9px] font-bold ${accentText} leading-none`}>
-                                  {geoNum}
-                                </span>
-                              </div>
-                            </div>
-
-                            {/* Body */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h2 className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight tracking-tight truncate">
-                                  {m.title}
-                                </h2>
-                                {moduleGeo && (
-                                  <span className="font-geo text-[10px] text-jewelInk-hint font-semibold shrink-0">
-                                    {moduleGeo}
-                                  </span>
-                                )}
-                                {(isProLocked || isVocabAtLimit) && (
-                                  <span className="shrink-0 ml-auto">
-                                    <ProBadge />
-                                  </span>
-                                )}
-                              </div>
-                              {hasLessons ? (
-                                <div className="flex items-center gap-2 mt-1.5">
-                                  <div className="flex-1">
-                                    <KilimProgress done={done} total={total} accent={accent} />
-                                  </div>
-                                  <span className="font-sans text-[11px] font-bold tabular-nums shrink-0">
-                                    {isComplete ? (
-                                      <span className="text-gold-deep">✓</span>
-                                    ) : isProLocked ? (
-                                      <span className="text-jewelInk-hint">{total} уроков</span>
-                                    ) : (
-                                      <>
-                                        <span className={accentText}>{done}</span>
-                                        <span className="text-jewelInk-hint">/{total}</span>
-                                      </>
-                                    )}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="mt-1">
-                                  <span className="font-sans text-[12px] text-jewelInk-mid">
-                                    {isVocabAtLimit ? '50 слов — лимит Free' : 'твои слова · квизы на выбор'}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="shrink-0 text-jewelInk-hint relative z-[1]">
-                              <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </section>
-                )}
+                  <button
+                    onClick={() => setPaywall({ trigger: 'module' })}
+                    className="relative z-[1] shrink-0 px-3 py-1.5 rounded-lg font-sans text-[11px] font-extrabold"
+                    style={{ background: '#F5B820', color: '#15100A', border: '1.5px solid #15100A' }}
+                  >
+                    купить
+                  </button>
+                </div>
               </div>
-            )
-          })}
+            )}
+
+            {/* ── «старт» section header ── */}
+            <div className="w-full px-5 pt-4 pb-3 flex items-center gap-3">
+              <div className="mn-eyebrow">старт</div>
+              <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">დასაწყისი</div>
+              <div className="flex-1 h-px bg-jewelInk/15" />
+            </div>
+
+            {/* ── Launch modules ა–ე ── */}
+            <section className="px-5 flex flex-col gap-3 pb-2">
+              {launchModules.map((m, idx) =>
+                renderTile(m, LAUNCH_GEO_NUMERALS[idx] ?? '?', idx)
+              )}
+            </section>
+
+            {/* ── LaunchPathBar ── */}
+            <LaunchPathBar
+              completedModules={completedModuleIds}
+              launchModuleIds={LAUNCH_MODULE_IDS}
+            />
+
+            {/* ── «Мой словарь» (ვ) ── */}
+            {myVocabModule && (
+              <section className="px-5 pb-2">
+                {renderTile(myVocabModule, 'ვ', 5)}
+              </section>
+            )}
+
+            {/* ── «все темы» section header (collapsible) ── */}
+            <button
+              onClick={toggleAllThemes}
+              className="w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity"
+              style={{ minHeight: 48 }}
+            >
+              <div className="mn-eyebrow">все темы</div>
+              <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">ყველა თემა</div>
+              <div className="flex-1 h-px bg-jewelInk/15" />
+              <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
+                {allThemesModules.length}
+              </div>
+              <svg
+                width="12" height="12" viewBox="0 0 24 24" fill="none"
+                className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${allThemesCollapsed ? '-rotate-90' : ''}`}
+              >
+                <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {/* ── «все темы» module tiles ── */}
+            {!allThemesCollapsed && (
+              <section className="px-5 flex flex-col gap-3 pb-2">
+                {allThemesModules.map((m, idx) =>
+                  renderTile(m, geoNumerals[idx] ?? '?', idx)
+                )}
+              </section>
+            )}
           </>
         )
       })()}
@@ -859,4 +732,3 @@ function computeHero(
 
   return { greeting, mascotMood, satiety, satietyText, suggestion }
 }
-
