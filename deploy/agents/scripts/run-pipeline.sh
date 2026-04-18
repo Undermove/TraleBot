@@ -2,10 +2,21 @@
 set -e
 
 # Sequential agent pipeline on a SHARED nightly branch.
-# Each hourly cron invocation continues work on the same branch agents/nightly-YYYY-MM-DD,
-# so every agent can see what previous agents (this hour AND prior hours) already did.
-# No PR is created here — the morning QA run opens the single daily PR.
-# Usage: /scripts/run-pipeline.sh
+#
+# FLOW (one hour = one pass through this pipeline):
+#   1. methodist    — pedagogical audit, files issues (label: methodist)
+#   2. product      — triages methodist's issues, updates ROADMAP.md
+#   3. tech-lead    — (a) breaks ROADMAP items into small technical GitHub
+#                      issues (labels: task, P1/P2/P3) with acceptance criteria
+#                     (b) reviews previous hour's developer work on the branch
+#   4. developer    — picks the highest-priority open 'task' issue and
+#                     implements it on the shared branch
+#   5. qa           — integration-tests the whole shared branch after the
+#                     new commit lands
+#
+# SINGLE SOURCE OF TRUTH: GitHub issues drive execution. ROADMAP.md is strategic.
+# SHARED BRANCH: agents/nightly-YYYY-MM-DD — each hour continues the previous.
+# NO PR HERE: the morning 09:00 run (run-qa.sh) opens the single daily PR.
 
 source /etc/environment
 
@@ -40,64 +51,83 @@ else
     git push -u origin "${BRANCH}"
 fi
 
-# Show recent activity so the agents' context window has it via git log below
 echo ""
 echo ">>> Recent activity on ${BRANCH}:"
 git log --oneline -20 main.."${BRANCH}" || true
 echo ""
 
 # --- Agent definitions ----------------------------------------------------------
-# Max turns per agent
-MAX_TURNS_PER_AGENT=(25 25 25 50 50)
+MAX_TURNS_PER_AGENT=(25 25 40 50 40)
 
-AGENTS=("product" "methodist" "designer" "developer" "tech-lead")
-AGENT_LABELS=("Product" "Methodist" "Designer" "Developer" "Tech Lead")
+AGENTS=("methodist" "product" "tech-lead" "developer" "qa")
+AGENT_LABELS=("Methodist" "Product" "Tech Lead" "Developer" "QA")
 
-# Shared context prefix — every agent sees it.
-CONTEXT_PREFIX="You are working on the SHARED nightly branch '${BRANCH}'. Previous agents (this hour AND earlier hours tonight) have already pushed work to this branch. BEFORE doing anything else:
+CONTEXT_PREFIX="You are working on the SHARED nightly branch '${BRANCH}'. Previous agents (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work — ROADMAP.md is strategic context only.
 
-1. Run: git log --oneline -30 main..HEAD — to see what has been done tonight.
-2. Run: git diff --stat main..HEAD — to see which files were touched.
-3. Check ROADMAP.md for current task statuses.
-4. Run: gh issue list --state open --limit 50 — to see open GitHub issues.
+BEFORE doing anything else:
+1. git log --oneline -30 main..HEAD — see what was done tonight.
+2. git diff --stat main..HEAD — see touched files.
+3. gh issue list --state open --limit 50 — see the task backlog.
+4. Read ROADMAP.md for strategic context.
 
-Your goal is to CONTINUE the work, not restart it. Do NOT re-do work previous agents already finished. Do NOT pick a task that is already [dev]/[review]/[done] unless it is explicitly your role to advance it. Do NOT create a PR — just commit locally, the script pushes at the end.
+Do NOT create a PR. Do NOT redo work that is already committed. Commit your own work with clear messages referencing issue numbers when applicable.
 
 "
 
 INSTRUCTIONS=(
-    "${CONTEXT_PREFIX}Read your role instructions from .claude/agents/product.md. Product workflow for this session:
-- First, sync the backlog: run 'gh issue list --label product --state open --limit 50' and cross-reference with ROADMAP.md. If an open issue is not in ROADMAP.md yet, add it as an [idea]. If a ROADMAP [idea] has a matching issue, link it.
-- Only AFTER the sync, generate at most 1-2 NEW ideas, and only if backlog is genuinely thin. Learning elements count.
-- Update ROADMAP.md (status tags, new [idea] entries).
-Do NOT create a separate PR. At the very end output '=== SUMMARY ===' with 3-7 bullets."
+    # 1. METHODIST
+    "${CONTEXT_PREFIX}Read .claude/agents/methodist.md. Your role this hour:
+- Scan pedagogical structure of course modules (skip Alphabet and Numbers — owner is happy with them). Focus on 'Verbs of Movement' and later modules.
+- First, read your existing feedback: 'gh issue list --label methodist --state open --limit 50'. Do NOT duplicate issues you already filed.
+- For NEW pedagogical problems only, file GitHub issues with 'gh issue create --label methodist'. Title should be concise, body should state: problem, affected module, suggested fix.
+- Do NOT edit code. Do NOT touch ROADMAP.md directly — product does that.
+At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
-    "${CONTEXT_PREFIX}Read your role instructions from .claude/agents/methodist.md. Methodist workflow:
-- First, read YOUR OWN past notes: run 'gh issue list --label methodist --state open --limit 50' AND grep for 'methodist' in ROADMAP.md. Do NOT duplicate feedback you already left.
-- Then validate pedagogical structure of course modules (skip Alphabet and Numbers — owner is happy). Focus on 'Verbs of Movement' and later modules.
-- File new GitHub issues (label: methodist) ONLY for problems you have not already flagged. Add methodical notes to ROADMAP.md.
-Do NOT edit code. Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets."
+    # 2. PRODUCT
+    "${CONTEXT_PREFIX}Read .claude/agents/product.md. Your role this hour:
+- Read open issues: 'gh issue list --label methodist --state open --limit 50' AND 'gh issue list --label product --state open --limit 50'.
+- Triage methodist's issues: decide which deserve action NOW. For each one you accept, reflect it in ROADMAP.md (add as [idea] or update an existing section). Close or comment on methodist issues once reflected.
+- Update ROADMAP.md status tags as appropriate. You may ADD new [idea] entries only if the backlog is genuinely thin.
+- Do NOT create small technical issues — that is tech-lead's job.
+At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
-    "${CONTEXT_PREFIX}Read your role instructions from .claude/agents/designer.md. Designer workflow:
-- Find the TOP [idea] task in ROADMAP.md that is not already in design-specs/. If all [idea] tasks already have specs, pick the topmost without — if none, stop and report nothing-to-do in the summary.
-- Create the design spec in design-specs/, update ROADMAP.md status to [designed].
-Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets."
+    # 3. TECH-LEAD (breakdown + review)
+    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have TWO responsibilities this hour:
 
-    "${CONTEXT_PREFIX}Read your role instructions from .claude/agents/developer.md and ARCHITECTURE.md. Developer workflow:
-- Priority: [dev] (returned by tech-lead, fix their comments) > [designed] (new task with spec). Pick exactly ONE task.
-- For [dev]: read tech-lead's latest review commit/notes and fix.
-- For [designed]: read design-specs/<task> and implement.
-- Also scan open GitHub issues labelled 'bug' with no assignee — if one is obviously fixable in the chosen task's area, fix it opportunistically (mention in summary).
-- Follow ARCHITECTURE.md: new use cases as services (not MediatR), Clean Architecture layers, unit tests for new business logic.
-- Run 'dotnet test' (must be green) and 'cd src/Trale/miniapp-src && npm run build'. Update status to [review].
-Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets on what changed, files, test results."
+PART A — BREAKDOWN (creating the execution backlog):
+- For each ROADMAP.md [idea] or [designed] entry that does NOT yet have a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours of work each).
+- Create each with 'gh issue create --label task --label <priority>' where priority is P1 (critical), P2 (normal), P3 (nice-to-have). Include acceptance criteria in the body.
+- Cross-link: in the ROADMAP section, add a reference like '(issues: #N, #M)'.
 
-    "${CONTEXT_PREFIX}Read your role instructions from .claude/agents/tech-lead.md AND ARCHITECTURE.md. Tech-lead workflow:
-- Review NEW changes since last tech-lead pass on this branch. Use: git log --oneline -20 main..HEAD and find the last '[tech-lead]' commit; diff from there.
-- Compare against ARCHITECTURE.md (Clean Architecture, services-not-MediatR for new features, SRP, no dead code). Check quality, test coverage, spec compliance.
-- Small fixes — apply directly (boy-scout + missing tests). Bigger issues — move the task from [review] back to [dev] with actionable notes, so next-hour developer picks it up.
-- Run 'dotnet test' (mandatory — must be green). Update status to [done] only if everything passes.
-Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets: reviewed / passed / fixed / sent-back-to-dev."
+PART B — REVIEW (of previous hour's developer work):
+- Look at the last developer commit (git log --author-date-order --grep='\\[developer\\]' -1) and the QA output from that hour (latest '[qa]' commit notes).
+- Compare against ARCHITECTURE.md (Clean Architecture, services-not-MediatR for new features, SRP, no dead code). Check test coverage.
+- Small issues you can fix in-place — do it (boy-scout + missing tests). Bigger issues — re-open the relevant GitHub issue (or open a follow-up with label 'needs-fix') with concrete remediation notes. Do NOT merge status changes that were broken.
+- Run 'dotnet test' — must be green when you finish your part.
+
+At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / reviewed / fixed / reopened."
+
+    # 4. DEVELOPER
+    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. Your role this hour:
+- Pick ONE task to work on, in this priority order:
+    1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
+    2) else highest-priority open issue labelled 'task' AND 'P1' with no assignee,
+    3) else 'task' + 'P2' with no assignee,
+    4) else 'task' + 'P3' with no assignee.
+- Assign the issue to yourself: 'gh issue edit <N> --add-assignee @me' (or just add a comment 'Taking this' if assignment fails).
+- Implement it on the shared branch. Follow ARCHITECTURE.md: new use cases as services (not MediatR), Clean Architecture layers, unit tests for new business logic.
+- Run 'dotnet test' (must be green) and 'cd src/Trale/miniapp-src && npm run build'.
+- Commit with 'Fixes #<N>' or 'Refs #<N>' in the message.
+- Do NOT close the issue yourself — tech-lead/QA decides.
+At the very end output '=== SUMMARY ===' with 3-7 bullets: issue picked, files changed, test results."
+
+    # 5. QA
+    "${CONTEXT_PREFIX}Read .claude/agents/qa.md. Your role this hour (after developer):
+- Run the full integration pass on the current state of the shared branch: 'dotnet test' + 'cd src/Trale/miniapp-src && npm run build'. Check migrations if DB code changed.
+- If builds/tests fail: comment on the issue that developer just touched with the failure details, add label 'needs-fix'. Do NOT try to fix big regressions yourself — that is developer's job next hour.
+- Small build/config fixes (missing files, stale snapshots, wwwroot rebuild) — do fix those yourself.
+- Append integration findings to 'qa-report-${TODAY}.md' at repo root (create if absent). One dated section per hour.
+At the very end output '=== SUMMARY ===' with 3-7 bullets: what you ran, what passed, what failed, follow-ups filed."
 )
 
 # --- Run agents -----------------------------------------------------------------
@@ -135,7 +165,6 @@ for i in "${!AGENTS[@]}"; do
         git commit -m "[${agent}] ${HOUR_STAMP}" 2>/dev/null || true
     fi
 
-    # Extract summary
     AGENT_SUMMARY=$(sed -n '/=== SUMMARY ===/,$ p' "${log_file}" | tail -n +2)
     {
         echo "### ${label}"
@@ -167,6 +196,6 @@ echo ""
 echo "============================================"
 echo "  Pipeline hour complete — ${HOUR_STAMP}"
 echo "  Shared branch: ${BRANCH}"
-echo "  QA will test & PR in the morning."
+echo "  PR will be opened at 09:00."
 echo "  $(date)"
 echo "============================================"
