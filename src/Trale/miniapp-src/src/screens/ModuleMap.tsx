@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import Header from '../components/Header'
-import HistoryBanner from '../components/HistoryBanner'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
-import AlphabetHistoryButton from '../components/AlphabetHistoryButton'
+import ScriptHistoryButton from '../components/ScriptHistoryButton'
+import HistoryCarousel from '../components/HistoryCarousel'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -19,7 +19,7 @@ export default function ModuleMap({
   progress,
   navigate
 }: Props) {
-  const [showHistory, setShowHistory] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const module = catalog.modules.find((m) => m.id === moduleId)
   if (!module) {
     return (
@@ -151,44 +151,18 @@ export default function ModuleMap({
             </div>
             <KilimProgress done={done} total={lessons.length} accent={accent} />
           </div>
-
-          {/* История алфавита — only for alphabet modules */}
-          {(moduleId === 'alphabet' || moduleId === 'alphabet-progressive') && (
-            <div className="relative z-[1]">
-              <div className="ink-dash my-3" />
-              <button
-                className="py-3 w-full flex items-center active:opacity-70 transition-opacity"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-                onClick={() => navigate({ kind: 'alphabet-history', moduleId })}
-              >
-                <span className="font-sans text-[14px] font-bold text-navy leading-none">
-                  История алфавита <span className="ml-1">→</span>
-                </span>
-              </button>
-            </div>
-          )}
         </div>
-
-        {/* Alphabet history entry — only for alphabet modules */}
-        {(moduleId === 'alphabet-progressive' || moduleId === 'alphabet') && (
-          <div className="mt-4">
-            <AlphabetHistoryButton moduleId={moduleId} navigate={navigate} />
-          </div>
-        )}
 
         {/* Module entry phrase — shown once per session */}
         <ModulePhraseBanner moduleId={moduleId} />
 
-        {/* Alphabet history button — shown only for alphabet modules */}
+        {/* Script history button — alphabet modules only */}
         {(moduleId === 'alphabet-progressive' || moduleId === 'alphabet') && (
-          <AlphabetHistoryButton
-            onClick={() => setShowHistory(true)}
-            className="mb-4"
-          />
+          <ScriptHistoryButton onOpen={() => setHistoryOpen(true)} />
         )}
 
         {/* Journey path map */}
-        <div className="mn-eyebrow mb-3 mt-4">уроки</div>
+        <div className="mn-eyebrow mb-3">уроки</div>
         <div
           className="relative mx-auto"
           style={{
@@ -373,8 +347,9 @@ export default function ModuleMap({
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
 
-      {showHistory && (
-        <AlphabetHistoryCarousel onClose={() => setShowHistory(false)} />
+      {/* Script history carousel — fullscreen overlay for alphabet modules */}
+      {historyOpen && (
+        <HistoryCarousel onClose={() => setHistoryOpen(false)} />
       )}
     </div>
   )
