@@ -217,8 +217,9 @@
 
 ---
 
-### L5. Курировать ModuleMap `[launch]`
-Источник: #235
+### L5. Курировать ModuleMap `[designed]`
+Источник: #235  
+Дизайн-спека: `design-specs/L5-modulemap-launch-curation.md`
 
 **Зачем:** 22 модуля → дашборд перегружен. 6 launch-модулей должны быть в фокусе.
 
