@@ -50,6 +50,7 @@ export default function Result({
         variant="result"
         onBack={() => navigate(backTarget)}
       />
+      <div className="mn-kilim" />
 
       {/* Confetti only on great result */}
       {isGreat && (
@@ -112,6 +113,8 @@ export default function Result({
           </p>
         </div>
       </div>
+
+      <div className="mn-kilim opacity-70" />
 
       {/* Action bar */}
       <div
