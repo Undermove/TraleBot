@@ -524,6 +524,18 @@ input:focus-visible {
   animation: goldFlash 600ms ease-in-out both;
 }
 
+/* Card slide animations for AlphabetHistoryScreen carousel */
+@keyframes card-slide-from-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes card-slide-from-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+.card-enter-right { animation: card-slide-from-right 220ms ease-out both; }
+.card-enter-left  { animation: card-slide-from-left  220ms ease-out both; }
+
 /* Full-viewport-width kilim strip — breaks out of max-width:480px container.
    Used only on LandingScreen where kilim must span the full browser window. */
 .mn-kilim-full {

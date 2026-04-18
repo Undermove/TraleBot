@@ -14,6 +14,7 @@ import AdminScreen from './screens/AdminScreen'
 import AdminUserScreen from './screens/AdminUserScreen'
 import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
+import AlphabetHistoryScreen from './screens/AlphabetHistoryScreen'
 import LandingScreen from './screens/LandingScreen'
 import Onboarding, { UserLevel } from './screens/Onboarding'
 import Mascot from './components/Mascot'
@@ -133,6 +134,8 @@ export default function App() {
       } else if (screen.kind === 'practice-mistakes') {
         setScreen({ kind: 'module', moduleId: screen.moduleId })
       } else if (screen.kind === 'mistakes-result') {
+        setScreen({ kind: 'module', moduleId: screen.moduleId })
+      } else if (screen.kind === 'alphabet-history') {
         setScreen({ kind: 'module', moduleId: screen.moduleId })
       }
     }
@@ -343,6 +346,8 @@ export default function App() {
           navigate={navigate}
         />
       )
+    case 'alphabet-history':
+      return <AlphabetHistoryScreen moduleId={screen.moduleId} navigate={navigate} />
     default:
       return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
   }

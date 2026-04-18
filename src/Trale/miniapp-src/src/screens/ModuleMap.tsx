@@ -2,6 +2,7 @@ import React from 'react'
 import Header from '../components/Header'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
+import AlphabetHistoryButton from '../components/AlphabetHistoryButton'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -149,6 +150,13 @@ export default function ModuleMap({
             <KilimProgress done={done} total={lessons.length} accent={accent} />
           </div>
         </div>
+
+        {/* Alphabet history entry — only for alphabet modules */}
+        {(moduleId === 'alphabet-progressive' || moduleId === 'alphabet') && (
+          <div className="mt-4">
+            <AlphabetHistoryButton moduleId={moduleId} navigate={navigate} />
+          </div>
+        )}
 
         {/* Module entry phrase — shown once per session */}
         <ModulePhraseBanner moduleId={moduleId} />
