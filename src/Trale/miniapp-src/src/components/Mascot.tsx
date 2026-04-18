@@ -2,6 +2,13 @@ import React from 'react'
 
 interface Props {
   mood?: 'happy' | 'cheer' | 'sleep' | 'think' | 'guide' | 'hungry' | 'sated' | 'chewing'
+  /**
+   * Satiety tier, only meaningful for mood="sated":
+   *  1 = light snack (Дзвали/Хорци) — just content smile + heart
+   *  2 = proper meal (Мцвади/Чурчхела) — table + plate with leftover
+   *  3 = feast (Супра) — lemonade glass, bread, grapes, sparkles
+   */
+  satietyTier?: 1 | 2 | 3
   size?: number
   className?: string
 }
@@ -11,7 +18,7 @@ interface Props {
  * Flat shapes, thick ink outline, warm fur, ruby scarf.
  * Designed as a book illustration: less detail, more character.
  */
-export default function Mascot({ mood = 'happy', size = 200, className = '' }: Props) {
+export default function Mascot({ mood = 'happy', satietyTier = 3, size = 200, className = '' }: Props) {
   const INK = '#2A1F18'
   const FUR = '#E6AE78'
   const FUR_DARK = '#C98B4A'
@@ -209,10 +216,48 @@ export default function Mascot({ mood = 'happy', size = 200, className = '' }: P
       <circle cx="56" cy="132" r={mood === 'sated' ? 6.5 : 5} fill={CORAL} opacity={mood === 'sated' ? 0.5 : 0.35} />
       <circle cx="144" cy="132" r={mood === 'sated' ? 6.5 : 5} fill={CORAL} opacity={mood === 'sated' ? 0.5 : 0.35} />
 
-      {/* Lemonade glass — raised by a satisfied Bombora */}
-      {mood === 'sated' && (
+      {/* ── Satiety accessories ── rendered only when sated. Tier cumulative: higher tier includes lower tier's vibe. */}
+      {mood === 'sated' && satietyTier >= 1 && (
+        /* Tier 1 — small floating heart near cheek (light snack) */
         <g>
-          {/* Paw holding the glass */}
+          <path
+            d="M40 98 C36 94 30 96 30 101 C30 105 34 108 40 112 C46 108 50 105 50 101 C50 96 44 94 40 98 Z"
+            fill={CORAL}
+            stroke={INK}
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+            opacity="0.9"
+          />
+        </g>
+      )}
+
+      {mood === 'sated' && satietyTier >= 2 && (
+        /* Tier 2 — small plate on the left paw with a nibbled treat */
+        <g>
+          {/* Left paw */}
+          <ellipse cx="32" cy="156" rx="14" ry="10" fill={FUR} stroke={INK} strokeWidth="2.5" />
+          {/* Plate */}
+          <ellipse cx="32" cy="148" rx="18" ry="5" fill={CREAM} stroke={INK} strokeWidth="2.2" />
+          <ellipse cx="32" cy="147.5" rx="14" ry="3.2" fill="#FBEFD2" />
+          {/* Leftover nibble — brown crumb */}
+          <circle cx="28" cy="146" r="2.2" fill="#8A5A2A" stroke={INK} strokeWidth="1.2" />
+          <circle cx="34" cy="145" r="1.6" fill="#8A5A2A" opacity="0.8" />
+          {/* Tiny steam */}
+          <path
+            d="M30 142 Q28 138 32 134"
+            stroke={INK}
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            opacity="0.35"
+          />
+        </g>
+      )}
+
+      {mood === 'sated' && satietyTier >= 3 && (
+        /* Tier 3 — full feast: lemonade glass raised + sparkles around */
+        <g>
+          {/* Right paw holding the glass */}
           <ellipse cx="168" cy="150" rx="12" ry="9" fill={FUR} stroke={INK} strokeWidth="2.5" />
           {/* Glass body */}
           <path
@@ -244,6 +289,15 @@ export default function Mascot({ mood = 'happy', size = 200, className = '' }: P
             strokeWidth="2.5"
             strokeLinecap="round"
           />
+          {/* Festive sparkles around Bombora */}
+          <g fill="#F5B820" stroke={INK} strokeWidth="1">
+            <path d="M14 70 L16 66 L18 70 L22 72 L18 74 L16 78 L14 74 L10 72 Z" opacity="0.9" />
+            <path d="M186 76 L187.5 73 L189 76 L192 77 L189 78 L187.5 81 L186 78 L183 77 Z" opacity="0.9" />
+          </g>
+          {/* Confetti dots */}
+          <circle cx="54" cy="34" r="2" fill="#E01A3C" opacity="0.8" />
+          <circle cx="146" cy="30" r="2" fill="#2B4A7A" opacity="0.8" />
+          <circle cx="100" cy="22" r="1.8" fill="#F5B820" opacity="0.9" />
         </g>
       )}
     </svg>

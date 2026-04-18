@@ -241,6 +241,15 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           const isHungry = progress.totalTreatsGiven > 0 && hoursSinceFed !== null && hoursSinceFed >= 24
           // Recently fed — Bombora stays sated for a window after eating
           const recentlyFed = hoursSinceFed !== null && hoursSinceFed < 2
+          // Satiety tier derived from the last treat: 0-1 → tier 1 (snack), 2-3 → tier 2 (meal), 4 → tier 3 (feast)
+          const satietyTier: 1 | 2 | 3 =
+            progress.lastTreatIndex == null
+              ? 1
+              : progress.lastTreatIndex >= 4
+                ? 3
+                : progress.lastTreatIndex >= 2
+                  ? 2
+                  : 1
           // Priority: unlock celebration > sated (recently fed) > hungry > baseline
           const mascotMood: 'happy' | 'cheer' | 'think' | 'guide' | 'sleep' | 'hungry' | 'sated' =
             mascotCheering ? 'cheer' : recentlyFed ? 'sated' : isHungry ? 'hungry' : baseMood
@@ -264,7 +273,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 className="w-full flex flex-col items-center gap-2 text-center active:opacity-80 transition-opacity"
               >
                 <div className="relative">
-                  <Mascot mood={mascotMood} size={120} />
+                  <Mascot mood={mascotMood} satietyTier={satietyTier} size={120} />
                   {/* Bowl indicator */}
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
                     {[0, 1, 2].map((i) => (
@@ -670,6 +679,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
               xpSpent: r.xpSpent,
               totalTreatsGiven: r.totalTreatsGiven,
               lastFedAtUtc: r.lastFedAtUtc,
+              lastTreatIndex: r.lastTreatIndex,
             })
             setFeedingAnimation(r.treatIndex)
           }}

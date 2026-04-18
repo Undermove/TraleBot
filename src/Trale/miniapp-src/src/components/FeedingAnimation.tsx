@@ -86,6 +86,10 @@ export default function FeedingAnimation({ treatIndex, onComplete }: Props) {
   const mascotMood: 'hungry' | 'chewing' | 'sated' =
     phase <= 1 ? 'hungry' : phase === 2 ? 'chewing' : 'sated'
 
+  // Tier derived from treatIndex: 0-1 → 1 (snack), 2-3 → 2 (meal), 4 → 3 (feast)
+  const satietyTier: 1 | 2 | 3 =
+    treatIndex >= 4 ? 3 : treatIndex >= 2 ? 2 : 1
+
   return (
     <div
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-cream/95 backdrop-blur-sm"
@@ -101,7 +105,7 @@ export default function FeedingAnimation({ treatIndex, onComplete }: Props) {
       <div className="relative" style={{ width: 240, height: 240 }}>
         {/* Mascot at bottom */}
         <div className="absolute inset-0 flex items-end justify-center">
-          <Mascot mood={mascotMood} size={200} />
+          <Mascot mood={mascotMood} satietyTier={satietyTier} size={200} />
         </div>
 
         {/* Flying treat emoji */}

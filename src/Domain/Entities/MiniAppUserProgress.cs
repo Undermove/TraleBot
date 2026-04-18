@@ -50,6 +50,12 @@ public class MiniAppUserProgress
     /// </summary>
     public DateTime? LastFedAtUtc { get; set; }
 
+    /// <summary>
+    /// Index (0..4) of the last treat given — picks the satiety tier shown on the mascot.
+    /// Null when never fed.
+    /// </summary>
+    public int? LastTreatIndex { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

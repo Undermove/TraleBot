@@ -96,7 +96,8 @@ public class ProgressCalculator : IProgressCalculator
             completedLessons = completed,
             xpSpent = progress.XpSpent,
             totalTreatsGiven = progress.TotalTreatsGiven,
-            lastFedAtUtc = progress.LastFedAtUtc
+            lastFedAtUtc = progress.LastFedAtUtc,
+            lastTreatIndex = progress.LastTreatIndex
         };
     }
 

@@ -8,7 +8,8 @@ export const defaultProgress: ProgressState = {
   lastPlayedDate: null,
   xpSpent: 0,
   totalTreatsGiven: 0,
-  lastFedAtUtc: null
+  lastFedAtUtc: null,
+  lastTreatIndex: null
 }
 
 export function progressFromDto(dto: ProgressDto): ProgressState {
@@ -19,6 +20,7 @@ export function progressFromDto(dto: ProgressDto): ProgressState {
     lastPlayedDate: dto.lastPlayedAtUtc ? dto.lastPlayedAtUtc.slice(0, 10) : null,
     xpSpent: dto.xpSpent ?? 0,
     totalTreatsGiven: dto.totalTreatsGiven ?? 0,
-    lastFedAtUtc: dto.lastFedAtUtc ?? null
+    lastFedAtUtc: dto.lastFedAtUtc ?? null,
+    lastTreatIndex: dto.lastTreatIndex ?? null
   }
 }

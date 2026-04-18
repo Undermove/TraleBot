@@ -32,6 +32,7 @@ export interface ProgressDto {
   xpSpent?: number
   totalTreatsGiven?: number
   lastFedAtUtc?: string | null
+  lastTreatIndex?: number | null
 }
 
 export interface MeResponse {
@@ -177,6 +178,7 @@ export const api = {
       xpSpent: number
       totalTreatsGiven: number
       lastFedAtUtc: string
+      lastTreatIndex: number
     }>('/api/miniapp/treat', {
       method: 'POST',
       body: JSON.stringify({ treatIndex })

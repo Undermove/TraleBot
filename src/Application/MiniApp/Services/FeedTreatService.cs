@@ -52,12 +52,13 @@ public class FeedTreatService(ITraleDbContext dbContext)
         progress.XpSpent += price;
         progress.TotalTreatsGiven += 1;
         progress.LastFedAtUtc = now;
+        progress.LastTreatIndex = treatIndex;
         progress.UpdatedAtUtc = now;
 
         await dbContext.SaveChangesAsync(ct);
 
-        return new FeedTreatResponse(FeedTreatResult.Success, progress.XpSpent, progress.TotalTreatsGiven, progress.LastFedAtUtc);
+        return new FeedTreatResponse(FeedTreatResult.Success, progress.XpSpent, progress.TotalTreatsGiven, progress.LastFedAtUtc, progress.LastTreatIndex);
     }
 }
 
-public record FeedTreatResponse(FeedTreatResult Result, int XpSpent, int TotalTreatsGiven, DateTime? LastFedAtUtc = null);
+public record FeedTreatResponse(FeedTreatResult Result, int XpSpent, int TotalTreatsGiven, DateTime? LastFedAtUtc = null, int? LastTreatIndex = null);

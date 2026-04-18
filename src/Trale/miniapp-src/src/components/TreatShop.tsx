@@ -4,7 +4,7 @@ import { api } from '../api'
 interface Props {
   availableXp: number
   totalTreatsGiven: number
-  onFed: (result: { treatIndex: number; xpSpent: number; totalTreatsGiven: number; lastFedAtUtc: string }) => void
+  onFed: (result: { treatIndex: number; xpSpent: number; totalTreatsGiven: number; lastFedAtUtc: string; lastTreatIndex: number }) => void
   onClose: () => void
 }
 
@@ -41,6 +41,7 @@ export default function TreatShop({ availableXp, totalTreatsGiven, onFed, onClos
         xpSpent: result.xpSpent,
         totalTreatsGiven: result.totalTreatsGiven,
         lastFedAtUtc: result.lastFedAtUtc,
+        lastTreatIndex: result.lastTreatIndex,
       })
     } catch (e) {
       setError('Не получилось покормить — попробуй ещё раз')

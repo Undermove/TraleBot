@@ -47,6 +47,7 @@ export interface ProgressState {
   xpSpent: number
   totalTreatsGiven: number
   lastFedAtUtc: string | null
+  lastTreatIndex: number | null
 }
 
 // Catalog — comes from /api/miniapp/content
