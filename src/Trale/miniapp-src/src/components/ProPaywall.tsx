@@ -262,7 +262,7 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
           ) : state === 'loading-plans' ? null : (
             <button
               onClick={handlePurchase}
-              className="jewel-btn w-full min-h-[52px] font-sans text-[16px] font-extrabold"
+              className="jewel-btn w-full min-h-[52px] font-sans text-[16px] font-extrabold flex flex-col items-center justify-center gap-0.5"
               style={{
                 background: '#F5B820',
                 color: '#15100A',
@@ -270,11 +270,18 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
                 boxShadow: '0 3px 0 #15100A',
               }}
             >
-              {state === 'error'
-                ? 'Попробовать снова'
-                : activePlan
-                  ? `Купить за ${activePlan.stars} ⭐`
-                  : 'Купить'}
+              <span>
+                {state === 'error'
+                  ? 'Попробовать снова'
+                  : activePlan
+                    ? `Купить за ${activePlan.stars} ⭐`
+                    : 'Купить'}
+              </span>
+              {state !== 'error' && (
+                <span className="font-geo font-normal text-[11px] opacity-70 leading-none">
+                  ვარსკვლავი · звезда
+                </span>
+              )}
             </button>
           )}
 
