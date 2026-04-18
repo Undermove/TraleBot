@@ -148,6 +148,22 @@ export default function ModuleMap({
             </div>
             <KilimProgress done={done} total={lessons.length} accent={accent} />
           </div>
+
+          {/* История алфавита — only for alphabet modules */}
+          {(moduleId === 'alphabet' || moduleId === 'alphabet-progressive') && (
+            <div className="relative z-[1]">
+              <div className="ink-dash my-3" />
+              <button
+                className="py-3 w-full flex items-center active:opacity-70 transition-opacity"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+                onClick={() => navigate({ kind: 'alphabet-history', moduleId })}
+              >
+                <span className="font-sans text-[14px] font-bold text-navy leading-none">
+                  История алфавита <span className="ml-1">→</span>
+                </span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Module entry phrase — shown once per session */}
