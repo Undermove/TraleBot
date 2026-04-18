@@ -3,8 +3,7 @@ import Header from '../components/Header'
 import HistoryBanner from '../components/HistoryBanner'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
-import ScriptHistoryButton from '../components/ScriptHistoryButton'
-import HistoryCarousel from '../components/HistoryCarousel'
+import AlphabetHistoryOverlay from '../components/AlphabetHistoryOverlay'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -20,7 +19,7 @@ export default function ModuleMap({
   progress,
   navigate
 }: Props) {
-  const [historyOpen, setHistoryOpen] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const module = catalog.modules.find((m) => m.id === moduleId)
   if (!module) {
     return (
@@ -169,6 +168,35 @@ export default function ModuleMap({
             </div>
           )}
         </div>
+
+        {/* Alphabet history entry tile — only for alphabet-progressive module */}
+        {moduleId === 'alphabet-progressive' && (
+          <button
+            className="jewel-tile px-4 py-3 mb-5 w-full text-left active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-75"
+            onClick={() => setShowHistory(true)}
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div className="relative z-[1] flex items-center justify-between">
+              <div>
+                <div
+                  className="mb-0.5"
+                  style={{
+                    fontFamily: "'Noto Sans Georgian', 'Manrope', sans-serif",
+                    fontSize: 14,
+                    color: 'rgba(21,16,10,0.50)',
+                  }}
+                >
+                  ასომთავრული
+                </div>
+                <div className="font-sans text-[15px] font-extrabold text-jewelInk">
+                  История грузинского письма
+                </div>
+                <div className="mn-eyebrow mt-0.5">4 карточки · 1 минута</div>
+              </div>
+              <span className="font-sans text-[18px] font-bold text-navy ml-3">→</span>
+            </div>
+          </button>
+        )}
 
         {/* Module entry phrase — shown once per session */}
         <ModulePhraseBanner moduleId={moduleId} />
@@ -364,9 +392,8 @@ export default function ModuleMap({
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
 
-      {/* Script history carousel — fullscreen overlay for alphabet modules */}
-      {historyOpen && (
-        <HistoryCarousel onClose={() => setHistoryOpen(false)} />
+      {showHistory && (
+        <AlphabetHistoryOverlay onClose={() => setShowHistory(false)} />
       )}
     </div>
   )
