@@ -32,7 +32,7 @@ function CardAncient() {
           V
         </div>
         <div className="font-geo text-[13px] text-navy/70 tracking-wide mt-1">
-          საუkუნე
+          საუკუნე
         </div>
       </div>
 
@@ -62,12 +62,12 @@ function CardThreeScripts() {
       {/* Three mini script tiles */}
       <div className="flex gap-2 w-full">
         {[
-          { geo: 'ანბანი', name: 'მხედრული', label: 'светское' },
-          { geo: 'ႠႬႡႠႬႨ', name: 'ასომTavr.', label: 'заглавные' },
-          { geo: 'ⴀⴌⴁ', name: 'ნუSXuri', label: 'курсив' },
+          { geo: 'ანბანი', label: 'светское' },
+          { geo: 'ႠႬႡႠႬႨ', label: 'заглавные' },
+          { geo: 'ⴀⴌⴁ', label: 'курсив' },
         ].map((script) => (
           <div
-            key={script.name}
+            key={script.geo}
             className="flex-1 border border-jewelInk/20 rounded px-2 py-2 text-center"
           >
             <div className="font-geo text-[12px] font-bold text-jewelInk leading-snug">
@@ -82,7 +82,7 @@ function CardThreeScripts() {
 
       {/* Caption */}
       <div className="font-sans text-[10px] text-jewelInk/50 text-center -mt-2">
-        мхедрули / ასომTavr. / ნუSXuri
+        мхедрули / Асомтаврули / Нусхури
       </div>
 
       {/* Headline */}
