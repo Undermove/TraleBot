@@ -60,7 +60,10 @@ git log --oneline -20 main.."${BRANCH}" || true
 echo ""
 
 # --- Agent definitions ----------------------------------------------------------
-MAX_TURNS_PER_AGENT=(25 25 25 40 50 40)
+# Generous limits — tech-lead has two jobs (breakdown + review), developer
+# does actual implementation, QA runs full integration. Methodist/product/
+# designer are lighter but raised from 25 so they don't truncate triage.
+MAX_TURNS_PER_AGENT=(40 50 40 80 100 60)
 
 AGENTS=("methodist" "product" "designer" "tech-lead" "developer" "qa")
 AGENT_LABELS=("Methodist" "Product" "Designer" "Tech Lead" "Developer" "QA")
