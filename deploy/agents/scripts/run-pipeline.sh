@@ -68,7 +68,8 @@ BEFORE doing anything else:
 1. git log --oneline -30 main..HEAD — see what was done tonight.
 2. git diff --stat main..HEAD — see touched files.
 3. gh issue list --state open --limit 50 — see the task backlog.
-4. Read ROADMAP.md for strategic context.
+4. Read STRATEGY.md — current product phase and launch checklist, priorities come from here.
+5. Read ROADMAP.md for strategic context.
 
 Do NOT create a PR. Do NOT redo work that is already committed. Commit your own work with clear messages referencing issue numbers when applicable.
 
@@ -84,19 +85,32 @@ INSTRUCTIONS=(
 At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
     # 2. PRODUCT
-    "${CONTEXT_PREFIX}Read .claude/agents/product.md. Your role this hour:
-- Read open issues: 'gh issue list --label methodist --state open --limit 50' AND 'gh issue list --label product --state open --limit 50'.
-- Triage methodist's issues: decide which deserve action NOW. For each one you accept, reflect it in ROADMAP.md (add as [idea] or update an existing section). Close or comment on methodist issues once reflected.
-- Update ROADMAP.md status tags as appropriate. You may ADD new [idea] entries only if the backlog is genuinely thin.
-- Do NOT create small technical issues — that is tech-lead's job.
+    "${CONTEXT_PREFIX}Read .claude/agents/product.md. Also read STRATEGY.md FIRST — it defines the current product phase and the launch checklist. Your role this hour:
+
+AGGREGATE inputs:
+- Read STRATEGY.md (current phase, launch checklist).
+- Read ROADMAP.md (backlog, philosophy).
+- 'gh issue list --label methodist --state open --limit 50'
+- 'gh issue list --label product --state open --limit 50'
+
+TRIAGE methodist's issues: for each relevant one, add to ROADMAP.md as [idea] or [launch] if it closes a checklist item; source-link the issue number; close/comment on the issue once reflected. Max 5 per session.
+
+GENERATE your own ideas (you are not just reacting to methodist): features closing launch-checklist items, marketing angles (Batumi expat chats, referral loops), retention mechanics (Bombora feeding tamagotchi), onboarding copy, positioning. File them as GitHub issues with label 'product' (and 'launch' if applicable).
+
+BACKLOG RULE: if ROADMAP already has 5+ [idea]/[launch] tasks, DO NOT generate new ideas — only triage and prioritize.
+
+PRIORITIZE: move tasks in ROADMAP. Items closing launch-checklist rank highest. Update STRATEGY.md if a checklist item is done.
+
+Do NOT create small technical issues — that is tech-lead's job.
 At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
     # 3. TECH-LEAD (breakdown + review)
     "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have TWO responsibilities this hour:
 
 PART A — BREAKDOWN (creating the execution backlog):
-- For each ROADMAP.md [idea] or [designed] entry that does NOT yet have a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours of work each).
-- Create each with 'gh issue create --label task --label <priority>' where priority is P1 (critical), P2 (normal), P3 (nice-to-have). Include acceptance criteria in the body.
+- For each ROADMAP.md [idea], [launch], or [designed] entry that does NOT yet have a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours of work each).
+- Priority rule: if the ROADMAP section is tagged [launch] OR directly closes a STRATEGY.md launch-checklist item, the task gets label P1. Other useful work is P2. Polish / post-launch ideas are P3.
+- Create each with 'gh issue create --label task --label <priority>'. Include acceptance criteria in the body.
 - Cross-link: in the ROADMAP section, add a reference like '(issues: #N, #M)'.
 
 PART B — REVIEW (of previous hour's developer work):
