@@ -22,7 +22,7 @@ public class LessonTheoryQuestionCoverageTests : TestBase
     // TODO (content backlog): the following modules currently have quizzes asking
     // about lemmas that were never shown in their theory screens and should be
     // brought up to this standard one by one, then re-added to this list:
-    //   adjectives, aorist, imperfect, numbers, postpositions, present-tense,
+    //   adjectives, aorist, imperfect, postpositions,
     //   preverbs, pronoun-declension, pronouns, verb-classes, verbs-of-movement,
     //   version-vowels
     // Run this test suite locally with those ids temporarily added to see the
@@ -34,7 +34,8 @@ public class LessonTheoryQuestionCoverageTests : TestBase
     {
         "intro",
         "cases",
-        "conditionals"
+        "conditionals",
+        "numbers"
     };
 
     [Test]
