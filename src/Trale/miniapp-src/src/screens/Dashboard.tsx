@@ -17,19 +17,39 @@ const STREAK_THRESHOLDS = Object.keys(STREAK_MILESTONES).map(Number)
 // Ordered launch modules (fixed sequence ა→ბ→გ→დ→ე)
 const LAUNCH_MODULE_IDS = ['alphabet-progressive', 'numbers', 'intro', 'pronouns', 'present-tense']
 
-// Extra modules — all other topics grouped as "все темы" below launch + vocab.
-// Order is curated (grammar → situations → advanced verbs).
-const EXTRA_MODULE_IDS = [
-  'cases', 'postpositions', 'adjectives',
-  'cafe', 'shopping', 'taxi', 'doctor', 'emergency',
-  'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
-  'pronoun-declension', 'conditionals', 'verbs-of-movement',
+// Extra modules — all other topics rendered below launch + vocab, grouped
+// into three sub-blocks (grammar → situations → advanced verbs) inside the
+// collapsible "все темы" section.
+const EXTRA_GROUPS: Array<{
+  ruTitle: string
+  geoTitle: string
+  moduleIds: string[]
+}> = [
+  {
+    ruTitle: 'грамматика',
+    geoTitle: 'გრამატიკა',
+    moduleIds: ['cases', 'postpositions', 'adjectives'],
+  },
+  {
+    ruTitle: 'ситуации',
+    geoTitle: 'სიტუაციები',
+    moduleIds: ['cafe', 'shopping', 'taxi', 'doctor', 'emergency'],
+  },
+  {
+    ruTitle: 'глаголы · продвинутое',
+    geoTitle: 'ზმნები',
+    moduleIds: [
+      'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
+      'pronoun-declension', 'conditionals', 'verbs-of-movement',
+    ],
+  },
 ]
 
 // Georgian letter numerals for launch tiles (ა=1 … ვ=6)
 const GEO_LAUNCH_NUMERALS = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ']
 
-// Continued Georgian letters (ზ=7 … ქ=22) for extra-section badges
+// Continued Georgian letters (ზ=7 … ქ=22) for extra-section badges,
+// consumed sequentially across all three sub-blocks.
 const GEO_EXTRA_NUMERALS = [
   'ზ', 'თ', 'ი', 'კ', 'ლ', 'მ', 'ნ', 'ო',
   'პ', 'ჟ', 'რ', 'ს', 'ტ', 'უ', 'ფ', 'ქ',
@@ -270,7 +290,15 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   // Modules for each section
   const launchModules = LAUNCH_MODULE_IDS.map((id) => moduleById[id]).filter(Boolean) as ModuleDto[]
   const myVocabModule = moduleById['my-vocabulary']
-  const extraModules = EXTRA_MODULE_IDS.map((id) => moduleById[id]).filter(Boolean) as ModuleDto[]
+
+  // Resolve extra groups against the catalog — drop any id the backend didn't
+  // return, then compute a single sequential numeral index for badge assignment.
+  const extraGroupsResolved = EXTRA_GROUPS.map((g) => ({
+    ruTitle: g.ruTitle,
+    geoTitle: g.geoTitle,
+    modules: g.moduleIds.map((id) => moduleById[id]).filter(Boolean) as ModuleDto[],
+  })).filter((g) => g.modules.length > 0)
+  const extraCount = extraGroupsResolved.reduce((sum, g) => sum + g.modules.length, 0)
 
   // Completed module ids (modules where all lessons are done)
   const completedModuleIds = catalog.modules
@@ -416,10 +444,10 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         )}
       </div>
 
-      {/* ══ All other topics — «все темы» (collapsible) ══ */}
-      {extraModules.length > 0 && (
+      {/* ══ All other topics — «все темы», grouped by block (collapsible) ══ */}
+      {extraCount > 0 && (
         <div>
-          {/* Section header — tappable to collapse/expand */}
+          {/* Section header — tappable to collapse/expand the whole area */}
           <button
             onClick={toggleExtra}
             className="w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity"
@@ -429,7 +457,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
             <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">ყველა თემა</div>
             <div className="flex-1 h-px bg-jewelInk/15" />
             <div className="font-sans text-[11px] font-bold text-jewelInk-hint tabular-nums">
-              {extraModules.length}
+              {extraCount}
             </div>
             <svg
               width="12" height="12" viewBox="0 0 24 24" fill="none"
@@ -439,14 +467,43 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
             </svg>
           </button>
 
-          {/* Extra module tiles — same interactive style as launch tiles */}
-          {!extraCollapsed && (
-            <section className="px-5 flex flex-col gap-3 pb-2">
-              {extraModules.map((m, idx) =>
-                renderModuleTile(m, GEO_EXTRA_NUMERALS[idx] ?? '?', launchModules.length + 1 + idx)
-              )}
-            </section>
-          )}
+          {/* Sub-blocks: грамматика / ситуации / глаголы — each with its own
+              lighter eyebrow, tiles rendered via the same active renderer,
+              Georgian numeral badges continue across blocks (ზ→ქ). */}
+          {!extraCollapsed && (() => {
+            let numeralCursor = 0
+            let tileCursor = launchModules.length + 1
+            return (
+              <div className="flex flex-col gap-2">
+                {extraGroupsResolved.map((group) => (
+                  <div key={group.ruTitle}>
+                    {/* Sub-block header — smaller, no interaction */}
+                    <div className="px-5 pt-3 pb-2 flex items-center gap-3">
+                      <div
+                        className="font-sans text-[10px] font-extrabold uppercase tracking-wider text-jewelInk-mid"
+                      >
+                        {group.ruTitle}
+                      </div>
+                      <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">
+                        {group.geoTitle}
+                      </div>
+                      <div className="flex-1 h-px bg-jewelInk/10" />
+                    </div>
+
+                    <section className="px-5 flex flex-col gap-3 pb-1">
+                      {group.modules.map((m) => {
+                        const geoNum = GEO_EXTRA_NUMERALS[numeralCursor] ?? '?'
+                        const tileIdx = tileCursor
+                        numeralCursor++
+                        tileCursor++
+                        return renderModuleTile(m, geoNum, tileIdx)
+                      })}
+                    </section>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </div>
       )}
 
