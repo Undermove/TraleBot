@@ -5,13 +5,16 @@ set -e
 #
 # FLOW (one hour = one pass through this pipeline):
 #   1. methodist    — pedagogical audit, files issues (label: methodist)
-#   2. product      — triages methodist's issues, updates ROADMAP.md
-#   3. tech-lead    — (a) breaks ROADMAP items into small technical GitHub
-#                      issues (labels: task, P1/P2/P3) with acceptance criteria
-#                     (b) reviews previous hour's developer work on the branch
-#   4. developer    — picks the highest-priority open 'task' issue and
+#   2. product      — triages methodist's issues + generates own ideas,
+#                     updates STRATEGY.md/ROADMAP.md
+#   3. designer     — creates UX design specs for [idea]/[launch] tasks
+#                     that don't have one yet (design-specs/<N>.md)
+#   4. tech-lead    — (a) breaks designed ROADMAP items into small
+#                      technical GitHub issues (labels: task, P1/P2/P3)
+#                     (b) reviews previous hour's developer work
+#   5. developer    — picks the highest-priority open 'task' issue and
 #                     implements it on the shared branch
-#   5. qa           — integration-tests the whole shared branch after the
+#   6. qa           — integration-tests the whole shared branch after the
 #                     new commit lands
 #
 # SINGLE SOURCE OF TRUTH: GitHub issues drive execution. ROADMAP.md is strategic.
@@ -57,10 +60,10 @@ git log --oneline -20 main.."${BRANCH}" || true
 echo ""
 
 # --- Agent definitions ----------------------------------------------------------
-MAX_TURNS_PER_AGENT=(25 25 40 50 40)
+MAX_TURNS_PER_AGENT=(25 25 25 40 50 40)
 
-AGENTS=("methodist" "product" "tech-lead" "developer" "qa")
-AGENT_LABELS=("Methodist" "Product" "Tech Lead" "Developer" "QA")
+AGENTS=("methodist" "product" "designer" "tech-lead" "developer" "qa")
+AGENT_LABELS=("Methodist" "Product" "Designer" "Tech Lead" "Developer" "QA")
 
 CONTEXT_PREFIX="You are working on the SHARED nightly branch '${BRANCH}'. Previous agents (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work — ROADMAP.md is strategic context only.
 
@@ -104,13 +107,22 @@ PRIORITIZE: move tasks in ROADMAP. Items closing launch-checklist rank highest. 
 Do NOT create small technical issues — that is tech-lead's job.
 At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
-    # 3. TECH-LEAD (breakdown + review)
+    # 3. DESIGNER
+    "${CONTEXT_PREFIX}Read .claude/agents/designer.md. Your role this hour:
+- Find ROADMAP.md entries with status [idea] or [launch] that do NOT yet have a design spec in design-specs/.
+- Pick ONE (highest in the launch section first; if everything is already specced — stop with a 'nothing-to-do' summary).
+- Create design-specs/<short-slug>.md with: goal, user flows, screen sketches (ASCII/prose is fine), component breakdown, edge cases, copy (Russian), accessibility notes.
+- Update the ROADMAP.md status of that entry from [idea]/[launch] to [designed] and add the design-spec path.
+Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets."
+
+    # 4. TECH-LEAD (breakdown + review)
     "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have TWO responsibilities this hour:
 
 PART A — BREAKDOWN (creating the execution backlog):
-- For each ROADMAP.md [idea], [launch], or [designed] entry that does NOT yet have a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours of work each).
+- Preferred source: ROADMAP.md entries with status [designed] (designer has produced a spec). For simple [launch] items without a full spec — allowed if acceptance criteria are obvious. [idea] entries skip until designer has specced them.
+- For each qualifying entry without a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours of work each).
 - Priority rule: if the ROADMAP section is tagged [launch] OR directly closes a STRATEGY.md launch-checklist item, the task gets label P1. Other useful work is P2. Polish / post-launch ideas are P3.
-- Create each with 'gh issue create --label task --label <priority>'. Include acceptance criteria in the body.
+- Create each with 'gh issue create --label task --label <priority>'. Include acceptance criteria (and design-spec path if available) in the body.
 - Cross-link: in the ROADMAP section, add a reference like '(issues: #N, #M)'.
 
 PART B — REVIEW (of previous hour's developer work):
@@ -121,7 +133,7 @@ PART B — REVIEW (of previous hour's developer work):
 
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / reviewed / fixed / reopened."
 
-    # 4. DEVELOPER
+    # 5. DEVELOPER
     "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. Your role this hour:
 - Pick ONE task to work on, in this priority order:
     1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
@@ -135,7 +147,7 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / revi
 - Do NOT close the issue yourself — tech-lead/QA decides.
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issue picked, files changed, test results."
 
-    # 5. QA
+    # 6. QA
     "${CONTEXT_PREFIX}Read .claude/agents/qa.md. Your role this hour (after developer):
 - Run the full integration pass on the current state of the shared branch: 'dotnet test' + 'cd src/Trale/miniapp-src && npm run build'. Check migrations if DB code changed.
 - If builds/tests fail: comment on the issue that developer just touched with the failure details, add label 'needs-fix'. Do NOT try to fix big regressions yourself — that is developer's job next hour.
