@@ -15,7 +15,7 @@ const DOTS = ['ა', 'ბ', 'გ', 'დ']
 function Card1() {
   return (
     <div className="jewel-tile px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow" style={{ color: '#F5B820' }}>ა — начало</div>
+      <div className="mn-eyebrow text-gold">ა — начало</div>
       <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
         V век — рождение
       </div>
@@ -39,7 +39,7 @@ function Card2() {
   ]
   return (
     <div className="jewel-tile px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow" style={{ color: '#F5B820' }}>ბ — три стиля</div>
+      <div className="mn-eyebrow text-gold">ბ — три стиля</div>
       <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
         Три стиля одного письма
       </div>
@@ -47,8 +47,7 @@ function Card2() {
         {styles.map((s) => (
           <div
             key={s.name}
-            className="flex-1 flex flex-col items-center rounded-xl border border-jewelInk/20 px-2 py-3"
-            style={{ background: '#FDFAEF' }}
+            className="flex-1 flex flex-col items-center rounded-xl border border-jewelInk/20 bg-cream-tile px-2 py-3"
           >
             <span
               className={`font-sans text-[28px] font-extrabold ${s.navy ? 'text-navy' : 'text-jewelInk'}`}
@@ -76,7 +75,7 @@ function Card2() {
 function Card3() {
   return (
     <div className="jewel-tile px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow" style={{ color: '#F5B820' }}>გ — в мире</div>
+      <div className="mn-eyebrow text-gold">გ — в мире</div>
       <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
         Наследие ЮНЕСКО
       </div>
@@ -99,7 +98,7 @@ function Card3() {
 function Card4() {
   return (
     <div className="jewel-tile gold-reveal-glow px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow" style={{ color: '#E01A3C' }}>დ — финал</div>
+      <div className="mn-eyebrow text-ruby">დ — финал</div>
       <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
         Ты уже знал эту букву
       </div>
@@ -189,19 +188,23 @@ export default function AlphabetHistoryScreen({ moduleId, navigate }: Props) {
             <button
               key={letter}
               onClick={() => goTo(i)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                i === cardIndex ? 'bg-navy' : 'border-2 border-jewelInk/30'
-              }`}
+              className="w-11 h-11 flex items-center justify-center"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               <span
-                className={`font-sans font-extrabold ${
-                  i === cardIndex
-                    ? 'text-[16px] text-cream'
-                    : 'text-[14px] text-jewelInk/30'
+                className={`w-9 h-9 rounded-full flex items-center justify-center ${
+                  i === cardIndex ? 'bg-navy' : 'border-2 border-jewelInk/30'
                 }`}
               >
-                {letter}
+                <span
+                  className={`font-sans font-extrabold ${
+                    i === cardIndex
+                      ? 'text-[16px] text-cream'
+                      : 'text-[14px] text-jewelInk/30'
+                  }`}
+                >
+                  {letter}
+                </span>
               </span>
             </button>
           ))}
