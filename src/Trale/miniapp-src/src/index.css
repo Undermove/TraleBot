@@ -514,6 +514,14 @@ input:focus-visible {
   animation: milestone-fade-out 200ms ease-in both;
 }
 
+/* Coming Soon tile toast animation */
+@keyframes comingsoon-toast {
+  0%   { opacity: 0; transform: translateY(8px); }
+  12%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(4px); }
+}
+
 /* Gold flash — all alphabet tiles flash gold when user reaches 33/33 letters */
 @keyframes goldFlash {
   0%   { background-color: #1B5FB0; }
