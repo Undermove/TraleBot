@@ -36,7 +36,8 @@ public class LessonTheoryQuestionCoverageTests : TestBase
         "cases",
         "conditionals",
         "numbers",
-        "present-tense"
+        "present-tense",
+        "pronouns"
     };
 
     [Test]
