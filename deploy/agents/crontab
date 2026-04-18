@@ -1,5 +1,7 @@
 # Бомбора Agent Pipeline (время по Батуми, Asia/Tbilisi UTC+4)
-# Все 4 агента последовательно на одной ветке, один PR в конце
+# Пять агентов последовательно на одной общей ночной ветке agents/nightly-YYYY-MM-DD.
+# Каждый час продолжает работу предыдущего часа — не начинает с нуля.
+# Утром в 09:00 QA-агент тестит ветку и открывает один PR на день.
 #
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
@@ -12,3 +14,6 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 0 6 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
 0 7 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
 0 8 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh >> /logs/agents.log 2>&1'
+
+# Утренний QA — тестит ночную ветку и открывает PR
+0 9 * * * su -s /bin/bash agent -c '/scripts/run-qa.sh >> /logs/agents.log 2>&1'
