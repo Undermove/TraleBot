@@ -28,6 +28,7 @@ export type Screen =
   | { kind: 'admin-user'; telegramId: number }
   | { kind: 'vocabulary-list' }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
+  | { kind: 'alphabet-history'; moduleId: string }
 
 export interface QuizQuestion {
   id: string
