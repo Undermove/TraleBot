@@ -48,14 +48,16 @@ public class FeedTreatService(ITraleDbContext dbContext)
             return new FeedTreatResponse(FeedTreatResult.NotEnoughXp, progress.XpSpent, progress.TotalTreatsGiven);
         }
 
+        var now = DateTime.UtcNow;
         progress.XpSpent += price;
         progress.TotalTreatsGiven += 1;
-        progress.UpdatedAtUtc = DateTime.UtcNow;
+        progress.LastFedAtUtc = now;
+        progress.UpdatedAtUtc = now;
 
         await dbContext.SaveChangesAsync(ct);
 
-        return new FeedTreatResponse(FeedTreatResult.Success, progress.XpSpent, progress.TotalTreatsGiven);
+        return new FeedTreatResponse(FeedTreatResult.Success, progress.XpSpent, progress.TotalTreatsGiven, progress.LastFedAtUtc);
     }
 }
 
-public record FeedTreatResponse(FeedTreatResult Result, int XpSpent, int TotalTreatsGiven);
+public record FeedTreatResponse(FeedTreatResult Result, int XpSpent, int TotalTreatsGiven, DateTime? LastFedAtUtc = null);

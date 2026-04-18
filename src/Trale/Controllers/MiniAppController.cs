@@ -288,7 +288,8 @@ public class MiniAppController : Controller
             {
                 ok = true,
                 xpSpent = response.XpSpent,
-                totalTreatsGiven = response.TotalTreatsGiven
+                totalTreatsGiven = response.TotalTreatsGiven,
+                lastFedAtUtc = response.LastFedAtUtc
             }),
             FeedTreatResult.NotEnoughXp => BadRequest(new { error = "not_enough_xp" }),
             FeedTreatResult.InvalidTreatIndex => BadRequest(new { error = "invalid_treat_index" }),

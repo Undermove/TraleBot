@@ -1,7 +1,7 @@
 import React from 'react'
 
 interface Props {
-  mood?: 'happy' | 'cheer' | 'sleep' | 'think' | 'guide'
+  mood?: 'happy' | 'cheer' | 'sleep' | 'think' | 'guide' | 'hungry' | 'sated' | 'chewing'
   size?: number
   className?: string
 }
@@ -32,6 +32,25 @@ export default function Mascot({ mood = 'happy', size = 200, className = '' }: P
         <ellipse cx="122" cy="100" rx="4" ry="5.5" />
         <circle cx="78.5" cy="98" r="1.3" fill="#fff" />
         <circle cx="120.5" cy="98" r="1.3" fill="#fff" />
+      </g>
+    ) : mood === 'hungry' ? (
+      <g fill={INK}>
+        <ellipse cx="80" cy="102" rx="5" ry="6.5" />
+        <ellipse cx="122" cy="102" rx="5" ry="6.5" />
+        <circle cx="78.5" cy="99" r="1.8" fill="#fff" />
+        <circle cx="120.5" cy="99" r="1.8" fill="#fff" />
+      </g>
+    ) : mood === 'chewing' ? (
+      /* Happy squinty eyes while chewing */
+      <g stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none">
+        <path d="M72 100 Q80 94 88 100" />
+        <path d="M112 100 Q120 94 128 100" />
+      </g>
+    ) : mood === 'sated' ? (
+      /* Contented half-closed eyes */
+      <g stroke={INK} strokeWidth="3" strokeLinecap="round" fill="none">
+        <path d="M72 101 Q80 106 88 101" />
+        <path d="M112 101 Q120 106 128 101" />
       </g>
     ) : (
       <g fill={INK}>
@@ -65,6 +84,41 @@ export default function Mascot({ mood = 'happy', size = 200, className = '' }: P
         d="M93 122 Q101 126 109 122"
         stroke={INK}
         strokeWidth="2.8"
+        fill="none"
+        strokeLinecap="round"
+      />
+    ) : mood === 'hungry' ? (
+      <g>
+        <path
+          d="M90 126 Q101 118 112 126"
+          stroke={INK}
+          strokeWidth="2.8"
+          fill="none"
+          strokeLinecap="round"
+        />
+        {/* tiny drool */}
+        <path
+          d="M104 128 Q104 134 106 138"
+          stroke={CORAL}
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          opacity="0.7"
+        />
+      </g>
+    ) : mood === 'chewing' ? (
+      /* Pursed, chewing mouth — round-ish */
+      <g>
+        <ellipse cx="101" cy="123" rx="8" ry="5" fill={CORAL_DEEP} stroke={INK} strokeWidth="2.5" />
+        {/* crumb */}
+        <circle cx="92" cy="125" r="1.5" fill="#C98B4A" />
+      </g>
+    ) : mood === 'sated' ? (
+      /* Big contented smile */
+      <path
+        d="M88 122 Q101 134 114 122"
+        stroke={INK}
+        strokeWidth="3"
         fill="none"
         strokeLinecap="round"
       />
@@ -151,9 +205,47 @@ export default function Mascot({ mood = 'happy', size = 200, className = '' }: P
       {/* Mouth */}
       {mouth}
 
-      {/* Blush cheeks */}
-      <circle cx="56" cy="132" r="5" fill={CORAL} opacity="0.35" />
-      <circle cx="144" cy="132" r="5" fill={CORAL} opacity="0.35" />
+      {/* Blush cheeks — extra pink when sated */}
+      <circle cx="56" cy="132" r={mood === 'sated' ? 6.5 : 5} fill={CORAL} opacity={mood === 'sated' ? 0.5 : 0.35} />
+      <circle cx="144" cy="132" r={mood === 'sated' ? 6.5 : 5} fill={CORAL} opacity={mood === 'sated' ? 0.5 : 0.35} />
+
+      {/* Lemonade glass — raised by a satisfied Bombora */}
+      {mood === 'sated' && (
+        <g>
+          {/* Paw holding the glass */}
+          <ellipse cx="168" cy="150" rx="12" ry="9" fill={FUR} stroke={INK} strokeWidth="2.5" />
+          {/* Glass body */}
+          <path
+            d="M156 116 L180 116 L178 150 L158 150 Z"
+            fill="#FFF8C2"
+            stroke={INK}
+            strokeWidth="2.8"
+            strokeLinejoin="round"
+            opacity="0.95"
+          />
+          {/* Lemonade liquid */}
+          <path
+            d="M157 124 L179 124 L177.5 148 L158.5 148 Z"
+            fill="#F5B820"
+            opacity="0.85"
+          />
+          {/* Lemon slice */}
+          <circle cx="168" cy="120" r="4" fill="#FFE070" stroke={INK} strokeWidth="1.5" />
+          <path d="M164.5 120 L171.5 120" stroke={INK} strokeWidth="1" />
+          <path d="M168 116.5 L168 123.5" stroke={INK} strokeWidth="1" />
+          {/* Bubbles */}
+          <circle cx="163" cy="132" r="1.3" fill="#fff" opacity="0.8" />
+          <circle cx="172" cy="138" r="1" fill="#fff" opacity="0.8" />
+          <circle cx="166" cy="142" r="1.2" fill="#fff" opacity="0.8" />
+          {/* Straw */}
+          <path
+            d="M170 114 L174 102"
+            stroke={CORAL}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          />
+        </g>
+      )}
     </svg>
   )
 }

@@ -45,6 +45,11 @@ public class MiniAppUserProgress
     /// </summary>
     public int TotalTreatsGiven { get; set; }
 
+    /// <summary>
+    /// When Bombora was last fed a treat. Used to derive mascot hunger state.
+    /// </summary>
+    public DateTime? LastFedAtUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

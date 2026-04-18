@@ -4,6 +4,7 @@ import { ProgressState } from '../types'
 interface Props {
   progress: ProgressState
   onNavigateProfile: () => void
+  onOpenTreatShop: () => void
 }
 
 function StatPill({
@@ -35,7 +36,7 @@ function StatPill({
  * DashboardTopBar — kilim signature strip + stats pills for the Dashboard hero zone.
  * Extracted from Dashboard to keep the main render lean.
  */
-export default function DashboardTopBar({ progress, onNavigateProfile }: Props) {
+export default function DashboardTopBar({ progress, onNavigateProfile, onOpenTreatShop }: Props) {
   return (
     <div>
       <div style={{ paddingTop: 'var(--safe-t)' }}>
@@ -43,13 +44,22 @@ export default function DashboardTopBar({ progress, onNavigateProfile }: Props) 
       </div>
       <div className="px-5 pt-4 pb-2 flex items-center justify-between">
         <div className="mn-eyebrow">TraleBot</div>
-        <button
-          onClick={onNavigateProfile}
-          className="flex items-center gap-3 active:opacity-80 transition-opacity"
-        >
-          <StatPill value={progress.streak} label="дн" color="ruby" />
-          <StatPill value={progress.xp} label="опыт" color="xp" />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onNavigateProfile}
+            className="active:opacity-80 transition-opacity"
+            aria-label="Профиль"
+          >
+            <StatPill value={progress.streak} label="дн" color="ruby" />
+          </button>
+          <button
+            onClick={onOpenTreatShop}
+            className="active:opacity-80 transition-opacity"
+            aria-label="Покормить Бомбору"
+          >
+            <StatPill value={Math.max(0, progress.xp - progress.xpSpent)} label="опыт" color="xp" />
+          </button>
+        </div>
       </div>
     </div>
   )

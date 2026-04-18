@@ -203,7 +203,7 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
         {/* Quick stats row */}
         <div className="grid grid-cols-3 gap-2 mb-5">
           <StatCard label="стрик" value={`${progress.streak}`} unit="дн" accent="ruby" />
-          <StatCard label="опыт" value={`${progress.xp}`} unit="xp" accent="navy" />
+          <StatCard label="опыт" value={`${Math.max(0, progress.xp - progress.xpSpent)}`} unit="xp" accent="navy" />
           <StatCard label="всего" value={`${totalDone}`} unit="ур" accent="gold" />
         </div>
 

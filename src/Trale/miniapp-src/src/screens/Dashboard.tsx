@@ -3,10 +3,10 @@ import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProBadge from '../components/ProBadge'
 import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
-import DayOfWeekChip from '../components/DayOfWeekChip'
 import DashboardTopBar from '../components/DashboardTopBar'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
-import TimeGreeting from '../components/TimeGreeting'
+import TreatShop from '../components/TreatShop'
+import FeedingAnimation from '../components/FeedingAnimation'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
@@ -22,6 +22,7 @@ interface Props {
   isTrialActive?: boolean
   trialDaysLeft?: number
   onPurchaseSuccess: () => void
+  onProgressUpdate?: (patch: Partial<ProgressState>) => void
   navigate: (s: Screen) => void
 }
 
@@ -73,7 +74,7 @@ function isSectionUnlocked(
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
   const isBeginner = userLevel === 'beginner'
   const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
@@ -131,6 +132,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   // Milestone banner — shown when XP or streak crosses a threshold for the first time
   const [milestone, setMilestone] = useState<{ type: 'xp' | 'streak'; value: number } | null>(null)
   const prevProgressRef = useRef<ProgressState | null>(null)
+
+  // Treat shop state
+  const [treatShopOpen, setTreatShopOpen] = useState(false)
+  const [feedingAnimation, setFeedingAnimation] = useState<number | null>(null)
+  const [feedToast, setFeedToast] = useState<string | null>(null)
 
   // Detect newly unlocked sections on mount — play the one-time animation sequence
   useEffect(() => {
@@ -221,14 +227,34 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       <DashboardTopBar
         progress={progress}
         onNavigateProfile={() => navigate({ kind: 'profile' })}
+        onOpenTreatShop={() => setTreatShopOpen(true)}
       />
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
       <section className="px-5 pt-3 pb-4">
         {(() => {
           const { greeting, mascotMood: baseMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
-          // Override mascot mood during unlock celebration
-          const mascotMood = mascotCheering ? 'cheer' : baseMood
+          const availableXp = Math.max(0, progress.xp - progress.xpSpent)
+          const hoursSinceFed = progress.lastFedAtUtc
+            ? (Date.now() - new Date(progress.lastFedAtUtc).getTime()) / (1000 * 60 * 60)
+            : null
+          const isHungry = progress.totalTreatsGiven > 0 && hoursSinceFed !== null && hoursSinceFed >= 24
+          // Recently fed — Bombora stays sated for a window after eating
+          const recentlyFed = hoursSinceFed !== null && hoursSinceFed < 2
+          // Priority: unlock celebration > sated (recently fed) > hungry > baseline
+          const mascotMood: 'happy' | 'cheer' | 'think' | 'guide' | 'sleep' | 'hungry' | 'sated' =
+            mascotCheering ? 'cheer' : recentlyFed ? 'sated' : isHungry ? 'hungry' : baseMood
+          // Single status line — chooses the most contextual message
+          const statusLine = recentlyFed
+            ? 'Бомбора доволен 💛'
+            : isHungry
+              ? 'проголодался — покорми'
+              : satietyText
+          const statusTone = recentlyFed
+            ? 'text-ruby'
+            : isHungry
+              ? 'text-gold-deep'
+              : 'text-jewelInk-mid'
           const bowlFill = Math.min(3, todayLessons)
           return (
             <>
@@ -252,22 +278,26 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                   </div>
                 </div>
                 <div>
-                  <TimeGreeting />
-                  <div className="font-sans font-extrabold text-[22px] leading-[1.1] text-jewelInk tracking-tight">
+                  <div className="font-sans font-extrabold text-[20px] leading-[1.1] text-jewelInk tracking-tight">
                     {greeting.line1}
                   </div>
-                  <div className="font-sans text-[14px] text-ruby font-bold leading-tight mt-0.5">
-                    {greeting.line2}
-                  </div>
-                  <div className="mt-1.5 font-sans text-[12px] text-jewelInk-mid">
-                    {satietyText}
+                  <div className={`mt-1 font-sans text-[13px] font-semibold ${statusTone}`}>
+                    {statusLine}
                   </div>
                 </div>
               </button>
 
-              {/* ── Georgian day of week chip ── */}
-              <div className="mt-2 flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-                <DayOfWeekChip />
+              {/* ── Feed button ── */}
+              <div className="mt-3 flex justify-center" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setTreatShopOpen(true)}
+                  className="px-4 py-2 rounded-xl font-sans text-[13px] font-extrabold bg-gold text-jewelInk border-[1.5px] border-jewelInk active:scale-95 transition-transform flex items-center gap-2"
+                  style={{ boxShadow: '2px 2px 0 #15100A' }}
+                >
+                  <span className="text-[16px] leading-none">🍖</span>
+                  <span>Покормить</span>
+                  <span className="text-jewelInk/70 font-bold">· ⭐ {availableXp}</span>
+                </button>
               </div>
 
               {suggestion && (
@@ -627,6 +657,46 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           value={milestone.value}
           onDismiss={() => setMilestone(null)}
         />
+      )}
+
+      {/* Treat shop modal */}
+      {treatShopOpen && (
+        <TreatShop
+          availableXp={Math.max(0, progress.xp - progress.xpSpent)}
+          totalTreatsGiven={progress.totalTreatsGiven}
+          onFed={(r) => {
+            setTreatShopOpen(false)
+            onProgressUpdate?.({
+              xpSpent: r.xpSpent,
+              totalTreatsGiven: r.totalTreatsGiven,
+              lastFedAtUtc: r.lastFedAtUtc,
+            })
+            setFeedingAnimation(r.treatIndex)
+          }}
+          onClose={() => setTreatShopOpen(false)}
+        />
+      )}
+
+      {/* Per-treat feeding animation overlay */}
+      {feedingAnimation !== null && (
+        <FeedingAnimation
+          treatIndex={feedingAnimation}
+          onComplete={() => {
+            setFeedingAnimation(null)
+            setFeedToast('Бомбора доволен! მადლობა 💛')
+            setTimeout(() => setFeedToast(null), 2500)
+          }}
+        />
+      )}
+
+      {/* Feed success toast */}
+      {feedToast && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-xl bg-jewelInk text-cream font-sans text-[14px] font-bold shadow-lg"
+          style={{ bottom: 'calc(var(--safe-b) + 24px)' }}
+        >
+          {feedToast}
+        </div>
       )}
     </div>
   )

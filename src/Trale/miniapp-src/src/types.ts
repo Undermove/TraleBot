@@ -44,6 +44,9 @@ export interface ProgressState {
   streak: number
   completedLessons: Record<string, number[]>
   lastPlayedDate: string | null
+  xpSpent: number
+  totalTreatsGiven: number
+  lastFedAtUtc: string | null
 }
 
 // Catalog — comes from /api/miniapp/content

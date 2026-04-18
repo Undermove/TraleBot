@@ -250,6 +250,7 @@ export default function App() {
             userLevel={userLevel ?? 'beginner'}
             isPro={isPro}
             onPurchaseSuccess={handleProPurchaseSuccess}
+            onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
             navigate={navigate}
           />
         </>
@@ -344,6 +345,6 @@ export default function App() {
         />
       )
     default:
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
+      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))} navigate={navigate} />
   }
 }

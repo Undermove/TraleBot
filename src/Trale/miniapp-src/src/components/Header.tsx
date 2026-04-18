@@ -102,7 +102,7 @@ export default function Header({ progress, onBack, title, eyebrow, variant = 'de
             </div>
             <div className="flex items-baseline gap-1">
               <span className="font-sans text-[14px] font-extrabold text-gold-deep tabular-nums leading-none">
-                {progress.xp}
+                {Math.max(0, progress.xp - progress.xpSpent)}
               </span>
               <span className="font-sans text-[9px] font-bold text-jewelInk-mid uppercase tracking-wider">
                 xp

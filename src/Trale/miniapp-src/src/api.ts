@@ -29,6 +29,9 @@ export interface ProgressDto {
   streak: number
   lastPlayedAtUtc: string | null
   completedLessons: Record<string, number[]>
+  xpSpent?: number
+  totalTreatsGiven?: number
+  lastFedAtUtc?: string | null
 }
 
 export interface MeResponse {
@@ -166,6 +169,17 @@ export const api = {
     request<{ ok: boolean; alreadyPro?: boolean; invoiceLink?: string }>('/api/miniapp/purchase', {
       method: 'POST',
       body: JSON.stringify({ plan })
+    }),
+
+  feedTreat: (treatIndex: number) =>
+    request<{
+      ok: boolean
+      xpSpent: number
+      totalTreatsGiven: number
+      lastFedAtUtc: string
+    }>('/api/miniapp/treat', {
+      method: 'POST',
+      body: JSON.stringify({ treatIndex })
     }),
 
   refund: (chargeId?: string) =>
