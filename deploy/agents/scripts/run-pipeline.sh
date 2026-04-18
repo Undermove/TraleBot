@@ -140,9 +140,10 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / revi
     "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. Your role this hour:
 - Pick ONE task to work on, in this priority order:
     1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
-    2) else highest-priority open issue labelled 'task' AND 'P1' with no assignee,
-    3) else 'task' + 'P2' with no assignee,
-    4) else 'task' + 'P3' with no assignee.
+    2) else any open issue labelled 'bug' with no assignee (CONTENT BUGS from methodist are HIGHEST product priority — users will see wrong grammar; prefer issues that also have 'methodist' label),
+    3) else highest-priority open issue labelled 'task' AND 'P1' with no assignee,
+    4) else 'task' + 'P2' with no assignee,
+    5) else 'task' + 'P3' with no assignee.
 - Assign the issue to yourself: 'gh issue edit <N> --add-assignee @me' (or just add a comment 'Taking this' if assignment fails).
 - Implement it on the shared branch. Follow ARCHITECTURE.md: new use cases as services (not MediatR), Clean Architecture layers, unit tests for new business logic.
 - Run 'dotnet test' (must be green) and 'cd src/Trale/miniapp-src && npm run build'.
