@@ -16,6 +16,9 @@ interface Props {
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
 type TranslateState = 'idle' | 'translating' | 'success' | 'error'
 type Filter = 'all' | 'new' | 'weak' | 'mastered'
+type OnboardingState = 'idle' | 'adding' | 'done' | 'error'
+
+const ONBOARDING_WORD_COUNT = 5
 
 interface Toast {
   id: number
@@ -36,6 +39,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
   const [cardItem, setCardItem] = useState<VocabularyItem | null>(null)
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set())
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [onboardingState, setOnboardingState] = useState<OnboardingState>('idle')
   const toastCounter = useRef(0)
 
   useEffect(() => {
@@ -160,6 +164,31 @@ export default function VocabularyList({ progress, navigate }: Props) {
       navigate({ kind: 'vocabulary-quiz', mode, wordIds: Array.from(selected) })
     } else {
       navigate({ kind: 'vocabulary-quiz', mode })
+    }
+  }
+
+  async function addStarterOnboarding() {
+    if (onboardingState === 'adding') return
+    setOnboardingState('adding')
+    const seed = items.slice(0, ONBOARDING_WORD_COUNT).map((i) => sides(i).georgian).filter(Boolean)
+    if (seed.length === 0) {
+      setOnboardingState('error')
+      return
+    }
+    try {
+      const results = await Promise.all(seed.map((w) => api.translateWord(w).catch(() => null)))
+      const addedAny = results.some((r) => r && (r.status === 'success' || r.status === 'exists'))
+      if (!addedAny) {
+        setOnboardingState('error')
+        return
+      }
+      const fresh = await api.vocabulary()
+      setItems(fresh.items.length > 0 ? fresh.items : fresh.starterItems)
+      setIsStarterMode(fresh.items.length === 0)
+      setOnboardingState('done')
+      showToast(`В словарь добавлено ${seed.length} ${pluralizeWord(seed.length)}`)
+    } catch {
+      setOnboardingState('error')
     }
   }
 
@@ -347,6 +376,49 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Onboarding CTA — first visit: one-tap add 5 starter words */}
+        {isStarterMode && onboardingState !== 'done' && (
+          <div className="jewel-tile px-5 py-4 mb-5 !bg-gold/20">
+            <div className="relative z-[1]">
+              <div className="mn-eyebrow mb-1">первые слова</div>
+              <div className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight">
+                Добавь 5 слов в словарь одним нажатием
+              </div>
+              <div className="font-sans text-[12px] text-jewelInk-mid mt-1 leading-snug">
+                Возьмём {ONBOARDING_WORD_COUNT} слов из стартовой колоды и положим их в твой словарь — потом сможешь пройти по ним квиз.
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {items.slice(0, ONBOARDING_WORD_COUNT).map((item) => {
+                  const { georgian, russian } = sides(item)
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-cream border-[1.5px] border-jewelInk rounded-lg px-2.5 py-1.5"
+                      style={{ boxShadow: '2px 2px 0 #15100A' }}
+                    >
+                      <span className="font-geo text-[13px] font-bold text-jewelInk">{georgian}</span>
+                      <span className="font-sans text-[11px] text-jewelInk-mid ml-1.5">{russian}</span>
+                    </div>
+                  )
+                })}
+              </div>
+              <button
+                onClick={addStarterOnboarding}
+                disabled={onboardingState === 'adding'}
+                className="w-full mt-4 px-4 py-3 bg-gold border-[1.5px] border-jewelInk rounded-xl font-sans text-[14px] font-extrabold uppercase tracking-wide text-jewelInk disabled:opacity-50 active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                style={{ boxShadow: '2px 2px 0 #15100A' }}
+              >
+                {onboardingState === 'adding' ? 'добавляю...' : 'добавить в словарь'}
+              </button>
+              {onboardingState === 'error' && (
+                <div className="mt-2 font-sans text-[12px] text-ruby">
+                  Не удалось добавить. Попробуй ещё раз или переведи слово вручную.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Translate bar */}
         <div className="mb-4">
