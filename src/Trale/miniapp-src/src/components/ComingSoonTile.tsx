@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 interface ComingSoonTileProps {
   geoTitle: string
@@ -6,10 +6,9 @@ interface ComingSoonTileProps {
   onTap?: () => void
 }
 
-let toastTimer: ReturnType<typeof setTimeout> | null = null
-
 export default function ComingSoonTile({ geoTitle, geoIcon, onTap }: ComingSoonTileProps) {
   const [showToast, setShowToast] = useState(false)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleTap() {
     if (onTap) {
@@ -18,13 +17,13 @@ export default function ComingSoonTile({ geoTitle, geoIcon, onTap }: ComingSoonT
     }
     // Show inline toast
     setShowToast(true)
-    if (toastTimer) clearTimeout(toastTimer)
-    toastTimer = setTimeout(() => setShowToast(false), 2500)
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setShowToast(false), 2500)
   }
 
   useEffect(() => {
     return () => {
-      if (toastTimer) clearTimeout(toastTimer)
+      if (toastTimer.current) clearTimeout(toastTimer.current)
     }
   }, [])
 
