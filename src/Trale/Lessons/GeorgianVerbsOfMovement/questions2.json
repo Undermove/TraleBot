@@ -796,7 +796,7 @@
       "difficulty": 2
     },
     {
-      "id": "q_like_up_01",
+      "id": "m2_q_like_up_01",
       "lemma": "ა",
       "template": "cloze_like",
       "prompt": "«Люблю подниматься в горы»: მიყვარს ___ მთაზე",
