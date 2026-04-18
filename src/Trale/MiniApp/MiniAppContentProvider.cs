@@ -780,7 +780,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("მე ვარ სტუდენტი", "Я — студент"),
                         Example("ის არის ექიმი", "Он/она — врач")
                     }),
-                Lesson(2, "Указательные местоимения", "ეს, ეგ, ის — это, то",
+                Lesson(2, "Указательные местоимения и наречия места", "ეს, ეგ, ის — это, то; აქ, იქ — здесь, там",
                     "Указательные местоимения",
                     "Различать три степени удалённости.",
                     new List<TheoryBlockDto>
@@ -918,7 +918,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                     {
                         Paragraph("Финальный прогон по всем глаголам. Следи за приставками и суффиксами."),
                         Example("მე ვარ ექიმი და ვმუშაობ საავადმყოფოში", "Я врач и работаю в больнице"),
-                        Example("მას აქვს ძაღლი, ის უყვარს", "У него есть собака, он её любит")
+                        Example("მას უყვარს ძაღლი", "Он любит собаку")
                     })
             }
         };
