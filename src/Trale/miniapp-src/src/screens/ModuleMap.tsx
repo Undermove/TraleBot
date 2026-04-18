@@ -1,7 +1,9 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Header from '../components/Header'
+import HistoryBanner from '../components/HistoryBanner'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
+import ScriptHistoryCarousel from '../components/ScriptHistoryCarousel'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -17,6 +19,7 @@ export default function ModuleMap({
   progress,
   navigate
 }: Props) {
+  const [historyOpen, setHistoryOpen] = useState(false)
   const module = catalog.modules.find((m) => m.id === moduleId)
   if (!module) {
     return (
@@ -153,8 +156,13 @@ export default function ModuleMap({
         {/* Module entry phrase — shown once per session */}
         <ModulePhraseBanner moduleId={moduleId} />
 
+        {/* History banner — alphabet modules only, always visible */}
+        {(moduleId === 'alphabet-progressive' || moduleId === 'alphabet') && (
+          <HistoryBanner onOpen={() => setHistoryOpen(true)} />
+        )}
+
         {/* Journey path map */}
-        <div className="mn-eyebrow mb-3">уроки</div>
+        <div className="mn-eyebrow mb-3 mt-4">уроки</div>
         <div
           className="relative mx-auto"
           style={{
@@ -338,6 +346,11 @@ export default function ModuleMap({
 
       <div className="mn-kilim opacity-70" />
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+
+      {/* Script history carousel — full-screen overlay, z-50 */}
+      {historyOpen && (
+        <ScriptHistoryCarousel onClose={() => setHistoryOpen(false)} />
+      )}
     </div>
   )
 }

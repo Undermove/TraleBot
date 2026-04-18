@@ -498,6 +498,28 @@ input:focus-visible {
 }
 .cursor-blink { animation: cursor-blink 1s step-end infinite; }
 
+/* Script history card transitions (ScriptHistoryCarousel) */
+@keyframes mn-card-exit {
+  0%   { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(-20px); }
+}
+@keyframes mn-card-enter {
+  0%   { opacity: 0; transform: translateX(20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+.mn-card-exit  { animation: mn-card-exit  200ms ease-in  both; }
+.mn-card-enter { animation: mn-card-enter 250ms ease-out both; }
+
+/* Script history overlay — slide up on open, slide down on close */
+@keyframes history-overlay-in {
+  0%   { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes history-overlay-out {
+  0%   { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(18px); }
+}
+
 /* Milestone banner — slide up from bottom */
 @keyframes milestone-slide-up {
   from { transform: translateY(100%); opacity: 0; }
