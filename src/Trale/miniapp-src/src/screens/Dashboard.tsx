@@ -7,7 +7,6 @@ import DayOfWeekChip from '../components/DayOfWeekChip'
 import DashboardTopBar from '../components/DashboardTopBar'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import TimeGreeting from '../components/TimeGreeting'
-import LaunchPathBar from '../components/LaunchPathBar'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
@@ -85,7 +84,7 @@ interface Props {
  * product signature is a tiny kilim strip at the top.
  *
  * Layout:
- *   Hero → LaunchSection (5 modules + LaunchPathBar) → MyVocab → ExtraTopics (all other active modules) → Profile
+ *   Hero → LaunchSection (5 modules) → MyVocab → ExtraTopics (grammar / situations / verbs) → Profile
  */
 export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, navigate }: Props) {
   const hasAccess = isPro || isTrialActive
@@ -300,11 +299,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   })).filter((g) => g.modules.length > 0)
   const extraCount = extraGroupsResolved.reduce((sum, g) => sum + g.modules.length, 0)
 
-  // Completed module ids (modules where all lessons are done)
-  const completedModuleIds = catalog.modules
-    .filter((m) => m.lessons.length > 0 && (progress.completedLessons[m.id] ?? []).length >= m.lessons.length)
-    .map((m) => m.id)
-
   return (
     <div className="flex flex-col min-h-full bg-cream">
       {/* ══ Kilim + stats bar ══ */}
@@ -430,15 +424,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           )}
         </section>
 
-        {/* LaunchPathBar */}
-        <LaunchPathBar
-          completedModules={completedModuleIds}
-          launchModuleIds={LAUNCH_MODULE_IDS}
-        />
-
         {/* My Vocabulary — ვ (6th, always present) */}
         {myVocabModule && (
-          <section className="px-5 pb-3">
+          <section className="px-5 pb-3 pt-1">
             {renderModuleTile(myVocabModule, 'ვ', launchModules.length)}
           </section>
         )}
