@@ -208,7 +208,7 @@ export default function ScriptHistoryCarousel({ onClose }: Props) {
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <button
           onClick={handleClose}
-          className="w-9 h-9 flex items-center justify-center rounded-full text-[20px] text-jewelInk active:bg-jewelInk/10"
+          className="w-9 h-9 flex items-center justify-center rounded-full text-[18px] text-jewelInk active:bg-jewelInk/10"
           style={{
             border: '1px solid rgba(21,16,10,0.2)',
             WebkitTapHighlightColor: 'transparent',
@@ -234,11 +234,11 @@ export default function ScriptHistoryCarousel({ onClose }: Props) {
             </div>
 
             {isReveal ? (
-              /* Card 4 special header: big ქ with gold underline */
+              /* Card 4 special header: big ქ with gold underline — static (no animation) */
               <div className="flex flex-col items-center">
                 <span
-                  className="mn-loader-letter text-navy font-geo"
-                  style={{ fontSize: 64, lineHeight: 1 }}
+                  className="font-geo font-bold text-navy"
+                  style={{ fontSize: 64, lineHeight: 1, display: 'inline-block' }}
                 >
                   ქ
                 </span>
