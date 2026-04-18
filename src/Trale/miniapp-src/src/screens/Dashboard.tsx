@@ -199,7 +199,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel: 
               <div className="mt-3 flex justify-center" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setTreatShopOpen(true)}
-                  className="px-4 py-2 rounded-xl font-sans text-[13px] font-extrabold bg-gold text-jewelInk border-[1.5px] border-jewelInk active:scale-95 transition-transform flex items-center gap-2"
+                  className="px-4 py-3 rounded-xl font-sans text-[13px] font-semibold bg-cream-tile text-jewelInk border-[1.5px] border-jewelInk/60 active:scale-95 transition-transform flex items-center gap-2"
                   style={{ boxShadow: '2px 2px 0 #15100A' }}
                 >
                   <span className="text-[16px] leading-none">🍖</span>

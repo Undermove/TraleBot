@@ -283,7 +283,8 @@
 
 ### L11. Minankari Design Audit: единообразие + один CTA на экран `[designed]`
 Источник: STRATEGY.md → Section 2 (Interface)  
-Дизайн-спека: `design-specs/L11-minankari-design-audit.md`
+Дизайн-спека: `design-specs/L11-minankari-design-audit.md`  
+(issues: #276 — kilim additions, #277 — Dashboard tap target + visual weight)
 
 **Зачем:** launch-чеклист §2 требует: (1) Minankari применён единообразно, (2) один первичный CTA на экран, (3) нет визуальных багов на 375px. Аудит выявил конкретные несоответствия.
 
@@ -292,7 +293,7 @@
 - `LessonTheory.tsx` — добавить kilim-полосы сверху и снизу
 - `VocabularyList.tsx` — добавить kilim-полосы сверху и снизу, проверить CTA
 - `Profile.tsx` — добавить верхнюю kilim-полосу (нижняя уже есть)
-- `Dashboard.tsx` — кнопка «Покормить»: `py-2` → `py-3` (tap target ≥ 44px), понизить визуальный вес (bg-gold → bg-cream-tile)
+- `Dashboard.tsx` — кнопка «Покормить»: `py-2` → `py-3` (tap target ≥ 44px), понизить визуальный вес (bg-gold → bg-cream-tile) — **py-3 + cream-tile исправлено tech-lead в nightly-2026-04-19 (boy-scout)**
 
 **Обучающий элемент:** kilim-орнамент = мтиульский ковровый мотив, reveal — в будущем модуле «История алфавита» (#33).
 **Критерий готовности:** все launch-экраны имеют mn-kilim сверху и снизу; кнопка «Покормить» ≥ 44px tap target; один primary CTA на экран.
