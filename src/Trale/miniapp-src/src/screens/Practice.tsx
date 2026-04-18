@@ -255,14 +255,15 @@ export default function Practice({
             onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
             className="shrink-0 w-11 h-11 rounded-xl bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-75"
             style={{ boxShadow: '2px 2px 0 #15100A' }}
-            aria-label="Закрыть"
+            aria-label="Назад"
           >
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path
-                d="M3 3 L13 13 M13 3 L3 13"
+                d="M10 3 L4 8 L10 13"
                 stroke="#15100A"
                 strokeWidth="2.2"
                 strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
           </button>
