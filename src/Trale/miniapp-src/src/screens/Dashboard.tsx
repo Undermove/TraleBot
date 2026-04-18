@@ -8,7 +8,6 @@ import DashboardTopBar from '../components/DashboardTopBar'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import TimeGreeting from '../components/TimeGreeting'
 import LaunchPathBar from '../components/LaunchPathBar'
-import ComingSoonTile from '../components/ComingSoonTile'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
@@ -18,8 +17,9 @@ const STREAK_THRESHOLDS = Object.keys(STREAK_MILESTONES).map(Number)
 // Ordered launch modules (fixed sequence ა→ბ→გ→დ→ე)
 const LAUNCH_MODULE_IDS = ['alphabet-progressive', 'numbers', 'intro', 'pronouns', 'present-tense']
 
-// Coming Soon = everything that is neither launch nor my-vocabulary
-const COMING_SOON_MODULE_IDS = [
+// Extra modules — all other topics grouped as "все темы" below launch + vocab.
+// Order is curated (grammar → situations → advanced verbs).
+const EXTRA_MODULE_IDS = [
   'cases', 'postpositions', 'adjectives',
   'cafe', 'shopping', 'taxi', 'doctor', 'emergency',
   'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
@@ -28,6 +28,12 @@ const COMING_SOON_MODULE_IDS = [
 
 // Georgian letter numerals for launch tiles (ა=1 … ვ=6)
 const GEO_LAUNCH_NUMERALS = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ']
+
+// Continued Georgian letters (ზ=7 … ქ=22) for extra-section badges
+const GEO_EXTRA_NUMERALS = [
+  'ზ', 'თ', 'ი', 'კ', 'ლ', 'მ', 'ნ', 'ო',
+  'პ', 'ჟ', 'რ', 'ს', 'ტ', 'უ', 'ფ', 'ქ',
+]
 
 function pluralDays(n: number): string {
   const mod100 = n % 100
@@ -58,8 +64,8 @@ interface Props {
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  *
- * Layout (post L5 refactor):
- *   Hero → LaunchSection (5 modules + LaunchPathBar) → MyVocab → ComingSoonSection → Profile
+ * Layout:
+ *   Hero → LaunchSection (5 modules + LaunchPathBar) → MyVocab → ExtraTopics (all other active modules) → Profile
  */
 export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, navigate }: Props) {
   const hasAccess = isPro || isTrialActive
@@ -108,18 +114,19 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     prevProgressRef.current = progress
   }, [progress.xp, progress.streak])
 
-  // Coming-soon collapse state — persisted in localStorage, collapsed by default
-  const [comingSoonCollapsed, setComingSoonCollapsed] = useState<boolean>(() => {
+  // Extra-modules collapse state — persisted in localStorage, collapsed by default
+  // so the dashboard stays focused on the launch path; tap to expand all topics.
+  const [extraCollapsed, setExtraCollapsed] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem('bombora_comingsoon_collapsed')
+      const saved = localStorage.getItem('bombora_extra_collapsed')
       return saved !== null ? JSON.parse(saved) : true
     } catch { return true }
   })
 
-  function toggleComingSoon() {
-    setComingSoonCollapsed((prev) => {
+  function toggleExtra() {
+    setExtraCollapsed((prev) => {
       const next = !prev
-      try { localStorage.setItem('bombora_comingsoon_collapsed', JSON.stringify(next)) } catch {}
+      try { localStorage.setItem('bombora_extra_collapsed', JSON.stringify(next)) } catch {}
       return next
     })
   }
@@ -159,26 +166,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
   // Build module lookup from catalog
   const moduleById = Object.fromEntries(catalog.modules.map((m) => [m.id, m]))
-
-  // Coming-soon tile mapping from design spec
-  const comingSoonMeta: Record<string, { geoTitle: string; geoIcon: string }> = {
-    'cases':            { geoTitle: 'ბრუნვები',    geoIcon: 'ბ' },
-    'postpositions':    { geoTitle: 'თანდებულები', geoIcon: 'შ' },
-    'adjectives':       { geoTitle: 'ზედსართავები',geoIcon: 'ლ' },
-    'cafe':             { geoTitle: 'კაფე',         geoIcon: 'ყ' },
-    'shopping':         { geoTitle: 'მაღაზია',      geoIcon: 'ხ' },
-    'taxi':             { geoTitle: 'ტაქსი',        geoIcon: 'ტ' },
-    'doctor':           { geoTitle: 'ექიმი',        geoIcon: 'ე' },
-    'emergency':        { geoTitle: 'დახმარება',    geoIcon: 'ს' },
-    'verb-classes':     { geoTitle: 'ზმნის კლასები',geoIcon: 'ზ' },
-    'version-vowels':   { geoTitle: 'ვერსია',       geoIcon: 'უ' },
-    'preverbs':         { geoTitle: 'პრევერბები',   geoIcon: 'და' },
-    'imperfect':        { geoTitle: 'უწყვეტელი',    geoIcon: 'დ' },
-    'aorist':           { geoTitle: 'წყვეტილი',     geoIcon: 'მ' },
-    'pronoun-declension':{ geoTitle: 'ბრუნვა',      geoIcon: 'ი' },
-    'conditionals':     { geoTitle: 'პირობითი',     geoIcon: 'თ' },
-    'verbs-of-movement':{ geoTitle: 'ზმნები',       geoIcon: 'ზ' },
-  }
 
   function renderModuleTile(m: ModuleDto, geoNum: string, tileIdx: number) {
     const hasLessons = m.lessons.length > 0
@@ -283,7 +270,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   // Modules for each section
   const launchModules = LAUNCH_MODULE_IDS.map((id) => moduleById[id]).filter(Boolean) as ModuleDto[]
   const myVocabModule = moduleById['my-vocabulary']
-  const comingSoonModules = COMING_SOON_MODULE_IDS.filter((id) => comingSoonMeta[id])
+  const extraModules = EXTRA_MODULE_IDS.map((id) => moduleById[id]).filter(Boolean) as ModuleDto[]
 
   // Completed module ids (modules where all lessons are done)
   const completedModuleIds = catalog.modules
@@ -429,45 +416,39 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         )}
       </div>
 
-      {/* ══ Coming Soon section — «скоро» ══ */}
-      <div>
-        {/* Section header — tappable to collapse/expand */}
-        <button
-          onClick={toggleComingSoon}
-          className="w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity"
-          style={{ minHeight: 48 }}
-        >
-          <div className="mn-eyebrow">скоро</div>
-          <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">მალე</div>
-          <div className="flex-1 h-px bg-jewelInk/15" />
-          <div className="font-sans text-[11px] font-bold text-jewelInk-hint tabular-nums">
-            {comingSoonModules.length}
-          </div>
-          <svg
-            width="12" height="12" viewBox="0 0 24 24" fill="none"
-            className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${comingSoonCollapsed ? '-rotate-90' : ''}`}
+      {/* ══ All other topics — «все темы» (collapsible) ══ */}
+      {extraModules.length > 0 && (
+        <div>
+          {/* Section header — tappable to collapse/expand */}
+          <button
+            onClick={toggleExtra}
+            className="w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity"
+            style={{ minHeight: 48 }}
           >
-            <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+            <div className="mn-eyebrow">все темы</div>
+            <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">ყველა თემა</div>
+            <div className="flex-1 h-px bg-jewelInk/15" />
+            <div className="font-sans text-[11px] font-bold text-jewelInk-hint tabular-nums">
+              {extraModules.length}
+            </div>
+            <svg
+              width="12" height="12" viewBox="0 0 24 24" fill="none"
+              className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${extraCollapsed ? '-rotate-90' : ''}`}
+            >
+              <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
 
-        {/* Coming Soon grid */}
-        {!comingSoonCollapsed && (
-          <div className="grid grid-cols-2 gap-3 px-5 pb-2">
-            {comingSoonModules.map((id) => {
-              const meta = comingSoonMeta[id]
-              if (!meta) return null
-              return (
-                <ComingSoonTile
-                  key={id}
-                  geoTitle={meta.geoTitle}
-                  geoIcon={meta.geoIcon}
-                />
-              )
-            })}
-          </div>
-        )}
-      </div>
+          {/* Extra module tiles — same interactive style as launch tiles */}
+          {!extraCollapsed && (
+            <section className="px-5 flex flex-col gap-3 pb-2">
+              {extraModules.map((m, idx) =>
+                renderModuleTile(m, GEO_EXTRA_NUMERALS[idx] ?? '?', launchModules.length + 1 + idx)
+              )}
+            </section>
+          )}
+        </div>
+      )}
 
       {/* ══ Profile button ══ */}
       <div className="px-5 pb-6 pt-2">
