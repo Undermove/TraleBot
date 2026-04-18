@@ -4,7 +4,6 @@ import HistoryBanner from '../components/HistoryBanner'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
 import AlphabetHistoryButton from '../components/AlphabetHistoryButton'
-import AlphabetHistoryCarousel from '../components/AlphabetHistoryCarousel'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -170,33 +169,11 @@ export default function ModuleMap({
           )}
         </div>
 
-        {/* Alphabet history entry tile — only for alphabet-progressive module */}
-        {moduleId === 'alphabet-progressive' && (
-          <button
-            className="jewel-tile px-4 py-3 mb-5 w-full text-left active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all duration-75"
-            onClick={() => setShowHistory(true)}
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <div className="relative z-[1] flex items-center justify-between">
-              <div>
-                <div
-                  className="mb-0.5"
-                  style={{
-                    fontFamily: "'Noto Sans Georgian', 'Manrope', sans-serif",
-                    fontSize: 14,
-                    color: 'rgba(21,16,10,0.50)',
-                  }}
-                >
-                  ასომთავრული
-                </div>
-                <div className="font-sans text-[15px] font-extrabold text-jewelInk">
-                  История грузинского письма
-                </div>
-                <div className="mn-eyebrow mt-0.5">4 карточки · 1 минута</div>
-              </div>
-              <span className="font-sans text-[18px] font-bold text-navy ml-3">→</span>
-            </div>
-          </button>
+        {/* Alphabet history entry — only for alphabet modules */}
+        {(moduleId === 'alphabet-progressive' || moduleId === 'alphabet') && (
+          <div className="mt-4">
+            <AlphabetHistoryButton moduleId={moduleId} navigate={navigate} />
+          </div>
         )}
 
         {/* Module entry phrase — shown once per session */}

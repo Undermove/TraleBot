@@ -1,39 +1,32 @@
-import React from 'react'
+import { Screen } from '../types'
 
 interface AlphabetHistoryButtonProps {
-  onClick: () => void
-  className?: string
+  moduleId: string
+  navigate: (s: Screen) => void
 }
 
-/**
- * Entry point to the AlphabetHistoryCarousel.
- * Rendered in ModuleMap only for alphabet modules.
- * Pure presentation component — no internal state.
- */
-export default function AlphabetHistoryButton({ onClick, className = '' }: AlphabetHistoryButtonProps) {
+export default function AlphabetHistoryButton({ moduleId, navigate }: AlphabetHistoryButtonProps) {
   return (
     <button
-      onClick={onClick}
-      className={`jewel-tile jewel-pressable w-full px-4 py-3 flex items-center gap-3 text-left ${className}`}
-      style={{ WebkitTapHighlightColor: 'transparent' }}
+      className="jewel-tile w-full text-left"
+      style={{ minHeight: 56 }}
+      onClick={() => navigate({ kind: 'alphabet-history', moduleId })}
     >
-      {/* Georgian letter icon */}
-      <div className="w-8 h-8 rounded-full bg-navy/10 flex items-center justify-center shrink-0">
-        <span className="font-geo text-[18px] font-bold text-navy leading-none relative z-[1]">ა</span>
-      </div>
-
-      {/* Text */}
-      <div className="flex-1 min-w-0 relative z-[1]">
-        <div className="font-sans text-[15px] font-bold text-jewelInk leading-tight">
-          История алфавита
+      <div className="px-4 py-3 flex items-center gap-3">
+        {/* Georgian letter ა in navy circle */}
+        <div className="rounded-full bg-navy flex items-center justify-center shrink-0" style={{ width: 40, height: 40 }}>
+          <span className="font-geo text-[20px] font-bold text-cream leading-none">ა</span>
         </div>
-        <div className="font-sans text-[11px] text-jewelInk/60 mt-0.5">
-          V в. · 3 письма · UNESCO
-        </div>
-      </div>
 
-      {/* Arrow */}
-      <span className="text-jewelInk/40 text-[18px] ml-auto shrink-0 relative z-[1]">›</span>
+        {/* Text block */}
+        <div className="flex-1 min-w-0">
+          <div className="font-sans text-[15px] font-bold text-jewelInk">История алфавита</div>
+          <div className="font-sans text-[11px] text-jewelInk/60 mt-0.5">V в. · три стиля · ქართული</div>
+        </div>
+
+        {/* Arrow */}
+        <span className="text-jewelInk/40 text-[18px] ml-auto shrink-0 leading-none">›</span>
+      </div>
     </button>
   )
 }

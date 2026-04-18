@@ -563,27 +563,17 @@ input:focus-visible {
   animation: goldFlash 600ms ease-in-out both;
 }
 
-/* AlphabetHistoryCarousel — card slide transitions (forward/backward navigation) */
-@keyframes mn-slide-out-left {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(-32px); opacity: 0; }
+/* Card slide animations for AlphabetHistoryScreen carousel */
+@keyframes card-slide-from-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
-@keyframes mn-slide-in-right {
-  from { transform: translateX(32px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
+@keyframes card-slide-from-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
 }
-@keyframes mn-slide-out-right {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(32px); opacity: 0; }
-}
-@keyframes mn-slide-in-left {
-  from { transform: translateX(-32px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
-}
-.mn-slide-out-left  { animation: mn-slide-out-left  220ms ease both; }
-.mn-slide-in-right  { animation: mn-slide-in-right  220ms ease both; }
-.mn-slide-out-right { animation: mn-slide-out-right 220ms ease both; }
-.mn-slide-in-left   { animation: mn-slide-in-left   220ms ease both; }
+.card-enter-right { animation: card-slide-from-right 220ms ease-out both; }
+.card-enter-left  { animation: card-slide-from-left  220ms ease-out both; }
 
 /* Full-viewport-width kilim strip — breaks out of max-width:480px container.
    Used only on LandingScreen where kilim must span the full browser window. */

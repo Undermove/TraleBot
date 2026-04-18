@@ -14,6 +14,7 @@ import AdminScreen from './screens/AdminScreen'
 import AdminUserScreen from './screens/AdminUserScreen'
 import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
+import AlphabetHistoryScreen from './screens/AlphabetHistoryScreen'
 import LandingScreen from './screens/LandingScreen'
 import AlphabetHistoryScreen from './screens/AlphabetHistoryScreen'
 import Onboarding, { UserLevel } from './screens/Onboarding'
@@ -347,12 +348,7 @@ export default function App() {
         />
       )
     case 'alphabet-history':
-      return (
-        <AlphabetHistoryScreen
-          moduleId={screen.moduleId}
-          navigate={navigate}
-        />
-      )
+      return <AlphabetHistoryScreen moduleId={screen.moduleId} navigate={navigate} />
     default:
       return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} navigate={navigate} />
   }

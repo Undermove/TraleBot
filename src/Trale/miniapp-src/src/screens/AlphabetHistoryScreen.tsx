@@ -1,160 +1,150 @@
-import React, { useState, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '../components/Header'
 import Mascot from '../components/Mascot'
+import Stamp from '../components/Stamp'
 import { Screen } from '../types'
 
-interface Props {
+interface AlphabetHistoryScreenProps {
   moduleId: string
   navigate: (s: Screen) => void
 }
 
-const DOTS = ['ა', 'ბ', 'გ', 'დ']
+// ─── Card data types ─────────────────────────────────────────────────────────
 
-// ─── Card components (pure presentational, no state) ─────────────────────────
-
-function Card1() {
-  return (
-    <div className="jewel-tile px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow text-gold">ა — начало</div>
-      <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
-        V век — рождение
-      </div>
-      <div className="font-sans text-[40px] font-extrabold text-navy text-center my-4">
-        ანბანი
-      </div>
-      <div className="font-sans text-[13px] text-jewelInk/80 leading-relaxed flex-1">
-        Грузинский алфавит появился в V веке н.э. Старейшие известные надписи (~430 г.)
-        найдены в Палестине. Один из немногих алфавитов с точной датой рождения.
-      </div>
-      <Mascot size={64} mood="think" className="ml-auto mt-4" />
-    </div>
-  )
+interface ScriptStyle {
+  letters: string
+  name: string
+  desc: string
+  accent: 'navy' | 'neutral' | 'muted'
 }
 
-function Card2() {
-  const styles = [
-    { letter: 'მ', name: 'მხედრული', label: 'современный', navy: true },
-    { letter: 'Ⴋ', name: 'ასომთავრული', label: 'церковный',   navy: false },
-    { letter: '⴬', name: 'ნუსხური',     label: 'рукописный',  navy: false },
-  ]
-  return (
-    <div className="jewel-tile px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow text-gold">ბ — три стиля</div>
-      <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
-        Три стиля одного письма
-      </div>
-      <div className="flex gap-2 my-4">
-        {styles.map((s) => (
-          <div
-            key={s.name}
-            className="flex-1 flex flex-col items-center rounded-xl border border-jewelInk/20 bg-cream-tile px-2 py-3"
-          >
-            <span
-              className={`font-sans text-[28px] font-extrabold ${s.navy ? 'text-navy' : 'text-jewelInk'}`}
-            >
-              {s.letter}
-            </span>
-            <span className="font-sans text-[10px] text-jewelInk/60 text-center mt-1 leading-tight">
-              {s.name}
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="font-sans text-[10px] text-jewelInk/60 text-center -mt-2 mb-3 tracking-wide">
-        современный · церковный · рукописный
-      </div>
-      <div className="font-sans text-[13px] text-jewelInk/80 leading-relaxed flex-1">
-        Мы учим მხედრული — современное светское письмо. Остальные два встречаются в
-        церковных текстах.
-      </div>
-      <Mascot size={64} mood="guide" className="mt-4" />
-    </div>
-  )
+interface Card1 {
+  kind: 'birth'
+  label: string
+  labelRu: string
+  bombora: 'cheer'
+  body: string
+  caption: string
 }
 
-function Card3() {
-  return (
-    <div className="jewel-tile px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow text-gold">გ — в мире</div>
-      <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
-        Наследие ЮНЕСКО
-      </div>
-      <div className="font-sans text-[36px] font-extrabold text-navy text-center mt-4">
-        ქართული
-      </div>
-      <div className="font-sans text-[12px] text-jewelInk/60 text-center font-semibold tracking-wide mt-0.5 mb-4">
-        грузинский
-      </div>
-      <div className="font-sans text-[13px] text-jewelInk/80 leading-relaxed flex-1">
-        В 2016 году три грузинских письма включены в Реестр документального наследия
-        ЮНЕСКО. Из ~7 000 языков лишь ~100 имеют собственный алфавит. Грузинский —
-        один из старейших непрерывно используемых.
-      </div>
-      <Mascot size={64} mood="happy" className="ml-auto mt-4" />
-    </div>
-  )
+interface Card2 {
+  kind: 'styles'
+  label: string
+  labelRu: string
+  bombora: 'guide'
+  body: string
+  styles: ScriptStyle[]
 }
 
-function Card4() {
-  return (
-    <div className="jewel-tile gold-reveal-glow px-5 py-6 flex flex-col h-full">
-      <div className="mn-eyebrow text-ruby">დ — финал</div>
-      <div className="font-sans text-[24px] font-extrabold text-jewelInk leading-tight mt-1">
-        Ты уже знал эту букву
-      </div>
-      <div className="flex-1 flex items-center justify-center">
-        <div
-          className="display-xl text-navy text-center anim-scale-reveal"
-          style={{ fontSize: 'clamp(64px, 18vw, 80px)', animationDelay: '150ms' }}
-        >
-          ქ
-        </div>
-      </div>
-      <div className="font-sans text-[13px] text-jewelInk/80 leading-relaxed">
-        Каждый раз, открывая Бомбору, ты видел эту букву. Это ქ — первая буква слова
-        ქართული (грузинский). Загрузчик был уроком с первого дня.
-      </div>
-      <Mascot size={72} mood="cheer" className="anim-wag mx-auto mt-4" />
-    </div>
-  )
+interface Card3 {
+  kind: 'uniqueness'
+  label: string
+  labelRu: null
+  bombora: 'think'
+  body: string
+  navyTile: { geo: string; text: string }
+}
+
+interface Card4 {
+  kind: 'reveal'
+  label: string
+  labelRu: string
+  bombora: 'happy'
+  headline: string
+  body: string
+  reveal: { letter: string; word: string; translation: string }
+  stamp: string
+}
+
+type HistoryCard = Card1 | Card2 | Card3 | Card4
+
+// ─── Static card data — no backend needed ────────────────────────────────────
+
+const HISTORY_CARDS: HistoryCard[] = [
+  {
+    kind: 'birth',
+    label: 'V საუკუნე',
+    labelRu: 'Пятый век',
+    bombora: 'cheer',
+    body: 'Грузинский алфавит создан в V веке нашей эры. Это один из немногих алфавитов мира, признанных ЮНЕСКО частью нематериального культурного наследия.',
+    caption: '1 из 4 · «С чего всё началось»',
+  },
+  {
+    kind: 'styles',
+    label: 'სამი სახე',
+    labelRu: 'Три лица алфавита',
+    bombora: 'guide',
+    body: 'Ты учишь მხედრული — именно им написаны все современные тексты.',
+    styles: [
+      { letters: 'ა ბ გ', name: 'მხედრული', desc: 'всадническое · стандарт', accent: 'navy' },
+      { letters: 'Ⴀ Ⴁ Ⴂ', name: 'ასომთავრული', desc: 'заглавное · церковный декор', accent: 'neutral' },
+      { letters: 'ⴀ ⴁ ⴂ', name: 'ნუსხური', desc: 'рукописное · XII–XIX вв.', accent: 'muted' },
+    ],
+  },
+  {
+    kind: 'uniqueness',
+    label: 'Отдельный мир',
+    labelRu: null,
+    bombora: 'think',
+    body: 'В мире около 40 активно используемых письменностей. Грузинская — среди немногих, у которых нет общего предка с другими алфавитами.',
+    navyTile: {
+      geo: 'ქართული',
+      text: 'Грузинский — единственный официальный язык в регионе с полностью самобытной письменностью.',
+    },
+  },
+  {
+    kind: 'reveal',
+    label: 'ძველი მეგობარი',
+    labelRu: 'Старый знакомый',
+    bombora: 'happy',
+    headline: 'Ты уже знал её!',
+    body: 'Эта буква встречала тебя при каждом открытии. Теперь ты знаешь: ქ — «кани», первая буква слова',
+    reveal: { letter: 'ქ', word: 'ქართული', translation: 'грузинский язык' },
+    stamp: 'ძველი მეგობარი',
+  },
+]
+
+// ─── Shared sub-component ────────────────────────────────────────────────────
+
+function KilimStripe() {
+  return <div className="mn-kilim" />
 }
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
-export default function AlphabetHistoryScreen({ moduleId, navigate }: Props) {
-  const [cardIndex, setCardIndex] = useState(0)
-  const [outgoing, setOutgoing] = useState<React.ReactNode | null>(null)
-  const [animDir, setAnimDir] = useState<'left' | 'right'>('left')
-  const [animating, setAnimating] = useState(false)
-  const animRef = useRef(false)
+export default function AlphabetHistoryScreen({ moduleId, navigate }: AlphabetHistoryScreenProps) {
+  const [card, setCard] = useState(0)
+  const [animClass, setAnimClass] = useState<string>('')
+  const [showStamp, setShowStamp] = useState(false)
 
-  function renderCard(index: number): React.ReactNode {
-    switch (index) {
-      case 0: return <Card1 />
-      case 1: return <Card2 />
-      case 2: return <Card3 />
-      case 3: return <Card4 />
-      default: return null
+  // When card 4 appears, show stamp after 300ms
+  useEffect(() => {
+    if (card === 3) {
+      const t = setTimeout(() => setShowStamp(true), 300)
+      return () => clearTimeout(t)
+    } else {
+      setShowStamp(false)
     }
+  }, [card])
+
+  const goTo = (next: number, direction: 'right' | 'left') => {
+    setAnimClass(direction === 'right' ? 'card-enter-right' : 'card-enter-left')
+    setCard(next)
   }
 
-  function goTo(newIndex: number) {
-    if (animRef.current || newIndex === cardIndex || newIndex < 0 || newIndex > 3) return
-    const dir: 'left' | 'right' = newIndex > cardIndex ? 'left' : 'right'
-    animRef.current = true
-    setOutgoing(renderCard(cardIndex))
-    setAnimDir(dir)
-    setAnimating(true)
-    setCardIndex(newIndex)
-    setTimeout(() => {
-      setOutgoing(null)
-      setAnimating(false)
-      animRef.current = false
-    }, 295)
+  const goNext = () => {
+    if (card < HISTORY_CARDS.length - 1) goTo(card + 1, 'right')
   }
 
-  const outClass = animDir === 'left' ? 'card-slide-out-left' : 'card-slide-out-right'
-  const inClass  = animDir === 'left' ? 'card-slide-in-right' : 'card-slide-in-left'
+  const goBack = () => {
+    if (card > 0) goTo(card - 1, 'left')
+  }
+
+  const handleDone = () => {
+    navigate({ kind: 'module', moduleId })
+  }
+
+  const current = HISTORY_CARDS[card]
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
@@ -164,67 +154,222 @@ export default function AlphabetHistoryScreen({ moduleId, navigate }: Props) {
       />
 
       <div
-        className="flex-1 flex flex-col px-5 pt-6"
-        style={{ paddingBottom: 'calc(var(--safe-b) + 24px)' }}
+        className="flex flex-col flex-1 px-5 pt-4"
+        style={{ paddingBottom: 'calc(var(--safe-b) + 16px)' }}
       >
-        {/* Card carousel — overflow-hidden clips slide animations */}
-        <div className="relative overflow-hidden flex-1" style={{ minHeight: 420 }}>
-          {outgoing && (
-            <div key="outgoing" className={`absolute inset-0 ${outClass}`}>
-              {outgoing}
-            </div>
-          )}
+        {/* Card carousel — overflow-hidden clips slide animation */}
+        <div className="relative overflow-hidden flex-1 flex flex-col" style={{ maxHeight: 520 }}>
           <div
-            key="current"
-            className={animating ? `absolute inset-0 ${inClass}` : 'absolute inset-0'}
+            key={card}
+            className={`jewel-tile flex flex-col flex-1 overflow-hidden ${animClass}`}
+            onAnimationEnd={() => setAnimClass('')}
           >
-            {renderCard(cardIndex)}
+            <CardContent current={current} showStamp={showStamp} />
           </div>
         </div>
 
-        {/* Progress dots — Georgian letters ა ბ გ დ */}
-        <div className="flex gap-4 justify-center items-center py-3">
-          {DOTS.map((letter, i) => (
-            <button
-              key={letter}
-              onClick={() => goTo(i)}
-              className="w-11 h-11 flex items-center justify-center"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <span
-                className={`w-9 h-9 rounded-full flex items-center justify-center ${
-                  i === cardIndex ? 'bg-navy' : 'border-2 border-jewelInk/30'
-                }`}
-              >
-                <span
-                  className={`font-sans font-extrabold ${
-                    i === cardIndex
-                      ? 'text-[16px] text-cream'
-                      : 'text-[14px] text-jewelInk/30'
-                  }`}
-                >
-                  {letter}
-                </span>
-              </span>
-            </button>
+        {/* Dots indicator */}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          {HISTORY_CARDS.map((_, i) => (
+            <div
+              key={i}
+              className={`rounded-full transition-all duration-200 ${
+                i === card
+                  ? 'w-3 h-3 bg-gold'
+                  : 'w-2 h-2 bg-jewelInk/20'
+              }`}
+            />
           ))}
         </div>
 
-        {/* CTA button */}
-        <button
-          className="jewel-btn jewel-btn-navy w-full"
-          onClick={() =>
-            cardIndex === 3
-              ? navigate({ kind: 'module', moduleId })
-              : goTo(cardIndex + 1)
-          }
-        >
-          {cardIndex === 3 ? 'Начать алфавит' : 'Далее →'}
-        </button>
-      </div>
+        {/* Navigation buttons */}
+        <div className="flex gap-3 px-0 pt-4">
+          {/* Back button — hidden on card 0 */}
+          <button
+            className="jewel-btn jewel-btn-cream text-[14px] flex-1"
+            style={{ minHeight: 52, opacity: card === 0 ? 0 : 1, pointerEvents: card === 0 ? 'none' : 'auto' }}
+            onClick={goBack}
+          >
+            ← Назад
+          </button>
 
-      <div className="mn-kilim opacity-70" />
-      <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
+          {/* Next / Done button */}
+          {card < HISTORY_CARDS.length - 1 ? (
+            <button
+              className="jewel-btn jewel-btn-navy text-[14px] flex-1"
+              style={{ minHeight: 52 }}
+              onClick={goNext}
+            >
+              Дальше →
+            </button>
+          ) : (
+            <button
+              className="jewel-btn jewel-btn-navy text-[14px] flex-1"
+              style={{ minHeight: 52 }}
+              onClick={handleDone}
+            >
+              Готово ✓
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Individual card renderers ───────────────────────────────────────────────
+
+interface CardContentProps {
+  current: HistoryCard
+  showStamp: boolean
+}
+
+function CardContent({ current, showStamp }: CardContentProps) {
+  if (current.kind === 'birth') {
+    return (
+      <div className="flex flex-col flex-1">
+        <KilimStripe />
+        <div className="flex flex-col items-center px-4 pt-4 pb-2 flex-1">
+          <Mascot mood="cheer" size={64} />
+          <div className="mt-3 text-center">
+            <span className="font-sans text-[60px] font-extrabold text-navy leading-none">V</span>
+            <div className="font-geo text-[18px] font-bold text-navy mt-0">საუკუნე</div>
+            <div className="font-sans text-[11px] text-jewelInk/60">Пятый век</div>
+          </div>
+          <div className="h-px bg-gold/60 my-3 w-full" />
+          <p className="font-sans text-[14px] text-jewelInk leading-relaxed text-center">
+            {current.body}
+          </p>
+          <div className="mt-auto pt-3">
+            <div className="font-sans text-[10px] text-jewelInk/40 text-center">{current.caption}</div>
+          </div>
+        </div>
+        <KilimStripe />
+      </div>
+    )
+  }
+
+  if (current.kind === 'styles') {
+    return (
+      <div className="flex flex-col flex-1">
+        <KilimStripe />
+        <div className="flex flex-col items-center px-4 pt-4 pb-2 flex-1">
+          <Mascot mood="guide" size={64} />
+          <div className="mt-2 text-center">
+            <div className="font-geo text-[22px] font-bold text-navy">{current.label}</div>
+            <div className="font-sans text-[11px] text-jewelInk/60">{current.labelRu}</div>
+          </div>
+          <div className="h-px bg-gold/60 my-3 w-full" />
+
+          {/* Styles table */}
+          <div className="jewel-tile w-full overflow-hidden mx-0 p-0">
+            {current.styles.map((s, i) => (
+              <div
+                key={s.name}
+                className={`px-4 py-2.5 flex items-center gap-3 ${
+                  i < current.styles.length - 1 ? 'border-b border-jewelInk/10' : ''
+                } ${i === 0 ? 'bg-navy/5' : ''}`}
+              >
+                <span
+                  className={`font-geo text-[18px] font-bold w-16 shrink-0 ${
+                    s.accent === 'navy' ? 'text-navy' : s.accent === 'neutral' ? 'text-jewelInk' : 'text-jewelInk/50'
+                  }`}
+                >
+                  {s.letters}
+                </span>
+                <div className="flex flex-col min-w-0">
+                  <span
+                    className={`font-sans text-[11px] font-bold uppercase tracking-wide ${
+                      s.accent === 'navy' ? 'text-navy' : s.accent === 'neutral' ? 'text-jewelInk' : 'text-jewelInk/50'
+                    }`}
+                  >
+                    {s.name}
+                  </span>
+                  <span className="font-sans text-[10px] text-jewelInk/60">{s.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="font-sans text-[13px] text-jewelInk leading-relaxed text-center mt-3">
+            {current.body}
+          </p>
+        </div>
+        <KilimStripe />
+      </div>
+    )
+  }
+
+  if (current.kind === 'uniqueness') {
+    return (
+      <div className="flex flex-col flex-1">
+        <KilimStripe />
+        <div className="flex flex-col items-center px-4 pt-4 pb-2 flex-1">
+          <Mascot mood="think" size={64} />
+          <div className="mt-2 flex items-center gap-2 justify-center">
+            <span className="text-gold text-[16px]">✦</span>
+            <span className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight text-center">
+              {current.label}
+            </span>
+            <span className="text-gold text-[16px]">✦</span>
+          </div>
+          <div className="h-px bg-gold/60 my-3 w-full" />
+          <p className="font-sans text-[14px] text-jewelInk leading-relaxed text-center">
+            {current.body}
+          </p>
+          {/* Navy tile */}
+          <div
+            className="jewel-tile px-4 py-3 mt-3 w-full text-center"
+            style={{ backgroundColor: '#1B5FB0' }}
+          >
+            <div className="font-geo text-[16px] font-bold text-cream">{current.navyTile.geo}</div>
+            <div className="font-sans text-[12px] text-cream/90 mt-1 leading-snug">{current.navyTile.text}</div>
+          </div>
+        </div>
+        <KilimStripe />
+      </div>
+    )
+  }
+
+  // Card 4 — reveal
+  return (
+    <div className="flex flex-col flex-1">
+      <KilimStripe />
+      <div className="flex flex-col items-center px-4 pt-4 pb-2 flex-1">
+        <Mascot mood="happy" size={64} />
+        <div className="mt-2 font-sans text-[22px] font-extrabold text-jewelInk text-center">
+          {current.headline}
+        </div>
+        <div className="h-px bg-gold/60 my-3 w-full" />
+
+        {/* Animated letter */}
+        <div className="flex flex-col items-center">
+          <span className="mn-loader-letter font-geo text-[80px] font-bold text-navy leading-none">
+            {current.reveal.letter}
+          </span>
+          <div className="w-12 h-1 bg-gold rounded-full mx-auto mt-2 mb-4" />
+        </div>
+
+        <p className="font-sans text-[13px] text-jewelInk leading-relaxed text-center">
+          {current.body}
+        </p>
+
+        {/* Mini tile */}
+        <div className="jewel-tile px-4 py-3 mt-3 w-full text-center">
+          <div className="font-geo text-[20px] font-bold text-jewelInk">{current.reveal.word}</div>
+          <div className="font-sans text-[11px] text-jewelInk/60 mt-1">{current.reveal.translation}</div>
+        </div>
+
+        {/* Stamp — appears with delay */}
+        {showStamp && (
+          <div className="mt-4">
+            <Stamp color="navy" tilt="left" animate>
+              {current.stamp}
+            </Stamp>
+          </div>
+        )}
+      </div>
+      <KilimStripe />
     </div>
   )
 }
