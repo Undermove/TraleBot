@@ -3,7 +3,8 @@ import Header from '../components/Header'
 import HistoryBanner from '../components/HistoryBanner'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
-import AlphabetHistoryOverlay from '../components/AlphabetHistoryOverlay'
+import AlphabetHistoryButton from '../components/AlphabetHistoryButton'
+import AlphabetHistoryCarousel from '../components/AlphabetHistoryCarousel'
 import { CatalogDto, ProgressState, Screen } from '../types'
 
 interface Props {
@@ -201,9 +202,12 @@ export default function ModuleMap({
         {/* Module entry phrase — shown once per session */}
         <ModulePhraseBanner moduleId={moduleId} />
 
-        {/* Script history button — alphabet modules only */}
+        {/* Alphabet history button — shown only for alphabet modules */}
         {(moduleId === 'alphabet-progressive' || moduleId === 'alphabet') && (
-          <ScriptHistoryButton onOpen={() => setHistoryOpen(true)} />
+          <AlphabetHistoryButton
+            onClick={() => setShowHistory(true)}
+            className="mb-4"
+          />
         )}
 
         {/* Journey path map */}
@@ -393,7 +397,7 @@ export default function ModuleMap({
       <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
 
       {showHistory && (
-        <AlphabetHistoryOverlay onClose={() => setShowHistory(false)} />
+        <AlphabetHistoryCarousel onClose={() => setShowHistory(false)} />
       )}
     </div>
   )
