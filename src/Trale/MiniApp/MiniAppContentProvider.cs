@@ -201,6 +201,10 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
 
     private static ModuleDto BuildAlphabetProgressiveModule()
     {
+        // Each lesson's Letters(...) block lists the letters it introduces for the
+        // first time. The Profile "My Alphabet" widget unions those across completed
+        // lessons to derive learned-letter progress — so every one of the 33 Georgian
+        // letters has to appear in exactly one lesson's Letters(...) block here.
         return new ModuleDto
         {
             Id = "alphabet-progressive",
@@ -210,25 +214,54 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             Lessons = new List<LessonDto>
             {
                 Lesson(1, "Гласные", "ა ე ი ო უ", "Пять гласных грузинского", "Узнать и произносить все 5 гласных букв.",
-                    new List<TheoryBlockDto> { Paragraph("В грузинском 5 гласных. Каждая буква = один звук."), List("ა — а", "ე — э", "ი — и", "ო — о", "უ — у"), Paragraph("Прочитай: აე, ოი, უა — это уже грузинский!") }),
-                Lesson(2, "Первые согласные", "ბ გ დ მ ნ", "Согласные ბ გ დ მ ნ", "5 согласных, как русские.",
-                    new List<TheoryBlockDto> { List("ბ — б", "გ — г", "დ — д", "მ — м", "ნ — н") }),
-                Lesson(3, "Первые слова", "დედა, მამა, ბაბა", "Читаем первые слова", "Настоящие слова из 10 букв.",
-                    new List<TheoryBlockDto> { Paragraph("10 букв: ა ე ი ო უ ბ გ დ მ ნ. Хватает для слов!"), List("დედა — мама", "მამა — папа", "ბაბა — дедушка", "ბინა — квартира", "დიდი — большой"), Example("დედა, მამა, ბაბა", "мама, папа, дедушка") }),
+                    new List<TheoryBlockDto>
+                    {
+                        Paragraph("В грузинском 5 гласных. Каждая буква = один звук."),
+                        Letters("ა", "ე", "ი", "ო", "უ"),
+                        Paragraph("Прочитай: აე, ოი, უა — это уже грузинский!")
+                    }),
+                Lesson(2, "Первые согласные", "ბ გ დ ვ ზ მ ნ", "Согласные ბ გ დ ვ ზ მ ნ", "7 простых согласных, близких к русским.",
+                    new List<TheoryBlockDto>
+                    {
+                        Paragraph("Семь согласных без грузинских сюрпризов — читаются как русские."),
+                        Letters("ბ", "გ", "დ", "ვ", "ზ", "მ", "ნ")
+                    }),
+                Lesson(3, "Первые слова", "დედა, მამა, ბაბა", "Читаем первые слова", "Настоящие слова из уже выученных букв.",
+                    new List<TheoryBlockDto> { Paragraph("12 букв: 5 гласных + 7 согласных. Хватает для слов!"), List("დედა — мама", "მამა — папа", "ბაბა — дедушка", "ბინა — квартира", "დიდი — большой"), Example("დედა, მამა, ბაბა", "мама, папа, дедушка") }),
                 Lesson(4, "Частые согласные", "რ ს ტ ლ კ", "Согласные რ ს ტ ლ კ", "Ещё 5 согласных. ტ и კ — абруптивные.",
-                    new List<TheoryBlockDto> { List("რ — р (раскатистое)", "ს — с", "ტ — т (резкое)", "ლ — л", "კ — к (резкое)") }),
-                Lesson(5, "Читаем больше", "კარგი, ლომი, მარილი", "Чтение с 15 буквами", "Слова из 15 букв.",
+                    new List<TheoryBlockDto>
+                    {
+                        Letters("რ", "ს", "ტ", "ლ", "კ"),
+                        Paragraph("ტ и კ — абруптивные: резкие, короткие, со щелчком.")
+                    }),
+                Lesson(5, "Читаем больше", "კარგი, ლომი, მარილი", "Чтение с 17 буквами", "Слова из ранее выученных букв.",
                     new List<TheoryBlockDto> { List("კარგი — хороший", "ლომი — лев", "მარილი — соль", "კალამი — ручка", "სტუმარი — гость"), Example("კარგი დედა", "хорошая мама") }),
-                Lesson(6, "Тройки согласных", "ბ/ფ/პ, დ/თ/ტ, გ/ქ/კ", "Тройная система", "Звонкие, придыхательные, абруптивные.",
-                    new List<TheoryBlockDto> { Paragraph("Согласные идут тройками!"), List("Звонкие: ბ დ გ — как русские", "Придыхательные: ფ თ ქ — с выдохом", "Абруптивные: პ ტ კ — резкие"), Paragraph("Новые буквы: ფ თ ქ პ ჰ"), Example("ფული — деньги (придых.)", "პური — хлеб (абруптив.)") }),
-                Lesson(7, "Читаем с тройками", "ფული, პური, თავი, ქალი", "Чтение с 20 буквами", "Минимальные пары.",
+                Lesson(6, "Тройки согласных", "ფ თ ქ პ ჰ", "Тройная система", "Звонкие, придыхательные, абруптивные.",
+                    new List<TheoryBlockDto>
+                    {
+                        Paragraph("Согласные идут тройками!"),
+                        List("Звонкие: ბ დ გ — как русские", "Придыхательные: ფ თ ქ — с выдохом", "Абруптивные: პ ტ კ — резкие"),
+                        Paragraph("Новые буквы этого урока — придыхательные и ჰ:"),
+                        Letters("ფ", "თ", "ქ", "პ", "ჰ"),
+                        Example("ფული — деньги (придых.)", "პური — хлеб (абруптив.)")
+                    }),
+                Lesson(7, "Читаем с тройками", "ფული, პური, თავი, ქალი", "Чтение с тройками", "Минимальные пары.",
                     new List<TheoryBlockDto> { List("ფული — деньги", "პური — хлеб", "თავი — голова", "ქალი — женщина", "კაფე — кафе") }),
                 Lesson(8, "Шипящие и свистящие", "შ ჟ ჯ ძ წ ჭ", "Шипящие, аффрикаты", "Ещё 6 букв и их тройки.",
-                    new List<TheoryBlockDto> { List("შ — ш", "ჟ — ж", "ჯ — дж", "ძ — дз", "წ — ц (абруптив.)", "ჭ — ч (абруптив.)") }),
+                    new List<TheoryBlockDto>
+                    {
+                        Letters("შ", "ჟ", "ჯ", "ძ", "წ", "ჭ")
+                    }),
                 Lesson(9, "Последние 5 букв", "ჩ ც ხ ღ ყ", "Самые сложные звуки", "ღ и ყ — гортанные.",
-                    new List<TheoryBlockDto> { List("ჩ — ч", "ც — ц", "ხ — х"), Paragraph("Два самых сложных:"), List("ღ — гортанное «гх»", "ყ — гортанный щелчок"), Example("ყავა — кофе", "ღამე — ночь") }),
+                    new List<TheoryBlockDto>
+                    {
+                        Letters("ჩ", "ც", "ხ", "ღ", "ყ"),
+                        Paragraph("Два самых сложных:"),
+                        List("ღ — гортанное «гх»", "ყ — гортанный щелчок"),
+                        Example("ყავა — кофе", "ღამე — ночь")
+                    }),
                 Lesson(10, "Экзамен: все 33!", "სახლი, ძაღლი, ხაჭაპური", "Финальный экзамен", "Прочитай любое слово!",
-                    new List<TheoryBlockDto> { Paragraph("Все 33 буквы — ты готов!"), List("სახლი — дом", "ძაღლი — собака", "წიგნი — книга", "ხაჭაპური — хачапури", "ღვინო — вино", "ყავა — кофе"), Example("საქართველო", "Грузия") })
+                    new List<TheoryBlockDto> { Paragraph("Все 33 буквы — ты готов!"), List("სახლი — дом", "ძაღლი — собака", "წიგნი — книга", "ხაჭაპური — хачапური", "ღვინო — вино", "ყავა — кофе"), Example("საქართველო", "Грузия") })
             }
         };
     }
@@ -1378,17 +1411,20 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("გამარჯობა, როგორ ხარ?", "Здравствуй, как дела?"),
                         Example("კარგად, შენ?", "Хорошо, а ты?")
                     }),
-                Lesson(2, "О себе", "მე მქვია, საიდან ხარ, პროფესია",
+                Lesson(2, "О себе", "სახელი, მე მქვია, საიდან ხარ, ასაკი, პროფესია, ოჯახი",
                     "О себе",
                     "Представиться и рассказать о себе.",
                     new List<TheoryBlockDto>
                     {
                         List(
+                            "სახელი — имя",
                             "მე მქვია... — меня зовут...",
                             "საიდან ხარ? — откуда ты?",
-                            "მე ვარ რუსეთიდან — я из России",
+                            "მე ვარ ესპანეთიდან — я из Испании",
+                            "ასაკი — возраст",
                             "პროფესია — профессия",
-                            "სტუდენტი — студент"),
+                            "სტუდენტი — студент",
+                            "ოჯახი — семья (подробнее в след. уроке)"),
                         Example("მე მქვია ანა. მე ვარ საქართველოდან.", "Меня зовут Ана. Я из Грузии."),
                         Example("შენ რა პროფესია გაქვს?", "Какая у тебя профессия?")
                     }),
@@ -1419,7 +1455,8 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                             "ვმუშაობ — я работаю",
                             "მიყვარს — мне нравится / я люблю",
                             "ლამაზი — красивый",
-                            "საინტერესო — интересный"),
+                            "საინტერესო — интересный",
+                            "სასიამოვნოა — приятно (при знакомстве)"),
                         Example("მე ვცხოვრობ თბილისში", "Я живу в Тбилиси"),
                         Example("საქართველო ძალიან ლამაზია", "Грузия очень красивая")
                     }),
@@ -1429,7 +1466,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                     new List<TheoryBlockDto>
                     {
                         Example("— გამარჯობა! მე მქვია ნინო. შენ?", "— Привет! Меня зовут Нино. А тебя?"),
-                        Example("— მე მქვია დიმა. მე ვარ რუსეთიდან.", "— Меня зовут Дима. Я из России."),
+                        Example("— მე მქვია კარლოსი. მე ვარ ესპანეთიდან.", "— Меня зовут Карлос. Я из Испании."),
                         Example("— სასიამოვნოა! საქართველო მოგწონს?", "— Приятно! Тебе нравится Грузия?")
                     })
             }
@@ -1562,10 +1599,31 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
         Ru = ru
     };
 
-    private static Dictionary<int, List<AlphabetLetterDto>> BuildAlphabetLessonLetters()
+    /// <summary>
+    /// Theory block of type "letters" — the Profile screen's "My Alphabet" widget
+    /// scans these to decide which letters a lesson teaches. Resolves each symbol
+    /// through the shared 33-letter catalog so name/translit/example stay in sync
+    /// with the legacy alphabet module.
+    /// </summary>
+    private static TheoryBlockDto Letters(params string[] symbols) => new()
+    {
+        Type = "letters",
+        Letters = symbols.Select(s =>
+            AlphabetLetterCatalog.TryGetValue(s, out var dto)
+                ? dto
+                : throw new InvalidOperationException($"Unknown Georgian letter symbol: '{s}'"))
+            .ToList()
+    };
+
+    private static readonly List<AlphabetLetterDto> AllAlphabetLetters = BuildAllAlphabetLetters();
+
+    private static readonly Dictionary<string, AlphabetLetterDto> AlphabetLetterCatalog =
+        AllAlphabetLetters.ToDictionary(l => l.Letter, l => l);
+
+    private static List<AlphabetLetterDto> BuildAllAlphabetLetters()
     {
         // All 33 letters, each with name/translit/example.
-        var all = new List<AlphabetLetterDto>
+        return new List<AlphabetLetterDto>
         {
             new("ა", "ან", "а", "ავი", "злой"),
             new("ბ", "ბან", "б", "ბავშვი", "ребёнок"),
@@ -1601,8 +1659,12 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             new("ჯ", "ჯან", "дж", "ჯიბე", "карман"),
             new("ჰ", "ჰაე", "х (придых.)", "ჰაერი", "воздух")
         };
+    }
 
-        // Chunk into groups: 5 per lesson, last lesson gets the remainder (3).
+    private static Dictionary<int, List<AlphabetLetterDto>> BuildAlphabetLessonLetters()
+    {
+        // Chunk all 33 letters into groups: 5 per lesson, last lesson gets the remainder (3).
+        var all = AllAlphabetLetters;
         var result = new Dictionary<int, List<AlphabetLetterDto>>();
         var lessonId = 1;
         const int perLesson = 5;

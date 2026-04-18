@@ -83,7 +83,11 @@ public class MiniAppController : Controller
     [HttpGet("modules/{moduleId}/lessons/{lessonId:int}/questions")]
     public IActionResult GetModuleLessonQuestions(string moduleId, int lessonId)
     {
-        if (moduleId is "alphabet" or "alphabet-progressive")
+        // Legacy "alphabet" module uses the in-memory letter generator (7 auto-chunked lessons).
+        // "alphabet-progressive" has its own 10 curated lesson JSONs in Lessons/GeorgianAlphabetProgressive
+        // and flows through the generic ModuleRegistry path below — keeping the two in sync is
+        // why lessons 8–10 used to 404.
+        if (moduleId == "alphabet")
         {
             var alphabetQuestions = _content.GetAlphabetLessonQuestions(lessonId);
             if (alphabetQuestions.Count == 0)
