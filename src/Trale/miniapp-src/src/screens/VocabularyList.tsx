@@ -340,6 +340,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
         eyebrow="ლექსიკონი"
         title="Мой словарь"
       />
+      <div className="mn-kilim" />
 
       {/* Toast notifications */}
       <div className="fixed top-0 left-0 right-0 max-w-[480px] mx-auto z-[60] flex flex-col items-stretch px-4 pt-4 gap-2 pointer-events-none">
@@ -633,6 +634,8 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
           )}
         </div>
+
+        <div className="mn-kilim opacity-70 mt-4" />
       </div>
 
       {/* Action bar */}

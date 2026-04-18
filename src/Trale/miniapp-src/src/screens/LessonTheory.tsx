@@ -65,6 +65,7 @@ export default function LessonTheory({
         eyebrow={`урок ${lessonId} из ${module.lessons.length}`}
         title={module.title}
       />
+      <div className="mn-kilim" />
 
       <article
         className="flex-1 px-5 pt-6 pb-in"
@@ -94,6 +95,8 @@ export default function LessonTheory({
             <TheoryBlock key={i} block={b} />
           ))}
         </div>
+
+        <div className="mn-kilim opacity-70 mt-6" />
       </article>
 
       {/* Action bar */}

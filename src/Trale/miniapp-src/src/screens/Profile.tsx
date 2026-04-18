@@ -141,6 +141,7 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
         eyebrow="вкладка"
         title="Мой профиль"
       />
+      <div className="mn-kilim" />
 
       <div
         className="flex-1 px-5 pt-6 pb-in"
