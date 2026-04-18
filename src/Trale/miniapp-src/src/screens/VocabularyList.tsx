@@ -18,8 +18,6 @@ type TranslateState = 'idle' | 'translating' | 'success' | 'error'
 type Filter = 'all' | 'new' | 'weak' | 'mastered'
 type OnboardingState = 'idle' | 'adding' | 'done' | 'error'
 
-const ONBOARDING_WORD_COUNT = 5
-
 interface Toast {
   id: number
   message: string
@@ -170,7 +168,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
   async function addStarterOnboarding() {
     if (onboardingState === 'adding') return
     setOnboardingState('adding')
-    const seed = items.slice(0, ONBOARDING_WORD_COUNT).map((i) => sides(i).georgian).filter(Boolean)
+    const seed = items.map((i) => sides(i).georgian).filter(Boolean)
     if (seed.length === 0) {
       setOnboardingState('error')
       return
@@ -371,54 +369,30 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
             <div className="font-sans text-[13px] text-jewelInk-mid mt-1 leading-snug">
               {isStarterMode
-                ? 'Начни с базового набора от Бомборы или добавь свои слова ниже.'
+                ? `Добавь ${items.length} ${pluralizeWord(items.length)} из стартовой колоды в словарь одним нажатием — и возвращайся, чтобы пройти по ним квиз.`
                 : 'Отметь слова или выбери готовый набор снизу.'}
             </div>
+            {isStarterMode && (
+              <>
+                <button
+                  onClick={addStarterOnboarding}
+                  disabled={onboardingState === 'adding'}
+                  className="w-full mt-3 px-4 py-3 bg-gold border-[1.5px] border-jewelInk rounded-xl font-sans text-[14px] font-extrabold uppercase tracking-wide text-jewelInk disabled:opacity-50 active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                  style={{ boxShadow: '2px 2px 0 #15100A' }}
+                >
+                  {onboardingState === 'adding'
+                    ? 'добавляю...'
+                    : `добавить ${items.length} ${pluralizeWord(items.length)} в словарь`}
+                </button>
+                {onboardingState === 'error' && (
+                  <div className="mt-2 font-sans text-[12px] text-ruby">
+                    Не удалось добавить. Попробуй ещё раз или переведи слово вручную ниже.
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
-
-        {/* Onboarding CTA — first visit: one-tap add 5 starter words */}
-        {isStarterMode && onboardingState !== 'done' && (
-          <div className="jewel-tile px-5 py-4 mb-5 !bg-gold/20">
-            <div className="relative z-[1]">
-              <div className="mn-eyebrow mb-1">первые слова</div>
-              <div className="font-sans text-[17px] font-extrabold text-jewelInk leading-tight">
-                Добавь 5 слов в словарь одним нажатием
-              </div>
-              <div className="font-sans text-[12px] text-jewelInk-mid mt-1 leading-snug">
-                Возьмём {ONBOARDING_WORD_COUNT} слов из стартовой колоды и положим их в твой словарь — потом сможешь пройти по ним квиз.
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-3">
-                {items.slice(0, ONBOARDING_WORD_COUNT).map((item) => {
-                  const { georgian, russian } = sides(item)
-                  return (
-                    <div
-                      key={item.id}
-                      className="bg-cream border-[1.5px] border-jewelInk rounded-lg px-2.5 py-1.5"
-                      style={{ boxShadow: '2px 2px 0 #15100A' }}
-                    >
-                      <span className="font-geo text-[13px] font-bold text-jewelInk">{georgian}</span>
-                      <span className="font-sans text-[11px] text-jewelInk-mid ml-1.5">{russian}</span>
-                    </div>
-                  )
-                })}
-              </div>
-              <button
-                onClick={addStarterOnboarding}
-                disabled={onboardingState === 'adding'}
-                className="w-full mt-4 px-4 py-3 bg-gold border-[1.5px] border-jewelInk rounded-xl font-sans text-[14px] font-extrabold uppercase tracking-wide text-jewelInk disabled:opacity-50 active:translate-x-0.5 active:translate-y-0.5 transition-all"
-                style={{ boxShadow: '2px 2px 0 #15100A' }}
-              >
-                {onboardingState === 'adding' ? 'добавляю...' : 'добавить в словарь'}
-              </button>
-              {onboardingState === 'error' && (
-                <div className="mt-2 font-sans text-[12px] text-ruby">
-                  Не удалось добавить. Попробуй ещё раз или переведи слово вручную.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Translate bar */}
         <div className="mb-4">
