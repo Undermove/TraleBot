@@ -76,11 +76,12 @@ export interface LessonTheoryDto {
 }
 
 export interface TheoryBlockDto {
-  type: 'paragraph' | 'list' | 'example' | 'letters'
+  type: 'paragraph' | 'list' | 'example' | 'letters' | 'sos'
   text?: string
   items?: string[]
   ge?: string
   ru?: string
+  translit?: string
   letters?: AlphabetLetterDto[]
 }
 

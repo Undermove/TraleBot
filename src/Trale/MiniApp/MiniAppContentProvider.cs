@@ -1417,6 +1417,21 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("— გამარჯობა! მე მქვია ნინო. შენ?", "— Привет! Меня зовут Нино. А тебя?"),
                         Example("— მე მქვია დიმა. მე ვარ რუსეთიდან.", "— Меня зовут Дима. Я из России."),
                         Example("— სასიამოვნოა! საქართველო მოგწონს?", "— Приятно! Тебе нравится Грузия?")
+                    }),
+                Lesson(6, "Экстренные фразы", "დამეხმარეთ! — პოლიცია! — სად ვარ?",
+                    "Экстренные фразы",
+                    "Запомнить 5 фраз, которые спасут в любой ситуации в Грузии.",
+                    new List<TheoryBlockDto>
+                    {
+                        Paragraph("Эти пять фраз — твой аварийный запас. Никакой грамматики, " +
+                                  "только формулы. Выучи их целиком, как аварийный выход."),
+                        Sos("დამეხმარეთ!", "da-me-kha-ma-ret", "Помогите!"),
+                        Sos("პოლიცია!",   "po-li-tsi-a",     "Полиция!"),
+                        Sos("სასწრაფო!", "sas-ts-ra-po",    "Скорая помощь!"),
+                        Sos("არ მესმის",  "ar mes-mis",      "Я не понимаю"),
+                        Sos("სად ვარ?",   "sad var",         "Где я?"),
+                        Paragraph("Полный курс экстренных ситуаций — вызов скорой, потеря документов, " +
+                                  "языковой барьер — в разделе «SOS» Фазы 4.")
                     })
             }
         };
@@ -1548,6 +1563,14 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
         Ru = ru
     };
 
+    private static TheoryBlockDto Sos(string ge, string translit, string ru) => new()
+    {
+        Type = "sos",
+        Ge = ge,
+        Translit = translit,
+        Ru = ru
+    };
+
     private static Dictionary<int, List<AlphabetLetterDto>> BuildAlphabetLessonLetters()
     {
         // All 33 letters, each with name/translit/example.
@@ -1670,6 +1693,7 @@ public class TheoryBlockDto
     public List<string> Items { get; set; }
     public string Ge { get; set; }
     public string Ru { get; set; }
+    public string Translit { get; set; }
     public List<AlphabetLetterDto> Letters { get; set; }
 }
 
