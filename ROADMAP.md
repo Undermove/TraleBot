@@ -320,7 +320,7 @@
 ### L8. Production rollout `[designed]`
 Источник: #238  
 Дизайн-спека: `design-specs/L8-production-rollout.md`
-(issues: #270 — MiniAppEnabled + SetChatMenuButton)
+(issues: #270 — MiniAppEnabled + SetChatMenuButton, #283 — returning user /start UX, #284 — Onboarding sub-hint, #285 — FirstVocabBanner)
 
 **Зачем:** финальный шаг — включить мини-апп для всех пользователей.
 
