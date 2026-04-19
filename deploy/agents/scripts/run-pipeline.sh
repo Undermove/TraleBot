@@ -4,18 +4,20 @@ set -e
 # Sequential agent pipeline on a SHARED nightly branch.
 #
 # FLOW (one hour = one pass through this pipeline):
-#   1. methodist    — pedagogical audit, files issues (label: methodist)
-#   2. product      — triages methodist's issues + generates own ideas,
-#                     updates STRATEGY.md/ROADMAP.md
-#   3. designer     — creates UX design specs for [idea]/[launch] tasks
-#                     that don't have one yet (design-specs/<N>.md)
-#   4. tech-lead    — (a) breaks designed ROADMAP items into small
-#                      technical GitHub issues (labels: task, P1/P2/P3)
-#                     (b) reviews previous hour's developer work
-#   5. developer    — picks the highest-priority open 'task' issue and
-#                     implements it on the shared branch
-#   6. qa           — integration-tests the whole shared branch after the
-#                     new commit lands
+#   1. methodist       — pedagogical audit, files issues (label: methodist)
+#   2. native-reviewer — bilingual ge+ru native speaker: proofreads content,
+#                        commits small fixes directly, files issues (label: native)
+#   3. product         — triages methodist's/native's issues + generates own
+#                        ideas, updates STRATEGY.md/ROADMAP.md
+#   4. designer        — creates UX design specs for [idea]/[launch] tasks
+#                        that don't have one yet (design-specs/<N>.md)
+#   5. tech-lead       — (a) breaks designed ROADMAP items into small
+#                         technical GitHub issues (labels: task, P1/P2/P3)
+#                        (b) reviews previous hour's developer work
+#   6. developer       — picks the highest-priority open 'task' issue and
+#                        implements it on the shared branch
+#   7. qa              — integration-tests the whole shared branch after the
+#                        new commit lands
 #
 # SINGLE SOURCE OF TRUTH: GitHub issues drive execution. ROADMAP.md is strategic.
 # SHARED BRANCH: agents/nightly-YYYY-MM-DD — each hour continues the previous.
@@ -63,10 +65,10 @@ echo ""
 # Generous limits — tech-lead has two jobs (breakdown + review), developer
 # does actual implementation, QA runs full integration. Methodist/product/
 # designer are lighter but raised from 25 so they don't truncate triage.
-MAX_TURNS_PER_AGENT=(40 50 40 80 100 60)
+MAX_TURNS_PER_AGENT=(40 60 50 40 80 100 60)
 
-AGENTS=("methodist" "product" "designer" "tech-lead" "developer" "qa")
-AGENT_LABELS=("Methodist" "Product" "Designer" "Tech Lead" "Developer" "QA")
+AGENTS=("methodist" "native-reviewer" "product" "designer" "tech-lead" "developer" "qa")
+AGENT_LABELS=("Methodist" "Native Reviewer" "Product" "Designer" "Tech Lead" "Developer" "QA")
 
 CONTEXT_PREFIX="You are working on the SHARED nightly branch '${BRANCH}'. Previous agents (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work — ROADMAP.md is strategic context only.
 
@@ -90,16 +92,33 @@ INSTRUCTIONS=(
 - Do NOT edit code. Do NOT touch ROADMAP.md directly — product does that.
 At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
-    # 2. PRODUCT
+    # 2. NATIVE REVIEWER
+    "${CONTEXT_PREFIX}Read .claude/agents/native-reviewer.md. Your role this hour:
+- You are a BILINGUAL Georgian+Russian native speaker. Your job is real-language proofreading, NOT pedagogy. Methodist already handles lesson ordering — you only look at whether each Georgian sentence is correct, natural, and whether the Russian translation accurately conveys it.
+- Priority #1 is VERBS: conjugation (personal forms), tense (present vs future vs aorist), class (transitive/intransitive/inverse — მინდა/მიყვარს/მესმის take dative subjects), preverbs (და-/შე-/გა-/მო-/მი-/გადა-), version vowels (-ი-/-უ-/-ე-), ergative case in aorist for transitive verbs. Owner explicitly flagged verbs as the problem zone.
+- Priority #2: cases, adjective agreement, word order (no Russian calques).
+- Priority #3: naturalness + accurate Russian translation + register (ты/вы).
+- Priority #4: typos, Georgian letter confusions (ჩ/ც, ძ/ზ, ჰ/ხ).
+- First check 'gh issue list --label native --state all --limit 30' — don't duplicate.
+- Sources: src/Trale/Lessons/**/questions*.json and src/Trale/MiniApp/MiniAppContentProvider.cs (theory examples/list/paragraph blocks). Skip .cs/.tsx for code review — only extract Georgian text from them.
+- Minimum per session: one launch-module (Alphabet/Numbers/Intro/Pronouns/Present-Tense/My-Vocab) + one non-launch module. Verbs of Movement and verb-classes are top priority.
+- SMALL fixes (typos, wrong personal form, wrong case in an example pair, wrong preverb when obviously required) — commit directly with 'content(<module>): native fix — <what> <lessonN>' and reference file:line.
+- LARGER/disputed cases (replace whole example, swap lexicon, fix depends on unknown context, 'sounds unnatural' is an opinion) — 'gh issue create --label native' with title '[native] <module> L<N>: <short>' and body with file:line, current text, why wrong, native phrasing, confidence (уверен/сомневаюсь).
+- HARD RULES: no rewriting to taste; no pedagogy changes; standard Tbilisi Georgian; Russian stylistic preferences are NOT errors; when in doubt — issue, not commit.
+- Do NOT touch ROADMAP.md.
+At the very end output '=== SUMMARY ===' with 3-7 bullets: modules reviewed, fixes committed, issues filed."
+
+    # 3. PRODUCT
     "${CONTEXT_PREFIX}Read .claude/agents/product.md. Also read STRATEGY.md FIRST — it defines the current product phase and the launch checklist. Your role this hour:
 
 AGGREGATE inputs:
 - Read STRATEGY.md (current phase, launch checklist).
 - Read ROADMAP.md (backlog, philosophy).
 - 'gh issue list --label methodist --state open --limit 50'
+- 'gh issue list --label native --state open --limit 50'
 - 'gh issue list --label product --state open --limit 50'
 
-TRIAGE methodist's issues: for each relevant one, add to ROADMAP.md as [idea] or [launch] if it closes a checklist item; source-link the issue number; close/comment on the issue once reflected. Max 5 per session.
+TRIAGE methodist's and native-reviewer's issues: for each relevant one, add to ROADMAP.md as [idea] or [launch] if it closes a checklist item; source-link the issue number; close/comment on the issue once reflected. Max 5 per session. Note: native-reviewer issues are usually content-fix granularity — most do NOT need ROADMAP entries, they go straight to developer; only surface here if the fix is big enough to warrant prioritization (e.g. whole example swap or lexicon change).
 
 GENERATE your own ideas (you are not just reacting to methodist): features closing launch-checklist items, marketing angles (Batumi expat chats, referral loops), retention mechanics (Bombora feeding tamagotchi), onboarding copy, positioning. File them as GitHub issues with label 'product' (and 'launch' if applicable).
 
@@ -110,7 +129,7 @@ PRIORITIZE: move tasks in ROADMAP. Items closing launch-checklist rank highest. 
 Do NOT create small technical issues — that is tech-lead's job.
 At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
-    # 3. DESIGNER
+    # 4. DESIGNER
     "${CONTEXT_PREFIX}Read .claude/agents/designer.md. Your role this hour:
 - Find ROADMAP.md entries with status [idea] or [launch] that do NOT yet have a design spec in design-specs/.
 - Pick ONE (highest in the launch section first; if everything is already specced — stop with a 'nothing-to-do' summary).
@@ -118,7 +137,7 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets."
 - Update the ROADMAP.md status of that entry from [idea]/[launch] to [designed] and add the design-spec path.
 Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
-    # 4. TECH-LEAD (breakdown + review)
+    # 5. TECH-LEAD (breakdown + review)
     "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have TWO responsibilities this hour:
 
 PART A — BREAKDOWN (creating the execution backlog):
@@ -136,7 +155,7 @@ PART B — REVIEW (of previous hour's developer work):
 
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / reviewed / fixed / reopened."
 
-    # 5. DEVELOPER
+    # 6. DEVELOPER
     "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. Your role this hour:
 - Pick ONE task to work on, in this priority order:
     1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
@@ -151,7 +170,7 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / revi
 - Do NOT close the issue yourself — tech-lead/QA decides.
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issue picked, files changed, test results."
 
-    # 6. QA
+    # 7. QA
     "${CONTEXT_PREFIX}Read .claude/agents/qa.md. Your role this hour (after developer):
 - Run the full integration pass on the current state of the shared branch: 'dotnet test' + 'cd src/Trale/miniapp-src && npm run build'. Check migrations if DB code changed.
 - If builds/tests fail: comment on the issue that developer just touched with the failure details, add label 'needs-fix'. Do NOT try to fix big regressions yourself — that is developer's job next hour.
