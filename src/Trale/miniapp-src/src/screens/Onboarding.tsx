@@ -6,9 +6,10 @@ export type UserLevel = 'beginner' | 'intermediate'
 
 interface Props {
   onSelect: (level: UserLevel) => void
+  vocabularyCount?: number
 }
 
-export default function Onboarding({ onSelect }: Props) {
+export default function Onboarding({ onSelect, vocabularyCount = 0 }: Props) {
   return (
     <div
       className="flex flex-col bg-cream"
@@ -86,6 +87,12 @@ export default function Onboarding({ onSelect }: Props) {
         <div className="mt-6 font-sans text-[12px] text-jewelInk-hint text-center max-w-[280px]">
           Все уроки будут доступны — это только поможет Бомборе подсказать, с чего начать
         </div>
+
+        {vocabularyCount > 0 && (
+          <p className="font-sans text-[12px] text-jewelInk/60 text-center mt-3 max-w-[280px] mx-auto">
+            Твои переводы из бота уже в «Мой словарь» 📖
+          </p>
+        )}
       </div>
 
       <div className="mn-kilim opacity-70" />

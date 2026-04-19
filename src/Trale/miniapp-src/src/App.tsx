@@ -57,6 +57,7 @@ export default function App() {
   const [isOwner, setIsOwner] = useState(false)
   const [telegramId, setTelegramId] = useState<number | null>(null)
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
+  const [vocabularyCount, setVocabularyCount] = useState<number>(0)
 
   // Load catalog + progress from backend on mount
   useEffect(() => {
@@ -76,6 +77,7 @@ export default function App() {
           setTrialDaysLeft((meData as any).trialDaysLeft ?? 0)
           setIsOwner((meData as any).isOwner ?? false)
           setTelegramId((meData as any).telegramId ?? null)
+          setVocabularyCount((meData as any).vocabularyCount ?? 0)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
@@ -230,6 +232,7 @@ export default function App() {
     case 'onboarding':
       return (
         <Onboarding
+          vocabularyCount={vocabularyCount}
           onSelect={(level) => {
             setUserLevel(level)
             if (authenticated) {
