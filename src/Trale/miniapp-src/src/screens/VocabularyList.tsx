@@ -5,6 +5,7 @@ import LoaderLetter from '../components/LoaderLetter'
 import Mascot from '../components/Mascot'
 import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
 import WordCard from '../components/WordCard'
+import FirstVocabBanner from '../components/FirstVocabBanner'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
 
@@ -341,6 +342,10 @@ export default function VocabularyList({ progress, navigate }: Props) {
         title="Мой словарь"
       />
       <div className="mn-kilim" />
+
+      {items.length > 0 && !isStarterMode && (
+        <FirstVocabBanner onStartQuiz={() => startQuiz('all')} />
+      )}
 
       {/* Toast notifications */}
       <div className="fixed top-0 left-0 right-0 max-w-[480px] mx-auto z-[60] flex flex-col items-stretch px-4 pt-4 gap-2 pointer-events-none">
