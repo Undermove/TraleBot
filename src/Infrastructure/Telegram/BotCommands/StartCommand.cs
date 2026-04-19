@@ -1,6 +1,7 @@
 using Application.MiniApp.Commands;
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
+using Domain.Entities;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -126,13 +127,48 @@ $@"გამარჯობა, {request.UserName}! 👋
         }
         else
         {
-            await client.SendTextMessageAsync(
-                request.UserTelegramId,
+            var isGeorgianMiniApp = miniAppUrl != null && user?.Settings?.CurrentLanguage == Language.Georgian;
+            if (isGeorgianMiniApp)
+            {
+                var georgianRows = new List<InlineKeyboardButton[]>
+                {
+                    new[]
+                    {
+                        InlineKeyboardButton.WithWebApp(
+                            "🏔 Открыть Бомбору",
+                            new WebAppInfo { Url = miniAppUrl! })
+                    },
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
+                    }
+                };
+                var georgianKeyboard = new InlineKeyboardMarkup(georgianRows);
+
+                await client.SendTextMessageAsync(
+                    request.UserTelegramId,
+$@"გამარჯობა снова, {request.UserName}! 👋
+
+Пока тебя не было — мы открыли мини-апп.
+Теперь Бомбора ждёт тебя прямо в Telegram:
+алфавит, грамматика, твой словарь, квизы.
+
+Жми «🏔 Бомбора» рядом с полем ввода — или кнопку ниже.
+
+კარგი? — «Хорошо?» по-грузински 😄",
+                    replyMarkup: georgianKeyboard,
+                    cancellationToken: token);
+            }
+            else
+            {
+                await client.SendTextMessageAsync(
+                    request.UserTelegramId,
 $@"გამარჯობა снова, {request.UserName}! 👋
 
 Напиши слово — переведу и добавлю в словарь. Или открой TraleBot, чтобы продолжить учиться.",
-                replyMarkup: keyboard,
-                cancellationToken: token);
+                    replyMarkup: keyboard,
+                    cancellationToken: token);
+            }
         }
     }
 
