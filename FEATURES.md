@@ -262,7 +262,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `version-vowels` | `GeorgianVersionVowels` | 5 | ✅ |
 | `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
 | `imperfect` | `GeorgianImperfect` | 5 | ✅ |
-| `aorist` | `GeorgianAorist` | 5 | ✅ |
+| `aorist` | `GeorgianAorist` | 6 | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
 | `postpositions` | `GeorgianPostpositions` | 5 | ✅ |
 | `adjectives` | `GeorgianAdjectives` | 5 | ✅ |
