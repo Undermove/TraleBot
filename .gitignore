@@ -456,3 +456,6 @@ $RECYCLE.BIN/
 
 # Agent secrets
 deploy/agents/.env
+
+# Content audit workspace files (results kept locally / in PR description)
+content-audit-*.md
