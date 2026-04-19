@@ -168,13 +168,19 @@ public class MiniAppController : Controller
     }
 
     [HttpGet("plans")]
-    public IActionResult GetPlans()
+    public async Task<IActionResult> GetPlans(CancellationToken ct)
     {
+        // Resolve caller so whitelisted test users see the 1⭐ test price in the
+        // plan cards, matching what Purchase() will then charge them. Anonymous /
+        // unresolved callers fall through to normal SubscriptionPlans prices.
+        var user = await ResolveUserAsync(ct);
+        var applyTestPricing = user != null && TestPricingTelegramIds.Contains(user.TelegramId);
+
         var plans = SubscriptionPlans.All.Select(p => new
         {
             id = p.Plan.ToString(),
             payloadId = p.PayloadId,
-            stars = p.StarsPrice,
+            stars = applyTestPricing ? TestPricingStars : p.StarsPrice,
             durationDays = p.DurationDays,
             title = p.Title,
             description = p.Description
