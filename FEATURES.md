@@ -344,7 +344,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 - **Multi-language vocabulary**: Georgian + English. Premium for keeping multiple vocabs simultaneously.
 - **Telegram Stars (XTR) payments**: all current Pro purchases on the mini-app.
 - **Ink / kilim visual style**: shared across Result, LessonTheory, VocabularyList, Profile via `KilimProgress`, `InkDivider`.
-- **Georgian name transliteration widget** (`GeorgianNameCard.tsx` in pending nightly work) — Latin/Cyrillic → Georgian glyphs on Profile. *To be merged in nightly 2026-04-19 PR.*
+- **Georgian name transliteration widget** (`GeorgianNameCard.tsx`) — Latin/Cyrillic → Georgian glyphs on Profile, uses `georgianizerName.ts` (~60-name dictionary + symbol fallback).
 
 ---
 
