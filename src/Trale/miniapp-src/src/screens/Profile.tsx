@@ -777,6 +777,7 @@ function OwnerDebugPanel() {
     { label: 'Сбросить reveal ქ', hint: 'Покажет оверлей буквы ქ снова', fn: () => clearKeys(['bombora_kani_reveal_shown'], 'kani reveal') },
     { label: 'Сбросить unlock-анимации', hint: 'Повторит анимацию открытия секций', fn: () => clearKeys(['bombora_unlocked_once'], 'unlock') },
     { label: 'Сбросить алфавит 33/33', hint: 'Повторит анимацию завершения алфавита', fn: () => clearKeys(['bombora_alphabet_complete_shown'], 'alphabet complete') },
+    { label: 'Сбросить имя по-грузински', hint: 'Повторит reveal-badge «Ты можешь прочитать своё имя»', fn: () => clearKeys(['bombora_name_reveal_shown'], 'name reveal') },
     { label: 'Очистить весь localStorage', hint: 'Онбординг, прогресс UI, флаги', fn: clearAllLocalStorage },
     { label: 'Reload мини-аппа', hint: 'location.reload()', fn: reload },
   ]
