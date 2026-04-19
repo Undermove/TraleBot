@@ -317,14 +317,15 @@
 
 ---
 
-### L8. Production rollout `[launch]`
-Источник: #238
+### L8. Production rollout `[designed]`
+Источник: #238  
+Дизайн-спека: `design-specs/L8-production-rollout.md`
 (issues: #270 — MiniAppEnabled + SetChatMenuButton)
 
 **Зачем:** финальный шаг — включить мини-апп для всех пользователей.
 
-**Обучающий элемент:** не применимо.
-**Критерий готовности:** MiniAppEnabled=true в проде, SetChatMenuButton настроен, миграции применены, бот анонсирует мини-апп.
+**Обучающий элемент:** кнопка меню `🏔 Бомбора`, обновлённое /start с грузинским словом `კარგი?`, reveal-момент «мои переводы = мой первый учебник» в FirstVocabBanner.
+**Критерий готовности:** MiniAppEnabled=true в проде, SetChatMenuButton настроен (label «🏔 Бомбора»), возвращательное /start обновлено, FirstVocabBanner реализован в VocabularyList, миграции применены.
 **Зависимости:** L1–L7 закрыты.
 
 ---
