@@ -113,7 +113,7 @@
     },
     {
       "id": "m3-q003",
-      "lemma": "მიდис",
+      "lemma": "მიდის",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «он идёт в офис».",
       "options": [
@@ -151,7 +151,7 @@
     },
     {
       "id": "m3-q005",
-      "lemma": "მიდис",
+      "lemma": "მიდის",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «вы идёте в университет?»",
       "options": [
@@ -307,7 +307,7 @@
     },
     {
       "id": "m3-q013",
-      "lemma": "მიდис",
+      "lemma": "მიდის",
       "template": "cloze_like",
       "prompt": "ახლა ___ მაღაზიაში. (идти, მე)",
       "options": [
@@ -467,7 +467,7 @@
     },
     {
       "id": "m3-q021",
-      "lemma": "მიდис",
+      "lemma": "მიდის",
       "template": "cloze_wish",
       "prompt": "ახლა არ ___ — ხვალ. (идти, მე)",
       "options": [
@@ -506,7 +506,7 @@
     },
     {
       "id": "m3-q023",
-      "lemma": "შედис/გამოდის",
+      "lemma": "შედის/გამოდის",
       "template": "pair_opposites",
       "question": "Выбери противоположное по направлению: «შევდივარ» — ?",
       "options": [
@@ -742,7 +742,7 @@
     },
     {
       "id": "m3-q035",
-      "lemma": "მიდис",
+      "lemma": "მიდის",
       "template": "cloze_like",
       "prompt": "დღეს მე ადრე ___ უნივერსიტეტში. (идти, მე)",
       "options": [
@@ -901,7 +901,7 @@
     },
     {
       "id": "m3-q043",
-      "lemma": "მიდис",
+      "lemma": "მიდის",
       "template": "choose_translation_geo",
       "question": "Выбери грузинский: «мы идём к морю»",
       "options": [
@@ -1061,7 +1061,7 @@
     },
     {
       "id": "m3-q051",
-      "lemma": "მიდիս",
+      "lemma": "მიდის",
       "template": "cloze_wish",
       "prompt": "ახლა ოფისში არა — ბარში ___ . (идти, მე)",
       "options": [
