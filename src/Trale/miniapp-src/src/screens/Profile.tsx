@@ -5,6 +5,7 @@ import ProPaywall from '../components/ProPaywall'
 import KilimProgress from '../components/KilimProgress'
 import AlphabetGrid from '../components/AlphabetGrid'
 import LetterPopover from '../components/LetterPopover'
+import GeorgianNameCard from '../components/GeorgianNameCard'
 import { AlphabetLetterDto, CatalogDto, ProgressState, Screen } from '../types'
 import { api } from '../api'
 
@@ -98,6 +99,20 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
   }, [catalog, progress.completedLessons])
 
   const learnedCount = learnedLetters.size
+
+  // Georgian name — sourced entirely from Telegram WebApp (no backend needed)
+  const tgFirstName: string | undefined = useMemo(() => {
+    const tg = (window as any).Telegram?.WebApp
+    return tg?.initDataUnsafe?.user?.first_name as string | undefined
+  }, [])
+
+  // alphabetDone: every lesson in the alphabet-progressive module is completed
+  const alphabetDone = useMemo(() => {
+    const alphabetModule = catalog.modules.find((m) => m.id === 'alphabet-progressive')
+    if (!alphabetModule || alphabetModule.lessons.length === 0) return false
+    const completedIds = progress.completedLessons['alphabet-progressive'] ?? []
+    return alphabetModule.lessons.every((l) => completedIds.includes(l.id))
+  }, [catalog, progress.completedLessons])
 
   // Trigger 33/33 reveal animation once
   useEffect(() => {
@@ -262,6 +277,14 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
             </div>
           )}
         </div>
+
+        {/* Georgian name — only when Telegram provides first_name */}
+        {tgFirstName && (
+          <GeorgianNameCard
+            firstName={tgFirstName}
+            alphabetDone={alphabetDone}
+          />
+        )}
 
         {/* Favorite module */}
         {favorite && favorite.done > 0 && (
