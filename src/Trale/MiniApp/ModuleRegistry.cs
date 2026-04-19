@@ -15,7 +15,7 @@ public static class ModuleRegistry
     {
         ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 10),
         ["numbers"] = new("numbers", "Lessons/GeorgianNumbers", 4),
-        ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 5),
+        ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 6),
         ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 5),
         ["preverbs"] = new("preverbs", "Lessons/GeorgianPreverbs", 5),
         ["imperfect"] = new("imperfect", "Lessons/GeorgianImperfect", 5),

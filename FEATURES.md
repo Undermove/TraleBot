@@ -258,7 +258,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Grammar modules
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `verb-classes` | `GeorgianVerbClasses` | 5 | ✅ |
+| `verb-classes` | `GeorgianVerbClasses` | 6 | ✅ |
 | `version-vowels` | `GeorgianVersionVowels` | 5 | ✅ |
 | `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
 | `imperfect` | `GeorgianImperfect` | 5 | ✅ |
