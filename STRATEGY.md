@@ -44,6 +44,9 @@
 ### 5. Запуск в прод
 
 - [ ] **Production rollout** (#238) — MiniAppEnabled=true, SetChatMenuButton, миграции, announce
+  - [x] L8-B: returning user /start с грузинским приветствием + кнопка мини-аппа (commit `2751f3b`) — #283
+  - [x] L8-C/D: Onboarding hint + FirstVocabBanner (commit `1329680`) — #284 #285
+  - [ ] L8-A: prod config MiniAppEnabled=true + SetChatMenuButton (#270) — **единственный оставшийся блокер**, требует prod-доступа
 
 ### 6. Маркетинг
 

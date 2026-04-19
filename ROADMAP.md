@@ -163,9 +163,9 @@
 
 Все задачи ниже — условие запуска. Статусы синхронизируются с чеклистом в STRATEGY.md.
 
-**Текущее состояние (2026-04-19 час 8):** L1✅ L2✅ L3✅ L4✅ L5✅ L6✅ L10✅ L11✅ — остаётся: L7 (checkout test), L8 (rollout, частично), L9 (marketing).
+**Текущее состояние (2026-04-19 час 11):** L1✅ L2✅ L3✅ L4✅ L5✅ L6✅ L10✅ L11✅ — остаётся: L7 (checkout test), L8 (rollout: только #270 prod config), L9 (marketing).
 **Критический путь:** L7 → L8 → L9.
-**Ближайший разблокер:** L7 `[designed]` — issues #267 (CTA subtext ✅ commit `afa8421`) + #268 (manual test script, нужен тестер со Telegram Stars). L8 частично готов: #284 ✅ #285 ✅ (commit `1329680`), остаётся #283 (L8-B, returning user /start) + #270 (L8-A, prod config требует prod-доступа). L9 — после L8.
+**Ближайший разблокер:** L7 `[designed]` — issues #267 (CTA subtext ✅ commit `afa8421`) + #268 (manual test script, нужен тестер со Telegram Stars). L8 почти готов: #283 ✅ (commit `2751f3b`) + #284 ✅ #285 ✅ (commit `1329680`), остаётся только #270 (L8-A, prod config требует prod-доступа). L9 — после L8.
 **VoM content (non-critical):** 20+ ошибок методиста зафиксировано в VoM questions; 7 исправлено в nightly (commits `6c6bfb0`, `e8562a5`, `30369e0`); остальные отложены до post-launch (не в launch-наборе).
 
 ### L1. Определить launch-набор модулей `[done]`
@@ -329,10 +329,10 @@
 **Критерий готовности:** MiniAppEnabled=true в проде, SetChatMenuButton настроен (label «🏔 Бомбора»), возвращательное /start обновлено, FirstVocabBanner реализован в VocabularyList, миграции применены.
 **Зависимости:** L1–L7 закрыты.
 
-**Прогресс (2026-04-19 час 5):**
+**Прогресс (2026-04-19 час 11):**
 - #284 (L8-C) Onboarding sub-hint «Твои переводы из бота уже в «Мой словарь»» ✅ — реализован (commit `1329680`)
 - #285 (L8-D) FirstVocabBanner в VocabularyList при первом открытии ✅ — реализован (commit `1329680`)
-- #283 (L8-B) Returning user /start update — ещё в очереди разработки
+- #283 (L8-B) Returning user /start update ✅ — реализован (commit `2751f3b`, nightly 2026-04-19): грузинский /start с кнопкой мини-аппа для пользователей с MiniAppEnabled=true
 - #270 (L8-A) Production config: MiniAppEnabled=true + SetChatMenuButton — ещё в очереди (требует prod доступа)
 
 ---
