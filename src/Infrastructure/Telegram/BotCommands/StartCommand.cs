@@ -83,27 +83,13 @@ public class StartCommand(
             : null;
 
         // Build keyboard: WebApp button (primary CTA) when mini-app is enabled, plus text menu fallback.
-        var rows = new List<InlineKeyboardButton[]>();
-        if (miniAppUrl != null)
-        {
-            rows.Add(new[]
-            {
-                InlineKeyboardButton.WithWebApp(
-                    "🚀 Открыть TraleBot",
-                    new WebAppInfo { Url = miniAppUrl })
-            });
-        }
-        rows.Add(new[]
-        {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
-        });
-        var keyboard = new InlineKeyboardMarkup(rows);
+        var keyboard = BuildKeyboard(miniAppUrl, miniAppUrl != null ? "🚀 Открыть TraleBot" : null);
 
         if (isNewUser)
         {
             var trialLine = hasReferralArg
-                ? "Т��бе ещё и бонус: 60 дней бесплатно вм��сто 30 — за то, что пришёл по приглашению. 🎁"
-                : "Первые 30 дней — ��сё бесплатно.";
+                ? "Тебе ещё и бонус: 60 дней бесплатно вместо 30 — за то, что пришёл по приглашению. 🎁"
+                : "Первые 30 дней — всё бесплатно.";
 
             var hasMiniApp = miniAppUrl != null;
             var miniAppLine = hasMiniApp
@@ -130,21 +116,7 @@ $@"გამარჯობა, {request.UserName}! 👋
             var isGeorgianMiniApp = miniAppUrl != null && user?.Settings?.CurrentLanguage == Language.Georgian;
             if (isGeorgianMiniApp)
             {
-                var georgianRows = new List<InlineKeyboardButton[]>
-                {
-                    new[]
-                    {
-                        InlineKeyboardButton.WithWebApp(
-                            "🏔 Открыть Бомбору",
-                            new WebAppInfo { Url = miniAppUrl! })
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
-                    }
-                };
-                var georgianKeyboard = new InlineKeyboardMarkup(georgianRows);
-
+                var georgianKeyboard = BuildKeyboard(miniAppUrl, "🏔 Открыть Бомбору");
                 await client.SendTextMessageAsync(
                     request.UserTelegramId,
 $@"გამარჯობა снова, {request.UserName}! 👋
@@ -181,6 +153,23 @@ $@"გამარჯობა снова, {request.UserName}! 👋
             cancellationToken: token);
 
         await client.SendQuizQuestion(request, sharedQuizCreated.FirstQuestion, token);
+    }
+
+    private InlineKeyboardMarkup BuildKeyboard(string? miniAppUrl, string? webAppLabel)
+    {
+        var rows = new List<InlineKeyboardButton[]>();
+        if (miniAppUrl != null && webAppLabel != null)
+        {
+            rows.Add(new[]
+            {
+                InlineKeyboardButton.WithWebApp(webAppLabel, new WebAppInfo { Url = miniAppUrl })
+            });
+        }
+        rows.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
+        });
+        return new InlineKeyboardMarkup(rows);
     }
 
     private static bool ContainsArguments(string[] args)
