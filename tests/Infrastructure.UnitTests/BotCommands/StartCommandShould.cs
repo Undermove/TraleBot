@@ -1,5 +1,3 @@
-using Domain.Entities;
-using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -7,9 +5,17 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Shouldly;
 using Telegram.Bot;
-using Telegram.Bot.Requests.Abstractions;
-using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using DomainUser = Domain.Entities.User;
+using Language = Domain.Entities.Language;
+using UserSettings = Domain.Entities.UserSettings;
+using UserAccountType = Domain.Entities.UserAccountType;
+using BotConfiguration = Infrastructure.Telegram.BotConfiguration;
+using TgRequest = Telegram.Bot.Requests.Abstractions.IRequest<Telegram.Bot.Types.Message>;
+using TgMessage = Telegram.Bot.Types.Message;
+using TgUpdate = Telegram.Bot.Types.Update;
+using TgChat = Telegram.Bot.Types.Chat;
+using TgBotUser = Telegram.Bot.Types.User;
 
 namespace Infrastructure.UnitTests.BotCommands;
 
@@ -26,14 +32,14 @@ public class StartCommandShould
         _capturedTexts = new List<string>();
         _mockClient = new Mock<ITelegramBotClient>();
         _mockClient
-            .Setup(c => c.MakeRequestAsync(It.IsAny<IRequest<Message>>(), It.IsAny<CancellationToken>()))
-            .Callback<IRequest<Message>, CancellationToken>((req, _) =>
+            .Setup(c => c.MakeRequestAsync(It.IsAny<TgRequest>(), It.IsAny<CancellationToken>()))
+            .Callback<TgRequest, CancellationToken>((req, _) =>
             {
                 var textProp = req.GetType().GetProperty("Text");
                 if (textProp?.GetValue(req) is string text && !string.IsNullOrEmpty(text))
                     _capturedTexts.Add(text);
             })
-            .ReturnsAsync(new Message { MessageId = 1 });
+            .ReturnsAsync(new TgMessage { MessageId = 1 });
         _mockMediator = new Mock<IMediator>();
     }
 
@@ -56,7 +62,7 @@ public class StartCommandShould
 
     private static TelegramRequest BuildReturningUserRequest(long telegramId, Language language)
     {
-        var user = new User
+        var user = new DomainUser
         {
             Id = Guid.NewGuid(),
             TelegramId = telegramId,
@@ -72,15 +78,15 @@ public class StartCommandShould
             }
         };
 
-        var update = new Update
+        var update = new TgUpdate
         {
             Id = 1,
-            Message = new Message
+            Message = new TgMessage
             {
                 MessageId = 1,
                 Date = DateTime.UtcNow,
-                Chat = new Chat { Id = telegramId, Type = ChatType.Private, FirstName = "TestUser" },
-                From = new Telegram.Bot.Types.User { Id = telegramId, IsBot = false, FirstName = "TestUser" },
+                Chat = new TgChat { Id = telegramId, Type = ChatType.Private, FirstName = "TestUser" },
+                From = new TgBotUser { Id = telegramId, IsBot = false, FirstName = "TestUser" },
                 Text = "/start"
             }
         };
