@@ -50,6 +50,7 @@ cd src/Trale/miniapp-src && npm run build
 - **Новые сервисы:** если добавлен сервис в Application — проверь что он зарегистрирован в `DependencyInjection.cs`
 - **Шрифт font-geo:** если используется класс `font-geo` — отметь как потенциальную проблему (в Telegram WebView не рендерится, нужен `font-sans`)
 - **questionType в API:** если добавлены новые вопросы — проверь что `questionType` передаётся в ответе
+- **FEATURES.md актуален:** `FeatureCatalogCoverageTests` должен быть зелёным. Если красный — посмотри его вывод: он прямо скажет какие класс-имена / файлы / маршруты отсутствуют в FEATURES.md. Допиши строчки в нужные разделы FEATURES.md на основании диффа — это твоя страховка от того что Developer/Tech-lead забыли обновить каталог. Не оставляй `FeatureCatalogCoverageTests` красным между hour-ами.
 
 ### 5. Визуальные проверки (для пользователя)
 
