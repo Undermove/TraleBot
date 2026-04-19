@@ -77,7 +77,7 @@ export default function App() {
           setTrialDaysLeft((meData as any).trialDaysLeft ?? 0)
           setIsOwner((meData as any).isOwner ?? false)
           setTelegramId((meData as any).telegramId ?? null)
-          setVocabularyCount((meData as any).vocabularyCount ?? 0)
+          setVocabularyCount(meData.vocabularyCount ?? 0)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
