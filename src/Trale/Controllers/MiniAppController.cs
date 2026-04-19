@@ -33,6 +33,20 @@ public class MiniAppController : Controller
 
     private const int StarsProPrice = 150;
 
+    /// <summary>
+    /// Telegram user IDs that get a symbolic 1-star price on all subscription plans —
+    /// used exclusively to validate the end-to-end Stars checkout flow against real
+    /// Telegram infrastructure without paying full fare each time. All other users
+    /// see the normal <see cref="SubscriptionPlans"/> prices.
+    /// </summary>
+    private static readonly HashSet<long> TestPricingTelegramIds = new()
+    {
+        309149393, // owner
+        866427565,
+    };
+
+    private const int TestPricingStars = 1;
+
     private readonly IGeorgianQuestionsLoaderFactory _questionsLoaderFactory;
     private readonly ITraleDbContext _dbContext;
     private readonly BotConfiguration _botConfig;
@@ -236,6 +250,14 @@ public class MiniAppController : Controller
         if (plan == null)
         {
             return BadRequest(new { error = "invalid_plan" });
+        }
+
+        if (TestPricingTelegramIds.Contains(user.TelegramId))
+        {
+            _logger.LogWarning(
+                "Test pricing applied: user {TelegramId} ({UserId}) purchasing {Plan} at {Stars}⭐ instead of {OriginalStars}⭐",
+                user.TelegramId, user.Id, plan.Plan, TestPricingStars, plan.StarsPrice);
+            plan = plan with { StarsPrice = TestPricingStars };
         }
 
         try
