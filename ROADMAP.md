@@ -163,9 +163,10 @@
 
 Все задачи ниже — условие запуска. Статусы синхронизируются с чеклистом в STRATEGY.md.
 
-**Текущее состояние (2026-04-19 час 5):** L1✅ L2✅ L3✅ L4✅ L5✅ L6✅ L10✅ L11✅ — остаётся: L7 (checkout test), L8 (rollout, частично), L9 (marketing).
+**Текущее состояние (2026-04-19 час 8):** L1✅ L2✅ L3✅ L4✅ L5✅ L6✅ L10✅ L11✅ — остаётся: L7 (checkout test), L8 (rollout, частично), L9 (marketing).
 **Критический путь:** L7 → L8 → L9.
-**Ближайший разблокер:** L7 `[designed]` — issues #267 (CTA subtext ✅ commit `afa8421`) + #268 (manual test script, нужен тестер со Telegram Stars). L8 частично готов: #284 ✅ #285 ✅ (commit `1329680`), остаётся #283 (L8-B, returning user /start) + #270 (L8-A, prod config). L9 — после L8.
+**Ближайший разблокер:** L7 `[designed]` — issues #267 (CTA subtext ✅ commit `afa8421`) + #268 (manual test script, нужен тестер со Telegram Stars). L8 частично готов: #284 ✅ #285 ✅ (commit `1329680`), остаётся #283 (L8-B, returning user /start) + #270 (L8-A, prod config требует prod-доступа). L9 — после L8.
+**VoM content (non-critical):** 20+ ошибок методиста зафиксировано в VoM questions; 7 исправлено в nightly (commits `6c6bfb0`, `e8562a5`, `30369e0`); остальные отложены до post-launch (не в launch-наборе).
 
 ### L1. Определить launch-набор модулей `[done]`
 Источник: #231
