@@ -163,9 +163,9 @@
 
 Все задачи ниже — условие запуска. Статусы синхронизируются с чеклистом в STRATEGY.md.
 
-**Текущее состояние (2026-04-19 час 3):** L1✅ L2✅ L3✅ L4✅ L5✅ L6✅ L10✅ — остаётся: L7 (checkout test), L11 (design audit), L8 (rollout), L9 (marketing).
-**Критический путь:** L7 → L11 → L8 → L9.
-**Ближайший разблокер:** L7 `[designed]` — issues #267 (CTA subtext ✅ commit `afa8421`) + #268 (manual test script, нужен тестер со Telegram Stars). L11 (design audit) — параллельно с L7, реализуется Developer-ом. L8 разблокируется после L7 и L11. L9 — после L8.
+**Текущее состояние (2026-04-19 час 4):** L1✅ L2✅ L3✅ L4✅ L5✅ L6✅ L10✅ L11✅ — остаётся: L7 (checkout test), L8 (rollout), L9 (marketing).
+**Критический путь:** L7 → L8 → L9.
+**Ближайший разблокер:** L7 `[designed]` — issues #267 (CTA subtext ✅ commit `afa8421`) + #268 (manual test script, нужен тестер со Telegram Stars). L8 разблокируется после L7. L9 — после L8.
 
 ### L1. Определить launch-набор модулей `[done]`
 Источник: #231
@@ -281,7 +281,7 @@
 
 ---
 
-### L11. Minankari Design Audit: единообразие + один CTA на экран `[designed]`
+### L11. Minankari Design Audit: единообразие + один CTA на экран `[done]`
 Источник: STRATEGY.md → Section 2 (Interface)  
 Дизайн-спека: `design-specs/L11-minankari-design-audit.md`  
 (issues: #276 — kilim additions, #277 — Dashboard tap target + visual weight)
@@ -308,6 +308,12 @@
   - **Дано:** Dashboard с sated Бомборой (кнопка «Покормить» видна)
   - **Когда:** пользователь нажимает область кнопки
   - **Тогда:** зона нажатия ≥ 44px по высоте, без промахов
+
+**Итог (2026-04-19 час 4):**
+- #276 kilim-полосы на Result, LessonTheory, VocabularyList, Profile — реализованы (commit `d05a4a8`), подтверждены QA ✅
+- #277 кнопка «Покормить»: py-2→py-3 + bg-cream-tile + border-jewelInk/60 + font-semibold — реализован (commit `38462b4`), подтверждён QA ✅
+- Визуальная иерархия CTA на Dashboard: модули (primary) > Покормить (ghost-style) ✅
+- Весь критерий готовности L11 закрыт.
 
 ---
 

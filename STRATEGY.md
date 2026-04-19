@@ -26,7 +26,7 @@
 
 - [x] **Убрать × кнопки, унифицировать навигацию** (#234) — Practice/PracticeMistakes/VocabularyPractice теперь с ← стрелкой
 - [x] **Курировать ModuleMap** (#235) — 2-секционный Dashboard реализован: «старт» + LaunchPathBar вверху, «все темы» (collapsed, все модули активны) ниже. Closes #269 (commit `3961a27`, nightly 2026-04-19)
-- [ ] **Minankari-дизайн применён единообразно** — палитра, типографика, один акцент на смысл. Пройтись дизайнером по всем экранам launch-набора.
+- [x] **Minankari-дизайн применён единообразно** — kilim-полосы на всех 5 launch-экранах (Dashboard/Result/LessonTheory/VocabularyList/Profile), CTA-иерархия выровнена, «Покормить» тап-зона ≥ 44px. Закрыто L11 (commits `d05a4a8`, `38462b4`, nightly 2026-04-19).
 - [ ] **Один первичный CTA на экран** — проверить Dashboard, Result, Profile, Onboarding, ProPaywall — где больше одной яркой кнопки, переделать иерархию.
 - [ ] **Нет визуальных багов** на популярных размерах (iPhone SE, стандартный Android). Прогнать по launch-модулям.
 
