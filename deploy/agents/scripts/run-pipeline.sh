@@ -215,6 +215,23 @@ for i in "${!AGENTS[@]}"; do
     fi
 
     AGENT_SUMMARY=$(sed -n '/=== SUMMARY ===/,$ p' "${log_file}" | tail -n +2)
+
+    # Turn-limit detection: if the agent produced no "=== SUMMARY ===" marker
+    # AND the log tail hints at a cutoff, assume max-turns was reached.
+    # Claude CLI prints a "Reached max turns" / "Max turns reached" line when
+    # --max-turns is exhausted. Record this in a distinct audit file so the
+    # morning QA pass can see which slots ran out of headroom.
+    TURN_ALERTS_FILE="${LOG_DIR}/turn-alerts.md"
+    if [ -z "${AGENT_SUMMARY}" ]; then
+        if grep -qiE 'max.?turns.*(reached|exceeded|hit)|reached.*max.?turns' "${log_file}" 2>/dev/null; then
+            alert="⚠️  ${label} (${agent}) hit max-turns cap of ${turns} at ${HOUR_STAMP} — no === SUMMARY === produced. See ${log_file}."
+        else
+            alert="⚠️  ${label} (${agent}) did not produce === SUMMARY === at ${HOUR_STAMP}. Max-turns=${turns}. Could be early exit, crash, or silent truncation. See ${log_file}."
+        fi
+        echo "${alert}"
+        echo "- ${alert}" >> "${TURN_ALERTS_FILE}"
+    fi
+
     {
         echo "### ${label}"
         echo ""
@@ -228,6 +245,23 @@ for i in "${!AGENTS[@]}"; do
 
     echo ">>> [${agent}] finished at $(date)"
 done
+
+# --- Append turn-limit alerts to qa-report so owner can see them --------------
+if [ -f "${LOG_DIR}/turn-alerts.md" ]; then
+    QA_REPORT="${REPO_DIR}/qa-report-${TODAY}.md"
+    {
+        echo ""
+        echo "## Turn-limit alerts — ${HOUR_STAMP}"
+        echo ""
+        cat "${LOG_DIR}/turn-alerts.md"
+    } >> "${QA_REPORT}"
+    # Stage this update so it lands in the next commit (usually the next agent's,
+    # or the final nothing-to-push check below commits an empty agent-less change).
+    if ! git diff --quiet -- "${QA_REPORT}"; then
+        git add "${QA_REPORT}"
+        git commit -m "pipeline: turn-limit alerts ${HOUR_STAMP}" 2>/dev/null || true
+    fi
+fi
 
 # --- Push back to shared branch -------------------------------------------------
 if [ "$(git rev-list "origin/${BRANCH}..HEAD" --count)" -eq 0 ]; then
