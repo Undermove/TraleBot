@@ -47,6 +47,10 @@ public static class CommandNames
     public const string ChangeCurrentLanguageAndDeleteVocabulary = "/chadl";
     public const string SetInitialLanguage = "/setinitiallanguage";
     
+    // referral / sharing
+    public const string Share = "/share";
+    public const string ShareIcon = "🔗";
+
     // georgian language learning commands - repetition modules
     public const string GeorgianRepetitionModules = "/georgianrepetitionmodules";
     public const string GeorgianVerbsOfMovement = "/georgianverbsofmovement";

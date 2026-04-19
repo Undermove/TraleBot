@@ -74,6 +74,7 @@ public class CreateWebhook : IHostedService
                 commands: new[]
                 {
                     new BotCommand { Command = "start", Description = "Открыть TraleBot" },
+                    new BotCommand { Command = "share", Description = "Пригласить друга и получить бонус" },
                     new BotCommand { Command = "menu", Description = "Меню в чате" },
                     new BotCommand { Command = "help", Description = "Поддержка" }
                 },
