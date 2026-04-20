@@ -70,6 +70,40 @@ MAX_TURNS_PER_AGENT=(40 60 50 40 80 100 60)
 AGENTS=("methodist" "native-reviewer" "product" "designer" "tech-lead" "developer" "qa")
 AGENT_LABELS=("Methodist" "Native Reviewer" "Product" "Designer" "Tech Lead" "Developer" "QA")
 
+# --- Per-agent plugin loadout --------------------------------------------------
+# tech-lead / developer / qa work on C# code. They load the official .NET Agent
+# Skills (dotnet/skills) vendored at /opt/dotnet-skills in the Dockerfile.
+# Each --plugin-dir loads one plugin for the session (Claude Code doesn't
+# auto-enumerate sub-plugins from a marketplace, so we list the ones we want).
+# qa additionally gets dotnet-diag for build/test diagnostics.
+DOTNET_SKILLS_ROOT="/opt/dotnet-skills/plugins"
+DOTNET_CORE_PLUGINS=(
+    "${DOTNET_SKILLS_ROOT}/dotnet"
+    "${DOTNET_SKILLS_ROOT}/dotnet-aspnet"
+    "${DOTNET_SKILLS_ROOT}/dotnet-data"
+    "${DOTNET_SKILLS_ROOT}/dotnet-test"
+    "${DOTNET_SKILLS_ROOT}/dotnet-nuget"
+)
+DOTNET_QA_PLUGINS=("${DOTNET_CORE_PLUGINS[@]}" "${DOTNET_SKILLS_ROOT}/dotnet-diag")
+
+# Build --plugin-dir argument arrays once. Used in the per-agent claude invocation.
+agent_plugin_args() {
+    local agent="$1"
+    local -a dirs=()
+    case "$agent" in
+        tech-lead|developer) dirs=("${DOTNET_CORE_PLUGINS[@]}") ;;
+        qa) dirs=("${DOTNET_QA_PLUGINS[@]}") ;;
+        *) return 0 ;;
+    esac
+    for d in "${dirs[@]}"; do
+        # Defensive: skip silently if the skills repo wasn't vendored (image built
+        # before skills landed) so the agent still runs, just without skills.
+        if [ -d "$d" ]; then
+            printf -- '--plugin-dir %s ' "$d"
+        fi
+    done
+}
+
 CONTEXT_PREFIX="You are working on the SHARED nightly branch '${BRANCH}'. Previous agents (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work — ROADMAP.md is strategic context only.
 
 BEFORE doing anything else:
@@ -138,7 +172,7 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets."
 Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
     # 5. TECH-LEAD (breakdown + review)
-    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have TWO responsibilities this hour:
+    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) — check '/skills' to discover them and invoke when reviewing C# code, tests, EF migrations, or package decisions. Prefer those skills over ad-hoc advice so standards match what Microsoft's own .NET team recommends. You have TWO responsibilities this hour:
 
 PART A — BREAKDOWN (creating the execution backlog):
 - Preferred source: ROADMAP.md entries with status [designed] (designer has produced a spec). For simple [launch] items without a full spec — allowed if acceptance criteria are obvious. [idea] entries skip until designer has specced them.
@@ -156,7 +190,7 @@ PART B — REVIEW (of previous hour's developer work):
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / reviewed / fixed / reopened."
 
     # 6. DEVELOPER
-    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. Your role this hour:
+    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) plus the Roslyn language server via lsp.json — check '/skills' to list them. When writing C#/ASP.NET/EF code, invoke the relevant skill (e.g. for new endpoints, EF migrations, test scaffolding) rather than free-styling — skills encode the conventions the Microsoft .NET team uses internally. LSP diagnostics are available for reading symbols/references in the sln. Your role this hour:
 - Pick ONE task to work on, in this priority order:
     1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
     2) else any open issue labelled 'bug' with no assignee (CONTENT BUGS from methodist are HIGHEST product priority — users will see wrong grammar; prefer issues that also have 'methodist' label),
@@ -171,7 +205,7 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / revi
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issue picked, files changed, test results."
 
     # 7. QA
-    "${CONTEXT_PREFIX}Read .claude/agents/qa.md. Your role this hour (after developer):
+    "${CONTEXT_PREFIX}Read .claude/agents/qa.md. You have the official Microsoft .NET Agent Skills loaded including dotnet-diag (performance/debugging/incident analysis) and dotnet-test (test execution, filtering, failure triage) — check '/skills' and use them to diagnose failing tests or flaky integration runs. Your role this hour (after developer):
 - Run the full integration pass on the current state of the shared branch: 'dotnet test' + 'cd src/Trale/miniapp-src && npm run build'. Check migrations if DB code changed.
 - If builds/tests fail: comment on the issue that developer just touched with the failure details, add label 'needs-fix'. Do NOT try to fix big regressions yourself — that is developer's job next hour.
 - Small build/config fixes (missing files, stale snapshots, wwwroot rebuild) — do fix those yourself.
@@ -200,7 +234,9 @@ for i in "${!AGENTS[@]}"; do
         git commit -m "[${prev_agent}] ${HOUR_STAMP}" --allow-empty 2>/dev/null || true
     fi
 
+    # shellcheck disable=SC2046  # word-splitting is intentional here
     claude \
+        $(agent_plugin_args "${agent}") \
         -p "${instruction}" \
         --dangerously-skip-permissions \
         --max-turns "${turns}" \
