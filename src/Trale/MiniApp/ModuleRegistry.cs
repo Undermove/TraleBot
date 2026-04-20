@@ -20,6 +20,7 @@ public static class ModuleRegistry
         ["preverbs"] = new("preverbs", "Lessons/GeorgianPreverbs", 5),
         ["imperfect"] = new("imperfect", "Lessons/GeorgianImperfect", 5),
         ["aorist"] = new("aorist", "Lessons/GeorgianAorist", 6),
+        ["future-tense"] = new("future-tense", "Lessons/GeorgianFutureTense", 2),
         ["pronoun-declension"] = new("pronoun-declension", "Lessons/GeorgianPronounDeclension", 5),
         ["conditionals"] = new("conditionals", "Lessons/GeorgianConditionals", 5),
         ["postpositions"] = new("postpositions", "Lessons/GeorgianPostpositions", 5),
