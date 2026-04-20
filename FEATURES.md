@@ -263,6 +263,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
 | `imperfect` | `GeorgianImperfect` | 5 | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
+| `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
 | `postpositions` | `GeorgianPostpositions` | 5 | ✅ |
 | `adjectives` | `GeorgianAdjectives` | 5 | ✅ |
