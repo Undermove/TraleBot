@@ -479,9 +479,6 @@ namespace Persistence.Migrations
                     b.Property<bool>("IsPro")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("MiniAppAnnounceSentAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime?>("ProPurchasedAtUtc")
                         .HasColumnType("timestamp with time zone");
 

@@ -24,8 +24,6 @@ public class User
     public virtual ICollection<ShareableQuiz> ShareableQuizzes { get; set; }
     public virtual ICollection<Payment> Payments { get; set; }
     
-    public DateTime? MiniAppAnnounceSentAtUtc { get; set; }
-
     public bool IsActivePremium()
     {
         return AccountType == UserAccountType.Premium && SubscribedUntil!.Value.Date > DateTime.UtcNow;

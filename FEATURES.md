@@ -193,7 +193,6 @@ Location: `src/Trale/HostedServices/`.
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
-| `LaunchAnnouncementWorker` | `StartAsync` (once) | One-shot broadcast: sends Бомбора launch announcement to all Georgian users who have not yet received it (`MiniAppAnnounceSentAtUtc == null`). Idempotent — safe to restart. |
 
 ---
 
@@ -243,7 +242,6 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddReferrals` | Referral entity + FK. |
 | `AddLastFedAtUtc` | Last-fed timestamp. |
 | `AddLastTreatIndex` | Last-treat index for rotation. |
-| `AddMiniAppAnnounceSentAtUtc` | `MiniAppAnnounceSentAtUtc` nullable timestamp on User — tracks per-user delivery of the one-time launch announcement. |
 
 ---
 
