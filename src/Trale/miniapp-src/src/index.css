@@ -290,11 +290,6 @@ input:focus-visible {
   pointer-events: none;
 }
 
-/* Navy hairline variant — replaces gold hairline for day/info tiles */
-.jewel-tile-navy::before {
-  border-color: rgba(27, 95, 176, 0.5);
-}
-
 /* Pressable state */
 .jewel-pressable {
   transition: transform 80ms ease-out, box-shadow 80ms ease-out;
