@@ -46,6 +46,17 @@ WORKDIR /workspace
 RUN git clone --depth 1 https://github.com/dotnet/skills.git /opt/dotnet-skills \
     && chown -R agent:agent /opt/dotnet-skills
 
+# --- Official Anthropic frontend-design plugin ---------------------------------
+# From anthropics/claude-code repo — skill that steers the agent toward
+# distinctive, production-grade UI (bold aesthetics, typography/color choices,
+# meaningful animations) instead of generic "AI aesthetic". Used by the designer
+# and developer agents for mini-app UI work. Sparse clone so we don't pull the
+# whole claude-code repo into the image.
+RUN git clone --depth 1 --filter=blob:none --sparse https://github.com/anthropics/claude-code.git /opt/anthropic-plugins \
+    && cd /opt/anthropic-plugins \
+    && git sparse-checkout set plugins/frontend-design \
+    && chown -R agent:agent /opt/anthropic-plugins
+
 # Pre-warm the Roslyn language server nuget cache as the `agent` user so the
 # first agent run doesn't stall on a first-time download. Falls back to a
 # no-op if the package can't be fetched offline — we log but don't fail the

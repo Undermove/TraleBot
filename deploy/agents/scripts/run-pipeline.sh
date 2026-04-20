@@ -86,13 +86,19 @@ DOTNET_CORE_PLUGINS=(
 )
 DOTNET_QA_PLUGINS=("${DOTNET_CORE_PLUGINS[@]}" "${DOTNET_SKILLS_ROOT}/dotnet-diag")
 
+# Anthropic frontend-design plugin — used by designer and developer agents for
+# mini-app UI work. Vendored in the Dockerfile via sparse clone.
+FRONTEND_DESIGN_PLUGIN="/opt/anthropic-plugins/plugins/frontend-design"
+
 # Build --plugin-dir argument arrays once. Used in the per-agent claude invocation.
 agent_plugin_args() {
     local agent="$1"
     local -a dirs=()
     case "$agent" in
-        tech-lead|developer) dirs=("${DOTNET_CORE_PLUGINS[@]}") ;;
-        qa) dirs=("${DOTNET_QA_PLUGINS[@]}") ;;
+        tech-lead)  dirs=("${DOTNET_CORE_PLUGINS[@]}") ;;
+        developer)  dirs=("${DOTNET_CORE_PLUGINS[@]}" "${FRONTEND_DESIGN_PLUGIN}") ;;
+        designer)   dirs=("${FRONTEND_DESIGN_PLUGIN}") ;;
+        qa)         dirs=("${DOTNET_QA_PLUGINS[@]}") ;;
         *) return 0 ;;
     esac
     for d in "${dirs[@]}"; do
@@ -164,7 +170,7 @@ Do NOT create small technical issues — that is tech-lead's job.
 At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
     # 4. DESIGNER
-    "${CONTEXT_PREFIX}Read .claude/agents/designer.md. Your role this hour:
+    "${CONTEXT_PREFIX}Read .claude/agents/designer.md. You have the official Anthropic 'frontend-design' skill loaded — check '/skills' and use it when picking aesthetic direction, typography, color, and animation for a new spec. It steers AWAY from generic 'AI aesthetic' toward distinctive, production-grade UI. Your role this hour:
 - Find ROADMAP.md entries with status [idea] or [launch] that do NOT yet have a design spec in design-specs/.
 - Pick ONE (highest in the launch section first; if everything is already specced — stop with a 'nothing-to-do' summary).
 - Create design-specs/<short-slug>.md with: goal, user flows, screen sketches (ASCII/prose is fine), component breakdown, edge cases, copy (Russian), accessibility notes.
@@ -190,7 +196,7 @@ PART B — REVIEW (of previous hour's developer work):
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / reviewed / fixed / reopened."
 
     # 6. DEVELOPER
-    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) plus the Roslyn language server via lsp.json — check '/skills' to list them. When writing C#/ASP.NET/EF code, invoke the relevant skill (e.g. for new endpoints, EF migrations, test scaffolding) rather than free-styling — skills encode the conventions the Microsoft .NET team uses internally. LSP diagnostics are available for reading symbols/references in the sln. Your role this hour:
+    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) plus the Roslyn language server via lsp.json, AND the Anthropic 'frontend-design' skill for mini-app React/CSS work — check '/skills' to list all. When writing C#/ASP.NET/EF code, invoke the relevant .NET skill (e.g. for new endpoints, EF migrations, test scaffolding). When touching miniapp-src (React, Tailwind, CSS), invoke frontend-design so the implementation matches the designer's aesthetic intent instead of generic defaults. LSP diagnostics are available for reading symbols/references in the sln. Your role this hour:
 - Pick ONE task to work on, in this priority order:
     1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
     2) else any open issue labelled 'bug' with no assignee (CONTENT BUGS from methodist are HIGHEST product priority — users will see wrong grammar; prefer issues that also have 'methodist' label),
