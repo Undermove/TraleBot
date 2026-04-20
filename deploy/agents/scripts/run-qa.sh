@@ -56,6 +56,69 @@ if [ -f "${QA_REPORT}" ]; then
     QA_REPORT_CONTENT=$(cat "${QA_REPORT}")
 fi
 
+# Group commits into human-readable sections by subject prefix + touched files.
+# Buckets:
+#   🆕 Новый контент         — feat(...) touching Lessons/, ModuleRegistry,
+#                               MiniAppContentProvider, or data/dialogs.ts
+#   📝 Исправления контента  — fix(content)...
+#   🔧 Код-фичи              — other feat(...)
+#   📐 Дизайн-спеки          — design(...)
+#   🛠 Инфраструктура        — config:, chore:, tech-debt:, other fix(...)
+#   ⏮ Откаты                — Revert "..."
+# qa:, [tech-lead], product(roadmap), test(...) fall into the collapsed
+# "Все коммиты" block below, not into top-level sections.
+NEW_CONTENT=""
+CONTENT_FIXES=""
+CODE_FEATURES=""
+DESIGN_SPECS=""
+INFRA=""
+REVERTS=""
+
+while IFS='|' read -r sha subject; do
+    [ -z "$sha" ] && continue
+    files=$(git show --name-only --format='' "$sha" 2>/dev/null || true)
+    line="- ${subject}"
+
+    case "$subject" in
+        "Revert"*)
+            REVERTS+="${line}"$'\n'
+            ;;
+        "fix(content)"*)
+            CONTENT_FIXES+="${line}"$'\n'
+            ;;
+        "design("*)
+            DESIGN_SPECS+="${line}"$'\n'
+            ;;
+        "config:"*|"chore:"*|"tech-debt:"*)
+            INFRA+="${line}"$'\n'
+            ;;
+        "feat"*)
+            if echo "$files" | grep -qE '(Lessons/|ModuleRegistry|MiniAppContentProvider|data/dialogs\.ts)'; then
+                NEW_CONTENT+="${line}"$'\n'
+            else
+                CODE_FEATURES+="${line}"$'\n'
+            fi
+            ;;
+        "fix"*)
+            INFRA+="${line}"$'\n'
+            ;;
+    esac
+done < <(git log main..HEAD --format='%h|%s' --reverse)
+
+render_section() {
+    local title="$1"
+    local body="$2"
+    if [ -n "$body" ]; then
+        printf "### %s\n\n%s\n" "$title" "$body"
+    fi
+}
+
+# Summary stats
+COMMITS_TOTAL=$(git rev-list main..HEAD --count)
+FILES_TOTAL=$(git diff --name-only main..HEAD | wc -l | tr -d ' ')
+ADDITIONS=$(git diff --shortstat main..HEAD | grep -oE '[0-9]+ insertion' | grep -oE '[0-9]+' || echo "0")
+DELETIONS=$(git diff --shortstat main..HEAD | grep -oE '[0-9]+ deletion' | grep -oE '[0-9]+' || echo "0")
+
 # Issues closed or referenced tonight
 CLOSED_ISSUES=$(git log main..HEAD --format=%B | grep -iEo '(fixes|closes|resolves)[[:space:]]+#[0-9]+' | grep -oE '#[0-9]+' | sort -u | tr '\n' ' ' || true)
 REFERENCED_ISSUES=$(git log main..HEAD --format=%B | grep -iEo 'refs[[:space:]]+#[0-9]+' | grep -oE '#[0-9]+' | sort -u | tr '\n' ' ' || true)
@@ -63,13 +126,33 @@ REFERENCED_ISSUES=$(git log main..HEAD --format=%B | grep -iEo 'refs[[:space:]]+
 FILES_CHANGED=$(git diff --stat main..HEAD)
 COMMITS=$(git log --oneline main..HEAD)
 
+SECTIONS=""
+SECTIONS+=$(render_section "🆕 Новый контент" "$NEW_CONTENT")
+SECTIONS+=$(render_section "📝 Исправления контента" "$CONTENT_FIXES")
+SECTIONS+=$(render_section "🔧 Код-фичи" "$CODE_FEATURES")
+SECTIONS+=$(render_section "📐 Дизайн-спеки (готовы к разработке)" "$DESIGN_SPECS")
+SECTIONS+=$(render_section "🛠 Инфраструктура" "$INFRA")
+SECTIONS+=$(render_section "⏮ Откаты" "$REVERTS")
+
 PR_BODY=$(cat <<PREOF
 ## Ночной прогон — ${TODAY}
 
-Пять агентов (methodist → product → tech-lead → developer → qa) работали последовательно каждый час на общей ветке \`${BRANCH}\`. GitHub issues — источник правды по задачам, интеграционные тесты гоняются каждый час.
+Пять агентов (methodist → product → tech-lead → developer → qa) работали последовательно каждый час на ветке \`${BRANCH}\`. Интеграционный QA каждый час, GitHub issues — источник правды по задачам.
 
-**Закрытые задачи:** ${CLOSED_ISSUES:-—}
-**Упомянутые задачи:** ${REFERENCED_ISSUES:-—}
+**Итого:** ${COMMITS_TOTAL} коммитов · ${FILES_TOTAL} файлов · +${ADDITIONS} / -${DELETIONS} строк
+
+---
+
+## Что сделали этой ночью
+
+${SECTIONS}
+
+---
+
+### Задачи
+
+**Закрытые:** ${CLOSED_ISSUES:-—}
+**Упомянутые:** ${REFERENCED_ISSUES:-—}
 
 <details>
 <summary>QA Report (hourly integration)</summary>
@@ -78,17 +161,23 @@ ${QA_REPORT_CONTENT:-_QA-отчёт не сгенерирован_}
 
 </details>
 
-## Коммиты
+<details>
+<summary>Все коммиты</summary>
 
 \`\`\`
 ${COMMITS}
 \`\`\`
 
-## Изменённые файлы
+</details>
+
+<details>
+<summary>Изменённые файлы</summary>
 
 \`\`\`
 ${FILES_CHANGED}
 \`\`\`
+
+</details>
 
 ---
 *Automated by Bombora Nightly Pipeline — ${TODAY}*
