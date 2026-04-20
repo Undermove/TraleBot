@@ -109,6 +109,9 @@
       <Content Update="Lessons\GeorgianAorist\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="Lessons\GeorgianFutureTense\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Update="Lessons\GeorgianPronounDeclension\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

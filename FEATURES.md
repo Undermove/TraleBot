@@ -128,6 +128,11 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `InkDivider.tsx` | Ink-style divider. |
 | `ModulePhraseBanner.tsx` | Daily phrase banner on Profile. |
 | `ComingSoonTile.tsx` | Placeholder tile for not-yet-built modules. |
+| `GeorgianNameCard.tsx` | Profile widget: user's name rendered in Georgian script (transliteration phase → reveal phase). |
+| `DialogOfDayCard.tsx` | Dashboard card: «Диалог дня» — daily mini-dialogue (tap-to-reveal translations, collapse toggle). |
+
+### Data (`src/data/`)
+- `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -262,7 +267,8 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `version-vowels` | `GeorgianVersionVowels` | 5 | ✅ |
 | `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
 | `imperfect` | `GeorgianImperfect` | 5 | ✅ |
-| `aorist` | `GeorgianAorist` | 5 | ✅ |
+| `aorist` | `GeorgianAorist` | 6 | ✅ |
+| `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
 | `postpositions` | `GeorgianPostpositions` | 5 | ✅ |
 | `adjectives` | `GeorgianAdjectives` | 5 | ✅ |

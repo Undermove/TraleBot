@@ -39,6 +39,7 @@ public class UserBuilder
             TelegramId = _telegramId,
             AccountType = _accountType,
             InitialLanguageSet = _initialLanguageSet,
+            IsActive = true,
             UserSettingsId = settingsGuid,
             Settings = new UserSettings
             {
