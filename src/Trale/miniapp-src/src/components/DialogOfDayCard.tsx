@@ -20,11 +20,12 @@ export default function DialogOfDayCard() {
   }
 
   useEffect(() => {
-    if (revealed.size === dialog.lines.length && revealed.size > 0 && !allDoneShown) {
+    if (revealed.size === dialog.lines.length && revealed.size > 0) {
       setAllDone(true)
-      setTimeout(() => setAllDone(false), 2000)
+      const timer = setTimeout(() => setAllDone(false), 2000)
+      return () => clearTimeout(timer)
     }
-  }, [revealed]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [revealed, dialog.lines.length])
 
   return (
     <div className="jewel-tile mx-5 mb-4 px-5 py-4 jewel-tile-navy">
