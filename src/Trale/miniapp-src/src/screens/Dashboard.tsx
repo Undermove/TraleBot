@@ -9,6 +9,7 @@ import TreatShop from '../components/TreatShop'
 import FeedingAnimation from '../components/FeedingAnimation'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
+import DialogOfDayCard from '../components/DialogOfDayCard'
 
 const XP_THRESHOLDS = Object.keys(XP_MILESTONES).map(Number)
 const STREAK_THRESHOLDS = Object.keys(STREAK_MILESTONES).map(Number)
@@ -340,6 +341,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           )
         })()}
       </section>
+
+      {/* ══ Dialog of the Day ══ */}
+      <DialogOfDayCard />
 
       {/* ══ Module sections ══ */}
       {(() => {
