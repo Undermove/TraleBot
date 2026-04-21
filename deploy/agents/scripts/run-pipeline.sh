@@ -4,20 +4,22 @@ set -e
 # Sequential agent pipeline on a SHARED nightly branch.
 #
 # FLOW (one hour = one pass through this pipeline):
-#   1. methodist       — pedagogical audit, files issues (label: methodist)
-#   2. native-reviewer — bilingual ge+ru native speaker: proofreads content,
-#                        commits small fixes directly, files issues (label: native)
-#   3. product         — triages methodist's/native's issues + generates own
-#                        ideas, updates STRATEGY.md/ROADMAP.md
-#   4. designer        — creates UX design specs for [idea]/[launch] tasks
-#                        that don't have one yet (design-specs/<N>.md)
-#   5. tech-lead       — (a) breaks designed ROADMAP items into small
-#                         technical GitHub issues (labels: task, P1/P2/P3)
-#                        (b) reviews previous hour's developer work
-#   6. developer       — picks the highest-priority open 'task' issue and
-#                        implements it on the shared branch
-#   7. qa              — integration-tests the whole shared branch after the
-#                        new commit lands
+#   1. methodist            — pedagogical audit, files issues (label: methodist)
+#   2. native-reviewer      — bilingual ge+ru native speaker: proofreads content,
+#                             commits small fixes directly, files issues (label: native)
+#   3. designer             — UX audit, files design ideas as issues (label: design);
+#                             optional design-specs/*.md for big features
+#   4. product              — triages methodist/native/design issues + generates own
+#                             ideas, updates STRATEGY.md/ROADMAP.md
+#   5. tech-lead-breakdown  — breaks [designed]/[launch] ROADMAP items into small
+#                             technical GitHub issues with acceptance criteria
+#                             (labels: task, P1/P2/P3)
+#   6. developer            — picks the highest-priority open 'task' issue and
+#                             implements it on the shared branch
+#   7. qa                   — integration-tests the whole shared branch after the
+#                             new commit lands
+#   8. tech-lead-review     — architecture review of developer's commit + qa report;
+#                             opens 'needs-fix' issues for regressions
 #
 # SINGLE SOURCE OF TRUTH: GitHub issues drive execution. ROADMAP.md is strategic.
 # SHARED BRANCH: agents/nightly-YYYY-MM-DD — each hour continues the previous.
@@ -62,13 +64,14 @@ git log --oneline -20 main.."${BRANCH}" || true
 echo ""
 
 # --- Agent definitions ----------------------------------------------------------
-# Generous limits — tech-lead has two jobs (breakdown + review), developer
-# does actual implementation, QA runs full integration. Methodist/product/
-# designer are lighter but raised from 25 so they don't truncate triage.
-MAX_TURNS_PER_AGENT=(40 60 50 40 80 100 60)
+# Generous limits — developer does actual implementation, tech-lead runs twice
+# (breakdown up front, architecture review at the end), QA runs full integration.
+# Methodist/native/designer/product are lighter but raised from 25 so they don't
+# truncate triage.
+MAX_TURNS_PER_AGENT=(40 60 40 50 80 100 60 50)
 
-AGENTS=("methodist" "native-reviewer" "product" "designer" "tech-lead" "developer" "qa")
-AGENT_LABELS=("Methodist" "Native Reviewer" "Product" "Designer" "Tech Lead" "Developer" "QA")
+AGENTS=("methodist" "native-reviewer" "designer" "product" "tech-lead-breakdown" "developer" "qa" "tech-lead-review")
+AGENT_LABELS=("Methodist" "Native Reviewer" "Designer" "Product" "Tech Lead (Breakdown)" "Developer" "QA" "Tech Lead (Review)")
 
 # --- Per-agent plugin loadout --------------------------------------------------
 # tech-lead / developer / qa work on C# code. They load the official .NET Agent
@@ -95,7 +98,8 @@ agent_plugin_args() {
     local agent="$1"
     local -a dirs=()
     case "$agent" in
-        tech-lead)  dirs=("${DOTNET_CORE_PLUGINS[@]}") ;;
+        tech-lead-breakdown|tech-lead-review)
+                    dirs=("${DOTNET_CORE_PLUGINS[@]}") ;;
         developer)  dirs=("${DOTNET_CORE_PLUGINS[@]}" "${FRONTEND_DESIGN_PLUGIN}") ;;
         designer)   dirs=("${FRONTEND_DESIGN_PLUGIN}") ;;
         qa)         dirs=("${DOTNET_QA_PLUGINS[@]}") ;;
@@ -150,19 +154,36 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets."
 - Do NOT touch ROADMAP.md.
 At the very end output '=== SUMMARY ===' with 3-7 bullets: modules reviewed, fixes committed, issues filed."
 
-    # 3. PRODUCT
+    # 3. DESIGNER (idea generator — runs BEFORE product)
+    "${CONTEXT_PREFIX}Read .claude/agents/designer.md. You have the official Anthropic 'frontend-design' skill loaded — check '/skills' and use it when proposing aesthetic direction, typography, color, and animation. It steers AWAY from generic 'AI aesthetic' toward distinctive, production-grade UI.
+
+NEW ROLE THIS HOUR: you are an IDEA GENERATOR, not a spec bottleneck. Methodist and native-reviewer feed product with content/language ideas — you feed product with DESIGN ideas on the same input-phase. tech-lead writes the acceptance criteria later; you do NOT need to produce a formal spec for every idea.
+
+- First check 'gh issue list --label design --state open --limit 30' so you don't duplicate.
+- AUDIT the current mini-app UI (src/Trale/miniapp-src/src/) and the onboarding/checkout/profile flows. Spot:
+  * Screens that feel generic or inconsistent with Minankari (palette, jewel-tile, kilim-progress).
+  * Moments where a grusinian 'reveal' (letter, numeral, word) could replace a generic element.
+  * Friction points: ambiguous CTAs, unclear state, bad empty states, misaligned spacing.
+  * Missed opportunities in launch-checklist features (STRATEGY.md).
+- For each finding, file 'gh issue create --label design' with: title '[design] <area>: <short>', body with: current state (path + what's wrong), proposed direction (palette/component/motion notes, 3-8 bullets), expected UX impact, whether tech-lead can decompose from these notes alone OR a full design-specs/ file is needed.
+- For BIG features (whole new flow, new major component) where notes aren't enough: create design-specs/<slug>.md with goal, user flows, screen sketches, component breakdown, states, copy, accessibility. Still open the design issue and link the spec from it. This is the EXCEPTION, not the default.
+- Do NOT touch ROADMAP.md directly — product does that based on your issues.
+At the very end output '=== SUMMARY ===' with 3-7 bullets: areas audited, issues filed, specs created (if any)."
+
+    # 4. PRODUCT
     "${CONTEXT_PREFIX}Read .claude/agents/product.md. Also read STRATEGY.md FIRST — it defines the current product phase and the launch checklist. Your role this hour:
 
-AGGREGATE inputs:
+AGGREGATE inputs from the three upstream reviewers (methodist, native-reviewer, designer):
 - Read STRATEGY.md (current phase, launch checklist).
 - Read ROADMAP.md (backlog, philosophy).
 - 'gh issue list --label methodist --state open --limit 50'
 - 'gh issue list --label native --state open --limit 50'
+- 'gh issue list --label design --state open --limit 50'
 - 'gh issue list --label product --state open --limit 50'
 
-TRIAGE methodist's and native-reviewer's issues: for each relevant one, add to ROADMAP.md as [idea] or [launch] if it closes a checklist item; source-link the issue number; close/comment on the issue once reflected. Max 5 per session. Note: native-reviewer issues are usually content-fix granularity — most do NOT need ROADMAP entries, they go straight to developer; only surface here if the fix is big enough to warrant prioritization (e.g. whole example swap or lexicon change).
+TRIAGE all three streams: for each relevant issue, add to ROADMAP.md as [idea] or [launch] if it closes a checklist item; source-link the issue number; close/comment on the issue once reflected. Max 5 per session. Note: native-reviewer issues are usually content-fix granularity — most do NOT need ROADMAP entries, they go straight to developer; only surface here if the fix is big enough (whole example swap or lexicon change). Design issues with clear acceptance criteria can skip ROADMAP and go straight to tech-lead as a [launch] entry.
 
-GENERATE your own ideas (you are not just reacting to methodist): features closing launch-checklist items, marketing angles (Batumi expat chats, referral loops), retention mechanics (Bombora feeding tamagotchi), onboarding copy, positioning. File them as GitHub issues with label 'product' (and 'launch' if applicable).
+GENERATE your own ideas (you are not just reacting): features closing launch-checklist items, marketing angles (Batumi expat chats, referral loops), retention mechanics (Bombora feeding tamagotchi), onboarding copy, positioning. File them as GitHub issues with label 'product' (and 'launch' if applicable).
 
 BACKLOG RULE: if ROADMAP already has 5+ [idea]/[launch] tasks, DO NOT generate new ideas — only triage and prioritize.
 
@@ -171,31 +192,19 @@ PRIORITIZE: move tasks in ROADMAP. Items closing launch-checklist rank highest. 
 Do NOT create small technical issues — that is tech-lead's job.
 At the very end output '=== SUMMARY ===' with 3-7 bullets."
 
-    # 4. DESIGNER
-    "${CONTEXT_PREFIX}Read .claude/agents/designer.md. You have the official Anthropic 'frontend-design' skill loaded — check '/skills' and use it when picking aesthetic direction, typography, color, and animation for a new spec. It steers AWAY from generic 'AI aesthetic' toward distinctive, production-grade UI. Your role this hour:
-- Find ROADMAP.md entries with status [idea] or [launch] that do NOT yet have a design spec in design-specs/.
-- Pick ONE (highest in the launch section first; if everything is already specced — stop with a 'nothing-to-do' summary).
-- Create design-specs/<short-slug>.md with: goal, user flows, screen sketches (ASCII/prose is fine), component breakdown, edge cases, copy (Russian), accessibility notes.
-- Update the ROADMAP.md status of that entry from [idea]/[launch] to [designed] and add the design-spec path.
-Do NOT create a PR. At the very end output '=== SUMMARY ===' with 3-7 bullets."
+    # 5. TECH-LEAD (BREAKDOWN only — review slot runs after QA)
+    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) — check '/skills' to discover them and invoke when writing acceptance criteria that touch EF migrations, tests, ASP.NET endpoints, or NuGet decisions.
 
-    # 5. TECH-LEAD (breakdown + review)
-    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) — check '/skills' to discover them and invoke when reviewing C# code, tests, EF migrations, or package decisions. Prefer those skills over ad-hoc advice so standards match what Microsoft's own .NET team recommends. You have TWO responsibilities this hour:
+THIS SLOT IS BREAKDOWN ONLY. Architecture review runs AFTER QA in a separate tech-lead-review slot — do NOT do that work here.
 
-PART A — BREAKDOWN (creating the execution backlog):
-- Preferred source: ROADMAP.md entries with status [designed] (designer has produced a spec). For simple [launch] items without a full spec — allowed if acceptance criteria are obvious. [idea] entries skip until designer has specced them.
-- For each qualifying entry without a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours of work each).
+BREAKDOWN (creating the execution backlog with acceptance criteria):
+- Preferred source: ROADMAP.md entries with status [designed] or [launch]. For [designed] items, a design-spec in design-specs/ exists — link it from the task body. For [launch] items without a full spec, acceptance criteria from the related design issue ('gh issue list --label design') are usually enough.
+- [idea] entries skip until product or designer has promoted them.
+- For each qualifying entry without a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours each).
 - Priority rule: if the ROADMAP section is tagged [launch] OR directly closes a STRATEGY.md launch-checklist item, the task gets label P1. Other useful work is P2. Polish / post-launch ideas are P3.
-- Create each with 'gh issue create --label task --label <priority>'. Include acceptance criteria (and design-spec path if available) in the body.
+- Create each with 'gh issue create --label task --label <priority>'. Body MUST include: acceptance criteria (3-7 bullets, testable), design-spec path (if [designed]), linked design/native/methodist issues it closes, sketch of files/classes to touch.
 - Cross-link: in the ROADMAP section, add a reference like '(issues: #N, #M)'.
-
-PART B — REVIEW (of previous hour's developer work):
-- Look at the last developer commit (git log --author-date-order --grep='\\[developer\\]' -1) and the QA output from that hour (latest '[qa]' commit notes).
-- Compare against ARCHITECTURE.md (Clean Architecture, services-not-MediatR for new features, SRP, no dead code). Check test coverage.
-- Small issues you can fix in-place — do it (boy-scout + missing tests). Bigger issues — re-open the relevant GitHub issue (or open a follow-up with label 'needs-fix') with concrete remediation notes. Do NOT merge status changes that were broken.
-- Run 'dotnet test' — must be green when you finish your part.
-
-At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created / reviewed / fixed / reopened."
+At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created, backlog state."
 
     # 6. DEVELOPER
     "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) plus the Roslyn language server via lsp.json, AND the Anthropic 'frontend-design' skill for mini-app React/CSS work — check '/skills' to list all. When writing C#/ASP.NET/EF code, invoke the relevant .NET skill (e.g. for new endpoints, EF migrations, test scaffolding). When touching miniapp-src (React, Tailwind, CSS), invoke frontend-design so the implementation matches the designer's aesthetic intent instead of generic defaults. LSP diagnostics are available for reading symbols/references in the sln. Your role this hour:
@@ -219,6 +228,19 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets: issue picked, files c
 - Small build/config fixes (missing files, stale snapshots, wwwroot rebuild) — do fix those yourself.
 - Append integration findings to 'qa-report-${TODAY}.md' at repo root (create if absent). One dated section per hour.
 At the very end output '=== SUMMARY ===' with 3-7 bullets: what you ran, what passed, what failed, follow-ups filed."
+
+    # 8. TECH-LEAD-REVIEW (architecture review — runs LAST, after QA)
+    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) — invoke them when reviewing C# code, tests, EF migrations, or package decisions so feedback matches Microsoft's own .NET team standards.
+
+THIS SLOT IS ARCHITECTURE REVIEW ONLY. The breakdown happened earlier this hour in the tech-lead-breakdown slot — do NOT create more task issues here.
+
+ARCHITECTURE REVIEW (of this hour's developer + QA work):
+- Look at the last developer commit (git log --author-date-order --grep='\\[developer\\]' -1) AND the QA output from this hour (latest '[qa]' commit notes + qa-report-${TODAY}.md).
+- Compare against ARCHITECTURE.md: Clean Architecture layers respected, new use cases as services (NOT MediatR), SRP, no dead code, no leaky abstractions, EF queries sane (no N+1), migrations reversible, tests cover the real behaviour (not just the happy path).
+- Boy-scout fixes (small): apply in place — tighten types, delete dead code, add missing unit tests, split a too-big file.
+- Real regressions (bigger): re-open the relevant GitHub issue OR open a follow-up with label 'needs-fix' and a 3-7 bullet remediation plan. Do NOT silently leave the issue closed if the implementation is broken.
+- Run 'dotnet test' at the end — must be green when you finish your part.
+At the very end output '=== SUMMARY ===' with 3-7 bullets: commits reviewed, fixes applied, needs-fix opened."
 )
 
 # --- Run agents -----------------------------------------------------------------
