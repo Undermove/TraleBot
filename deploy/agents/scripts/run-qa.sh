@@ -206,10 +206,16 @@ PREOF
 )
 
 # --- Open or refresh PR ---------------------------------------------------------
+# Use the REST API directly for body updates. `gh pr edit` currently fails
+# (exit 1) on repos with classic Projects attached — it emits "GraphQL: Projects
+# (classic) is being deprecated" and aborts the update. REST PATCH avoids the
+# GraphQL projects enumeration entirely.
+REPO_SLUG=$(git config --get remote.origin.url | sed -E 's#.*github\.com[:/]([^/]+/[^/.]+).*#\1#')
 EXISTING_PR=$(gh pr list --head "${BRANCH}" --state open --json number --jq '.[0].number' 2>/dev/null || true)
 if [ -n "${EXISTING_PR}" ]; then
-    echo ">>> PR #${EXISTING_PR} already exists for ${BRANCH}. Updating body."
-    gh pr edit "${EXISTING_PR}" --body "${PR_BODY}" || true
+    echo ">>> PR #${EXISTING_PR} already exists for ${BRANCH}. Updating body via REST."
+    gh api "repos/${REPO_SLUG}/pulls/${EXISTING_PR}" --method PATCH \
+        -f body="${PR_BODY}" --jq .html_url || true
 else
     gh pr create \
         --title "Ночной прогон ${TODAY}" \
