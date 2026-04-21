@@ -349,10 +349,18 @@ export default function Practice({
                 }`}
                 style={{ boxShadow: '2px 2px 0 #15100A' }}
               >
-                <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
-                  {isCorrect ? 'верно' : 'ещё раз'}
+                <div className="mb-2">
+                  <div className="font-geo text-[26px] font-bold leading-tight">
+                    {isCorrect ? 'სწორია!' : 'არასწორია!'}
+                  </div>
+                  <div className="font-sans text-[11px] tracking-wide opacity-60">
+                    {isCorrect ? 'swor·ia' : 'ara·swor·ia'}
+                  </div>
+                  <div className="font-sans text-[11px] font-extrabold uppercase tracking-widest opacity-75 mt-0.5">
+                    {isCorrect ? 'Верно' : 'Ошибка'}
+                  </div>
                 </div>
-                <div className="font-sans text-[14px] leading-snug">
+                <div className="font-sans text-[14px] leading-snug opacity-90">
                   {isCorrect
                     ? (current.explanation || 'Хорошо запомнил — так держать.')
                     : `правильно: ${correctAnswer}`}
@@ -431,10 +439,18 @@ export default function Practice({
                 }`}
                 style={{ boxShadow: '2px 2px 0 #15100A' }}
               >
-                <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
-                  {isCorrect ? 'верно' : 'ещё раз'}
+                <div className="mb-2">
+                  <div className="font-geo text-[26px] font-bold leading-tight">
+                    {isCorrect ? 'სწორია!' : 'არასწორია!'}
+                  </div>
+                  <div className="font-sans text-[11px] tracking-wide opacity-60">
+                    {isCorrect ? 'swor·ia' : 'ara·swor·ia'}
+                  </div>
+                  <div className="font-sans text-[11px] font-extrabold uppercase tracking-widest opacity-75 mt-0.5">
+                    {isCorrect ? 'Верно' : 'Ошибка'}
+                  </div>
                 </div>
-                <div className="font-sans text-[14px] leading-snug">
+                <div className="font-sans text-[14px] leading-snug opacity-90">
                   {current.explanation ||
                     (isCorrect
                       ? 'Хорошо запомнил — так держать.'
