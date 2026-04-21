@@ -760,7 +760,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Paragraph("В настоящем времени подлежащее стоит в именительном падеже:"),
                         Example("კაცი მუშაობს", "Мужчина работает"),
                         Example("ბავშვი თამაშობს", "Ребёнок играет"),
-                        Example("ძაღლი ძინავს", "Собака спит")
+                        Example("ძაღლი ჭამს", "Собака ест")
                     }),
 
                 Lesson(2, "Эргативный падеж", "მოთხრობითი — подлежащее в аористе",
