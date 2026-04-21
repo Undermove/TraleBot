@@ -39,7 +39,8 @@ public class LessonJsonValidationTests
     {
         var fullPath = Path.Combine(RepoRoot, relativePath);
         var content = File.ReadAllText(fullPath);
-        Action parse = () => JsonDocument.Parse(content);
-        parse.ShouldNotThrow($"Lesson file '{relativePath}' must be valid JSON");
+        Should.NotThrow(
+            () => { using var _ = JsonDocument.Parse(content); },
+            $"Lesson file '{relativePath}' must be valid JSON");
     }
 }
