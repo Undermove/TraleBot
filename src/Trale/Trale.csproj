@@ -118,6 +118,9 @@
       <Content Update="Lessons\GeorgianConditionals\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="Lessons\GeorgianImperative\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Update="Lessons\GeorgianPronouns\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
