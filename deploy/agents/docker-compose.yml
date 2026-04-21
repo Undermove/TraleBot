@@ -21,6 +21,11 @@ services:
     volumes:
       - agent-logs:/logs
       - agent-workspace:/workspace
+      # Host Docker socket — lets Testcontainers in the QA agent spawn sibling
+      # containers (Postgres, etc.) for IntegrationTests. Without this mount
+      # `dotnet test` skips all IntegrationTests because Testcontainers can't
+      # reach a Docker daemon from inside bombora-agents.
+      - /var/run/docker.sock:/var/run/docker.sock
 
 volumes:
   agent-logs:

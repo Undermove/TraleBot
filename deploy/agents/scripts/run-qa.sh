@@ -74,10 +74,31 @@ DESIGN_SPECS=""
 INFRA=""
 REVERTS=""
 
+# Neutralize ROADMAP section references so GitHub doesn't auto-link them to
+# unrelated legacy issues/PRs. Two narrow patterns match:
+#   (a) `#NN` inside parens, e.g. `design(#46)`, `design(VoM #53)`.
+#   (b) `ROADMAP #NN`, e.g. `create #433 for ROADMAP #46`.
+# Bare `#NN` outside these patterns (real issue refs like `create #433`,
+# `Refs #403`, `Fixes #370`) is left alone so live links still work.
+sanitize_subject() {
+    local s="$1"
+    # Swap `#NN` → sentinel `§§NN§§` inside paren groups (covers any number of
+    # #NN within one `(...)`, loops until no raw `#NN` remains in parens).
+    while printf '%s' "$s" | grep -qE '\([^)]*#[0-9]+[^)]*\)'; do
+        s=$(printf '%s' "$s" | sed -E 's/(\([^)#]*)#([0-9]+)/\1§§\2§§/')
+    done
+    # `ROADMAP #NN` (case-insensitive) → also sentinel.
+    s=$(printf '%s' "$s" | sed -E 's/([Rr][Oo][Aa][Dd][Mm][Aa][Pp]) #([0-9]+)/\1 §§\2§§/g')
+    # Finally: sentinel → `\`#NN\`` (backticked, so GitHub won't auto-link).
+    s=$(printf '%s' "$s" | sed -E 's/§§([0-9]+)§§/`#\1`/g')
+    printf '%s' "$s"
+}
+
 while IFS='|' read -r sha subject; do
     [ -z "$sha" ] && continue
     files=$(git show --name-only --format='' "$sha" 2>/dev/null || true)
-    line="- ${subject}"
+    safe_subject=$(sanitize_subject "$subject")
+    line="- ${safe_subject}"
 
     case "$subject" in
         "Revert"*)

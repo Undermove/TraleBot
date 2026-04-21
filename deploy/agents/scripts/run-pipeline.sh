@@ -121,6 +121,8 @@ BEFORE doing anything else:
 
 Do NOT create a PR. Do NOT redo work that is already committed. Commit your own work with clear messages referencing issue numbers when applicable.
 
+COMMIT SUBJECT CONVENTION — ROADMAP section numbers are NOT GitHub issue numbers. When referencing a ROADMAP section in a commit subject, write it as \`ROADMAP-46\`, \`§46\`, or \`ROADMAP §46\` — NEVER \`#46\` — because GitHub auto-links any bare \`#NN\` to issue/PR #NN in this repo, which produces wrong cross-references in the nightly PR. Use bare \`#NN\` ONLY for real GitHub issues (e.g. \`Refs #403\`, \`Fixes #370\`, \`create #433 for ROADMAP-46\`).
+
 "
 
 INSTRUCTIONS=(
