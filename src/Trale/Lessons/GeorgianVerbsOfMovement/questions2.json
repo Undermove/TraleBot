@@ -514,7 +514,7 @@
       "id": "q_sent_gad_cross_01",
       "lemma": "გად",
       "template": "choose_translation_rus",
-      "question": "„ის ქუჩა გადავიდა” — это…",
+      "question": "„ის ქუჩაზე გადავიდა” — это…",
       "options": [
         "Он перешёл улицу",
         "Он прошёл по улице",
@@ -932,7 +932,7 @@
       "id": "q_ctx_street_cross_01",
       "lemma": "გად",
       "template": "choose_translation_rus",
-      "question": "„ის ქუჩა უსაფრთხოდ გადავიდა” — это…",
+      "question": "„ის ქუჩაზე უსაფრთხოდ გადავიდა” — это…",
       "options": [
         "Он безопасно перешёл улицу",
         "Он вышел на улицу",
