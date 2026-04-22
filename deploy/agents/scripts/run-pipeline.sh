@@ -223,11 +223,11 @@ At the very end output '=== SUMMARY ===' with 3-7 bullets: issue picked, files c
 
     # 7. QA
     "${CONTEXT_PREFIX}Read .claude/agents/qa.md. You have the official Microsoft .NET Agent Skills loaded including dotnet-diag (performance/debugging/incident analysis) and dotnet-test (test execution, filtering, failure triage) — check '/skills' and use them to diagnose failing tests or flaky integration runs. Your role this hour (after developer):
-- Run the full integration pass on the current state of the shared branch: 'dotnet test' + 'cd src/Trale/miniapp-src && npm run build'. Check migrations if DB code changed.
-- If builds/tests fail: comment on the issue that developer just touched with the failure details, add label 'needs-fix'. Do NOT try to fix big regressions yourself — that is developer's job next hour.
-- Small build/config fixes (missing files, stale snapshots, wwwroot rebuild) — do fix those yourself.
-- Append integration findings to 'qa-report-${TODAY}.md' at repo root (create if absent). One dated section per hour.
-At the very end output '=== SUMMARY ===' with 3-7 bullets: what you ran, what passed, what failed, follow-ups filed."
+- Run the FULL test pass on the current state of the shared branch: 'dotnet test TraleBot.sln' (ALL projects, IntegrationTests included — Testcontainers works here, env vars TESTCONTAINERS_RYUK_DISABLED + TESTCONTAINERS_HOST_OVERRIDE are set in compose) + 'cd src/Trale/miniapp-src && npm run build'. Check migrations if DB code changed.
+- HARD GATE: the hour does NOT close until 'dotnet test TraleBot.sln' is green locally. If IntegrationTests fail — do NOT write 'skipped/unavailable' in the report, that is always an infra bug and must be filed as such.
+- If builds/tests fail: either fix small things yourself (stale snapshot, missing lemma in theory, wwwroot rebuild, missing migration .Designer.cs), or revert the last developer commit to return to green, or comment on the issue that developer just touched with the failure details and add label 'needs-fix'. Do NOT leave the branch red for the next hour.
+- Append integration findings to 'qa-report-${TODAY}.md' at repo root (create if absent). One dated section per hour. Explicitly record the result of 'dotnet test TraleBot.sln' (pass/fail + count).
+At the very end output '=== SUMMARY ===' with 3-7 bullets: what you ran, whether 'dotnet test TraleBot.sln' ended green, what passed, what failed, follow-ups filed."
 
     # 8. TECH-LEAD-REVIEW (architecture review — runs LAST, after QA)
     "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) — invoke them when reviewing C# code, tests, EF migrations, or package decisions so feedback matches Microsoft's own .NET team standards.

@@ -15,13 +15,17 @@
 
 ## Что ты делаешь
 
-### 1. Сборка и тесты
+### 1. Сборка и тесты — жёсткий гейт
+
 ```bash
-dotnet build
-dotnet test
+dotnet build TraleBot.sln
+dotnet test TraleBot.sln                  # ВСЕ проекты: Domain, Application, Infrastructure, IntegrationTests
 cd src/Trale/miniapp-src && npm run build
 ```
-Если что-то не собирается или тесты падают — это баг #1. Почини и зафиксируй.
+
+**IntegrationTests обязательны.** В этом контейнере Testcontainers работает — в `deploy/agents/docker-compose.yml` выставлены `TESTCONTAINERS_RYUK_DISABLED=true` и `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`. Если IntegrationTests не запускаются — это проблема инфры, немедленно отметь в отчёте и файли issue, НЕ пропускай их молча.
+
+Если любая из команд падает — это баг #1. Либо почини сам (мелкие вещи: stale snapshot, missing lemma в theory, wwwroot rebuild), либо откати последний developer-коммит, либо повесь `needs-fix` на issue, который developer только что тронул. **Час не закрывается, пока `dotnet test TraleBot.sln` локально не зелёный.**
 
 ### 2. Проверка миграций
 - Есть ли новые файлы в `src/Persistence/Migrations/`?
@@ -85,4 +89,6 @@ cd src/Trale/miniapp-src && npm run build
 - НЕ пушь в main
 - НЕ удаляй чужой код без причины
 - Если не уверен — отметь как «⚠️ требует проверки» вместо того чтобы чинить наугад
-- ВСЕГДА запускай `dotnet test` после любых исправлений — тесты должны быть зелёными
+- ВСЕГДА запускай `dotnet test TraleBot.sln` после любых исправлений — ВСЕ тесты (включая IntegrationTests) должны быть зелёными
+- Никогда не пиши в отчёте «IntegrationTests skipped/unavailable» как нормальный исход — это всегда ошибка среды и должна быть расследована
+- Час считается закрытым только если последний локальный прогон `dotnet test TraleBot.sln` зелёный. Если не удалось довести до зелёного — явно об этом напиши в отчёте и в `=== SUMMARY ===`, чтобы следующий developer-слот увидел ишью как priority #1
