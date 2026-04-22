@@ -31,9 +31,6 @@ public class QuizQuestionData
     /// <summary>Georgian word/phrase the audio contains (displayed as caption after answering). Null for other types.</summary>
     public string? Transcript { get; set; }
 
-    /// <summary>
-    /// Shuffles the answer options while keeping track of the correct answer.
-    /// </summary>
     public void ShuffleOptions(Random random)
     {
         if (Options.Count <= 1)
