@@ -18,6 +18,14 @@ services:
       - TZ=Asia/Tbilisi
       # Limits
       - MAX_TURNS=${MAX_TURNS:-30}
+      # Testcontainers: run sibling containers on the host Docker daemon.
+      # RYUK_DISABLED — socket proxy can't look up ryuk by id after creation
+      # (returns 404), so disable the resource reaper.
+      # HOST_OVERRIDE=host.docker.internal — test client inside this container
+      # must connect to test Postgres via the host's docker-desktop bridge,
+      # not via `localhost` (which points back to bombora-agents itself).
+      - TESTCONTAINERS_RYUK_DISABLED=true
+      - TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal
     volumes:
       - agent-logs:/logs
       - agent-workspace:/workspace
