@@ -26,6 +26,9 @@ public class User
     
     public bool IsActivePremium()
     {
-        return AccountType == UserAccountType.Premium && SubscribedUntil!.Value.Date > DateTime.UtcNow;
+        if (AccountType != UserAccountType.Premium) return false;
+        // Lifetime subscription: SubscribedUntil is null (see GrantProService).
+        if (!SubscribedUntil.HasValue) return true;
+        return SubscribedUntil.Value.Date > DateTime.UtcNow;
     }
 }
