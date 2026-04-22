@@ -3,11 +3,7 @@ using Shouldly;
 
 namespace Infrastructure.UnitTests;
 
-/// <summary>
-/// Guards every JSON file under src/Trale/Lessons/ against parse errors.
-/// Catches structural issues (curly-quote delimiters, trailing commas, etc.)
-/// without Docker — these are not allowed in production lesson files.
-/// </summary>
+// Guards src/Trale/Lessons/**/*.json against parse errors without requiring Docker.
 public class LessonJsonValidationTests
 {
     private static readonly string RepoRoot = FindRepoRoot();
