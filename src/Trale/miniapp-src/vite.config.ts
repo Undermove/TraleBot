@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/',
   build: {
     outDir: '../wwwroot',
-    emptyOutDir: true
+    emptyOutDir: false
   },
   server: {
     port: 5173,
