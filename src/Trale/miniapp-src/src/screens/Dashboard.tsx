@@ -99,7 +99,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
   const advancedIds = [
     'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
-    'pronoun-declension', 'conditionals', 'verbs-of-movement',
+    'pronoun-declension', 'conditionals', 'imperative', 'verbs-of-movement',
   ]
 
   const basics = catalog.modules.filter((m) => basicsIds.includes(m.id))
@@ -348,6 +348,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           'postpositions': 'შ', 'adjectives': 'ლ',
           'verb-classes': 'ზ', 'version-vowels': 'უ', 'preverbs': 'და', 'imperfect': 'დ',
           'aorist': 'მ', 'pronoun-declension': 'ი', 'conditionals': 'თ',
+          'imperative': 'ბ',
           'verbs-of-movement': 'ზ', 'cases': 'ბ', 'pronouns': 'მ',
           'present-tense': 'დ', 'cafe': 'ყ', 'taxi': 'ტ', 'doctor': 'ე',
           'shopping': 'ხ', 'intro': 'გ', 'emergency': 'ს', 'my-vocabulary': 'ლ',
@@ -358,7 +359,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           'numbers': 'რიცხვები', 'postpositions': 'თანდებულები', 'adjectives': 'ზედსართავები',
           'verb-classes': 'ზმნის კლასები', 'version-vowels': 'ვერსია', 'preverbs': 'პრევერბები',
           'imperfect': 'უწყვეტელი', 'aorist': 'წყვეტილი', 'pronoun-declension': 'ბრუნვა',
-          'conditionals': 'პირობითი',
+          'conditionals': 'პირობითი', 'imperative': 'ბრძანება',
           'verbs-of-movement': 'ზმნები', 'cases': 'ბრუნვები',
           'pronouns': 'ნაცვალსახელები', 'present-tense': 'აწმყო', 'cafe': 'კაფე',
           'taxi': 'ტაქსი', 'doctor': 'ექიმი', 'shopping': 'მაღაზია',
