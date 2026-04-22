@@ -1,0 +1,12 @@
+# Pre-built Georgian TTS audio files for the "Listen & Choose" exercise (ROADMAP §71).
+#
+# Naming convention: {module}_{word_slug}.mp3
+# Examples:
+#   alphabet_an.mp3          — letter ა from Alphabet module
+#   greetings_gamardzhoba.mp3
+#
+# Files here are copied into wwwroot/audio/ka/ during Docker build (see Dockerfile).
+# Served at: /audio/ka/{filename}  via ASP.NET Core UseStaticFiles middleware (HTTP 200 + audio/mpeg).
+# Missing file → HTTP 404 (UseStaticFiles default, no custom handling needed).
+#
+# To generate: use ElevenLabs or Google TTS (ka-GE voice), save as 128kbps MP3.

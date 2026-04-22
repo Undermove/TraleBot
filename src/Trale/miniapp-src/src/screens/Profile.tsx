@@ -605,9 +605,15 @@ function plural(n: number, one: string, two: string, many: string): string {
   return many
 }
 
+// Georgian weekday abbreviations Mon–Sun: ორ/სამ/ოთხ/ხუთ/პარ/შაბ/კვირ
+const WEEKDAY_LABELS = ['ო', 'ს', 'ო', 'ხ', 'პ', 'შ', 'კ']
+
 function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; days: number }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+
+  // Map getDay() (0=Sun…6=Sat) to Mon-first column index
+  const todayColumnIndex = (today.getDay() + 6) % 7
 
   const cells: { date: string; active: boolean; isToday: boolean }[] = []
   for (let i = days - 1; i >= 0; i--) {
@@ -629,6 +635,22 @@ function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; da
 
   return (
     <div className="flex flex-col gap-1.5 items-center">
+      <div className="flex gap-1.5">
+        {WEEKDAY_LABELS.map((label, i) => (
+          <div
+            key={i}
+            className="w-6 flex items-center justify-center"
+            style={{
+              fontSize: '9px',
+              fontFamily: "'Noto Sans Georgian', sans-serif",
+              color: i === todayColumnIndex ? '#C9A84C' : 'rgba(21,16,10,0.4)',
+              lineHeight: 1
+            }}
+          >
+            {label}
+          </div>
+        ))}
+      </div>
       {rows.map((row, ri) => (
         <div key={ri} className="flex gap-1.5">
           {row.map((c) => (
@@ -637,7 +659,7 @@ function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; da
               title={c.date}
               className="w-6 h-6 rounded border-[1.5px] border-jewelInk"
               style={{
-                background: c.active ? '#0d4a6e' : 'rgba(21,16,10,0.06)',
+                background: c.active ? '#1B5FB0' : 'rgba(21,16,10,0.06)',
                 outline: c.isToday ? '2px solid #F5B820' : 'none',
                 outlineOffset: c.isToday ? '1px' : undefined
               }}

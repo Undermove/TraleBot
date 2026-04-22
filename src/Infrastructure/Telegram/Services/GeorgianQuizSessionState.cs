@@ -22,12 +22,15 @@ public class QuizQuestionData
     public int AnswerIndex { get; set; }
     public string Explanation { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
-    /// <summary>"choice" (default) or "type" (user types answer on Georgian keyboard).</summary>
+    /// <summary>"choice" (default), "type" (user types on Georgian keyboard), or "audio-choice" (listen and pick).</summary>
     public string? QuestionType { get; set; }
 
-    /// <summary>
-    /// Shuffles the answer options while keeping track of the correct answer.
-    /// </summary>
+    /// <summary>URL of the audio file for audio-choice questions, e.g. /audio/ka/alphabet_ga.mp3. Null for other types.</summary>
+    public string? AudioUrl { get; set; }
+
+    /// <summary>Georgian word/phrase the audio contains (displayed as caption after answering). Null for other types.</summary>
+    public string? Transcript { get; set; }
+
     public void ShuffleOptions(Random random)
     {
         if (Options.Count <= 1)

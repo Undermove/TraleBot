@@ -443,7 +443,9 @@ public class MiniAppController : Controller
             options = q.Options,
             answerIndex = q.AnswerIndex,
             explanation = q.Explanation,
-            questionType = q.QuestionType ?? "choice"
+            questionType = q.QuestionType ?? "choice",
+            audioUrl = q.AudioUrl,
+            transcript = q.Transcript
         });
     }
 

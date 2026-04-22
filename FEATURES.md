@@ -124,6 +124,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `ProPaywall.tsx` | Stars-XTR paywall modal. |
 | `TreatShop.tsx` | Treat purchase UI (Dzval / Khorci / Mtsvadi / Churchkhela / Supra). |
 | `FeedingAnimation.tsx` | Feeding animation for the mascot. |
+| `FeedbackBanner.tsx` | Correct/incorrect answer feedback banner (სწორია!/არასწორია!) with transliteration and Russian label. |
 | `RevealKaniOverlay.tsx` | Kani-screen reveal animation. |
 | `InkDivider.tsx` | Ink-style divider. |
 | `ModulePhraseBanner.tsx` | Daily phrase banner on Profile. |

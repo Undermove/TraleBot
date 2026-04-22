@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Button from '../components/Button'
+import FeedbackBanner from '../components/FeedbackBanner'
 import GeorgianKeyboard from '../components/GeorgianKeyboard'
 import LoaderLetter from '../components/LoaderLetter'
 import { ProgressState, QuizQuestion, Screen } from '../types'
@@ -341,23 +342,14 @@ export default function Practice({
 
             {/* Feedback banner */}
             {phase === 'checked' && (
-              <div
-                className={`mt-4 p-4 border-[1.5px] rounded-xl relative ${
+              <FeedbackBanner
+                isCorrect={isCorrect}
+                body={
                   isCorrect
-                    ? 'bg-navy border-jewelInk text-cream'
-                    : 'bg-ruby border-jewelInk text-cream'
-                }`}
-                style={{ boxShadow: '2px 2px 0 #15100A' }}
-              >
-                <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
-                  {isCorrect ? 'верно' : 'ещё раз'}
-                </div>
-                <div className="font-sans text-[14px] leading-snug">
-                  {isCorrect
                     ? (current.explanation || 'Хорошо запомнил — так держать.')
-                    : `правильно: ${correctAnswer}`}
-                </div>
-              </div>
+                    : `правильно: ${correctAnswer}`
+                }
+              />
             )}
           </div>
         ) : (
@@ -423,24 +415,16 @@ export default function Practice({
             </div>
 
             {phase === 'checked' && (
-              <div
-                className={`mt-6 p-4 border-[1.5px] rounded-xl relative ${
-                  isCorrect
-                    ? 'bg-navy border-jewelInk text-cream'
-                    : 'bg-ruby border-jewelInk text-cream'
-                }`}
-                style={{ boxShadow: '2px 2px 0 #15100A' }}
-              >
-                <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
-                  {isCorrect ? 'верно' : 'ещё раз'}
-                </div>
-                <div className="font-sans text-[14px] leading-snug">
-                  {current.explanation ||
-                    (isCorrect
-                      ? 'Хорошо запомнил — так держать.'
-                      : 'Запомни правильный вариант и идём дальше.')}
-                </div>
-              </div>
+              <FeedbackBanner
+                isCorrect={isCorrect}
+                topMargin="mt-6"
+                body={
+                  current.explanation ||
+                  (isCorrect
+                    ? 'Хорошо запомнил — так держать.'
+                    : 'Запомни правильный вариант и идём дальше.')
+                }
+              />
             )}
           </>
         )}

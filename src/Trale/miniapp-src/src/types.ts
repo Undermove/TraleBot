@@ -101,5 +101,5 @@ export const PRO_MODULE_IDS: ReadonlySet<string> = new Set([
   'pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives',
   'cafe', 'shopping', 'taxi', 'doctor', 'emergency',
   'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
-  'pronoun-declension', 'conditionals',
+  'pronoun-declension', 'conditionals', 'imperative',
 ])
