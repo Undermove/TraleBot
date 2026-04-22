@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     tzdata \
     ca-certificates \
     gpg \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Default timezone (overridable via TZ env var)
@@ -56,6 +57,28 @@ RUN git clone --depth 1 --filter=blob:none --sparse https://github.com/anthropic
     && cd /opt/anthropic-plugins \
     && git sparse-checkout set plugins/frontend-design \
     && chown -R agent:agent /opt/anthropic-plugins
+
+# --- Piper TTS (local Georgian speech synthesis) -------------------------------
+# Local neural TTS so agents can generate lesson audio without an API key.
+# Binary is arch-specific — TARGETARCH comes from Docker buildx. Voice model
+# ka_GE-natia-medium is downloaded once at build time. The /scripts/tts-generate.sh
+# wrapper takes (text, output.ogg) and pipes through ffmpeg for opus encoding.
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        arm64) PIPER_ARCH=aarch64 ;; \
+        amd64) PIPER_ARCH=x86_64 ;; \
+        *) echo "unsupported TARGETARCH: ${TARGETARCH}" && exit 1 ;; \
+    esac; \
+    mkdir -p /opt/piper /opt/piper-voices; \
+    curl -fsSL "https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_${PIPER_ARCH}.tar.gz" \
+        | tar -xz -C /opt/piper --strip-components=1; \
+    curl -fsSL -o /opt/piper-voices/ka_GE-natia-medium.onnx \
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/ka/ka_GE/natia/medium/ka_GE-natia-medium.onnx"; \
+    curl -fsSL -o /opt/piper-voices/ka_GE-natia-medium.onnx.json \
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/ka/ka_GE/natia/medium/ka_GE-natia-medium.onnx.json"; \
+    chown -R agent:agent /opt/piper /opt/piper-voices; \
+    /opt/piper/piper --version
 
 # Pre-warm the Roslyn language server nuget cache as the `agent` user so the
 # first agent run doesn't stall on a first-time download. Falls back to a
