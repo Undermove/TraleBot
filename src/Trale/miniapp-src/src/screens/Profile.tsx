@@ -605,8 +605,8 @@ function plural(n: number, one: string, two: string, many: string): string {
   return many
 }
 
-// Georgian weekday abbreviations Mon–Sun per issue #507
-const WEEKDAY_LABELS = ['ო', 'ს', 'ო', 'ო', 'ხ', 'შ', 'კ']
+// Georgian weekday abbreviations Mon–Sun: ორ/სამ/ოთხ/ხუთ/პარ/შაბ/კვირ
+const WEEKDAY_LABELS = ['ო', 'ს', 'ო', 'ხ', 'პ', 'შ', 'კ']
 
 function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; days: number }) {
   const today = new Date()
