@@ -207,7 +207,11 @@ BREAKDOWN (creating the execution backlog with acceptance criteria):
 At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created, backlog state."
 
     # 6. DEVELOPER
-    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) plus the Roslyn language server via lsp.json, AND the Anthropic 'frontend-design' skill for mini-app React/CSS work — check '/skills' to list all. When writing C#/ASP.NET/EF code, invoke the relevant .NET skill (e.g. for new endpoints, EF migrations, test scaffolding). When touching miniapp-src (React, Tailwind, CSS), invoke frontend-design so the implementation matches the designer's aesthetic intent instead of generic defaults. LSP diagnostics are available for reading symbols/references in the sln. Your role this hour:
+    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) plus the Roslyn language server via lsp.json, AND the Anthropic 'frontend-design' skill for mini-app React/CSS work — check '/skills' to list all. When writing C#/ASP.NET/EF code, invoke the relevant .NET skill (e.g. for new endpoints, EF migrations, test scaffolding). When touching miniapp-src (React, Tailwind, CSS), invoke frontend-design so the implementation matches the designer's aesthetic intent instead of generic defaults. LSP diagnostics are available for reading symbols/references in the sln.
+
+TTS for Georgian audio content: when an issue asks for audio files (e.g. Listen & Choose content, pronunciation samples), use the Piper wrapper: /scripts/tts-generate.sh \"<Georgian text>\" <output.ogg>. Voice is ka_GE-natia-medium (neural, female). Output audio goes under src/Trale/miniapp-src/public/audio/<module>/<slug>.ogg — Vite's public/ folder is copied into wwwroot during build, so these files DO get shipped with the app. Commit the generated .ogg files with the code that references them. Do NOT write audio into wwwroot/ directly (it's gitignored).
+
+Your role this hour:
 - Pick ONE task to work on, in this priority order:
     1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
     2) else any open issue labelled 'bug' with no assignee (CONTENT BUGS from methodist are HIGHEST product priority — users will see wrong grammar; prefer issues that also have 'methodist' label),
