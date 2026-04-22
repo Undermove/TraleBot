@@ -16,6 +16,8 @@ COPY /src/Trale/appsettings.json .
 # Replace wwwroot with the built SPA bundle from the webapp stage
 RUN rm -rf src/Trale/wwwroot
 COPY --from=webapp-build /build/src/Trale/wwwroot ./src/Trale/wwwroot
+# Copy pre-generated TTS audio files into the static assets tree (Refs #542)
+COPY src/Trale/audio ./src/Trale/wwwroot/audio
 RUN dotnet publish src/Trale/Trale.csproj -c Release -o output
 
 # Stage 3: runtime — ASP.NET Core serves the API + the SPA bundle from wwwroot

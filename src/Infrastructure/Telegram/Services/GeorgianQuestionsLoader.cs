@@ -103,6 +103,16 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                         question.QuestionType = qt.GetString();
                     }
 
+                    if (questionElement.TryGetProperty("audio_url", out var au))
+                    {
+                        question.AudioUrl = au.GetString();
+                    }
+
+                    if (questionElement.TryGetProperty("transcript", out var tr))
+                    {
+                        question.Transcript = tr.GetString();
+                    }
+
                     if (questionElement.TryGetProperty("tags", out var tagsArray) && tagsArray.ValueKind == JsonValueKind.Array)
                     {
                         foreach (var tag in tagsArray.EnumerateArray())
