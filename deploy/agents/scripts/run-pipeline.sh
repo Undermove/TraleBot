@@ -27,17 +27,28 @@ set -e
 
 source /etc/environment
 
+# MODE selects which subset of agents runs this hour.
+#   full  — all 8 agents (audit + build). Expensive; scheduled 2×/night.
+#   build — only tech-lead-breakdown, developer, qa, tech-lead-review.
+#           Cheapest pass that still makes code progress — audit agents
+#           (methodist, native-reviewer, designer, product) are skipped
+#           because running them every hour produces duplicate triage
+#           churn and burns tokens re-reading the same backlog.
+MODE="${1:-full}"
+
 TODAY=$(date '+%Y-%m-%d')
 HOUR_STAMP=$(date '+%Y-%m-%d_%H-%M')
 BRANCH="agents/nightly-${TODAY}"
 REPO_DIR="/workspace/repo"
 LOG_DIR="/logs/pipeline_${HOUR_STAMP}"
 SUMMARY_FILE="${LOG_DIR}/summaries.md"
+SHARED_CONTEXT_FILE="${LOG_DIR}/shared-context.md"
 
 mkdir -p "${LOG_DIR}"
 
 echo "============================================"
 echo "  Pipeline hour: ${HOUR_STAMP}"
+echo "  Mode:          ${MODE}"
 echo "  Shared branch: ${BRANCH}"
 echo "  $(date)"
 echo "============================================"
@@ -72,6 +83,22 @@ MAX_TURNS_PER_AGENT=(40 60 40 50 80 100 60 50)
 
 AGENTS=("methodist" "native-reviewer" "designer" "product" "tech-lead-breakdown" "developer" "qa" "tech-lead-review")
 AGENT_LABELS=("Methodist" "Native Reviewer" "Designer" "Product" "Tech Lead (Breakdown)" "Developer" "QA" "Tech Lead (Review)")
+
+# Which indices into AGENTS to actually run this hour. Audit agents (0..3) are
+# the expensive re-reading crew; build agents (4..7) convert approved backlog
+# into commits. See MODE comment at top.
+case "${MODE}" in
+    full)
+        AGENT_INDICES=(0 1 2 3 4 5 6 7)
+        ;;
+    build)
+        AGENT_INDICES=(4 5 6 7)
+        ;;
+    *)
+        echo "Unknown MODE '${MODE}'. Expected 'full' or 'build'." >&2
+        exit 64
+        ;;
+esac
 
 # --- Per-agent plugin loadout --------------------------------------------------
 # tech-lead / developer / qa work on C# code. They load the official .NET Agent
@@ -116,12 +143,9 @@ agent_plugin_args() {
 
 CONTEXT_PREFIX="You are working on the SHARED nightly branch '${BRANCH}'. Previous agents (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work — ROADMAP.md is strategic context only.
 
-BEFORE doing anything else:
-1. git log --oneline -30 main..HEAD — see what was done tonight.
-2. git diff --stat main..HEAD — see touched files.
-3. gh issue list --state open --limit 50 — see the task backlog.
-4. Read STRATEGY.md — current product phase and launch checklist, priorities come from here.
-5. Read ROADMAP.md for strategic context.
+BEFORE doing anything else, read the pre-built shared context at '${SHARED_CONTEXT_FILE}'. It already contains: recent commits on the nightly branch, touched files, open-issue counts by label, the most recently filed issues. Do NOT re-run 'git log main..HEAD', 'git diff --stat main..HEAD', or an unfiltered 'gh issue list --state open --limit 50' — that information is already in the shared context. Use labeled queries only when you need the BODIES of issues you intend to act on this hour (e.g. 'gh issue list --label task --label P1 --state open --limit 20', 'gh issue view <N>').
+
+After reading the shared context, read STRATEGY.md (current phase + launch checklist) and ROADMAP.md (strategic backlog) — these are your priority signal.
 
 Do NOT create a PR. Do NOT redo work that is already committed. Commit your own work with clear messages referencing issue numbers when applicable.
 
@@ -247,10 +271,51 @@ ARCHITECTURE REVIEW (of this hour's developer + QA work):
 At the very end output '=== SUMMARY ===' with 3-7 bullets: commits reviewed, fixes applied, needs-fix opened."
 )
 
+# --- Build shared hour context -------------------------------------------------
+# Each agent previously re-ran the same git-log / git-diff / gh-issue-list
+# queries at the top of its prompt, which (a) chewed tokens on redundant tool
+# calls and (b) produced subtly different snapshots when issues landed mid-hour.
+# We now snapshot this context ONCE per hour and point every agent at it.
+{
+    echo "# Shared context — ${HOUR_STAMP}"
+    echo ""
+    echo "Nightly branch: \`${BRANCH}\`  •  Mode: \`${MODE}\`"
+    echo ""
+    echo "## Recent commits on nightly branch (main..HEAD, up to 50)"
+    echo ""
+    echo '```'
+    git log --oneline -50 "main..HEAD" 2>/dev/null || echo "(no commits yet tonight)"
+    echo '```'
+    echo ""
+    echo "## Touched files (main..HEAD)"
+    echo ""
+    echo '```'
+    git diff --stat "main..HEAD" 2>/dev/null || echo "(no diff)"
+    echo '```'
+    echo ""
+    echo "## Open issue counts by label"
+    echo ""
+    for lbl in methodist native design product task bug needs-fix P1 P2 P3; do
+        count=$(gh issue list --label "$lbl" --state open --limit 100 --json number 2>/dev/null \
+                    | jq 'length' 2>/dev/null || echo "?")
+        printf -- "- **%s**: %s\n" "$lbl" "$count"
+    done
+    echo ""
+    echo "## Most recently filed open issues (last 15)"
+    echo ""
+    gh issue list --state open --limit 15 --json number,title,labels \
+        --template '{{range .}}- #{{.number}} {{.title}} {{range .labels}}[{{.name}}] {{end}}
+{{end}}' 2>/dev/null || echo "(gh unavailable)"
+    echo ""
+} > "${SHARED_CONTEXT_FILE}"
+
+echo ">>> Shared context written to ${SHARED_CONTEXT_FILE}"
+echo ""
+
 # --- Run agents -----------------------------------------------------------------
 > "${SUMMARY_FILE}"
 
-for i in "${!AGENTS[@]}"; do
+for i in "${AGENT_INDICES[@]}"; do
     agent="${AGENTS[$i]}"
     label="${AGENT_LABELS[$i]}"
     instruction="${INSTRUCTIONS[$i]}"
@@ -260,10 +325,11 @@ for i in "${!AGENTS[@]}"; do
     echo ""
     echo ">>> [${agent}] starting at $(date)"
 
-    # Commit anything the previous agent left uncommitted
+    # Commit anything the previous agent left uncommitted. We look up the last
+    # executed agent from LAST_AGENT rather than $((i-1)), because AGENT_INDICES
+    # may be non-contiguous in build mode (4,5,6,7 skips 0..3).
     if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-        prev_idx=$((i-1))
-        prev_agent="${AGENTS[$prev_idx]:-prev}"
+        prev_agent="${LAST_AGENT:-prev}"
         git add -A
         git commit -m "[${prev_agent}] ${HOUR_STAMP}" --allow-empty 2>/dev/null || true
     fi
@@ -314,6 +380,7 @@ for i in "${!AGENTS[@]}"; do
     } >> "${SUMMARY_FILE}"
 
     echo ">>> [${agent}] finished at $(date)"
+    LAST_AGENT="${agent}"
 done
 
 # --- Append turn-limit alerts to qa-report so owner can see them --------------
