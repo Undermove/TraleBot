@@ -46,6 +46,14 @@ SHARED_CONTEXT_FILE="${LOG_DIR}/shared-context.md"
 
 mkdir -p "${LOG_DIR}"
 
+# Per-hour token accounting table. Each agent appends a row; a total row is
+# added after the loop. Morning QA can concatenate these across the night to
+# answer "how much did last night cost and where".
+TOKEN_USAGE_FILE="${LOG_DIR}/token-usage.md"
+# Per-night rolling log — every hour appends its section here so morning QA
+# has a single file to read across 8 hours.
+TOKEN_USAGE_NIGHTLY="/logs/token-usage-${TODAY}.md"
+
 echo "============================================"
 echo "  Pipeline hour: ${HOUR_STAMP}"
 echo "  Mode:          ${MODE}"
@@ -315,12 +323,31 @@ echo ""
 # --- Run agents -----------------------------------------------------------------
 > "${SUMMARY_FILE}"
 
+# Initialise the per-hour token usage table.
+{
+    echo "# Token usage — ${HOUR_STAMP} (mode: ${MODE})"
+    echo ""
+    echo "| Agent | Turns | Input | Output | Cache read | Cache create | Cost (USD) |"
+    echo "|-------|------:|------:|-------:|-----------:|-------------:|-----------:|"
+} > "${TOKEN_USAGE_FILE}"
+
+# Running totals for the final row.
+TOTAL_TURNS=0
+TOTAL_INPUT=0
+TOTAL_OUTPUT=0
+TOTAL_CACHE_READ=0
+TOTAL_CACHE_CREATE=0
+# Cost is a float — accumulate via awk at print time.
+COST_VALUES=()
+
 for i in "${AGENT_INDICES[@]}"; do
     agent="${AGENTS[$i]}"
     label="${AGENT_LABELS[$i]}"
     instruction="${INSTRUCTIONS[$i]}"
     turns="${MAX_TURNS_PER_AGENT[$i]}"
     log_file="${LOG_DIR}/${agent}.log"
+    jsonl_file="${LOG_DIR}/${agent}.jsonl"
+    stderr_file="${LOG_DIR}/${agent}.stderr.log"
 
     echo ""
     echo ">>> [${agent}] starting at $(date)"
@@ -334,20 +361,56 @@ for i in "${AGENT_INDICES[@]}"; do
         git commit -m "[${prev_agent}] ${HOUR_STAMP}" --allow-empty 2>/dev/null || true
     fi
 
+    # stream-json gives us per-event JSON (system/assistant/user/result) which
+    # (a) contains the final usage+cost report in the `result` event, and
+    # (b) still lets us emit a human-readable .log by filtering assistant text.
+    # We keep the raw jsonl for audit and feed text through jq into the .log
+    # so the existing === SUMMARY === / max-turns detection keeps working.
     # shellcheck disable=SC2046  # word-splitting is intentional here
     claude \
         $(agent_plugin_args "${agent}") \
         -p "${instruction}" \
         --dangerously-skip-permissions \
         --max-turns "${turns}" \
-        --output-format text \
+        --output-format stream-json \
         --verbose \
-        2>&1 | tee "${log_file}"
+        2>"${stderr_file}" \
+        | tee "${jsonl_file}" \
+        | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text // empty' 2>/dev/null \
+        | tee "${log_file}"
 
     # Commit this agent's work immediately so the next agent sees it in git log
     if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
         git add -A
         git commit -m "[${agent}] ${HOUR_STAMP}" 2>/dev/null || true
+    fi
+
+    # --- Extract usage from the final `result` event ---------------------------
+    USAGE_JSON=$(jq -c 'select(.type=="result")' "${jsonl_file}" 2>/dev/null | tail -1)
+    if [ -n "${USAGE_JSON}" ]; then
+        u_turns=$(echo "${USAGE_JSON}"      | jq -r '.num_turns                     // 0')
+        u_input=$(echo "${USAGE_JSON}"      | jq -r '.usage.input_tokens            // 0')
+        u_output=$(echo "${USAGE_JSON}"     | jq -r '.usage.output_tokens           // 0')
+        u_cache_read=$(echo "${USAGE_JSON}" | jq -r '.usage.cache_read_input_tokens // 0')
+        u_cache_cr=$(echo "${USAGE_JSON}"   | jq -r '.usage.cache_creation_input_tokens // 0')
+        u_cost=$(echo "${USAGE_JSON}"       | jq -r '.total_cost_usd // .cost_usd   // 0')
+        u_subtype=$(echo "${USAGE_JSON}"    | jq -r '.subtype                       // "unknown"')
+
+        printf -- "| %s | %s | %s | %s | %s | %s | %s |\n" \
+            "${agent} (${u_subtype})" \
+            "${u_turns}" "${u_input}" "${u_output}" "${u_cache_read}" "${u_cache_cr}" \
+            "$(awk -v c="${u_cost}" 'BEGIN{printf "%.4f", c}')" \
+            >> "${TOKEN_USAGE_FILE}"
+
+        TOTAL_TURNS=$((TOTAL_TURNS + u_turns))
+        TOTAL_INPUT=$((TOTAL_INPUT + u_input))
+        TOTAL_OUTPUT=$((TOTAL_OUTPUT + u_output))
+        TOTAL_CACHE_READ=$((TOTAL_CACHE_READ + u_cache_read))
+        TOTAL_CACHE_CREATE=$((TOTAL_CACHE_CREATE + u_cache_cr))
+        COST_VALUES+=("${u_cost}")
+    else
+        printf -- "| %s | ? | ? | ? | ? | ? | ? |\n" "${agent} (no result event)" \
+            >> "${TOKEN_USAGE_FILE}"
     fi
 
     AGENT_SUMMARY=$(sed -n '/=== SUMMARY ===/,$ p' "${log_file}" | tail -n +2)
@@ -359,7 +422,12 @@ for i in "${AGENT_INDICES[@]}"; do
     # morning QA pass can see which slots ran out of headroom.
     TURN_ALERTS_FILE="${LOG_DIR}/turn-alerts.md"
     if [ -z "${AGENT_SUMMARY}" ]; then
-        if grep -qiE 'max.?turns.*(reached|exceeded|hit)|reached.*max.?turns' "${log_file}" 2>/dev/null; then
+        # u_subtype is set by the result-event extractor above; in stream-json,
+        # a non-"success" subtype (e.g. "error_max_turns") is the authoritative
+        # signal. Fall back to grep on the text log for older behavior.
+        if [ "${u_subtype:-}" != "success" ] && [ -n "${u_subtype:-}" ]; then
+            alert="⚠️  ${label} (${agent}) ended with result subtype=${u_subtype} at ${HOUR_STAMP} (max-turns=${turns}). No === SUMMARY === produced. See ${log_file} and ${jsonl_file}."
+        elif grep -qiE 'max.?turns.*(reached|exceeded|hit)|reached.*max.?turns' "${log_file}" 2>/dev/null; then
             alert="⚠️  ${label} (${agent}) hit max-turns cap of ${turns} at ${HOUR_STAMP} — no === SUMMARY === produced. See ${log_file}."
         else
             alert="⚠️  ${label} (${agent}) did not produce === SUMMARY === at ${HOUR_STAMP}. Max-turns=${turns}. Could be early exit, crash, or silent truncation. See ${log_file}."
@@ -382,6 +450,25 @@ for i in "${AGENT_INDICES[@]}"; do
     echo ">>> [${agent}] finished at $(date)"
     LAST_AGENT="${agent}"
 done
+
+# --- Finalize per-hour token usage table --------------------------------------
+TOTAL_COST=$(printf '%s\n' "${COST_VALUES[@]:-0}" | awk 'BEGIN{s=0} {s+=$1} END{printf "%.4f", s}')
+{
+    printf -- "| **TOTAL** | **%s** | **%s** | **%s** | **%s** | **%s** | **%s** |\n" \
+        "${TOTAL_TURNS}" "${TOTAL_INPUT}" "${TOTAL_OUTPUT}" \
+        "${TOTAL_CACHE_READ}" "${TOTAL_CACHE_CREATE}" "${TOTAL_COST}"
+    echo ""
+} >> "${TOKEN_USAGE_FILE}"
+
+echo ""
+echo ">>> Hour ${HOUR_STAMP} tokens: in=${TOTAL_INPUT} out=${TOTAL_OUTPUT} cache_read=${TOTAL_CACHE_READ} cost=\$${TOTAL_COST}"
+
+# Append this hour's table to the nightly rolling log so morning QA has one
+# file per night instead of chasing 8 directories.
+{
+    echo ""
+    cat "${TOKEN_USAGE_FILE}"
+} >> "${TOKEN_USAGE_NIGHTLY}"
 
 # --- Append turn-limit alerts to qa-report so owner can see them --------------
 if [ -f "${LOG_DIR}/turn-alerts.md" ]; then
