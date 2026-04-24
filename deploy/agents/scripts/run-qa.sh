@@ -205,23 +205,52 @@ ${FILES_CHANGED}
 PREOF
 )
 
-# --- Open or refresh PR ---------------------------------------------------------
+# --- Open or refresh PR (as DRAFT) ----------------------------------------------
 # Use the REST API directly for body updates. `gh pr edit` currently fails
 # (exit 1) on repos with classic Projects attached — it emits "GraphQL: Projects
 # (classic) is being deprecated" and aborts the update. REST PATCH avoids the
 # GraphQL projects enumeration entirely.
+#
+# Morning PR always opens as DRAFT. It is promoted to "ready for review" only
+# AFTER GitHub Actions CI returns green (see CI-gate below). This way the
+# owner's morning PR list only surfaces PRs that are actually mergeable —
+# red PRs stay visibly in draft state with the failure details commented.
 REPO_SLUG=$(git config --get remote.origin.url | sed -E 's#.*github\.com[:/]([^/]+/[^/.]+).*#\1#')
 EXISTING_PR=$(gh pr list --head "${BRANCH}" --state open --json number --jq '.[0].number' 2>/dev/null || true)
 if [ -n "${EXISTING_PR}" ]; then
     echo ">>> PR #${EXISTING_PR} already exists for ${BRANCH}. Updating body via REST."
     gh api "repos/${REPO_SLUG}/pulls/${EXISTING_PR}" --method PATCH \
         -f body="${PR_BODY}" --jq .html_url || true
+    PR_NUMBER="${EXISTING_PR}"
 else
-    gh pr create \
+    PR_NUMBER=$(gh pr create \
         --title "Ночной прогон ${TODAY}" \
         --body "${PR_BODY}" \
         --base main \
-        --head "${BRANCH}"
+        --head "${BRANCH}" \
+        --draft \
+        | grep -oE '/pull/[0-9]+' | grep -oE '[0-9]+' || true)
+fi
+
+# --- CI gate: wait for green, promote draft → ready -----------------------------
+# Gives GitHub Actions up to 15 minutes to finish. If green → mark PR as ready
+# for review. If red or timeout → leave as draft and post a comment pointing at
+# the failed run, so the owner sees exactly why it isn't mergeable yet.
+if [ -n "${PR_NUMBER}" ]; then
+    echo ">>> Waiting for CI on PR #${PR_NUMBER}..."
+    if timeout 900 gh pr checks "${PR_NUMBER}" --watch --fail-fast >/dev/null 2>&1; then
+        echo ">>> CI green. Marking PR #${PR_NUMBER} as ready for review."
+        gh pr ready "${PR_NUMBER}" 2>/dev/null || true
+    else
+        echo ">>> CI failed or timed out. PR #${PR_NUMBER} stays in draft."
+        FAILED_RUN=$(gh pr checks "${PR_NUMBER}" --json name,state,link \
+            --jq '.[] | select(.state != "SUCCESS") | "- " + .name + " (" + .state + ") " + .link' 2>/dev/null || echo "- see Actions tab")
+        gh pr comment "${PR_NUMBER}" --body "🚧 Автоматически оставлен в draft — CI не зелёный.
+
+$FAILED_RUN
+
+Следующему developer-слоту стоит взять это как priority #1." 2>/dev/null || true
+    fi
 fi
 
 git checkout main
