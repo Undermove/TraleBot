@@ -3,15 +3,16 @@ import react from '@vitejs/plugin-react'
 import { rmSync } from 'fs'
 import { resolve } from 'path'
 
-// Vite's emptyOutDir:true fails when root-owned files exist in wwwroot (EACCES).
-// This plugin removes only the agent-owned assets/ subdir before each build,
-// preventing stale fingerprinted bundles from accumulating. Ref #528.
+// Vite's emptyOutDir:true fails when root-owned assets.bak.old/ exists in wwwroot (EACCES).
+// This plugin manually cleans the outputs we own (assets/ dir + index.html) before each
+// build, preventing stale fingerprinted bundles from accumulating. Ref #528.
 function cleanAssetsPlugin(): Plugin {
   return {
     name: 'clean-assets',
     buildStart() {
-      const assetsDir = resolve(process.cwd(), '../wwwroot/assets')
-      rmSync(assetsDir, { recursive: true, force: true })
+      const outDir = resolve(process.cwd(), '../wwwroot')
+      rmSync(resolve(outDir, 'assets'), { recursive: true, force: true })
+      rmSync(resolve(outDir, 'index.html'), { force: true })
     }
   }
 }
