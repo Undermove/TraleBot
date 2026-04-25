@@ -29,6 +29,10 @@ source /etc/environment
 
 # MODE selects which subset of agents runs this hour.
 #   full  — all 8 agents (audit + build). Expensive; scheduled 2×/night.
+#   plan  — only audit agents (methodist, native-reviewer, designer, product).
+#           Runs in the evening; creates a sprint-plan GitHub issue for owner
+#           review. plan-poller.sh then handles the feedback loop until the
+#           owner approves.
 #   build — only tech-lead-breakdown, developer, qa, tech-lead-review.
 #           Cheapest pass that still makes code progress — audit agents
 #           (methodist, native-reviewer, designer, product) are skipped
@@ -99,11 +103,14 @@ case "${MODE}" in
     full)
         AGENT_INDICES=(0 1 2 3 4 5 6 7)
         ;;
+    plan)
+        AGENT_INDICES=(0 1 2 3)
+        ;;
     build)
         AGENT_INDICES=(4 5 6 7)
         ;;
     *)
-        echo "Unknown MODE '${MODE}'. Expected 'full' or 'build'." >&2
+        echo "Unknown MODE '${MODE}'. Expected 'full', 'plan', or 'build'." >&2
         exit 64
         ;;
 esac
@@ -484,6 +491,48 @@ if [ -f "${LOG_DIR}/turn-alerts.md" ]; then
     if ! git diff --quiet -- "${QA_REPORT}"; then
         git add "${QA_REPORT}"
         git commit -m "pipeline: turn-limit alerts ${HOUR_STAMP}" 2>/dev/null || true
+    fi
+fi
+
+# --- Create sprint-plan issue after plan mode ----------------------------------
+if [ "${MODE}" = "plan" ] && [ -f "${SUMMARY_FILE}" ]; then
+    echo ""
+    echo ">>> Creating sprint-plan issue from agent summaries..."
+
+    # Close any stale sprint-plan issues from previous days.
+    STALE_ISSUES=$(gh issue list --label sprint-plan --state open --json number -q '.[].number' 2>/dev/null)
+    for old in ${STALE_ISSUES}; do
+        gh issue close "${old}" --comment "Superseded by tonight's plan." 2>/dev/null || true
+    done
+
+    PLAN_BODY="$(cat <<PLANEOF
+Ночной план на **${TODAY}**. Ниже — что нашли методист, нативщик, дизайнер и продакт. Напишите комментарий, чтобы скорректировать план. Когда всё устроит — напишите «поехали».
+
+---
+
+$(cat "${SUMMARY_FILE}")
+
+---
+
+_Ветка: \`${BRANCH}\`_
+<!-- sprint-plan-bot -->
+PLANEOF
+)"
+
+    # gh issue create does NOT support --json/-q (only list/view do). It prints
+    # the issue URL on success. Capture stderr so we can log a real reason on
+    # failure (missing label, auth, rate limit) instead of silently dying.
+    PLAN_ISSUE_URL=$(gh issue create \
+        --title "Sprint Plan ${TODAY}" \
+        --label sprint-plan \
+        --body "${PLAN_BODY}" 2> "${LOG_DIR}/sprint-plan-issue.err") || true
+
+    if [ -n "${PLAN_ISSUE_URL}" ]; then
+        PLAN_ISSUE=$(echo "${PLAN_ISSUE_URL}" | grep -oE '/issues/[0-9]+$' | grep -oE '[0-9]+$')
+        echo ">>> Sprint plan issue created: #${PLAN_ISSUE} (${PLAN_ISSUE_URL})"
+    else
+        echo ">>> WARNING: failed to create sprint-plan issue. Reason:"
+        sed 's/^/    /' "${LOG_DIR}/sprint-plan-issue.err" || true
     fi
 fi
 

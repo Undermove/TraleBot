@@ -1,20 +1,25 @@
 # Бомбора Agent Pipeline (время по Батуми, Asia/Tbilisi UTC+4)
-# Пять агентов последовательно на одной общей ночной ветке agents/nightly-YYYY-MM-DD.
-# Каждый час продолжает работу предыдущего часа — не начинает с нуля.
-# Утром в 09:00 QA-агент тестит ветку и открывает один PR на день.
+#
+# Двухфазный цикл:
+#   20:00       — plan: методист/native/designer/product наполняют бэклог
+#                 и создают sprint-plan issue для согласования с владельцем.
+#   20:00-00:59 — plan-poller.sh (демон) каждые 60с проверяет issue на новые
+#                 комменты владельца и отвечает через product-агента.
+#   01:00-08:00 — build: tech-lead-breakdown, developer, qa, tech-lead-review
+#                 реализуют согласованный план.
+#   09:00       — run-qa.sh открывает один PR за ночь.
 #
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Ночные прогоны — каждый час с 1:00 до 8:00.
-# Часы 1 и 5 — 'full' (все 8 агентов: аудит + сборка).
-# Часы 2,3,4,6,7,8 — 'build' (только tech-lead-breakdown, developer, qa, tech-lead-review) —
-# методист/native/designer/product успевают наполнить бэклог за два full-прогона,
-# остальные часы тратят токены только на реальные коммиты, а не на перечтение трика.
-0 1 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh full  >> /logs/agents.log 2>&1'
+# Вечерний plan-прогон — аудит + создание sprint-plan issue
+0 20 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh plan >> /logs/agents.log 2>&1'
+
+# Ночные build-прогоны — реализация согласованного плана
+0 1 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'
 0 2 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'
 0 3 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'
 0 4 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'
-0 5 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh full  >> /logs/agents.log 2>&1'
+0 5 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'
 0 6 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'
 0 7 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'
 0 8 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh build >> /logs/agents.log 2>&1'

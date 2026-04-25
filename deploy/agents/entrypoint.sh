@@ -47,6 +47,13 @@ echo ""
 
 # Start cron daemon (needs root) and tail logs
 cron
-touch /logs/agents.log
-chown agent:agent /logs/agents.log
-tail -f /logs/agents.log
+
+touch /logs/agents.log /logs/plan-poller.log
+chown agent:agent /logs/agents.log /logs/plan-poller.log
+
+# Start plan-poller as a background daemon (runs as agent, polls every 60s,
+# only acts when a sprint-plan issue is open).
+su -s /bin/bash agent -c 'nohup /scripts/plan-poller.sh >> /logs/plan-poller.log 2>&1 &'
+echo "plan-poller started in background"
+
+tail -f /logs/agents.log /logs/plan-poller.log
