@@ -79,10 +79,7 @@ export default function AudioPlayer({ url, onPlayed }: AudioPlayerProps) {
         height: 62,
         borderRadius: '50%',
         border: state === 'played' ? '1.5px solid #1B5FB0' : '1.5px solid #15100A',
-        boxShadow:
-          state === 'played' ? 'none'
-          : state === 'playing' ? '3px 3px 0 #15100A'
-          : '3px 3px 0 #15100A',
+        boxShadow: state === 'played' ? 'none' : '3px 3px 0 #15100A',
         background:
           state === 'played' ? '#FBF6EC'
           : state === 'playing' ? '#E01A3C'
@@ -140,7 +137,7 @@ function SpinnerIcon() {
       viewBox="0 0 20 20"
       fill="none"
       aria-hidden
-      style={{ animation: 'spin 0.8s linear infinite' }}
+      className="anim-spin"
     >
       <circle cx="10" cy="10" r="7" stroke="rgba(251,246,236,0.3)" strokeWidth="2.5" />
       <path
@@ -149,7 +146,6 @@ function SpinnerIcon() {
         strokeWidth="2.5"
         strokeLinecap="round"
       />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </svg>
   )
 }
