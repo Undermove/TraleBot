@@ -6,9 +6,11 @@ import { resolve } from 'path'
 // Vite's emptyOutDir:true fails when root-owned assets.bak.old/ exists in wwwroot (EACCES).
 // This plugin manually cleans the outputs we own (assets/ dir + index.html) before each
 // build, preventing stale fingerprinted bundles from accumulating. Ref #528.
+// apply:'build' ensures cleanup only runs during production builds, not during vite dev.
 function cleanAssetsPlugin(): Plugin {
   return {
     name: 'clean-assets',
+    apply: 'build',
     buildStart() {
       const outDir = resolve(process.cwd(), '../wwwroot')
       rmSync(resolve(outDir, 'assets'), { recursive: true, force: true })
