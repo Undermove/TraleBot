@@ -96,16 +96,26 @@ At the end output '=== SUMMARY ===' with 3-5 bullets."
 
     log "Spawning product agent for issue #${issue_number} (approval=${is_approval})"
 
+    # set +e for the duration of this block: claude can exit non-zero
+    # (max_turns, network blip, transient API error) and we don't want a
+    # single bad agent run to kill the poller daemon.
+    set +e
     claude \
         -p "${respond_prompt}" \
         --dangerously-skip-permissions \
-        --max-turns 15 \
+        --max-turns 30 \
         --output-format stream-json \
         --verbose \
         2>"${log_dir}/stderr.log" \
         | tee "${log_dir}/response.jsonl" \
         | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text // empty' 2>/dev/null \
         > "${log_dir}/response.log"
+    local claude_exit=${PIPESTATUS[0]}
+    set -e
+
+    if [ "${claude_exit}" -ne 0 ]; then
+        log "WARNING: claude exited ${claude_exit} for issue #${issue_number} — poller continues"
+    fi
 
     # Push any ROADMAP changes.
     if ! git diff --quiet || ! git diff --staged --quiet; then
