@@ -505,14 +505,69 @@ if [ "${MODE}" = "plan" ] && [ -f "${SUMMARY_FILE}" ]; then
         gh issue close "${old}" --comment "Superseded by tonight's plan." 2>/dev/null || true
     done
 
-    PLAN_BODY="$(cat <<PLANEOF
-Ночной план на **${TODAY}**. Ниже — что нашли методист, нативщик, дизайнер и продакт. Напишите комментарий, чтобы скорректировать план. Когда всё устроит — напишите «поехали».
+    # Owner-facing brief: translate raw agent summaries into plain Russian,
+    # grouped by issue, explaining the user-visible problem and what will be
+    # built. Owner does not read English engineering bullets — they want
+    # «что реально попадёт в код».
+    OWNER_BRIEF_FILE="${LOG_DIR}/owner-brief.md"
+    OWNER_PROMPT="Ты переводчик ночного плана для владельца проекта (русскоязычный, не разработчик).
 
----
+Прочитай саммари 4 агентов ниже и перепиши их в формат, понятный владельцу:
+
+ФОРМАТ (строго):
+- Короткий вступительный абзац: что в плане всего N задач, две группы — учебный контент и UI.
+- Раздел «🎓 Учебная часть» — для каждого issue от методиста: '#NNN — <короткое название урока>: <2-3 предложения простым языком: в чём проблема глазами ученика, что починят>. Жирным выделяй грузинские формы и важные термины.
+- Раздел «🇬🇪 Грузинский нативщик» — что уже починил прямо в этом прогоне (без issue), одной фразой.
+- Раздел «🎨 Дизайн (UI)» — для каждого issue от дизайнера: '#NNN — <название экрана/компонента>: <что увидит пользователь после правки>'.
+- В конце — итоговая строчка: 'Итого ночью: X правок учебного контента + Y UI-улучшений.'
+
+ПРАВИЛА:
+- Пиши простым русским, без жаргона разработчика (никаких 'bucket', 'paradigm', 'scoped', 'forward reference').
+- Грамматические термины оставляй (падеж, спряжение, прошедшее время) — но объясняй на примерах.
+- Грузинские слова в оригинале + перевод в скобках.
+- НЕ перечисляй технические детали (имена файлов, ROADMAP buckets, метки P0/P2 — это шум для владельца).
+- Не используй monospace/code formatting и тройные бэктики.
+- Объём — компактно, но информативно. Каждый issue — 2-4 строки.
+
+САММАРИ АГЕНТОВ:
 
 $(cat "${SUMMARY_FILE}")
 
+Выведи только готовый текст брифа. Никаких '=== SUMMARY ===' или комментариев. Не добавляй заголовок 'Ночной план на ДАТУ' — он будет добавлен автоматически."
+
+    echo ">>> Generating owner-friendly Russian brief..."
+    if claude \
+        -p "${OWNER_PROMPT}" \
+        --dangerously-skip-permissions \
+        --max-turns 1 \
+        --output-format stream-json \
+        --verbose \
+        2> "${LOG_DIR}/owner-brief.stderr.log" \
+        | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text // empty' 2>/dev/null \
+        > "${OWNER_BRIEF_FILE}" \
+        && [ -s "${OWNER_BRIEF_FILE}" ]; then
+        echo ">>> Owner brief generated ($(wc -c < "${OWNER_BRIEF_FILE}") bytes)"
+        BODY_CONTENT=$(cat "${OWNER_BRIEF_FILE}")
+    else
+        echo ">>> WARNING: owner-brief generation failed, falling back to raw agent summaries"
+        BODY_CONTENT=$(cat "${SUMMARY_FILE}")
+    fi
+
+    PLAN_BODY="$(cat <<PLANEOF
+Ночной план на **${TODAY}**. Напишите комментарий, чтобы скорректировать план. Когда всё устроит — напишите «поехали».
+
 ---
+
+${BODY_CONTENT}
+
+---
+
+<details>
+<summary>📋 Сырые саммари агентов (для трассировки)</summary>
+
+$(cat "${SUMMARY_FILE}")
+
+</details>
 
 _Ветка: \`${BRANCH}\`_
 <!-- sprint-plan-bot -->
