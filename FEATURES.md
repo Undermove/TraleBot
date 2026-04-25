@@ -131,6 +131,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `ComingSoonTile.tsx` | Placeholder tile for not-yet-built modules. |
 | `GeorgianNameCard.tsx` | Profile widget: user's name rendered in Georgian script (transliteration phase → reveal phase). |
 | `DialogOfDayCard.tsx` | Dashboard card: «Диалог дня» — daily mini-dialogue (tap-to-reveal translations, collapse toggle). |
+| `AudioPlayer.tsx` | Audio play-button component (idle/loading/playing/played/error states) for Listen & Choose questions. |
 
 ### Data (`src/data/`)
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
