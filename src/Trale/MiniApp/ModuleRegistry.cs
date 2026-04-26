@@ -14,7 +14,7 @@ public static class ModuleRegistry
     private static readonly FrozenDictionary<string, ModuleDefinition> Modules = new Dictionary<string, ModuleDefinition>
     {
         ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 11),
-        ["numbers"] = new("numbers", "Lessons/GeorgianNumbers", 4),
+        ["numbers"] = new("numbers", "Lessons/GeorgianNumbers", 5),
         ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 6),
         ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 5),
         ["preverbs"] = new("preverbs", "Lessons/GeorgianPreverbs", 5),
