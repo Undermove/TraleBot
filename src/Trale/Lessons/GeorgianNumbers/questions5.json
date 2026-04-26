@@ -16,7 +16,7 @@
       "answer_index": 0,
       "explanation": "«ერთი» — один (1)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/erti.ogg",
+      "audio_url": "/audio/numbers/erti.m4a",
       "transcript": "ერთი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -29,7 +29,7 @@
       "answer_index": 1,
       "explanation": "«ორი» — два (2)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/ori.ogg",
+      "audio_url": "/audio/numbers/ori.m4a",
       "transcript": "ორი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -42,7 +42,7 @@
       "answer_index": 2,
       "explanation": "«სამი» — три (3)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/sami.ogg",
+      "audio_url": "/audio/numbers/sami.m4a",
       "transcript": "სამი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -55,7 +55,7 @@
       "answer_index": 3,
       "explanation": "«ოთხი» — четыре (4)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/otkhi.ogg",
+      "audio_url": "/audio/numbers/otkhi.m4a",
       "transcript": "ოთხი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -68,7 +68,7 @@
       "answer_index": 0,
       "explanation": "«ხუთი» — пять (5)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/khuti.ogg",
+      "audio_url": "/audio/numbers/khuti.m4a",
       "transcript": "ხუთი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -81,7 +81,7 @@
       "answer_index": 1,
       "explanation": "«ექვსი» — шесть (6)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/ekvsi.ogg",
+      "audio_url": "/audio/numbers/ekvsi.m4a",
       "transcript": "ექვსი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -94,7 +94,7 @@
       "answer_index": 2,
       "explanation": "«შვიდი» — семь (7)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/shvidi.ogg",
+      "audio_url": "/audio/numbers/shvidi.m4a",
       "transcript": "შვიდი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -107,7 +107,7 @@
       "answer_index": 3,
       "explanation": "«რვა» — восемь (8)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/rva.ogg",
+      "audio_url": "/audio/numbers/rva.m4a",
       "transcript": "რვა",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -120,7 +120,7 @@
       "answer_index": 0,
       "explanation": "«ცხრა» — девять (9)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tskhra.ogg",
+      "audio_url": "/audio/numbers/tskhra.m4a",
       "transcript": "ცხრა",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -133,7 +133,7 @@
       "answer_index": 1,
       "explanation": "«ათი» — десять (10)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/ati.ogg",
+      "audio_url": "/audio/numbers/ati.m4a",
       "transcript": "ათი",
       "tags": ["audio", "number", "1-10"],
       "difficulty": 1
@@ -146,7 +146,7 @@
       "answer_index": 2,
       "explanation": "«თერთმეტი» — одиннадцать (11): «ერთი» (один) + «-მეტი» (-надцать)",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tertmeti.ogg",
+      "audio_url": "/audio/numbers/tertmeti.m4a",
       "transcript": "თერთმეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -159,7 +159,7 @@
       "answer_index": 3,
       "explanation": "«თორმეტი» — двенадцать (12): «ორი» (два) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tormeti.ogg",
+      "audio_url": "/audio/numbers/tormeti.m4a",
       "transcript": "თორმეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -172,7 +172,7 @@
       "answer_index": 0,
       "explanation": "«ცამეტი» — тринадцать (13): «სამი» (три) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tsameti.ogg",
+      "audio_url": "/audio/numbers/tsameti.m4a",
       "transcript": "ცამეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -185,7 +185,7 @@
       "answer_index": 1,
       "explanation": "«თოთხმეტი» — четырнадцать (14): «ოთხი» (четыре) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/totkhmeti.ogg",
+      "audio_url": "/audio/numbers/totkhmeti.m4a",
       "transcript": "თოთხმეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -198,7 +198,7 @@
       "answer_index": 2,
       "explanation": "«თხუთმეტი» — пятнадцать (15): «ხუთი» (пять) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tkhutmeti.ogg",
+      "audio_url": "/audio/numbers/tkhutmeti.m4a",
       "transcript": "თხუთმეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -211,7 +211,7 @@
       "answer_index": 3,
       "explanation": "«თექვსმეტი» — шестнадцать (16): «ექვსი» (шесть) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tekvsemeti.ogg",
+      "audio_url": "/audio/numbers/tekvsemeti.m4a",
       "transcript": "თექვსმეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -224,7 +224,7 @@
       "answer_index": 0,
       "explanation": "«ჩვიდმეტი» — семнадцать (17): «შვიდი» (семь) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/chvidmeti.ogg",
+      "audio_url": "/audio/numbers/chvidmeti.m4a",
       "transcript": "ჩვიდმეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -237,7 +237,7 @@
       "answer_index": 1,
       "explanation": "«თვრამეტი» — восемнадцать (18): «რვა» (восемь) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tvrameti.ogg",
+      "audio_url": "/audio/numbers/tvrameti.m4a",
       "transcript": "თვრამეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -250,7 +250,7 @@
       "answer_index": 2,
       "explanation": "«ცხრამეტი» — девятнадцать (19): «ცხრა» (девять) + «-მეტი»",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/tskhrameti.ogg",
+      "audio_url": "/audio/numbers/tskhrameti.m4a",
       "transcript": "ცხრამეტი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
@@ -263,7 +263,7 @@
       "answer_index": 3,
       "explanation": "«ოცი» — двадцать (20). В грузинском счёте 20 — особое число: ოც-და- («двадцать и») — основа для 21–39",
       "question_type": "audio-choice",
-      "audio_url": "/audio/numbers/otsi.ogg",
+      "audio_url": "/audio/numbers/otsi.m4a",
       "transcript": "ოცი",
       "tags": ["audio", "number", "11-20"],
       "difficulty": 2
