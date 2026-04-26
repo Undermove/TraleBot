@@ -5,9 +5,10 @@ type PlayerState = 'idle' | 'loading' | 'playing' | 'played' | 'error'
 interface AudioPlayerProps {
   url: string
   onPlayed?: () => void
+  onError?: () => void
 }
 
-export default function AudioPlayer({ url, onPlayed }: AudioPlayerProps) {
+export default function AudioPlayer({ url, onPlayed, onError }: AudioPlayerProps) {
   const [state, setState] = useState<PlayerState>('idle')
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const playedOnceRef = useRef(false)
@@ -26,16 +27,19 @@ export default function AudioPlayer({ url, onPlayed }: AudioPlayerProps) {
         onPlayed?.()
       }
     }
-    const onError = () => setState('error')
+    const handleError = () => {
+      setState('error')
+      onError?.()
+    }
 
     audio.addEventListener('ended', onEnded)
-    audio.addEventListener('error', onError)
+    audio.addEventListener('error', handleError)
     audio.src = url
     audio.preload = 'none'
 
     return () => {
       audio.removeEventListener('ended', onEnded)
-      audio.removeEventListener('error', onError)
+      audio.removeEventListener('error', handleError)
       audio.pause()
       audio.src = ''
     }
