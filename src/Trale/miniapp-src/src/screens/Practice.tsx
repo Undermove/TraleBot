@@ -52,19 +52,21 @@ export default function Practice({
   // For shake animation on wrong type answer
   const [shakeInput, setShakeInput] = useState(false)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyQuestions(data: any) {
+    if (!Array.isArray(data) || data.length === 0) {
+      setPhase('error')
+      return
+    }
+    setQuestions(data.slice(0, 10).map(normalizeQuestion))
+    setPhase('answering')
+  }
+
   useEffect(() => {
     let cancelled = false
     api
       .lessonQuestions(moduleId, lessonId)
-      .then((data) => {
-        if (cancelled) return
-        if (!Array.isArray(data) || data.length === 0) {
-          setPhase('error')
-          return
-        }
-        setQuestions(data.slice(0, 10).map(normalizeQuestion))
-        setPhase('answering')
-      })
+      .then((data) => { if (!cancelled) applyQuestions(data) })
       .catch(() => !cancelled && setPhase('error'))
     return () => {
       cancelled = true
@@ -110,14 +112,7 @@ export default function Practice({
             onClick={() => {
               setPhase('loading')
               api.lessonQuestions(moduleId, lessonId)
-                .then((data) => {
-                  if (!Array.isArray(data) || data.length === 0) {
-                    setPhase('error')
-                    return
-                  }
-                  setQuestions(data.slice(0, 10).map(normalizeQuestion))
-                  setPhase('answering')
-                })
+                .then(applyQuestions)
                 .catch(() => setPhase('error'))
             }}
           >
