@@ -20,7 +20,11 @@ if [ -e /var/run/docker.sock ]; then
     fi
     SOCK_GROUP=$(getent group "$SOCK_GID" | cut -d: -f1)
     usermod -aG "$SOCK_GROUP" agent
-    echo "Docker socket: GID=$SOCK_GID group=$SOCK_GROUP — agent added to group"
+    # Also change socket group to agent's primary group so access is immediate.
+    # usermod takes effect only at next login; chgrp takes effect right away,
+    # so cron-spawned processes can reach the socket without a container restart.
+    chgrp agent /var/run/docker.sock
+    echo "Docker socket: GID=$SOCK_GID group=$SOCK_GROUP — agent added, socket chgrp→agent"
 else
     echo "Docker socket not found — IntegrationTests will run without Testcontainers"
 fi
