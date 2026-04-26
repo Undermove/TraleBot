@@ -137,6 +137,10 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 ### Data (`src/data/`)
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
 
+### Static audio assets (`public/audio/`)
+- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Piper voice), used by `audio-choice` lesson 11 in `alphabet-progressive`.
+- `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
+
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
 
@@ -256,7 +260,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
 | `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (lesson 11 = audio-choice) | ✅ |
-| `numbers` | `GeorgianNumbers` | 4 | ✅ |
+| `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 5 | ✅ |
 | `pronouns` | `GeorgianPronouns` | 5 | ✅ |
 | `present-tense` | `GeorgianPresentTense` | 5 | ✅ |
