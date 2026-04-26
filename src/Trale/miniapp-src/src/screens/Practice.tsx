@@ -8,6 +8,21 @@ import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
 import { api } from '../api'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeQuestion(d: any): QuizQuestion {
+  return {
+    id: d.id,
+    lemma: d.lemma ?? '',
+    question: d.question,
+    options: d.options,
+    answerIndex: d.answerIndex,
+    explanation: d.explanation,
+    questionType: d.questionType,
+    audioUrl: d.audioUrl ?? null,
+    transcript: d.transcript ?? null,
+  }
+}
+
 interface Props {
   moduleId: string
   lessonId: number
@@ -47,19 +62,7 @@ export default function Practice({
           setPhase('error')
           return
         }
-        setQuestions(
-          data.slice(0, 10).map((d) => ({
-            id: d.id,
-            lemma: d.lemma ?? '',
-            question: d.question,
-            options: d.options,
-            answerIndex: d.answerIndex,
-            explanation: d.explanation,
-            questionType: d.questionType,
-            audioUrl: d.audioUrl ?? null,
-            transcript: d.transcript ?? null
-          }))
-        )
+        setQuestions(data.slice(0, 10).map(normalizeQuestion))
         setPhase('answering')
       })
       .catch(() => !cancelled && setPhase('error'))
@@ -112,14 +115,7 @@ export default function Practice({
                     setPhase('error')
                     return
                   }
-                  setQuestions(
-                    data.slice(0, 10).map((d) => ({
-                      id: d.id, lemma: d.lemma ?? '', question: d.question,
-                      options: d.options, answerIndex: d.answerIndex,
-                      explanation: d.explanation, questionType: d.questionType,
-                      audioUrl: d.audioUrl ?? null, transcript: d.transcript ?? null
-                    }))
-                  )
+                  setQuestions(data.slice(0, 10).map(normalizeQuestion))
                   setPhase('answering')
                 })
                 .catch(() => setPhase('error'))
