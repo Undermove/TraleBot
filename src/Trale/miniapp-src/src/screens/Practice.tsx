@@ -295,7 +295,7 @@ export default function Practice({
         style={{ paddingBottom: isTypeQuestion ? '16px' : 'calc(var(--safe-b) + 110px)' }}
       >
         {isAudioChoice ? (
-          <AudioChoiceCard key={current.id} question={current} />
+          <AudioChoiceCard key={current.id} question={current} revealed={phase === 'checked'} />
         ) : (
           <>
             <div className="mn-eyebrow mb-2">
