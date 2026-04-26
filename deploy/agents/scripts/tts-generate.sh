@@ -1,14 +1,24 @@
 #!/bin/bash
 set -euo pipefail
 
-# Generate Georgian TTS audio using Piper's ka_GE-natia-medium voice,
-# converted to opus/ogg for compact web delivery.
+# Generate Georgian TTS audio using Piper's ka_GE-natia-medium voice.
+#
+# IMPORTANT: default output is .m4a (AAC in MP4 container) — universally
+# playable in browsers including iOS Safari/WKWebView (Telegram iOS Mini App).
+# Do NOT default to .ogg/Opus: iOS < 17.4 and many in-app WebViews silently
+# fail to play opus, leaving users with a dead audio button. AAC works
+# everywhere desktop/Android/iOS without exceptions.
 #
 # Usage:
-#   /scripts/tts-generate.sh "<Georgian text>" <output.ogg>
+#   /scripts/tts-generate.sh "<Georgian text>" <output.m4a>
+#
+# Output codec is selected from the file extension:
+#   .m4a → AAC (recommended, default, iOS-safe)
+#   .mp3 → MP3 (also iOS-safe, larger files)
+#   .ogg → opus (legacy, AVOID — breaks on iOS in Telegram WebView)
 #
 # Example:
-#   /scripts/tts-generate.sh "გამარჯობა" /workspace/repo/src/Trale/wwwroot/audio/alphabet/hello.ogg
+#   /scripts/tts-generate.sh "გამარჯობა" /workspace/repo/src/Trale/wwwroot/audio/alphabet/hello.m4a
 #
 # Batch via JSON manifest (one object per line):
 #   {"text": "...", "output": "..."}
@@ -39,8 +49,23 @@ fi
 
 mkdir -p "$(dirname "${OUT}")"
 
-# Piper writes WAV to stdout when --output_file is -; pipe into ffmpeg for opus.
-# LD_LIBRARY_PATH picks up the bundled .so files next to the piper binary.
+# Pick codec args from output extension. AAC/m4a is the default & recommended
+# path; opus is kept for backward compat but will warn loudly.
+case "${OUT,,}" in
+    *.m4a) FFMPEG_CODEC=(-c:a aac -b:a 64k -ac 1 -movflags +faststart) ;;
+    *.mp3) FFMPEG_CODEC=(-c:a libmp3lame -b:a 64k -ac 1) ;;
+    *.ogg)
+        echo "WARNING: .ogg/opus does NOT play on iOS Safari/Telegram WebView. Use .m4a instead." >&2
+        FFMPEG_CODEC=(-c:a libopus -b:a 48k -ac 1)
+        ;;
+    *)
+        echo "Unsupported output extension: ${OUT}. Use .m4a (recommended), .mp3, or .ogg." >&2
+        exit 64
+        ;;
+esac
+
+# Piper writes WAV to stdout when --output_file is -; pipe into ffmpeg for the
+# chosen codec. LD_LIBRARY_PATH picks up the bundled .so files next to piper.
 LD_LIBRARY_PATH="/opt/piper:${LD_LIBRARY_PATH:-}" \
     printf '%s\n' "${TEXT}" \
     | "${PIPER_BIN}" \
@@ -49,7 +74,7 @@ LD_LIBRARY_PATH="/opt/piper:${LD_LIBRARY_PATH:-}" \
         2>/dev/null \
     | ffmpeg -hide_banner -loglevel error -y \
         -i - \
-        -c:a libopus -b:a 48k -ac 1 \
+        "${FFMPEG_CODEC[@]}" \
         "${OUT}"
 
 # Sanity: file must exist and be non-empty.
