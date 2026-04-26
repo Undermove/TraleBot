@@ -120,7 +120,7 @@ export default function PracticeMistakes({ moduleId, lessonId, wrongQuestions, n
             let shadowStyle = '3px 3px 0 #15100A'
 
             if (phase === 'answering' && isSelected) {
-              tileClasses = 'bg-ruby border-jewelInk text-cream'
+              tileClasses = 'bg-navy border-jewelInk text-cream'
             }
             if (phase === 'checked') {
               if (isAnswer) {
