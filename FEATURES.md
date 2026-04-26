@@ -265,7 +265,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
-| `present-tense` | `GeorgianPresentTense` | 5 | ✅ |
+| `present-tense` | `GeorgianPresentTense` | 6 (lesson 6 = audio-choice) | ✅ |
 | `cases` | `GeorgianCases` | 8 | ✅ |
 | `conditionals` | `GeorgianConditionals` | 5 | ✅ |
 
