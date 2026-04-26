@@ -1698,6 +1698,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                             "მადლობა / გმადლობთ — спасибо",
                             "ბოდიში — извините",
                             "კი / არა — да / нет",
+                            "არ ვიცი — не знаю",
                             "სასიამოვნოა — приятно познакомиться")
                     })
             }
