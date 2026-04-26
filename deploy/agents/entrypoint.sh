@@ -11,20 +11,13 @@ printenv | grep -E '^(ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN|GITHUB_TOKEN|REP
 chmod 644 /etc/environment
 
 # Grant agent user access to the Docker socket so Testcontainers can spawn
-# Postgres sibling containers during IntegrationTests. The socket GID may differ
-# between hosts, so we resolve it dynamically rather than hardcoding it.
+# Postgres sibling containers during IntegrationTests.
+# chmod o+rw (world-accessible) is the most reliable approach: it works
+# regardless of host Docker GID, survives daemon restarts, and avoids adding
+# the agent user to the root group (which usermod -aG root would do).
 if [ -e /var/run/docker.sock ]; then
-    SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
-    if ! getent group "$SOCK_GID" > /dev/null 2>&1; then
-        groupadd -g "$SOCK_GID" dockersock
-    fi
-    SOCK_GROUP=$(getent group "$SOCK_GID" | cut -d: -f1)
-    usermod -aG "$SOCK_GROUP" agent
-    # Also change socket group to agent's primary group so access is immediate.
-    # usermod takes effect only at next login; chgrp takes effect right away,
-    # so cron-spawned processes can reach the socket without a container restart.
-    chgrp agent /var/run/docker.sock
-    echo "Docker socket: GID=$SOCK_GID group=$SOCK_GROUP — agent added, socket chgrp→agent"
+    chmod o+rw /var/run/docker.sock
+    echo "Docker socket: $(stat -c '%A %U:%G' /var/run/docker.sock) — agent can now connect"
 else
     echo "Docker socket not found — IntegrationTests will run without Testcontainers"
 fi
