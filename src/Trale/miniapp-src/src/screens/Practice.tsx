@@ -165,7 +165,7 @@ export default function Practice({
       setPhase('checked')
       if (selected === current.answerIndex) {
         setCorrectCount((c) => c + 1)
-      } else if (!isAudioChoice) {
+      } else {
         setWrongQuestions((prev) => [...prev, current])
       }
     }
