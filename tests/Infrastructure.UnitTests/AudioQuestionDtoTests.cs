@@ -4,7 +4,6 @@ using Infrastructure.Telegram.Services;
 
 namespace Infrastructure.UnitTests;
 
-// RED tests for #542: audioUrl/transcript fields on QuizQuestionData + GeorgianQuestionsLoader
 public class AudioQuestionDtoTests
 {
     [Test]

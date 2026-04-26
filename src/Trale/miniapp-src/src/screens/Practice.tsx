@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import AudioChoiceCard from '../components/AudioChoiceCard'
 import Button from '../components/Button'
 import FeedbackBanner from '../components/FeedbackBanner'
 import GeorgianKeyboard from '../components/GeorgianKeyboard'
@@ -6,6 +7,21 @@ import LoaderLetter from '../components/LoaderLetter'
 import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
 import { api } from '../api'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeQuestion(d: any): QuizQuestion {
+  return {
+    id: d.id,
+    lemma: d.lemma ?? '',
+    question: d.question,
+    options: d.options,
+    answerIndex: d.answerIndex,
+    explanation: d.explanation,
+    questionType: d.questionType,
+    audioUrl: d.audioUrl ?? null,
+    transcript: d.transcript ?? null,
+  }
+}
 
 interface Props {
   moduleId: string
@@ -36,29 +52,21 @@ export default function Practice({
   // For shake animation on wrong type answer
   const [shakeInput, setShakeInput] = useState(false)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyQuestions(data: any) {
+    if (!Array.isArray(data) || data.length === 0) {
+      setPhase('error')
+      return
+    }
+    setQuestions(data.slice(0, 10).map(normalizeQuestion))
+    setPhase('answering')
+  }
+
   useEffect(() => {
     let cancelled = false
     api
       .lessonQuestions(moduleId, lessonId)
-      .then((data) => {
-        if (cancelled) return
-        if (!Array.isArray(data) || data.length === 0) {
-          setPhase('error')
-          return
-        }
-        setQuestions(
-          data.slice(0, 10).map((d) => ({
-            id: d.id,
-            lemma: d.lemma ?? '',
-            question: d.question,
-            options: d.options,
-            answerIndex: d.answerIndex,
-            explanation: d.explanation,
-            questionType: d.questionType
-          }))
-        )
-        setPhase('answering')
-      })
+      .then((data) => { if (!cancelled) applyQuestions(data) })
       .catch(() => !cancelled && setPhase('error'))
     return () => {
       cancelled = true
@@ -104,20 +112,7 @@ export default function Practice({
             onClick={() => {
               setPhase('loading')
               api.lessonQuestions(moduleId, lessonId)
-                .then((data) => {
-                  if (!Array.isArray(data) || data.length === 0) {
-                    setPhase('error')
-                    return
-                  }
-                  setQuestions(
-                    data.slice(0, 10).map((d) => ({
-                      id: d.id, lemma: d.lemma ?? '', question: d.question,
-                      options: d.options, answerIndex: d.answerIndex,
-                      explanation: d.explanation, questionType: d.questionType
-                    }))
-                  )
-                  setPhase('answering')
-                })
+                .then(applyQuestions)
                 .catch(() => setPhase('error'))
             }}
           >
@@ -140,6 +135,7 @@ export default function Practice({
   const pct = Math.round((questionNumber / total) * 100)
 
   const isTypeQuestion = current.questionType === 'type'
+  const isAudioChoice = current.questionType === 'audio-choice'
 
   // Georgian numerals 1-10 for passive learning
   const geoNumerals = ['ერთი', 'ორი', 'სამი', 'ოთხი', 'ხუთი', 'ექვსი', 'შვიდი', 'რვა', 'ცხრა', 'ათი']
@@ -298,14 +294,20 @@ export default function Practice({
         className="flex-1 px-5 pt-6"
         style={{ paddingBottom: isTypeQuestion ? '16px' : 'calc(var(--safe-b) + 110px)' }}
       >
-        <div className="mn-eyebrow mb-2">
-          {isTypeQuestion
-            ? `напиши по-грузински · ${geoQuestion ?? questionNumber}`
-            : `вопрос № ${questionNumber}${geoQuestion ? ` · ${geoQuestion}` : ''}`}
-        </div>
-        <h2 className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
-          {current.question}
-        </h2>
+        {isAudioChoice ? (
+          <AudioChoiceCard key={current.id} question={current} revealed={phase === 'checked'} />
+        ) : (
+          <>
+            <div className="mn-eyebrow mb-2">
+              {isTypeQuestion
+                ? `напиши по-грузински · ${geoQuestion ?? questionNumber}`
+                : `вопрос № ${questionNumber}${geoQuestion ? ` · ${geoQuestion}` : ''}`}
+            </div>
+            <h2 className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
+              {current.question}
+            </h2>
+          </>
+        )}
 
         {isTypeQuestion ? (
           /* ── Type-answer mode ── */
@@ -353,7 +355,7 @@ export default function Practice({
             )}
           </div>
         ) : (
-          /* ── Choice mode ── */
+          /* ── Choice / Audio-choice mode ── */
           <>
             <div className="mt-6 flex flex-col gap-3">
               {current.options.map((opt, i) => {
@@ -379,6 +381,10 @@ export default function Practice({
                   }
                 }
 
+                const badgeLabel = isAudioChoice
+                  ? (['ა', 'ბ', 'გ', 'დ'][i] ?? String.fromCharCode(97 + i))
+                  : String.fromCharCode(97 + i)
+
                 return (
                   <button
                     key={i}
@@ -388,13 +394,15 @@ export default function Practice({
                     style={{ boxShadow: shadowStyle }}
                   >
                     <span
-                      className={`shrink-0 w-7 h-7 rounded-md border-[1.5px] flex items-center justify-center font-sans text-[12px] font-extrabold uppercase ${
+                      className={`shrink-0 w-7 h-7 rounded-md border-[1.5px] flex items-center justify-center text-[12px] font-extrabold ${
+                        isAudioChoice ? 'font-geo' : 'font-sans uppercase'
+                      } ${
                         phase === 'checked' && isAnswer
                           ? 'bg-cream text-ruby border-cream'
                           : 'bg-cream-deep text-jewelInk border-jewelInk/30'
                       }`}
                     >
-                      {String.fromCharCode(97 + i)}
+                      {badgeLabel}
                     </span>
                     <span className="flex-1">{opt}</span>
                     {phase === 'checked' && isAnswer && (
@@ -419,10 +427,25 @@ export default function Practice({
                 isCorrect={isCorrect}
                 topMargin="mt-6"
                 body={
-                  current.explanation ||
-                  (isCorrect
-                    ? 'Хорошо запомнил — так держать.'
-                    : 'Запомни правильный вариант и идём дальше.')
+                  isAudioChoice
+                    ? isCorrect
+                      ? (
+                          <>
+                            <span className="font-geo text-[28px] font-bold block leading-tight">
+                              {current.transcript ?? current.lemma}
+                            </span>
+                            {current.lemma && (
+                              <span className="font-sans text-[12px] opacity-70 block mt-0.5">
+                                {current.lemma}
+                              </span>
+                            )}
+                          </>
+                        )
+                      : `правильно: ${correctAnswer}`
+                    : current.explanation ||
+                      (isCorrect
+                        ? 'Хорошо запомнил — так держать.'
+                        : 'Запомни правильный вариант и идём дальше.')
                 }
               />
             )}

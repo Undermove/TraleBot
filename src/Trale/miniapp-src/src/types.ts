@@ -36,7 +36,9 @@ export interface QuizQuestion {
   options: string[]
   answerIndex: number
   explanation: string
-  questionType?: 'choice' | 'type'
+  questionType?: 'choice' | 'type' | 'audio-choice'
+  audioUrl?: string | null
+  transcript?: string | null
 }
 
 export interface ProgressState {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
+import AudioChoiceCard from '../components/AudioChoiceCard'
 import Button from '../components/Button'
+import FeedbackBanner from '../components/FeedbackBanner'
 import { QuizQuestion, Screen } from '../types'
 
 interface Props {
@@ -21,6 +23,7 @@ export default function PracticeMistakes({ moduleId, lessonId, wrongQuestions, n
   const total = wrongQuestions.length
   const questionNumber = index + 1
   const pct = Math.round((questionNumber / total) * 100)
+  const isAudioChoice = current.questionType === 'audio-choice'
   const isCorrect = selected !== null && selected === current.answerIndex
 
   function check() {
@@ -100,9 +103,13 @@ export default function PracticeMistakes({ moduleId, lessonId, wrongQuestions, n
         style={{ paddingBottom: 'calc(var(--safe-b) + 110px)' }}
       >
         <div className="mn-eyebrow mb-2">разбор ошибок</div>
-        <h2 className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
-          {current.question}
-        </h2>
+        {isAudioChoice ? (
+          <AudioChoiceCard key={current.id} question={current} />
+        ) : (
+          <h2 className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
+            {current.question}
+          </h2>
+        )}
 
         <div className="mt-6 flex flex-col gap-3">
           {current.options.map((opt, i) => {
@@ -113,7 +120,7 @@ export default function PracticeMistakes({ moduleId, lessonId, wrongQuestions, n
             let shadowStyle = '3px 3px 0 #15100A'
 
             if (phase === 'answering' && isSelected) {
-              tileClasses = 'bg-ruby border-jewelInk text-cream'
+              tileClasses = 'bg-navy border-jewelInk text-cream'
             }
             if (phase === 'checked') {
               if (isAnswer) {
@@ -136,13 +143,17 @@ export default function PracticeMistakes({ moduleId, lessonId, wrongQuestions, n
                 style={{ boxShadow: shadowStyle }}
               >
                 <span
-                  className={`shrink-0 w-7 h-7 rounded-md border-[1.5px] flex items-center justify-center font-sans text-[12px] font-extrabold uppercase ${
+                  className={`shrink-0 w-7 h-7 rounded-md border-[1.5px] flex items-center justify-center text-[12px] font-extrabold ${
+                    isAudioChoice ? 'font-geo' : 'font-sans uppercase'
+                  } ${
                     phase === 'checked' && isAnswer
                       ? 'bg-cream text-ruby border-cream'
                       : 'bg-cream-deep text-jewelInk border-jewelInk/30'
                   }`}
                 >
-                  {String.fromCharCode(97 + i)}
+                  {isAudioChoice
+                    ? (['ა', 'ბ', 'გ', 'დ'][i] ?? String.fromCharCode(97 + i))
+                    : String.fromCharCode(97 + i)}
                 </span>
                 <span className="flex-1">{opt}</span>
                 {phase === 'checked' && isAnswer && (
@@ -163,24 +174,31 @@ export default function PracticeMistakes({ moduleId, lessonId, wrongQuestions, n
         </div>
 
         {phase === 'checked' && (
-          <div
-            className={`mt-6 p-4 border-[1.5px] rounded-xl relative ${
-              isCorrect
-                ? 'bg-navy border-jewelInk text-cream'
-                : 'bg-ruby border-jewelInk text-cream'
-            }`}
-            style={{ boxShadow: '2px 2px 0 #15100A' }}
-          >
-            <div className="font-sans text-[13px] font-extrabold uppercase tracking-wider mb-1 opacity-90">
-              {isCorrect ? 'верно' : 'ещё раз'}
-            </div>
-            <div className="font-sans text-[14px] leading-snug">
-              {current.explanation ||
-                (isCorrect
-                  ? 'Хорошо запомнил — так держать.'
-                  : 'Запомни правильный вариант и идём дальше.')}
-            </div>
-          </div>
+          <FeedbackBanner
+            isCorrect={isCorrect}
+            topMargin="mt-6"
+            body={
+              isAudioChoice
+                ? isCorrect
+                  ? (
+                      <>
+                        <span className="font-geo text-[28px] font-bold block leading-tight">
+                          {current.transcript ?? current.lemma}
+                        </span>
+                        {current.lemma && (
+                          <span className="font-sans text-[12px] opacity-70 block mt-0.5">
+                            {current.lemma}
+                          </span>
+                        )}
+                      </>
+                    )
+                  : `правильно: ${current.options[current.answerIndex]}`
+                : current.explanation ||
+                  (isCorrect
+                    ? 'Хорошо запомнил — так держать.'
+                    : 'Запомни правильный вариант и идём дальше.')
+            }
+          />
         )}
       </div>
 

@@ -7,8 +7,20 @@ echo "Starting at $(date)"
 # Pass environment to cron jobs (quote values to handle spaces)
 # Include PATH so cron jobs can find claude CLI in /usr/local/bin
 echo "PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'" > /etc/environment
-printenv | grep -E '^(ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN|GITHUB_TOKEN|REPO_URL|GIT_USER_NAME|GIT_USER_EMAIL|MAX_TURNS)=' | sed "s/=/='/" | sed "s/$/'/" >> /etc/environment
+printenv | grep -E '^(ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN|GITHUB_TOKEN|REPO_URL|GIT_USER_NAME|GIT_USER_EMAIL|MAX_TURNS|TESTCONTAINERS_RYUK_DISABLED|TESTCONTAINERS_HOST_OVERRIDE)=' | sed "s/=/='/" | sed "s/$/'/" >> /etc/environment
 chmod 644 /etc/environment
+
+# Grant agent user access to the Docker socket so Testcontainers can spawn
+# Postgres sibling containers during IntegrationTests.
+# chmod o+rw (world-accessible) is the most reliable approach: it works
+# regardless of host Docker GID, survives daemon restarts, and avoids adding
+# the agent user to the root group (which usermod -aG root would do).
+if [ -e /var/run/docker.sock ]; then
+    chmod o+rw /var/run/docker.sock
+    echo "Docker socket: $(stat -c '%A %U:%G' /var/run/docker.sock) — agent can now connect"
+else
+    echo "Docker socket not found — IntegrationTests will run without Testcontainers"
+fi
 
 # Validate auth
 if [ -z "${CLAUDE_CODE_OAUTH_TOKEN}" ] && [ -z "${ANTHROPIC_API_KEY}" ]; then
