@@ -659,7 +659,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                             "ასვლა — подниматься",
                             "ჩასვლა — спускаться",
                             "გადასვლა — переходить"),
-                        Example("მე ვდივარ სახლში", "Я иду домой"),
+                        Example("მე მივდივარ სახლში", "Я иду домой"),
                         Example("ის მოდის სკოლიდან", "Он идёт из школы")
                     }),
 
