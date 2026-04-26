@@ -141,6 +141,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Piper voice), used by `audio-choice` lesson 11 in `alphabet-progressive`.
 - `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
 - `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
+- `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -263,7 +264,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (lesson 11 = audio-choice) | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
-| `pronouns` | `GeorgianPronouns` | 5 | ✅ |
+| `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
 | `present-tense` | `GeorgianPresentTense` | 5 | ✅ |
 | `cases` | `GeorgianCases` | 8 | ✅ |
 | `conditionals` | `GeorgianConditionals` | 5 | ✅ |
