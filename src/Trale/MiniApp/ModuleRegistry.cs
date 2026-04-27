@@ -14,9 +14,9 @@ public static class ModuleRegistry
     private static readonly FrozenDictionary<string, ModuleDefinition> Modules = new Dictionary<string, ModuleDefinition>
     {
         // L11 (audio-choice) temporarily disabled — Piper TTS quality on isolated letters
-// is too poor to disambiguate ejective vs aspirated pairs (კ/ქ, ტ/თ, წ/ც, ჭ/ჩ).
-// Re-enable once letter audio is re-recorded or replaced with better TTS.
-["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 10),
+        // is too poor to disambiguate ejective vs aspirated pairs (კ/ქ, ტ/თ, წ/ც, ჭ/ჩ).
+        // Re-enable once letter audio is re-recorded or replaced with better TTS.
+        ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 10),
         ["numbers"] = new("numbers", "Lessons/GeorgianNumbers", 5),
         ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 7),
         ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 5),
