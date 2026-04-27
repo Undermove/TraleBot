@@ -110,4 +110,54 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
         result.Items.ShouldHaveSingleItem();
         result.StarterItems.ShouldBeEmpty();
     }
+
+    [Test]
+    public async Task StarterItem_ShouldPropagateAudioUrl()
+    {
+        const string expectedAudioUrl = "/audio/vocabulary/kargi.m4a";
+        _contentProvider
+            .Setup(p => p.GetStarterVocabulary())
+            .Returns(new List<StarterWordDto>
+            {
+                new StarterWordDto("კარგი", "хорошо", "კარგი ადამიანი", expectedAudioUrl)
+            });
+
+        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+
+        result.StarterItems.ShouldHaveSingleItem();
+        result.StarterItems[0].AudioUrl.ShouldBe(expectedAudioUrl);
+    }
+
+    [Test]
+    public async Task StarterItem_ShouldHaveNullAudioUrl_WhenNotProvided()
+    {
+        _contentProvider
+            .Setup(p => p.GetStarterVocabulary())
+            .Returns(new List<StarterWordDto>
+            {
+                new StarterWordDto("კარგი", "хорошо", "კარგი ადამიანი")
+            });
+
+        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+
+        result.StarterItems.ShouldHaveSingleItem();
+        result.StarterItems[0].AudioUrl.ShouldBeNull();
+    }
+
+    [Test]
+    public async Task UserVocabularyItem_ShouldHaveNullAudioUrl()
+    {
+        var entry = Create.VocabularyEntry()
+            .WithUser(_user)
+            .WithLanguage(Language.Georgian)
+            .WithWord("კარგი")
+            .Build();
+        Context.VocabularyEntries.Add(entry);
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+
+        result.Items.ShouldHaveSingleItem();
+        result.Items[0].AudioUrl.ShouldBeNull();
+    }
 }
