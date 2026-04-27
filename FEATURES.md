@@ -147,6 +147,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `verb-classes/` — 15 Georgian verb TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 7 in `verb-classes`.
 - `postpositions/` — 24 Georgian postposition/location TTS clips (ka-GE Natia voice, includes combined forms), used by `audio-choice` lesson 6 in `postpositions`.
 - `cafe/` — 15 Georgian cafe/restaurant vocabulary TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `cafe`.
+- `verbs-of-movement/` — 15 Georgian motion verb TTS clips (ka-GE Natia voice; present/aorist/future paradigms), used by `audio-choice` lesson 12 in `verbs-of-movement`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -280,7 +281,8 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `verb-classes` | `GeorgianVerbClasses` | 7 (L7 audio-choice) | ✅ |
 | `version-vowels` | `GeorgianVersionVowels` | 5 | ✅ |
 | `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
-| `imperfect` | `GeorgianImperfect` | 5 | ✅ |
+| `imperfect` | `GeorgianImperfect` | 6 (L6 audio-choice) | ✅ |
+| `verbs-of-movement` | `GeorgianVerbsOfMovement` | 12 (L12 audio-choice) | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
@@ -300,7 +302,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 `GeorgianAlphabetEasy`, `GeorgianAlphabetFull`, `GeorgianAlphabetCommon`, `GeorgianAlphabetTriples`, `GeorgianAlphabetVowels` — alternative presentations of the same alphabet content.
 
 ### Telegram-only
-`GeorgianVerbsOfMovement` (11 lessons, invoked via `/georgianverbs*` commands, not on the mini-app catalog).
+`GeorgianVerbsOfMovement` (12 lessons, invoked via `/georgianverbs*` commands; also served via mini-app ModuleRegistry as `verbs-of-movement`).
 
 ---
 

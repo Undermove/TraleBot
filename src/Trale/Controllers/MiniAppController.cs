@@ -111,16 +111,6 @@ public class MiniAppController : Controller
             return Ok(alphabetQuestions);
         }
 
-        if (moduleId == "verbs-of-movement")
-        {
-            if (lessonId < 1 || lessonId > 11)
-            {
-                return NotFound(new { error = "Unknown lesson" });
-            }
-            var loader = _questionsLoaderFactory.CreateForLesson(lessonId);
-            return Ok(MapQuestions(loader, lessonId));
-        }
-
         var moduleDef = ModuleRegistry.Get(moduleId);
         if (moduleDef != null)
         {
