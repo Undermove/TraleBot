@@ -126,15 +126,15 @@
     },
     {
       "id": "post6-q10",
-      "lemma": "თბილისში",
-      "question": "Послушай и выбери услышанное слово",
-      "options": ["სახლიდან", "სკოლაში", "პარკში", "თბილისში"],
+      "lemma": "დან",
+      "question": "Послушай и выбери услышанный послелог",
+      "options": ["ში", "ზე", "თან", "დან"],
       "answer_index": 3,
-      "explanation": "«თბილისში» — в Тбилиси. Столица Грузии! Послелог -ში означает «в/внутри»",
+      "explanation": "«-დან» — послелог «из/от» (направление). სახლიდან = из дома, სკოლიდან = из школы.",
       "question_type": "audio-choice",
-      "audio_url": "/audio/postpositions/tbilisshi.m4a",
-      "transcript": "თბილისში",
-      "tags": ["audio", "postposition", "location", "city"],
+      "audio_url": "/audio/postpositions/dan.m4a",
+      "transcript": "დან",
+      "tags": ["audio", "postposition", "direction", "standalone"],
       "difficulty": 2
     }
   ]
