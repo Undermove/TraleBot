@@ -1939,26 +1939,26 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
     {
         return new List<StarterWordDto>
         {
-            new("გამარჯობა", "здравствуй / привет", "გამარჯობა, როგორ ხარ?"),
-            new("მადლობა", "спасибо", "დიდი მადლობა!"),
-            new("კარგი", "хороший", "კარგი დღე!"),
-            new("ლამაზი", "красивый", "ლამაზი ყვავილი"),
-            new("წყალი", "вода", "მინდა წყალი"),
-            new("პური", "хлеб", "პური და ყველი"),
-            new("ყავა", "кофе", "ერთი ყავა, გთხოვთ"),
-            new("ჩაი", "чай", "ცხელი ჩაი"),
-            new("სახლი", "дом", "ჩემი სახლი"),
-            new("ქალი", "женщина", "ეს ქალი"),
-            new("კაცი", "мужчина", "კარგი კაცი"),
-            new("ბავშვი", "ребёнок", "პატარა ბავშვი"),
-            new("დედა", "мама", "ჩემი დედა"),
-            new("მამა", "папа", "ჩემი მამა"),
-            new("ძაღლი", "собака", "კარგი ძაღლი"),
-            new("კატა", "кошка", "პატარა კატა"),
-            new("ცა", "небо", "ლამაზი ცა"),
-            new("მზე", "солнце", "ცხელი მზე"),
-            new("მთვარე", "луна", "სავსე მთვარე"),
-            new("წიგნი", "книга", "კარგი წიგნი")
+            new("გამარჯობა", "здравствуй / привет", "გამარჯობა, როგორ ხარ?", "/audio/vocabulary/gamarjoba.m4a"),
+            new("მადლობა", "спасибо", "დიდი მადლობა!", "/audio/vocabulary/madloba.m4a"),
+            new("კარგი", "хороший", "კარგი დღე!", "/audio/vocabulary/kargi.m4a"),
+            new("ლამაზი", "красивый", "ლამაზი ყვავილი", "/audio/vocabulary/lamazi.m4a"),
+            new("წყალი", "вода", "მინდა წყალი", "/audio/vocabulary/tsqali.m4a"),
+            new("პური", "хлеб", "პური და ყველი", "/audio/vocabulary/puri.m4a"),
+            new("ყავა", "кофе", "ერთი ყავა, გთხოვთ", "/audio/vocabulary/qava.m4a"),
+            new("ჩაი", "чай", "ცხელი ჩაი", "/audio/vocabulary/chai.m4a"),
+            new("სახლი", "дом", "ჩემი სახლი", "/audio/vocabulary/sakhli.m4a"),
+            new("ქალი", "женщина", "ეს ქალი", "/audio/vocabulary/kali.m4a"),
+            new("კაცი", "мужчина", "კარგი კაცი", "/audio/vocabulary/katsi.m4a"),
+            new("ბავშვი", "ребёнок", "პატარა ბავშვი", "/audio/vocabulary/bavshvi.m4a"),
+            new("დედა", "мама", "ჩემი დედა", "/audio/vocabulary/deda.m4a"),
+            new("მამა", "папа", "ჩემი მამა", "/audio/vocabulary/mama.m4a"),
+            new("ძაღლი", "собака", "კარგი ძაღლი", "/audio/vocabulary/dzaghli.m4a"),
+            new("კატა", "кошка", "პატარა კატა", "/audio/vocabulary/kata.m4a"),
+            new("ცა", "небо", "ლამაზი ცა", "/audio/vocabulary/tsa.m4a"),
+            new("მზე", "солнце", "ცხელი მზე", "/audio/vocabulary/mze.m4a"),
+            new("მთვარე", "луна", "სავსე მთვარე", "/audio/vocabulary/mtvare.m4a"),
+            new("წიგნი", "книга", "კარგი წიგნი", "/audio/vocabulary/tsigni.m4a")
         };
     }
 }

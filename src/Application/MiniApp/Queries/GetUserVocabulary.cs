@@ -68,7 +68,8 @@ public class GetUserVocabulary : IRequest<GetUserVocabularyResult>
                     SuccessReverseCount = 0,
                     FailedCount = 0,
                     Mastery = MasteringLevel.NotMastered.ToString(),
-                    IsStarter = true
+                    IsStarter = true,
+                    AudioUrl = s.AudioUrl
                 }).ToList();
 
             return new GetUserVocabularyResult
@@ -101,4 +102,5 @@ public class VocabularyItemDto
     public int FailedCount { get; init; }
     public string Mastery { get; init; }
     public bool IsStarter { get; init; }
+    public string? AudioUrl { get; init; }
 }

@@ -508,7 +508,8 @@ public class MiniAppController : Controller
                 successReverseCount = i.SuccessReverseCount,
                 failedCount = i.FailedCount,
                 mastery = i.Mastery,
-                isStarter = i.IsStarter
+                isStarter = i.IsStarter,
+                audioUrl = i.AudioUrl
             })
         });
     }
