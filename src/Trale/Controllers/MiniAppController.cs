@@ -466,7 +466,9 @@ public class MiniAppController : Controller
     }
 
     [HttpGet("vocabulary")]
-    public async Task<IActionResult> GetVocabulary(CancellationToken ct)
+    public async Task<IActionResult> GetVocabulary(
+        [FromServices] GetUserVocabularyQuery query,
+        CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -474,10 +476,7 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        var result = await _mediator.Send(new GetUserVocabulary
-        {
-            UserId = user.Id
-        }, ct);
+        var result = await query.ExecuteAsync(user.Id, ct);
 
         return Ok(new
         {

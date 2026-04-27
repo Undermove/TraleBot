@@ -18,7 +18,7 @@ public static class ModuleRegistry
         ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 7),
         ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 5),
         ["preverbs"] = new("preverbs", "Lessons/GeorgianPreverbs", 5),
-        ["imperfect"] = new("imperfect", "Lessons/GeorgianImperfect", 5),
+        ["imperfect"] = new("imperfect", "Lessons/GeorgianImperfect", 6),
         ["aorist"] = new("aorist", "Lessons/GeorgianAorist", 6),
         ["future-tense"] = new("future-tense", "Lessons/GeorgianFutureTense", 2),
         ["pronoun-declension"] = new("pronoun-declension", "Lessons/GeorgianPronounDeclension", 5),

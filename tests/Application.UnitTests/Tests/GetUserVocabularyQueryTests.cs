@@ -11,7 +11,7 @@ namespace Application.UnitTests.Tests;
 public class GetUserVocabularyQueryTests : CommandTestsBase
 {
     private User _user = null!;
-    private GetUserVocabulary.Handler _sut = null!;
+    private GetUserVocabularyQuery _sut = null!;
     private Mock<IMiniAppContentProvider> _contentProvider = null!;
 
     [SetUp]
@@ -27,7 +27,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
         Context.Users.Add(_user);
         await Context.SaveChangesAsync();
 
-        _sut = new GetUserVocabulary.Handler(Context, _contentProvider.Object);
+        _sut = new GetUserVocabularyQuery(Context, _contentProvider.Object);
     }
 
     [Test]
@@ -42,7 +42,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
         Context.VocabularyEntries.Add(entry);
         await Context.SaveChangesAsync();
 
-        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+        var result = await _sut.ExecuteAsync(_user.Id, CancellationToken.None);
 
         result.Items.ShouldHaveSingleItem();
         result.Items[0].AdditionalInfo.ShouldBe(expectedAdditionalInfo);
@@ -64,7 +64,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
         Context.VocabularyEntries.AddRange(georgianEntry, englishEntry);
         await Context.SaveChangesAsync();
 
-        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+        var result = await _sut.ExecuteAsync(_user.Id, CancellationToken.None);
 
         result.Items.ShouldHaveSingleItem();
         result.Items[0].Word.ShouldBe("კარგი");
@@ -80,7 +80,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
                 new StarterWordDto("კარგი", "хорошо", "კარგი ადამიანი")
             });
 
-        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+        var result = await _sut.ExecuteAsync(_user.Id, CancellationToken.None);
 
         result.Items.ShouldBeEmpty();
         result.StarterItems.ShouldHaveSingleItem();
@@ -105,7 +105,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
         Context.VocabularyEntries.Add(entry);
         await Context.SaveChangesAsync();
 
-        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+        var result = await _sut.ExecuteAsync(_user.Id, CancellationToken.None);
 
         result.Items.ShouldHaveSingleItem();
         result.StarterItems.ShouldBeEmpty();
@@ -122,7 +122,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
                 new StarterWordDto("კარგი", "хорошо", "კარგი ადამიანი", expectedAudioUrl)
             });
 
-        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+        var result = await _sut.ExecuteAsync(_user.Id, CancellationToken.None);
 
         result.StarterItems.ShouldHaveSingleItem();
         result.StarterItems[0].AudioUrl.ShouldBe(expectedAudioUrl);
@@ -138,7 +138,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
                 new StarterWordDto("კარგი", "хорошо", "კარგი ადამიანი")
             });
 
-        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+        var result = await _sut.ExecuteAsync(_user.Id, CancellationToken.None);
 
         result.StarterItems.ShouldHaveSingleItem();
         result.StarterItems[0].AudioUrl.ShouldBeNull();
@@ -155,7 +155,7 @@ public class GetUserVocabularyQueryTests : CommandTestsBase
         Context.VocabularyEntries.Add(entry);
         await Context.SaveChangesAsync();
 
-        var result = await _sut.Handle(new GetUserVocabulary { UserId = _user.Id }, CancellationToken.None);
+        var result = await _sut.ExecuteAsync(_user.Id, CancellationToken.None);
 
         result.Items.ShouldHaveSingleItem();
         result.Items[0].AudioUrl.ShouldBeNull();
