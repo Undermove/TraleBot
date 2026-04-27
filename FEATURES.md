@@ -145,6 +145,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `present-tense/` — 20 Georgian present-tense verb TTS clips (ka-GE Piper voice), used by `audio-choice` lesson 6 in `present-tense`.
 - `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`.
 - `verb-classes/` — 15 Georgian verb TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 7 in `verb-classes`.
+- `postpositions/` — 24 Georgian postposition/location TTS clips (ka-GE Natia voice, includes combined forms), used by `audio-choice` lesson 6 in `postpositions`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -282,7 +283,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
-| `postpositions` | `GeorgianPostpositions` | 5 | ✅ |
+| `postpositions` | `GeorgianPostpositions` | 6 (L6 audio-choice) | ✅ |
 | `adjectives` | `GeorgianAdjectives` | 5 | ✅ |
 
 ### Vocabulary modules
