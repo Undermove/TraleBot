@@ -146,6 +146,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`.
 - `verb-classes/` — 15 Georgian verb TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 7 in `verb-classes`.
 - `postpositions/` — 24 Georgian postposition/location TTS clips (ka-GE Natia voice, includes combined forms), used by `audio-choice` lesson 6 in `postpositions`.
+- `cafe/` — 15 Georgian cafe/restaurant vocabulary TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `cafe`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -289,7 +290,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Vocabulary modules
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `cafe` | `GeorgianVocabCafe` | 5 | ✅ |
+| `cafe` | `GeorgianVocabCafe` | 6 (L6 audio-choice) | ✅ |
 | `taxi` | `GeorgianVocabTaxi` | 5 | ✅ |
 | `doctor` | `GeorgianVocabDoctor` | 5 | ✅ |
 | `shopping` | `GeorgianVocabShopping` | 5 | ✅ |
