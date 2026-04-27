@@ -66,7 +66,7 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 | Class | Command / trigger | Purpose |
 |---|---|---|
 | `GeorgianRepetitionModulesCommand` | `/georgianrepetitionmodules` | Show menu of Georgian modules available in the bot chat (not the mini-app). |
-| `GeorgianVerbsOfMovementCommand` | `/georgianverbsofmovement` | Show the 11-lesson Verbs of Movement index. |
+| `GeorgianVerbsOfMovementCommand` | `/georgianverbsofmovement` | Show the Verbs of Movement index (L1–L11 via bot; L12 audio-choice is mini-app only). |
 | `GeorgianVerbsLessonCommand` | `/georgianverbslesson{1..11}` | Render theory text for the selected VoM lesson. |
 | `GeorgianVerbsQuizCommand1` .. `GeorgianVerbsQuizCommand11` | `/georgianverbsquizstart{1..11}` | Start the quiz for the corresponding lesson. |
 | `GeorgianVerbsQuizAnswerCommand` | `/georgianverbsquizanswer` | Grade a VoM quiz answer. |
