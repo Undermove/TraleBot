@@ -35,7 +35,7 @@ public static class ModuleRegistry
         ["cafe"] = new("cafe", "Lessons/GeorgianVocabCafe", 6),
         ["taxi"] = new("taxi", "Lessons/GeorgianVocabTaxi", 5),
         ["doctor"] = new("doctor", "Lessons/GeorgianVocabDoctor", 5),
-        ["shopping"] = new("shopping", "Lessons/GeorgianVocabShopping", 5),
+        ["shopping"] = new("shopping", "Lessons/GeorgianVocabShopping", 6),
         ["intro"] = new("intro", "Lessons/GeorgianVocabIntro", 6),
         ["emergency"] = new("emergency", "Lessons/GeorgianVocabEmergency", 5),
         ["verbs-of-movement"] = new("verbs-of-movement", "Lessons/GeorgianVerbsOfMovement", 12),
