@@ -6,78 +6,75 @@ using System.Threading.Tasks;
 using Application.Common;
 using Application.Common.Interfaces.MiniApp;
 using Domain.Entities;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.MiniApp.Queries;
 
-public class GetUserVocabulary : IRequest<GetUserVocabularyResult>
+/// <summary>
+/// Returns the user's vocabulary entries plus the starter word set.
+/// Starter items are only returned when the user has no vocabulary entries yet.
+/// Service per ARCHITECTURE.md.
+/// </summary>
+public class GetUserVocabularyQuery(ITraleDbContext dbContext, IMiniAppContentProvider content)
 {
-    public required Guid UserId { get; init; }
-
-    public class Handler(
-        ITraleDbContext dbContext,
-        IMiniAppContentProvider content)
-        : IRequestHandler<GetUserVocabulary, GetUserVocabularyResult>
+    public async Task<GetUserVocabularyResult> ExecuteAsync(Guid userId, CancellationToken ct)
     {
-        public async Task<GetUserVocabularyResult> Handle(GetUserVocabulary request, CancellationToken ct)
+        var user = await dbContext.Users
+            .Include(u => u.Settings)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+
+        if (user == null)
         {
-            var user = await dbContext.Users
-                .Include(u => u.Settings)
-                .FirstOrDefaultAsync(u => u.Id == request.UserId, ct);
-
-            if (user == null)
-            {
-                return new GetUserVocabularyResult
-                {
-                    Language = string.Empty,
-                    Items = new List<VocabularyItemDto>(),
-                    StarterItems = new List<VocabularyItemDto>()
-                };
-            }
-
-            var entries = await dbContext.VocabularyEntries
-                .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
-                .OrderByDescending(v => v.DateAddedUtc)
-                .ToListAsync(ct);
-
-            var items = entries.Select(e => new VocabularyItemDto
-            {
-                Id = e.Id.ToString(),
-                Word = e.Word,
-                Definition = e.Definition,
-                AdditionalInfo = e.AdditionalInfo,
-                Example = e.Example,
-                DateAddedUtc = e.DateAddedUtc,
-                SuccessCount = e.SuccessAnswersCount,
-                SuccessReverseCount = e.SuccessAnswersCountInReverseDirection,
-                FailedCount = e.FailedAnswersCount,
-                Mastery = e.GetMasteringLevel().ToString(),
-                IsStarter = false
-            }).ToList();
-
-            var starters = content.GetStarterVocabulary()
-                .Select(s => new VocabularyItemDto
-                {
-                    Id = "starter-" + s.Word,
-                    Word = s.Word,
-                    Definition = s.Definition,
-                    Example = s.Example,
-                    DateAddedUtc = null,
-                    SuccessCount = 0,
-                    SuccessReverseCount = 0,
-                    FailedCount = 0,
-                    Mastery = MasteringLevel.NotMastered.ToString(),
-                    IsStarter = true
-                }).ToList();
-
             return new GetUserVocabularyResult
             {
-                Language = user.Settings.CurrentLanguage.ToString(),
-                Items = items,
-                StarterItems = items.Count == 0 ? starters : new List<VocabularyItemDto>()
+                Language = string.Empty,
+                Items = new List<VocabularyItemDto>(),
+                StarterItems = new List<VocabularyItemDto>()
             };
         }
+
+        var entries = await dbContext.VocabularyEntries
+            .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
+            .OrderByDescending(v => v.DateAddedUtc)
+            .ToListAsync(ct);
+
+        var items = entries.Select(e => new VocabularyItemDto
+        {
+            Id = e.Id.ToString(),
+            Word = e.Word,
+            Definition = e.Definition,
+            AdditionalInfo = e.AdditionalInfo,
+            Example = e.Example,
+            DateAddedUtc = e.DateAddedUtc,
+            SuccessCount = e.SuccessAnswersCount,
+            SuccessReverseCount = e.SuccessAnswersCountInReverseDirection,
+            FailedCount = e.FailedAnswersCount,
+            Mastery = e.GetMasteringLevel().ToString(),
+            IsStarter = false
+        }).ToList();
+
+        var starters = content.GetStarterVocabulary()
+            .Select(s => new VocabularyItemDto
+            {
+                Id = "starter-" + s.Word,
+                Word = s.Word,
+                Definition = s.Definition,
+                Example = s.Example,
+                DateAddedUtc = null,
+                SuccessCount = 0,
+                SuccessReverseCount = 0,
+                FailedCount = 0,
+                Mastery = MasteringLevel.NotMastered.ToString(),
+                IsStarter = true,
+                AudioUrl = s.AudioUrl
+            }).ToList();
+
+        return new GetUserVocabularyResult
+        {
+            Language = user.Settings.CurrentLanguage.ToString(),
+            Items = items,
+            StarterItems = items.Count == 0 ? starters : new List<VocabularyItemDto>()
+        };
     }
 }
 
@@ -101,4 +98,5 @@ public class VocabularyItemDto
     public int FailedCount { get; init; }
     public string Mastery { get; init; }
     public bool IsStarter { get; init; }
+    public string? AudioUrl { get; init; }
 }

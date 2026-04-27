@@ -61,6 +61,7 @@ export interface VocabularyItem {
   failedCount: number
   mastery: 'NotMastered' | 'MasteredInForwardDirection' | 'MasteredInBothDirections'
   isStarter: boolean
+  audioUrl?: string
 }
 
 export interface VocabularyListResponse {

@@ -111,16 +111,6 @@ public class MiniAppController : Controller
             return Ok(alphabetQuestions);
         }
 
-        if (moduleId == "verbs-of-movement")
-        {
-            if (lessonId < 1 || lessonId > 11)
-            {
-                return NotFound(new { error = "Unknown lesson" });
-            }
-            var loader = _questionsLoaderFactory.CreateForLesson(lessonId);
-            return Ok(MapQuestions(loader, lessonId));
-        }
-
         var moduleDef = ModuleRegistry.Get(moduleId);
         if (moduleDef != null)
         {
@@ -466,7 +456,9 @@ public class MiniAppController : Controller
     }
 
     [HttpGet("vocabulary")]
-    public async Task<IActionResult> GetVocabulary(CancellationToken ct)
+    public async Task<IActionResult> GetVocabulary(
+        [FromServices] GetUserVocabularyQuery query,
+        CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -474,10 +466,7 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        var result = await _mediator.Send(new GetUserVocabulary
-        {
-            UserId = user.Id
-        }, ct);
+        var result = await query.ExecuteAsync(user.Id, ct);
 
         return Ok(new
         {
@@ -508,7 +497,8 @@ public class MiniAppController : Controller
                 successReverseCount = i.SuccessReverseCount,
                 failedCount = i.FailedCount,
                 mastery = i.Mastery,
-                isStarter = i.IsStarter
+                isStarter = i.IsStarter,
+                audioUrl = i.AudioUrl
             })
         });
     }

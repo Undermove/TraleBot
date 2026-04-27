@@ -45,6 +45,7 @@ public static class DependencyInjection
 
         // MiniApp services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetActivityDaysQuery>();
+        services.AddScoped<GetUserVocabularyQuery>();
         services.AddScoped<FeedTreatService>();
 
         // Referral services (per ARCHITECTURE.md, no MediatR)

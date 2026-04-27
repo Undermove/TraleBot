@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { api, VocabularyItem } from '../api'
+import AudioPlayer from './AudioPlayer'
 import LoaderLetter from './LoaderLetter'
 import MasteryIndicator from './MasteryIndicator'
 
@@ -104,13 +105,20 @@ export default function WordCard({ item, isSelected, onClose, onToggleSelect, on
           <div className="mn-eyebrow text-gold-deep">ლექსიკონი · слово</div>
 
           {/* Word identification */}
-          <div>
-            <div className="font-geo font-extrabold text-[28px] text-jewelInk leading-tight break-words">
-              {georgian}
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="font-geo font-extrabold text-[28px] text-jewelInk leading-tight break-words">
+                {georgian}
+              </div>
+              <div className="font-sans font-semibold text-[18px] text-jewelInk mt-1">
+                {russian}
+              </div>
             </div>
-            <div className="font-sans font-semibold text-[18px] text-jewelInk mt-1">
-              {russian}
-            </div>
+            {item.audioUrl && (
+              <div className="shrink-0 mt-1">
+                <AudioPlayer url={item.audioUrl} />
+              </div>
+            )}
           </div>
 
           {/* Mastery block */}

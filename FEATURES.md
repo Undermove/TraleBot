@@ -66,7 +66,7 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 | Class | Command / trigger | Purpose |
 |---|---|---|
 | `GeorgianRepetitionModulesCommand` | `/georgianrepetitionmodules` | Show menu of Georgian modules available in the bot chat (not the mini-app). |
-| `GeorgianVerbsOfMovementCommand` | `/georgianverbsofmovement` | Show the 11-lesson Verbs of Movement index. |
+| `GeorgianVerbsOfMovementCommand` | `/georgianverbsofmovement` | Show the Verbs of Movement index (L1–L11 via bot; L12 audio-choice is mini-app only). |
 | `GeorgianVerbsLessonCommand` | `/georgianverbslesson{1..11}` | Render theory text for the selected VoM lesson. |
 | `GeorgianVerbsQuizCommand1` .. `GeorgianVerbsQuizCommand11` | `/georgianverbsquizstart{1..11}` | Start the quiz for the corresponding lesson. |
 | `GeorgianVerbsQuizAnswerCommand` | `/georgianverbsquizanswer` | Grade a VoM quiz answer. |
@@ -111,7 +111,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `GeorgianKeyboard.tsx` | Virtual keyboard for Georgian input. |
 | `KilimProgress.tsx` | Kilim-pattern progress bar. |
 | `MasteryIndicator.tsx` | Mastery medal (🥈 / 🥇 / 💎). |
-| `WordCard.tsx` | Vocabulary word card. |
+| `WordCard.tsx` | Vocabulary word card (slide-up sheet). Shows Georgian/Russian sides, mastery, stats, delete confirmation. Displays `AudioPlayer` when `item.audioUrl` is set (starter words). |
 | `SketchCard.tsx` | Ink-style lesson card. |
 | `Stamp.tsx` | Achievement stamp. |
 | `StampBadge.tsx` | Badge with stamp inside. |
@@ -140,6 +140,14 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 ### Static audio assets (`public/audio/`)
 - `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Piper voice), used by `audio-choice` lesson 11 in `alphabet-progressive`.
 - `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
+- `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
+- `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
+- `present-tense/` — 20 Georgian present-tense verb TTS clips (ka-GE Piper voice), used by `audio-choice` lesson 6 in `present-tense`.
+- `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`.
+- `verb-classes/` — 15 Georgian verb TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 7 in `verb-classes`.
+- `postpositions/` — 24 Georgian postposition/location TTS clips (ka-GE Natia voice, includes combined forms), used by `audio-choice` lesson 6 in `postpositions`.
+- `cafe/` — 15 Georgian cafe/restaurant vocabulary TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `cafe`.
+- `verbs-of-movement/` — 15 Georgian motion verb TTS clips (ka-GE Natia voice; present/aorist/future paradigms), used by `audio-choice` lesson 12 in `verbs-of-movement`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -261,29 +269,30 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 |---|---|---|---|
 | `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (lesson 11 = audio-choice) | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
-| `intro` | `GeorgianVocabIntro` | 5 | ✅ |
-| `pronouns` | `GeorgianPronouns` | 5 | ✅ |
-| `present-tense` | `GeorgianPresentTense` | 5 | ✅ |
+| `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
+| `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
+| `present-tense` | `GeorgianPresentTense` | 6 (lesson 6 = audio-choice) | ✅ |
 | `cases` | `GeorgianCases` | 8 | ✅ |
 | `conditionals` | `GeorgianConditionals` | 5 | ✅ |
 
 ### Grammar modules
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `verb-classes` | `GeorgianVerbClasses` | 6 | ✅ |
+| `verb-classes` | `GeorgianVerbClasses` | 7 (L7 audio-choice) | ✅ |
 | `version-vowels` | `GeorgianVersionVowels` | 5 | ✅ |
 | `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
-| `imperfect` | `GeorgianImperfect` | 5 | ✅ |
+| `imperfect` | `GeorgianImperfect` | 6 (L6 audio-choice) | ✅ |
+| `verbs-of-movement` | `GeorgianVerbsOfMovement` | 12 (L12 audio-choice) | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
-| `postpositions` | `GeorgianPostpositions` | 5 | ✅ |
+| `postpositions` | `GeorgianPostpositions` | 6 (L6 audio-choice) | ✅ |
 | `adjectives` | `GeorgianAdjectives` | 5 | ✅ |
 
 ### Vocabulary modules
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `cafe` | `GeorgianVocabCafe` | 5 | ✅ |
+| `cafe` | `GeorgianVocabCafe` | 6 (L6 audio-choice) | ✅ |
 | `taxi` | `GeorgianVocabTaxi` | 5 | ✅ |
 | `doctor` | `GeorgianVocabDoctor` | 5 | ✅ |
 | `shopping` | `GeorgianVocabShopping` | 5 | ✅ |
@@ -293,7 +302,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 `GeorgianAlphabetEasy`, `GeorgianAlphabetFull`, `GeorgianAlphabetCommon`, `GeorgianAlphabetTriples`, `GeorgianAlphabetVowels` — alternative presentations of the same alphabet content.
 
 ### Telegram-only
-`GeorgianVerbsOfMovement` (11 lessons, invoked via `/georgianverbs*` commands, not on the mini-app catalog).
+`GeorgianVerbsOfMovement` (12 lessons, invoked via `/georgianverbs*` commands; also served via mini-app ModuleRegistry as `verbs-of-movement`).
 
 ---
 

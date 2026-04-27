@@ -1,0 +1,141 @@
+{
+  "lesson_id": "post6",
+  "title": "Listen & Choose — Послелоги",
+  "lexicon": [
+    "სახლში", "სკოლაში", "ქალაქში", "მაღაზიაში",
+    "პარკში", "ბანკში", "მეტროში", "სახლიდან", "თბილისში",
+    "ში", "ზე", "თან", "დან", "მდე", "კენ"
+  ],
+  "questions": [
+    {
+      "id": "post6-q01",
+      "lemma": "სახლში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სახლში", "სკოლაში", "ქალაქში", "პარკში"],
+      "answer_index": 0,
+      "explanation": "«სახლში» — в доме (-ში = в/внутри)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/sakhlshi.m4a",
+      "transcript": "სახლში",
+      "tags": ["audio", "postposition", "location"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q02",
+      "lemma": "სკოლაში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ბანკში", "მეტროში", "სკოლაში", "მაღაზიაში"],
+      "answer_index": 2,
+      "explanation": "«სკოლაში» — в школе (-ში = в/внутри)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/skolashi.m4a",
+      "transcript": "სკოლაში",
+      "tags": ["audio", "postposition", "location"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q03",
+      "lemma": "ქალაქში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სახლში", "ქალაქში", "პარკში", "ბანკში"],
+      "answer_index": 1,
+      "explanation": "«ქალაქში» — в городе (-ში = в/внутри)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/kalakshi.m4a",
+      "transcript": "ქალაქში",
+      "tags": ["audio", "postposition", "location"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q04",
+      "lemma": "მაღაზიაში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სკოლაში", "თბილისში", "ბანკში", "მაღაზიაში"],
+      "answer_index": 3,
+      "explanation": "«მაღაზიაში» — в магазине (-ში = в/внутри)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/maghaziashi.m4a",
+      "transcript": "მაღაზიაში",
+      "tags": ["audio", "postposition", "location"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q05",
+      "lemma": "პარკში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["პარკში", "მეტროში", "სკოლაში", "სახლში"],
+      "answer_index": 0,
+      "explanation": "«პარკში» — в парке (-ში = в/внутри)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/parkshi.m4a",
+      "transcript": "პარკში",
+      "tags": ["audio", "postposition", "location"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q06",
+      "lemma": "ბანკში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სახლში", "ბანკში", "ქალაქში", "მაღაზიაში"],
+      "answer_index": 1,
+      "explanation": "«ბანკში» — в банке (-ში = в/внутри)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/bankshi.m4a",
+      "transcript": "ბანკში",
+      "tags": ["audio", "postposition", "location"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q07",
+      "lemma": "მეტროში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ბანკში", "პარკში", "მეტროში", "სახლში"],
+      "answer_index": 2,
+      "explanation": "«მეტროში» — в метро (-ში = в/внутри)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/metroshi.m4a",
+      "transcript": "მეტროში",
+      "tags": ["audio", "postposition", "location"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q08",
+      "lemma": "სახლიდან",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სახლში", "ქალაქში", "სკოლაში", "სახლიდან"],
+      "answer_index": 3,
+      "explanation": "«სახლიდან» — из дома (-დან = из/от)",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/sakhlidan.m4a",
+      "transcript": "სახლიდან",
+      "tags": ["audio", "postposition", "direction"],
+      "difficulty": 2
+    },
+    {
+      "id": "post6-q09",
+      "lemma": "თბილისში",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["თბილისში", "ქალაქში", "სახლში", "სკოლაში"],
+      "answer_index": 0,
+      "explanation": "«თბილისში» — в Тбилиси (-ში = в/внутри). Столица Грузии!",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/tbilisshi.m4a",
+      "transcript": "თბილისში",
+      "tags": ["audio", "postposition", "location", "city"],
+      "difficulty": 2
+    },
+    {
+      "id": "post6-q10",
+      "lemma": "დან",
+      "question": "Послушай и выбери услышанный послелог",
+      "options": ["ში", "ზე", "თან", "დან"],
+      "answer_index": 3,
+      "explanation": "«-დან» — послелог «из/от» (направление). სახლიდან = из дома, სკოლიდან = из школы.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/dan.m4a",
+      "transcript": "დან",
+      "tags": ["audio", "postposition", "direction", "standalone"],
+      "difficulty": 2
+    }
+  ]
+}
