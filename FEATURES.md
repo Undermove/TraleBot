@@ -267,7 +267,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Launch modules (owner-approved)
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (lesson 11 = audio-choice) | ✅ |
+| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 10 (L11 audio-choice temporarily disabled, see ModuleRegistry.cs) | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |

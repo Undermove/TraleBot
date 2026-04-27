@@ -263,9 +263,10 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("ყავა — кофе", "ღამე — ночь")
                     }),
                 Lesson(10, "Экзамен: все 33!", "სახლი, ძაღლი, ხაჭაპური", "Финальный экзамен", "Прочитай любое слово!",
-                    new List<TheoryBlockDto> { Paragraph("Все 33 буквы — ты готов!"), List("სახლი — дом", "ძაღლი — собака", "წიგნი — книга", "ხაჭაპური — хачапური", "ღვინო — вино", "ყავა — кофе"), Example("საქართველო", "Грузия") }),
-                Lesson(11, "Слушай и выбери", "ა, ბ, გ, ე...", "Аудио: узнай букву на слух", "Услышать звук и выбрать правильную грузинскую букву.",
-                    new List<TheoryBlockDto> { Paragraph("Нажми ▶ и выбери услышанную букву. Тренируй различие похожих звуков."), List("Гласные: ა ე ი ო უ", "Простые согласные: ბ გ დ მ ნ ს ლ კ ტ რ", "Сложные: შ ხ ქ თ ჩ — придыхательные и абруптивные") })
+                    new List<TheoryBlockDto> { Paragraph("Все 33 буквы — ты готов!"), List("სახლი — дом", "ძაღლი — собака", "წიგნი — книга", "ხაჭაპური — хачапური", "ღვინო — вино", "ყავა — кофе"), Example("საქართველო", "Грузия") })
+                // L11 (Слушай и выбери) temporarily disabled — Piper TTS quality on
+                // isolated letters is too poor to disambiguate ejective vs aspirated
+                // pairs. Re-enable once letter audio is re-recorded.
             }
         };
     }
