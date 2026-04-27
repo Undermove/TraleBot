@@ -111,7 +111,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `GeorgianKeyboard.tsx` | Virtual keyboard for Georgian input. |
 | `KilimProgress.tsx` | Kilim-pattern progress bar. |
 | `MasteryIndicator.tsx` | Mastery medal (🥈 / 🥇 / 💎). |
-| `WordCard.tsx` | Vocabulary word card. |
+| `WordCard.tsx` | Vocabulary word card (slide-up sheet). Shows Georgian/Russian sides, mastery, stats, delete confirmation. Displays `AudioPlayer` when `item.audioUrl` is set (starter words). |
 | `SketchCard.tsx` | Ink-style lesson card. |
 | `Stamp.tsx` | Achievement stamp. |
 | `StampBadge.tsx` | Badge with stamp inside. |
@@ -143,6 +143,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
 - `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
 - `present-tense/` — 20 Georgian present-tense verb TTS clips (ka-GE Piper voice), used by `audio-choice` lesson 6 in `present-tense`.
+- `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
