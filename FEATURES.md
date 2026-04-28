@@ -298,7 +298,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 |---|---|---|---|
 | `cafe` | `GeorgianVocabCafe` | 6 (L6 audio-choice) | ✅ |
 | `taxi` | `GeorgianVocabTaxi` | 6 (L6 audio-choice) | ✅ |
-| `doctor` | `GeorgianVocabDoctor` | 5 | ✅ |
+| `doctor` | `GeorgianVocabDoctor` | 6 (L6 audio-choice) | ✅ |
 | `shopping` | `GeorgianVocabShopping` | 6 (lesson 6 = audio-choice) | ✅ |
 | `emergency` | `GeorgianVocabEmergency` | 5 | ✅ |
 
