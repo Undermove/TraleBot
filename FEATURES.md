@@ -148,6 +148,9 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `postpositions/` — 24 Georgian postposition/location TTS clips (ka-GE Natia voice, includes combined forms), used by `audio-choice` lesson 6 in `postpositions`.
 - `cafe/` — 15 Georgian cafe/restaurant vocabulary TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `cafe`.
 - `verbs-of-movement/` — 15 Georgian motion verb TTS clips (ka-GE Natia voice; present/aorist/future paradigms), used by `audio-choice` lesson 12 in `verbs-of-movement`.
+- `adjectives/` — 17 Georgian adjective TTS clips (ka-GE voice; single adjectives + two adjective+noun phrases), used by `audio-choice` lesson 6 in `adjectives`.
+- `cases/` — 15 Georgian noun-case TTS clips (ka-GE voice; nominative/ergative/dative/genitive/adverbial forms), used by `audio-choice` lesson 9 in `cases`.
+- `shopping/` — 15 Georgian shopping vocabulary TTS clips (ka-GE voice; food, dairy, spices, drinks + price phrases), used by `audio-choice` lesson 6 in `shopping`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -272,7 +275,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
 | `present-tense` | `GeorgianPresentTense` | 6 (lesson 6 = audio-choice) | ✅ |
-| `cases` | `GeorgianCases` | 8 | ✅ |
+| `cases` | `GeorgianCases` | 9 (lesson 9 = audio-choice) | ✅ |
 | `conditionals` | `GeorgianConditionals` | 5 | ✅ |
 
 ### Grammar modules
@@ -287,7 +290,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
 | `postpositions` | `GeorgianPostpositions` | 6 (L6 audio-choice) | ✅ |
-| `adjectives` | `GeorgianAdjectives` | 5 | ✅ |
+| `adjectives` | `GeorgianAdjectives` | 6 (lesson 6 = audio-choice) | ✅ |
 
 ### Vocabulary modules
 | ID | Folder | Lessons | Theory |
@@ -295,7 +298,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `cafe` | `GeorgianVocabCafe` | 6 (L6 audio-choice) | ✅ |
 | `taxi` | `GeorgianVocabTaxi` | 5 | ✅ |
 | `doctor` | `GeorgianVocabDoctor` | 5 | ✅ |
-| `shopping` | `GeorgianVocabShopping` | 5 | ✅ |
+| `shopping` | `GeorgianVocabShopping` | 6 (lesson 6 = audio-choice) | ✅ |
 | `emergency` | `GeorgianVocabEmergency` | 5 | ✅ |
 
 ### Legacy / alternative alphabet variants
