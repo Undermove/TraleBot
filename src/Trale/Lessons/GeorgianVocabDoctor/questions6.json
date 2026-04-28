@@ -137,6 +137,71 @@
       "transcript": "მუცელი მტკივა",
       "tags": ["audio", "doctor", "pain-pattern"],
       "difficulty": 3
+    },
+    {
+      "id": "doctor6-q11",
+      "lemma": "თვალი",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ხელი", "ყური", "თვალი", "ფეხი"],
+      "answer_index": 2,
+      "explanation": "«თვალი» — глаз. Запомни: «თვალი მტკივა» — у меня болит глаз.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/doctor/tvali.m4a",
+      "transcript": "თვალი",
+      "tags": ["audio", "doctor", "body"],
+      "difficulty": 1
+    },
+    {
+      "id": "doctor6-q12",
+      "lemma": "კბილი",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["კბილი", "ყური", "ზურგი", "ხელი"],
+      "answer_index": 0,
+      "explanation": "«კბილი» — зуб. კ — смычный эjective-согласный. Скажи: «კბილი მტკივა» — у меня болит зуб.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/doctor/kbili.m4a",
+      "transcript": "კბილი",
+      "tags": ["audio", "doctor", "body"],
+      "difficulty": 1
+    },
+    {
+      "id": "doctor6-q13",
+      "lemma": "გული",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ზურგი", "გული", "ფეხი", "კბილი"],
+      "answer_index": 1,
+      "explanation": "«გული» — сердце. Также: «გული მკლავს» — сердце щемит.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/doctor/guli.m4a",
+      "transcript": "გული",
+      "tags": ["audio", "doctor", "body"],
+      "difficulty": 2
+    },
+    {
+      "id": "doctor6-q14",
+      "lemma": "ტკივილი",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სიცხე", "ავად ვარ", "მუცელი", "ტკივილი"],
+      "answer_index": 3,
+      "explanation": "«ტკივილი» — боль (существительное). Скажи врачу: «ძლიერი ტკივილი» — сильная боль.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/doctor/tkivili.m4a",
+      "transcript": "ტკივილი",
+      "tags": ["audio", "doctor", "symptoms"],
+      "difficulty": 2
+    },
+    {
+      "id": "doctor6-q15",
+      "lemma": "მტკივა",
+      "question": "Послушай и выбери услышанную форму",
+      "options": ["თავი", "ფეხი", "მტკივა", "ზურგი"],
+      "answer_index": 2,
+      "explanation": "«მტკივა» — болит (у меня). Паттерн: «X მტკივა» = у меня болит X. Например: «ყური მტკივა» — болит ухо.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/doctor/mtkiva.m4a",
+      "transcript": "მტკივა",
+      "tags": ["audio", "doctor", "symptoms"],
+      "difficulty": 3
     }
   ]
 }
