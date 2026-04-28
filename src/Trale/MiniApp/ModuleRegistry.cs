@@ -33,7 +33,7 @@ public static class ModuleRegistry
         ["pronouns"] = new("pronouns", "Lessons/GeorgianPronouns", 6),
         ["present-tense"] = new("present-tense", "Lessons/GeorgianPresentTense", 6),
         ["cafe"] = new("cafe", "Lessons/GeorgianVocabCafe", 6),
-        ["taxi"] = new("taxi", "Lessons/GeorgianVocabTaxi", 5),
+        ["taxi"] = new("taxi", "Lessons/GeorgianVocabTaxi", 6),
         ["doctor"] = new("doctor", "Lessons/GeorgianVocabDoctor", 5),
         ["shopping"] = new("shopping", "Lessons/GeorgianVocabShopping", 6),
         ["intro"] = new("intro", "Lessons/GeorgianVocabIntro", 6),

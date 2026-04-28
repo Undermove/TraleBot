@@ -151,6 +151,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `adjectives/` — 17 Georgian adjective TTS clips (ka-GE voice; single adjectives + two adjective+noun phrases), used by `audio-choice` lesson 6 in `adjectives`.
 - `cases/` — 15 Georgian noun-case TTS clips (ka-GE voice; nominative/ergative/dative/genitive/adverbial forms), used by `audio-choice` lesson 9 in `cases`.
 - `shopping/` — 15 Georgian shopping vocabulary TTS clips (ka-GE voice; food, dairy, spices, drinks + price phrases), used by `audio-choice` lesson 6 in `shopping`.
+- `taxi/` — 15 Georgian transport/direction TTS clips (ka-GE Natia voice; taxi, bus, metro, stops, directions + city places), used by `audio-choice` lesson 6 in `taxi`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -296,7 +297,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
 | `cafe` | `GeorgianVocabCafe` | 6 (L6 audio-choice) | ✅ |
-| `taxi` | `GeorgianVocabTaxi` | 5 | ✅ |
+| `taxi` | `GeorgianVocabTaxi` | 6 (L6 audio-choice) | ✅ |
 | `doctor` | `GeorgianVocabDoctor` | 5 | ✅ |
 | `shopping` | `GeorgianVocabShopping` | 6 (lesson 6 = audio-choice) | ✅ |
 | `emergency` | `GeorgianVocabEmergency` | 5 | ✅ |
