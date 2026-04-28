@@ -163,6 +163,45 @@
       "transcript": "ბილეთი",
       "tags": ["audio", "taxi", "transport"],
       "difficulty": 1
+    },
+    {
+      "id": "taxi6-q13",
+      "lemma": "შორს",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ახლოს", "პირდაპირ", "შორს", "სადგური"],
+      "answer_index": 2,
+      "explanation": "«შორს» — далеко. Антоним: «ახლოს» (близко). Спроси: «ეს შორს არის?» — это далеко?",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/taxi/shors.m4a",
+      "transcript": "შორს",
+      "tags": ["audio", "taxi", "directions"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi6-q14",
+      "lemma": "ახლოს",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["შორს", "ახლოს", "მეტრო", "ქუჩა"],
+      "answer_index": 1,
+      "explanation": "«ახლოს» — близко / рядом. Пара с «შორს» (далеко). «ახლოს არის» — это близко.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/taxi/axlos.m4a",
+      "transcript": "ახლოს",
+      "tags": ["audio", "taxi", "directions"],
+      "difficulty": 1
+    },
+    {
+      "id": "taxi6-q15",
+      "lemma": "ქუჩა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ქუჩა", "გაჩერება", "ბილეთი", "სადგური"],
+      "answer_index": 0,
+      "explanation": "«ქუჩა» — улица. Скажи таксисту: «რომელ ქუჩაზე?» — на какой улице?",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/taxi/qucha.m4a",
+      "transcript": "ქუჩა",
+      "tags": ["audio", "taxi", "places"],
+      "difficulty": 1
     }
   ]
 }
