@@ -103,6 +103,11 @@ public class LessonJsonValidationTests
             if (!q.TryGetProperty("options", out var opts) || opts.ValueKind != JsonValueKind.Array) continue;
             if (!q.TryGetProperty("answer_index", out var ai)) continue;
 
+            // letter-name audio: the audio plays the full letter name (e.g. "ანი") while
+            // the correct option is the letter symbol ("ა"). Transcript ≠ option is intentional.
+            if (q.TryGetProperty("tags", out var tags) &&
+                tags.EnumerateArray().Any(t => t.GetString() == "letter-name")) continue;
+
             var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
             var correctOption = opts.EnumerateArray().ElementAt(ai.GetInt32()).GetString();
             tr.GetString().ShouldBe(correctOption,

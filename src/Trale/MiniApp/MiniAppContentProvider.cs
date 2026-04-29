@@ -263,10 +263,9 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("ყავა — кофе", "ღამე — ночь")
                     }),
                 Lesson(10, "Экзамен: все 33!", "სახლი, ძაღლი, ხაჭაპური", "Финальный экзамен", "Прочитай любое слово!",
-                    new List<TheoryBlockDto> { Paragraph("Все 33 буквы — ты готов!"), List("სახლი — дом", "ძაღლი — собака", "წიგნი — книга", "ხაჭაპური — хачапური", "ღვინო — вино", "ყავა — кофе"), Example("საქართველო", "Грузия") })
-                // L11 (Слушай и выбери) temporarily disabled — Piper TTS quality on
-                // isolated letters is too poor to disambiguate ejective vs aspirated
-                // pairs. Re-enable once letter audio is re-recorded.
+                    new List<TheoryBlockDto> { Paragraph("Все 33 буквы — ты готов!"), List("სახლი — дом", "ძაღლი — собака", "წიგნი — книга", "ხაჭაპური — хачапური", "ღვინო — вино", "ყავა — кофе"), Example("საქართველო", "Грузия") }),
+                Lesson(11, "Слушай и выбери", "ანი, ბანი, განი...", "Аудио: узнай букву по названию", "Услышать название буквы и выбрать правильный символ.",
+                    new List<TheoryBlockDto> { Paragraph("Нажми ▶ и выбери букву, которую называют. Каждая буква произносится своим именем: ანი, ბანი, განი…"), List("Гласные: ანი ენი ინი ონი უნი", "Частые согласные: ბანი განი დანი მანი ნარი სანი ლასი", "Абруптивные vs придыхательные: კანი vs ქანი, ტარი vs თანი") })
             }
         };
     }
