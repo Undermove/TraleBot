@@ -149,6 +149,22 @@ public class LessonJsonValidationTests
         }
     }
 
+    [TestCaseSource(nameof(AllLessonJsonFiles))]
+    public void Explanation_field_must_not_contain_CJK_or_unexpected_scripts(string relativePath)
+    {
+        var fullPath = Path.Combine(RepoRoot, relativePath);
+        using var doc = JsonDocument.Parse(File.ReadAllText(fullPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        foreach (var q in questions.EnumerateArray())
+        {
+            if (!q.TryGetProperty("explanation", out var expl) || expl.ValueKind != JsonValueKind.String) continue;
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            var text = expl.GetString() ?? "";
+            AssertNoCjk(relativePath, id!, "explanation", text);
+        }
+    }
+
     private static void AssertNoMixedScript(string file, string questionId, string field, string text)
     {
         var hasGeorgian = text.Any(c => c >= 'ა' && c <= 'ჿ');
@@ -156,5 +172,12 @@ public class LessonJsonValidationTests
         if (!hasGeorgian || cyrillic.Count == 0) return;
         cyrillic.ShouldBeEmpty(
             $"'{file}' question '{questionId}' field '{field}': mixes Georgian and Cyrillic — {string.Join(", ", cyrillic.Select(c => $"U+{(int)c:X4} '{c}'"))} found in '{text}'");
+    }
+
+    private static void AssertNoCjk(string file, string questionId, string field, string text)
+    {
+        var cjk = text.Where(c => (c >= '一' && c <= '鿿') || (c >= '　' && c <= '〿')).ToList();
+        cjk.ShouldBeEmpty(
+            $"'{file}' question '{questionId}' field '{field}': contains CJK characters — {string.Join(", ", cjk.Select(c => $"U+{(int)c:X4} '{c}'"))} — likely an AI generation artefact");
     }
 }
