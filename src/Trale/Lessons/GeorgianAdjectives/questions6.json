@@ -162,6 +162,71 @@
       "transcript": "კარგი კაცი",
       "tags": ["audio", "adjectives", "agreement"],
       "difficulty": 2
+    },
+    {
+      "id": "adj6-q13",
+      "lemma": "ძველი",
+      "question": "Послушай и выбери услышанное прилагательное",
+      "options": ["ახალი", "კარგი", "ძველი", "ცივი"],
+      "answer_index": 2,
+      "explanation": "«ძველი» — старый. Антоним — ახალი (новый). ძ- уникальный грузинский аффрикат.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/adjectives/dzveli.m4a",
+      "transcript": "ძველი",
+      "tags": ["audio", "adjectives", "age"],
+      "difficulty": 2
+    },
+    {
+      "id": "adj6-q14",
+      "lemma": "მახინჯი",
+      "question": "Послушай и выбери услышанное прилагательное",
+      "options": ["ლამაზი", "მახინჯი", "სუსტი", "ცუდი"],
+      "answer_index": 1,
+      "explanation": "«მახინჯი» — некрасивый. Антоним — ლამაზი (красивый). Различай по первому слогу: ма-ХИН-джи.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/adjectives/makhinji.m4a",
+      "transcript": "მახინჯი",
+      "tags": ["audio", "adjectives", "appearance"],
+      "difficulty": 2
+    },
+    {
+      "id": "adj6-q15",
+      "lemma": "მოკლე",
+      "question": "Послушай и выбери услышанное прилагательное",
+      "options": ["გრძელი", "პატარა", "ახალი", "მოკლე"],
+      "answer_index": 3,
+      "explanation": "«მოკლე» — короткий. Антоним — გრძელი (длинный). Не путай с პატარა (маленький) — о длине.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/adjectives/mokle.m4a",
+      "transcript": "მოკლე",
+      "tags": ["audio", "adjectives", "size"],
+      "difficulty": 2
+    },
+    {
+      "id": "adj6-q16",
+      "lemma": "მშვიდი",
+      "question": "Послушай и выбери услышанное прилагательное",
+      "options": ["ძლიერი", "კარგი", "ცუდი", "მშვიდი"],
+      "answer_index": 3,
+      "explanation": "«მშვიდი» — спокойный. Не путай с სუსტი (слабый) — «мшвиди» о внутреннем покое.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/adjectives/mshvidi.m4a",
+      "transcript": "მშვიდი",
+      "tags": ["audio", "adjectives", "character"],
+      "difficulty": 2
+    },
+    {
+      "id": "adj6-q17",
+      "lemma": "ცუდი",
+      "question": "Послушай и выбери услышанное прилагательное",
+      "options": ["ცუდი", "კარგი", "ძველი", "მახინჯი"],
+      "answer_index": 0,
+      "explanation": "«ცუდი» — плохой. Антоним — კარგი (хороший). Пара კარგი/ცუდი — базовая оценочная шкала.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/adjectives/tsudi.m4a",
+      "transcript": "ცუდი",
+      "tags": ["audio", "adjectives", "evaluation"],
+      "difficulty": 2
     }
   ]
 }
