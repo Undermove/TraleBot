@@ -163,6 +163,45 @@
       "transcript": "მიმტანი",
       "tags": ["audio", "cafe", "service"],
       "difficulty": 2
+    },
+    {
+      "id": "cafe6-q13",
+      "lemma": "გემრიელი",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["გემრიელი", "ცხელი", "ყველი", "პური"],
+      "answer_index": 0,
+      "explanation": "«გემრიელი» — вкусный/вкусная. «ეს გემრიელია!» — это вкусно! (прилагательное без глагола-связки).",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/cafe/gemrieli.m4a",
+      "transcript": "გემრიელი",
+      "tags": ["audio", "cafe", "adjective"],
+      "difficulty": 2
+    },
+    {
+      "id": "cafe6-q14",
+      "lemma": "ყველი",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ხორცი", "ყველი", "პური", "ყავა"],
+      "answer_index": 1,
+      "explanation": "«ყველი» — сыр. ყ — гортанный взрывной; ყველი — основной ингредиент хачапури.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/cafe/qveli.m4a",
+      "transcript": "ყველი",
+      "tags": ["audio", "cafe", "food"],
+      "difficulty": 2
+    },
+    {
+      "id": "cafe6-q15",
+      "lemma": "ცხელი",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ყავა", "ყველი", "ცხელი", "გემრიელი"],
+      "answer_index": 2,
+      "explanation": "«ცხელი» — горячий/горячая. «ცხელი ყავა» — горячий кофе; «ცხელი ჩაი» — горячий чай.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/cafe/tskheli.m4a",
+      "transcript": "ცხელი",
+      "tags": ["audio", "cafe", "adjective"],
+      "difficulty": 2
     }
   ]
 }

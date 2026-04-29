@@ -4,7 +4,8 @@
   "lexicon": [
     "სახლში", "სკოლაში", "ქალაქში", "მაღაზიაში",
     "პარკში", "ბანკში", "მეტროში", "სახლიდან", "თბილისში",
-    "ში", "ზე", "თან", "დან", "მდე", "კენ"
+    "ში", "ზე", "თან", "დან", "მდე", "კენ",
+    "მეტრო", "რესტორანი"
   ],
   "questions": [
     {
@@ -135,6 +136,71 @@
       "audio_url": "/audio/postpositions/dan.m4a",
       "transcript": "დან",
       "tags": ["audio", "postposition", "direction", "standalone"],
+      "difficulty": 2
+    },
+    {
+      "id": "post6-q11",
+      "lemma": "რესტორანი",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სახლი", "სკოლა", "ბანკი", "რესტორანი"],
+      "answer_index": 3,
+      "explanation": "«რესტორანი» — ресторан (базовая форма). С послелогом: «რესტორანში» — в ресторане (-ში = в/внутри).",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/restoran.m4a",
+      "transcript": "რესტორანი",
+      "tags": ["audio", "postposition", "noun", "base-form"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q12",
+      "lemma": "მეტრო",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["სახლი", "პარკი", "მეტრო", "ბანკი"],
+      "answer_index": 2,
+      "explanation": "«მეტრო» — метро (базовая форма). В предложении: «მეტროში» — в метро (-ში = в/внутри).",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/metro.m4a",
+      "transcript": "მეტრო",
+      "tags": ["audio", "postposition", "noun", "base-form"],
+      "difficulty": 1
+    },
+    {
+      "id": "post6-q13",
+      "lemma": "ში",
+      "question": "Послушай и выбери услышанный послелог",
+      "options": ["ში", "ზე", "თან", "დან"],
+      "answer_index": 0,
+      "explanation": "«-ში» — послелог «в/внутри». სახლ-ში = в доме, ქალაქ-ში = в городе.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/shi.m4a",
+      "transcript": "ში",
+      "tags": ["audio", "postposition", "suffix"],
+      "difficulty": 2
+    },
+    {
+      "id": "post6-q14",
+      "lemma": "ზე",
+      "question": "Послушай и выбери услышанный послелог",
+      "options": ["ში", "ზე", "კენ", "მდე"],
+      "answer_index": 1,
+      "explanation": "«-ზე» — послелог «на/о». მაგიდა-ზე = на столе, ამა-ზე = об этом.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/ze.m4a",
+      "transcript": "ზე",
+      "tags": ["audio", "postposition", "suffix"],
+      "difficulty": 2
+    },
+    {
+      "id": "post6-q15",
+      "lemma": "თან",
+      "question": "Послушай и выбери услышанный послелог",
+      "options": ["ში", "ზე", "თან", "დან"],
+      "answer_index": 2,
+      "explanation": "«-თან» — послелог «у/рядом». მეგობარ-თან = у друга, კარ-თან = у двери.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/postpositions/tan.m4a",
+      "transcript": "თან",
+      "tags": ["audio", "postposition", "suffix"],
       "difficulty": 2
     }
   ]

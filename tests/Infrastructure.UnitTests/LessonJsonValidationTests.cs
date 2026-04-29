@@ -109,4 +109,52 @@ public class LessonJsonValidationTests
                 $"'{relativePath}' question '{id}': transcript must equal options[answer_index]");
         }
     }
+
+    // Guards against Cyrillic characters (e.g. А U+0410) mixed into Georgian words —
+    // visually identical to some Georgian letters but causes search/comparison failures
+    // (as seen in taxi6-q09 where Cyrillic А was inside Georgian text in lemma, options,
+    // explanation, and transcript fields simultaneously).
+    // Only flags strings that contain BOTH Georgian and Cyrillic characters — purely
+    // Cyrillic lemmas (e.g. grammar-metadata tags) are a separate content-quality issue.
+    // For audio-choice questions, options must also be pure Georgian (they are the heard words).
+    [TestCaseSource(nameof(AllLessonJsonFiles))]
+    public void Georgian_text_fields_must_not_mix_Georgian_and_Cyrillic(string relativePath)
+    {
+        var fullPath = Path.Combine(RepoRoot, relativePath);
+        using var doc = JsonDocument.Parse(File.ReadAllText(fullPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            var isAudioChoice = q.TryGetProperty("question_type", out var qt) && qt.GetString() == "audio-choice";
+
+            foreach (var field in new[] { "lemma", "transcript" })
+            {
+                if (!q.TryGetProperty(field, out var el) || el.ValueKind != JsonValueKind.String) continue;
+                AssertNoMixedScript(relativePath, id!, field, el.GetString() ?? "");
+            }
+
+            // audio-choice options are always pure Georgian words — guard them too
+            if (isAudioChoice && q.TryGetProperty("options", out var opts) && opts.ValueKind == JsonValueKind.Array)
+            {
+                var optIndex = 0;
+                foreach (var opt in opts.EnumerateArray())
+                {
+                    if (opt.ValueKind == JsonValueKind.String)
+                        AssertNoMixedScript(relativePath, id!, $"options[{optIndex}]", opt.GetString() ?? "");
+                    optIndex++;
+                }
+            }
+        }
+    }
+
+    private static void AssertNoMixedScript(string file, string questionId, string field, string text)
+    {
+        var hasGeorgian = text.Any(c => c >= 'ა' && c <= 'ჿ');
+        var cyrillic = text.Where(c => c >= 'Ѐ' && c <= 'ԯ').ToList();
+        if (!hasGeorgian || cyrillic.Count == 0) return;
+        cyrillic.ShouldBeEmpty(
+            $"'{file}' question '{questionId}' field '{field}': mixes Georgian and Cyrillic — {string.Join(", ", cyrillic.Select(c => $"U+{(int)c:X4} '{c}'"))} found in '{text}'");
+    }
 }
