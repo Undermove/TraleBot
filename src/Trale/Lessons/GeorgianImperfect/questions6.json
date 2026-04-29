@@ -164,6 +164,45 @@
       "transcript": "გადიოდით",
       "tags": ["audio", "imperfect", "class2", "motion"],
       "difficulty": 3
+    },
+    {
+      "id": "imp6-q13",
+      "lemma": "ვჭამდი",
+      "question": "Послушай и выбери услышанную форму",
+      "options": ["ვსვამდი", "ვჭამდი", "ვდიოდი", "ვწერდი"],
+      "answer_index": 1,
+      "explanation": "«ვჭამდი» — я ел (обычно). Класс 1: ვ- (я) + корень ჭამ- + суффикс имперфекта -დ-.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/imperfect/vchomdi.m4a",
+      "transcript": "ვჭამდი",
+      "tags": ["audio", "imperfect", "class1"],
+      "difficulty": 2
+    },
+    {
+      "id": "imp6-q14",
+      "lemma": "მჭიროდა",
+      "question": "Послушай и выбери услышанную форму",
+      "options": ["მინდოდა", "მიყვარდა", "მჭიროდა", "მჭირდება"],
+      "answer_index": 2,
+      "explanation": "«მჭიროდა» — мне было нужно (обычно). Класс 3: дативно-инверсивный глагол; суффикс имперфекта -ოდ- (ср.: მჭირდება — настоящее).",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/imperfect/mchiroda.m4a",
+      "transcript": "მჭიროდა",
+      "tags": ["audio", "imperfect", "class3", "inverse"],
+      "difficulty": 3
+    },
+    {
+      "id": "imp6-q15",
+      "lemma": "იყავით",
+      "question": "Послушай и выбери услышанную форму",
+      "options": ["ვიყავი", "იყავი", "იყო", "იყავით"],
+      "answer_index": 3,
+      "explanation": "«იყავით» — вы были (мн. ч.). Окончание -ით = 2л. мн. ч.; ср.: იყავი — 2л. ед. ч.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/imperfect/iyavit.m4a",
+      "transcript": "იყავით",
+      "tags": ["audio", "imperfect", "verb-to-be"],
+      "difficulty": 2
     }
   ]
 }
