@@ -19,7 +19,7 @@ public static class ModuleRegistry
         ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 10),
         ["numbers"] = new("numbers", "Lessons/GeorgianNumbers", 5),
         ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 7),
-        ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 5),
+        ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 6),
         ["preverbs"] = new("preverbs", "Lessons/GeorgianPreverbs", 5),
         ["imperfect"] = new("imperfect", "Lessons/GeorgianImperfect", 6),
         ["aorist"] = new("aorist", "Lessons/GeorgianAorist", 6),
