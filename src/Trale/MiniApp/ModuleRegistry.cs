@@ -37,7 +37,7 @@ public static class ModuleRegistry
         ["doctor"] = new("doctor", "Lessons/GeorgianVocabDoctor", 6),
         ["shopping"] = new("shopping", "Lessons/GeorgianVocabShopping", 6),
         ["intro"] = new("intro", "Lessons/GeorgianVocabIntro", 6),
-        ["emergency"] = new("emergency", "Lessons/GeorgianVocabEmergency", 5),
+        ["emergency"] = new("emergency", "Lessons/GeorgianVocabEmergency", 6),
         ["verbs-of-movement"] = new("verbs-of-movement", "Lessons/GeorgianVerbsOfMovement", 12),
     }.ToFrozenDictionary();
 
