@@ -291,7 +291,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `verbs-of-movement` | `GeorgianVerbsOfMovement` | 12 (L12 audio-choice) | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
-| `pronoun-declension` | `GeorgianPronounDeclension` | 5 | ✅ |
+| `pronoun-declension` | `GeorgianPronounDeclension` | 6 (L6 audio-choice) | ✅ |
 | `postpositions` | `GeorgianPostpositions` | 6 (L6 audio-choice) | ✅ |
 | `adjectives` | `GeorgianAdjectives` | 6 (lesson 6 = audio-choice) | ✅ |
 
