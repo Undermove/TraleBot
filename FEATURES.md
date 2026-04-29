@@ -153,6 +153,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `shopping/` — 15 Georgian shopping vocabulary TTS clips (ka-GE voice; food, dairy, spices, drinks + price phrases), used by `audio-choice` lesson 6 in `shopping`.
 - `taxi/` — 15 Georgian transport/direction TTS clips (ka-GE Natia voice; taxi, bus, metro, stops, directions + city places), used by `audio-choice` lesson 6 in `taxi`.
 - `doctor/` — 15 Georgian medical vocabulary TTS clips (ka-GE Natia voice; body parts, symptoms, pain phrases), used by `audio-choice` lesson 6 in `doctor`.
+- `imperfect/` — 15 Georgian imperfect-tense verb TTS clips (ka-GE voice; 1st/2nd/3rd person forms of common verbs), used by `audio-choice` lesson 6 in `imperfect`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
