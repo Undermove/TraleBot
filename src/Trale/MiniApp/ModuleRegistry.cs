@@ -25,7 +25,7 @@ public static class ModuleRegistry
         ["aorist"] = new("aorist", "Lessons/GeorgianAorist", 6),
         ["future-tense"] = new("future-tense", "Lessons/GeorgianFutureTense", 2),
         ["pronoun-declension"] = new("pronoun-declension", "Lessons/GeorgianPronounDeclension", 6),
-        ["conditionals"] = new("conditionals", "Lessons/GeorgianConditionals", 5),
+        ["conditionals"] = new("conditionals", "Lessons/GeorgianConditionals", 6),
         ["imperative"] = new("imperative", "Lessons/GeorgianImperative", 3),
         ["postpositions"] = new("postpositions", "Lessons/GeorgianPostpositions", 6),
         ["adjectives"] = new("adjectives", "Lessons/GeorgianAdjectives", 6),
