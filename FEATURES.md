@@ -302,7 +302,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `taxi` | `GeorgianVocabTaxi` | 6 (L6 audio-choice) | ✅ |
 | `doctor` | `GeorgianVocabDoctor` | 6 (L6 audio-choice) | ✅ |
 | `shopping` | `GeorgianVocabShopping` | 6 (lesson 6 = audio-choice) | ✅ |
-| `emergency` | `GeorgianVocabEmergency` | 5 | ✅ |
+| `emergency` | `GeorgianVocabEmergency` | 6 (L6 audio-choice) | ✅ |
 
 ### Legacy / alternative alphabet variants
 `GeorgianAlphabetEasy`, `GeorgianAlphabetFull`, `GeorgianAlphabetCommon`, `GeorgianAlphabetTriples`, `GeorgianAlphabetVowels` — alternative presentations of the same alphabet content.
