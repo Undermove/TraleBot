@@ -299,6 +299,28 @@
         "recognition"
       ],
       "difficulty": 2
+    },
+    {
+        "id": "ae2-q19",
+        "lemma": "გ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ბ",
+            "გ",
+            "მ",
+            "დ"
+        ],
+        "answer_index": 1,
+        "explanation": "«გ» — согласная «г»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/g.m4a",
+        "transcript": "განი",
+        "tags": [
+            "audio",
+            "consonant",
+            "letter-name"
+        ],
+        "difficulty": 2
     }
   ]
 }

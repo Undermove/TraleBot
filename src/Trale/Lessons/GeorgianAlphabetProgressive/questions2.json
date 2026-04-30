@@ -296,6 +296,50 @@
         "syllable-reading"
       ],
       "difficulty": 2
+    },
+    {
+        "id": "ae1-q19",
+        "lemma": "დ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ბ",
+            "გ",
+            "დ",
+            "ნ"
+        ],
+        "answer_index": 2,
+        "explanation": "«დ» — согласная «д»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/d.m4a",
+        "transcript": "დანი",
+        "tags": [
+            "audio",
+            "consonant",
+            "letter-name"
+        ],
+        "difficulty": 2
+    },
+    {
+        "id": "ae1-q20",
+        "lemma": "ნ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ნ",
+            "მ",
+            "ბ",
+            "გ"
+        ],
+        "answer_index": 0,
+        "explanation": "«ნ» — согласная «н»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/n.m4a",
+        "transcript": "ნარი",
+        "tags": [
+            "audio",
+            "consonant",
+            "letter-name"
+        ],
+        "difficulty": 2
     }
   ]
 }

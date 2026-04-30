@@ -44,9 +44,6 @@ export default function DayOfWeekChip() {
           <div className="font-geo text-[20px] font-extrabold text-cream leading-none">
             {day.geo}
           </div>
-          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-cream/70 mt-1">
-            {day.translit}
-          </div>
           <div className="font-sans text-[13px] font-semibold text-cream mt-1">
             {day.ru}
           </div>

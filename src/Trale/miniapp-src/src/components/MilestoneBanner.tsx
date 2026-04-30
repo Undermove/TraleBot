@@ -70,9 +70,6 @@ export default function MilestoneBanner({ type, value, onDismiss }: Props) {
         <div className="font-geo text-t2 font-extrabold text-jewelInk leading-none">
           {config.georgian}
         </div>
-        <div className="font-sans text-t6 uppercase tracking-widest text-jewelInk-mid mt-0.5">
-          {config.translit}
-        </div>
       </div>
     </button>
   )

@@ -331,6 +331,51 @@
         "triple-system"
       ],
       "difficulty": 2
+    },
+    {
+        "id": "triples1_q19",
+        "lemma": "ფ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ბ",
+            "ფ",
+            "პ",
+            "ვ"
+        ],
+        "answer_index": 1,
+        "explanation": "«ფ» — придыхательная «п»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/f.m4a",
+        "transcript": "ფარი",
+        "tags": [
+            "audio",
+            "consonant",
+            "aspirated",
+            "letter-name"
+        ],
+        "difficulty": 3
+    },
+    {
+        "id": "triples1_q20",
+        "lemma": "ჰ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ხ",
+            "ჰ",
+            "ქ",
+            "კ"
+        ],
+        "answer_index": 1,
+        "explanation": "«ჰ» — лёгкий выдох «х»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/h.m4a",
+        "transcript": "ჰაე",
+        "tags": [
+            "audio",
+            "consonant",
+            "letter-name"
+        ],
+        "difficulty": 3
     }
   ]
 }

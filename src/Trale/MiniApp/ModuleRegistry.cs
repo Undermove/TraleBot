@@ -13,19 +13,16 @@ public static class ModuleRegistry
 {
     private static readonly FrozenDictionary<string, ModuleDefinition> Modules = new Dictionary<string, ModuleDefinition>
     {
-        // L11 (audio-choice) temporarily disabled — Piper TTS quality on isolated letters
-        // is too poor to disambiguate ejective vs aspirated pairs (კ/ქ, ტ/თ, წ/ც, ჭ/ჩ).
-        // Re-enable once letter audio is re-recorded or replaced with better TTS.
-        ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 10),
+        ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 11),
         ["numbers"] = new("numbers", "Lessons/GeorgianNumbers", 5),
         ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 7),
         ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 6),
-        ["preverbs"] = new("preverbs", "Lessons/GeorgianPreverbs", 5),
+        ["preverbs"] = new("preverbs", "Lessons/GeorgianPreverbs", 6),
         ["imperfect"] = new("imperfect", "Lessons/GeorgianImperfect", 6),
         ["aorist"] = new("aorist", "Lessons/GeorgianAorist", 6),
-        ["future-tense"] = new("future-tense", "Lessons/GeorgianFutureTense", 2),
+        ["future-tense"] = new("future-tense", "Lessons/GeorgianFutureTense", 5),
         ["pronoun-declension"] = new("pronoun-declension", "Lessons/GeorgianPronounDeclension", 6),
-        ["conditionals"] = new("conditionals", "Lessons/GeorgianConditionals", 5),
+        ["conditionals"] = new("conditionals", "Lessons/GeorgianConditionals", 6),
         ["imperative"] = new("imperative", "Lessons/GeorgianImperative", 3),
         ["postpositions"] = new("postpositions", "Lessons/GeorgianPostpositions", 6),
         ["adjectives"] = new("adjectives", "Lessons/GeorgianAdjectives", 6),
@@ -36,7 +33,7 @@ public static class ModuleRegistry
         ["taxi"] = new("taxi", "Lessons/GeorgianVocabTaxi", 6),
         ["doctor"] = new("doctor", "Lessons/GeorgianVocabDoctor", 6),
         ["shopping"] = new("shopping", "Lessons/GeorgianVocabShopping", 6),
-        ["intro"] = new("intro", "Lessons/GeorgianVocabIntro", 6),
+        ["intro"] = new("intro", "Lessons/GeorgianVocabIntro", 8),
         ["emergency"] = new("emergency", "Lessons/GeorgianVocabEmergency", 6),
         ["verbs-of-movement"] = new("verbs-of-movement", "Lessons/GeorgianVerbsOfMovement", 12),
     }.ToFrozenDictionary();

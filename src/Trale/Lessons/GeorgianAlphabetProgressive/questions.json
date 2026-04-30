@@ -296,6 +296,50 @@
         "syllable-reading"
       ],
       "difficulty": 2
+    },
+    {
+        "id": "av1-q19",
+        "lemma": "ი",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ა",
+            "ე",
+            "ი",
+            "ო"
+        ],
+        "answer_index": 2,
+        "explanation": "«ი» — гласная «и»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/i.m4a",
+        "transcript": "ინი",
+        "tags": [
+            "audio",
+            "vowel",
+            "letter-name"
+        ],
+        "difficulty": 1
+    },
+    {
+        "id": "av1-q20",
+        "lemma": "უ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ო",
+            "ა",
+            "ე",
+            "უ"
+        ],
+        "answer_index": 3,
+        "explanation": "«უ» — гласная «у»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/u.m4a",
+        "transcript": "უნი",
+        "tags": [
+            "audio",
+            "vowel",
+            "letter-name"
+        ],
+        "difficulty": 1
     }
   ]
 }

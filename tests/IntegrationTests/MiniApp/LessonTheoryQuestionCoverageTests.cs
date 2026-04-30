@@ -23,7 +23,7 @@ public class LessonTheoryQuestionCoverageTests : TestBase
     // about lemmas that were never shown in their theory screens and should be
     // brought up to this standard one by one, then re-added to this list:
     //   aorist, imperfect, postpositions,
-    //   preverbs, pronoun-declension, pronouns, verb-classes, verbs-of-movement,
+    //   preverbs, pronouns, verb-classes, verbs-of-movement,
     //   version-vowels
     // Run this test suite locally with those ids temporarily added to see the
     // concrete list of missing lemmas per lesson.
@@ -38,7 +38,8 @@ public class LessonTheoryQuestionCoverageTests : TestBase
         "conditionals",
         "numbers",
         "present-tense",
-        "pronouns"
+        "pronouns",
+        "pronoun-declension"
     };
 
     [Test]

@@ -138,7 +138,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
 
 ### Static audio assets (`public/audio/`)
-- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Piper voice), used by `audio-choice` lesson 11 in `alphabet-progressive`.
+- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound. Used by `audio-choice` questions in L1–L7 (1–2 questions each) and L11 (20 questions, full review of all 33 letters) in `alphabet-progressive`.
 - `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
 - `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
 - `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
@@ -154,6 +154,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `taxi/` — 15 Georgian transport/direction TTS clips (ka-GE Natia voice; taxi, bus, metro, stops, directions + city places), used by `audio-choice` lesson 6 in `taxi`.
 - `doctor/` — 15 Georgian medical vocabulary TTS clips (ka-GE Natia voice; body parts, symptoms, pain phrases), used by `audio-choice` lesson 6 in `doctor`.
 - `imperfect/` — 15 Georgian imperfect-tense verb TTS clips (ka-GE voice; 1st/2nd/3rd person forms of common verbs), used by `audio-choice` lesson 6 in `imperfect`.
+- `conditionals/` — 15 Georgian conditional-mood TTS clips (ka-GE Natia voice; conjunctions თუ/რომ, imperfect forms, conditional-mood forms, subjunctive forms), used by `audio-choice` lesson 6 in `conditionals`.
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
@@ -273,20 +274,20 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Launch modules (owner-approved)
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 10 (L11 audio-choice temporarily disabled, see ModuleRegistry.cs) | ✅ |
+| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (L1–L7 each end with 1–2 audio-choice questions; L11 = full audio review «Слушай и выбери» — 20 letter names ანი/ბანი/განი) | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
-| `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
+| `intro` | `GeorgianVocabIntro` | 8 (L6 = audio-choice; L7 = SOS-phrases: Help/I don't understand/Slowly/Repeat/Doctor; L8 = navigation: Where is?/How much?/Ambulance/Police) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
 | `present-tense` | `GeorgianPresentTense` | 6 (lesson 6 = audio-choice) | ✅ |
 | `cases` | `GeorgianCases` | 9 (lesson 9 = audio-choice) | ✅ |
-| `conditionals` | `GeorgianConditionals` | 5 | ✅ |
+| `conditionals` | `GeorgianConditionals` | 6 (L6 = audio-choice «Слушай и выбери» — кондиционал vs имперфект) | ✅ |
 
 ### Grammar modules
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
 | `verb-classes` | `GeorgianVerbClasses` | 7 (L7 audio-choice) | ✅ |
 | `version-vowels` | `GeorgianVersionVowels` | 6 (L6 audio-choice) | ✅ |
-| `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
+| `preverbs` | `GeorgianPreverbs` | 6 (L6 audio-choice «Слушай и выбери» — превербы на слух) | ✅ |
 | `imperfect` | `GeorgianImperfect` | 6 (L6 audio-choice) | ✅ |
 | `verbs-of-movement` | `GeorgianVerbsOfMovement` | 12 (L12 audio-choice) | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |

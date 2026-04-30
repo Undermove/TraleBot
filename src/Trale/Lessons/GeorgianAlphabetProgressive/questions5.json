@@ -303,6 +303,29 @@
         "meaning"
       ],
       "difficulty": 2
+    },
+    {
+        "id": "ac2-q19",
+        "lemma": "ტ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ტ",
+            "თ",
+            "ს",
+            "კ"
+        ],
+        "answer_index": 0,
+        "explanation": "«ტ» — абруптивная «т»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/t.m4a",
+        "transcript": "ტარი",
+        "tags": [
+            "audio",
+            "consonant",
+            "ejective",
+            "letter-name"
+        ],
+        "difficulty": 3
     }
   ]
 }
