@@ -170,6 +170,43 @@ public class LessonJsonValidationTests
         }
     }
 
+    // Guards against Georgian chars embedded inside Cyrillic words (e.g. выბeri where
+    // ბ U+10D1 visually resembles Cyrillic б U+0431). Fires when a Georgian char has
+    // both its direct left and right neighbours as Cyrillic letters — unambiguous substitution.
+    // Does NOT fire for Georgian words quoted within Russian text («…» pattern), because
+    // those have guillemets or spaces as neighbours.
+    [TestCaseSource(nameof(AllLessonJsonFiles))]
+    public void Question_and_explanation_fields_must_not_embed_Georgian_inside_Cyrillic_words(string relativePath)
+    {
+        var fullPath = Path.Combine(RepoRoot, relativePath);
+        using var doc = JsonDocument.Parse(File.ReadAllText(fullPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            foreach (var fieldName in new[] { "question", "explanation" })
+            {
+                if (!q.TryGetProperty(fieldName, out var el) || el.ValueKind != JsonValueKind.String) continue;
+                var text = el.GetString() ?? "";
+                for (var i = 0; i < text.Length; i++)
+                {
+                    var ch = text[i];
+                    if (ch < 'ა' || ch > 'ჿ') continue;
+                    var prev = i > 0 ? text[i - 1] : '\0';
+                    var next = i + 1 < text.Length ? text[i + 1] : '\0';
+                    var prevIsCyrillic = prev >= 'Ѐ' && prev <= 'ԯ';
+                    var nextIsCyrillic = next >= 'Ѐ' && next <= 'ԯ';
+                    if (prevIsCyrillic && nextIsCyrillic)
+                    {
+                        false.ShouldBeTrue(
+                            $"'{relativePath}' question '{id}' field '{fieldName}': Georgian char U+{(int)ch:X4} '{ch}' is embedded inside a Cyrillic word at position {i} — likely accidental substitution (e.g. Georgian ბ instead of Cyrillic б). Context: '{text[Math.Max(0, i - 6)..Math.Min(text.Length, i + 7)]}'");
+                    }
+                }
+            }
+        }
+    }
+
     private static void AssertNoMixedScript(string file, string questionId, string field, string text)
     {
         var hasGeorgian = text.Any(c => c >= 'ა' && c <= 'ჿ');
