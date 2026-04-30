@@ -37,7 +37,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             .Where(kv => kv.Key <= lessonId)
             .SelectMany(kv => kv.Value)
             .ToList();
-        var random = new Random();
+        var random = Random.Shared;
         var questions = new List<AlphabetQuizQuestionDto>();
 
         // Build 3 questions per letter: choice (both directions) + type (keyboard).
