@@ -138,7 +138,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
 
 ### Static audio assets (`public/audio/`)
-- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound — lets L11 disambiguate ejective/aspirated pairs (კ/ქ, ტ/თ) by ear. Used by `audio-choice` lesson 11 in `alphabet-progressive`.
+- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound. Used by `audio-choice` questions in L1–L7 (1–2 questions each) and L11 (20 questions, full review of all 33 letters) in `alphabet-progressive`.
 - `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
 - `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
 - `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
@@ -274,7 +274,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Launch modules (owner-approved)
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (L11 = audio-choice «Слушай и выбери» — letter names ანი/ბანი/განი) | ✅ |
+| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (L1–L7 each end with 1–2 audio-choice questions; L11 = full audio review «Слушай и выбери» — 20 letter names ანი/ბანი/განი) | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
