@@ -287,7 +287,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 |---|---|---|---|
 | `verb-classes` | `GeorgianVerbClasses` | 7 (L7 audio-choice) | ✅ |
 | `version-vowels` | `GeorgianVersionVowels` | 6 (L6 audio-choice) | ✅ |
-| `preverbs` | `GeorgianPreverbs` | 5 | ✅ |
+| `preverbs` | `GeorgianPreverbs` | 6 (L6 audio-choice «Слушай и выбери» — превербы на слух) | ✅ |
 | `imperfect` | `GeorgianImperfect` | 6 (L6 audio-choice) | ✅ |
 | `verbs-of-movement` | `GeorgianVerbsOfMovement` | 12 (L12 audio-choice) | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
