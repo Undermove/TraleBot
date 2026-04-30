@@ -131,7 +131,7 @@ export default function ModuleMap({
           <div className="flex items-center justify-between gap-3 relative z-[1]">
             <div className="flex-1 min-w-0">
               <div className="mn-eyebrow mb-1">глава</div>
-              <div className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight truncate">
+              <div className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">
                 {module.title}
               </div>
               <div className="mt-1 font-sans text-[13px] text-jewelInk-mid leading-snug">
