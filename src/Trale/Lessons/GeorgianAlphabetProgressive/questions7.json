@@ -199,6 +199,51 @@
       "explanation": "В слове «ფოტო» встречаются оба типа: «ფ» (придыхательный ph) и «ტ» (эжективный t').",
       "tags": ["triple-system", "reading"],
       "difficulty": 3
+    },
+    {
+        "id": "triples2_q19",
+        "lemma": "პ",
+        "question": "Послушай и выبери грузинскую букву",
+        "options": [
+            "ფ",
+            "ბ",
+            "პ",
+            "ვ"
+        ],
+        "answer_index": 2,
+        "explanation": "«პ» — абруптивная «п»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/p.m4a",
+        "transcript": "პარი",
+        "tags": [
+            "audio",
+            "consonant",
+            "ejective",
+            "letter-name"
+        ],
+        "difficulty": 3
+    },
+    {
+        "id": "triples2_q20",
+        "lemma": "რ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ლ",
+            "ნ",
+            "მ",
+            "რ"
+        ],
+        "answer_index": 3,
+        "explanation": "«რ» — дрожащая «р»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/r.m4a",
+        "transcript": "რაე",
+        "tags": [
+            "audio",
+            "consonant",
+            "letter-name"
+        ],
+        "difficulty": 2
     }
   ]
 }

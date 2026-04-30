@@ -296,6 +296,51 @@
         "phonetics"
       ],
       "difficulty": 2
+    },
+    {
+        "id": "ac1-q19",
+        "lemma": "კ",
+        "question": "Послушай и выბери грузинскую букву",
+        "options": [
+            "კ",
+            "გ",
+            "ს",
+            "ტ"
+        ],
+        "answer_index": 0,
+        "explanation": "«კ» — абруптивная «к»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/k.m4a",
+        "transcript": "კანი",
+        "tags": [
+            "audio",
+            "consonant",
+            "ejective",
+            "letter-name"
+        ],
+        "difficulty": 3
+    },
+    {
+        "id": "ac1-q20",
+        "lemma": "ლ",
+        "question": "Послушай и выбери грузинскую букву",
+        "options": [
+            "ნ",
+            "ლ",
+            "რ",
+            "მ"
+        ],
+        "answer_index": 1,
+        "explanation": "«ლ» — согласная «л»",
+        "question_type": "audio-choice",
+        "audio_url": "/audio/alphabet/l.m4a",
+        "transcript": "ლასი",
+        "tags": [
+            "audio",
+            "consonant",
+            "letter-name"
+        ],
+        "difficulty": 2
     }
   ]
 }
