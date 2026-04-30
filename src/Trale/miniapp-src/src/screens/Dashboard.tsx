@@ -99,6 +99,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
   const advancedIds = [
     'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
+    'future-tense',
     'pronoun-declension', 'conditionals', 'imperative', 'verbs-of-movement',
   ]
 
