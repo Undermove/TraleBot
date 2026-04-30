@@ -5,6 +5,8 @@ namespace Infrastructure.Telegram.Services;
 
 public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
 {
+    private const int QuestionsPerLesson = 12;
+
     private readonly string _questionsFilePath;
     private List<QuizQuestionData>? _cachedQuestions;
     private readonly ILogger<GeorgianQuestionsLoader> _logger;
@@ -38,13 +40,9 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
             _cachedQuestions = LoadAllQuestions();
         }
 
-        var random = new Random();
+        var random = Random.Shared;
         var shuffled = _cachedQuestions.OrderBy(_ => random.Next()).ToList();
-        
-        // Возвращаем 12 случайных вопросов
-        var selectedQuestions = shuffled.Take(12).ToList();
-        
-        // Shuffle answer options for each question
+        var selectedQuestions = shuffled.Take(QuestionsPerLesson).ToList();
         foreach (var question in selectedQuestions)
         {
             question.ShuffleOptions(random);
