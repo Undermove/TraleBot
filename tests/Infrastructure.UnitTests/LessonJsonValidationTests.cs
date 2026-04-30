@@ -188,23 +188,27 @@ public class LessonJsonValidationTests
             foreach (var fieldName in new[] { "question", "explanation" })
             {
                 if (!q.TryGetProperty(fieldName, out var el) || el.ValueKind != JsonValueKind.String) continue;
-                var text = el.GetString() ?? "";
-                for (var i = 0; i < text.Length; i++)
-                {
-                    var ch = text[i];
-                    if (ch < 'ა' || ch > 'ჿ') continue;
-                    var prev = i > 0 ? text[i - 1] : '\0';
-                    var next = i + 1 < text.Length ? text[i + 1] : '\0';
-                    var prevIsCyrillic = prev >= 'Ѐ' && prev <= 'ԯ';
-                    var nextIsCyrillic = next >= 'Ѐ' && next <= 'ԯ';
-                    if (prevIsCyrillic && nextIsCyrillic)
-                    {
-                        false.ShouldBeTrue(
-                            $"'{relativePath}' question '{id}' field '{fieldName}': Georgian char U+{(int)ch:X4} '{ch}' is embedded inside a Cyrillic word at position {i} — likely accidental substitution (e.g. Georgian ბ instead of Cyrillic б). Context: '{text[Math.Max(0, i - 6)..Math.Min(text.Length, i + 7)]}'");
-                    }
-                }
+                AssertNoGeorgianEmbeddedInCyrillic(relativePath, id!, fieldName, el.GetString() ?? "");
             }
         }
+    }
+
+    // Detects Georgian chars sandwiched between Cyrillic chars (e.g. вы[ბ]ери — Georgian ბ inside Cyrillic word).
+    // Guillemets/spaces around Georgian letters (legitimate bilingual text) will not trigger.
+    private static void AssertNoGeorgianEmbeddedInCyrillic(string file, string questionId, string field, string text)
+    {
+        var violations = new List<string>();
+        for (var i = 0; i < text.Length; i++)
+        {
+            var ch = text[i];
+            if (ch < 'ა' || ch > 'ჿ') continue;
+            var prev = i > 0 ? text[i - 1] : '\0';
+            var next = i + 1 < text.Length ? text[i + 1] : '\0';
+            if (prev >= 'Ѐ' && prev <= 'ԯ' && next >= 'Ѐ' && next <= 'ԯ')
+                violations.Add($"U+{(int)ch:X4} '{ch}' at pos {i} in «{text[Math.Max(0, i - 6)..Math.Min(text.Length, i + 7)]}»");
+        }
+        violations.ShouldBeEmpty(
+            $"'{file}' question '{questionId}' field '{field}': Georgian char(s) embedded inside Cyrillic words — likely accidental substitution (e.g. Georgian ბ instead of Cyrillic б): {string.Join("; ", violations)}");
     }
 
     private static void AssertNoMixedScript(string file, string questionId, string field, string text)
