@@ -276,7 +276,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 |---|---|---|---|
 | `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (L1–L7 each end with 1–2 audio-choice questions; L11 = full audio review «Слушай и выбери» — 20 letter names ანი/ბანი/განი) | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
-| `intro` | `GeorgianVocabIntro` | 6 (lesson 6 = audio-choice) | ✅ |
+| `intro` | `GeorgianVocabIntro` | 8 (L6 = audio-choice; L7 = SOS-phrases: Help/I don't understand/Slowly/Repeat/Doctor; L8 = navigation: Where is?/How much?/Ambulance/Police) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
 | `present-tense` | `GeorgianPresentTense` | 6 (lesson 6 = audio-choice) | ✅ |
 | `cases` | `GeorgianCases` | 9 (lesson 9 = audio-choice) | ✅ |
