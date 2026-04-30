@@ -1,0 +1,140 @@
+{
+  "lesson_id": "prev-6",
+  "title": "Listen & Choose — превербы на слух",
+  "lexicon": [
+    "გავიდა", "შევიდა", "ავიდა", "ჩავიდა", "წავიდა",
+    "მოვიდა", "მივიდა", "გადავიდა", "დაწერა", "შეჭამა"
+  ],
+  "questions": [
+    {
+      "id": "prev6_q01",
+      "lemma": "გავიდა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["გავიდა", "შევიდა", "წავიდა", "მოვიდა"],
+      "answer_index": 0,
+      "explanation": "«გა-» = наружу. «გა-ვ-იდ-ა» — он вышел. Первый слог «გა» — сигнал движения наружу. Ср. «შე-» = внутрь.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/gavida.m4a",
+      "transcript": "გავიდა",
+      "tags": ["audio", "preverbs", "minimal-pair", "ga"],
+      "difficulty": 2
+    },
+    {
+      "id": "prev6_q02",
+      "lemma": "შევიდა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["გავიდა", "შევიდა", "ჩავიდა", "ავიდა"],
+      "answer_index": 1,
+      "explanation": "«შე-» = внутрь. «შე-ვ-იდ-ა» — он вошёл. Первый слог «შე» — движение внутрь. Ср. «გა-» = наружу.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/shevida.m4a",
+      "transcript": "შევიდა",
+      "tags": ["audio", "preverbs", "minimal-pair", "she"],
+      "difficulty": 2
+    },
+    {
+      "id": "prev6_q03",
+      "lemma": "ავიდა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ავიდა", "ჩავიდა", "გადავიდა", "გავიდა"],
+      "answer_index": 0,
+      "explanation": "«ა-» = вверх. «ა-ვ-იდ-ა» — он поднялся. Короткий «ა» в начале — ориентир вверх. Ср. «ჩა-» = вниз.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/avida.m4a",
+      "transcript": "ავიდა",
+      "tags": ["audio", "preverbs", "minimal-pair", "a"],
+      "difficulty": 2
+    },
+    {
+      "id": "prev6_q04",
+      "lemma": "ჩავიდა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["ავიდა", "ჩავიდა", "მოვიდა", "მივიდა"],
+      "answer_index": 1,
+      "explanation": "«ჩა-» = вниз. «ჩა-ვ-იდ-ა» — он спустился. Слог «ჩა» — движение вниз. Ср. «ა-» = вверх.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/chavida.m4a",
+      "transcript": "ჩავიდა",
+      "tags": ["audio", "preverbs", "minimal-pair", "cha"],
+      "difficulty": 2
+    },
+    {
+      "id": "prev6_q05",
+      "lemma": "წავიდა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["მოვიდა", "წავიდა", "მივიდა", "გადავიდა"],
+      "answer_index": 1,
+      "explanation": "«წა-» = прочь от говорящего. «წა-ვ-იდ-ა» — он ушёл. Ср. «მო-» = к говорящему: მო-ვ-იდ-ა (пришёл).",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/tsavida.m4a",
+      "transcript": "წავიდა",
+      "tags": ["audio", "preverbs", "minimal-pair", "tsa"],
+      "difficulty": 2
+    },
+    {
+      "id": "prev6_q06",
+      "lemma": "მოვიდა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["მოვიდა", "მივიდა", "გადავიდა", "წავიდა"],
+      "answer_index": 0,
+      "explanation": "«მო-» = к говорящему. «მო-ვ-იდ-ა» — он пришёл (сюда). Ср. «მი-» = туда от говорящего: მი-ვ-იდ-ა.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/movida.m4a",
+      "transcript": "მოვიდა",
+      "tags": ["audio", "preverbs", "minimal-pair", "mo"],
+      "difficulty": 3
+    },
+    {
+      "id": "prev6_q07",
+      "lemma": "გადავიდა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["მივიდა", "გადავიდა", "გავიდა", "ჩავიდა"],
+      "answer_index": 1,
+      "explanation": "«გადა-» = через, на другую сторону. «გადა-ვ-იდ-ა» — он перешёл (перебрался). Ср. «მი-» = туда: მი-ვ-იდ-ა.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/gadavida.m4a",
+      "transcript": "გადავიდა",
+      "tags": ["audio", "preverbs", "minimal-pair", "gada"],
+      "difficulty": 3
+    },
+    {
+      "id": "prev6_q08",
+      "lemma": "დაწერა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["დაწერა", "გააკეთა", "შეჭამა", "წაიკითხა"],
+      "answer_index": 0,
+      "explanation": "«და-» = завершённость. «და-წერ-ა» — он написал (завершил написание). Слышишь «და» в начале — завершённое действие.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/datsera.m4a",
+      "transcript": "დაწერა",
+      "tags": ["audio", "preverbs", "da", "aspect"],
+      "difficulty": 1
+    },
+    {
+      "id": "prev6_q09",
+      "lemma": "შეჭამა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["წაიკითხა", "დაჯდა", "შეჭამა", "მიიტანა"],
+      "answer_index": 2,
+      "explanation": "«შე-» = внутрь / полностью. «შე-ჭამ-ა» — он съел всё. «შე-» с глаголами еды означает завершённое поглощение.",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/shechama.m4a",
+      "transcript": "შეჭამა",
+      "tags": ["audio", "preverbs", "she", "aspect"],
+      "difficulty": 2
+    },
+    {
+      "id": "prev6_q10",
+      "lemma": "მიიტანა",
+      "question": "Послушай и выбери услышанное слово",
+      "options": ["მივიდა", "მიიტანა", "გადავიდა", "გააკეთა"],
+      "answer_index": 1,
+      "explanation": "«მი-» = туда от говорящего. «მი-ი-ტან-ა» — он принёс туда / доставил. Ср. «მი-ვ-იდ-ა» = пошёл туда (без объекта).",
+      "question_type": "audio-choice",
+      "audio_url": "/audio/preverbs/miitana.m4a",
+      "transcript": "მიიტანა",
+      "tags": ["audio", "preverbs", "mi", "aspect"],
+      "difficulty": 3
+    }
+  ]
+}
