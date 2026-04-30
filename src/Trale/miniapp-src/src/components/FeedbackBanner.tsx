@@ -20,9 +20,6 @@ export default function FeedbackBanner({ isCorrect, body, topMargin = 'mt-4' }: 
         <div className="font-geo text-[26px] font-bold leading-tight">
           {isCorrect ? 'სწორია!' : 'არასწორია!'}
         </div>
-        <div className="font-sans text-[11px] tracking-wide opacity-60">
-          {isCorrect ? 'swor·ia' : 'ara·swor·ia'}
-        </div>
         <div className="font-sans text-[11px] font-extrabold uppercase tracking-widest opacity-75 mt-0.5">
           {isCorrect ? 'Верно' : 'Ошибка'}
         </div>

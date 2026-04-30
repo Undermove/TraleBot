@@ -85,9 +85,9 @@ export default function TimeGreeting({ className }: TimeGreetingProps) {
         )}
       </div>
 
-      {/* Transliteration */}
+      {/* Russian translation */}
       <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5 font-semibold tracking-wide leading-none">
-        {phrase.translit}
+        {phrase.russian}
       </div>
 
       {/* Cultural note card */}
@@ -100,7 +100,7 @@ export default function TimeGreeting({ className }: TimeGreetingProps) {
               {phrase.geo}
             </div>
             <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5 font-semibold tracking-wide">
-              {phrase.translit}
+              {phrase.russian}
             </div>
             <div className="h-px bg-jewelInk/10 my-2" />
             <div className="font-sans text-[12px] text-jewelInk leading-snug whitespace-pre-line">
