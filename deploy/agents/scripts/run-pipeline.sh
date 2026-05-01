@@ -71,6 +71,17 @@ git reset --hard origin/main
 if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null 2>&1; then
     echo ">>> Branch ${BRANCH} exists on origin — continuing work."
     git checkout -B "${BRANCH}" "origin/${BRANCH}"
+    # Pull in any main commits merged after the night started: latest agent
+    # prompts (.claude/agents/), OWNER-PRIORITIES.md updates, content fixes
+    # merged via PR during the day. Without this, the night branch keeps
+    # running on prompts and files that were current at branch creation.
+    if ! git merge origin/main --no-edit; then
+        echo ">>> WARNING: auto-merge of origin/main into ${BRANCH} hit a conflict — aborting merge, agents will work on stale tip."
+        git merge --abort 2>/dev/null || true
+    else
+        echo ">>> Merged origin/main into ${BRANCH} (latest agent prompts + main fixes)."
+        git push origin "${BRANCH}"
+    fi
 else
     echo ">>> First run of the night — creating ${BRANCH} from main."
     git checkout -B "${BRANCH}" main
