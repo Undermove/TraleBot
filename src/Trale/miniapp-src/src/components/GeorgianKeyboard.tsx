@@ -119,7 +119,7 @@ export default function GeorgianKeyboard({ value, onChange, disabled = false }: 
       </div>
 
       {/* Gold hairline divider between main and rare rows */}
-      <div className="h-px bg-gold/30 my-1 mx-1" />
+      <div className="h-px bg-gold/50 my-1 mx-1" />
 
       {/* Row 4: rare letters + space */}
       <div className="relative flex gap-[3px]">

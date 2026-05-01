@@ -193,7 +193,7 @@ export default function ModulePhraseBanner({ moduleId }: Props) {
             className="font-sans text-[11px] text-center mt-1"
             style={{ color: 'rgba(21,16,10,0.5)', animation: 'pulse-hint 1.2s ease-in-out infinite' }}
           >
-            👆 тапни — узнай перевод
+            тапни → узнай перевод
           </div>
         )}
 
