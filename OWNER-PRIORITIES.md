@@ -49,12 +49,13 @@
 - [x] **designer** — оформить дизайн-спеку `design-specs/79-sentence-builder.md` по механике из ROADMAP §79. Скрины не нужны, состояния (default / chip selected / slot active / after check / error) описаны словами + low-fi схемы. Перевести §79 в ROADMAP в `[designed]` после готовности спеки. → done by designer 2026-05-01: design-specs/79-sentence-builder.md, ROADMAP §79 → [designed]
 - [x] **methodist** — проверить, что предложенная прогрессия L1→L5+ соответствует CEFR A1-A2 и принципу i+1. Подобрать конкретные русско-грузинские пары для пилота на Postpositions: 5-7 предложений на каждый из L1-L3 (один слот / два слота / половина предложения). Сохранить как `design-specs/79-sentence-builder-content.md` или внутри спеки. → done by methodist 2026-05-01: design-specs/79-sentence-builder-content.md — прогрессия L1-L5+ проверена (CEFR A1/A2/B1, i+1 соблюдается); 7 предложений L1 + 7 предложений L2 + 6 предложений L3; отмечены [VoM]-зависимые предложения и non-VoM альтернативы; примечание: Georgian Unicode в некоторых производных формах нужно проверить native-reviewer.
 - [x] **native-reviewer** — пройтись по предложенным грузинским предложениям. Подтвердить, что для каждого есть один корректный порядок слов и что выбранные дистракторы (неправильный падеж, лишняя постпозиция) реально сбивают, а не оставляют двусмысленность. → done by native-reviewer 2026-05-01: все 20 предложений (7×L1, 7×L2, 6×L3) лингвистически верны, SOV-порядок и послелоги правильные, дистракторы эффективны. БЛОКЕР: 84+ chip-токенов в correctOrder/chipPool написаны смешанным скриптом (Georgian+Latin/Cyrillic) — не будут рендериться в UI. Также грамматическая ошибка в L2-5: «ხARs» вместо «ხARH» (2sg «ты есть» = ხ+ა+რ без -s). Подробности в issue #807.
-- [ ] **tech-lead-breakdown** — после готовности спеки разбить на task-issues:
+- [x] **tech-lead-breakdown** — после готовности спеки разбить на task-issues:
   1. Новый `QuestionType.SentenceBuilder` в backend (DTO + JSON-схема + Loader).
   2. Frontend-компонент `SentenceBuilderCard` (tap-select / tap-slot / pool of chips).
   3. Подсветка после check (зелёный/красный по позициям).
   4. Контент: 15-20 вопросов для пилота на Postpositions L1-L3.
   5. Тесты (component + e2e).
+  → done by tech-lead 2026-05-01: создал issues #815 (content blocker — mixed-script tokens), #816 (§79-A backend DTO + loader), #817 (§79-C frontend atoms), #818 (§79-D SentenceBuilderCard + Practice.tsx + content JSON), #819 (§79-E tests); execution order: #815 → #816, #817 (parallel) → #818 → #819
 - [ ] **developer** — реализовать в порядке, установленном tech-lead'ом. Один issue = один PR.
 - [ ] **qa** — после landing'а каждого PR проверить full-suite + руками протестировать UI на 375px (tap target ≥ 44px на чипе и слоте, текст не обрезается).
 - [ ] **product** — после полной готовности (все пункты закрыты, тесты зелёные на пилоте) убрать §79 из этого файла и обновить ROADMAP в `[done]`.
