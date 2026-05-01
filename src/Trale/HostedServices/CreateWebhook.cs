@@ -61,21 +61,29 @@ public class CreateWebhook : IHostedService
         {
             await _telegramBotClient.SetMyDescriptionAsync(
                 description:
-                    "Учи грузинский язык прямо в Telegram. Алфавит, грамматика, " +
-                    "падежи, глаголы, личный словарь и квизы. Первые 30 дней бесплатно. " +
-                    "Тебя встретит щенок Бомбора 🐶 — твой гид и маскот.",
+                    "Грузинский в приложении внутри Telegram: алфавит, грамматика, " +
+                    "словарь, квизы. Гид — щенок Бомбора 🐶.\n\n" +
+                    "Тапни 👉 /app 👈 — чтобы начать.\n\n" +
+                    "Первые 30 дней — бесплатно.",
                 cancellationToken: cancellationToken);
 
             await _telegramBotClient.SetMyShortDescriptionAsync(
-                shortDescription: "TraleBot — учи грузинский язык в Telegram. ქართული ენა.",
+                shortDescription:
+                    "Грузинский в Telegram-приложении 🇬🇪 Алфавит, грамматика, словарь, квизы.",
                 cancellationToken: cancellationToken);
 
+            // /app appears in the slash-commands list before the user even opens the
+            // chat. Older users who don't notice the bottom menu button get a
+            // clear, named entry point: tap "/app — Открыть приложение" and the
+            // bot replies with the WebApp button on the next message.
+            // /start kept as alias with the same launch-oriented description.
             await _telegramBotClient.SetMyCommandsAsync(
                 commands: new[]
                 {
-                    new BotCommand { Command = "start", Description = "Открыть TraleBot" },
-                    new BotCommand { Command = "menu", Description = "Меню в чате" },
-                    new BotCommand { Command = "help", Description = "Поддержка" }
+                    new BotCommand { Command = "app", Description = "🚀 Открыть приложение" },
+                    new BotCommand { Command = "start", Description = "🚀 Открыть приложение" },
+                    new BotCommand { Command = "menu", Description = "📋 Меню в чате" },
+                    new BotCommand { Command = "help", Description = "💬 Поддержка" }
                 },
                 cancellationToken: cancellationToken);
         }

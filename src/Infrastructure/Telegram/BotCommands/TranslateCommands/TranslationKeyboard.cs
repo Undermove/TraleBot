@@ -3,6 +3,7 @@ using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
@@ -16,7 +17,8 @@ public static class TranslationKeyboard
         string additionalInfo,
         string? example,
         CancellationToken token,
-        bool isOwner = false)
+        bool isOwner = false,
+        string? miniAppUrl = null)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         return SendTranslation(
@@ -28,7 +30,8 @@ public static class TranslationKeyboard
             example,
             removeFromVocabularyText,
             token,
-            isOwner);
+            isOwner,
+            miniAppUrl);
     }
 
     public static Task UpdateTranslation(this ITelegramBotClient client,
@@ -38,7 +41,8 @@ public static class TranslationKeyboard
         string additionalInfo,
         string? example,
         CancellationToken token,
-        bool isOwner = false)
+        bool isOwner = false,
+        string? miniAppUrl = null)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         return UpdateTranslation(
@@ -50,7 +54,8 @@ public static class TranslationKeyboard
             example,
             removeFromVocabularyText,
             token,
-            isOwner);
+            isOwner,
+            miniAppUrl);
     }
 
     public static Task SendExistedTranslation(this ITelegramBotClient client,
@@ -60,7 +65,8 @@ public static class TranslationKeyboard
         string additionalInfo,
         string? example,
         CancellationToken token,
-        bool isOwner = false)
+        bool isOwner = false,
+        string? miniAppUrl = null)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return SendTranslation(
@@ -72,7 +78,8 @@ public static class TranslationKeyboard
             example,
             removeFromVocabularyText,
             token,
-            isOwner);
+            isOwner,
+            miniAppUrl);
     }
 
     public static Task UpdateExistedTranslation(this ITelegramBotClient client,
@@ -82,7 +89,8 @@ public static class TranslationKeyboard
         string additionalInfo,
         string? example,
         CancellationToken token,
-        bool isOwner = false)
+        bool isOwner = false,
+        string? miniAppUrl = null)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return UpdateTranslation(
@@ -94,7 +102,8 @@ public static class TranslationKeyboard
             example,
             removeFromVocabularyText,
             token,
-            isOwner);
+            isOwner,
+            miniAppUrl);
     }
     
     public static async Task HandleEmojiDetected(this ITelegramBotClient client,TelegramRequest request, CancellationToken token)
@@ -171,16 +180,30 @@ public static class TranslationKeyboard
         string? example,
         string removeFromVocabularyText,
         CancellationToken token,
-        bool isOwner = false)
+        bool isOwner = false,
+        string? miniAppUrl = null)
     {
-        var replyMarkup = new List<InlineKeyboardButton[]>
+        var replyMarkup = new List<InlineKeyboardButton[]>();
+
+        // Owner-priority CTA: a WebApp button as the first row, so the mini-app
+        // entry stays one tap away under every translated word. Older users
+        // who don't notice the bottom menu button get a clear, persistent
+        // launchpoint right next to the bot's reply.
+        if (!string.IsNullOrEmpty(miniAppUrl))
         {
-            new[]
+            replyMarkup.Add(new[]
             {
-                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
-                    $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
-            }
-        };
+                InlineKeyboardButton.WithWebApp(
+                    "🚀 Открыть приложение",
+                    new WebAppInfo { Url = miniAppUrl })
+            });
+        }
+
+        replyMarkup.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
+                $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
+        });
 
         if (isOwner && request.User!.Settings.CurrentLanguage == Language.English)
         {
@@ -190,15 +213,15 @@ public static class TranslationKeyboard
                     $"https://context.reverso.net/translation/russian-english/{request.Text}")
             ]);
         }
-        
+
         replyMarkup.Add([
             InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeTranslationLanguage} {vocabularyEntryId}")
         ]);
-        
+
         replyMarkup.Add([
             InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
         ]);
-        
+
         var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
         await client.SendTextMessageAsync(
@@ -219,16 +242,26 @@ public static class TranslationKeyboard
         string? example,
         string removeFromVocabularyText,
         CancellationToken token,
-        bool isOwner = false)
+        bool isOwner = false,
+        string? miniAppUrl = null)
     {
-        var replyMarkup = new List<InlineKeyboardButton[]>
+        var replyMarkup = new List<InlineKeyboardButton[]>();
+
+        if (!string.IsNullOrEmpty(miniAppUrl))
         {
-            new[]
+            replyMarkup.Add(new[]
             {
-                InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
-                    $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
-            }
-        };
+                InlineKeyboardButton.WithWebApp(
+                    "🚀 Открыть приложение",
+                    new WebAppInfo { Url = miniAppUrl })
+            });
+        }
+
+        replyMarkup.Add(new[]
+        {
+            InlineKeyboardButton.WithCallbackData(removeFromVocabularyText,
+                $"{CommandNames.RemoveEntry} {vocabularyEntryId}")
+        });
 
         if (isOwner && request.User!.Settings.CurrentLanguage == Language.English)
         {
@@ -238,15 +271,15 @@ public static class TranslationKeyboard
                     $"https://context.reverso.net/translation/russian-english/{request.Text}")
             ]);
         }
-        
+
         replyMarkup.Add([
             InlineKeyboardButton.WithCallbackData($"{CommandNames.ChangeTranslationLanguageIcon} Перевести на другой язык", $"{CommandNames.ChangeTranslationLanguage} {vocabularyEntryId}")
         ]);
-        
+
         replyMarkup.Add([
             InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню", CommandNames.Menu)
         ]);
-        
+
         var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
         await client.EditMessageTextAsync(

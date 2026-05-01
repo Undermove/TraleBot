@@ -25,7 +25,12 @@ public class StartCommand(
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
         var commandPayload = request.Text;
-        return Task.FromResult(commandPayload.Contains(CommandNames.Start));
+        // /app is an alias for /start that gets surfaced as its own slash-command
+        // entry on the bot's preview screen. Older users who don't notice the
+        // bottom menu button get a clearer named entry point.
+        return Task.FromResult(
+            commandPayload.Contains(CommandNames.Start) ||
+            commandPayload.Contains("/app"));
     }
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
@@ -82,48 +87,64 @@ public class StartCommand(
             ? $"{botConfig.NormalizedHost()}/"
             : null;
 
-        // Build keyboard: WebApp button (primary CTA) when mini-app is enabled, plus text menu fallback.
+        // /app is the focused launchpad: a single WebApp button, no chat-menu
+        // fallback. /start keeps both buttons because for first-time and
+        // returning users, the chat menu is still a useful secondary path.
+        var isAppLauncher = request.Text.Contains("/app", StringComparison.OrdinalIgnoreCase);
+
         var rows = new List<InlineKeyboardButton[]>();
         if (miniAppUrl != null)
         {
             rows.Add(new[]
             {
                 InlineKeyboardButton.WithWebApp(
-                    "🚀 Открыть TraleBot",
+                    "🚀 Открыть приложение",
                     new WebAppInfo { Url = miniAppUrl })
             });
         }
-        rows.Add(new[]
+        if (!isAppLauncher)
         {
-            InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
-        });
+            rows.Add(new[]
+            {
+                InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
+            });
+        }
         var keyboard = new InlineKeyboardMarkup(rows);
 
         if (isNewUser)
         {
             var trialLine = hasReferralArg
-                ? "Т��бе ещё и бонус: 60 дней бесплатно вм��сто 30 — за то, что пришёл по приглашению. 🎁"
-                : "Первые 30 дней — ��сё бесплатно.";
+                ? "Тебе ещё и бонус: 60 дней бесплатно вместо 30 — за то, что пришёл по приглашению. 🎁"
+                : "Первые 30 дней — всё бесплатно.";
 
-            var hasMiniApp = miniAppUrl != null;
-            var miniAppLine = hasMiniApp
-                ? "Жми «🚀 Открыть TraleBot» — попадёшь в приложение, где есть алфавит, грамматика, словарь и квизы. Тебя там встретит щенок Бомбора 🐶 — твой гид и маскот.\n\n"
-                : "";
-
+            // Message 1: short welcome — fits on one screen so users see CTA without scrolling.
             await client.SendTextMessageAsync(
                 request.UserTelegramId,
 $@"გამარჯობა, {request.UserName}! 👋
 
-Я — TraleBot, приложение для изучения грузинского языка прямо в Telegram.
-
-Только что ты узнал своё первое слово:
-გამარჯობა — «привет» по-грузински.
-
-{miniAppLine}А ещё в чате со мной можно переводить слова — я добавлю их в твой словарь и сделаю по ним квизы. Просто напиши любое слово или фразу.
+Я — TraleBot, приложение для изучения грузинского. Ты уже выучил первое слово: გამარჯობა — «привет».
 
 {trialLine}",
-                replyMarkup: keyboard,
                 cancellationToken: token);
+
+            // Message 2: dedicated CTA — single big WebApp button, impossible to miss.
+            // Older users get a clear «what to do next» without parsing a long text wall.
+            if (miniAppUrl != null)
+            {
+                await client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    "↓ Жми кнопку, чтобы открыть приложение. Там алфавит, грамматика, твой словарь и щенок Бомбора 🐶 — гид по грузинскому.\n\nА в чат можешь писать любое слово — переведу и добавлю в словарь.",
+                    replyMarkup: keyboard,
+                    cancellationToken: token);
+            }
+            else
+            {
+                await client.SendTextMessageAsync(
+                    request.UserTelegramId,
+                    "Напиши мне любое слово или фразу — переведу и добавлю в твой словарь.",
+                    replyMarkup: keyboard,
+                    cancellationToken: token);
+            }
         }
         else
         {
@@ -135,14 +156,17 @@ $@"გამარჯობა, {request.UserName}! 👋
                     new[]
                     {
                         InlineKeyboardButton.WithWebApp(
-                            "🏔 Открыть Бомбору",
+                            "🚀 Открыть приложение",
                             new WebAppInfo { Url = miniAppUrl! })
-                    },
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
                     }
                 };
+                if (!isAppLauncher)
+                {
+                    georgianRows.Add(new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData($"{CommandNames.MenuIcon} Меню в чате", CommandNames.Menu)
+                    });
+                }
                 var georgianKeyboard = new InlineKeyboardMarkup(georgianRows);
 
                 await client.SendTextMessageAsync(
