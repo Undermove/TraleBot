@@ -119,6 +119,52 @@ case "${MODE}" in
         ;;
 esac
 
+# --- Owner approval gate (build mode only) ------------------------------------
+# Build mode runs every hour 01:00–08:00. Without an explicit owner approval
+# on the latest sprint-plan issue, we burn ~$3-5/hour x 8 hours = $25-40/night
+# even when the owner hasn't reviewed the plan. Gate it: skip the build pass
+# unless the latest open sprint-plan issue has a comment from the owner saying
+# «поехали» (or a similar approve marker).
+#
+# Plan mode (full or one-off) is NOT gated — it still runs to draft the next
+# sprint plan that the owner will approve.
+#
+# Owner can override the gate with SKIP_APPROVAL_GATE=1 env var (manual runs).
+if [ "${MODE}" = "build" ] && [ "${SKIP_APPROVAL_GATE:-0}" != "1" ]; then
+    OWNER_LOGIN="${OWNER_LOGIN:-Undermove}"
+    APPROVE_RE='(?i)поехали|approve|^go\b|^го\b|поехали[!.]*|🚀'
+
+    SPRINT_ISSUE=$(gh issue list --label sprint-plan --state open --limit 1 \
+                       --json number -q '.[0].number' 2>/dev/null)
+    if [ -z "${SPRINT_ISSUE}" ]; then
+        echo ""
+        echo "============================================"
+        echo "  Build mode skipped: no open sprint-plan issue."
+        echo "  Approval gate is on. Use SKIP_APPROVAL_GATE=1 to override."
+        echo "  $(date)"
+        echo "============================================"
+        exit 0
+    fi
+
+    APPROVED=$(gh issue view "${SPRINT_ISSUE}" --json comments \
+                   -q ".comments[]? | select(.author.login == \"${OWNER_LOGIN}\") | .body" 2>/dev/null \
+                | grep -P -i "${APPROVE_RE}" | head -1 || true)
+
+    if [ -z "${APPROVED}" ]; then
+        echo ""
+        echo "============================================"
+        echo "  Build mode skipped: sprint plan #${SPRINT_ISSUE} not approved by ${OWNER_LOGIN}."
+        echo "  Waiting for the owner to comment «поехали» (or approve / go / го / 🚀)."
+        echo "  Use SKIP_APPROVAL_GATE=1 to override."
+        echo "  $(date)"
+        echo "============================================"
+        exit 0
+    fi
+
+    echo ""
+    echo ">>> Approval gate passed: sprint plan #${SPRINT_ISSUE} approved by ${OWNER_LOGIN}."
+fi
+
 # --- Per-agent plugin loadout --------------------------------------------------
 # tech-lead / developer / qa work on C# code. They load the official .NET Agent
 # Skills (dotnet/skills) vendored at /opt/dotnet-skills in the Dockerfile.
