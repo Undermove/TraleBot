@@ -56,6 +56,36 @@ public class AudioQuestionDtoTests
     }
 
     [Test]
+    public void GeorgianQuestionsLoader_ReturnsAtMostTwelveQuestions_WhenFileHasMore()
+    {
+        // Aorist L6 expanded to 18 questions — loader must cap at QuestionsPerLesson=12.
+        var questionsJson = string.Join(",\n", Enumerable.Range(1, 18).Select(i => $$"""
+            {
+              "id": "q_{{i:D2}}",
+              "lemma": "ტ",
+              "question": "Q{{i}}",
+              "options": ["A", "B", "C"],
+              "answer_index": 0,
+              "explanation": "E{{i}}"
+            }
+            """));
+        var json = $$"""{"lesson_id":"test","questions":[{{questionsJson}}]}""";
+
+        var tmpFile = Path.Combine(Path.GetTempPath(), $"cap_test_{Guid.NewGuid()}.json");
+        File.WriteAllText(tmpFile, json);
+        try
+        {
+            var loader = new GeorgianQuestionsLoader(NullLogger<GeorgianQuestionsLoader>.Instance, tmpFile);
+            var questions = loader.LoadQuestionsForLesson(6);
+            questions.Count.ShouldBe(12);
+        }
+        finally
+        {
+            File.Delete(tmpFile);
+        }
+    }
+
+    [Test]
     public void GeorgianQuestionsLoader_AudioFields_AreNullForStandardChoiceQuestion()
     {
         var json = """
