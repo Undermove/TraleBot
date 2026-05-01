@@ -123,6 +123,26 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                         }
                     }
 
+                    if (questionElement.TryGetProperty("target_sentence", out var ts) && ts.TryGetProperty("ru", out var tsRu))
+                        question.TargetSentenceRu = tsRu.GetString();
+
+                    if (questionElement.TryGetProperty("correct_order", out var co) && co.ValueKind == JsonValueKind.Array)
+                        question.CorrectOrder = co.EnumerateArray().Select(e => e.GetString() ?? string.Empty).ToList();
+
+                    if (questionElement.TryGetProperty("chip_pool", out var cp) && cp.ValueKind == JsonValueKind.Array)
+                        question.ChipPool = cp.EnumerateArray().Select(e => e.GetString() ?? string.Empty).ToList();
+
+                    if (questionElement.TryGetProperty("preset_positions", out var pp) && pp.ValueKind == JsonValueKind.Array)
+                        question.PresetPositions = pp.EnumerateArray()
+                            .Select(e => new SentenceBuilderPreset(
+                                e.GetProperty("position").GetInt32(),
+                                e.GetProperty("token").GetString() ?? string.Empty))
+                            .ToList();
+
+                    if (questionElement.TryGetProperty("hints", out var hints) && hints.ValueKind == JsonValueKind.Object)
+                        question.Hints = hints.EnumerateObject()
+                            .ToDictionary(p => p.Name, p => p.Value.GetString() ?? string.Empty);
+
                     questions.Add(question);
                 }
             }

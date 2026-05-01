@@ -22,7 +22,7 @@ public class QuizQuestionData
     public int AnswerIndex { get; set; }
     public string Explanation { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
-    /// <summary>"choice" (default), "type" (user types on Georgian keyboard), or "audio-choice" (listen and pick).</summary>
+    /// <summary>"choice" (default), "type" (user types on Georgian keyboard), "audio-choice" (listen and pick), or "sentence-builder" (arrange chips).</summary>
     public string? QuestionType { get; set; }
 
     /// <summary>URL of the audio file for audio-choice questions, e.g. /audio/ka/alphabet_ga.mp3. Null for other types.</summary>
@@ -31,6 +31,21 @@ public class QuizQuestionData
     /// <summary>Georgian word/phrase the audio contains (displayed as caption after answering). Null for other types.</summary>
     public string? Transcript { get; set; }
 
+    /// <summary>Target sentence in Russian for sentence-builder questions (e.g. "Я иду домой"). Null for other types.</summary>
+    public string? TargetSentenceRu { get; set; }
+
+    /// <summary>Correct token order defining the Georgian answer (e.g. ["მე","სახლში","მივდივარ"]). Null for other types.</summary>
+    public List<string>? CorrectOrder { get; set; }
+
+    /// <summary>Full chip pool including distractors. Null for other types.</summary>
+    public List<string>? ChipPool { get; set; }
+
+    /// <summary>Pre-filled slots (position → token). Null for other types.</summary>
+    public List<SentenceBuilderPreset>? PresetPositions { get; set; }
+
+    /// <summary>Slot-index → hint text (e.g. {"1":"Постпозиция -ში..."}). Null for other types.</summary>
+    public Dictionary<string, string>? Hints { get; set; }
+
     public void ShuffleOptions(Random random)
     {
         if (Options.Count <= 1)
@@ -38,8 +53,10 @@ public class QuizQuestionData
 
         var correctAnswer = Options[AnswerIndex];
         var shuffledOptions = Options.OrderBy(_ => random.Next()).ToList();
-        
+
         Options = shuffledOptions;
         AnswerIndex = Options.IndexOf(correctAnswer);
     }
 }
+
+public record SentenceBuilderPreset(int Position, string Token);

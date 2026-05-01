@@ -435,7 +435,12 @@ public class MiniAppController : Controller
             explanation = q.Explanation,
             questionType = q.QuestionType ?? "choice",
             audioUrl = q.AudioUrl,
-            transcript = q.Transcript
+            transcript = q.Transcript,
+            targetSentenceRu = q.TargetSentenceRu,
+            correctOrder = q.CorrectOrder,
+            chipPool = q.ChipPool,
+            presetPositions = q.PresetPositions?.Select(p => new { position = p.Position, token = p.Token }),
+            hints = q.Hints
         });
     }
 
