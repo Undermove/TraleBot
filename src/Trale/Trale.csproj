@@ -146,4 +146,31 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
+
+    <!-- Mini-app SPA build: run `vite build` automatically before .NET build whenever
+         source files in miniapp-src/ are newer than wwwroot/index.html. Without this
+         step, dotnet build can regenerate index.html with a fresh fingerprint while
+         wwwroot/assets/ keeps the old bundle, breaking the mini-app at runtime
+         (browser fetches a hash that doesn't exist → React never starts → blank
+         screen). Self-healing on every dotnet build.
+         Inputs/Outputs make MSBuild skip the target when nothing relevant changed,
+         so it adds zero overhead on incremental builds. -->
+    <ItemGroup>
+      <MiniappSourceFiles Include="miniapp-src/src/**/*.*" />
+      <MiniappSourceFiles Include="miniapp-src/index.html" />
+      <MiniappSourceFiles Include="miniapp-src/package.json" />
+      <MiniappSourceFiles Include="miniapp-src/vite.config.ts" />
+      <MiniappSourceFiles Include="miniapp-src/tailwind.config.js" />
+      <MiniappSourceFiles Include="miniapp-src/postcss.config.js" />
+      <MiniappSourceFiles Include="miniapp-src/tsconfig.json" />
+    </ItemGroup>
+
+    <Target Name="BuildMiniapp"
+            BeforeTargets="BeforeBuild"
+            Inputs="@(MiniappSourceFiles)"
+            Outputs="wwwroot/index.html"
+            Condition="Exists('miniapp-src/package.json') AND '$(SkipMiniappBuild)' != 'true'">
+      <Message Importance="high" Text="Building mini-app SPA (vite) — sources changed since last bundle..." />
+      <Exec Command="npm run build" WorkingDirectory="miniapp-src" />
+    </Target>
 </Project>
