@@ -34,7 +34,7 @@ export default function ComingSoonTile({ geoTitle, geoIcon, onTap }: ComingSoonT
         aria-label={`Модуль ${geoTitle}, скоро`}
         className="w-full text-left active:opacity-70 transition-opacity"
         style={{
-          background: '#F5EFE0',
+          background: '#FBF6EC',
           border: '1.5px solid rgba(21,16,10,0.25)',
           borderRadius: 10,
           padding: '12px',
@@ -87,7 +87,7 @@ export default function ComingSoonTile({ geoTitle, geoIcon, onTap }: ComingSoonT
           <div
             className="inline-block font-sans text-[13px] font-semibold text-cream px-4 py-2.5 rounded-xl"
             style={{
-              background: 'rgba(21,16,10,0.88)',
+              background: '#15100A',
               animation: 'comingsoon-toast 2.5s ease both',
             }}
           >

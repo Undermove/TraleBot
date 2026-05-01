@@ -191,7 +191,7 @@ export default function ModuleMap({
               const nextIsDone = completed.has(lessons[idx + 1].id)
               const currentIsDone = completed.has(lessons[idx].id)
               const segmentDone = currentIsDone && nextIsDone
-              const segmentColor = segmentDone ? accentHex : '#B5A68B'
+              const segmentColor = segmentDone ? accentHex : 'rgba(21,16,10,0.25)'
 
               return (
                 <path
