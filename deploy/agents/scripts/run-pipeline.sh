@@ -538,11 +538,15 @@ if [ -f "OWNER-PRIORITIES.md" ]; then
             LAST_AGENT="${agent}"
         done
 
-        # Bail if qa filed needs-fix or tests failed in this iteration's qa log.
-        # Conservative pattern — false positives just stop the loop early; the
-        # next nightly hour picks it up.
+        # Bail if qa explicitly flagged regressions. Patterns are intentionally
+        # narrow: a literal `needs-fix` label / commit subject, a failing test
+        # count, or a QA-report failure marker. Avoid generic substrings like
+        # "red" that match TDD jargon ("red test for X") and produce false
+        # positives — the previous loop bailed after iter 1 because the QA
+        # agent's text contained the phrase "red test", not because anything
+        # actually failed.
         qa_log="${LOG_DIR}/qa_epic${epic_iter}.log"
-        if [ -f "${qa_log}" ] && grep -qiE 'needs-fix|tests? failed|qa report .*FAIL|integration .*FAIL|red[: ]' "${qa_log}" 2>/dev/null; then
+        if [ -f "${qa_log}" ] && grep -qE '\bneeds-fix\b|[1-9][0-9]* tests? failed|❌|qa-report.*FAIL|integration.*FAIL' "${qa_log}" 2>/dev/null; then
             echo ""
             echo ">>> Epic loop: qa flagged failures in iter ${epic_iter}. Stopping; remaining work continues next pass."
             break
