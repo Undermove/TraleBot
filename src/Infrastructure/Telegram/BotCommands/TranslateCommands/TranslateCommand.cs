@@ -16,6 +16,10 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator, Bot
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
         var isOwner = botConfig.OwnerTelegramId != 0 && request.UserTelegramId == botConfig.OwnerTelegramId;
+        var miniAppUrl = botConfig.MiniAppEnabled && !string.IsNullOrEmpty(botConfig.HostAddress)
+            ? $"{botConfig.NormalizedHost()}/"
+            : null;
+
         var result = await mediator.Send(new TranslateAndCreateVocabularyEntry
         {
             Word = request.Text,
@@ -24,8 +28,8 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator, Bot
 
         await (result switch
         {
-            CreateVocabularyEntryResult.TranslationSuccess success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token, isOwner),
-            CreateVocabularyEntryResult.TranslationExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token, isOwner),
+            CreateVocabularyEntryResult.TranslationSuccess success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token, isOwner, miniAppUrl),
+            CreateVocabularyEntryResult.TranslationExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token, isOwner, miniAppUrl),
             CreateVocabularyEntryResult.EmojiDetected => client.HandleEmojiDetected(request, token),
             CreateVocabularyEntryResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             CreateVocabularyEntryResult.TranslationFailure => client.HandleFailure(request, token),
