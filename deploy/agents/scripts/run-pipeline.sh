@@ -462,6 +462,104 @@ for i in "${AGENT_INDICES[@]}"; do
     LAST_AGENT="${agent}"
 done
 
+# --- Epic loop: drive OWNER-PRIORITY P1 chain to completion in one pass --------
+# After the regular agent pass, if OWNER-PRIORITIES.md still has unchecked rows
+# for developer (and there are still open P1 task issues), run additional
+# developer+qa iterations. Each iteration is a fresh agent session — avoids
+# context rot from one giant agent ploughing through 5 issues. Stops on:
+#   - no more pending owner-priority developer work
+#   - no more open P1 issues
+#   - qa reports a regression
+#   - hard cap (3 iterations) to bound cost / wall-clock per pipeline pass
+#
+# Skipped automatically when there is no OWNER-PRIORITIES.md, no unchecked
+# developer rows, or no P1 backlog. So normal nights without active epics
+# pay zero overhead.
+EPIC_LOOP_MAX_ITER="${EPIC_LOOP_MAX_ITER:-3}"
+
+if [ -f "OWNER-PRIORITIES.md" ]; then
+    epic_iter=0
+    while [ "${epic_iter}" -lt "${EPIC_LOOP_MAX_ITER}" ]; do
+        pending_dev=$(grep -cE '^\s*-\s*\[\s*\]\s+\*\*developer\*\*' OWNER-PRIORITIES.md 2>/dev/null | tr -d ' ')
+        pending_dev="${pending_dev:-0}"
+        open_p1=$(gh issue list --label task --label P1 --state open --limit 1 --json number 2>/dev/null \
+                    | jq 'length' 2>/dev/null || echo 0)
+
+        if [ "${pending_dev}" -eq 0 ] || [ "${open_p1}" -eq 0 ]; then
+            echo ""
+            echo ">>> Epic loop: no pending owner-priority dev work (pending_dev=${pending_dev}, open_p1=${open_p1}). Done."
+            break
+        fi
+
+        epic_iter=$((epic_iter + 1))
+        echo ""
+        echo "============================================"
+        echo "  Epic iter ${epic_iter}/${EPIC_LOOP_MAX_ITER} — owner-priority dev cycle"
+        echo "  pending_dev=${pending_dev}  open_p1=${open_p1}"
+        echo "============================================"
+
+        # Run developer (5) then qa (6). Two indices, in order.
+        for i in 5 6; do
+            agent="${AGENTS[$i]}"
+            label="${AGENT_LABELS[$i]}"
+            instruction="${INSTRUCTIONS[$i]}"
+            turns="${MAX_TURNS_PER_AGENT[$i]}"
+            log_file="${LOG_DIR}/${agent}_epic${epic_iter}.log"
+            jsonl_file="${LOG_DIR}/${agent}_epic${epic_iter}.jsonl"
+            stderr_file="${LOG_DIR}/${agent}_epic${epic_iter}.stderr.log"
+
+            echo ""
+            echo ">>> [${agent} epic-iter ${epic_iter}] starting at $(date)"
+
+            if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+                git add -A
+                git commit -m "[${LAST_AGENT:-prev}] ${HOUR_STAMP} epic-${epic_iter}-pre" --allow-empty 2>/dev/null || true
+            fi
+
+            # shellcheck disable=SC2046
+            claude \
+                $(agent_plugin_args "${agent}") \
+                -p "${instruction}" \
+                --dangerously-skip-permissions \
+                --max-turns "${turns}" \
+                --output-format stream-json \
+                --verbose \
+                2>"${stderr_file}" \
+                | tee "${jsonl_file}" \
+                | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text // empty' 2>/dev/null \
+                | tee "${log_file}"
+
+            if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+                git add -A
+                git commit -m "[${agent}] ${HOUR_STAMP} epic-iter ${epic_iter}" 2>/dev/null || true
+            fi
+
+            echo ">>> [${agent} epic-iter ${epic_iter}] finished at $(date)"
+            LAST_AGENT="${agent}"
+        done
+
+        # Bail if qa filed needs-fix or tests failed in this iteration's qa log.
+        # Conservative pattern — false positives just stop the loop early; the
+        # next nightly hour picks it up.
+        qa_log="${LOG_DIR}/qa_epic${epic_iter}.log"
+        if [ -f "${qa_log}" ] && grep -qiE 'needs-fix|tests? failed|qa report .*FAIL|integration .*FAIL|red[: ]' "${qa_log}" 2>/dev/null; then
+            echo ""
+            echo ">>> Epic loop: qa flagged failures in iter ${epic_iter}. Stopping; remaining work continues next pass."
+            break
+        fi
+
+        # Push partial progress so a subsequent failure doesn't lose it.
+        if [ "$(git rev-list "origin/${BRANCH}..HEAD" --count 2>/dev/null || echo 0)" -gt 0 ]; then
+            git push origin "${BRANCH}" 2>/dev/null || true
+        fi
+    done
+
+    if [ "${epic_iter}" -gt 0 ]; then
+        echo ""
+        echo ">>> Epic loop finished after ${epic_iter} extra developer+qa iteration(s)."
+    fi
+fi
+
 # --- Finalize per-hour token usage table --------------------------------------
 TOTAL_COST=$(printf '%s\n' "${COST_VALUES[@]:-0}" | awk 'BEGIN{s=0} {s+=$1} END{printf "%.4f", s}')
 {
