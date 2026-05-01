@@ -4,6 +4,7 @@ import Button from '../components/Button'
 import FeedbackBanner from '../components/FeedbackBanner'
 import GeorgianKeyboard from '../components/GeorgianKeyboard'
 import LoaderLetter from '../components/LoaderLetter'
+import Mascot from '../components/Mascot'
 import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
 import { api } from '../api'
@@ -92,39 +93,46 @@ export default function Practice({
   if (phase === 'error') {
     return (
       <div
-        className="flex flex-col items-center justify-center bg-cream px-6 text-center gap-5"
-        style={{
-          minHeight: '100dvh',
-          paddingTop: 'calc(var(--safe-t) + 24px)',
-          paddingBottom: 'calc(var(--safe-b) + 24px)'
-        }}
+        className="flex flex-col bg-cream"
+        style={{ minHeight: '100dvh', paddingTop: 'var(--safe-t)' }}
       >
-        <div className="mn-eyebrow">страница не раскрылась</div>
-        <div className="font-sans text-[20px] font-extrabold text-jewelInk">
-          Вопросы не загрузились
+        <div className="mn-kilim" />
+
+        <div
+          className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-5"
+          style={{ paddingBottom: 'calc(var(--safe-b) + 24px)' }}
+        >
+          <Mascot mood="think" size={120} />
+          <div className="mn-eyebrow">კითხვები არ ჩაიტვირთა</div>
+          <div className="font-sans text-[20px] font-extrabold text-jewelInk">
+            Вопросы не загрузились.
+          </div>
+          <div className="font-sans text-[14px] text-jewelInk-mid max-w-[300px]">
+            Проверь соединение и попробуй ещё раз.
+          </div>
+          <div className="w-full max-w-[280px] mt-2 flex flex-col gap-3">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setPhase('loading')
+                api.lessonQuestions(moduleId, lessonId)
+                  .then(applyQuestions)
+                  .catch(() => setPhase('error'))
+              }}
+            >
+              попробовать ещё раз
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
+            >
+              ← назад
+            </Button>
+          </div>
         </div>
-        <div className="font-sans text-[14px] text-jewelInk-mid max-w-[300px]">
-          Проверь соединение и попробуй ещё раз.
-        </div>
-        <div className="w-full max-w-[280px] mt-2 flex flex-col gap-3">
-          <Button
-            variant="primary"
-            onClick={() => {
-              setPhase('loading')
-              api.lessonQuestions(moduleId, lessonId)
-                .then(applyQuestions)
-                .catch(() => setPhase('error'))
-            }}
-          >
-            попробовать ещё раз
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
-          >
-            ← назад
-          </Button>
-        </div>
+
+        <div className="mn-kilim opacity-70" />
+        <div style={{ height: 'calc(var(--safe-b) + 4px)' }} />
       </div>
     )
   }
