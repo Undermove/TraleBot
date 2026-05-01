@@ -466,6 +466,8 @@ export default function VocabularyPractice({
         )}
       </div>
 
+      <div className="mn-kilim opacity-70" />
+
       {/* Action bar */}
       <div
         className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto px-5 pt-4 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15 z-20"

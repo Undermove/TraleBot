@@ -453,6 +453,8 @@ export default function Practice({
         )}
       </div>
 
+      <div className="mn-kilim opacity-70" />
+
       {/* Action bar */}
       {isTypeQuestion ? (
         /* For type questions: keyboard + check button at bottom */
