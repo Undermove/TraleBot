@@ -46,7 +46,7 @@
 
 **Чек-лист по ролям:**
 
-- [ ] **designer** — оформить дизайн-спеку `design-specs/79-sentence-builder.md` по механике из ROADMAP §79. Скрины не нужны, состояния (default / chip selected / slot active / after check / error) описаны словами + low-fi схемы. Перевести §79 в ROADMAP в `[designed]` после готовности спеки.
+- [x] **designer** — оформить дизайн-спеку `design-specs/79-sentence-builder.md` по механике из ROADMAP §79. Скрины не нужны, состояния (default / chip selected / slot active / after check / error) описаны словами + low-fi схемы. Перевести §79 в ROADMAP в `[designed]` после готовности спеки. → done by designer 2026-05-01: design-specs/79-sentence-builder.md, ROADMAP §79 → [designed]
 - [ ] **methodist** — проверить, что предложенная прогрессия L1→L5+ соответствует CEFR A1-A2 и принципу i+1. Подобрать конкретные русско-грузинские пары для пилота на Postpositions: 5-7 предложений на каждый из L1-L3 (один слот / два слота / половина предложения). Сохранить как `design-specs/79-sentence-builder-content.md` или внутри спеки.
 - [ ] **native-reviewer** — пройтись по предложенным грузинским предложениям. Подтвердить, что для каждого есть один корректный порядок слов и что выбранные дистракторы (неправильный падеж, лишняя постпозиция) реально сбивают, а не оставляют двусмысленность.
 - [ ] **tech-lead-breakdown** — после готовности спеки разбить на task-issues:
