@@ -43,7 +43,7 @@ set -e
 # OUTPUT: agents push to the shared nightly branch agents/nightly-YYYY-MM-DD.
 # The morning 09:00 cron (run-qa.sh) opens/refreshes the daily PR.
 
-source /etc/environment 2>/dev/null || true
+[ -f /etc/environment ] && source /etc/environment
 
 MODE="${1:-auto}"
 TODAY=$(date '+%Y-%m-%d')
@@ -575,11 +575,13 @@ Action: investigate the planning logs above. The pipeline will NOT auto-retry �
             echo "## Эпик #${enum}: ${etitle}"
             echo ""
 
-            # Pull the breakdown comment (the one that starts with '## Breakdown').
+            # Pull the most recent breakdown comment (one starting with '## Breakdown').
+            # Use jq's array-last instead of unix `tail -1`: comment bodies are
+            # multi-line, so tail -1 grabs the last LINE (often blank), not the
+            # last MATCHING COMMENT.
             local breakdown_comment
             breakdown_comment=$(gh issue view "${enum}" --json comments \
-                                 -q '.comments[]? | select(.body | startswith("## Breakdown")) | .body' 2>/dev/null \
-                              | tail -1)
+                                 -q '[.comments[]? | select(.body | startswith("## Breakdown")) | .body] | last // ""' 2>/dev/null)
             if [ -n "${breakdown_comment}" ]; then
                 echo "${breakdown_comment}"
                 local epic_hours
