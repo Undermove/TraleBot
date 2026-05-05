@@ -1,176 +1,101 @@
 #!/bin/bash
 set -e
 
-# Sequential agent pipeline on a SHARED nightly branch.
+# Epic-driven nightly pipeline.
 #
-# FLOW (one hour = one pass through this pipeline):
-#   1. methodist            — pedagogical audit, files issues (label: methodist)
-#   2. native-reviewer      — bilingual ge+ru native speaker: proofreads content,
-#                             commits small fixes directly, files issues (label: native)
-#   3. designer             — UX audit, files design ideas as issues (label: design);
-#                             optional design-specs/*.md for big features
-#   4. product              — triages methodist/native/design issues + generates own
-#                             ideas, updates STRATEGY.md/ROADMAP.md
-#   5. tech-lead-breakdown  — breaks [designed]/[launch] ROADMAP items into small
-#                             technical GitHub issues with acceptance criteria
-#                             (labels: task, P1/P2/P3)
-#   6. developer            — picks the highest-priority open 'task' issue and
-#                             implements it on the shared branch
-#   7. qa                   — integration-tests the whole shared branch after the
-#                             new commit lands
-#   8. tech-lead-review     — architecture review of developer's commit + qa report;
-#                             opens 'needs-fix' issues for regressions
+# PHASES (in order):
+#   1. discovery        — product creates one epic-draft issue with BDD scenarios
+#                         (owner-priority first, else from STRATEGY/ROADMAP)
+#   2. methodist-review — methodist comments on every open epic-draft issue
+#                         (pedagogy: progression, prerequisites, missing topics)
+#   3. native-review    — native-reviewer comments on every open epic-draft issue
+#                         (language: Georgian correctness, Russian translation,
+#                         word choice, register)
+#   4. finalize         — product reads review comments, updates epic body to
+#                         address them, swaps label epic-draft → epic-ready
+#   5. breakdown        — tech-lead splits each epic-ready into task issues
+#                         (1-4h each) with hour estimates; comments total on epic
+#   6. publish-plan     — orchestrator (no agent) composes/refreshes a single
+#                         sprint-plan-issue listing every epic-ready and its
+#                         tasks. Owner approval gate hangs on this issue.
+#                         If discovery/breakdown produced nothing → file a
+#                         pipeline-failure issue instead of an empty plan.
+#   7. qa-prep          — qa writes a per-task test plan as a comment on every
+#                         task issue under approved epics (before dev starts)
+#   8. dev              — developer picks one qa-prepared task at a time, must
+#                         cover every test the qa plan listed; loops until tasks
+#                         exhausted or iteration cap hit
+#   9. refactor         — tech-lead end-of-night pass on the whole nightly
+#                         branch; only refactors when dotnet test is green
+#                         before AND after each step
 #
-# SINGLE SOURCE OF TRUTH: GitHub issues drive execution. ROADMAP.md is strategic.
-# SHARED BRANCH: agents/nightly-YYYY-MM-DD — each hour continues the previous.
-# NO PR HERE: the morning 09:00 run (run-qa.sh) opens the single daily PR.
+# MODES (passed as $1):
+#   auto    — orchestrator decides from sprint-plan state (default)
+#               · no open sprint-plan        → run planning phases (1–6)
+#               · open sprint-plan, pending  → exit, wait for owner «поехали»
+#               · open sprint-plan, approved → run build phases (7–9)
+#   plan    — force planning phases (1–6), ignore approval state
+#   build   — force build phases (7–9), ignore approval state
+#   <phase> — force a single phase (for smoke testing). Valid:
+#             discovery / methodist-review / native-review / finalize /
+#             breakdown / publish-plan / qa-prep / dev / refactor
+#
+# OUTPUT: agents push to the shared nightly branch agents/nightly-YYYY-MM-DD.
+# The morning 09:00 cron (run-qa.sh) opens/refreshes the daily PR.
 
-source /etc/environment
+source /etc/environment 2>/dev/null || true
 
-# MODE selects which subset of agents runs this hour.
-#   full  — all 8 agents (audit + build). Expensive; scheduled 2×/night.
-#   build — only tech-lead-breakdown, developer, qa, tech-lead-review.
-#           Cheapest pass that still makes code progress — audit agents
-#           (methodist, native-reviewer, designer, product) are skipped
-#           because running them every hour produces duplicate triage
-#           churn and burns tokens re-reading the same backlog.
-MODE="${1:-full}"
-
+MODE="${1:-auto}"
 TODAY=$(date '+%Y-%m-%d')
 HOUR_STAMP=$(date '+%Y-%m-%d_%H-%M')
-BRANCH="agents/nightly-${TODAY}"
-REPO_DIR="/workspace/repo"
-LOG_DIR="/logs/pipeline_${HOUR_STAMP}"
+BRANCH="${BRANCH_OVERRIDE:-agents/nightly-${TODAY}}"
+REPO_DIR="${REPO_DIR:-/workspace/repo}"
+LOG_DIR="${LOG_DIR_OVERRIDE:-/logs/pipeline_${HOUR_STAMP}}"
 SUMMARY_FILE="${LOG_DIR}/summaries.md"
 SHARED_CONTEXT_FILE="${LOG_DIR}/shared-context.md"
+TOKEN_USAGE_FILE="${LOG_DIR}/token-usage.md"
+TOKEN_USAGE_NIGHTLY="${TOKEN_USAGE_NIGHTLY_OVERRIDE:-/logs/token-usage-${TODAY}.md}"
+
+OWNER_LOGIN="${OWNER_LOGIN:-Undermove}"
+APPROVE_RE='(?i)поехали|approve|^go\b|^го\b|🚀'
+
+# Iteration cap for the per-task dev loop. Each iteration is one task (one fresh
+# developer session). Bounded so a runaway night can't burn the whole budget.
+DEV_LOOP_MAX_ITER="${DEV_LOOP_MAX_ITER:-5}"
 
 mkdir -p "${LOG_DIR}"
 
-# Per-hour token accounting table. Each agent appends a row; a total row is
-# added after the loop. Morning QA can concatenate these across the night to
-# answer "how much did last night cost and where".
-TOKEN_USAGE_FILE="${LOG_DIR}/token-usage.md"
-# Per-night rolling log — every hour appends its section here so morning QA
-# has a single file to read across 8 hours.
-TOKEN_USAGE_NIGHTLY="/logs/token-usage-${TODAY}.md"
-
 echo "============================================"
-echo "  Pipeline hour: ${HOUR_STAMP}"
+echo "  Epic-driven pipeline"
 echo "  Mode:          ${MODE}"
+echo "  Hour:          ${HOUR_STAMP}"
 echo "  Shared branch: ${BRANCH}"
 echo "  $(date)"
 echo "============================================"
 
 cd "${REPO_DIR}"
 
-# --- Sync shared nightly branch -------------------------------------------------
+# --- Sync shared nightly branch ------------------------------------------------
 git fetch origin --prune --quiet
-git checkout main
-git reset --hard origin/main
+git checkout main 2>/dev/null
+git reset --hard origin/main 2>/dev/null
 
 if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null 2>&1; then
-    echo ">>> Branch ${BRANCH} exists on origin — continuing work."
+    echo ">>> Branch ${BRANCH} exists on origin — continuing."
     git checkout -B "${BRANCH}" "origin/${BRANCH}"
-    # Pull in any main commits merged after the night started: latest agent
-    # prompts (.claude/agents/), OWNER-PRIORITIES.md updates, content fixes
-    # merged via PR during the day. Without this, the night branch keeps
-    # running on prompts and files that were current at branch creation.
-    if ! git merge origin/main --no-edit; then
-        echo ">>> WARNING: auto-merge of origin/main into ${BRANCH} hit a conflict — aborting merge, agents will work on stale tip."
-        git merge --abort 2>/dev/null || true
+    if git merge origin/main --no-edit; then
+        git push origin "${BRANCH}" 2>/dev/null || true
     else
-        echo ">>> Merged origin/main into ${BRANCH} (latest agent prompts + main fixes)."
-        git push origin "${BRANCH}"
+        echo ">>> WARNING: auto-merge of origin/main into ${BRANCH} hit a conflict — agents will work on stale tip."
+        git merge --abort 2>/dev/null || true
     fi
 else
     echo ">>> First run of the night — creating ${BRANCH} from main."
     git checkout -B "${BRANCH}" main
-    git push -u origin "${BRANCH}"
+    git push -u origin "${BRANCH}" 2>/dev/null || true
 fi
 
-echo ""
-echo ">>> Recent activity on ${BRANCH}:"
-git log --oneline -20 main.."${BRANCH}" || true
-echo ""
-
-# --- Agent definitions ----------------------------------------------------------
-# Generous limits — developer does actual implementation, tech-lead runs twice
-# (breakdown up front, architecture review at the end), QA runs full integration.
-# Methodist/native/designer/product are lighter but raised from 25 so they don't
-# truncate triage.
-MAX_TURNS_PER_AGENT=(40 60 40 50 80 100 60 50)
-
-AGENTS=("methodist" "native-reviewer" "designer" "product" "tech-lead-breakdown" "developer" "qa" "tech-lead-review")
-AGENT_LABELS=("Methodist" "Native Reviewer" "Designer" "Product" "Tech Lead (Breakdown)" "Developer" "QA" "Tech Lead (Review)")
-
-# Which indices into AGENTS to actually run this hour. Audit agents (0..3) are
-# the expensive re-reading crew; build agents (4..7) convert approved backlog
-# into commits. See MODE comment at top.
-case "${MODE}" in
-    full)
-        AGENT_INDICES=(0 1 2 3 4 5 6 7)
-        ;;
-    build)
-        AGENT_INDICES=(4 5 6 7)
-        ;;
-    *)
-        echo "Unknown MODE '${MODE}'. Expected 'full' or 'build'." >&2
-        exit 64
-        ;;
-esac
-
-# --- Owner approval gate (build mode only) ------------------------------------
-# Build mode runs every hour 01:00–08:00. Without an explicit owner approval
-# on the latest sprint-plan issue, we burn ~$3-5/hour x 8 hours = $25-40/night
-# even when the owner hasn't reviewed the plan. Gate it: skip the build pass
-# unless the latest open sprint-plan issue has a comment from the owner saying
-# «поехали» (or a similar approve marker).
-#
-# Plan mode (full or one-off) is NOT gated — it still runs to draft the next
-# sprint plan that the owner will approve.
-#
-# Owner can override the gate with SKIP_APPROVAL_GATE=1 env var (manual runs).
-if [ "${MODE}" = "build" ] && [ "${SKIP_APPROVAL_GATE:-0}" != "1" ]; then
-    OWNER_LOGIN="${OWNER_LOGIN:-Undermove}"
-    APPROVE_RE='(?i)поехали|approve|^go\b|^го\b|поехали[!.]*|🚀'
-
-    SPRINT_ISSUE=$(gh issue list --label sprint-plan --state open --limit 1 \
-                       --json number -q '.[0].number' 2>/dev/null)
-    if [ -z "${SPRINT_ISSUE}" ]; then
-        echo ""
-        echo "============================================"
-        echo "  Build mode skipped: no open sprint-plan issue."
-        echo "  Approval gate is on. Use SKIP_APPROVAL_GATE=1 to override."
-        echo "  $(date)"
-        echo "============================================"
-        exit 0
-    fi
-
-    APPROVED=$(gh issue view "${SPRINT_ISSUE}" --json comments \
-                   -q ".comments[]? | select(.author.login == \"${OWNER_LOGIN}\") | .body" 2>/dev/null \
-                | grep -P -i "${APPROVE_RE}" | head -1 || true)
-
-    if [ -z "${APPROVED}" ]; then
-        echo ""
-        echo "============================================"
-        echo "  Build mode skipped: sprint plan #${SPRINT_ISSUE} not approved by ${OWNER_LOGIN}."
-        echo "  Waiting for the owner to comment «поехали» (or approve / go / го / 🚀)."
-        echo "  Use SKIP_APPROVAL_GATE=1 to override."
-        echo "  $(date)"
-        echo "============================================"
-        exit 0
-    fi
-
-    echo ""
-    echo ">>> Approval gate passed: sprint plan #${SPRINT_ISSUE} approved by ${OWNER_LOGIN}."
-fi
-
-# --- Per-agent plugin loadout --------------------------------------------------
-# tech-lead / developer / qa work on C# code. They load the official .NET Agent
-# Skills (dotnet/skills) vendored at /opt/dotnet-skills in the Dockerfile.
-# Each --plugin-dir loads one plugin for the session (Claude Code doesn't
-# auto-enumerate sub-plugins from a marketplace, so we list the ones we want).
-# qa additionally gets dotnet-diag for build/test diagnostics.
+# --- Plugin loadouts ----------------------------------------------------------
 DOTNET_SKILLS_ROOT="/opt/dotnet-skills/plugins"
 DOTNET_CORE_PLUGINS=(
     "${DOTNET_SKILLS_ROOT}/dotnet"
@@ -180,12 +105,8 @@ DOTNET_CORE_PLUGINS=(
     "${DOTNET_SKILLS_ROOT}/dotnet-nuget"
 )
 DOTNET_QA_PLUGINS=("${DOTNET_CORE_PLUGINS[@]}" "${DOTNET_SKILLS_ROOT}/dotnet-diag")
-
-# Anthropic frontend-design plugin — used by designer and developer agents for
-# mini-app UI work. Vendored in the Dockerfile via sparse clone.
 FRONTEND_DESIGN_PLUGIN="/opt/anthropic-plugins/plugins/frontend-design"
 
-# Build --plugin-dir argument arrays once. Used in the per-agent claude invocation.
 agent_plugin_args() {
     local agent="$1"
     local -a dirs=()
@@ -198,237 +119,104 @@ agent_plugin_args() {
         *) return 0 ;;
     esac
     for d in "${dirs[@]}"; do
-        # Defensive: skip silently if the skills repo wasn't vendored (image built
-        # before skills landed) so the agent still runs, just without skills.
-        if [ -d "$d" ]; then
-            printf -- '--plugin-dir %s ' "$d"
-        fi
+        [ -d "$d" ] && printf -- '--plugin-dir %s ' "$d"
     done
 }
 
-CONTEXT_PREFIX="You are working on the SHARED nightly branch '${BRANCH}'. Previous agents (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work — ROADMAP.md is strategic context only.
+# --- Shared context (built once per pipeline invocation) ----------------------
+build_shared_context() {
+    {
+        echo "# Shared context — ${HOUR_STAMP}"
+        echo ""
+        echo "Nightly branch: \`${BRANCH}\`  •  Mode: \`${MODE}\`"
+        echo ""
+        echo "## Recent commits on nightly branch (main..HEAD, up to 50)"
+        echo ""
+        echo '```'
+        git log --oneline -50 "main..HEAD" 2>/dev/null || echo "(no commits yet tonight)"
+        echo '```'
+        echo ""
+        echo "## Touched files (main..HEAD)"
+        echo ""
+        echo '```'
+        git diff --stat "main..HEAD" 2>/dev/null || echo "(no diff)"
+        echo '```'
+        echo ""
+        echo "## Open issue counts by label"
+        echo ""
+        for lbl in epic epic-draft epic-ready epic-methodist-reviewed epic-native-reviewed task qa-prepared sprint-plan pipeline-failure needs-fix P1 P2 P3; do
+            count=$(gh issue list --label "$lbl" --state open --limit 100 --json number 2>/dev/null \
+                        | jq 'length' 2>/dev/null || echo "?")
+            printf -- "- **%s**: %s\n" "$lbl" "$count"
+        done
+        echo ""
+        echo "## Open epic-draft issues"
+        echo ""
+        gh issue list --label epic-draft --state open --limit 20 --json number,title \
+            --template '{{range .}}- #{{.number}} {{.title}}
+{{end}}' 2>/dev/null || echo "(none)"
+        echo ""
+        echo "## Open epic-ready issues"
+        echo ""
+        gh issue list --label epic-ready --state open --limit 20 --json number,title \
+            --template '{{range .}}- #{{.number}} {{.title}}
+{{end}}' 2>/dev/null || echo "(none)"
+        echo ""
+    } > "${SHARED_CONTEXT_FILE}"
+    echo ">>> Shared context: ${SHARED_CONTEXT_FILE}"
+}
 
-BEFORE doing anything else, read the pre-built shared context at '${SHARED_CONTEXT_FILE}'. It already contains: recent commits on the nightly branch, touched files, open-issue counts by label, the most recently filed issues. Do NOT re-run 'git log main..HEAD', 'git diff --stat main..HEAD', or an unfiltered 'gh issue list --state open --limit 50' — that information is already in the shared context. Use labeled queries only when you need the BODIES of issues you intend to act on this hour (e.g. 'gh issue list --label task --label P1 --state open --limit 20', 'gh issue view <N>').
-
-After reading the shared context, read STRATEGY.md (current phase + launch checklist) and ROADMAP.md (strategic backlog) — these are your priority signal.
-
-Do NOT create a PR. Do NOT redo work that is already committed. Commit your own work with clear messages referencing issue numbers when applicable.
-
-COMMIT SUBJECT CONVENTION — ROADMAP section numbers are NOT GitHub issue numbers. When referencing a ROADMAP section in a commit subject, write it as \`ROADMAP-46\`, \`§46\`, or \`ROADMAP §46\` — NEVER \`#46\` — because GitHub auto-links any bare \`#NN\` to issue/PR #NN in this repo, which produces wrong cross-references in the nightly PR. Use bare \`#NN\` ONLY for real GitHub issues (e.g. \`Refs #403\`, \`Fixes #370\`, \`create #433 for ROADMAP-46\`).
-
-"
-
-INSTRUCTIONS=(
-    # 1. METHODIST
-    "${CONTEXT_PREFIX}Read .claude/agents/methodist.md. Your role this hour:
-- Scan pedagogical structure of course modules (skip Alphabet and Numbers — owner is happy with them). Focus on 'Verbs of Movement' and later modules.
-- First, read your existing feedback: 'gh issue list --label methodist --state open --limit 50'. Do NOT duplicate issues you already filed.
-- For NEW pedagogical problems only, file GitHub issues with 'gh issue create --label methodist'. Title should be concise, body should state: problem, affected module, suggested fix.
-- Do NOT edit code. Do NOT touch ROADMAP.md directly — product does that.
-At the very end output '=== SUMMARY ===' with 3-7 bullets."
-
-    # 2. NATIVE REVIEWER
-    "${CONTEXT_PREFIX}Read .claude/agents/native-reviewer.md. Your role this hour:
-- You are a BILINGUAL Georgian+Russian native speaker. Your job is real-language proofreading, NOT pedagogy. Methodist already handles lesson ordering — you only look at whether each Georgian sentence is correct, natural, and whether the Russian translation accurately conveys it.
-- Priority #1 is VERBS: conjugation (personal forms), tense (present vs future vs aorist), class (transitive/intransitive/inverse — მინდა/მიყვარს/მესმის take dative subjects), preverbs (და-/შე-/გა-/მო-/მი-/გადა-), version vowels (-ი-/-უ-/-ე-), ergative case in aorist for transitive verbs. Owner explicitly flagged verbs as the problem zone.
-- Priority #2: cases, adjective agreement, word order (no Russian calques).
-- Priority #3: naturalness + accurate Russian translation + register (ты/вы).
-- Priority #4: typos, Georgian letter confusions (ჩ/ც, ძ/ზ, ჰ/ხ).
-- First check 'gh issue list --label native --state all --limit 30' — don't duplicate.
-- Sources: src/Trale/Lessons/**/questions*.json and src/Trale/MiniApp/MiniAppContentProvider.cs (theory examples/list/paragraph blocks). Skip .cs/.tsx for code review — only extract Georgian text from them.
-- Minimum per session: one launch-module (Alphabet/Numbers/Intro/Pronouns/Present-Tense/My-Vocab) + one non-launch module. Verbs of Movement and verb-classes are top priority.
-- SMALL fixes (typos, wrong personal form, wrong case in an example pair, wrong preverb when obviously required) — commit directly with 'content(<module>): native fix — <what> <lessonN>' and reference file:line.
-- LARGER/disputed cases (replace whole example, swap lexicon, fix depends on unknown context, 'sounds unnatural' is an opinion) — 'gh issue create --label native' with title '[native] <module> L<N>: <short>' and body with file:line, current text, why wrong, native phrasing, confidence (уверен/сомневаюсь).
-- HARD RULES: no rewriting to taste; no pedagogy changes; standard Tbilisi Georgian; Russian stylistic preferences are NOT errors; when in doubt — issue, not commit.
-- Do NOT touch ROADMAP.md.
-At the very end output '=== SUMMARY ===' with 3-7 bullets: modules reviewed, fixes committed, issues filed."
-
-    # 3. DESIGNER (idea generator — runs BEFORE product)
-    "${CONTEXT_PREFIX}Read .claude/agents/designer.md. You have the official Anthropic 'frontend-design' skill loaded — check '/skills' and use it when proposing aesthetic direction, typography, color, and animation. It steers AWAY from generic 'AI aesthetic' toward distinctive, production-grade UI.
-
-NEW ROLE THIS HOUR: you are an IDEA GENERATOR, not a spec bottleneck. Methodist and native-reviewer feed product with content/language ideas — you feed product with DESIGN ideas on the same input-phase. tech-lead writes the acceptance criteria later; you do NOT need to produce a formal spec for every idea.
-
-- First check 'gh issue list --label design --state open --limit 30' so you don't duplicate.
-- AUDIT the current mini-app UI (src/Trale/miniapp-src/src/) and the onboarding/checkout/profile flows. Spot:
-  * Screens that feel generic or inconsistent with Minankari (palette, jewel-tile, kilim-progress).
-  * Moments where a grusinian 'reveal' (letter, numeral, word) could replace a generic element.
-  * Friction points: ambiguous CTAs, unclear state, bad empty states, misaligned spacing.
-  * Missed opportunities in launch-checklist features (STRATEGY.md).
-- For each finding, file 'gh issue create --label design' with: title '[design] <area>: <short>', body with: current state (path + what's wrong), proposed direction (palette/component/motion notes, 3-8 bullets), expected UX impact, whether tech-lead can decompose from these notes alone OR a full design-specs/ file is needed.
-- For BIG features (whole new flow, new major component) where notes aren't enough: create design-specs/<slug>.md with goal, user flows, screen sketches, component breakdown, states, copy, accessibility. Still open the design issue and link the spec from it. This is the EXCEPTION, not the default.
-- Do NOT touch ROADMAP.md directly — product does that based on your issues.
-At the very end output '=== SUMMARY ===' with 3-7 bullets: areas audited, issues filed, specs created (if any)."
-
-    # 4. PRODUCT
-    "${CONTEXT_PREFIX}Read .claude/agents/product.md. Also read STRATEGY.md FIRST — it defines the current product phase and the launch checklist. Your role this hour:
-
-AGGREGATE inputs from the three upstream reviewers (methodist, native-reviewer, designer):
-- Read STRATEGY.md (current phase, launch checklist).
-- Read ROADMAP.md (backlog, philosophy).
-- 'gh issue list --label methodist --state open --limit 50'
-- 'gh issue list --label native --state open --limit 50'
-- 'gh issue list --label design --state open --limit 50'
-- 'gh issue list --label product --state open --limit 50'
-
-TRIAGE all three streams: for each relevant issue, add to ROADMAP.md as [idea] or [launch] if it closes a checklist item; source-link the issue number; close/comment on the issue once reflected. Max 5 per session. Note: native-reviewer issues are usually content-fix granularity — most do NOT need ROADMAP entries, they go straight to developer; only surface here if the fix is big enough (whole example swap or lexicon change). Design issues with clear acceptance criteria can skip ROADMAP and go straight to tech-lead as a [launch] entry.
-
-GENERATE your own ideas (you are not just reacting): features closing launch-checklist items, marketing angles (Batumi expat chats, referral loops), retention mechanics (Bombora feeding tamagotchi), onboarding copy, positioning. File them as GitHub issues with label 'product' (and 'launch' if applicable).
-
-BACKLOG RULE: if ROADMAP already has 5+ [idea]/[launch] tasks, DO NOT generate new ideas — only triage and prioritize.
-
-PRIORITIZE: move tasks in ROADMAP. Items closing launch-checklist rank highest. Update STRATEGY.md if a checklist item is done.
-
-Do NOT create small technical issues — that is tech-lead's job.
-At the very end output '=== SUMMARY ===' with 3-7 bullets."
-
-    # 5. TECH-LEAD (BREAKDOWN only — review slot runs after QA)
-    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) — check '/skills' to discover them and invoke when writing acceptance criteria that touch EF migrations, tests, ASP.NET endpoints, or NuGet decisions.
-
-THIS SLOT IS BREAKDOWN ONLY. Architecture review runs AFTER QA in a separate tech-lead-review slot — do NOT do that work here.
-
-BREAKDOWN (creating the execution backlog with acceptance criteria):
-- Preferred source: ROADMAP.md entries with status [designed] or [launch]. For [designed] items, a design-spec in design-specs/ exists — link it from the task body. For [launch] items without a full spec, acceptance criteria from the related design issue ('gh issue list --label design') are usually enough.
-- [idea] entries skip until product or designer has promoted them.
-- For each qualifying entry without a corresponding open GitHub 'task' issue, break it into SMALL technical issues (ideally 1-4 hours each).
-- Priority rule: if the ROADMAP section is tagged [launch] OR directly closes a STRATEGY.md launch-checklist item, the task gets label P1. Other useful work is P2. Polish / post-launch ideas are P3.
-- Create each with 'gh issue create --label task --label <priority>'. Body MUST include: acceptance criteria (3-7 bullets, testable), design-spec path (if [designed]), linked design/native/methodist issues it closes, sketch of files/classes to touch.
-- Cross-link: in the ROADMAP section, add a reference like '(issues: #N, #M)'.
-At the very end output '=== SUMMARY ===' with 3-7 bullets: issues created, backlog state."
-
-    # 6. DEVELOPER
-    "${CONTEXT_PREFIX}Read .claude/agents/developer.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) plus the Roslyn language server via lsp.json, AND the Anthropic 'frontend-design' skill for mini-app React/CSS work — check '/skills' to list all. When writing C#/ASP.NET/EF code, invoke the relevant .NET skill (e.g. for new endpoints, EF migrations, test scaffolding). When touching miniapp-src (React, Tailwind, CSS), invoke frontend-design so the implementation matches the designer's aesthetic intent instead of generic defaults. LSP diagnostics are available for reading symbols/references in the sln.
-
-TTS for Georgian audio content: when an issue asks for audio files (e.g. Listen & Choose content, pronunciation samples), use the Piper wrapper: /scripts/tts-generate.sh \"<Georgian text>\" <output.ogg>. Voice is ka_GE-natia-medium (neural, female). Output audio goes under src/Trale/miniapp-src/public/audio/<module>/<slug>.ogg — Vite's public/ folder is copied into wwwroot during build, so these files DO get shipped with the app. Commit the generated .ogg files with the code that references them. Do NOT write audio into wwwroot/ directly (it's gitignored).
-
-Your role this hour:
-- Pick ONE task to work on, in this priority order:
-    1) any open issue labelled 'needs-fix' (tech-lead sent back for rework) assigned to you or unassigned,
-    2) else any open issue labelled 'bug' with no assignee (CONTENT BUGS from methodist are HIGHEST product priority — users will see wrong grammar; prefer issues that also have 'methodist' label),
-    3) else highest-priority open issue labelled 'task' AND 'P1' with no assignee,
-    4) else 'task' + 'P2' with no assignee,
-    5) else 'task' + 'P3' with no assignee.
-- Assign the issue to yourself: 'gh issue edit <N> --add-assignee @me' (or just add a comment 'Taking this' if assignment fails).
-- Implement it on the shared branch. Follow ARCHITECTURE.md: new use cases as services (not MediatR), Clean Architecture layers, unit tests for new business logic.
-- Run 'dotnet test' (must be green) and 'cd src/Trale/miniapp-src && npm run build'.
-- Commit with 'Fixes #<N>' or 'Refs #<N>' in the message.
-- Do NOT close the issue yourself — tech-lead/QA decides.
-At the very end output '=== SUMMARY ===' with 3-7 bullets: issue picked, files changed, test results."
-
-    # 7. QA
-    "${CONTEXT_PREFIX}Read .claude/agents/qa.md. You have the official Microsoft .NET Agent Skills loaded including dotnet-diag (performance/debugging/incident analysis) and dotnet-test (test execution, filtering, failure triage) — check '/skills' and use them to diagnose failing tests or flaky integration runs. Your role this hour (after developer):
-- Run the FULL test pass on the current state of the shared branch: 'dotnet test TraleBot.sln' (ALL projects, IntegrationTests included — Testcontainers works here, env vars TESTCONTAINERS_RYUK_DISABLED + TESTCONTAINERS_HOST_OVERRIDE are set in compose) + 'cd src/Trale/miniapp-src && npm run build'. Check migrations if DB code changed.
-- HARD GATE: the hour does NOT close until 'dotnet test TraleBot.sln' is green locally. If IntegrationTests fail — do NOT write 'skipped/unavailable' in the report, that is always an infra bug and must be filed as such.
-- If builds/tests fail: either fix small things yourself (stale snapshot, missing lemma in theory, wwwroot rebuild, missing migration .Designer.cs), or revert the last developer commit to return to green, or comment on the issue that developer just touched with the failure details and add label 'needs-fix'. Do NOT leave the branch red for the next hour.
-- Append integration findings to 'qa-report-${TODAY}.md' at repo root (create if absent). One dated section per hour. Explicitly record the result of 'dotnet test TraleBot.sln' (pass/fail + count).
-At the very end output '=== SUMMARY ===' with 3-7 bullets: what you ran, whether 'dotnet test TraleBot.sln' ended green, what passed, what failed, follow-ups filed."
-
-    # 8. TECH-LEAD-REVIEW (architecture review — runs LAST, after QA)
-    "${CONTEXT_PREFIX}Read .claude/agents/tech-lead.md AND ARCHITECTURE.md. You have the official Microsoft .NET Agent Skills loaded (dotnet, dotnet-aspnet, dotnet-data, dotnet-test, dotnet-nuget) — invoke them when reviewing C# code, tests, EF migrations, or package decisions so feedback matches Microsoft's own .NET team standards.
-
-THIS SLOT IS ARCHITECTURE REVIEW ONLY. The breakdown happened earlier this hour in the tech-lead-breakdown slot — do NOT create more task issues here.
-
-ARCHITECTURE REVIEW (of this hour's developer + QA work):
-- Look at the last developer commit (git log --author-date-order --grep='\\[developer\\]' -1) AND the QA output from this hour (latest '[qa]' commit notes + qa-report-${TODAY}.md).
-- Compare against ARCHITECTURE.md: Clean Architecture layers respected, new use cases as services (NOT MediatR), SRP, no dead code, no leaky abstractions, EF queries sane (no N+1), migrations reversible, tests cover the real behaviour (not just the happy path).
-- Boy-scout fixes (small): apply in place — tighten types, delete dead code, add missing unit tests, split a too-big file.
-- Real regressions (bigger): re-open the relevant GitHub issue OR open a follow-up with label 'needs-fix' and a 3-7 bullet remediation plan. Do NOT silently leave the issue closed if the implementation is broken.
-- Run 'dotnet test' at the end — must be green when you finish your part.
-At the very end output '=== SUMMARY ===' with 3-7 bullets: commits reviewed, fixes applied, needs-fix opened."
-)
-
-# --- Build shared hour context -------------------------------------------------
-# Each agent previously re-ran the same git-log / git-diff / gh-issue-list
-# queries at the top of its prompt, which (a) chewed tokens on redundant tool
-# calls and (b) produced subtly different snapshots when issues landed mid-hour.
-# We now snapshot this context ONCE per hour and point every agent at it.
-{
-    echo "# Shared context — ${HOUR_STAMP}"
-    echo ""
-    echo "Nightly branch: \`${BRANCH}\`  •  Mode: \`${MODE}\`"
-    echo ""
-    echo "## Recent commits on nightly branch (main..HEAD, up to 50)"
-    echo ""
-    echo '```'
-    git log --oneline -50 "main..HEAD" 2>/dev/null || echo "(no commits yet tonight)"
-    echo '```'
-    echo ""
-    echo "## Touched files (main..HEAD)"
-    echo ""
-    echo '```'
-    git diff --stat "main..HEAD" 2>/dev/null || echo "(no diff)"
-    echo '```'
-    echo ""
-    echo "## Open issue counts by label"
-    echo ""
-    for lbl in methodist native design product task bug needs-fix P1 P2 P3; do
-        count=$(gh issue list --label "$lbl" --state open --limit 100 --json number 2>/dev/null \
-                    | jq 'length' 2>/dev/null || echo "?")
-        printf -- "- **%s**: %s\n" "$lbl" "$count"
-    done
-    echo ""
-    echo "## Most recently filed open issues (last 15)"
-    echo ""
-    gh issue list --state open --limit 15 --json number,title,labels \
-        --template '{{range .}}- #{{.number}} {{.title}} {{range .labels}}[{{.name}}] {{end}}
-{{end}}' 2>/dev/null || echo "(gh unavailable)"
-    echo ""
-} > "${SHARED_CONTEXT_FILE}"
-
-echo ">>> Shared context written to ${SHARED_CONTEXT_FILE}"
-echo ""
-
-# --- Run agents -----------------------------------------------------------------
+# --- Token tracking init ------------------------------------------------------
 > "${SUMMARY_FILE}"
-
-# Initialise the per-hour token usage table.
 {
     echo "# Token usage — ${HOUR_STAMP} (mode: ${MODE})"
     echo ""
-    echo "| Agent | Turns | Input | Output | Cache read | Cache create | Cost (USD) |"
+    echo "| Phase | Turns | Input | Output | Cache read | Cache create | Cost (USD) |"
     echo "|-------|------:|------:|-------:|-----------:|-------------:|-----------:|"
 } > "${TOKEN_USAGE_FILE}"
 
-# Running totals for the final row.
 TOTAL_TURNS=0
 TOTAL_INPUT=0
 TOTAL_OUTPUT=0
 TOTAL_CACHE_READ=0
 TOTAL_CACHE_CREATE=0
-# Cost is a float — accumulate via awk at print time.
 COST_VALUES=()
 
-for i in "${AGENT_INDICES[@]}"; do
-    agent="${AGENTS[$i]}"
-    label="${AGENT_LABELS[$i]}"
-    instruction="${INSTRUCTIONS[$i]}"
-    turns="${MAX_TURNS_PER_AGENT[$i]}"
-    log_file="${LOG_DIR}/${agent}.log"
-    jsonl_file="${LOG_DIR}/${agent}.jsonl"
-    stderr_file="${LOG_DIR}/${agent}.stderr.log"
+# --- run_agent helper ---------------------------------------------------------
+# Wraps a single claude invocation: extracts usage, summary, max-turn alerts,
+# commits any changes the agent left behind. Caller passes phase name (for log
+# files), agent name (for plugin loadout + .md prompt), max turns, and the
+# instruction body that follows the standard CONTEXT_PREFIX.
+PHASE_PRODUCED_OUTPUT=0  # set by run_agent based on whether the session produced commits / issue activity
+
+run_agent() {
+    local phase_id="$1"      # e.g. "discovery", "qa-prep-task-123"
+    local agent="$2"         # e.g. "product", "qa", maps to plugins + .md
+    local max_turns="$3"
+    local instruction="$4"
+
+    local log_file="${LOG_DIR}/${phase_id}.log"
+    local jsonl_file="${LOG_DIR}/${phase_id}.jsonl"
+    local stderr_file="${LOG_DIR}/${phase_id}.stderr.log"
 
     echo ""
-    echo ">>> [${agent}] starting at $(date)"
+    echo ">>> [${phase_id}] starting at $(date) (agent=${agent}, max_turns=${max_turns})"
 
-    # Commit anything the previous agent left uncommitted. We look up the last
-    # executed agent from LAST_AGENT rather than $((i-1)), because AGENT_INDICES
-    # may be non-contiguous in build mode (4,5,6,7 skips 0..3).
+    # Commit any leftover from a previous phase before starting fresh.
     if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-        prev_agent="${LAST_AGENT:-prev}"
         git add -A
-        git commit -m "[${prev_agent}] ${HOUR_STAMP}" --allow-empty 2>/dev/null || true
+        git commit -m "[pipeline] pre-${phase_id} ${HOUR_STAMP}" --allow-empty 2>/dev/null || true
     fi
 
-    # stream-json gives us per-event JSON (system/assistant/user/result) which
-    # (a) contains the final usage+cost report in the `result` event, and
-    # (b) still lets us emit a human-readable .log by filtering assistant text.
-    # We keep the raw jsonl for audit and feed text through jq into the .log
-    # so the existing === SUMMARY === / max-turns detection keeps working.
-    # shellcheck disable=SC2046  # word-splitting is intentional here
+    local pre_sha
+    pre_sha=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+    # shellcheck disable=SC2046
     claude \
         $(agent_plugin_args "${agent}") \
         -p "${instruction}" \
         --dangerously-skip-permissions \
-        --max-turns "${turns}" \
+        --max-turns "${max_turns}" \
         --output-format stream-json \
         --verbose \
         2>"${stderr_file}" \
@@ -436,15 +224,25 @@ for i in "${AGENT_INDICES[@]}"; do
         | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text // empty' 2>/dev/null \
         | tee "${log_file}"
 
-    # Commit this agent's work immediately so the next agent sees it in git log
     if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
         git add -A
-        git commit -m "[${agent}] ${HOUR_STAMP}" 2>/dev/null || true
+        git commit -m "[${phase_id}] ${HOUR_STAMP}" 2>/dev/null || true
     fi
 
-    # --- Extract usage from the final `result` event ---------------------------
+    local post_sha
+    post_sha=$(git rev-parse HEAD 2>/dev/null || echo "")
+    if [ "${pre_sha}" != "${post_sha}" ]; then
+        PHASE_PRODUCED_OUTPUT=1
+    else
+        PHASE_PRODUCED_OUTPUT=0
+    fi
+
+    # --- Token accounting -------------------------------------------------------
+    local USAGE_JSON
     USAGE_JSON=$(jq -c 'select(.type=="result")' "${jsonl_file}" 2>/dev/null | tail -1)
+    local u_subtype="unknown"
     if [ -n "${USAGE_JSON}" ]; then
+        local u_turns u_input u_output u_cache_read u_cache_cr u_cost
         u_turns=$(echo "${USAGE_JSON}"      | jq -r '.num_turns                     // 0')
         u_input=$(echo "${USAGE_JSON}"      | jq -r '.usage.input_tokens            // 0')
         u_output=$(echo "${USAGE_JSON}"     | jq -r '.usage.output_tokens           // 0')
@@ -454,7 +252,7 @@ for i in "${AGENT_INDICES[@]}"; do
         u_subtype=$(echo "${USAGE_JSON}"    | jq -r '.subtype                       // "unknown"')
 
         printf -- "| %s | %s | %s | %s | %s | %s | %s |\n" \
-            "${agent} (${u_subtype})" \
+            "${phase_id} (${u_subtype})" \
             "${u_turns}" "${u_input}" "${u_output}" "${u_cache_read}" "${u_cache_cr}" \
             "$(awk -v c="${u_cost}" 'BEGIN{printf "%.4f", c}')" \
             >> "${TOKEN_USAGE_FILE}"
@@ -466,35 +264,28 @@ for i in "${AGENT_INDICES[@]}"; do
         TOTAL_CACHE_CREATE=$((TOTAL_CACHE_CREATE + u_cache_cr))
         COST_VALUES+=("${u_cost}")
     else
-        printf -- "| %s | ? | ? | ? | ? | ? | ? |\n" "${agent} (no result event)" \
+        printf -- "| %s | ? | ? | ? | ? | ? | ? |\n" "${phase_id} (no result event)" \
             >> "${TOKEN_USAGE_FILE}"
     fi
 
+    # --- Summary + max-turn alert ----------------------------------------------
+    local AGENT_SUMMARY
     AGENT_SUMMARY=$(sed -n '/=== SUMMARY ===/,$ p' "${log_file}" | tail -n +2)
 
-    # Turn-limit detection: if the agent produced no "=== SUMMARY ===" marker
-    # AND the log tail hints at a cutoff, assume max-turns was reached.
-    # Claude CLI prints a "Reached max turns" / "Max turns reached" line when
-    # --max-turns is exhausted. Record this in a distinct audit file so the
-    # morning QA pass can see which slots ran out of headroom.
-    TURN_ALERTS_FILE="${LOG_DIR}/turn-alerts.md"
+    local TURN_ALERTS_FILE="${LOG_DIR}/turn-alerts.md"
     if [ -z "${AGENT_SUMMARY}" ]; then
-        # u_subtype is set by the result-event extractor above; in stream-json,
-        # a non-"success" subtype (e.g. "error_max_turns") is the authoritative
-        # signal. Fall back to grep on the text log for older behavior.
-        if [ "${u_subtype:-}" != "success" ] && [ -n "${u_subtype:-}" ]; then
-            alert="⚠️  ${label} (${agent}) ended with result subtype=${u_subtype} at ${HOUR_STAMP} (max-turns=${turns}). No === SUMMARY === produced. See ${log_file} and ${jsonl_file}."
-        elif grep -qiE 'max.?turns.*(reached|exceeded|hit)|reached.*max.?turns' "${log_file}" 2>/dev/null; then
-            alert="⚠️  ${label} (${agent}) hit max-turns cap of ${turns} at ${HOUR_STAMP} — no === SUMMARY === produced. See ${log_file}."
+        local alert
+        if [ "${u_subtype}" != "success" ] && [ "${u_subtype}" != "unknown" ]; then
+            alert="⚠️  ${phase_id} ended with subtype=${u_subtype} (max-turns=${max_turns}). No === SUMMARY === produced."
         else
-            alert="⚠️  ${label} (${agent}) did not produce === SUMMARY === at ${HOUR_STAMP}. Max-turns=${turns}. Could be early exit, crash, or silent truncation. See ${log_file}."
+            alert="⚠️  ${phase_id} did not produce === SUMMARY === (max-turns=${max_turns})."
         fi
         echo "${alert}"
         echo "- ${alert}" >> "${TURN_ALERTS_FILE}"
     fi
 
     {
-        echo "### ${label}"
+        echo "### ${phase_id}"
         echo ""
         if [ -n "${AGENT_SUMMARY}" ]; then
             echo "${AGENT_SUMMARY}"
@@ -504,113 +295,534 @@ for i in "${AGENT_INDICES[@]}"; do
         echo ""
     } >> "${SUMMARY_FILE}"
 
-    echo ">>> [${agent}] finished at $(date)"
-    LAST_AGENT="${agent}"
-done
+    echo ">>> [${phase_id}] finished at $(date)"
+}
 
-# --- Epic loop: drive OWNER-PRIORITY P1 chain to completion in one pass --------
-# After the regular agent pass, if OWNER-PRIORITIES.md still has unchecked rows
-# for developer (and there are still open P1 task issues), run additional
-# developer+qa iterations. Each iteration is a fresh agent session — avoids
-# context rot from one giant agent ploughing through 5 issues. Stops on:
-#   - no more pending owner-priority developer work
-#   - no more open P1 issues
-#   - qa reports a regression
-#   - hard cap (3 iterations) to bound cost / wall-clock per pipeline pass
-#
-# Skipped automatically when there is no OWNER-PRIORITIES.md, no unchecked
-# developer rows, or no P1 backlog. So normal nights without active epics
-# pay zero overhead.
-EPIC_LOOP_MAX_ITER="${EPIC_LOOP_MAX_ITER:-3}"
+# --- Common context prefix that every agent prompt starts with -----------------
+context_prefix() {
+    cat <<EOF
+You are working on the SHARED nightly branch '${BRANCH}'. Previous phases (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work.
 
-if [ -f "OWNER-PRIORITIES.md" ]; then
-    epic_iter=0
-    while [ "${epic_iter}" -lt "${EPIC_LOOP_MAX_ITER}" ]; do
-        pending_dev=$(grep -cE '^\s*-\s*\[\s*\]\s+\*\*developer\*\*' OWNER-PRIORITIES.md 2>/dev/null | tr -d ' ')
-        pending_dev="${pending_dev:-0}"
-        open_p1=$(gh issue list --label task --label P1 --state open --limit 1 --json number 2>/dev/null \
-                    | jq 'length' 2>/dev/null || echo 0)
+BEFORE doing anything else, read the pre-built shared context at '${SHARED_CONTEXT_FILE}'. It already contains: recent commits on the nightly branch, touched files, open-issue counts by label, the open epic-drafts and epic-readys. Do NOT re-run 'git log main..HEAD', 'git diff --stat main..HEAD', or unfiltered 'gh issue list'. Use labelled queries only when you need the BODIES of issues you intend to act on.
 
-        if [ "${pending_dev}" -eq 0 ] || [ "${open_p1}" -eq 0 ]; then
-            echo ""
-            echo ">>> Epic loop: no pending owner-priority dev work (pending_dev=${pending_dev}, open_p1=${open_p1}). Done."
-            break
+Do NOT create a PR. Do NOT redo work that is already committed. Commit your own work with clear messages.
+
+COMMIT SUBJECT CONVENTION — ROADMAP section numbers are NOT GitHub issue numbers. Write them as \`§46\` or \`ROADMAP-46\`, NEVER \`#46\` (GitHub auto-links bare \`#NN\` to issue #NN). Use bare \`#NN\` ONLY for real GitHub issues.
+
+EOF
+}
+
+# =============================================================================
+# PHASE FUNCTIONS
+# =============================================================================
+
+phase_discovery() {
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/product.md and STRATEGY.md.
+
+YOUR JOB IN THIS PHASE: pick ONE candidate task and create exactly ONE epic-draft GitHub issue with full BDD scenarios. That epic will be reviewed by methodist + native-reviewer in the next phase, finalized by you again, and broken down by tech-lead.
+
+Source priority for the epic:
+1. OWNER-PRIORITIES.md — if any unchecked task there has unfilled developer work AND no open epic-issue already covers it, use that.
+2. Owner comments on the latest sprint-plan-issue (label sprint-plan, latest closed/open) where the owner asks for new work.
+3. STRATEGY.md launch-checklist — pick the top unchecked launch item.
+4. ROADMAP.md [idea]/[launch] backlog — pick the highest priority that closes a launch-checklist item.
+
+Skip if: an open epic-draft, epic-methodist-reviewed, epic-native-reviewed, or epic-ready issue already covers the same scope. Don't open a duplicate. If everything is covered, output '=== SUMMARY ===' saying 'no candidate, all covered' and exit.
+
+Create the epic via:
+  gh issue create --label epic --label epic-draft --title '[epic] <short title>' --body @epic-body.md
+where epic-body.md follows this template (write it locally first, then pass with --body-file):
+
+# <Epic title>
+**Source:** OWNER-PRIORITIES §N | ROADMAP §N | sprint-plan #N comment | STRATEGY launch-checklist
+**Goal:** one paragraph — what user-visible outcome this epic delivers and why it matters now.
+**Out of scope:** what this epic does NOT cover (so the breakdown stays tight).
+
+## Acceptance criteria (BDD)
+- Scenario 1 — short name
+  - **Given:** initial state (which user, what's already in the system)
+  - **When:** action (what the user does)
+  - **Then:** expected observable result (what the user sees / what changes in API / what is written to DB)
+- Scenario 2 — …
+- Scenario «negative» — what must NOT happen, or which error case is handled
+
+## Existing artefacts
+- design-spec: <path-or-«none»>
+- related issues: <links-or-«none»>
+- ROADMAP section: <§N or «none»>
+
+## Notes for reviewers
+- Methodist: focus on <progression / prerequisite / module fit>
+- Native-reviewer: focus on <Georgian phrasing / register / examples>
+
+After creating the issue, output '=== SUMMARY ===' with: epic number, source, scope in one line.
+
+HARD RULES:
+- Exactly ONE epic per discovery phase. Don't batch.
+- BDD section MUST contain at least one Given/When/Then scenario AND at least one negative scenario.
+- Don't touch ROADMAP.md or any code in this phase. Just create the epic-issue.
+- Don't comment on the epic yourself. Reviewers add comments next."
+
+    run_agent "discovery" "product" 50 "${instruction}"
+}
+
+phase_methodist_review() {
+    local drafts
+    drafts=$(gh issue list --label epic-draft --state open --limit 20 --json number -q '.[].number' 2>/dev/null)
+    if [ -z "${drafts}" ]; then
+        echo ">>> [methodist-review] no open epic-draft. Skip."
+        return
+    fi
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/methodist.md.
+
+YOUR JOB IN THIS PHASE: comment on every open epic-draft issue with pedagogical feedback, then add label 'epic-methodist-reviewed' on each issue you reviewed.
+
+Process every issue listed by:
+  gh issue list --label epic-draft --state open --json number,title,body
+
+For each issue:
+1. Read the body (Goal + BDD + Notes for reviewers).
+2. Post ONE comment with your pedagogical analysis. Cover:
+   - Does the epic respect i+1 (no skipped prerequisites)?
+   - Are the BDD scenarios pedagogically sound?
+   - Is the proposed module/lesson placement correct?
+   - Anything missing — a forward-reference, a contrast lesson, a review pass?
+3. Add label epic-methodist-reviewed:
+   gh issue edit <N> --add-label epic-methodist-reviewed
+
+DO NOT edit the body. DO NOT close the issue. DO NOT create new task issues. Comments only.
+
+If you find no pedagogical concerns, comment 'pedagogically sound, no objections' and still add the label.
+
+At the very end output '=== SUMMARY ===' with one bullet per epic reviewed."
+
+    run_agent "methodist-review" "methodist" 40 "${instruction}"
+}
+
+phase_native_review() {
+    local drafts
+    drafts=$(gh issue list --label epic-draft --state open --limit 20 --json number -q '.[].number' 2>/dev/null)
+    if [ -z "${drafts}" ]; then
+        echo ">>> [native-review] no open epic-draft. Skip."
+        return
+    fi
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/native-reviewer.md.
+
+YOUR JOB IN THIS PHASE: comment on every open epic-draft issue with language-correctness feedback, then add label 'epic-native-reviewed'.
+
+Process every issue listed by:
+  gh issue list --label epic-draft --state open --json number,title,body
+
+For each issue:
+1. Read the body. Pay attention to any Georgian text in BDD scenarios, examples, or 'Notes for reviewers'.
+2. Post ONE comment covering:
+   - Are example Georgian phrases in the BDD natural and correct?
+   - Are translations accurate and idiomatic (no Russian calques)?
+   - Verb forms, cases, preverbs, version vowels — anything wrong?
+   - Register match (formal/informal)?
+3. Add label:
+   gh issue edit <N> --add-label epic-native-reviewed
+
+DO NOT edit the body. DO NOT close the issue. Comments only.
+
+If the epic has no Georgian content (pure infra/UX), comment 'no language content to review' and still add the label.
+
+At the very end output '=== SUMMARY ===' with one bullet per epic reviewed."
+
+    run_agent "native-review" "native-reviewer" 40 "${instruction}"
+}
+
+phase_finalize() {
+    local ready_for_finalize
+    ready_for_finalize=$(gh issue list --label epic-draft --label epic-methodist-reviewed --label epic-native-reviewed --state open --limit 20 --json number -q '.[].number' 2>/dev/null)
+    if [ -z "${ready_for_finalize}" ]; then
+        echo ">>> [finalize] no epic-draft fully reviewed by both methodist and native. Skip."
+        return
+    fi
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/product.md.
+
+YOUR JOB IN THIS PHASE: take every epic-draft issue that has BOTH labels epic-methodist-reviewed AND epic-native-reviewed, read the review comments, update the issue body to address them, and promote it to epic-ready.
+
+Process every issue listed by:
+  gh issue list --label epic-draft --label epic-methodist-reviewed --label epic-native-reviewed --state open --json number,title,body,comments
+
+For each issue:
+1. Read body + ALL comments (methodist + native).
+2. Update the body to address the feedback. Concrete changes:
+   - If methodist flagged a missing prerequisite — add a sub-scenario or a 'Prerequisite' line under Existing artefacts.
+   - If native flagged an incorrect Georgian phrase — fix it in the BDD scenarios.
+   - If a reviewer suggested a scope cut — narrow Out-of-scope.
+   - If a reviewer flagged something you do NOT agree with — leave the body but add a section '### Reviewer concerns deferred' with one sentence per deferred item explaining why.
+3. Update body via:
+   gh issue edit <N> --body-file updated-body.md
+4. Swap labels:
+   gh issue edit <N> --remove-label epic-draft --add-label epic-ready
+5. Post a short comment summarising what changed in the body, e.g. 'Finalized — incorporated methodist comment on prerequisite chain, deferred native concern on register (out of scope this epic).'
+
+DO NOT touch ROADMAP.md or code. DO NOT close the issue. DO NOT split into tasks (that's the next phase).
+
+At the very end output '=== SUMMARY ===' with one bullet per epic finalized."
+
+    run_agent "finalize" "product" 50 "${instruction}"
+}
+
+phase_breakdown() {
+    local ready
+    ready=$(gh issue list --label epic-ready --state open --limit 20 --json number -q '.[].number' 2>/dev/null)
+    if [ -z "${ready}" ]; then
+        echo ">>> [breakdown] no open epic-ready. Skip."
+        return
+    fi
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/tech-lead.md AND ARCHITECTURE.md.
+
+YOUR JOB IN THIS PHASE: for every open epic-ready issue, split it into small task issues (1–4 hours each) with explicit hour estimates. Then comment on the epic with the total estimate and per-task list.
+
+Process every issue listed by:
+  gh issue list --label epic-ready --state open --json number,title,body
+
+For each epic:
+1. Re-read the BDD scenarios. Each scenario typically becomes one or more task issues.
+2. Decompose into tasks of 1–4h. A good task closes one BDD scenario or one technical layer (backend DTO, frontend component, tests).
+3. Create each task issue:
+   gh issue create --label task --label P1 --title 'epic-<EPIC>: <task-title>' --body @body.md
+   where body.md is:
+       Part of #<EPIC>
+       **Estimate:** <N>h
+       **Scope:** what this task delivers (one paragraph)
+       **Acceptance criteria:** 3-7 testable bullets — derived from the BDD scenarios this task closes
+       **Files to touch:** rough sketch of files / classes
+       **BDD scenarios this task closes:** Scenario 1, Scenario 2 (by name from the epic)
+4. After all tasks for an epic are created, comment on the EPIC issue with:
+       ## Breakdown — total <SUM>h
+       - #<task1> — <task title> — <estN>h
+       - #<task2> — …
+       Total: <SUM>h.
+       Sprint capacity (one night) ≈ 6h. <If SUM ≤ 6h: 'fits one night, possibly room for another epic'. If SUM > 6h: 'spans two nights, will continue tomorrow'.>
+
+5. Add label epic-broken-down on the epic:
+   gh issue edit <EPIC> --add-label epic-broken-down
+
+If you reach the conclusion that an epic-ready is actually too small (<2h total) or too big (>10h), comment that on the epic and DO NOT split it — flag it for the publish-plan phase to decide. Don't attempt to merge or split epics yourself in this phase.
+
+DO NOT pick a task and start coding. DO NOT close the epic. Just decompose + estimate.
+
+At the very end output '=== SUMMARY ===' with: epics broken down, total task issues created, total hours."
+
+    run_agent "breakdown" "tech-lead-breakdown" 80 "${instruction}"
+}
+
+phase_publish_plan() {
+    # No agent — orchestrator-only step. Compose a sprint-plan-issue body from
+    # all open epic-broken-down issues. Update existing sprint-plan if one is
+    # open and pending owner approval; otherwise create a new one.
+    local broken_down
+    broken_down=$(gh issue list --label epic-broken-down --state open --limit 20 --json number,title -q '.[]' 2>/dev/null)
+
+    # Decide whether we have anything to plan.
+    local epic_count
+    epic_count=$(echo "${broken_down}" | jq -s 'length')
+    if [ "${epic_count}" -eq 0 ]; then
+        # No broken-down epics — and we just ran planning phases that should
+        # have produced some. File a pipeline-failure issue so the owner is
+        # not left with silence.
+        echo ">>> [publish-plan] no epic-broken-down issues found after planning."
+        local turn_alerts=""
+        if [ -f "${LOG_DIR}/turn-alerts.md" ]; then
+            turn_alerts=$(cat "${LOG_DIR}/turn-alerts.md")
         fi
+        local fail_body
+        fail_body="Pipeline ${HOUR_STAMP}: planning completed but produced zero epic-broken-down issues.
 
-        epic_iter=$((epic_iter + 1))
+Possible causes:
+- discovery skipped (no candidate found in OWNER-PRIORITIES / sprint-plan comments / STRATEGY / ROADMAP)
+- methodist or native review hit max-turns
+- finalize skipped (epic-draft missing one of the required review labels)
+- breakdown hit max-turns
+
+Turn-limit alerts this hour:
+${turn_alerts:-(none)}
+
+Logs: ${LOG_DIR}
+
+Action: investigate the planning logs above. The pipeline will NOT auto-retry — fix the root cause, then run the planning phases manually with run-pipeline.sh plan."
+        gh issue create \
+            --label pipeline-failure \
+            --title "Pipeline failure ${HOUR_STAMP}: no sprint plan generated" \
+            --body "${fail_body}" 2>/dev/null || true
+        return
+    fi
+
+    # Compose the sprint-plan body. One section per epic.
+    local plan_body_file="${LOG_DIR}/sprint-plan-body.md"
+    {
+        echo "Ночной план на **${TODAY}**. Напишите комментарий с уточнениями. Когда всё устроит — напишите «поехали»."
         echo ""
-        echo "============================================"
-        echo "  Epic iter ${epic_iter}/${EPIC_LOOP_MAX_ITER} — owner-priority dev cycle"
-        echo "  pending_dev=${pending_dev}  open_p1=${open_p1}"
-        echo "============================================"
-
-        # Run developer (5) then qa (6). Two indices, in order.
-        for i in 5 6; do
-            agent="${AGENTS[$i]}"
-            label="${AGENT_LABELS[$i]}"
-            instruction="${INSTRUCTIONS[$i]}"
-            turns="${MAX_TURNS_PER_AGENT[$i]}"
-            log_file="${LOG_DIR}/${agent}_epic${epic_iter}.log"
-            jsonl_file="${LOG_DIR}/${agent}_epic${epic_iter}.jsonl"
-            stderr_file="${LOG_DIR}/${agent}_epic${epic_iter}.stderr.log"
-
+        echo "В плане ${epic_count} эпик(ов). Для каждого есть готовая разбивка на задачи с оценками от тех-лида."
+        echo ""
+        echo "---"
+        echo ""
+        local total_hours=0
+        while read -r e; do
+            [ -z "$e" ] && continue
+            local enum etitle
+            enum=$(echo "$e" | jq -r '.number')
+            etitle=$(echo "$e" | jq -r '.title')
+            echo "## Эпик #${enum}: ${etitle}"
             echo ""
-            echo ">>> [${agent} epic-iter ${epic_iter}] starting at $(date)"
 
-            if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-                git add -A
-                git commit -m "[${LAST_AGENT:-prev}] ${HOUR_STAMP} epic-${epic_iter}-pre" --allow-empty 2>/dev/null || true
+            # Pull the breakdown comment (the one that starts with '## Breakdown').
+            local breakdown_comment
+            breakdown_comment=$(gh issue view "${enum}" --json comments \
+                                 -q '.comments[]? | select(.body | startswith("## Breakdown")) | .body' 2>/dev/null \
+                              | tail -1)
+            if [ -n "${breakdown_comment}" ]; then
+                echo "${breakdown_comment}"
+                local epic_hours
+                epic_hours=$(echo "${breakdown_comment}" | grep -oE 'Total: [0-9]+h' | grep -oE '[0-9]+' | head -1 || echo 0)
+                total_hours=$((total_hours + epic_hours))
+            else
+                echo "_Breakdown comment not found — see #${enum} for tasks._"
             fi
-
-            # shellcheck disable=SC2046
-            claude \
-                $(agent_plugin_args "${agent}") \
-                -p "${instruction}" \
-                --dangerously-skip-permissions \
-                --max-turns "${turns}" \
-                --output-format stream-json \
-                --verbose \
-                2>"${stderr_file}" \
-                | tee "${jsonl_file}" \
-                | jq -r 'select(.type=="assistant") | .message.content[]? | select(.type=="text") | .text // empty' 2>/dev/null \
-                | tee "${log_file}"
-
-            if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
-                git add -A
-                git commit -m "[${agent}] ${HOUR_STAMP} epic-iter ${epic_iter}" 2>/dev/null || true
-            fi
-
-            echo ">>> [${agent} epic-iter ${epic_iter}] finished at $(date)"
-            LAST_AGENT="${agent}"
-        done
-
-        # Bail if qa explicitly flagged regressions. Patterns are intentionally
-        # narrow: a literal `needs-fix` label / commit subject, a failing test
-        # count, or a QA-report failure marker. Avoid generic substrings like
-        # "red" that match TDD jargon ("red test for X") and produce false
-        # positives — the previous loop bailed after iter 1 because the QA
-        # agent's text contained the phrase "red test", not because anything
-        # actually failed.
-        qa_log="${LOG_DIR}/qa_epic${epic_iter}.log"
-        if [ -f "${qa_log}" ] && grep -qE '\bneeds-fix\b|[1-9][0-9]* tests? failed|❌|qa-report.*FAIL|integration.*FAIL' "${qa_log}" 2>/dev/null; then
             echo ""
-            echo ">>> Epic loop: qa flagged failures in iter ${epic_iter}. Stopping; remaining work continues next pass."
+        done < <(echo "${broken_down}" | jq -c '.')
+
+        echo "---"
+        echo ""
+        echo "**Итого по ночи: ~${total_hours}h.**"
+        echo ""
+        echo "_Ветка: \`${BRANCH}\`_"
+        echo "<!-- sprint-plan-bot -->"
+    } > "${plan_body_file}"
+
+    # Find the latest open sprint-plan issue (if any) and refresh it.
+    local existing
+    existing=$(gh issue list --label sprint-plan --state open --limit 1 --json number -q '.[0].number' 2>/dev/null)
+    if [ -n "${existing}" ]; then
+        echo ">>> [publish-plan] refreshing open sprint-plan #${existing}."
+        gh issue edit "${existing}" --body-file "${plan_body_file}" 2>/dev/null || true
+        gh issue comment "${existing}" --body "Plan refreshed at ${HOUR_STAMP}: ${epic_count} epic(s), ~${total_hours}h. Approve with «поехали» when ready." 2>/dev/null || true
+    else
+        echo ">>> [publish-plan] creating new sprint-plan."
+        gh issue create \
+            --label sprint-plan \
+            --title "Sprint Plan ${TODAY}" \
+            --body-file "${plan_body_file}" 2>/dev/null || true
+    fi
+}
+
+phase_qa_prep() {
+    # For each task issue under approved epics that lacks 'qa-prepared' label,
+    # ask qa to add an acceptance test plan as a comment, then label it qa-prepared.
+    local pending_tasks
+    pending_tasks=$(gh issue list --label task --state open --limit 50 --json number,labels \
+                    -q '.[] | select((.labels // []) | map(.name) | contains(["qa-prepared"]) | not) | .number' 2>/dev/null)
+    if [ -z "${pending_tasks}" ]; then
+        echo ">>> [qa-prep] no unprepared tasks. Skip."
+        return
+    fi
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/qa.md.
+
+YOUR JOB IN THIS PHASE: for every open task issue WITHOUT label 'qa-prepared', post an acceptance test plan as a comment, then add the qa-prepared label.
+
+Process tasks listed by:
+  gh issue list --label task --state open --json number,title,body,labels
+
+Skip any task that already has label qa-prepared (idempotent).
+
+For each task:
+1. Read the body — Acceptance criteria + BDD scenarios closed.
+2. Trace each acceptance criterion to a concrete test:
+   - HTTP behaviour → integration test in tests/IntegrationTests/
+   - Business logic without infra → unit test in tests/UnitTests/ via builder pattern
+   - UI behaviour → component test in miniapp-src or integration test on the API
+3. Post ONE comment with this structure:
+       ## Test plan
+       Each acceptance criterion above MUST be covered by at least one test before this task is considered done.
+       - **AC: <criterion text>** → <test type> in <file path>: <one-line test name>
+       - **AC: <criterion text>** → …
+       - **Negative case: <edge case>** → <test type> in <path>: <test name>
+
+       Notes:
+       - <any infra required, e.g. Testcontainers, mock data>
+       - <any non-obvious assertion>
+4. Add label qa-prepared:
+   gh issue edit <N> --add-label qa-prepared
+
+Do NOT run dotnet test in this phase. Do NOT touch code. This is a planning step.
+
+At the very end output '=== SUMMARY ===' with one bullet per task prepared, total tests planned."
+
+    run_agent "qa-prep" "qa" 60 "${instruction}"
+}
+
+phase_dev() {
+    # Pick ONE qa-prepared task that's open and not yet developed. Implement.
+    local picks
+    picks=$(gh issue list --label task --label qa-prepared --state open --limit 5 --json number,title,labels \
+              -q '[.[] | select(.labels // [] | map(.name) | contains(["done"]) | not)] | .[0]' 2>/dev/null)
+    local pick_num pick_title
+    pick_num=$(echo "${picks}" | jq -r '.number // empty')
+    pick_title=$(echo "${picks}" | jq -r '.title // empty')
+    if [ -z "${pick_num}" ]; then
+        echo ">>> [dev] no qa-prepared open tasks. Skip."
+        return
+    fi
+    local phase_id="dev-${pick_num}"
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/developer.md AND ARCHITECTURE.md.
+
+YOUR JOB IN THIS PHASE: implement task issue #${pick_num} (${pick_title}).
+
+1. gh issue view ${pick_num}  — read body + the qa test-plan comment.
+2. Assign yourself: gh issue edit ${pick_num} --add-assignee @me  (ignore failure if not allowed).
+3. Implement on the shared branch (NOT a feature branch). TDD order: write red tests for every test the qa plan listed FIRST (one commit), then green code (next commit), then optional refactor.
+4. Every test from the qa-prepared comment MUST be present and green before you finish. If you cannot cover one — DO NOT skip silently. Comment on the issue with what you couldn't do and why, leave the task open.
+5. Run 'dotnet test TraleBot.sln' — must be green.
+6. Run 'cd src/Trale/miniapp-src && npm run build' — must succeed.
+7. Commit with 'Refs #${pick_num}' / 'Fixes #${pick_num}'.
+8. After committing, add label 'done' to the issue: gh issue edit ${pick_num} --add-label done. Do NOT close the issue (refactor + qa pass needs to see it).
+
+DO NOT pick a different task. DO NOT touch issues outside this scope.
+
+At the very end output '=== SUMMARY ===' with: task picked, files changed, tests added, dotnet test result."
+
+    run_agent "${phase_id}" "developer" 100 "${instruction}"
+}
+
+phase_refactor() {
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/tech-lead.md AND ARCHITECTURE.md.
+
+YOUR JOB IN THIS PHASE: end-of-night architecture review on the whole nightly branch. Run AFTER all dev iterations are done.
+
+1. git log --oneline main..HEAD  — see every commit this night.
+2. Read commits with prefix [dev-N], group by epic (each task issue links to a parent epic).
+3. For each touched area:
+   - Compare against ARCHITECTURE.md (Clean Architecture layers, services not MediatR for new use cases, SRP, no leaky abstractions, EF queries sane).
+   - Boy-scout fixes (small): apply in place — tighten types, delete dead code, split too-big files, pull duplicates into helpers.
+4. After ANY refactor commit:
+   - Run 'dotnet test TraleBot.sln' — MUST be green. If not, REVERT the last refactor commit (do not chase). Tests are the contract.
+   - Run 'cd src/Trale/miniapp-src && npm run build' — must succeed.
+5. For real regressions you can't fix in 1-2 commits — open a 'needs-fix' issue with a 3-7 bullet remediation plan. Do NOT silently leave broken code on the branch.
+
+DO NOT create new task issues outside needs-fix. DO NOT touch tests to make them pass — fix the code or revert.
+
+At the very end output '=== SUMMARY ===' with: commits reviewed, refactor commits, needs-fix opened."
+
+    run_agent "refactor" "tech-lead-review" 50 "${instruction}"
+}
+
+# =============================================================================
+# ORCHESTRATION
+# =============================================================================
+
+run_planning_phases() {
+    echo ""
+    echo "=== PLANNING PHASES ==="
+    phase_discovery
+    phase_methodist_review
+    phase_native_review
+    phase_finalize
+    phase_breakdown
+    phase_publish_plan
+}
+
+run_build_phases() {
+    echo ""
+    echo "=== BUILD PHASES ==="
+    phase_qa_prep
+    local i=0
+    while [ "${i}" -lt "${DEV_LOOP_MAX_ITER}" ]; do
+        i=$((i + 1))
+        echo ""
+        echo ">>> Dev loop iteration ${i}/${DEV_LOOP_MAX_ITER}"
+        local before_count
+        before_count=$(gh issue list --label task --label qa-prepared --state open --limit 50 --json number,labels \
+                         -q '[.[] | select(.labels // [] | map(.name) | contains(["done"]) | not)] | length' 2>/dev/null)
+        if [ "${before_count}" -eq 0 ]; then
+            echo ">>> No qa-prepared undone tasks remaining. Stop dev loop."
             break
         fi
-
-        # Push partial progress so a subsequent failure doesn't lose it.
+        phase_dev
+        # Push partial progress between iterations.
         if [ "$(git rev-list "origin/${BRANCH}..HEAD" --count 2>/dev/null || echo 0)" -gt 0 ]; then
             git push origin "${BRANCH}" 2>/dev/null || true
         fi
     done
+    phase_refactor
+}
 
-    if [ "${epic_iter}" -gt 0 ]; then
-        echo ""
-        echo ">>> Epic loop finished after ${epic_iter} extra developer+qa iteration(s)."
+detect_sprint_state() {
+    local SPRINT_NUM
+    SPRINT_NUM=$(gh issue list --label sprint-plan --state open --limit 1 \
+                   --json number -q '.[0].number' 2>/dev/null)
+    if [ -z "${SPRINT_NUM}" ]; then
+        echo "no-plan"
+        return
     fi
-fi
+    local APPROVED
+    APPROVED=$(gh issue view "${SPRINT_NUM}" --json comments \
+                   -q ".comments[]? | select(.author.login == \"${OWNER_LOGIN}\") | .body" 2>/dev/null \
+                | grep -P -i "${APPROVE_RE}" | head -1 || true)
+    if [ -n "${APPROVED}" ]; then
+        echo "approved:${SPRINT_NUM}"
+    else
+        echo "pending:${SPRINT_NUM}"
+    fi
+}
 
-# --- Finalize per-hour token usage table --------------------------------------
+build_shared_context
+
+case "${MODE}" in
+    auto)
+        STATE=$(detect_sprint_state || echo "no-plan")
+        echo ">>> Sprint state: ${STATE}"
+        case "${STATE}" in
+            no-plan)
+                run_planning_phases
+                ;;
+            approved:*)
+                run_build_phases
+                ;;
+            pending:*)
+                echo ""
+                echo "============================================"
+                echo "  Sprint plan ${STATE#pending:} pending owner approval."
+                echo "  Skipping planning AND build (no token spend)."
+                echo "  Waiting for owner «поехали»."
+                echo "  $(date)"
+                echo "============================================"
+                ;;
+        esac
+        ;;
+    plan)
+        run_planning_phases
+        ;;
+    build)
+        run_build_phases
+        ;;
+    discovery)        phase_discovery ;;
+    methodist-review) phase_methodist_review ;;
+    native-review)    phase_native_review ;;
+    finalize)         phase_finalize ;;
+    breakdown)        phase_breakdown ;;
+    publish-plan)     phase_publish_plan ;;
+    qa-prep)          phase_qa_prep ;;
+    dev)              phase_dev ;;
+    refactor)         phase_refactor ;;
+    *)
+        echo "Unknown MODE '${MODE}'. See header for valid modes." >&2
+        exit 64
+        ;;
+esac
+
+# --- Finalize per-hour token usage table ---------------------------------------
 TOTAL_COST=$(printf '%s\n' "${COST_VALUES[@]:-0}" | awk 'BEGIN{s=0} {s+=$1} END{printf "%.4f", s}')
 {
     printf -- "| **TOTAL** | **%s** | **%s** | **%s** | **%s** | **%s** | **%s** |\n" \
@@ -622,46 +834,25 @@ TOTAL_COST=$(printf '%s\n' "${COST_VALUES[@]:-0}" | awk 'BEGIN{s=0} {s+=$1} END{
 echo ""
 echo ">>> Hour ${HOUR_STAMP} tokens: in=${TOTAL_INPUT} out=${TOTAL_OUTPUT} cache_read=${TOTAL_CACHE_READ} cost=\$${TOTAL_COST}"
 
-# Append this hour's table to the nightly rolling log so morning QA has one
-# file per night instead of chasing 8 directories.
 {
     echo ""
     cat "${TOKEN_USAGE_FILE}"
 } >> "${TOKEN_USAGE_NIGHTLY}"
 
-# --- Append turn-limit alerts to qa-report so owner can see them --------------
-if [ -f "${LOG_DIR}/turn-alerts.md" ]; then
-    QA_REPORT="${REPO_DIR}/qa-report-${TODAY}.md"
-    {
-        echo ""
-        echo "## Turn-limit alerts — ${HOUR_STAMP}"
-        echo ""
-        cat "${LOG_DIR}/turn-alerts.md"
-    } >> "${QA_REPORT}"
-    # Stage this update so it lands in the next commit (usually the next agent's,
-    # or the final nothing-to-push check below commits an empty agent-less change).
-    if ! git diff --quiet -- "${QA_REPORT}"; then
-        git add "${QA_REPORT}"
-        git commit -m "pipeline: turn-limit alerts ${HOUR_STAMP}" 2>/dev/null || true
-    fi
-fi
-
-# --- Push back to shared branch -------------------------------------------------
-if [ "$(git rev-list "origin/${BRANCH}..HEAD" --count)" -eq 0 ]; then
-    echo ""
+# --- Push back to shared branch ------------------------------------------------
+if [ "$(git rev-list "origin/${BRANCH}..HEAD" --count 2>/dev/null || echo 0)" -eq 0 ]; then
     echo ">>> No new commits this hour. Nothing to push."
 else
-    echo ""
     echo ">>> Pushing updates to ${BRANCH}..."
-    git push origin "${BRANCH}"
+    git push origin "${BRANCH}" 2>/dev/null || true
 fi
 
-git checkout main
+git checkout main 2>/dev/null || true
 
 echo ""
 echo "============================================"
 echo "  Pipeline hour complete — ${HOUR_STAMP}"
+echo "  Mode: ${MODE}"
 echo "  Shared branch: ${BRANCH}"
-echo "  PR will be opened at 09:00."
 echo "  $(date)"
 echo "============================================"
