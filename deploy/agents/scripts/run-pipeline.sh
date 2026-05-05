@@ -322,13 +322,18 @@ phase_discovery() {
 
 YOUR JOB IN THIS PHASE: pick ONE candidate task and create exactly ONE epic-draft GitHub issue with full BDD scenarios. That epic will be reviewed by methodist + native-reviewer in the next phase, finalized by you again, and broken down by tech-lead.
 
-Source priority for the epic:
-1. OWNER-PRIORITIES.md — if any unchecked task there has unfilled developer work AND no open epic-issue already covers it, use that.
+Source priority for the epic — STRICT order, do NOT skip earlier sources:
+
+1. OWNER-PRIORITIES.md — for every section there, look at the role-checklist. If ANY checkbox in that section is unchecked AND no open epic-issue covers that section, use it. The checklist is the SOLE source of truth for done-ness.
+   IMPORTANT: closed GitHub issues do NOT mean a checkbox is satisfied. Issues with the label 'not-implemented' were closed during a backlog reset without any implementation — TREAT THEM AS IF THEY DO NOT EXIST when reasoning about completed work. Only `[x]` in the role-checklist of OWNER-PRIORITIES.md counts as done.
+
 2. Owner comments on the latest sprint-plan-issue (label sprint-plan, latest closed/open) where the owner asks for new work.
+
 3. STRATEGY.md launch-checklist — pick the top unchecked launch item.
+
 4. ROADMAP.md [idea]/[launch] backlog — pick the highest priority that closes a launch-checklist item.
 
-Skip if: an open epic-draft, epic-methodist-reviewed, epic-native-reviewed, or epic-ready issue already covers the same scope. Don't open a duplicate. If everything is covered, output '=== SUMMARY ===' saying 'no candidate, all covered' and exit.
+Skip a source ONLY if every candidate in it is fully covered by an open epic-issue (epic-draft / epic-methodist-reviewed / epic-native-reviewed / epic-ready / epic-broken-down). Skip is NOT triggered by closed task-issues — those reflect a previous workflow and are unreliable. If everything is genuinely covered across all four sources, output '=== SUMMARY ===' saying 'no candidate, all covered' and exit.
 
 Create the epic via:
   gh issue create --label epic --label epic-draft --title '[epic] <short title>' --body @epic-body.md
