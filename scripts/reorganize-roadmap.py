@@ -26,6 +26,11 @@ from typing import List, Tuple
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ROADMAP = REPO_ROOT / "ROADMAP.md"
 ARCHIVE = REPO_ROOT / "ROADMAP-archive.md"
+OWNER_PRIORITIES = REPO_ROOT / "OWNER-PRIORITIES.md"
+
+# Match OWNER-PRIORITIES.md task headers: `### §79 «Конструктор предложений»`
+# (the file uses `## Активные owner-priorities` then `### §<N> «<title>»`)
+OWNER_SECTION_RE = re.compile(r"^### §(?P<num>\d+)\s+«(?P<title>[^»]+)»", flags=re.MULTILINE)
 
 # Task-bearing H2 sections — only these are reorganized. Others stay verbatim.
 TASK_SECTIONS = {
@@ -120,11 +125,53 @@ def first_paragraph(block: str) -> str:
     return ""
 
 
+def parse_owner_priorities() -> List[int]:
+    """Read OWNER-PRIORITIES.md and return the list of pinned ROADMAP section
+    numbers. Order matters — the order in OWNER-PRIORITIES is the owner's
+    preferred order, preserved here so the TOC reflects that intent."""
+    if not OWNER_PRIORITIES.exists():
+        return []
+    text = OWNER_PRIORITIES.read_text()
+    nums: List[int] = []
+    for m in OWNER_SECTION_RE.finditer(text):
+        nums.append(int(m.group("num")))
+    return nums
+
+
 def render_priority_index(active: List[Tuple[str, str, str]]) -> str:
     """Build the priority backlog index from a flat list of (title, status, _).
-    Sorts by status priority, preserving original order within each status."""
-    by_status: dict[str, list[str]] = {}
+    Owner-pinned items go first (block 🎯), then status groups (launch/dev/...).
+    Within each block the original ROADMAP order is preserved."""
+    owner_nums = parse_owner_priorities()
+    owner_set = set(owner_nums)
+
+    # Pull out owner-pinned items, keeping their order from OWNER-PRIORITIES.
+    # Detect by leading `<num>.` in the title (e.g. "79. Конструктор...").
+    def task_num(title: str) -> int | None:
+        m = re.match(r"^(\d+)\.", title)
+        return int(m.group(1)) if m else None
+
+    owner_items: list[Tuple[str, str]] = []  # (title, status)
+    rest: list[Tuple[str, str]] = []
     for title, status, _ in active:
+        n = task_num(title)
+        if n is not None and n in owner_set:
+            owner_items.append((title, status))
+        else:
+            rest.append((title, status))
+
+    # Order owner_items by the OWNER-PRIORITIES sequence
+    def owner_index(t: Tuple[str, str]) -> int:
+        n = task_num(t[0])
+        try:
+            return owner_nums.index(n) if n is not None else len(owner_nums)
+        except ValueError:
+            return len(owner_nums)
+
+    owner_items.sort(key=owner_index)
+
+    by_status: dict[str, list[str]] = {}
+    for title, status in rest:
         by_status.setdefault(status, []).append(title)
 
     out: List[str] = []
@@ -136,6 +183,15 @@ def render_priority_index(active: List[Tuple[str, str, str]]) -> str:
         "[done] и [rejected] вынесены в ROADMAP-archive.md._"
     )
     out.append("")
+
+    # Owner-priority block goes first if present
+    if owner_items:
+        out.append("### 🎯 Owner priority (закреплено в OWNER-PRIORITIES.md)")
+        out.append("")
+        for title, status in owner_items:
+            out.append(f"- [{status}] {title}")
+        out.append("")
+
     labels = {
         "launch": "🚀 Launch (P0 — блокеры запуска)",
         "dev": "🛠 В разработке",
@@ -202,6 +258,10 @@ def reorganize() -> Tuple[str, str, dict]:
     all_archived: List[Tuple[str, str, str]] = []
     section_data: List[dict] = []
     for heading, body in sections:
+        # Skip a previously-generated TOC block — re-render fresh below. This
+        # makes the script idempotent on repeated runs.
+        if heading == "## Бэклог по приоритету":
+            continue
         if heading in TASK_SECTIONS:
             prose, blocks = split_h3_entries(body)
             active = [b for b in blocks if b[1] not in ("done", "rejected")]
@@ -235,17 +295,23 @@ def reorganize() -> Tuple[str, str, dict]:
         if sec["heading"] == "":
             out.append(sec["raw"].rstrip("\n"))
         elif "raw" in sec:
+            # Body already contains the leading blank between heading and content;
+            # don't insert a second one or we'd grow whitespace on every re-run.
             out.append(sec["heading"])
-            out.append("")
-            out.append(sec["raw"].rstrip("\n"))
+            body = sec["raw"].lstrip("\n").rstrip("\n")
+            if body:
+                out.append("")
+                out.append(body)
         else:
             # Task-bearing section — re-emit prose + active blocks only
             out.append(sec["heading"])
-            out.append("")
-            out.append(sec["prose"].rstrip("\n"))
-            for _title, _status, block in sec["active"]:
-                out.append(block.rstrip("\n"))
+            prose = sec["prose"].lstrip("\n").rstrip("\n")
+            if prose:
                 out.append("")
+                out.append(prose)
+            for _title, _status, block in sec["active"]:
+                out.append("")
+                out.append(block.rstrip("\n"))
         out.append("")
 
     new_roadmap = "\n".join(out).rstrip("\n") + "\n"
@@ -264,15 +330,22 @@ def reorganize() -> Tuple[str, str, dict]:
 def main():
     new_roadmap, archive, stats = reorganize()
     ROADMAP.write_text(new_roadmap)
-    ARCHIVE.write_text(archive)
+    # Only refresh the archive when this run actually moved something out of
+    # ROADMAP.md. On idempotent re-runs (everything already archived) we leave
+    # the existing archive file alone — otherwise we'd nuke prior history.
+    if stats["archived_count"] > 0:
+        ARCHIVE.write_text(archive)
+        archive_msg = (
+            f"ROADMAP-archive.md: {stats['archive_lines']} lines "
+            f"(archived: {stats['archived_count']})"
+        )
+    else:
+        archive_msg = "ROADMAP-archive.md: untouched (nothing new to archive this run)"
     print(
         f"ROADMAP.md: {stats['old_lines']} → {stats['new_lines']} lines "
         f"(active tasks: {stats['active_count']})"
     )
-    print(
-        f"ROADMAP-archive.md: {stats['archive_lines']} lines "
-        f"(archived: {stats['archived_count']})"
-    )
+    print(archive_msg)
 
 
 if __name__ == "__main__":
