@@ -325,7 +325,7 @@ YOUR JOB IN THIS PHASE: pick ONE candidate task and create exactly ONE epic-draf
 Source priority for the epic — STRICT order, do NOT skip earlier sources:
 
 1. OWNER-PRIORITIES.md — for every section there, look at the role-checklist. If ANY checkbox in that section is unchecked AND no open epic-issue covers that section, use it. The checklist is the SOLE source of truth for done-ness.
-   IMPORTANT: closed GitHub issues do NOT mean a checkbox is satisfied. Issues with the label 'not-implemented' were closed during a backlog reset without any implementation — TREAT THEM AS IF THEY DO NOT EXIST when reasoning about completed work. Only `[x]` in the role-checklist of OWNER-PRIORITIES.md counts as done.
+   IMPORTANT: closed GitHub issues do NOT mean a checkbox is satisfied. Issues with the label 'not-implemented' were closed during a backlog reset without any implementation — TREAT THEM AS IF THEY DO NOT EXIST when reasoning about completed work. Only an [x] checkmark in the role-checklist of OWNER-PRIORITIES.md counts as done.
 
 2. Owner comments on the latest sprint-plan-issue (label sprint-plan, latest closed/open) where the owner asks for new work.
 
