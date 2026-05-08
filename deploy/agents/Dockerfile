@@ -31,6 +31,17 @@ RUN curl -fsSL https://packages.microsoft.com/config/debian/12/packages-microsof
 # Install Claude Code CLI
 RUN npm install -g @anthropic-ai/claude-code
 
+# --- Playwright + chromium (E2E test gate for mini-app developer agent) -------
+# The developer agent runs `npx playwright test` as part of its done-gate.
+# Pre-install at image-build time so a runtime invocation doesn't have to
+# download 165MB of browser on first use. PLAYWRIGHT_BROWSERS_PATH puts the
+# binaries in a system path readable by the `agent` user. `--with-deps` apt-
+# installs the runtime libs chromium needs (libnss3, libxshmfence1, etc.).
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+RUN npm install -g @playwright/test@1.48.0 \
+    && npx playwright install --with-deps chromium \
+    && chmod -R a+rX /opt/ms-playwright
+
 # Create non-root user (Claude Code refuses --dangerously-skip-permissions as root)
 RUN useradd -m -s /bin/bash agent
 

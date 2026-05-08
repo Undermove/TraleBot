@@ -49,6 +49,10 @@ MODE="${1:-auto}"
 TODAY=$(date '+%Y-%m-%d')
 HOUR_STAMP=$(date '+%Y-%m-%d_%H-%M')
 BRANCH="${BRANCH_OVERRIDE:-agents/nightly-${TODAY}}"
+# BASE_BRANCH is the branch the nightly is forked off / synced to. Defaults
+# to main; can be overridden when smoke-testing pipeline changes that haven't
+# been merged yet (e.g. BASE_BRANCH=feature/foo before re-running the night).
+BASE_BRANCH="${BASE_BRANCH:-main}"
 REPO_DIR="${REPO_DIR:-/workspace/repo}"
 LOG_DIR="${LOG_DIR_OVERRIDE:-/logs/pipeline_${HOUR_STAMP}}"
 SUMMARY_FILE="${LOG_DIR}/summaries.md"
@@ -77,21 +81,21 @@ cd "${REPO_DIR}"
 
 # --- Sync shared nightly branch ------------------------------------------------
 git fetch origin --prune --quiet
-git checkout main 2>/dev/null
-git reset --hard origin/main 2>/dev/null
+git checkout "${BASE_BRANCH}" 2>/dev/null
+git reset --hard "origin/${BASE_BRANCH}" 2>/dev/null
 
 if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null 2>&1; then
     echo ">>> Branch ${BRANCH} exists on origin — continuing."
     git checkout -B "${BRANCH}" "origin/${BRANCH}"
-    if git merge origin/main --no-edit; then
+    if git merge "origin/${BASE_BRANCH}" --no-edit; then
         git push origin "${BRANCH}" 2>/dev/null || true
     else
-        echo ">>> WARNING: auto-merge of origin/main into ${BRANCH} hit a conflict — agents will work on stale tip."
+        echo ">>> WARNING: auto-merge of origin/${BASE_BRANCH} into ${BRANCH} hit a conflict — agents will work on stale tip."
         git merge --abort 2>/dev/null || true
     fi
 else
-    echo ">>> First run of the night — creating ${BRANCH} from main."
-    git checkout -B "${BRANCH}" main
+    echo ">>> First run of the night — creating ${BRANCH} from ${BASE_BRANCH}."
+    git checkout -B "${BRANCH}" "${BASE_BRANCH}"
     git push -u origin "${BRANCH}" 2>/dev/null || true
 fi
 
@@ -130,16 +134,16 @@ build_shared_context() {
         echo ""
         echo "Nightly branch: \`${BRANCH}\`  •  Mode: \`${MODE}\`"
         echo ""
-        echo "## Recent commits on nightly branch (main..HEAD, up to 50)"
+        echo "## Recent commits on nightly branch (${BASE_BRANCH}..HEAD, up to 50)"
         echo ""
         echo '```'
-        git log --oneline -50 "main..HEAD" 2>/dev/null || echo "(no commits yet tonight)"
+        git log --oneline -50 "${BASE_BRANCH}..HEAD" 2>/dev/null || echo "(no commits yet tonight)"
         echo '```'
         echo ""
-        echo "## Touched files (main..HEAD)"
+        echo "## Touched files (${BASE_BRANCH}..HEAD)"
         echo ""
         echo '```'
-        git diff --stat "main..HEAD" 2>/dev/null || echo "(no diff)"
+        git diff --stat "${BASE_BRANCH}..HEAD" 2>/dev/null || echo "(no diff)"
         echo '```'
         echo ""
         echo "## Open issue counts by label"
@@ -303,7 +307,7 @@ context_prefix() {
     cat <<EOF
 You are working on the SHARED nightly branch '${BRANCH}'. Previous phases (this hour AND earlier hours tonight) have already pushed work to this branch. GitHub issues are the SINGLE SOURCE OF TRUTH for executable work.
 
-BEFORE doing anything else, read the pre-built shared context at '${SHARED_CONTEXT_FILE}'. It already contains: recent commits on the nightly branch, touched files, open-issue counts by label, the open epic-drafts and epic-readys. Do NOT re-run 'git log main..HEAD', 'git diff --stat main..HEAD', or unfiltered 'gh issue list'. Use labelled queries only when you need the BODIES of issues you intend to act on.
+BEFORE doing anything else, read the pre-built shared context at '${SHARED_CONTEXT_FILE}'. It already contains: recent commits on the nightly branch, touched files, open-issue counts by label, the open epic-drafts and epic-readys. Do NOT re-run 'git log ${BASE_BRANCH}..HEAD', 'git diff --stat ${BASE_BRANCH}..HEAD', or unfiltered 'gh issue list'. Use labelled queries only when you need the BODIES of issues you intend to act on.
 
 Do NOT create a PR. Do NOT redo work that is already committed. Commit your own work with clear messages.
 
@@ -607,18 +611,51 @@ Action: investigate the planning logs above. The pipeline will NOT auto-retry �
     } > "${plan_body_file}"
 
     # Find the latest open sprint-plan issue (if any) and refresh it.
+    local sprint_num
     local existing
     existing=$(gh issue list --label sprint-plan --state open --limit 1 --json number -q '.[0].number' 2>/dev/null)
     if [ -n "${existing}" ]; then
         echo ">>> [publish-plan] refreshing open sprint-plan #${existing}."
         gh issue edit "${existing}" --body-file "${plan_body_file}" 2>/dev/null || true
         gh issue comment "${existing}" --body "Plan refreshed at ${HOUR_STAMP}: ${epic_count} epic(s), ~${total_hours}h. Approve with «поехали» when ready." 2>/dev/null || true
+        sprint_num="${existing}"
     else
         echo ">>> [publish-plan] creating new sprint-plan."
-        gh issue create \
+        sprint_num=$(gh issue create \
             --label sprint-plan \
             --title "Sprint Plan ${TODAY}" \
-            --body-file "${plan_body_file}" 2>/dev/null || true
+            --body-file "${plan_body_file}" 2>/dev/null \
+            | grep -oE '/issues/[0-9]+' | grep -oE '[0-9]+' || true)
+    fi
+
+    # --- Owner-priority auto-approval --------------------------------------
+    # If EVERY epic in this plan came from OWNER-PRIORITIES.md, the owner has
+    # already pinned these tasks — there's no point waiting for a manual
+    # «поехали» comment that only re-confirms what's already pinned. Tag the
+    # sprint-plan with label 'auto-approved' so detect_sprint_state moves
+    # straight to build phases on the next hour. If even one epic comes from
+    # another source (STRATEGY / ROADMAP / sprint-plan comment), keep the
+    # default manual gate so the owner can still triage non-pinned work.
+    if [ -n "${sprint_num}" ] && [ "${epic_count}" -gt 0 ]; then
+        local non_pinned=0
+        while read -r e; do
+            [ -z "$e" ] && continue
+            local enum
+            enum=$(echo "$e" | jq -r '.number')
+            local body
+            body=$(gh issue view "${enum}" --json body -q '.body' 2>/dev/null)
+            if ! echo "${body}" | grep -qE '^\*\*Source:\*\* +OWNER-PRIORITIES'; then
+                non_pinned=$((non_pinned + 1))
+            fi
+        done < <(echo "${broken_down}" | jq -c '.')
+
+        if [ "${non_pinned}" -eq 0 ]; then
+            echo ">>> [publish-plan] all ${epic_count} epic(s) sourced from OWNER-PRIORITIES — auto-approving sprint #${sprint_num}."
+            gh issue edit "${sprint_num}" --add-label auto-approved 2>/dev/null || true
+            gh issue comment "${sprint_num}" --body "🚀 Auto-approved: every epic in this plan is sourced from OWNER-PRIORITIES.md. Build phases will run on the next hourly tick — no «поехали» required." 2>/dev/null || true
+        else
+            echo ">>> [publish-plan] sprint #${sprint_num}: ${non_pinned} epic(s) outside OWNER-PRIORITIES — keeping manual «поехали» gate."
+        fi
     fi
 }
 
@@ -658,6 +695,11 @@ For each task:
        Notes:
        - <any infra required, e.g. Testcontainers, mock data>
        - <any non-obvious assertion>
+
+   Test type guide:
+   - HTTP behaviour or backend integration → integration test in tests/IntegrationTests/
+   - Business logic without infra → unit test in tests/UnitTests/ via builder pattern
+   - **UI behaviour visible to the user (mini-app component, screen flow, tap interactions)** → Playwright spec in src/Trale/miniapp-src/e2e/<feature>.spec.ts. EVERY visible BDD scenario from the parent epic that touches the mini-app MUST get a Playwright spec — it's the only layer that catches a 'it compiles, but the tap target is broken' regression. Mock the /api/* surface with page.route() so the spec is deterministic and doesn't need a live backend.
 4. Add label qa-prepared:
    gh issue edit <N> --add-label qa-prepared
 
@@ -692,8 +734,11 @@ YOUR JOB IN THIS PHASE: implement task issue #${pick_num} (${pick_title}).
 4. Every test from the qa-prepared comment MUST be present and green before you finish. If you cannot cover one — DO NOT skip silently. Comment on the issue with what you couldn't do and why, leave the task open.
 5. Run 'dotnet test TraleBot.sln' — must be green.
 6. Run 'cd src/Trale/miniapp-src && npm run build' — must succeed.
-7. Commit with 'Refs #${pick_num}' / 'Fixes #${pick_num}'.
-8. After committing, add label 'done' to the issue: gh issue edit ${pick_num} --add-label done. Do NOT close the issue (refactor + qa pass needs to see it).
+7. **Playwright UI gate.** Look at the qa-prep test plan above. If ANY entry mentions a Playwright spec (UI behaviour AC), you MUST author/extend the spec in 'src/Trale/miniapp-src/e2e/' AND run it green. Run with:
+       cd src/Trale/miniapp-src && npx playwright test
+   The webServer in playwright.config.ts builds + previews the SPA itself; the spec mocks /api/* via page.route() so it doesn't need the .NET backend. If a Playwright spec was listed in the qa-prep plan and you couldn't make it green, DO NOT add the 'done' label — comment on the issue with what failed and leave it open. 'It compiles' is not 'it works'.
+8. Commit with 'Refs #${pick_num}' / 'Fixes #${pick_num}'.
+9. After committing, add label 'done' to the issue: gh issue edit ${pick_num} --add-label done. Do NOT close the issue (refactor + qa pass needs to see it).
 
 DO NOT pick a different task. DO NOT touch issues outside this scope.
 
@@ -708,7 +753,7 @@ phase_refactor() {
 
 YOUR JOB IN THIS PHASE: end-of-night architecture review on the whole nightly branch. Run AFTER all dev iterations are done.
 
-1. git log --oneline main..HEAD  — see every commit this night.
+1. git log --oneline ${BASE_BRANCH}..HEAD  — see every commit this night.
 2. Read commits with prefix [dev-N], group by epic (each task issue links to a parent epic).
 3. For each touched area:
    - Compare against ARCHITECTURE.md (Clean Architecture layers, services not MediatR for new use cases, SRP, no leaky abstractions, EF queries sane).
@@ -716,6 +761,7 @@ YOUR JOB IN THIS PHASE: end-of-night architecture review on the whole nightly br
 4. After ANY refactor commit:
    - Run 'dotnet test TraleBot.sln' — MUST be green. If not, REVERT the last refactor commit (do not chase). Tests are the contract.
    - Run 'cd src/Trale/miniapp-src && npm run build' — must succeed.
+   - Run 'cd src/Trale/miniapp-src && npx playwright test' — MUST be green if any spec exists. UI tests are part of the contract.
 5. For real regressions you can't fix in 1-2 commits — open a 'needs-fix' issue with a 3-7 bullet remediation plan. Do NOT silently leave broken code on the branch.
 
 DO NOT create new task issues outside needs-fix. DO NOT touch tests to make them pass — fix the code or revert.
@@ -773,6 +819,18 @@ detect_sprint_state() {
         echo "no-plan"
         return
     fi
+
+    # Auto-approval: publish-plan stamps 'auto-approved' on plans where every
+    # epic comes from OWNER-PRIORITIES.md. Treat that as if the owner had
+    # written «поехали» — no manual gate needed for already-pinned work.
+    local AUTO
+    AUTO=$(gh issue view "${SPRINT_NUM}" --json labels \
+               -q '.labels[]? | select(.name == "auto-approved") | .name' 2>/dev/null)
+    if [ -n "${AUTO}" ]; then
+        echo "approved:${SPRINT_NUM}"
+        return
+    fi
+
     local APPROVED
     APPROVED=$(gh issue view "${SPRINT_NUM}" --json comments \
                    -q ".comments[]? | select(.author.login == \"${OWNER_LOGIN}\") | .body" 2>/dev/null \
@@ -854,7 +912,7 @@ else
     git push origin "${BRANCH}" 2>/dev/null || true
 fi
 
-git checkout main 2>/dev/null || true
+git checkout "${BASE_BRANCH}" 2>/dev/null || true
 
 echo ""
 echo "============================================"
