@@ -470,7 +470,8 @@ test('SentenceSlot — incorrect state shows hint text below slot with ruby styl
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
 
   // Place wrong chip 'ვარ' in slot-1 (correct is 'სახლში')
-  await page.getByRole('button', { name: 'ვარ' }).click()
+  // exact: true avoids matching 'მივდივარ' (preset slot) which also contains 'ვარ'
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვარ', exact: true }).click()
   await page.locator('[data-testid="slot-1"]').click()
 
   // Проверить should be enabled now (slot is filled)
@@ -482,9 +483,9 @@ test('SentenceSlot — incorrect state shows hint text below slot with ruby styl
   await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
 
   // hint text should appear below the incorrect slot
-  await expect(
-    page.locator('text=Постпозиция -ши стоит после существительного')
-  ).toBeVisible()
+  const slotHint = page.locator('[data-testid="slot-hint"]')
+  await expect(slotHint).toBeVisible()
+  await expect(slotHint).toContainText('Постпозиция')
 })
 
 test('incorrect answer shows ruby slot fill and hint', async ({ page }) => {
@@ -495,8 +496,8 @@ test('incorrect answer shows ruby slot fill and hint', async ({ page }) => {
 
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
 
-  // Place wrong chip
-  await page.getByRole('button', { name: 'ვარ' }).click()
+  // Place wrong chip (exact: true avoids matching 'მივდივარ' preset slot)
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვარ', exact: true }).click()
   await page.locator('[data-testid="slot-1"]').click()
   await page.getByRole('button', { name: /Проверить/i }).click()
 

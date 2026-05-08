@@ -44,7 +44,7 @@ export default function SentenceSlot({ state, chip, hint, onTap, 'data-testid': 
         {chip?.text ?? ''}
       </button>
       {hint && state === 'incorrect' && (
-        <div className="font-sans text-[11px] text-ruby font-medium mt-1 text-center max-w-[100px] leading-tight">
+        <div data-testid="slot-hint" className="font-sans text-[11px] text-ruby font-medium mt-1 text-center max-w-[100px] leading-tight">
           {hint}
         </div>
       )}
