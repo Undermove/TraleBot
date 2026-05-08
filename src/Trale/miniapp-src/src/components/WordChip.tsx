@@ -1,6 +1,6 @@
 import React from 'react'
 
-export type WordChipState = 'default' | 'selected' | 'in-slot' | 'correct' | 'incorrect' | 'disabled'
+export type WordChipState = 'default' | 'selected' | 'correct' | 'incorrect' | 'disabled'
 
 interface Props {
   text: string
@@ -12,14 +12,14 @@ export default function WordChip({ text, state, onTap }: Props) {
   const bg =
     state === 'selected'
       ? 'bg-gold'
-      : state === 'in-slot' || state === 'correct'
+      : state === 'correct'
       ? 'bg-navy'
       : state === 'incorrect'
       ? 'bg-ruby'
       : 'bg-cream'
 
   const textColor =
-    state === 'in-slot' || state === 'correct' || state === 'incorrect'
+    state === 'correct' || state === 'incorrect'
       ? 'text-cream'
       : state === 'disabled'
       ? 'text-jewelInk/40'
@@ -28,7 +28,7 @@ export default function WordChip({ text, state, onTap }: Props) {
   const borderColor =
     state === 'disabled' ? 'border-jewelInk/30' : 'border-jewelInk'
 
-  const shadow = state === 'in-slot' || state === 'correct' || state === 'incorrect' ? '' : '2px 2px 0 #15100A'
+  const shadow = state === 'correct' || state === 'incorrect' ? '' : '2px 2px 0 #15100A'
   const opacity = state === 'disabled' ? 'opacity-40' : ''
 
   return (

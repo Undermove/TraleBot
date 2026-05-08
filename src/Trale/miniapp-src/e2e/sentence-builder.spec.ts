@@ -422,7 +422,7 @@ test('Practice screen — sentence-builder questionType routes to SentenceBuilde
   })
 })
 
-test('WordChip — all 6 state classes present; tap-target ≥ 44px in 375px viewport', async ({
+test('WordChip — default/selected/disabled state classes; tap-target ≥ 44px in 375px viewport', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 })

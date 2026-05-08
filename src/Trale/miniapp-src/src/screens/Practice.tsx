@@ -59,6 +59,17 @@ export default function Practice({
   // For shake animation on wrong type answer
   const [shakeInput, setShakeInput] = useState(false)
 
+  function applyOfflineProgress(isPerfect: boolean, xpEarned: number) {
+    const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
+    if (isPerfect) {
+      updatedProgress.completedLessons = {
+        ...progress.completedLessons,
+        [moduleId]: Array.from(new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])).sort((a, b) => a - b),
+      }
+    }
+    setProgress(updatedProgress)
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function applyQuestions(data: any) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -174,14 +185,7 @@ export default function Practice({
           setProgress(progressFromDto(r.progress))
           xpEarned = r.xpEarned
         } catch {
-          const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
-          if (isPerfect) {
-            updatedProgress.completedLessons = {
-              ...progress.completedLessons,
-              [moduleId]: Array.from(new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])).sort((a, b) => a - b),
-            }
-          }
-          setProgress(updatedProgress)
+          applyOfflineProgress(isPerfect, xpEarned)
         }
       }
       navigate({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions })
@@ -231,29 +235,10 @@ export default function Practice({
           setProgress(progressFromDto(r.progress))
           xpEarned = r.xpEarned
         } catch {
-          // Offline fallback: only mark completed if 100%
-          const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
-          if (isPerfect) {
-            updatedProgress.completedLessons = {
-              ...progress.completedLessons,
-              [moduleId]: Array.from(
-                new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])
-              ).sort((a, b) => a - b)
-            }
-          }
-          setProgress(updatedProgress)
+          applyOfflineProgress(isPerfect, xpEarned)
         }
       } else {
-        const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
-        if (isPerfect) {
-          updatedProgress.completedLessons = {
-            ...progress.completedLessons,
-            [moduleId]: Array.from(
-              new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])
-            ).sort((a, b) => a - b)
-          }
-        }
-        setProgress(updatedProgress)
+        applyOfflineProgress(isPerfect, xpEarned)
       }
 
       navigate({
