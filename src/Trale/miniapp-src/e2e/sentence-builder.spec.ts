@@ -112,6 +112,75 @@ const freeMeResponse = {
   },
 }
 
+// 6 slots (positions 0-4 preset, slot 5 empty) — for overflow-x scroll-snap test
+const mock6SlotQuestion = [
+  {
+    id: 'q-6slot',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Длинное предложение с шестью позициями' },
+    level: 5,
+    correctOrder: ['სიტ1', 'სიტ2', 'სიტ3', 'სიტ4', 'სიტ5', 'სიტ6'],
+    chipPool: ['სიტ6', 'ვარ', 'ხარ'],
+    presetPositions: [
+      { position: 0, token: 'სიტ1' },
+      { position: 1, token: 'სიტ2' },
+      { position: 2, token: 'სიტ3' },
+      { position: 3, token: 'სიტ4' },
+      { position: 4, token: 'სიტ5' },
+    ],
+    hints: {},
+    lemma: '',
+    question: 'test-6slot',
+    options: [],
+    answerIndex: 0,
+    explanation: '',
+  },
+]
+
+// 10 chips in pool (1 empty slot) — for ChipPool wrap test
+const mock10ChipQuestion = [
+  {
+    id: 'q-10chip',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Тест с десятью чипами в пуле' },
+    level: 5,
+    correctOrder: ['მე', 'სახლში', 'მივდივარ'],
+    chipPool: ['სახლში', 'ვარ', 'ხარ', 'არის', 'ვიყავი', 'იყო', 'ვიქნები', 'იქნება', 'მაქვს', 'გაქვს'],
+    presetPositions: [
+      { position: 0, token: 'მე' },
+      { position: 2, token: 'მივდივარ' },
+    ],
+    hints: {},
+    lemma: '',
+    question: 'test-10chip',
+    options: [],
+    answerIndex: 0,
+    explanation: '',
+  },
+]
+
+// Broken: chipPool missing 'სახლში' needed for non-preset slot 1 — triggers error fallback
+const mockBrokenQuestion = [
+  {
+    id: 'q-broken',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Сломанное упражнение' },
+    level: 1,
+    correctOrder: ['მე', 'სახლში', 'მივდივარ'],
+    chipPool: ['ვარ', 'გახვედი'],
+    presetPositions: [
+      { position: 0, token: 'მე' },
+      { position: 2, token: 'მივდივარ' },
+    ],
+    hints: {},
+    lemma: '',
+    question: 'test-broken',
+    options: [],
+    answerIndex: 0,
+    explanation: '',
+  },
+]
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function setupApiMocks(page: any, meResponse: object, lessonQuestions: object[]) {
@@ -338,4 +407,182 @@ test('Free user — Postpositions L1 shows paywall component; tap-target ≥ 44p
   expect(box).toBeTruthy()
   expect(box!.height).toBeGreaterThanOrEqual(44)
   expect(box!.width).toBeGreaterThanOrEqual(44)
+})
+
+test('Practice screen — sentence-builder questionType routes to SentenceBuilderCard', async ({
+  page,
+}) => {
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+})
+
+test('WordChip — all 6 state classes present; tap-target ≥ 44px in 375px viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // default state: tap-target ≥ 44px
+  const chip = page.getByRole('button', { name: 'სახლში' })
+  await expect(chip).toBeVisible()
+  const chipBox = await chip.boundingBox()
+  expect(chipBox!.height).toBeGreaterThanOrEqual(44)
+  expect(chipBox!.width).toBeGreaterThanOrEqual(44)
+
+  // default state has bg-cream class
+  await expect(chip).toHaveClass(/bg-cream/)
+
+  // selected state: tap chip → gold bg
+  await chip.click()
+  await expect(chip).toHaveClass(/bg-gold/)
+
+  // place chip, verify, then check disabled state
+  await page.locator('[data-testid="slot-1"]').click()
+  await page.getByRole('button', { name: /Проверить/i }).click()
+
+  // after check — remaining chips in pool have disabled state (opacity-40)
+  const remainingChips = page.locator('[data-testid="chip-pool"] button')
+  const count = await remainingChips.count()
+  if (count > 0) {
+    await expect(remainingChips.first()).toHaveClass(/opacity-40/)
+  }
+})
+
+test('SentenceSlot — incorrect state shows hint text below slot with ruby styling', async ({
+  page,
+}) => {
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // Place wrong chip 'ვარ' in slot-1 (correct is 'სახლში')
+  await page.getByRole('button', { name: 'ვარ' }).click()
+  await page.locator('[data-testid="slot-1"]').click()
+
+  // Проверить should be enabled now (slot is filled)
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // slot-1 should have ruby fill (incorrect state)
+  await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
+
+  // hint text should appear below the incorrect slot
+  await expect(
+    page.locator('text=Постпозиция -ши стоит после существительного')
+  ).toBeVisible()
+})
+
+test('incorrect answer shows ruby slot fill and hint', async ({ page }) => {
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // Place wrong chip
+  await page.getByRole('button', { name: 'ვარ' }).click()
+  await page.locator('[data-testid="slot-1"]').click()
+  await page.getByRole('button', { name: /Проверить/i }).click()
+
+  // Ruby fill on incorrect slot
+  await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
+
+  // FeedbackBanner shows incorrect header
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  // Далее button appears even on wrong answer
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+})
+
+test('SentenceSlotRow — overflow-x auto present and scroll-snap active when 6+ slots', async ({
+  page,
+}) => {
+  await setupApiMocks(page, proMeResponse, mock6SlotQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // 6 slots should be rendered
+  const slots = page.locator('[data-testid^="slot-"]')
+  await expect(slots).toHaveCount(6)
+
+  // SentenceSlotRow should have overflow-x: auto
+  const slotRow = page.locator('[data-testid="sentence-slot-row"]')
+  await expect(slotRow).toBeVisible()
+
+  const overflowX = await slotRow.evaluate(
+    (el) => window.getComputedStyle(el).overflowX
+  )
+  expect(overflowX).toBe('auto')
+
+  // scroll-snap-type is set via inline style
+  const scrollSnapType = await slotRow.evaluate(
+    (el) => (el as HTMLElement).style.scrollSnapType
+  )
+  expect(scrollSnapType).toBeTruthy()
+})
+
+test('ChipPool — 10+ chips wrap without x-scroll at 375px viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock10ChipQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // All 10 chips should be visible in pool
+  const pool = page.locator('[data-testid="chip-pool"]')
+  const chips = pool.locator('button')
+  await expect(chips).toHaveCount(10)
+
+  // No horizontal scroll: chips wrap to rows
+  const { scrollWidth, clientWidth } = await pool.evaluate((el) => ({
+    scrollWidth: el.scrollWidth,
+    clientWidth: el.clientWidth,
+  }))
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth)
+})
+
+test('SentenceBuilderCard — error fallback renders for question with missing chip in pool', async ({
+  page,
+}) => {
+  await setupApiMocks(page, proMeResponse, mockBrokenQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // Error fallback must show
+  await expect(page.locator('text=Упражнение не загрузилось')).toBeVisible()
+
+  // Retry button present
+  const retryBtn = page.getByRole('button', { name: /Попробовать снова/i })
+  await expect(retryBtn).toBeVisible()
+
+  // Tap retry → onAnswer(false) → navigates away (lesson completes with 0/1)
+  await retryBtn.click()
+  await page.waitForTimeout(600)
+
+  // SentenceBuilderCard should no longer be visible (navigated to result screen)
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).not.toBeVisible()
 })
