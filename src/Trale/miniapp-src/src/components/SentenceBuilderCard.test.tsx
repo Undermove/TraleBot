@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SentenceBuilderCard from './SentenceBuilderCard'
 import { QuizQuestion } from '../types'
@@ -86,8 +86,8 @@ describe('SentenceBuilderCard', () => {
       await user.click(screen.getByRole('button', { name: 'სახლში' }))
       await user.click(screen.getByTestId('slot-1'))
 
-      // Chip should now be in the slot; not in pool
-      expect(screen.queryByRole('button', { name: 'სახლში' })).toBeNull()
+      // Chip should now be in the slot; not in the pool area
+      expect(within(screen.getByTestId('chip-pool')).queryByRole('button', { name: 'სახლში' })).toBeNull()
 
       // Tap the filled slot to return the chip
       await user.click(screen.getByTestId('slot-1'))
