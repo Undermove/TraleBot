@@ -49,12 +49,13 @@
 - [x] **designer** — оформить дизайн-спеку `design-specs/79-sentence-builder.md` по механике из ROADMAP §79. Скрины не нужны, состояния (default / chip selected / slot active / after check / error) описаны словами + low-fi схемы. Перевести §79 в ROADMAP в `[designed]` после готовности спеки. → done by designer 2026-05-01: design-specs/79-sentence-builder.md, ROADMAP §79 → [designed]
 - [ ] **methodist** — проверить, что предложенная прогрессия L1→L5+ соответствует CEFR A1-A2 и принципу i+1. Подобрать конкретные русско-грузинские пары для пилота на Postpositions: 5-7 предложений на каждый из L1-L3 (один слот / два слота / половина предложения). Сохранить как `design-specs/79-sentence-builder-content.md` или внутри спеки.
 - [ ] **native-reviewer** — пройтись по предложенным грузинским предложениям. Подтвердить, что для каждого есть один корректный порядок слов и что выбранные дистракторы (неправильный падеж, лишняя постпозиция) реально сбивают, а не оставляют двусмысленность.
-- [ ] **tech-lead-breakdown** — после готовности спеки разбить на task-issues:
+- [x] **tech-lead-breakdown** — после готовности спеки разбить на task-issues:
   1. Новый `QuestionType.SentenceBuilder` в backend (DTO + JSON-схема + Loader).
   2. Frontend-компонент `SentenceBuilderCard` (tap-select / tap-slot / pool of chips).
   3. Подсветка после check (зелёный/красный по позициям).
   4. Контент: 15-20 вопросов для пилота на Postpositions L1-L3.
   5. Тесты (component + e2e).
+  → done by tech-lead 2026-05-09: создал issues #860 (backend), #861 (frontend), #862 (content), #863 (tests) — P1, epic #858
 - [ ] **developer** — реализовать в порядке, установленном tech-lead'ом. Один issue = один PR.
 - [ ] **qa** — после landing'а каждого PR проверить full-suite + руками протестировать UI на 375px (tap target ≥ 44px на чипе и слоте, текст не обрезается).
 - [ ] **product** — после полной готовности (все пункты закрыты, тесты зелёные на пилоте) убрать §79 из этого файла и обновить ROADMAP в `[done]`.
