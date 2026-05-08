@@ -36,9 +36,16 @@ export interface QuizQuestion {
   options: string[]
   answerIndex: number
   explanation: string
-  questionType?: 'choice' | 'type' | 'audio-choice'
+  questionType?: 'choice' | 'type' | 'audio-choice' | 'sentence-builder'
   audioUrl?: string | null
   transcript?: string | null
+  // sentence-builder specific
+  targetSentence?: { ru: string }
+  level?: number
+  correctOrder?: string[]
+  chipPool?: string[]
+  presetPositions?: Array<{ position: number; token: string }>
+  hints?: Record<string, string>
 }
 
 export interface ProgressState {
