@@ -21,6 +21,7 @@
 dotnet build TraleBot.sln
 dotnet test TraleBot.sln                  # ВСЕ проекты: Domain, Application, Infrastructure, IntegrationTests
 cd src/Trale/miniapp-src && npm run build
+cd src/Trale/miniapp-src && npx playwright test   # UI-гейт: моки /api/* через page.route(), бэкенд не нужен
 ```
 
 **IntegrationTests обязательны.** В этом контейнере Testcontainers работает — в `deploy/agents/docker-compose.yml` выставлены `TESTCONTAINERS_RYUK_DISABLED=true` и `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`. Если IntegrationTests не запускаются — это проблема инфры, немедленно отметь в отчёте и файли issue, НЕ пропускай их молча.

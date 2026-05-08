@@ -56,6 +56,15 @@ if [ -f "${QA_REPORT}" ]; then
     QA_REPORT_CONTENT=$(cat "${QA_REPORT}")
 fi
 
+# Russian manual-test scenarios written by phase_test_scenarios at end of
+# build. Owner reads them on phone, walks through the tap-by-tap guide
+# without having to read code or BDD specs themselves.
+QA_SCENARIOS_FILE="qa-scenarios-${TODAY}.md"
+QA_SCENARIOS_CONTENT=""
+if [ -f "${QA_SCENARIOS_FILE}" ]; then
+    QA_SCENARIOS_CONTENT=$(cat "${QA_SCENARIOS_FILE}")
+fi
+
 # Group commits into human-readable sections by subject prefix + touched files.
 # Buckets:
 #   🆕 Новый контент         — feat(...) touching Lessons/, ModuleRegistry,
@@ -161,6 +170,12 @@ PR_BODY=$(cat <<PREOF
 Пять агентов (methodist → product → tech-lead → developer → qa) работали последовательно каждый час на ветке \`${BRANCH}\`. Интеграционный QA каждый час, GitHub issues — источник правды по задачам.
 
 **Итого:** ${COMMITS_TOTAL} коммитов · ${FILES_TOTAL} файлов · +${ADDITIONS} / -${DELETIONS} строк
+
+---
+
+## 🧪 Как протестировать (тап-за-тапом)
+
+${QA_SCENARIOS_CONTENT:-_Тест-сценарии не сгенерированы (phase_test_scenarios не отработал или этой ночью ничего не закрыли)._}
 
 ---
 

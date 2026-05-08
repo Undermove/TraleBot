@@ -7,6 +7,7 @@ echo "Starting at $(date)"
 # Pass environment to cron jobs (quote values to handle spaces)
 # Include PATH so cron jobs can find claude CLI in /usr/local/bin
 echo "PATH='/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'" > /etc/environment
+echo "PLAYWRIGHT_BROWSERS_PATH='/opt/ms-playwright'" >> /etc/environment
 printenv | grep -E '^(ANTHROPIC_API_KEY|CLAUDE_CODE_OAUTH_TOKEN|GITHUB_TOKEN|REPO_URL|GIT_USER_NAME|GIT_USER_EMAIL|MAX_TURNS|TESTCONTAINERS_RYUK_DISABLED|TESTCONTAINERS_HOST_OVERRIDE)=' | sed "s/=/='/" | sed "s/$/'/" >> /etc/environment
 chmod 644 /etc/environment
 
