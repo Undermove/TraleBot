@@ -133,6 +133,11 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `DialogOfDayCard.tsx` | Dashboard card: «Диалог дня» — daily mini-dialogue (tap-to-reveal translations, collapse toggle). |
 | `AudioPlayer.tsx` | Audio play-button component (idle/loading/playing/played/error states) for Listen & Choose questions. |
 | `AudioChoiceCard.tsx` | Jewel-tile card for audio-choice questions: eyebrow «Послушай и выбери», AudioPlayer, transcript reveal (fades in after first play or on error). Used in Practice.tsx and PracticeMistakes.tsx. |
+| `SentenceBuilderCard.tsx` | Card for `sentence-builder` questions: slot row + chip pool, tap-to-place interaction, preset slots, Verify button, FeedbackBanner on check. Used in Practice.tsx. |
+| `SentenceSlotRow.tsx` | Row of SentenceSlot components for the sentence-builder layout. |
+| `SentenceSlot.tsx` | Single droppable slot in the sentence-builder (empty / preset / filled states). |
+| `ChipPool.tsx` | Scrollable pool of WordChip tokens for sentence-builder drag-to-slot interaction. |
+| `WordChip.tsx` | Tappable chip representing one Georgian word token; selected/used states. |
 
 ### Data (`src/data/`)
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
@@ -293,7 +298,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 6 (L6 audio-choice) | ✅ |
-| `postpositions` | `GeorgianPostpositions` | 6 (L6 audio-choice) | ✅ |
+| `postpositions` | `GeorgianPostpositions` | 7 (L6 audio-choice; L7 sentence-builder — конструктор предложений) | ✅ |
 | `adjectives` | `GeorgianAdjectives` | 6 (lesson 6 = audio-choice) | ✅ |
 
 ### Vocabulary modules
@@ -330,6 +335,18 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `GeorgianQuizSession` | Active Georgian module quiz session. |
 | `ShareableQuiz` / `SharedQuiz` | Link-shared quizzes. |
 | `UserSettings` | Per-user preferences. |
+
+### Exercise types (QuizQuestionData extensions)
+
+| Type string | DTO | Fields |
+|---|---|---|
+| `choice` (default) | — | `options`, `answerIndex` |
+| `type` | — | `options` (single item — the correct Georgian word) |
+| `audio-choice` | — | `audioUrl`, `transcript` |
+| `sentence-builder` | `SentenceBuilderQuestion` | `targetSentence.ru`, `level`, `correctOrder`, `chipPool`, `presetPositions`, `hints` |
+
+`SentenceBuilderQuestion` lives in `src/Infrastructure/Telegram/Services/SentenceBuilderQuestion.cs`.  
+Validation: loader logs a warning and skips any sentence-builder question whose `correctOrder` contains a token absent from `chipPool`.
 
 ### Application services (selected)
 - `GetMiniAppProfileQuery` — profile + isPro / trial / plan
