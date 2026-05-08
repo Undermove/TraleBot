@@ -98,7 +98,8 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                         }
                     }
 
-                    if (questionElement.TryGetProperty("question_type", out var qt))
+                    if (questionElement.TryGetProperty("question_type", out var qt)
+                        || questionElement.TryGetProperty("questionType", out qt))
                     {
                         question.QuestionType = qt.GetString();
                     }
@@ -125,6 +126,14 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                         }
                     }
 
+                    if (question.QuestionType == "sentence-builder")
+                    {
+                        var sb = ParseSentenceBuilder(questionElement, question.Id);
+                        if (sb == null)
+                            continue; // validation failed — skip this question
+                        question.SentenceBuilder = sb;
+                    }
+
                     questions.Add(question);
                 }
             }
@@ -137,5 +146,49 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
             _logger.LogError(ex, "Error loading questions from {Path}", _questionsFilePath);
             return new();
         }
+    }
+
+    private SentenceBuilderQuestion? ParseSentenceBuilder(JsonElement el, string questionId)
+    {
+        var sb = new SentenceBuilderQuestion();
+
+        if (el.TryGetProperty("targetSentence", out var ts) && ts.TryGetProperty("ru", out var ru))
+            sb.TargetSentence = new TargetSentenceData { Ru = ru.GetString() ?? string.Empty };
+
+        if (el.TryGetProperty("level", out var lvl))
+            sb.Level = lvl.GetInt32();
+
+        if (el.TryGetProperty("correctOrder", out var co) && co.ValueKind == JsonValueKind.Array)
+            sb.CorrectOrder = co.EnumerateArray().Select(t => t.GetString() ?? string.Empty).ToList();
+
+        if (el.TryGetProperty("chipPool", out var cp) && cp.ValueKind == JsonValueKind.Array)
+            sb.ChipPool = cp.EnumerateArray().Select(t => t.GetString() ?? string.Empty).ToList();
+
+        if (el.TryGetProperty("presetPositions", out var pp) && pp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var pos in pp.EnumerateArray())
+            {
+                if (pos.TryGetProperty("position", out var p) && pos.TryGetProperty("token", out var tok))
+                    sb.PresetPositions.Add(new PresetPosition { Position = p.GetInt32(), Token = tok.GetString() ?? string.Empty });
+            }
+        }
+
+        if (el.TryGetProperty("hints", out var hints) && hints.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var hint in hints.EnumerateObject())
+                sb.Hints[hint.Name] = hint.Value.GetString() ?? string.Empty;
+        }
+
+        var chipSet = new HashSet<string>(sb.ChipPool);
+        var missingTokens = sb.CorrectOrder.Where(t => !chipSet.Contains(t)).ToList();
+        if (missingTokens.Count > 0)
+        {
+            _logger.LogWarning(
+                "Question {QuestionId} skipped: tokens [{Tokens}] in correctOrder are absent from chipPool",
+                questionId, string.Join(", ", missingTokens));
+            return null;
+        }
+
+        return sb;
     }
 }

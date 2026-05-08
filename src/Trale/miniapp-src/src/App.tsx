@@ -20,6 +20,7 @@ import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
 
 function isInsideTelegram(): boolean {
+  if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
   const tg = (window as any).Telegram?.WebApp
   return Boolean(tg?.initData && tg.initData.length > 0)
 }

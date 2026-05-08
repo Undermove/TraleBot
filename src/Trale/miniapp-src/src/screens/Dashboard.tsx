@@ -519,6 +519,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                       return (
                         <button
                           key={m.id}
+                          data-testid={`module-tile-${m.id}`}
                           onClick={() => {
                             if (isProLocked) {
                               setPaywall({ trigger: 'module' })

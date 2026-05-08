@@ -252,6 +252,7 @@ export default function ModuleMap({
               <div key={lesson.id} className="absolute" style={{ top: topY, left: 0, right: 0, height: CIRCLE_SIZE }}>
                 {/* Tappable circle */}
                 <button
+                  data-testid={`lesson-btn-${lesson.id}`}
                   onClick={() =>
                     navigate({
                       kind: 'lesson-theory',

@@ -31,6 +31,9 @@ public class QuizQuestionData
     /// <summary>Georgian word/phrase the audio contains (displayed as caption after answering). Null for other types.</summary>
     public string? Transcript { get; set; }
 
+    /// <summary>Structured data for sentence-builder questions. Null for all other question types.</summary>
+    public SentenceBuilderQuestion? SentenceBuilder { get; set; }
+
     public void ShuffleOptions(Random random)
     {
         if (Options.Count <= 1)

@@ -24,6 +24,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Infrastructure\Infrastructure.csproj" />
+      <ProjectReference Include="..\..\src\Trale\Trale.csproj" />
     </ItemGroup>
 
 </Project>
