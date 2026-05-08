@@ -1417,7 +1417,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                             "მეტროში — в метро (-ში)", "სახლიდან — из дома (-დან)",
                             "თბილისში — в Тбилиси (-ში)")
                     }),
-                Lesson(7, "Конструктор предложений", "-ში, -ზე, -თAN",
+                Lesson(7, "Конструктор предложений", "-ში, -ზე, -თან",
                     "Постпозиции: собери предложение",
                     "Собрать грузинское предложение из слов, применяя постпозиции места.",
                     new List<TheoryBlockDto>
@@ -1426,7 +1426,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         List(
                             "-ში — в, внутри: სახლში (в доме)",
                             "-ზე — на: მაგიდაზე (на столе)",
-                            "-თAN — у, рядом: კართАN (у двери)"),
+                            "-თან — у, рядом: კართან (у двери)"),
                         Paragraph("Порядок слов: Субъект → Место → Глагол")
                     })
             }
