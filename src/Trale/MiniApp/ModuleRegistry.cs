@@ -24,7 +24,7 @@ public static class ModuleRegistry
         ["pronoun-declension"] = new("pronoun-declension", "Lessons/GeorgianPronounDeclension", 6),
         ["conditionals"] = new("conditionals", "Lessons/GeorgianConditionals", 6),
         ["imperative"] = new("imperative", "Lessons/GeorgianImperative", 3),
-        ["postpositions"] = new("postpositions", "Lessons/GeorgianPostpositions", 6),
+        ["postpositions"] = new("postpositions", "Lessons/GeorgianPostpositions", 7),
         ["adjectives"] = new("adjectives", "Lessons/GeorgianAdjectives", 6),
         ["cases"] = new("cases", "Lessons/GeorgianCases", 9),
         ["pronouns"] = new("pronouns", "Lessons/GeorgianPronouns", 6),
