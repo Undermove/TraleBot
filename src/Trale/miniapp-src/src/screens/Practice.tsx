@@ -4,6 +4,7 @@ import Button from '../components/Button'
 import FeedbackBanner from '../components/FeedbackBanner'
 import GeorgianKeyboard from '../components/GeorgianKeyboard'
 import LoaderLetter from '../components/LoaderLetter'
+import SentenceBuilderCard from '../components/SentenceBuilderCard'
 import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
 import { api } from '../api'
@@ -13,13 +14,19 @@ function normalizeQuestion(d: any): QuizQuestion {
   return {
     id: d.id,
     lemma: d.lemma ?? '',
-    question: d.question,
-    options: d.options,
-    answerIndex: d.answerIndex,
-    explanation: d.explanation,
+    question: d.question ?? '',
+    options: d.options ?? [],
+    answerIndex: d.answerIndex ?? 0,
+    explanation: d.explanation ?? '',
     questionType: d.questionType,
     audioUrl: d.audioUrl ?? null,
     transcript: d.transcript ?? null,
+    targetSentence: d.targetSentence,
+    level: d.level,
+    correctOrder: d.correctOrder,
+    chipPool: d.chipPool,
+    presetPositions: d.presetPositions,
+    hints: d.hints,
   }
 }
 
@@ -136,6 +143,7 @@ export default function Practice({
 
   const isTypeQuestion = current.questionType === 'type'
   const isAudioChoice = current.questionType === 'audio-choice'
+  const isSentenceBuilder = current.questionType === 'sentence-builder'
 
   // Georgian numerals 1-10 for passive learning
   const geoNumerals = ['ერთი', 'ორი', 'სამი', 'ოთხი', 'ხუთი', 'ექვსი', 'შვიდი', 'რვა', 'ცხრა', 'ათი']
@@ -147,6 +155,41 @@ export default function Practice({
   const isCorrect = isTypeQuestion
     ? typedAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
     : selected !== null && selected === current.answerIndex
+
+  async function handleSentenceBuilderAnswer(isCorrect: boolean) {
+    const newCorrectCount = isCorrect ? correctCount + 1 : correctCount
+    if (isCorrect) {
+      setCorrectCount((c) => c + 1)
+    } else {
+      setWrongQuestions((prev) => [...prev, current])
+    }
+    const newWrongQuestions = isCorrect ? wrongQuestions : [...wrongQuestions, current]
+
+    if (index + 1 >= total) {
+      const isPerfect = newCorrectCount === total
+      let xpEarned = isPerfect ? 20 : 0
+      if (authenticated) {
+        try {
+          const r = await api.completeLesson({ moduleId, lessonId, correct: newCorrectCount, total })
+          setProgress(progressFromDto(r.progress))
+          xpEarned = r.xpEarned
+        } catch {
+          const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
+          if (isPerfect) {
+            updatedProgress.completedLessons = {
+              ...progress.completedLessons,
+              [moduleId]: Array.from(new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])).sort((a, b) => a - b),
+            }
+          }
+          setProgress(updatedProgress)
+        }
+      }
+      navigate({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions })
+      return
+    }
+    setIndex((i) => i + 1)
+    setPhase('answering')
+  }
 
   function check() {
     if (isTypeQuestion) {
@@ -292,9 +335,15 @@ export default function Practice({
       {/* Question + answer area */}
       <div
         className="flex-1 px-5 pt-6"
-        style={{ paddingBottom: isTypeQuestion ? '16px' : 'calc(var(--safe-b) + 110px)' }}
+        style={{ paddingBottom: isSentenceBuilder ? 'calc(var(--safe-b) + 24px)' : isTypeQuestion ? '16px' : 'calc(var(--safe-b) + 110px)' }}
       >
-        {isAudioChoice ? (
+        {isSentenceBuilder ? (
+          <SentenceBuilderCard
+            key={current.id}
+            question={current}
+            onAnswer={handleSentenceBuilderAnswer}
+          />
+        ) : isAudioChoice ? (
           <AudioChoiceCard key={current.id} question={current} revealed={phase === 'checked'} />
         ) : (
           <>
@@ -453,8 +502,8 @@ export default function Practice({
         )}
       </div>
 
-      {/* Action bar */}
-      {isTypeQuestion ? (
+      {/* Action bar — sentence-builder manages its own buttons inline */}
+      {!isSentenceBuilder && (isTypeQuestion ? (
         /* For type questions: keyboard + check button at bottom */
         <div className="sticky bottom-0 left-0 right-0 z-20" style={{ paddingBottom: 'var(--safe-b)' }}>
           <GeorgianKeyboard
@@ -490,7 +539,7 @@ export default function Practice({
             </Button>
           )}
         </div>
-      )}
+      ))}
     </div>
   )
 }

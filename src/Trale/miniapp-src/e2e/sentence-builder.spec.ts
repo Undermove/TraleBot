@@ -115,34 +115,40 @@ const freeMeResponse = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 async function setupApiMocks(page: any, meResponse: object, lessonQuestions: object[]) {
-  await page.route('/api/miniapp/content', (route: any) =>
+  await page.route('**/api/miniapp/content', (route: any) =>
     route.fulfill({ json: mockCatalog })
   )
-  await page.route('/api/miniapp/me', (route: any) =>
+  await page.route('**/api/miniapp/me', (route: any) =>
     route.fulfill({ json: meResponse })
   )
-  await page.route('/api/miniapp/modules/postpositions/lessons/1/questions', (route: any) =>
+  await page.route('**/api/miniapp/modules/postpositions/lessons/1/questions', (route: any) =>
     route.fulfill({ json: lessonQuestions })
   )
-  await page.route('/api/miniapp/modules/postpositions/lessons/2/questions', (route: any) =>
+  await page.route('**/api/miniapp/modules/postpositions/lessons/2/questions', (route: any) =>
     route.fulfill({ json: mockL2Question })
   )
-  await page.route('/api/miniapp/lessons/complete', (route: any) =>
+  await page.route('**/api/miniapp/lessons/complete', (route: any) =>
     route.fulfill({ json: { xpEarned: 20, progress: (meResponse as any).progress } })
   )
   // Intercept plans (for paywall)
-  await page.route('/api/miniapp/plans', (route: any) =>
+  await page.route('**/api/miniapp/plans', (route: any) =>
     route.fulfill({ json: { plans: [{ id: 'Year', payloadId: 'year', stars: 900, durationDays: 365, title: 'Год', description: 'Полный год' }] } })
   )
 }
 
 async function navigateToPractice(page: any, lessonId: number = 1) {
-  // From dashboard click module tile
-  await page.locator('h2', { hasText: 'Постпозиции' }).click()
-  // Click lesson circle
-  await page.locator(`button[aria-label="Урок ${lessonId}"]`).click()
-  // Click "к практике →"
-  await page.getByRole('button', { name: /к практике/i }).click()
+  // Wait for Dashboard to be visible (module tile with 'Постпозиции')
+  const moduleTile = page.locator('button', { hasText: 'Постпозиции' }).first()
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  // Click lesson button (label button shows lesson title like "Урок 1")
+  const lessonBtn = page.locator('button', { hasText: `Урок ${lessonId}` }).first()
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  // Click "к практике →" button
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -166,12 +172,12 @@ test('L1 happy path — chip tap → slot fill → Проверить → Feedba
   await setupApiMocks(page, proMeResponse, mockL1Question)
 
   let completeLessonPayload: any = null
-  await page.route('/api/miniapp/lessons/complete', async (route) => {
+  await page.route('**/api/miniapp/lessons/complete', async (route) => {
     completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
     await route.fulfill({ json: { xpEarned: 20, progress: proMeResponse.progress } })
   })
 
-  await page.goto('/')
+  await page.goto('/?playwright=1')
   await page.waitForLoadState('networkidle')
 
   await navigateToPractice(page, 1)
@@ -214,7 +220,7 @@ test('L1 happy path — chip tap → slot fill → Проверить → Feedba
 test('L2 incomplete answer — Проверить aria-disabled; tap is no-op', async ({ page }) => {
   await setupApiMocks(page, proMeResponse, mockL2Question)
 
-  await page.goto('/')
+  await page.goto('/?playwright=1')
   await page.waitForLoadState('networkidle')
 
   await navigateToPractice(page, 1)
@@ -242,12 +248,12 @@ test('disabled Проверить — no network request on tap', async ({ page 
   await setupApiMocks(page, proMeResponse, mockL1Question)
 
   let networkRequestFired = false
-  await page.route('/api/miniapp/lessons/complete', (route) => {
+  await page.route('**/api/miniapp/lessons/complete', (route) => {
     networkRequestFired = true
     route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
   })
 
-  await page.goto('/')
+  await page.goto('/?playwright=1')
   await page.waitForLoadState('networkidle')
 
   await navigateToPractice(page, 1)
@@ -271,7 +277,7 @@ test('Chip return — tap filled slot returns chip to pool; slot reverts to dash
 }) => {
   await setupApiMocks(page, proMeResponse, mockL1Question)
 
-  await page.goto('/')
+  await page.goto('/?playwright=1')
   await page.waitForLoadState('networkidle')
 
   await navigateToPractice(page, 1)
@@ -307,11 +313,13 @@ test('Free user — Postpositions L1 shows paywall component; tap-target ≥ 44p
   await page.setViewportSize({ width: 375, height: 812 })
   await setupApiMocks(page, freeMeResponse, mockL1Question)
 
-  await page.goto('/')
+  await page.goto('/?playwright=1')
   await page.waitForLoadState('networkidle')
 
   // Click the postpositions module tile (free user → paywall should appear, not module map)
-  await page.locator('h2', { hasText: 'Постпозиции' }).click()
+  const moduleTile = page.locator('button', { hasText: 'Постпозиции' }).first()
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
 
   // Paywall dialog should be visible
   const paywallDialog = page.locator('[role="dialog"][aria-label="Про-доступ"]')
