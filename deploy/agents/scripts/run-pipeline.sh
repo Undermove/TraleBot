@@ -529,8 +529,30 @@ phase_publish_plan() {
     # No agent — orchestrator-only step. Compose a sprint-plan-issue body from
     # all open epic-broken-down issues. Update existing sprint-plan if one is
     # open and pending owner approval; otherwise create a new one.
-    local broken_down
-    broken_down=$(gh issue list --label epic-broken-down --state open --limit 20 --json number,title -q '.[]' 2>/dev/null)
+    #
+    # Make sure the auto-approved label exists in the repo — phase_publish_plan
+    # adds it to owner-priority sprint plans, but `gh issue edit --add-label`
+    # silently no-ops on a label name that isn't defined yet, so the first
+    # ever auto-approval otherwise loses the label.
+    gh label create auto-approved --color 0E8A16 \
+        --description "Sprint plan auto-approved (all epics from OWNER-PRIORITIES.md)" \
+        2>/dev/null || true
+
+    # Retry the broken-down query with backoff. GitHub's label search index
+    # lags 5-30s behind a freshly applied label, so a publish-plan that runs
+    # immediately after breakdown can see «no broken-down epics» even though
+    # the label was just attached. Retrying lets the index catch up before
+    # we falsely file a pipeline-failure issue.
+    local broken_down=""
+    local attempt
+    for attempt in 1 2 3 4 5; do
+        broken_down=$(gh issue list --label epic-broken-down --state open --limit 20 --json number,title -q '.[]' 2>/dev/null)
+        if [ -n "${broken_down}" ]; then
+            break
+        fi
+        echo ">>> [publish-plan] no broken-down epics on attempt ${attempt} — waiting 10s for label index to sync..."
+        sleep 10
+    done
 
     # Decide whether we have anything to plan.
     local epic_count
