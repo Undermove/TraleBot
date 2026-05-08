@@ -38,7 +38,8 @@ set -e
 #   build   — force build phases (7–9), ignore approval state
 #   <phase> — force a single phase (for smoke testing). Valid:
 #             discovery / methodist-review / native-review / finalize /
-#             breakdown / publish-plan / qa-prep / dev / refactor
+#             breakdown / publish-plan / qa-prep / dev / refactor /
+#             test-scenarios
 #
 # OUTPUT: agents push to the shared nightly branch agents/nightly-YYYY-MM-DD.
 # The morning 09:00 cron (run-qa.sh) opens/refreshes the daily PR.
@@ -813,6 +814,74 @@ At the very end output '=== SUMMARY ===' with: commits reviewed, refactor commit
     run_agent "refactor" "tech-lead-review" 50 "${instruction}"
 }
 
+phase_test_scenarios() {
+    # Generate human-readable Russian test scenarios for every task that
+    # got the `done` label tonight, so the morning PR gives the owner a
+    # tap-by-tap manual test guide. Owner reads the PR on their phone,
+    # opens the mini-app, and walks through each scenario without having
+    # to dig through code or BDD specs themselves.
+    local done_tasks
+    done_tasks=$(gh issue list --label task --label done --state open --limit 50 \
+                   --search "updated:>=${TODAY}" \
+                   --json number,title 2>/dev/null \
+                 | jq -r '.[] | "\(.number) \(.title)"')
+    if [ -z "${done_tasks}" ]; then
+        echo ">>> [test-scenarios] no tasks marked done today. Skip."
+        return
+    fi
+
+    local scenarios_file="qa-scenarios-${TODAY}.md"
+    local instruction
+    instruction="$(context_prefix)Read .claude/agents/qa.md.
+
+YOUR JOB IN THIS PHASE: write a Russian-language manual test guide so the owner can test tonight's work on their phone via the Telegram mini-app, without reading code. Save it to ${scenarios_file} in the repo root.
+
+Tasks marked 'done' tonight (these need test scenarios):
+${done_tasks}
+
+Workflow:
+1. For each task above, run 'gh issue view <N> --json title,body,labels,comments' and read the body + qa-prep comment.
+2. Trace through the parent epic (\`Part of #<EPIC>\` line in the body): 'gh issue view <EPIC> --json body' to read the BDD scenarios this task closed.
+3. For tasks with UI work (frontend/content/full-feature) — write a numbered tap-by-tap guide in Russian. For pure backend tasks — describe how to verify via Swagger / direct API hit (curl) or that the JSON in the response now contains the new fields.
+
+Output format (Russian, plain prose; NO code formatting in narrative; bold for screen names; concrete chip/button labels in Georgian where the user actually sees them):
+
+# Тест-сценарии — ночной прогон <date>
+
+## Общее
+- Локальный URL: http://localhost:1402
+- Ngrok / Telegram: открой @trale_bot и тапни «Open» на главном меню
+- Если что-то не загружается — F12, проверь Network на 4xx/5xx
+
+## Закрытые таски
+
+### #<N> — <таск-заголовок>
+**Что проверяем:** одно предложение, что эта таска должна делать с точки зрения пользователя.
+
+**Шаги:**
+1. ...
+2. ...
+
+**Ожидаемое поведение:** что должно случиться к концу.
+
+**Если что-то не так:** на что обратить внимание (консоль / сеть / БД-запись).
+
+(repeat per task)
+
+---
+
+HARD RULES:
+- All steps must be in Russian. Use Georgian only inside quoted in-app labels («სახლში», «Проверить», etc.).
+- No code blocks in the narrative. The owner reads this on a phone — wide blocks break the layout.
+- One section per done task; if two tasks both touch the same UI, deduplicate the user-flow steps and link them.
+- Be specific with screens: 'Главный экран → плитка \"Постпозиции\" → Урок 7' — not 'open the lesson'.
+- Where backend-only — show the exact curl command or Swagger path.
+
+After saving the file, do NOT commit yet — phase wrapper handles the commit. Output '=== SUMMARY ===' with one bullet per task covered (just the issue number)."
+
+    run_agent "test-scenarios" "qa" 50 "${instruction}"
+}
+
 # =============================================================================
 # ORCHESTRATION
 # =============================================================================
@@ -851,6 +920,7 @@ run_build_phases() {
         fi
     done
     phase_refactor
+    phase_test_scenarios
 }
 
 detect_sprint_state() {
@@ -923,6 +993,7 @@ case "${MODE}" in
     qa-prep)          phase_qa_prep ;;
     dev)              phase_dev ;;
     refactor)         phase_refactor ;;
+    test-scenarios)   phase_test_scenarios ;;
     *)
         echo "Unknown MODE '${MODE}'. See header for valid modes." >&2
         exit 64
