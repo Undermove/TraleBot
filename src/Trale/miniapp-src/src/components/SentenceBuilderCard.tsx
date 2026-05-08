@@ -37,7 +37,7 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
   const [phase, setPhase] = useState<'answering' | 'checked'>('answering')
   const [isAllCorrect, setIsAllCorrect] = useState(false)
 
-  const allEmptySlotsFilledcheck = slots.every(
+  const allSlotsFilled = slots.every(
     (token, i) => presetSet.has(i) || token !== null
   )
 
@@ -75,7 +75,7 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
   }
 
   function handleVerify() {
-    if (!allEmptySlotsFilledcheck) return
+    if (!allSlotsFilled) return
     const allCorrect = slots.every((token, i) => token === correctOrder[i])
     setIsAllCorrect(allCorrect)
     setPhase('checked')
@@ -185,15 +185,15 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
         {phase === 'answering' ? (
           <button
             onClick={handleVerify}
-            disabled={!allEmptySlotsFilledcheck}
-            aria-disabled={!allEmptySlotsFilledcheck}
+            disabled={!allSlotsFilled}
+            aria-disabled={!allSlotsFilled}
             className={`w-full min-h-[52px] rounded-xl border-[1.5px] font-sans text-[16px] font-extrabold transition-all duration-75 ${
-              allEmptySlotsFilledcheck
+              allSlotsFilled
                 ? 'bg-navy text-cream border-jewelInk'
                 : 'bg-cream text-jewelInk/40 border-jewelInk/30 opacity-40'
             }`}
             style={
-              allEmptySlotsFilledcheck ? { boxShadow: '2px 2px 0 #15100A' } : {}
+              allSlotsFilled ? { boxShadow: '2px 2px 0 #15100A' } : {}
             }
           >
             Проверить
