@@ -192,6 +192,7 @@ COST_VALUES=()
 # files), agent name (for plugin loadout + .md prompt), max turns, and the
 # instruction body that follows the standard CONTEXT_PREFIX.
 PHASE_PRODUCED_OUTPUT=0  # set by run_agent based on whether the session produced commits / issue activity
+RUN_AGENT_SUBTYPE=""     # set by run_agent — "success", "error_max_turns", "unknown"
 
 run_agent() {
     local phase_id="$1"      # e.g. "discovery", "qa-prep-task-123"
@@ -254,6 +255,7 @@ run_agent() {
         u_cache_cr=$(echo "${USAGE_JSON}"   | jq -r '.usage.cache_creation_input_tokens // 0')
         u_cost=$(echo "${USAGE_JSON}"       | jq -r '.total_cost_usd // .cost_usd   // 0')
         u_subtype=$(echo "${USAGE_JSON}"    | jq -r '.subtype                       // "unknown"')
+        RUN_AGENT_SUBTYPE="${u_subtype}"
 
         printf -- "| %s | %s | %s | %s | %s | %s | %s |\n" \
             "${phase_id} (${u_subtype})" \
@@ -733,17 +735,20 @@ At the very end output '=== SUMMARY ===' with one bullet per task prepared, tota
 }
 
 phase_dev() {
-    # Pick ONE qa-prepared task that's open and not yet developed. Implement.
-    local picks
-    picks=$(gh issue list --label task --label qa-prepared --state open --limit 5 --json number,title,labels \
-              -q '[.[] | select(.labels // [] | map(.name) | contains(["done"]) | not)] | .[0]' 2>/dev/null)
-    local pick_num pick_title
-    pick_num=$(echo "${picks}" | jq -r '.number // empty')
-    pick_title=$(echo "${picks}" | jq -r '.title // empty')
-    if [ -z "${pick_num}" ]; then
-        echo ">>> [dev] no qa-prepared open tasks. Skip."
+    # Pick ONE task via the deterministic picker (scripts/pick-next-task.sh).
+    # The picker walks epics in sprint-plan order and within each epic picks
+    # the lowest-numbered open task that's qa-prepared, not done, not
+    # dev-stuck. No agent reasoning involved — the orchestrator just gets
+    # told what to work on, which keeps the picking stable and cheap.
+    local pick_line pick_num pick_title
+    pick_line=$(/scripts/pick-next-task.sh 2>/dev/null | head -1)
+    if [ -z "${pick_line}" ]; then
+        echo ">>> [dev] picker found no eligible task in active sprint plan. Skip."
         return
     fi
+    pick_num=$(echo "${pick_line}" | cut -f1)
+    pick_title=$(echo "${pick_line}" | cut -f2-)
+    echo ">>> [dev] picker selected #${pick_num}: ${pick_title}"
     local phase_id="dev-${pick_num}"
     local instruction
     instruction="$(context_prefix)Read .claude/agents/developer.md AND ARCHITECTURE.md.
@@ -767,6 +772,21 @@ DO NOT pick a different task. DO NOT touch issues outside this scope.
 At the very end output '=== SUMMARY ===' with: task picked, files changed, tests added, dotnet test result."
 
     run_agent "${phase_id}" "developer" 100 "${instruction}"
+
+    # If the developer hit max-turns, mark the task `dev-stuck` so the next
+    # dev iteration's picker skips it. Without this, dev-loop would just
+    # re-pick the same problem task every iteration and burn ~$5 each time.
+    # The label requires human triage — typically the task scope was wrong
+    # or its dependencies aren't ready (e.g. Tests task picked before
+    # Frontend exists).
+    if [ "${RUN_AGENT_SUBTYPE}" = "error_max_turns" ]; then
+        echo ">>> [dev] #${pick_num} hit max-turns — labelling dev-stuck so picker skips it next iteration."
+        gh label create dev-stuck --color B60205 \
+            --description "Dev agent hit max-turns on this task; needs human triage before retrying" \
+            2>/dev/null || true
+        gh issue edit "${pick_num}" --add-label dev-stuck 2>/dev/null || true
+        gh issue comment "${pick_num}" --body "🚧 Dev iteration hit max-turns (${HOUR_STAMP}). Tagged \`dev-stuck\`; the picker will skip this task until a human reviews and removes the label. Logs: ${LOG_DIR}/${phase_id}.log" 2>/dev/null || true
+    fi
 }
 
 phase_refactor() {
