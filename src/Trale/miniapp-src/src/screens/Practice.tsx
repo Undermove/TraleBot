@@ -171,6 +171,19 @@ export default function Practice({
     }
   }
 
+  function applyLocalProgress(xpEarned: number, isPerfect: boolean) {
+    const updated: ProgressState = { ...progress, xp: progress.xp + xpEarned }
+    if (isPerfect) {
+      updated.completedLessons = {
+        ...progress.completedLessons,
+        [moduleId]: Array.from(
+          new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])
+        ).sort((a, b) => a - b)
+      }
+    }
+    setProgress(updated)
+  }
+
   async function next() {
     if (index + 1 >= total) {
       const finalCorrect = correctCount
@@ -188,29 +201,10 @@ export default function Practice({
           setProgress(progressFromDto(r.progress))
           xpEarned = r.xpEarned
         } catch {
-          // Offline fallback: only mark completed if 100%
-          const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
-          if (isPerfect) {
-            updatedProgress.completedLessons = {
-              ...progress.completedLessons,
-              [moduleId]: Array.from(
-                new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])
-              ).sort((a, b) => a - b)
-            }
-          }
-          setProgress(updatedProgress)
+          applyLocalProgress(xpEarned, isPerfect)
         }
       } else {
-        const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
-        if (isPerfect) {
-          updatedProgress.completedLessons = {
-            ...progress.completedLessons,
-            [moduleId]: Array.from(
-              new Set([...(progress.completedLessons[moduleId] ?? []), lessonId])
-            ).sort((a, b) => a - b)
-          }
-        }
-        setProgress(updatedProgress)
+        applyLocalProgress(xpEarned, isPerfect)
       }
 
       navigate({
