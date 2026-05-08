@@ -21,6 +21,10 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
   const presetMap = new Map(presetPositions.map((p) => [p.position, p.token]))
   const presetSet = new Set(presetPositions.map((p) => p.position))
 
+  // Detect broken question: any non-preset slot whose correct token isn't in chipPool
+  const nonPresetTokensNeeded = correctOrder.filter((_, i) => !presetSet.has(i))
+  const hasError = nonPresetTokensNeeded.some((token) => !chipPoolTokens.includes(token))
+
   // slots[i] = token placed in slot i (preset or user-placed), null if empty
   const [slots, setSlots] = useState<(string | null)[]>(() =>
     correctOrder.map((_, i) => presetMap.get(i) ?? null)
@@ -40,6 +44,29 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
   const allSlotsFilled = slots.every(
     (token, i) => presetSet.has(i) || token !== null
   )
+
+  if (hasError) {
+    return (
+      <div data-testid="sentence-builder-card">
+        <div
+          className="jewel-tile px-4 py-[14px] mb-4 flex flex-col gap-2"
+          style={{ background: '#FBF6EC', border: '1.5px solid #15100A', boxShadow: '3px 3px 0 #15100A' }}
+        >
+          <div className="mn-eyebrow">Упражнение не загрузилось</div>
+          <div className="font-sans text-[14px] text-jewelInk/70 leading-snug">
+            В упражнении отсутствуют нужные слова. Пропустим его.
+          </div>
+        </div>
+        <button
+          onClick={() => onAnswer(false)}
+          className="w-full min-h-[52px] rounded-xl border-[1.5px] border-jewelInk bg-navy text-cream font-sans text-[16px] font-extrabold"
+          style={{ boxShadow: '2px 2px 0 #15100A' }}
+        >
+          Попробовать снова
+        </button>
+      </div>
+    )
+  }
 
   function handleChipTap(chipIdx: number) {
     if (phase === 'checked') return
