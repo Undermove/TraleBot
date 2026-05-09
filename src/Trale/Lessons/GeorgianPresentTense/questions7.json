@@ -2,34 +2,200 @@
   "lesson_id": "present7",
   "title": "Конструктор предложений — SOV, глаголы классов 1 и 2",
   "lexicon": [
-    {"lemma": "კითხულობს", "ru": "читает (кл. 1)"},
-    {"lemma": "მიდის", "ru": "идёт (кл. 2)"},
-    {"lemma": "წიგნს", "ru": "книгу (дат.)"}
+    { "lemma": "ვკითხულობ", "ru": "я читаю (кл. 1)" },
+    { "lemma": "წერ",        "ru": "ты пишешь (кл. 1)" },
+    { "lemma": "მიდის",      "ru": "он/она идёт (кл. 2)" },
+    { "lemma": "ვხედავთ",    "ru": "мы видим (кл. 1)" },
+    { "lemma": "სძინავს",    "ru": "он/она спит (кл. 2/3)" },
+    { "lemma": "წერს",       "ru": "он/она пишет (кл. 1)" },
+    { "lemma": "ვაკეთებ",    "ru": "я делаю (кл. 1)" },
+    { "lemma": "სვამს",      "ru": "он/она пьёт (кл. 1)" },
+    { "lemma": "ხედავენ",    "ru": "они видят (кл. 1)" }
   ],
   "questions": [
     {
       "id": "present7-l1-q01",
       "questionType": "sentence-builder",
       "level": 1,
-      "correctOrder": ["ის", "წიგნს", "კითხულობს"],
-      "chipPool": ["ის", "ჩვენ", "მე", "წიგნს", "გაზეთს", "კითხულობს", "წერს"],
-      "hints": {"1": "SOV: субъект + объект + глагол"}
+      "lemma": "ვკითხულობ",
+      "question": "Собери предложение: Я читаю книгу",
+      "targetSentence": { "ru": "Я читаю книгу" },
+      "correctOrder": ["მე", "წიგნს", "ვკითხულობ"],
+      "presetPositions": [
+        { "position": 0, "token": "მე" },
+        { "position": 1, "token": "წიგნს" }
+      ],
+      "chipPool": ["მე", "წიგნს", "ვკითხულობ", "კითხულობს", "ვწერ"],
+      "hints": { "2": "-ვ- у 1 лица, Кл.1 глагол" },
+      "answer_index": 0,
+      "explanation": "SOV: S=მე, O=წიგნს (дат.), V=ვკითხულობ в конце."
     },
     {
       "id": "present7-l1-q02",
       "questionType": "sentence-builder",
       "level": 1,
-      "correctOrder": ["მე", "ყავას", "ვსვამ"],
-      "chipPool": ["მე", "ის", "ჩვენ", "ყავას", "ჩაის", "ვსვამ", "სვამს"],
-      "hints": {"1": "Кл. 1: мтис субъект + ამ суффикс"}
+      "lemma": "წერ",
+      "question": "Собери предложение: Ты пишешь письмо",
+      "targetSentence": { "ru": "Ты пишешь письмо" },
+      "correctOrder": ["შენ", "წერილს", "წერ"],
+      "presetPositions": [
+        { "position": 0, "token": "შენ" },
+        { "position": 1, "token": "წერილს" }
+      ],
+      "chipPool": ["შენ", "წერილს", "წერ", "წერს", "ვწერ"],
+      "hints": { "2": "2 лицо без ვ- (Кл.1)" },
+      "answer_index": 0,
+      "explanation": "SOV: S=შენ, O=წერილს (дат.), V=წერ в конце."
+    },
+    {
+      "id": "present7-l1-q03",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "მიდის",
+      "question": "Собери предложение: Бомбора идёт домой",
+      "targetSentence": { "ru": "Бомбора идёт домой" },
+      "correctOrder": ["ბომბორა", "სახლში", "მიდის"],
+      "presetPositions": [
+        { "position": 0, "token": "ბომბორა" },
+        { "position": 1, "token": "სახლში" }
+      ],
+      "chipPool": ["ბომბორა", "სახლში", "მიდის", "მივდივარ", "მიდიხარ"],
+      "hints": { "2": "Кл.2 глагол в конце (SOV)" },
+      "answer_index": 0,
+      "explanation": "SOV: S=ბომბორა, Loc=სახლში, V=მიდის (Кл.2) в конце."
+    },
+    {
+      "id": "present7-l1-q04",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "ვხედავთ",
+      "question": "Собери предложение: Мы видим Тбилиси",
+      "targetSentence": { "ru": "Мы видим Тбилиси" },
+      "correctOrder": ["ჩვენ", "თბილისს", "ვხედავთ"],
+      "presetPositions": [
+        { "position": 0, "token": "ჩვენ" },
+        { "position": 1, "token": "თბილისს" }
+      ],
+      "chipPool": ["ჩვენ", "თბილისს", "ვხედავთ", "ხედავს", "ვხედავ"],
+      "hints": { "2": "-თ маркирует мн.ч. (Кл.1)" },
+      "answer_index": 0,
+      "explanation": "SOV: S=ჩვენ, O=თბილისს (дат.), V=ვხედავთ в конце."
+    },
+    {
+      "id": "present7-l1-q05",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "სძინავს",
+      "question": "Собери предложение: Кошка спит на диване",
+      "targetSentence": { "ru": "Кошка спит на диване" },
+      "correctOrder": ["კატა", "დივანზე", "სძინავს"],
+      "presetPositions": [
+        { "position": 0, "token": "კატა" },
+        { "position": 1, "token": "დივანზე" }
+      ],
+      "chipPool": ["კატა", "დივანზე", "სძინავს", "კითხულობს", "მიდის"],
+      "hints": { "2": "Глагол всегда последний" },
+      "answer_index": 0,
+      "explanation": "SOV: S=კატა, Loc=დივანზე, V=სძინავს (Кл.2/3) в конце."
     },
     {
       "id": "present7-l2-q01",
       "questionType": "sentence-builder",
       "level": 2,
-      "correctOrder": ["ის", "სკოლაში", "მიდის"],
-      "chipPool": ["ის", "მე", "ჩვენ", "სკოლაში", "სახლში", "ბაზარში", "მიდის", "მივდივარ", "მივდივართ"],
-      "hints": {"1": "Кл. 2 (მიდის): без объекта"}
+      "lemma": "წერს",
+      "question": "Собери предложение: Студент пишет тест",
+      "targetSentence": { "ru": "Студент пишет тест" },
+      "correctOrder": ["სტუდენტი", "ტესტს", "წერს"],
+      "presetPositions": [
+        { "position": 0, "token": "სტუდენტი" }
+      ],
+      "chipPool": ["სტუდენტი", "ტესტს", "წერს", "ტესტი", "კითხულობს"],
+      "hints": {
+        "1": "Объект в дативе (-ს)",
+        "2": "Кл.1 глагол в конце"
+      },
+      "answer_index": 0,
+      "explanation": "SOV: S=სტუდენტი, O=ტესტს (дат.), V=წერს в конце."
+    },
+    {
+      "id": "present7-l2-q02",
+      "questionType": "sentence-builder",
+      "level": 2,
+      "lemma": "მიდის",
+      "question": "Собери предложение: Бомбора идёт в школу",
+      "targetSentence": { "ru": "Бомбора идёт в школу" },
+      "correctOrder": ["ბომბორა", "სკოლაში", "მიდის"],
+      "presetPositions": [
+        { "position": 0, "token": "ბომბორა" }
+      ],
+      "chipPool": ["ბომბორა", "სკოლაში", "მიდის", "სახლში", "მიდიხარ"],
+      "hints": {
+        "1": "Локатив -ში",
+        "2": "Кл.2 глагол последний"
+      },
+      "answer_index": 0,
+      "explanation": "SOV: S=ბომბორა, Loc=სკოლაში, V=მიდის (Кл.2) в конце."
+    },
+    {
+      "id": "present7-l2-q03",
+      "questionType": "sentence-builder",
+      "level": 2,
+      "lemma": "ვაკეთებ",
+      "question": "Собери предложение: Я делаю чай",
+      "targetSentence": { "ru": "Я делаю чай" },
+      "correctOrder": ["მე", "ჩაის", "ვაკეთებ"],
+      "presetPositions": [
+        { "position": 0, "token": "მე" }
+      ],
+      "chipPool": ["მე", "ჩაის", "ვაკეთებ", "ყავას", "აკეთებს"],
+      "hints": {
+        "1": "Объект ჩაი → дат. ჩაის",
+        "2": "1 лицо ვ- в конце (SOV)"
+      },
+      "answer_index": 0,
+      "explanation": "SOV: S=მე, O=ჩაის (дат.), V=ვაკეთებ в конце."
+    },
+    {
+      "id": "present7-l3-q01",
+      "questionType": "sentence-builder",
+      "level": 3,
+      "lemma": "სვამს",
+      "question": "Собери предложение: Утром мама пьёт кофе",
+      "targetSentence": { "ru": "Утром мама пьёт кофе" },
+      "correctOrder": ["დილით", "დედა", "ყავას", "სვამს"],
+      "presetPositions": [],
+      "chipPool": ["დილით", "დედა", "ყავას", "სვამს", "ჩაის", "ვსვამ"],
+      "hints": { "3": "Глагол всегда последний" },
+      "answer_index": 0,
+      "explanation": "ADV + S + O (дат.) + V в конце."
+    },
+    {
+      "id": "present7-l3-q02",
+      "questionType": "sentence-builder",
+      "level": 3,
+      "lemma": "წერს",
+      "question": "Собери предложение: Брат пишет учителю письмо",
+      "targetSentence": { "ru": "Брат пишет учителю письмо" },
+      "correctOrder": ["ძმა", "მასწავლებელს", "წერილს", "წერს"],
+      "presetPositions": [],
+      "chipPool": ["ძმა", "მასწავლებელს", "წერილს", "წერს", "ვწერ", "კითხულობს"],
+      "hints": { "3": "Кл.1 глагол в конце" },
+      "answer_index": 0,
+      "explanation": "S + IO (дат.) + DO (дат.) + V в конце."
+    },
+    {
+      "id": "present7-l3-q03",
+      "questionType": "sentence-builder",
+      "level": 3,
+      "lemma": "ხედავენ",
+      "question": "Собери предложение: Кошки видят собаку в парке",
+      "targetSentence": { "ru": "Кошки видят собаку в парке" },
+      "correctOrder": ["კატები", "ძაღლს", "პარკში", "ხედავენ"],
+      "presetPositions": [],
+      "chipPool": ["კატები", "ძაღლს", "პარკში", "ხედავენ", "ვხედავ", "ხედავს"],
+      "hints": { "3": "3 мн.ч. Кл.1 -ენ" },
+      "answer_index": 0,
+      "explanation": "S-мн. + O (дат.) + Loc + V-3мн. в конце."
     }
   ]
 }

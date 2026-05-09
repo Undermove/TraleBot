@@ -28,7 +28,7 @@ public static class ModuleRegistry
         ["adjectives"] = new("adjectives", "Lessons/GeorgianAdjectives", 6),
         ["cases"] = new("cases", "Lessons/GeorgianCases", 10),
         ["pronouns"] = new("pronouns", "Lessons/GeorgianPronouns", 6),
-        ["present-tense"] = new("present-tense", "Lessons/GeorgianPresentTense", 6),
+        ["present-tense"] = new("present-tense", "Lessons/GeorgianPresentTense", 7),
         ["cafe"] = new("cafe", "Lessons/GeorgianVocabCafe", 6),
         ["taxi"] = new("taxi", "Lessons/GeorgianVocabTaxi", 6),
         ["doctor"] = new("doctor", "Lessons/GeorgianVocabDoctor", 6),
