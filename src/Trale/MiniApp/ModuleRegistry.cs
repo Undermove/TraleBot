@@ -26,7 +26,7 @@ public static class ModuleRegistry
         ["imperative"] = new("imperative", "Lessons/GeorgianImperative", 3),
         ["postpositions"] = new("postpositions", "Lessons/GeorgianPostpositions", 7),
         ["adjectives"] = new("adjectives", "Lessons/GeorgianAdjectives", 6),
-        ["cases"] = new("cases", "Lessons/GeorgianCases", 9),
+        ["cases"] = new("cases", "Lessons/GeorgianCases", 10),
         ["pronouns"] = new("pronouns", "Lessons/GeorgianPronouns", 6),
         ["present-tense"] = new("present-tense", "Lessons/GeorgianPresentTense", 6),
         ["cafe"] = new("cafe", "Lessons/GeorgianVocabCafe", 6),
