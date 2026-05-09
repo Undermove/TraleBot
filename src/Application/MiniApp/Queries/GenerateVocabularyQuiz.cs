@@ -232,6 +232,6 @@ public class QuizQuestionDto
 public class WordPairDto
 {
     public Guid WordId { get; init; }
-    public string Georgian { get; init; }
-    public string Russian { get; init; }
+    public string Georgian { get; init; } = string.Empty;
+    public string Russian { get; init; } = string.Empty;
 }
