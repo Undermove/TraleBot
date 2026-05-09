@@ -78,8 +78,7 @@ public static class DependencyInjection
         // Georgian quiz services
         services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
         services.AddSingleton<IGeorgianQuestionsLoaderFactory, GeorgianQuestionsLoaderFactory>();
-        // SRS service removed per request
-        
+
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, StopCommand>();
