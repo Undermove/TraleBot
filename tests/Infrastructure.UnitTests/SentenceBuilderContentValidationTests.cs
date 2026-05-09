@@ -293,4 +293,128 @@ public class SentenceBuilderContentValidationTests
             "All hint texts must be ≤36 chars to fit T6 at 375px. Violations:\n" +
             string.Join("\n", violations));
     }
+
+    // ── New-module parameterised validation (§80: 5 sentence-builder modules) ─────────────
+    //
+    // These tests act as pre-flight checks for tasks #876–#880.
+    // Each test will fail with a clear "File not found: …" message until the corresponding
+    // content JSON is created by those tasks. That is intentional — the tests are meant to
+    // guide content authors, not to be silently skipped.
+    //
+    // All 6 checks (AC a–f from issue #881) are run in one parameterised method per module
+    // via the shared helper AssertSentenceBuilderModuleJson below.
+
+    [TestCase("GeorgianCases",        "questions10.json", TestName = "cases/questions10.json")]
+    [TestCase("GeorgianPresentTense", "questions7.json",  TestName = "present-tense/questions7.json")]
+    [TestCase("GeorgianVocabCafe",    "questions7.json",  TestName = "cafe/questions7.json")]
+    [TestCase("GeorgianVocabShopping","questions7.json",  TestName = "shopping/questions7.json")]
+    [TestCase("GeorgianVocabTaxi",    "questions7.json",  TestName = "taxi/questions7.json")]
+    public void NewModule_AllSixChecks(string subdirectory, string fileName)
+    {
+        AssertSentenceBuilderModuleJson(subdirectory, fileName);
+    }
+
+    // ── AC: missing file fails with actionable message naming the path ────────────────────
+
+    [Test]
+    public void NewModule_MissingJsonFile_FailsWithClearMessage()
+    {
+        var ex = Assert.Catch<Exception>(
+            () => AssertSentenceBuilderModuleJson("FakeModule", "questions99.json"));
+
+        ex.ShouldNotBeNull("validation must throw when the content file does not exist");
+        ex!.Message.ShouldContain("FakeModule/questions99.json");
+    }
+
+    // ── Shared validation helper used by all NewModule_AllSixChecks cases ─────────────────
+
+    private static void AssertSentenceBuilderModuleJson(string subdirectory, string fileName)
+    {
+        var path = Path.Combine(RepoRoot, "src", "Trale", "Lessons", subdirectory, fileName);
+
+        // (a) file exists — first check so the failure message names the missing file
+        File.Exists(path).ShouldBeTrue(
+            $"File not found: src/Trale/Lessons/{subdirectory}/{fileName}");
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(path));
+        doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
+            $"{subdirectory}/{fileName}: JSON must have a top-level 'questions' array");
+
+        // (b) question count 3–15
+        var count = questions.GetArrayLength();
+        count.ShouldBeInRange(3, 15,
+            $"{subdirectory}/{fileName}: must contain 3–15 sentence-builder questions, found {count}");
+
+        var violations = new List<string>();
+
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+
+            // (c) questionType must be "sentence-builder"
+            q.TryGetProperty("questionType", out var qt).ShouldBeTrue(
+                $"Question '{id}' must have 'questionType'");
+            qt.GetString().ShouldBe("sentence-builder",
+                $"Question '{id}' questionType must be 'sentence-builder'");
+
+            var hasCorrectOrder = q.TryGetProperty("correctOrder", out var co)
+                                  && co.ValueKind == JsonValueKind.Array;
+            var hasChipPool = q.TryGetProperty("chipPool", out var cp)
+                              && cp.ValueKind == JsonValueKind.Array;
+
+            if (hasCorrectOrder && hasChipPool)
+            {
+                // (d) every correctOrder token must appear in chipPool
+                var pool = cp.EnumerateArray()
+                    .Select(t => t.GetString() ?? "")
+                    .ToHashSet(StringComparer.Ordinal);
+
+                foreach (var token in co.EnumerateArray())
+                {
+                    var text = token.GetString() ?? "";
+                    if (!pool.Contains(text))
+                        violations.Add(
+                            $"Question '{id}': correctOrder token '{text}' missing from chipPool");
+                }
+            }
+
+            // (e) Georgian-script fields contain only Mkhedruli (U+10D0–U+10FF)
+            foreach (var field in new[] { "correctOrder", "chipPool" })
+            {
+                if (!q.TryGetProperty(field, out var arr) || arr.ValueKind != JsonValueKind.Array)
+                    continue;
+
+                foreach (var token in arr.EnumerateArray())
+                {
+                    var text = token.GetString() ?? "";
+                    var nonMkhedruli = text
+                        .Where(c => !char.IsWhiteSpace(c) && (c < 'ა' || c > 'ჿ'))
+                        .Select(c => $"U+{(int)c:X4} '{c}'")
+                        .ToList();
+
+                    if (nonMkhedruli.Count > 0)
+                        violations.Add(
+                            $"Question '{id}' field '{field}' token '{text}': " +
+                            $"non-Mkhedruli: {string.Join(", ", nonMkhedruli)}");
+                }
+            }
+
+            // (f) all hint texts ≤ 36 chars
+            if (q.TryGetProperty("hints", out var hints) && hints.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var hint in hints.EnumerateObject())
+                {
+                    var hintText = hint.Value.GetString() ?? "";
+                    if (hintText.Length > 36)
+                        violations.Add(
+                            $"Question '{id}', hints['{hint.Name}']: " +
+                            $"{hintText.Length} chars > 36: \"{hintText}\"");
+                }
+            }
+        }
+
+        violations.ShouldBeEmpty(
+            $"Validation violations in {subdirectory}/{fileName}:\n" +
+            string.Join("\n", violations));
+    }
 }
