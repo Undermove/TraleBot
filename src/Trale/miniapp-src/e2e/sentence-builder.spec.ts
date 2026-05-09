@@ -728,6 +728,153 @@ test('Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner'
   expect(completeLessonPayload.correct).toBe(0)
 })
 
+// ─── Shopping L7 mock data (issue #879) ─────────────────────────────────────
+
+// L1 price question: presets at positions 0 (რა) and 1 (ღირს), empty slot = 2 (ჩაი)
+// chipPool includes ყავა (coffee) and პური (bread) as price-related distractors
+const mockShoppingL7Question = [
+  {
+    id: 'shopping7-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Сколько стоит чай?' },
+    level: 1,
+    correctOrder: ['რა', 'ღირს', 'ჩაი'],
+    chipPool: ['რა', 'ღირს', 'ჩაი', 'ყავა', 'პური', 'ყველი'],
+    presetPositions: [
+      { position: 0, token: 'რა' },
+      { position: 1, token: 'ღირს' },
+    ],
+    hints: { '2': 'Объект в NOM после ღირს' },
+    lemma: 'ჩაი',
+    question: 'Собери предложение: Сколько стоит чай?',
+    options: [],
+    answerIndex: 0,
+    explanation: 'რა ღირს + объект в именительном (без -ს).',
+  },
+]
+
+const mockShoppingCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'shopping',
+      title: 'Магазин',
+      emoji: '🛒',
+      description: 'რა ღირს — вопрос о цене',
+      lessons: [
+        {
+          id: 7,
+          title: 'Конструктор: «Сколько стоит?»',
+          short: 'L7',
+          theory: {
+            title: 'Конструктор предложений: вопрос о цене «რა ღირს»',
+            goal: 'Собирать вопросительные предложения о цене.',
+            blocks: [
+              {
+                type: 'paragraph',
+                text: 'Вопрос о цене: «რა ღირს X?» — «Сколько стоит X?».',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupShoppingL7Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockShoppingCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/shopping/lessons/7/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [
+          {
+            id: 'Year',
+            payloadId: 'year',
+            stars: 900,
+            durationDays: 365,
+            title: 'Год',
+            description: 'Полный год',
+          },
+        ],
+      },
+    })
+  )
+}
+
+async function navigateToShoppingL7(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-shopping"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-7"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
+// ─── Shopping L7 — price distractor chip in slot → ruby slot + incorrect FeedbackBanner ──
+// AC from issue #879 qa-prep: place ყავა (coffee) in the tea slot → ruby highlight + "არასწორია!"
+
+test('Shopping L7 — price distractor chip in slot → ruby slot + incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupShoppingL7Mocks(page, mockShoppingL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToShoppingL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Slot 2 is empty (ჩაი = tea). Place price distractor ყავა (coffee) instead.
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ყავა', exact: true }).click()
+  await page.locator('[data-testid="slot-2"]').click()
+
+  // Проверить should be enabled (slot is filled)
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // slot-2 must have ruby fill (incorrect — coffee instead of tea)
+  await expect(page.locator('[data-testid="slot-2"]')).toHaveClass(/bg-ruby/)
+
+  // FeedbackBanner shows incorrect header
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  // Далее button appears even on wrong answer
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  // Tap Далее → lesson-complete payload must have correct: 0
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
+
 // ─── PresentTense L7 mock data (issue #877) ──────────────────────────────────
 
 // SOV question: preset slot 0 (subject), empty slots 1 (object) and 2 (verb)
