@@ -979,4 +979,141 @@ public class SentenceBuilderContentValidationTests
             "At least one question's chipPool must contain ≥2 distractor tokens " +
             "beyond correctOrder (price-related or shopping-vocabulary tokens)");
     }
+
+    // ── §880 Taxi L7 — specific AC tests ──────────────────────────────────────────────────
+
+    private static readonly string TaxiL7JsonPath =
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianVocabTaxi", "questions7.json");
+
+    private static readonly HashSet<string> GeorgianSubjectPronounsTaxi = new(StringComparer.Ordinal)
+    {
+        "მე", "შენ", "ის", "ჩვენ", "თქვენ", "ისინი",
+    };
+
+    [Test]
+    public void TaxiModule_MaxLessons_Is7()
+    {
+        var definition = ModuleRegistry.Get("taxi");
+        definition.ShouldNotBeNull("taxi module must be registered");
+        definition!.MaxLessons.ShouldBe(7,
+            "taxi MaxLessons must be bumped from 6 to 7 (issue #880)");
+    }
+
+    [Test]
+    public void TaxiModule_L7_FileExists_QuestionCount_InRange()
+    {
+        File.Exists(TaxiL7JsonPath).ShouldBeTrue(
+            $"src/Trale/Lessons/GeorgianVocabTaxi/questions7.json must exist at {TaxiL7JsonPath}");
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(TaxiL7JsonPath));
+        doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
+            "questions7.json must have a top-level 'questions' array");
+
+        var count = questions.GetArrayLength();
+        count.ShouldBeInRange(3, 7,
+            $"questions7.json must contain 3–7 sentence-builder questions, found {count}");
+    }
+
+    [Test]
+    public void TaxiModule_L7_CorrectOrder_DestinationTokenIsLast()
+    {
+        if (!File.Exists(TaxiL7JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(TaxiL7JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        var violations = new List<string>();
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            if (!q.TryGetProperty("correctOrder", out var co) || co.ValueKind != JsonValueKind.Array)
+                continue;
+
+            var tokens = co.EnumerateArray().Select(t => t.GetString() ?? "").ToList();
+            if (tokens.Count == 0) continue;
+
+            var last = tokens[^1];
+
+            // Last token must be a directional destination token:
+            // ends with -ши (locative -ში) or -მდე (up to, directional)
+            var isDestination = last.EndsWith("shi") || last.EndsWith("ში")
+                                || last.EndsWith("мде") || last.EndsWith("მდე");
+
+            // Also explicitly fail if last is a subject pronoun (never a destination)
+            var isSubjectPronoun = GeorgianSubjectPronounsTaxi.Contains(last);
+
+            if (isSubjectPronoun)
+                violations.Add($"Question '{id}': last token '{last}' is a subject pronoun — destination must be last in SOV+destination-final order");
+            else if (!isDestination)
+                violations.Add($"Question '{id}': last token '{last}' is not a directional destination token (expected to end with -ши/-ში or -мде/-მდე)");
+        }
+
+        violations.ShouldBeEmpty(
+            $"In Taxi L7 all correctOrder sequences must end with the destination token " +
+            $"(Georgian destination-final rule). Violations:\n{string.Join("\n", violations)}");
+    }
+
+    [Test]
+    public void TaxiModule_L7_TheoryBlock_NotesDestinationFinalRule()
+    {
+        var provider = new MiniAppContentProvider();
+        var catalog = provider.GetCatalog();
+
+        var taxiModule = catalog.Modules.FirstOrDefault(m => m.Id == "taxi");
+        taxiModule.ShouldNotBeNull("Taxi module must exist in catalog");
+
+        var lesson7 = taxiModule!.Lessons.FirstOrDefault(l => l.Id == 7);
+        lesson7.ShouldNotBeNull("Taxi module must have lesson 7 (issue #880)");
+
+        var theoryText = string.Join(" ",
+            lesson7!.Theory.Blocks.SelectMany(b =>
+                new[]
+                {
+                    b.Text ?? "",
+                    b.Ge ?? "",
+                    b.Ru ?? "",
+                    string.Join(" ", b.Items ?? new List<string>())
+                }));
+
+        var hasDestinationFinalNote =
+            theoryText.Contains("конце", StringComparison.OrdinalIgnoreCase)
+            || theoryText.Contains("last", StringComparison.OrdinalIgnoreCase)
+            || theoryText.Contains("SOV", StringComparison.OrdinalIgnoreCase)
+            || theoryText.Contains("назначения", StringComparison.OrdinalIgnoreCase);
+
+        hasDestinationFinalNote.ShouldBeTrue(
+            "Taxi Lesson 7 theory must note that the destination comes last " +
+            "(contain 'конце', 'last', 'SOV', or 'назначения')");
+    }
+
+    [Test]
+    public void TaxiModule_L7_ChipPool_ContainsDirectionalPostpositionDistractors()
+    {
+        if (!File.Exists(TaxiL7JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(TaxiL7JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        // At least one question must have distractor chips using other directional postpositions
+        // (-ზე / -თAN) to force postposition discrimination.
+        static bool HasDirectionalDistractor(JsonElement chipPoolEl, JsonElement correctOrderEl)
+        {
+            var correctSet = correctOrderEl.EnumerateArray()
+                .Select(t => t.GetString() ?? "")
+                .ToHashSet(StringComparer.Ordinal);
+
+            return chipPoolEl.EnumerateArray()
+                .Select(t => t.GetString() ?? "")
+                .Where(t => !correctSet.Contains(t))
+                .Any(t => t.EndsWith("ზე") || t.EndsWith("ze") || t.EndsWith("თAN") || t.EndsWith("თან"));
+        }
+
+        var hasDistractor = questions.EnumerateArray()
+            .Any(q =>
+                q.TryGetProperty("chipPool", out var cp) && cp.ValueKind == JsonValueKind.Array
+                && q.TryGetProperty("correctOrder", out var co) && co.ValueKind == JsonValueKind.Array
+                && HasDirectionalDistractor(cp, co));
+
+        hasDistractor.ShouldBeTrue(
+            "At least one question's chipPool must include a directional postposition distractor " +
+            "(-ზე or -თAN suffix) to force postposition discrimination (-ши vs -ზე vs -THАn)");
+    }
 }
