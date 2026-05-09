@@ -1,5 +1,96 @@
 import { test, expect } from '@playwright/test'
 
+// ─── Cases L10 mock data (issue #876) ────────────────────────────────────────
+
+// L1 ergative question: empty slot 0 (კაcMА), presets at 1 and 2
+const mockCasesL10Question = [
+  {
+    id: 'cases10-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Мужчина прочитал книгу' },
+    level: 1,
+    correctOrder: ['კაცმა', 'წაიკითხა', 'წიგნი'],
+    chipPool: ['კაცმა', 'კაცი', 'კაცის', 'კაცით', 'წაიკითხა', 'წიგნი'],
+    presetPositions: [
+      { position: 1, token: 'წაიკითხა' },
+      { position: 2, token: 'წიგნი' },
+    ],
+    hints: { '0': 'Подлежащее в эргативе' },
+    lemma: 'კაცმა',
+    question: 'Собери предложение: Мужчина прочитал книгу',
+    options: [],
+    answerIndex: 0,
+    explanation: 'Эргатив (-მА): подлежащее переходного глагола в аористе.',
+  },
+]
+
+const mockCasesCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'cases',
+      title: 'Падежи',
+      emoji: '🧩',
+      description: 'Падежи грузинского языка',
+      lessons: [
+        {
+          id: 10,
+          title: 'Конструктор предложений — эргатив и датив',
+          short: 'L10',
+          theory: {
+            title: 'Конструктор предложений: эргатив и датив',
+            goal: 'Собирать предложения с эргативным субъектом и дательным объектом',
+            blocks: [
+              {
+                type: 'list',
+                items: [
+                  '-მა (-მ после гласной) — эргатив: субъект переходного глагола в аористе',
+                  '-ს — датив: прямой объект в настоящем времени или адресат',
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupCasesL10Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockCasesCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/cases/lessons/10/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [{ id: 'Year', payloadId: 'year', stars: 900, durationDays: 365, title: 'Год', description: 'Полный год' }],
+      },
+    })
+  )
+}
+
+async function navigateToCasesL10(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-cases"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-10"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
 // ─── Shared mock data ────────────────────────────────────────────────────────
 
 const mockCatalog = {
@@ -586,4 +677,53 @@ test('SentenceBuilderCard — error fallback renders for question with missing c
 
   // SentenceBuilderCard should no longer be visible (navigated to result screen)
   await expect(page.locator('[data-testid="sentence-builder-card"]')).not.toBeVisible()
+})
+
+// ─── Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner ──
+// AC from issue #876 qa-prep: "Negative case: unordered chip answer in Cases L10
+// → ruby slot highlight + answer recorded in «Мои ошибки»"
+
+test('Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupCasesL10Mocks(page, mockCasesL10Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToCasesL10(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({ timeout: 10_000 })
+
+  // Slot 0 is empty (ergative subject კაcMА). Place wrong chip კაcI (nominative) instead.
+  // Use exact:true to avoid matching კაcIS or კАcIT in the pool
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'კაცი', exact: true }).click()
+  await page.locator('[data-testid="slot-0"]').click()
+
+  // Проверить should be enabled (slot is filled)
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // slot-0 must have ruby fill (incorrect state)
+  await expect(page.locator('[data-testid="slot-0"]')).toHaveClass(/bg-ruby/)
+
+  // FeedbackBanner shows incorrect header
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  // Далее button appears even on wrong answer
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  // Tap Далее and assert lesson-complete payload has correct: 0
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
 })
