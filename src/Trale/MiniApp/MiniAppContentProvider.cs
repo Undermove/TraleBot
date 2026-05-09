@@ -156,51 +156,6 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
         };
     }
 
-    private ModuleDto BuildAlphabetModule()
-    {
-        var lessons = new List<LessonDto>();
-        foreach (var (lessonId, letters) in _alphabetLessonLetters.OrderBy(kv => kv.Key))
-        {
-            var first = letters.First().Letter;
-            var last = letters.Last().Letter;
-            var joined = string.Join(" ", letters.Select(l => l.Letter));
-
-            lessons.Add(new LessonDto
-            {
-                Id = lessonId,
-                Title = $"Буквы {first}–{last}",
-                Short = joined,
-                Theory = new LessonTheoryDto
-                {
-                    Title = $"Буквы {first}–{last}",
-                    Goal = $"Запомнить {letters.Count} новых букв: их звучание и одно слово-пример на каждую.",
-                    Blocks = new List<TheoryBlockDto>
-                    {
-                        new()
-                        {
-                            Type = "paragraph",
-                            Text = "Тапни на каждую букву, прочитай её название и пример. Бомбора потом спросит."
-                        },
-                        new()
-                        {
-                            Type = "letters",
-                            Letters = letters
-                        }
-                    }
-                }
-            });
-        }
-
-        return new ModuleDto
-        {
-            Id = "alphabet",
-            Title = "Алфавит",
-            Emoji = "🔤",
-            Description = "33 буквы ქართული — по 4-5 за урок",
-            Lessons = lessons
-        };
-    }
-
     private static ModuleDto BuildAlphabetProgressiveModule()
     {
         // Each lesson's Letters(...) block lists the letters it introduces for the
