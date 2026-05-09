@@ -474,6 +474,145 @@ public class SentenceBuilderContentValidationTests
         return pool.Contains(stem) || pool.Contains(stem + "ი");
     }
 
+    // ── §877 PresentTense L7 — specific AC tests ─────────────────────────────────────────
+
+    private static readonly string PresentTenseL7JsonPath =
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianPresentTense", "questions7.json");
+
+    private static readonly HashSet<string> Class1PresentTenseVerbs = new(StringComparer.Ordinal)
+    {
+        "ვკითხულობ", "კითხულობს", "კითხულობ",
+        "ვწერ", "წერ", "წერს",
+        "ვხედავ", "ხედავს", "ვხედავთ", "ხედავენ",
+        "ვაკეთებ", "აკეთებს",
+        "ვსვამ", "სვამს",
+        "ვჭამ", "ჭამს",
+        "ვლაპარაკობ", "ლაპარაკობს",
+    };
+
+    private static readonly HashSet<string> Class2PresentTenseVerbs = new(StringComparer.Ordinal)
+    {
+        "მიდის", "მივდივარ", "მიდიხარ", "მივდივართ",
+        "სძინავს", "ვძინავ",
+        "ვცხოვრობ", "ცხოვრობს",
+    };
+
+    private static readonly HashSet<string> GeorgianSubjectPronouns = new(StringComparer.Ordinal)
+    {
+        "მე", "შენ", "ის", "ჩვენ", "თქვენ", "ისინი",
+    };
+
+    [Test]
+    public void PresentTenseModule_MaxLessons_Is7()
+    {
+        var definition = ModuleRegistry.Get("present-tense");
+        definition.ShouldNotBeNull("present-tense module must be registered");
+        definition!.MaxLessons.ShouldBe(7,
+            "present-tense MaxLessons must be bumped from 6 to 7 (issue #877)");
+    }
+
+    [Test]
+    public void PresentTenseModule_L7_TheoryBlock_ContainsSOVAndVerbClasses()
+    {
+        var provider = new MiniAppContentProvider();
+        var catalog = provider.GetCatalog();
+
+        var module = catalog.Modules.FirstOrDefault(m => m.Id == "present-tense");
+        module.ShouldNotBeNull("present-tense module must exist in catalog");
+
+        var lesson7 = module!.Lessons.FirstOrDefault(l => l.Id == 7);
+        lesson7.ShouldNotBeNull("present-tense module must have lesson 7 (issue #877)");
+
+        var theoryText = string.Join(" ",
+            lesson7!.Theory.Blocks.SelectMany(b =>
+                new[]
+                {
+                    b.Text ?? "",
+                    b.Ge ?? "",
+                    b.Ru ?? "",
+                    string.Join(" ", b.Items ?? new List<string>())
+                }));
+
+        var hasSov = theoryText.Contains("SOV", StringComparison.OrdinalIgnoreCase)
+                     || theoryText.Contains("Subject-Object-Verb", StringComparison.OrdinalIgnoreCase);
+        hasSov.ShouldBeTrue(
+            "Lesson 7 theory must mention 'SOV' or 'Subject-Object-Verb' explicitly");
+
+        var hasVerbClasses = theoryText.Contains("Класс 1", StringComparison.OrdinalIgnoreCase)
+                             || theoryText.Contains("Кл.1", StringComparison.OrdinalIgnoreCase)
+                             || theoryText.Contains("Class 1", StringComparison.OrdinalIgnoreCase);
+        hasVerbClasses.ShouldBeTrue(
+            "Lesson 7 theory must mention Class 1 (transitive) verbs");
+
+        var hasClass2 = theoryText.Contains("Класс 2", StringComparison.OrdinalIgnoreCase)
+                        || theoryText.Contains("Кл.2", StringComparison.OrdinalIgnoreCase)
+                        || theoryText.Contains("Class 2", StringComparison.OrdinalIgnoreCase);
+        hasClass2.ShouldBeTrue(
+            "Lesson 7 theory must mention Class 2 (intransitive) verbs");
+    }
+
+    [Test]
+    public void PresentTenseModule_L7_FileExists_QuestionCount_ClassDistribution()
+    {
+        File.Exists(PresentTenseL7JsonPath).ShouldBeTrue(
+            $"src/Trale/Lessons/GeorgianPresentTense/questions7.json must exist at {PresentTenseL7JsonPath}");
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(PresentTenseL7JsonPath));
+        doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
+            "questions7.json must have a top-level 'questions' array");
+
+        var count = questions.GetArrayLength();
+        count.ShouldBeGreaterThanOrEqualTo(5,
+            $"questions7.json must have ≥5 sentence-builder questions, found {count}");
+
+        var class1Count = 0;
+        var class2Count = 0;
+
+        foreach (var q in questions.EnumerateArray())
+        {
+            if (!q.TryGetProperty("correctOrder", out var co) || co.ValueKind != JsonValueKind.Array) continue;
+            var tokens = co.EnumerateArray().Select(t => t.GetString() ?? "").ToList();
+            if (tokens.Count == 0) continue;
+
+            var lastToken = tokens[^1];
+            if (Class1PresentTenseVerbs.Contains(lastToken)) class1Count++;
+            if (Class2PresentTenseVerbs.Contains(lastToken)) class2Count++;
+        }
+
+        class1Count.ShouldBeGreaterThanOrEqualTo(2,
+            $"≥2 questions must use a Class 1 (transitive) verb as the last token in correctOrder, found {class1Count}");
+        class2Count.ShouldBeGreaterThanOrEqualTo(1,
+            $"≥1 question must use a Class 2 (intransitive) verb as the last token in correctOrder, found {class2Count}");
+    }
+
+    [Test]
+    public void PresentTenseModule_L7_CorrectOrder_FollowsSOV()
+    {
+        if (!File.Exists(PresentTenseL7JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(PresentTenseL7JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        var violations = new List<string>();
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            if (!q.TryGetProperty("correctOrder", out var co) || co.ValueKind != JsonValueKind.Array) continue;
+
+            var tokens = co.EnumerateArray().Select(t => t.GetString() ?? "").ToList();
+
+            if (tokens.Count < 3)
+                violations.Add(
+                    $"Question '{id}': correctOrder has {tokens.Count} token(s); SOV needs at least 3 (S + O/Loc + V)");
+
+            if (tokens.Count > 0 && GeorgianSubjectPronouns.Contains(tokens[^1]))
+                violations.Add(
+                    $"Question '{id}': last token '{tokens[^1]}' is a subject pronoun — verb must be last in SOV order");
+        }
+
+        violations.ShouldBeEmpty(
+            $"SOV order violations in PresentTense L7:\n{string.Join("\n", violations)}");
+    }
+
     // ── New-module parameterised validation (§80: 5 sentence-builder modules) ─────────────
     //
     // These tests act as pre-flight checks for tasks #876–#880.
