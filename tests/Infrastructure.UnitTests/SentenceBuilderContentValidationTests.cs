@@ -859,4 +859,124 @@ public class SentenceBuilderContentValidationTests
             "At least one question's chipPool must contain ≥2 cafe-vocabulary distractor tokens " +
             "(ჩაი, წყალი, or წვენი) to force lexical discrimination");
     }
+
+    // ── §879 Shopping L7 — specific AC tests ─────────────────────────────────────────────
+
+    private static readonly string ShoppingL7JsonPath =
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianVocabShopping", "questions7.json");
+
+    [Test]
+    public void ShoppingModule_MaxLessons_Is7()
+    {
+        var definition = ModuleRegistry.Get("shopping");
+        definition.ShouldNotBeNull("shopping module must be registered");
+        definition!.MaxLessons.ShouldBe(7,
+            "shopping MaxLessons must be bumped from 6 to 7 (issue #879)");
+    }
+
+    [Test]
+    public void ShoppingModule_L7_FileExists_QuestionCount_InRange()
+    {
+        File.Exists(ShoppingL7JsonPath).ShouldBeTrue(
+            $"src/Trale/Lessons/GeorgianVocabShopping/questions7.json must exist at {ShoppingL7JsonPath}");
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(ShoppingL7JsonPath));
+        doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
+            "questions7.json must have a top-level 'questions' array");
+
+        var count = questions.GetArrayLength();
+        count.ShouldBeInRange(3, 7,
+            $"questions7.json must contain 3–7 sentence-builder questions, found {count}");
+    }
+
+    [Test]
+    public void ShoppingModule_L7_CorrectOrder_ContainsInterrogativeParticle()
+    {
+        if (!File.Exists(ShoppingL7JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(ShoppingL7JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        static bool HasInterrogativeParticle(JsonElement correctOrder)
+        {
+            var tokens = correctOrder.EnumerateArray()
+                .Select(t => t.GetString() ?? "")
+                .ToList();
+            if (tokens.Any(t => t.Contains("რა") && t.Contains("ღირს")))
+                return true;
+            return tokens.Contains("რა") && tokens.Contains("ღირს");
+        }
+
+        var hasInterrogative = questions.EnumerateArray()
+            .Any(q => q.TryGetProperty("correctOrder", out var co)
+                      && co.ValueKind == JsonValueKind.Array
+                      && HasInterrogativeParticle(co));
+
+        hasInterrogative.ShouldBeTrue(
+            "At least one question's correctOrder must contain 'რა ღირს' " +
+            "(as one token or separate 'რა' and 'ღირს' tokens)");
+
+        var hasDemonstrative = questions.EnumerateArray()
+            .Any(q => q.TryGetProperty("correctOrder", out var co)
+                      && co.ValueKind == JsonValueKind.Array
+                      && co.EnumerateArray().Any(t => t.GetString() == "ეს"));
+
+        hasDemonstrative.ShouldBeTrue(
+            "At least one question's correctOrder must contain the demonstrative 'ეს'");
+    }
+
+    [Test]
+    public void ShoppingModule_L7_TheoryBlock_ExplainsInterrogativeConstruction()
+    {
+        var provider = new MiniAppContentProvider();
+        var catalog = provider.GetCatalog();
+
+        var shoppingModule = catalog.Modules.FirstOrDefault(m => m.Id == "shopping");
+        shoppingModule.ShouldNotBeNull("Shopping module must exist in catalog");
+
+        var lesson7 = shoppingModule!.Lessons.FirstOrDefault(l => l.Id == 7);
+        lesson7.ShouldNotBeNull("Shopping module must have lesson 7 (issue #879)");
+
+        var theoryText = string.Join(" ",
+            lesson7!.Theory.Blocks.SelectMany(b =>
+                new[]
+                {
+                    b.Text ?? "",
+                    b.Ge ?? "",
+                    b.Ru ?? "",
+                    string.Join(" ", b.Items ?? new List<string>())
+                }));
+
+        var hasInterrogative = theoryText.Contains("რა ღირს")
+                               || theoryText.Contains("question", StringComparison.OrdinalIgnoreCase)
+                               || theoryText.Contains("вопрос", StringComparison.OrdinalIgnoreCase);
+        hasInterrogative.ShouldBeTrue(
+            "Lesson 7 theory must explain 'რა ღირს' or mention 'question'/'вопрос'");
+    }
+
+    [Test]
+    public void ShoppingModule_L7_ChipPool_ContainsShoppingDistractors()
+    {
+        if (!File.Exists(ShoppingL7JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(ShoppingL7JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        static int CountDistractors(JsonElement chipPoolEl, JsonElement correctOrderEl)
+        {
+            var correctSet = correctOrderEl.EnumerateArray()
+                .Select(t => t.GetString() ?? "")
+                .ToHashSet(StringComparer.Ordinal);
+            return chipPoolEl.EnumerateArray()
+                .Count(chip => !correctSet.Contains(chip.GetString() ?? ""));
+        }
+
+        var hasEnoughDistractors = questions.EnumerateArray()
+            .Any(q =>
+                q.TryGetProperty("chipPool", out var cp) && cp.ValueKind == JsonValueKind.Array
+                && q.TryGetProperty("correctOrder", out var co) && co.ValueKind == JsonValueKind.Array
+                && CountDistractors(cp, co) >= 2);
+
+        hasEnoughDistractors.ShouldBeTrue(
+            "At least one question's chipPool must contain ≥2 distractor tokens " +
+            "beyond correctOrder (price-related or shopping-vocabulary tokens)");
+    }
 }
