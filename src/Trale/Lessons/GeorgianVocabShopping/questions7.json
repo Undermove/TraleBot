@@ -1,0 +1,35 @@
+{
+  "lesson_id": "shopping7",
+  "title": "Конструктор предложений — «Сколько стоит?»",
+  "lexicon": [
+    {"lemma": "ღირს", "ru": "стоит"},
+    {"lemma": "ეს", "ru": "это"},
+    {"lemma": "ჩაი", "ru": "чай"}
+  ],
+  "questions": [
+    {
+      "id": "shopping7-l1-q01",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "correctOrder": ["რა", "ღირს", "ეს"],
+      "chipPool": ["რა", "ვინ", "ღირს", "ეს", "ის", "ეგ"],
+      "hints": {"1": "რა ღირს = сколько стоит"}
+    },
+    {
+      "id": "shopping7-l2-q01",
+      "questionType": "sentence-builder",
+      "level": 2,
+      "correctOrder": ["რა", "ღირს", "ეს", "ჩაი"],
+      "chipPool": ["რა", "ვინ", "ღირს", "ეს", "ის", "ჩაი", "ყავა", "პური"],
+      "hints": {"1": "Порядок: вопр. + глагол + dem + сущ."}
+    },
+    {
+      "id": "shopping7-l3-q01",
+      "questionType": "sentence-builder",
+      "level": 3,
+      "correctOrder": ["ეს", "ჩაი", "ძვირი", "ღირს"],
+      "chipPool": ["ეს", "ის", "ჩაი", "ყავა", "ძვირი", "იაფი", "ღირს", "ყიდის"],
+      "hints": {"1": "Прил. стоит перед глаголом"}
+    }
+  ]
+}
