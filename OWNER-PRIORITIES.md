@@ -48,13 +48,14 @@
 
 - [ ] **methodist** — для каждого из 5 модулей подобрать 5–7 русско-грузинских пар × 3 уровня (L1: один пустой слот / L2: два слота / L3: половина предложения). Сохранить в `design-specs/80-sentence-builder-spread-content.md`. Cases — фокус на эргативе и дативе. Present Tense — SOV с глаголами Класса 1 и 2 (читать, писать, видеть, идти). Cafe/Shopping/Taxi — по одному ключевому предложению на модуль («Я хочу кофе», «Сколько стоит этот чай», «Поехали в Батуми»).
 - [ ] **native-reviewer** — для каждого предложения проверить единственный корректный порядок слов, дистракторы реально сбивают, регистр естественный (нейтральный разговорный, без книжных архаизмов).
-- [ ] **tech-lead-breakdown** — разбить на task-issues по одному lesson на модуль:
+- [x] **tech-lead-breakdown** — разбить на task-issues по одному lesson на модуль:
   1. Cases lesson N+1 sentence-builder + JSON + theory-блок + ModuleRegistry MaxLessons +1.
   2. Present Tense lesson N+1 — то же.
   3. Cafe lesson N+1.
   4. Shopping lesson N+1.
   5. Taxi lesson N+1.
   6. Расширение `SentenceBuilderContentValidationTests` для покрытия новых модулей.
+  → done by tech-lead 2026-05-09: создал issues #876 (Cases L10), #877 (PresentTense L7), #878 (Cafe L7), #879 (Shopping L7), #880 (Taxi L7), #881 (validation tests); breakdown comment on #872; 9.5h total, spans two nights.
 - [ ] **developer** — реализовать в порядке tech-lead'а. Каждая таска = один lesson + JSON + theory + регистрация в ModuleRegistry. UI не трогать — `SentenceBuilderCard` и сабкомпоненты уже на месте.
 - [ ] **qa** — после landing'а каждого PR пройти full-suite (1430+ dotnet, 13+ Playwright, 4+ vitest) + ручная проверка одного happy-path сценария на каждый модуль через `@traletest_bot` на 375px.
 - [ ] **product** — после полной готовности (все 5 lesson'ов в проде, тесты зелёные) убрать §80 из этого файла и обновить ROADMAP §80 в `[done]`.
