@@ -736,4 +736,127 @@ public class SentenceBuilderContentValidationTests
             $"Validation violations in {subdirectory}/{fileName}:\n" +
             string.Join("\n", violations));
     }
+
+    // ── §878 Cafe L7 — specific AC tests ─────────────────────────────────────────
+
+    private static readonly string CafeL7JsonPath =
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianVocabCafe", "questions7.json");
+
+    [Test]
+    public void CafeModule_MaxLessons_Is7()
+    {
+        var definition = ModuleRegistry.Get("cafe");
+        definition.ShouldNotBeNull("cafe module must be registered");
+        definition!.MaxLessons.ShouldBe(7,
+            "cafe MaxLessons must be bumped from 6 to 7 (issue #878)");
+    }
+
+    [Test]
+    public void CafeModule_L7_FileExists_QuestionCount_InRange()
+    {
+        File.Exists(CafeL7JsonPath).ShouldBeTrue(
+            $"src/Trale/Lessons/GeorgianVocabCafe/questions7.json must exist at {CafeL7JsonPath}");
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(CafeL7JsonPath));
+        doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
+            "questions7.json must have a top-level 'questions' array");
+
+        var count = questions.GetArrayLength();
+        count.ShouldBeInRange(3, 7,
+            $"questions7.json must contain 3–7 sentence-builder questions, found {count}");
+    }
+
+    [Test]
+    public void CafeModule_L7_SlotLevels_CorrectEmptySlotCounts()
+    {
+        if (!File.Exists(CafeL7JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(CafeL7JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        var violations = new List<string>();
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+
+            if (!q.TryGetProperty("level", out var levelEl)) continue;
+            var level = levelEl.GetInt32();
+
+            if (!q.TryGetProperty("correctOrder", out var co) || co.ValueKind != JsonValueKind.Array) continue;
+            var correctOrderLength = co.GetArrayLength();
+
+            var presetCount = 0;
+            if (q.TryGetProperty("presetPositions", out var pp) && pp.ValueKind == JsonValueKind.Array)
+                presetCount = pp.GetArrayLength();
+
+            var emptySlots = correctOrderLength - presetCount;
+
+            if (level == 1 && emptySlots != 1)
+                violations.Add($"Question '{id}' (L1): emptySlots={emptySlots}, expected exactly 1");
+            else if (level == 2 && emptySlots != 2)
+                violations.Add($"Question '{id}' (L2): emptySlots={emptySlots}, expected exactly 2");
+            else if (level == 3 && emptySlots <= correctOrderLength / 2)
+                violations.Add(
+                    $"Question '{id}' (L3): emptySlots={emptySlots} must be > " +
+                    $"correctOrder.Length/2={correctOrderLength / 2}");
+        }
+
+        violations.ShouldBeEmpty(
+            $"Slot-level violations in GeorgianVocabCafe/questions7.json:\n" +
+            string.Join("\n", violations));
+    }
+
+    [Test]
+    public void CafeModule_L7_TheoryBlock_ContainsMindaExplanation()
+    {
+        var provider = new MiniAppContentProvider();
+        var catalog = provider.GetCatalog();
+
+        var cafeModule = catalog.Modules.FirstOrDefault(m => m.Id == "cafe");
+        cafeModule.ShouldNotBeNull("Cafe module must exist in catalog");
+
+        var lesson7 = cafeModule!.Lessons.FirstOrDefault(l => l.Id == 7);
+        lesson7.ShouldNotBeNull("Cafe module must have lesson 7 (issue #878)");
+
+        var theoryText = string.Join(" ",
+            lesson7!.Theory.Blocks.SelectMany(b =>
+                new[]
+                {
+                    b.Text ?? "",
+                    b.Ge ?? "",
+                    b.Ru ?? "",
+                    string.Join(" ", b.Items ?? new List<string>())
+                }));
+
+        theoryText.Contains("მინდა").ShouldBeTrue(
+            "Lesson 7 theory must contain 'მინდა' (I want)");
+
+        var hasWant = theoryText.Contains("хочу", StringComparison.OrdinalIgnoreCase)
+                      || theoryText.Contains("want", StringComparison.OrdinalIgnoreCase);
+        hasWant.ShouldBeTrue(
+            "Lesson 7 theory must contain 'хочу' or 'want' to explain მინდა");
+    }
+
+    [Test]
+    public void CafeModule_L7_ChipPool_ContainsCafeVocabDistractors()
+    {
+        if (!File.Exists(CafeL7JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(CafeL7JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        static int CountCafeDistractors(JsonElement chipPoolEl)
+        {
+            var distractors = new HashSet<string>(StringComparer.Ordinal) { "ჩაი", "წყალი", "წვენი" };
+            return chipPoolEl.EnumerateArray()
+                .Count(chip => distractors.Contains(chip.GetString() ?? ""));
+        }
+
+        var hasEnoughDistractors = questions.EnumerateArray()
+            .Any(q => q.TryGetProperty("chipPool", out var cp)
+                      && cp.ValueKind == JsonValueKind.Array
+                      && CountCafeDistractors(cp) >= 2);
+
+        hasEnoughDistractors.ShouldBeTrue(
+            "At least one question's chipPool must contain ≥2 cafe-vocabulary distractor tokens " +
+            "(ჩაი, წყალი, or წვენი) to force lexical discrimination");
+    }
 }
