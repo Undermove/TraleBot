@@ -81,11 +81,11 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                     var question = new QuizQuestionData
                     {
                         Id = questionElement.GetProperty("id").GetString() ?? string.Empty,
-                        Lemma = questionElement.GetProperty("lemma").GetString() ?? string.Empty,
-                        Question = questionElement.TryGetProperty("question", out var q) ? q.GetString() ?? string.Empty 
+                        Lemma = questionElement.TryGetProperty("lemma", out var lm) ? lm.GetString() ?? string.Empty : string.Empty,
+                        Question = questionElement.TryGetProperty("question", out var q) ? q.GetString() ?? string.Empty
                                  : questionElement.TryGetProperty("prompt", out var p) ? p.GetString() ?? string.Empty : string.Empty,
                         Explanation = questionElement.TryGetProperty("explanation", out var e) ? e.GetString() ?? string.Empty : string.Empty,
-                        AnswerIndex = questionElement.GetProperty("answer_index").GetInt32(),
+                        AnswerIndex = questionElement.TryGetProperty("answer_index", out var ai) ? ai.GetInt32() : 0,
                         Options = new(),
                         Tags = new()
                     };
