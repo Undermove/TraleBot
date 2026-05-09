@@ -1167,3 +1167,182 @@ test('PresentTense L7 — wrong order → ruby slot + incorrect FeedbackBanner',
   expect(completeLessonPayload).toBeTruthy()
   expect(completeLessonPayload.correct).toBe(0)
 })
+
+// ─── Taxi L7 mock data (issue #880) ──────────────────────────────────────────
+
+// L1 destination question: preset at position 0 (წავიდეთ), empty slot = 1 (ბათუმshi)
+// chipPool includes -ზე and -თAN postposition distractors to force discrimination
+const mockTaxiL7Question = [
+  {
+    id: 'taxi7-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Поехали в Батуми' },
+    level: 1,
+    correctOrder: ['წავიდეთ', 'ბათუმში'],
+    chipPool: ['წავიდეთ', 'ბათუმში', 'თბილისში', 'ქუთაისში', 'ბათუმზე', 'ბათუმთან'],
+    presetPositions: [{ position: 0, token: 'წავიდეთ' }],
+    hints: { '1': 'место назначения — в конце' },
+    lemma: 'ბათუმში',
+    question: 'Собери предложение: Поехали в Батуми',
+    options: [],
+    answerIndex: 0,
+    explanation: 'Место назначения (-ши) стоит в конце (SOV + destination-final).',
+  },
+]
+
+const mockTaxiCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'taxi',
+      title: 'Такси и город',
+      emoji: '🚕',
+      description: 'ტაქსი, გაჩერება, მარცხენა',
+      lessons: [
+        {
+          id: 7,
+          title: 'Конструктор: «Поехали в Батуми»',
+          short: 'L7',
+          theory: {
+            title: 'Конструктор предложений: место назначения',
+            goal: 'Собирать фразы о направлении.',
+            blocks: [
+              {
+                type: 'paragraph',
+                text: 'Место назначения — в конце предложения (SOV). Постпозиция -ши (-ში) показывает направление.',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupTaxiL7Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockTaxiCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/taxi/lessons/7/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [
+          {
+            id: 'Year',
+            payloadId: 'year',
+            stars: 900,
+            durationDays: 365,
+            title: 'Год',
+            description: 'Полный год',
+          },
+        ],
+      },
+    })
+  )
+}
+
+async function navigateToTaxiL7(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-taxi"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-7"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
+// ─── Taxi L7 — wrong city in destination slot → ruby slot + incorrect FeedbackBanner ──
+// AC from issue #880 qa-prep: wrong destination city → ruby highlight + "არასწორია!"
+
+test('Taxi L7 — destination chip placed in wrong position → ruby slot + incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupTaxiL7Mocks(page, mockTaxiL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToTaxiL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Slot 1 is empty (correct = ბათუმში). Place wrong city (თბილისshi) instead.
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'თბილისში', exact: true }).click()
+  await page.locator('[data-testid="slot-1"]').click()
+
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
+
+// ─── Taxi L7 — wrong postposition (-ზე vs -ში) in destination slot → ruby highlight ──
+// AC from issue #880 qa-prep: wrong postposition form → ruby slot
+
+test('Taxi L7 — wrong postposition distractor (-ზე vs -ში) in destination slot → ruby highlight', async ({
+  page,
+}) => {
+  await setupTaxiL7Mocks(page, mockTaxiL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToTaxiL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Slot 1 is empty (correct = ბათუმshi). Place postposition distractor ბათუმზე (-ზе) instead.
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ბათუმზე', exact: true }).click()
+  await page.locator('[data-testid="slot-1"]').click()
+
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // wrong postposition (-ზе instead of -ши) → ruby fill
+  await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
