@@ -91,11 +91,48 @@ if git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null 2>&1; then
     if git merge "origin/${BASE_BRANCH}" --no-edit; then
         git push origin "${BRANCH}" 2>/dev/null || true
     else
-        echo ">>> WARNING: auto-merge of origin/${BASE_BRANCH} into ${BRANCH} hit a conflict — agents will work on stale tip."
+        echo ">>> WARNING: auto-merge of origin/${BASE_BRANCH} into ${BRANCH} hit a conflict."
         git merge --abort 2>/dev/null || true
+        # Conflict resolution policy: hard-reset the nightly branch onto
+        # origin/${BASE_BRANCH}. We lose any commits that were on the old
+        # nightly tip but conflicted with main, but staying current with
+        # main beats shipping a regression.
+        # Why this case happens: owner merges a PR into main while a
+        # nightly is in flight, and the same files were touched on both
+        # sides. Without this reset the agents would continue working on
+        # a stale base for the rest of the cycle (real incident on
+        # 2026-05-09 — a refactor pass extracted the same helper an
+        # earlier merge had already landed under a different name, and
+        # the morning PR showed -8000/+1500 phantom regression).
+        # Lost work is reported as a comment on the active sprint plan
+        # so the owner sees what got dropped — task issues stay in
+        # GitHub regardless, so the next iteration just redoes the work
+        # against a fresh base.
+        local conflicted_head
+        conflicted_head=$(git rev-parse HEAD)
+        local lost_log
+        lost_log=$(git log --oneline "origin/${BASE_BRANCH}..${conflicted_head}" 2>/dev/null | head -10)
+
+        echo ">>> Hard-resetting ${BRANCH} to origin/${BASE_BRANCH} to avoid stale-tip regression."
+        git reset --hard "origin/${BASE_BRANCH}"
+        git push --force-with-lease origin "${BRANCH}" 2>/dev/null || true
+
+        if [ -n "${lost_log}" ]; then
+            local sprint_num
+            sprint_num=$(gh issue list --label sprint-plan --state open --limit 1 --json number -q '.[0].number' 2>/dev/null)
+            if [ -n "${sprint_num}" ]; then
+                gh issue comment "${sprint_num}" --body "⚠️ ${HOUR_STAMP}: nightly tip conflicted with origin/${BASE_BRANCH} during the hourly auto-merge. Hard-reset performed; the following commits were dropped:
+
+\`\`\`
+${lost_log}
+\`\`\`
+
+The pipeline will redo any pending task issues from a clean base on the next iteration. Closed/done issues are unaffected." 2>/dev/null || true
+            fi
+        fi
     fi
 else
-    echo ">>> First run of the night — creating ${BRANCH} from ${BASE_BRANCH}."
+    echo ">>> First run of the cycle — creating ${BRANCH} from ${BASE_BRANCH}."
     git checkout -B "${BRANCH}" "${BASE_BRANCH}"
     git push -u origin "${BRANCH}" 2>/dev/null || true
 fi
