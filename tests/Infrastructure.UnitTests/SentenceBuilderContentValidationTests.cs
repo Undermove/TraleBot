@@ -294,6 +294,186 @@ public class SentenceBuilderContentValidationTests
             string.Join("\n", violations));
     }
 
+    // ── §876 Cases L10 — specific AC tests ───────────────────────────────────────────────
+
+    private static readonly string CasesL10JsonPath =
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianCases", "questions10.json");
+
+    [Test]
+    public void CasesModule_MaxLessons_Is10()
+    {
+        var definition = ModuleRegistry.Get("cases");
+        definition.ShouldNotBeNull("cases module must be registered");
+        definition!.MaxLessons.ShouldBe(10,
+            "cases MaxLessons must be bumped from 9 to 10 (issue #876)");
+    }
+
+    [Test]
+    public void CasesModule_L10_TheoryBlock_ContainsErgativeAndDativeMarkers()
+    {
+        var provider = new MiniAppContentProvider();
+        var catalog = provider.GetCatalog();
+
+        var casesModule = catalog.Modules.FirstOrDefault(m => m.Id == "cases");
+        casesModule.ShouldNotBeNull("Cases module must exist in catalog");
+
+        var lesson10 = casesModule!.Lessons.FirstOrDefault(l => l.Id == 10);
+        lesson10.ShouldNotBeNull("Cases module must have lesson 10 (issue #876)");
+
+        var theoryText = string.Join(" ",
+            lesson10!.Theory.Blocks.SelectMany(b =>
+                new[]
+                {
+                    b.Text ?? "",
+                    b.Ge ?? "",
+                    b.Ru ?? "",
+                    string.Join(" ", b.Items ?? new List<string>())
+                }));
+
+        theoryText.Contains("-მა").ShouldBeTrue(
+            "Lesson 10 theory must contain the ergative marker '-მა'");
+        theoryText.Contains("-ს").ShouldBeTrue(
+            "Lesson 10 theory must contain the dative marker '-ს'");
+    }
+
+    [Test]
+    public void CasesModule_L10_FileExists_QuestionCount_ErgativeDativeDistribution()
+    {
+        File.Exists(CasesL10JsonPath).ShouldBeTrue(
+            $"src/Trale/Lessons/GeorgianCases/questions10.json must exist at {CasesL10JsonPath}");
+
+        using var doc = JsonDocument.Parse(File.ReadAllText(CasesL10JsonPath));
+        doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
+            "questions10.json must have a top-level 'questions' array");
+
+        var count = questions.GetArrayLength();
+        count.ShouldBeGreaterThanOrEqualTo(5,
+            $"questions10.json must have ≥5 questions, found {count}");
+
+        var ergativeCount = 0;
+        var dativeCount = 0;
+
+        foreach (var q in questions.EnumerateArray())
+        {
+            if (!q.TryGetProperty("correctOrder", out var co) || co.ValueKind != JsonValueKind.Array)
+                continue;
+            if (!q.TryGetProperty("chipPool", out var cp) || cp.ValueKind != JsonValueKind.Array)
+                continue;
+
+            var tokens = co.EnumerateArray().Select(t => t.GetString() ?? "").ToList();
+            var pool = cp.EnumerateArray().Select(t => t.GetString() ?? "").ToHashSet(StringComparer.Ordinal);
+
+            // Ergative: token ending -მა (e.g. კაცმა, სტუდენტმა)
+            if (tokens.Any(t => t.EndsWith("მა")))
+                ergativeCount++;
+
+            // Dative noun: token ending -ს that has a nominative counterpart in the chipPool
+            // (distinguishes dative nouns from present-tense 3sg verb endings)
+            if (tokens.Any(t => t.EndsWith("ს") && t.Length > 2 && HasNominativeAlternative(t, pool)))
+                dativeCount++;
+        }
+
+        ergativeCount.ShouldBeGreaterThanOrEqualTo(2,
+            $"≥2 questions must have an ergative marker token (-მА), found {ergativeCount}");
+        dativeCount.ShouldBeGreaterThanOrEqualTo(2,
+            $"≥2 questions must have a dative marker token (-ს with nominative in chipPool), found {dativeCount}");
+    }
+
+    [Test]
+    public void CasesModule_L10_EveryCorrectOrderToken_PresentInChipPool()
+    {
+        if (!File.Exists(CasesL10JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(CasesL10JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        var violations = new List<string>();
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            if (!q.TryGetProperty("correctOrder", out var co) || co.ValueKind != JsonValueKind.Array) continue;
+            if (!q.TryGetProperty("chipPool", out var cp) || cp.ValueKind != JsonValueKind.Array) continue;
+
+            var pool = cp.EnumerateArray().Select(t => t.GetString() ?? "").ToHashSet(StringComparer.Ordinal);
+            foreach (var token in co.EnumerateArray())
+            {
+                var text = token.GetString() ?? "";
+                if (!pool.Contains(text))
+                    violations.Add($"Question '{id}': correctOrder token '{text}' missing from chipPool");
+            }
+        }
+
+        violations.ShouldBeEmpty(
+            $"Every correctOrder token must appear in chipPool. Violations:\n{string.Join("\n", violations)}");
+    }
+
+    [Test]
+    public void CasesModule_L10_GeorgianFields_ContainOnlyMkhedruli()
+    {
+        if (!File.Exists(CasesL10JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(CasesL10JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        var violations = new List<string>();
+        foreach (var q in questions.EnumerateArray())
+        {
+            var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            foreach (var field in new[] { "correctOrder", "chipPool" })
+            {
+                if (!q.TryGetProperty(field, out var arr) || arr.ValueKind != JsonValueKind.Array) continue;
+                foreach (var token in arr.EnumerateArray())
+                {
+                    var text = token.GetString() ?? "";
+                    var bad = text.Where(c => !char.IsWhiteSpace(c) && (c < 'ა' || c > 'ჿ'))
+                                  .Select(c => $"U+{(int)c:X4}").ToList();
+                    if (bad.Count > 0)
+                        violations.Add($"Question '{id}' field '{field}' token '{text}': non-Mkhedruli {string.Join(", ", bad)}");
+                }
+            }
+        }
+
+        violations.ShouldBeEmpty(
+            $"All tokens in correctOrder and chipPool must be Mkhedruli only. Violations:\n{string.Join("\n", violations)}");
+    }
+
+    [Test]
+    public void CasesModule_L10_ChipPool_ContainsCaseSuffixDistractors()
+    {
+        if (!File.Exists(CasesL10JsonPath)) return;
+        using var doc = JsonDocument.Parse(File.ReadAllText(CasesL10JsonPath));
+        if (!doc.RootElement.TryGetProperty("questions", out var questions)) return;
+
+        // At least one question must have distractor chips using other case suffixes
+        // (-ი nominative, -ის genitive, -ად adverbial, -ით instrumental, -მა ergative)
+        // to force case-form discrimination.
+        static bool HasCaseSuffixDistractor(JsonElement chipPoolEl)
+        {
+            foreach (var chip in chipPoolEl.EnumerateArray())
+            {
+                var t = chip.GetString() ?? "";
+                if (t.EndsWith("ი") || t.EndsWith("ის") || t.EndsWith("ად") || t.EndsWith("ით") || t.EndsWith("მა"))
+                    return true;
+            }
+            return false;
+        }
+
+        var hasDistractors = questions.EnumerateArray()
+            .Any(q => q.TryGetProperty("chipPool", out var cp) && cp.ValueKind == JsonValueKind.Array
+                      && HasCaseSuffixDistractor(cp));
+
+        hasDistractors.ShouldBeTrue(
+            "At least one question's chipPool must include case-suffix distractor chips " +
+            "(-ი, -ის, -ად, -ით, or -მა) to force case-form discrimination");
+    }
+
+    // Heuristic: a token ending -ს is likely a dative noun (not a verb) when the chipPool
+    // contains the same stem with a nominative ending (-ი) or without the -ს suffix.
+    private static bool HasNominativeAlternative(string datToken, HashSet<string> pool)
+    {
+        if (datToken.Length < 2) return false;
+        var stem = datToken[..^1]; // strip trailing ს
+        return pool.Contains(stem) || pool.Contains(stem + "ი");
+    }
+
     // ── New-module parameterised validation (§80: 5 sentence-builder modules) ─────────────
     //
     // These tests act as pre-flight checks for tasks #876–#880.
