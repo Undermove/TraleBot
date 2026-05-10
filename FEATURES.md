@@ -283,8 +283,8 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 8 (L6 = audio-choice; L7 = SOS-phrases: Help/I don't understand/Slowly/Repeat/Doctor; L8 = navigation: Where is?/How much?/Ambulance/Police) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
-| `present-tense` | `GeorgianPresentTense` | 6 (lesson 6 = audio-choice) | ✅ |
-| `cases` | `GeorgianCases` | 9 (lesson 9 = audio-choice) | ✅ |
+| `present-tense` | `GeorgianPresentTense` | 7 (L6 audio-choice; L7 sentence-builder — SOV конструктор) | ✅ |
+| `cases` | `GeorgianCases` | 10 (L9 audio-choice; L10 sentence-builder — эргатив и датив) | ✅ |
 | `conditionals` | `GeorgianConditionals` | 6 (L6 = audio-choice «Слушай и выбери» — кондиционал vs имперфект) | ✅ |
 
 ### Grammar modules
@@ -304,10 +304,10 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Vocabulary modules
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `cafe` | `GeorgianVocabCafe` | 6 (L6 audio-choice) | ✅ |
-| `taxi` | `GeorgianVocabTaxi` | 6 (L6 audio-choice) | ✅ |
+| `cafe` | `GeorgianVocabCafe` | 7 (L6 audio-choice; L7 sentence-builder — «Я хочу кофе») | ✅ |
+| `taxi` | `GeorgianVocabTaxi` | 7 (L6 audio-choice; L7 sentence-builder — «Поехали в Батуми») | ✅ |
 | `doctor` | `GeorgianVocabDoctor` | 6 (L6 audio-choice) | ✅ |
-| `shopping` | `GeorgianVocabShopping` | 6 (lesson 6 = audio-choice) | ✅ |
+| `shopping` | `GeorgianVocabShopping` | 7 (L6 audio-choice; L7 sentence-builder — «Сколько стоит?») | ✅ |
 | `emergency` | `GeorgianVocabEmergency` | 6 (L6 audio-choice) | ✅ |
 
 ### Legacy / alternative alphabet variants

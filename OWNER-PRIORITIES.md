@@ -48,16 +48,45 @@
 
 - [ ] **methodist** — для каждого из 5 модулей подобрать 5–7 русско-грузинских пар × 3 уровня (L1: один пустой слот / L2: два слота / L3: половина предложения). Сохранить в `design-specs/80-sentence-builder-spread-content.md`. Cases — фокус на эргативе и дативе. Present Tense — SOV с глаголами Класса 1 и 2 (читать, писать, видеть, идти). Cafe/Shopping/Taxi — по одному ключевому предложению на модуль («Я хочу кофе», «Сколько стоит этот чай», «Поехали в Батуми»).
 - [ ] **native-reviewer** — для каждого предложения проверить единственный корректный порядок слов, дистракторы реально сбивают, регистр естественный (нейтральный разговорный, без книжных архаизмов).
-- [ ] **tech-lead-breakdown** — разбить на task-issues по одному lesson на модуль:
+- [x] **tech-lead-breakdown** — разбить на task-issues по одному lesson на модуль:
   1. Cases lesson N+1 sentence-builder + JSON + theory-блок + ModuleRegistry MaxLessons +1.
   2. Present Tense lesson N+1 — то же.
   3. Cafe lesson N+1.
   4. Shopping lesson N+1.
   5. Taxi lesson N+1.
   6. Расширение `SentenceBuilderContentValidationTests` для покрытия новых модулей.
+  → done by tech-lead 2026-05-09: создал issues #876 (Cases L10), #877 (PresentTense L7), #878 (Cafe L7), #879 (Shopping L7), #880 (Taxi L7), #881 (validation tests); breakdown comment on #872; 9.5h total, spans two nights.
 - [ ] **developer** — реализовать в порядке tech-lead'а. Каждая таска = один lesson + JSON + theory + регистрация в ModuleRegistry. UI не трогать — `SentenceBuilderCard` и сабкомпоненты уже на месте.
 - [ ] **qa** — после landing'а каждого PR пройти full-suite (1430+ dotnet, 13+ Playwright, 4+ vitest) + ручная проверка одного happy-path сценария на каждый модуль через `@traletest_bot` на 375px.
 - [ ] **product** — после полной готовности (все 5 lesson'ов в проде, тесты зелёные) убрать §80 из этого файла и обновить ROADMAP §80 в `[done]`.
+
+---
+
+### §81 «Конструктор предложений — глубже, легче, чище»
+
+- **Pinned:** 2026-05-10 (после ручного приёмочного теста §80 владельцем — обратная связь: «хочу сложнее», «не хочу скроллить», «хочу tap-only»)
+- **ROADMAP-статус:** `[idea]`
+- **Описание:** §79 + §80 поставили `SentenceBuilder` на 6 модулей. Эта итерация — про *качество* существующей механики, без расширения охвата. Три независимых улучшения, объединённых в один эпик потому что владелец просил «одним»:
+  1. **Усложнение контента** — добавить уровни L4 («только глагол как якорь») и L5 («с нуля, всё пусто») в каждый из 6 модулей, по 2-3 пары на L4 + 1-2 на L5. На L4-L5 ученик собирает предложение целиком, а не вставляет 1-3 слова в скелет.
+  2. **Layout без скролла** — длинные предложения (7+ слотов) должны полностью влезать на 375px-вьюпорт. Wrap цепочки слотов на 2 строки, ChipPool в 3 колонки, адаптивный шрифт T6→T7 на длинных вопросах. Никакого `overflow-x: auto` на slot row.
+  3. **Tap-only sequential** — переделать interaction. Сейчас: tap-чип → tap-слот (2 тапа на слово). Будет: tap-чип → авто-вставка в первый пустой слот по порядку (1 тап на слово). Возврат: tap по заполненному слоту → чип уезжает в пул, указатель на освободившийся слот.
+
+**Целевые модули:** все 6 текущих с SentenceBuilder — postpositions (L7), cases (L10), present-tense (L7), cafe (L7), shopping (L7), taxi (L7). UI-правки одни на всех.
+
+**Чек-лист по ролям:**
+
+- [ ] **designer** — обновить `design-specs/79-sentence-builder.md` (или создать `design-specs/81-sentence-builder-deeper.md`) с новым interaction model (tap-only sequential), layout-правилами для 7+ слотов и low-fi схемами L4/L5 уровней. Перевести §81 в `[designed]`.
+- [ ] **methodist** — для каждого из 6 модулей подобрать пары на L4 (только глагол preset, остальное пусто, 3-5 слотов) и L5 (ничего preset, 5+ слотов). По 2-3 L4 + 1-2 L5 на модуль = 18-30 новых пар суммарно. Сохранить как `design-specs/81-sentence-builder-deeper-content.md`.
+- [ ] **native-reviewer** — особое внимание на L5: длинные предложения с нуля должны иметь единственный корректный порядок слов; на L4 проверить, что глагол как якорь действительно подсказывает только время/число, не больше.
+- [ ] **tech-lead-breakdown** — разбить на task-issues:
+  1. Frontend: `SentenceBuilderCard` interaction refactor — tap-only sequential auto-insert. Возврат чипа через tap по filled slot. Удалить старый chip-selected state. Обновить Playwright specs.
+  2. Frontend: layout фикс — wrap slot row на 2 строки при ≥6 слотах, ChipPool 3-column grid, адаптивный шрифт. Тест на 375px viewport.
+  3. Content: добавить L4/L5 пары в JSON всех 6 модулей. По 2-3 L4 + 1-2 L5 на модуль.
+  4. Расширить `SentenceBuilderContentValidationTests` для L4/L5 (presetPositions может быть пустой массив, correctOrder length до 8).
+  5. Удалить existing Playwright specs которые тестируют tap-chip+tap-slot pattern, написать заново под tap-only.
+- [ ] **developer** — реализовать в порядке tech-lead'а. Один issue = один PR. Frontend interaction (1) делать первым — все остальные таски опираются на него.
+- [ ] **qa** — после landing'а каждого PR полный гейт (dotnet test + npm build + npx playwright test + npx vitest run). Особо: ручная проверка interaction на телефоне через `@traletest_bot` — tap-only должен ощущаться быстрее старого. На L5 проверить отсутствие горизонтального скролла.
+- [ ] **product** — после полной готовности убрать §81 из файла, обновить ROADMAP §81 в `[done]`.
 
 ---
 
@@ -74,5 +103,6 @@
 
 ## История
 
+- **2026-05-10** §81 добавлен после ручного приёмочного теста §80 владельцем. Запрос: «хочу сложнее» (L4-L5 уровни), «не хочу скроллить» (длинные предложения целиком на экран), «хочу tap-only» (один тап на слово вместо двух).
 - **2026-05-08** §79 «Конструктор предложений» закрыт — Postpositions L7 пилот в проде (PR #867 → main, 19 вопросов L1-L3, SentenceBuilderCard + 5 sub-компонентов, 13 Playwright + 4 vitest зелёных). §80 добавлен в тот же день после ручного приёмочного теста владельцем — расширение SentenceBuilder на cases, present-tense, cafe, shopping, taxi.
 - **2026-05-01** Файл создан. §79 добавлен по запросу владельца от 2026-04-28 (issue #699), который designer-агент проигнорировал три ночи подряд из-за отсутствия механизма приоритета. См. PR feat/owner-priorities-mechanism.

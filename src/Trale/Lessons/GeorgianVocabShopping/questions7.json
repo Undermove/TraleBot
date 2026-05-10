@@ -1,0 +1,114 @@
+{
+  "lesson_id": "shopping7",
+  "title": "Конструктор предложений — «Сколько стоит?»",
+  "lexicon": [
+    { "lemma": "ღირს", "ru": "стоит" },
+    { "lemma": "ეს", "ru": "это / этот" },
+    { "lemma": "ჩაი", "ru": "чай" },
+    { "lemma": "პური", "ru": "хлеб" },
+    { "lemma": "ლარი", "ru": "лари" }
+  ],
+  "questions": [
+    {
+      "id": "shopping7-l1-q01",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "ჩაი",
+      "question": "Собери предложение: Сколько стоит чай?",
+      "targetSentence": { "ru": "Сколько стоит чай?" },
+      "correctOrder": ["რა", "ღირს", "ჩაი"],
+      "presetPositions": [
+        { "position": 0, "token": "რა" },
+        { "position": 1, "token": "ღირს" }
+      ],
+      "chipPool": ["რა", "ღირს", "ჩაი", "ყავა", "პური", "ყველი"],
+      "hints": { "2": "Объект в NOM после ღირს" },
+      "explanation": "რა ღირს + объект в именительном (без -ს)."
+    },
+    {
+      "id": "shopping7-l1-q02",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "პური",
+      "question": "Собери предложение: Сколько стоит хлеб?",
+      "targetSentence": { "ru": "Сколько стоит хлеб?" },
+      "correctOrder": ["რა", "ღირს", "პური"],
+      "presetPositions": [
+        { "position": 0, "token": "რა" },
+        { "position": 1, "token": "ღირს" }
+      ],
+      "chipPool": ["რა", "ღირს", "პური", "ჩაი", "ყველი", "რძე"],
+      "hints": { "2": "Грузинское «хлеб»" },
+      "explanation": "პური — хлеб; именительный падеж (без -ს)."
+    },
+    {
+      "id": "shopping7-l1-q03",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "ლარი",
+      "question": "Собери предложение: Это пять лари",
+      "targetSentence": { "ru": "Это пять лари" },
+      "correctOrder": ["ეს", "ხუთი", "ლარი"],
+      "presetPositions": [
+        { "position": 0, "token": "ეს" },
+        { "position": 1, "token": "ხუთი" }
+      ],
+      "chipPool": ["ეს", "ხუთი", "ლარი", "ოთხი", "სამი", "ჩაი"],
+      "hints": { "2": "Грузинская валюта" },
+      "explanation": "ეს = это; ხუთი = пять; ლარი = лари."
+    },
+    {
+      "id": "shopping7-l2-q01",
+      "questionType": "sentence-builder",
+      "level": 2,
+      "lemma": "ჩაი",
+      "question": "Собери предложение: Сколько стоит этот чай?",
+      "targetSentence": { "ru": "Сколько стоит этот чай?" },
+      "correctOrder": ["რა", "ღირს", "ეს", "ჩაი"],
+      "presetPositions": [
+        { "position": 1, "token": "ღირს" },
+        { "position": 2, "token": "ეს" }
+      ],
+      "chipPool": ["რა", "ღირს", "ეს", "ჩაი", "ვინ", "ის", "ყავა"],
+      "hints": {
+        "0": "Вопросительное слово",
+        "3": "Объект после демонстратива"
+      },
+      "explanation": "რა ღირს ეს + объект: вопр. + глагол + dem + существительное."
+    },
+    {
+      "id": "shopping7-l2-q02",
+      "questionType": "sentence-builder",
+      "level": 2,
+      "lemma": "პური",
+      "question": "Собери предложение: Я покупаю хлеб",
+      "targetSentence": { "ru": "Я покупаю хлеб" },
+      "correctOrder": ["მე", "ვყიდულობ", "პურს"],
+      "presetPositions": [
+        { "position": 0, "token": "მე" }
+      ],
+      "chipPool": ["მე", "ვყიდულობ", "პურს", "ყიდულობ", "ჩაის", "ყველს"],
+      "hints": {
+        "1": "Глагол «покупаю»",
+        "2": "Объект в дативе"
+      },
+      "explanation": "ვყიდულობ — покупаю (Кл.1, 1sg); პурс — хлеб в дательном."
+    },
+    {
+      "id": "shopping7-l3-q01",
+      "questionType": "sentence-builder",
+      "level": 3,
+      "lemma": "ყველი",
+      "question": "Собери предложение: Покупаю молоко и сыр",
+      "targetSentence": { "ru": "Покупаю молоко и сыр" },
+      "correctOrder": ["ვყიდულობ", "რძეს", "და", "ყველს"],
+      "presetPositions": [],
+      "chipPool": ["ვყიდულობ", "რძეს", "და", "ყველს", "ჩაის", "ყიდულობ", "ძვირია"],
+      "hints": {
+        "0": "Глагол в начале",
+        "1": "Молоко в дативе"
+      },
+      "explanation": "ვყიდულობ + объекты в дательном; და = и."
+    }
+  ]
+}

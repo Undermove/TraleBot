@@ -1,5 +1,96 @@
 import { test, expect } from '@playwright/test'
 
+// ─── Cases L10 mock data (issue #876) ────────────────────────────────────────
+
+// L1 ergative question: empty slot 0 (კაcMА), presets at 1 and 2
+const mockCasesL10Question = [
+  {
+    id: 'cases10-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Мужчина прочитал книгу' },
+    level: 1,
+    correctOrder: ['კაცმა', 'წაიკითხა', 'წიგნი'],
+    chipPool: ['კაცმა', 'კაცი', 'კაცის', 'კაცით', 'წაიკითხა', 'წიგნი'],
+    presetPositions: [
+      { position: 1, token: 'წაიკითხა' },
+      { position: 2, token: 'წიგნი' },
+    ],
+    hints: { '0': 'Подлежащее в эргативе' },
+    lemma: 'კაცმა',
+    question: 'Собери предложение: Мужчина прочитал книгу',
+    options: [],
+    answerIndex: 0,
+    explanation: 'Эргатив (-მА): подлежащее переходного глагола в аористе.',
+  },
+]
+
+const mockCasesCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'cases',
+      title: 'Падежи',
+      emoji: '🧩',
+      description: 'Падежи грузинского языка',
+      lessons: [
+        {
+          id: 10,
+          title: 'Конструктор предложений — эргатив и датив',
+          short: 'L10',
+          theory: {
+            title: 'Конструктор предложений: эргатив и датив',
+            goal: 'Собирать предложения с эргативным субъектом и дательным объектом',
+            blocks: [
+              {
+                type: 'list',
+                items: [
+                  '-მა (-მ после гласной) — эргатив: субъект переходного глагола в аористе',
+                  '-ს — датив: прямой объект в настоящем времени или адресат',
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupCasesL10Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockCasesCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/cases/lessons/10/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [{ id: 'Year', payloadId: 'year', stars: 900, durationDays: 365, title: 'Год', description: 'Полный год' }],
+      },
+    })
+  )
+}
+
+async function navigateToCasesL10(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-cases"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-10"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
 // ─── Shared mock data ────────────────────────────────────────────────────────
 
 const mockCatalog = {
@@ -586,4 +677,672 @@ test('SentenceBuilderCard — error fallback renders for question with missing c
 
   // SentenceBuilderCard should no longer be visible (navigated to result screen)
   await expect(page.locator('[data-testid="sentence-builder-card"]')).not.toBeVisible()
+})
+
+// ─── Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner ──
+// AC from issue #876 qa-prep: "Negative case: unordered chip answer in Cases L10
+// → ruby slot highlight + answer recorded in «Мои ошибки»"
+
+test('Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupCasesL10Mocks(page, mockCasesL10Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToCasesL10(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({ timeout: 10_000 })
+
+  // Slot 0 is empty (ergative subject კაcMА). Place wrong chip კაcI (nominative) instead.
+  // Use exact:true to avoid matching კაcIS or კАcIT in the pool
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'კაცი', exact: true }).click()
+  await page.locator('[data-testid="slot-0"]').click()
+
+  // Проверить should be enabled (slot is filled)
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // slot-0 must have ruby fill (incorrect state)
+  await expect(page.locator('[data-testid="slot-0"]')).toHaveClass(/bg-ruby/)
+
+  // FeedbackBanner shows incorrect header
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  // Далее button appears even on wrong answer
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  // Tap Далее and assert lesson-complete payload has correct: 0
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
+
+// ─── Shopping L7 mock data (issue #879) ─────────────────────────────────────
+
+// L1 price question: presets at positions 0 (რა) and 1 (ღირს), empty slot = 2 (ჩაი)
+// chipPool includes ყავა (coffee) and პური (bread) as price-related distractors
+const mockShoppingL7Question = [
+  {
+    id: 'shopping7-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Сколько стоит чай?' },
+    level: 1,
+    correctOrder: ['რა', 'ღირს', 'ჩაი'],
+    chipPool: ['რა', 'ღირს', 'ჩაი', 'ყავა', 'პური', 'ყველი'],
+    presetPositions: [
+      { position: 0, token: 'რა' },
+      { position: 1, token: 'ღირს' },
+    ],
+    hints: { '2': 'Объект в NOM после ღირს' },
+    lemma: 'ჩაი',
+    question: 'Собери предложение: Сколько стоит чай?',
+    options: [],
+    answerIndex: 0,
+    explanation: 'რა ღირს + объект в именительном (без -ს).',
+  },
+]
+
+const mockShoppingCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'shopping',
+      title: 'Магазин',
+      emoji: '🛒',
+      description: 'რა ღირს — вопрос о цене',
+      lessons: [
+        {
+          id: 7,
+          title: 'Конструктор: «Сколько стоит?»',
+          short: 'L7',
+          theory: {
+            title: 'Конструктор предложений: вопрос о цене «რა ღირს»',
+            goal: 'Собирать вопросительные предложения о цене.',
+            blocks: [
+              {
+                type: 'paragraph',
+                text: 'Вопрос о цене: «რა ღირს X?» — «Сколько стоит X?».',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupShoppingL7Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockShoppingCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/shopping/lessons/7/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [
+          {
+            id: 'Year',
+            payloadId: 'year',
+            stars: 900,
+            durationDays: 365,
+            title: 'Год',
+            description: 'Полный год',
+          },
+        ],
+      },
+    })
+  )
+}
+
+async function navigateToShoppingL7(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-shopping"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-7"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
+// ─── Shopping L7 — price distractor chip in slot → ruby slot + incorrect FeedbackBanner ──
+// AC from issue #879 qa-prep: place ყავა (coffee) in the tea slot → ruby highlight + "არასწორია!"
+
+test('Shopping L7 — price distractor chip in slot → ruby slot + incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupShoppingL7Mocks(page, mockShoppingL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToShoppingL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Slot 2 is empty (ჩაი = tea). Place price distractor ყავა (coffee) instead.
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ყავა', exact: true }).click()
+  await page.locator('[data-testid="slot-2"]').click()
+
+  // Проверить should be enabled (slot is filled)
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // slot-2 must have ruby fill (incorrect — coffee instead of tea)
+  await expect(page.locator('[data-testid="slot-2"]')).toHaveClass(/bg-ruby/)
+
+  // FeedbackBanner shows incorrect header
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  // Далее button appears even on wrong answer
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  // Tap Далее → lesson-complete payload must have correct: 0
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
+
+// ─── PresentTense L7 mock data (issue #877) ──────────────────────────────────
+
+// SOV question: preset slot 0 (subject), empty slots 1 (object) and 2 (verb)
+const mockPresentTenseL7Question = [
+  {
+    id: 'present7-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Я читаю книгу' },
+    level: 1,
+    correctOrder: ['მე', 'წიგნს', 'ვკითხულობ'],
+    chipPool: ['მე', 'წიგნს', 'ვკითხულობ', 'კითხულობს', 'ვწერ'],
+    presetPositions: [{ position: 0, token: 'მე' }],
+    hints: { '2': '-ვ- у 1 лица, Кл.1 глагол' },
+    lemma: 'ვკითხულობ',
+    question: 'Собери предложение: Я читаю книгу',
+    options: [],
+    answerIndex: 0,
+    explanation: 'SOV: субъект + объект в дат. + глагол в конце.',
+  },
+]
+
+const mockPresentTenseCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'present-tense',
+      title: 'Настоящее время',
+      emoji: '⏰',
+      description: 'ვარ, მაქვს, ვაკეთებ',
+      lessons: [
+        {
+          id: 7,
+          title: 'Конструктор: SOV',
+          short: 'L7',
+          theory: {
+            title: 'Конструктор предложений: SOV порядок',
+            goal: 'Собирать предложения в порядке Subject-Object-Verb.',
+            blocks: [
+              {
+                type: 'paragraph',
+                text: 'Порядок слов: Subject-Object-Verb (SOV). Глагол в конце.',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupPresentTenseL7Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockPresentTenseCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/present-tense/lessons/7/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [
+          {
+            id: 'Year',
+            payloadId: 'year',
+            stars: 900,
+            durationDays: 365,
+            title: 'Год',
+            description: 'Полный год',
+          },
+        ],
+      },
+    })
+  )
+}
+
+async function navigateToPresentTenseL7(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-present-tense"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-7"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
+// ─── Cafe L7 mock data (issue #878) ─────────────────────────────────────────
+
+// L1 coffee question: presets at positions 0 (მე) and 1 (მINDA), empty slot = 2 (ყАVА)
+// chipPool includes ჩАΙ (tea) and წყАLΙ (water) as distractors
+const mockCafeL7Question = [
+  {
+    id: 'cafe7-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Я хочу кофе' },
+    level: 1,
+    correctOrder: ['მე', 'მინდა', 'ყავა'],
+    chipPool: ['მე', 'შენ', 'მინდა', 'ყავა', 'ჩაი', 'წყალი'],
+    presetPositions: [
+      { position: 0, token: 'მე' },
+      { position: 1, token: 'მინდა' },
+    ],
+    hints: { '2': 'ყавα = кофе' },
+    lemma: 'ყავა',
+    question: 'Собери предложение: Я хочу кофе',
+    explanation: 'მINDA + объект в именительном (без -ს).',
+  },
+]
+
+const mockCafeCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'cafe',
+      title: 'В кафе',
+      emoji: '☕',
+      description: 'მENIU, შEKVETA, АНГАРИши',
+      lessons: [
+        {
+          id: 7,
+          title: 'Конструктор: Я хочу…',
+          short: 'L7',
+          theory: {
+            title: 'Конструктор предложений: заказ в кафе',
+            goal: 'Собирать фразы-заказы по шаблону «мINDA X».',
+            blocks: [
+              {
+                type: 'paragraph',
+                text: 'Шаблон заказа: мINDA + существительное. Я хочу = мINDA.',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupCafeL7Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockCafeCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/cafe/lessons/7/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [
+          {
+            id: 'Year',
+            payloadId: 'year',
+            stars: 900,
+            durationDays: 365,
+            title: 'Год',
+            description: 'Полный год',
+          },
+        ],
+      },
+    })
+  )
+}
+
+async function navigateToCafeL7(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-cafe"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-7"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
+// ─── Cafe L7 — distractor chip (tea) in wrong slot → ruby slot + incorrect FeedbackBanner ──
+// AC from issue #878 qa-prep: place ჩАΙ (tea) in the coffee slot → ruby highlight + "არАsworIA!"
+
+test('Cafe L7 — distractor chip (tea) in wrong slot → ruby slot + incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupCafeL7Mocks(page, mockCafeL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToCafeL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Slot 2 is empty (coffee: ყАVА). Place distractor ჩАΙ (tea) instead.
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ჩაი', exact: true }).click()
+  await page.locator('[data-testid="slot-2"]').click()
+
+  // Проверить should be enabled (slot is filled)
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // slot-2 must have ruby fill (incorrect state — tea instead of coffee)
+  await expect(page.locator('[data-testid="slot-2"]')).toHaveClass(/bg-ruby/)
+
+  // FeedbackBanner shows incorrect header
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  // Далее button appears even on wrong answer
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  // Tap Далее → lesson-complete payload must have correct: 0
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
+
+// ─── PresentTense L7 — wrong order → ruby slot + incorrect FeedbackBanner ───
+// AC from issue #877 qa-prep: tap VSO arrangement (verb before object) →
+// ruby slot highlight + FeedbackBanner "არასწორია!" + lesson-complete correct: 0
+
+test('PresentTense L7 — wrong order → ruby slot + incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupPresentTenseL7Mocks(page, mockPresentTenseL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToPresentTenseL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Tap verb ვკითხულობ first → placed in slot-1 (wrong: SVO instead of SOV)
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვკითხულობ', exact: true }).click()
+  await page.locator('[data-testid="slot-1"]').click()
+
+  // Tap object წიგნს → placed in slot-2
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'წიგნს', exact: true }).click()
+  await page.locator('[data-testid="slot-2"]').click()
+
+  // Проверить must be enabled (both empty slots filled)
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // slot-1 must show ruby fill (wrong answer — verb placed before object)
+  await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
+
+  // FeedbackBanner shows incorrect header
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  // Далее button appears even on wrong answer
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  // Tap Далее → lesson-complete payload must have correct: 0
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
+
+// ─── Taxi L7 mock data (issue #880) ──────────────────────────────────────────
+
+// L1 destination question: preset at position 0 (წავიდეთ), empty slot = 1 (ბათუმshi)
+// chipPool includes -ზე and -თAN postposition distractors to force discrimination
+const mockTaxiL7Question = [
+  {
+    id: 'taxi7-l1-q01',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Поехали в Батуми' },
+    level: 1,
+    correctOrder: ['წავიდეთ', 'ბათუმში'],
+    chipPool: ['წავიდეთ', 'ბათუმში', 'თბილისში', 'ქუთაისში', 'ბათუმზე', 'ბათუმთან'],
+    presetPositions: [{ position: 0, token: 'წავიდეთ' }],
+    hints: { '1': 'место назначения — в конце' },
+    lemma: 'ბათუმში',
+    question: 'Собери предложение: Поехали в Батуми',
+    options: [],
+    answerIndex: 0,
+    explanation: 'Место назначения (-ши) стоит в конце (SOV + destination-final).',
+  },
+]
+
+const mockTaxiCatalog = {
+  botUsername: 'TraleBot',
+  miniAppEnabled: true,
+  modules: [
+    {
+      id: 'taxi',
+      title: 'Такси и город',
+      emoji: '🚕',
+      description: 'ტაქსი, გაჩერება, მარცხენა',
+      lessons: [
+        {
+          id: 7,
+          title: 'Конструктор: «Поехали в Батуми»',
+          short: 'L7',
+          theory: {
+            title: 'Конструктор предложений: место назначения',
+            goal: 'Собирать фразы о направлении.',
+            blocks: [
+              {
+                type: 'paragraph',
+                text: 'Место назначения — в конце предложения (SOV). Постпозиция -ши (-ში) показывает направление.',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+}
+
+async function setupTaxiL7Mocks(page: any, lessonQuestions: object[]) {
+  await page.route('**/api/miniapp/content', (route: any) =>
+    route.fulfill({ json: mockTaxiCatalog })
+  )
+  await page.route('**/api/miniapp/me', (route: any) =>
+    route.fulfill({ json: proMeResponse })
+  )
+  await page.route('**/api/miniapp/modules/taxi/lessons/7/questions', (route: any) =>
+    route.fulfill({ json: lessonQuestions })
+  )
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  )
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({
+      json: {
+        plans: [
+          {
+            id: 'Year',
+            payloadId: 'year',
+            stars: 900,
+            durationDays: 365,
+            title: 'Год',
+            description: 'Полный год',
+          },
+        ],
+      },
+    })
+  )
+}
+
+async function navigateToTaxiL7(page: any) {
+  const moduleTile = page.locator('[data-testid="module-tile-taxi"]')
+  await expect(moduleTile).toBeVisible({ timeout: 15_000 })
+  await moduleTile.click()
+  const lessonBtn = page.locator('[data-testid="lesson-btn-7"]')
+  await expect(lessonBtn).toBeVisible({ timeout: 10_000 })
+  await lessonBtn.click()
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+}
+
+// ─── Taxi L7 — wrong city in destination slot → ruby slot + incorrect FeedbackBanner ──
+// AC from issue #880 qa-prep: wrong destination city → ruby highlight + "არასწორია!"
+
+test('Taxi L7 — destination chip placed in wrong position → ruby slot + incorrect FeedbackBanner', async ({
+  page,
+}) => {
+  await setupTaxiL7Mocks(page, mockTaxiL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToTaxiL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Slot 1 is empty (correct = ბათუმში). Place wrong city (თბილისshi) instead.
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'თბილისში', exact: true }).click()
+  await page.locator('[data-testid="slot-1"]').click()
+
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
+
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
+})
+
+// ─── Taxi L7 — wrong postposition (-ზე vs -ში) in destination slot → ruby highlight ──
+// AC from issue #880 qa-prep: wrong postposition form → ruby slot
+
+test('Taxi L7 — wrong postposition distractor (-ზე vs -ში) in destination slot → ruby highlight', async ({
+  page,
+}) => {
+  await setupTaxiL7Mocks(page, mockTaxiL7Question)
+
+  let completeLessonPayload: any = null
+  await page.route('**/api/miniapp/progress/lesson-complete', async (route) => {
+    completeLessonPayload = JSON.parse(route.request().postData() ?? '{}')
+    await route.fulfill({ json: { xpEarned: 0, progress: proMeResponse.progress } })
+  })
+
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToTaxiL7(page)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({
+    timeout: 10_000,
+  })
+
+  // Slot 1 is empty (correct = ბათუმshi). Place postposition distractor ბათუმზე (-ზе) instead.
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ბათუმზე', exact: true }).click()
+  await page.locator('[data-testid="slot-1"]').click()
+
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+  await verifyBtn.click()
+
+  // wrong postposition (-ზе instead of -ши) → ruby fill
+  await expect(page.locator('[data-testid="slot-1"]')).toHaveClass(/bg-ruby/)
+  await expect(page.locator('text=არასწორია!')).toBeVisible()
+
+  await page.getByRole('button', { name: /Далее/i }).click()
+  await page.waitForTimeout(500)
+
+  expect(completeLessonPayload).toBeTruthy()
+  expect(completeLessonPayload.correct).toBe(0)
 })

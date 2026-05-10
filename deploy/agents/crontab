@@ -1,25 +1,30 @@
 # Бомбора Agent Pipeline (время по Батуми, Asia/Tbilisi UTC+4)
-# Epic-driven: одна общая ночная ветка agents/nightly-YYYY-MM-DD.
+# Epic-driven: одна общая ветка agents/nightly-YYYY-MM-DD (название
+# историческое — пайплайн теперь дневной, но ветка называется так же).
 # Скрипт запускается в режиме auto и сам решает что делать:
 #   - нет открытого sprint-plan-issue       → planning phases (1–6: discovery →
 #                                              review → finalize → breakdown →
 #                                              publish-plan)
 #   - открытый sprint-plan ждёт «поехали»   → выходим, ничего не тратим
 #   - sprint-plan одобрен («поехали»)        → build phases (qa-prep → dev loop
-#                                              → end-of-night refactor)
-# Утром в 09:00 — открытие/обновление ежедневного PR.
+#                                              → end-of-night refactor →
+#                                              test-scenarios)
+# В 18:00 — открытие/обновление ежедневного PR.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Ночные прогоны — каждый час с 01:00 до 08:00 в auto-режиме.
+# Дневные прогоны — каждый час с 11:00 до 17:00 в auto-режиме.
 # Один прогон = один час = одна фаза или один кусок dev-loop'а.
-0 1 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
-0 2 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
-0 3 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
-0 4 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
-0 5 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
-0 6 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
-0 7 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
-0 8 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+# Время выбрано чтобы пайплайн крутился, пока владелец бодрствует и
+# может смерджить PR в main без гонки с cron'ом — у предыдущей ночной
+# схемы регулярно случался кейс «owner мерджит pre-PR в main в 02:30,
+# а cron уже стартанул в 02:00 на старом main → нечего работать».
+0 11 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0 12 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0 13 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0 14 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0 15 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0 16 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0 17 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
 
-# Утренний QA — тестит ночную ветку и открывает PR
-0 9 * * * su -s /bin/bash agent -c '/scripts/run-qa.sh >> /logs/agents.log 2>&1'
+# Вечерний QA — собирает результаты дня и открывает PR
+0 18 * * * su -s /bin/bash agent -c '/scripts/run-qa.sh >> /logs/agents.log 2>&1'
