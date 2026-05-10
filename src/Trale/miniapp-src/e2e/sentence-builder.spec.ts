@@ -203,7 +203,7 @@ const freeMeResponse = {
   },
 }
 
-// 6 slots (positions 0-4 preset, slot 5 empty) — for overflow-x scroll-snap test
+// 6 slots (positions 0-4 preset, slot 5 empty) — for layout wrap test
 const mock6SlotQuestion = [
   {
     id: 'q-6slot',
@@ -244,6 +244,103 @@ const mock10ChipQuestion = [
     hints: {},
     lemma: '',
     question: 'test-10chip',
+    options: [],
+    answerIndex: 0,
+    explanation: '',
+  },
+]
+
+// 7 slots (6 preset, 1 empty) — for no-scroll layout tests
+const mock7SlotQuestion = [
+  {
+    id: 'q-7slot',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Предложение с семью словами тест' },
+    level: 5,
+    correctOrder: ['სიტ1', 'სიტ2', 'სიტ3', 'სიტ4', 'სიტ5', 'სიტ6', 'სიტ7'],
+    chipPool: ['სიტ7', 'ვარ', 'ხარ'],
+    presetPositions: [
+      { position: 0, token: 'სიტ1' },
+      { position: 1, token: 'სიტ2' },
+      { position: 2, token: 'სიტ3' },
+      { position: 3, token: 'სიტ4' },
+      { position: 4, token: 'სიტ5' },
+      { position: 5, token: 'სიტ6' },
+    ],
+    hints: {},
+    lemma: '',
+    question: 'test-7slot',
+    options: [],
+    answerIndex: 0,
+    explanation: '',
+  },
+]
+
+// 8 slots (7 preset, 1 empty) — for scrollWidth === innerWidth test
+const mock8SlotQuestion = [
+  {
+    id: 'q-8slot',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Предложение с восемью словами' },
+    level: 5,
+    correctOrder: ['სიტ1', 'სიტ2', 'სიტ3', 'სიტ4', 'სიტ5', 'სიტ6', 'სიტ7', 'სიტ8'],
+    chipPool: ['სიტ8', 'ვარ', 'ხარ'],
+    presetPositions: [
+      { position: 0, token: 'სიტ1' },
+      { position: 1, token: 'სიტ2' },
+      { position: 2, token: 'სიტ3' },
+      { position: 3, token: 'სიტ4' },
+      { position: 4, token: 'სიტ5' },
+      { position: 5, token: 'სიტ6' },
+      { position: 6, token: 'სიტ7' },
+    ],
+    hints: {},
+    lemma: '',
+    question: 'test-8slot',
+    options: [],
+    answerIndex: 0,
+    explanation: '',
+  },
+]
+
+// 3 slots (2 preset, 1 empty) — for T6 font size test (short question)
+const mock3SlotQuestion = [
+  {
+    id: 'q-3slot',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Краткое предложение' },
+    level: 1,
+    correctOrder: ['სიტ1', 'სიტ2', 'სიტ3'],
+    chipPool: ['სიტ3', 'ვარ'],
+    presetPositions: [
+      { position: 0, token: 'სიტ1' },
+      { position: 1, token: 'სიტ2' },
+    ],
+    hints: {},
+    lemma: '',
+    question: 'test-3slot',
+    options: [],
+    answerIndex: 0,
+    explanation: '',
+  },
+]
+
+// 15 chips in pool (2 preset, 1 empty slot) — for 3-column no-scroll stress test
+const mock15ChipQuestion = [
+  {
+    id: 'q-15chip',
+    questionType: 'sentence-builder',
+    targetSentence: { ru: 'Тест с пятнадцатью чипами' },
+    level: 5,
+    correctOrder: ['სიტ1', 'სიტ2', 'სიტ3'],
+    chipPool: ['სიტ3', 'ვ1', 'ვ2', 'ვ3', 'ვ4', 'ვ5', 'ვ6', 'ვ7', 'ვ8', 'ვ9', 'ვ10', 'ვ11', 'ვ12', 'ვ13', 'ვ14'],
+    presetPositions: [
+      { position: 0, token: 'სიტ1' },
+      { position: 1, token: 'სიტ2' },
+    ],
+    hints: {},
+    lemma: '',
+    question: 'test-15chip',
     options: [],
     answerIndex: 0,
     explanation: '',
@@ -593,9 +690,10 @@ test('incorrect answer shows ruby slot fill and hint', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Далее/i })).toBeVisible()
 })
 
-test('SentenceSlotRow — overflow-x auto present and scroll-snap active when 6+ slots', async ({
+test('SentenceSlotRow — flex-wrap layout at 375px; no overflow-x scroll (no-scroll layout)', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
   await setupApiMocks(page, proMeResponse, mock6SlotQuestion)
   await page.goto('/?playwright=1')
   await page.waitForLoadState('networkidle')
@@ -607,20 +705,21 @@ test('SentenceSlotRow — overflow-x auto present and scroll-snap active when 6+
   const slots = page.locator('[data-testid^="slot-"]')
   await expect(slots).toHaveCount(6)
 
-  // SentenceSlotRow should have overflow-x: auto
   const slotRow = page.locator('[data-testid="sentence-slot-row"]')
   await expect(slotRow).toBeVisible()
 
+  // Slot row must use flex-wrap (no overflow-x scrolling)
+  const flexWrap = await slotRow.evaluate(
+    (el) => window.getComputedStyle(el).flexWrap
+  )
+  expect(flexWrap).toBe('wrap')
+
+  // No overflow-x auto or scroll on the slot row
   const overflowX = await slotRow.evaluate(
     (el) => window.getComputedStyle(el).overflowX
   )
-  expect(overflowX).toBe('auto')
-
-  // scroll-snap-type is set via inline style
-  const scrollSnapType = await slotRow.evaluate(
-    (el) => (el as HTMLElement).style.scrollSnapType
-  )
-  expect(scrollSnapType).toBeTruthy()
+  expect(overflowX).not.toBe('auto')
+  expect(overflowX).not.toBe('scroll')
 })
 
 test('ChipPool — 10+ chips wrap without x-scroll at 375px viewport', async ({ page }) => {
@@ -1451,4 +1550,151 @@ test('tap-only: shake on distractor tap with full slots — no slot mutation, no
 
   // Slot still contains the original chip
   await expect(page.locator('[data-testid="slot-1"]')).toContainText('სახლში')
+})
+
+// ─── No-scroll layout tests (§81 #887) ───────────────────────────────────────
+
+test('no-scroll layout: 7-slot exercise — slot row wraps at 375px; no overflow-x scroll', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock7SlotQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  const slotRow = page.locator('[data-testid="sentence-slot-row"]')
+  await expect(slotRow).toBeVisible()
+
+  // flex-wrap: wrap must be set on the slot row
+  const flexWrap = await slotRow.evaluate(
+    (el) => window.getComputedStyle(el).flexWrap
+  )
+  expect(flexWrap).toBe('wrap')
+
+  // No overflow-x scroll on the row
+  const overflowX = await slotRow.evaluate(
+    (el) => window.getComputedStyle(el).overflowX
+  )
+  expect(overflowX).not.toBe('auto')
+  expect(overflowX).not.toBe('scroll')
+})
+
+test('no-scroll layout: 8-slot exercise — document.documentElement.scrollWidth === window.innerWidth at 375px', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock8SlotQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  const { scrollWidth, innerWidth } = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }))
+  expect(scrollWidth).toBe(innerWidth)
+})
+
+test('no-scroll layout: ChipPool has CSS grid-template-columns with 3 columns at 375px', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock7SlotQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  const pool = page.locator('[data-testid="chip-pool"]')
+  await expect(pool).toBeVisible()
+
+  const cols = await pool.evaluate(el => window.getComputedStyle(el).gridTemplateColumns)
+  // 3-column grid: computed value is "Xpx Xpx Xpx"
+  const colList = cols.trim().split(/\s+/).filter(Boolean)
+  expect(colList).toHaveLength(3)
+})
+
+test('no-scroll layout: question text uses T7 size (18px) for 7-slot exercise', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock7SlotQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  const fontSize = await page.locator('[data-testid="question-text"]').evaluate(
+    el => window.getComputedStyle(el).fontSize
+  )
+  expect(fontSize).toBe('18px')
+})
+
+test('no-scroll layout: question text uses T6 size (22px) for 3-slot exercise', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock3SlotQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  const fontSize = await page.locator('[data-testid="question-text"]').evaluate(
+    el => window.getComputedStyle(el).fontSize
+  )
+  expect(fontSize).toBe('22px')
+})
+
+test('no-scroll layout: no child of sentence-builder-card has overflowX auto or scroll', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock7SlotQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  const hasOverflowXScroll = await page.locator('[data-testid="sentence-builder-card"]').evaluate(card => {
+    function check(el: Element): boolean {
+      const style = window.getComputedStyle(el)
+      const ox = style.overflowX
+      if (ox === 'auto' || ox === 'scroll') return true
+      for (const child of Array.from(el.children)) {
+        if (check(child)) return true
+      }
+      return false
+    }
+    return check(card)
+  })
+  expect(hasOverflowXScroll).toBe(false)
+})
+
+test('no-scroll layout: ChipPool with 15 chips does not produce horizontal scroll at 375px', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await setupApiMocks(page, proMeResponse, mock15ChipQuestion)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  const pool = page.locator('[data-testid="chip-pool"]')
+  const { scrollWidth, clientWidth } = await pool.evaluate(el => ({
+    scrollWidth: el.scrollWidth,
+    clientWidth: el.clientWidth,
+  }))
+  expect(scrollWidth).toBeLessThanOrEqual(clientWidth)
 })
