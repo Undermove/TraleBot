@@ -35,8 +35,8 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
     chipPoolTokens.map((token) => ({ token, inSlot: false }))
   )
 
-  // Index into chips[] of currently selected chip (null = none selected)
-  const [selectedChipIdx, setSelectedChipIdx] = useState<number | null>(null)
+  // Index of chip currently playing the shake animation (all slots full)
+  const [shakingChipIdx, setShakingChipIdx] = useState<number | null>(null)
 
   const [phase, setPhase] = useState<'answering' | 'checked'>('answering')
   const [isAllCorrect, setIsAllCorrect] = useState(false)
@@ -71,7 +71,23 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
   function handleChipTap(chipIdx: number) {
     if (phase === 'checked') return
     if (chips[chipIdx].inSlot) return
-    setSelectedChipIdx((prev) => (prev === chipIdx ? null : chipIdx))
+
+    // Find first empty non-preset slot in order
+    const firstEmptySlotIdx = slots.findIndex((token, i) => !presetSet.has(i) && token === null)
+
+    if (firstEmptySlotIdx === -1) {
+      // All slots already filled — trigger shake animation
+      setShakingChipIdx(chipIdx)
+      setTimeout(() => setShakingChipIdx(null), 150)
+      return
+    }
+
+    // Place chip into first empty slot
+    const token = chips[chipIdx].token
+    setChips((prev) =>
+      prev.map((c, i) => (i === chipIdx ? { ...c, inSlot: true } : c))
+    )
+    setSlots((prev) => prev.map((t, i) => (i === firstEmptySlotIdx ? token : t)))
   }
 
   function handleSlotTap(slotIdx: number) {
@@ -89,15 +105,6 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
         return next
       })
       setSlots((prev) => prev.map((t, i) => (i === slotIdx ? null : t)))
-      setSelectedChipIdx(null)
-    } else if (selectedChipIdx !== null && !chips[selectedChipIdx].inSlot) {
-      // Place selected chip into empty slot
-      const token = chips[selectedChipIdx].token
-      setChips((prev) =>
-        prev.map((c, i) => (i === selectedChipIdx ? { ...c, inSlot: true } : c))
-      )
-      setSlots((prev) => prev.map((t, i) => (i === slotIdx ? token : t)))
-      setSelectedChipIdx(null)
     }
   }
 
@@ -144,8 +151,6 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
             } else {
               state = 'filled'
             }
-          } else if (phase === 'answering' && selectedChipIdx !== null) {
-            state = 'active'
           }
 
           return (
@@ -178,10 +183,10 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
         {chips.map((chip, i) => {
           if (chip.inSlot) return null
           const chipState =
-            i === selectedChipIdx
-              ? 'selected'
-              : phase === 'checked'
+            phase === 'checked'
               ? 'disabled'
+              : i === shakingChipIdx
+              ? 'shaking'
               : 'default'
           return (
             <WordChip

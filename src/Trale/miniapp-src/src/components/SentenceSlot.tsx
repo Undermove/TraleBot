@@ -1,6 +1,6 @@
 import React from 'react'
 
-export type SlotState = 'empty' | 'active' | 'filled' | 'correct' | 'incorrect' | 'preset'
+export type SlotState = 'empty' | 'filled' | 'correct' | 'incorrect' | 'preset'
 
 interface Props {
   state: SlotState
@@ -21,7 +21,7 @@ export default function SentenceSlot({ state, chip, hint, onTap, 'data-testid': 
 
   const border =
     isPreset ? 'border-[1.5px] border-solid border-jewelInk'
-    : state === 'empty' || state === 'active'
+    : state === 'empty'
     ? 'border-[1.5px] border-dashed border-jewelInk'
     : state === 'correct'
     ? 'border-2 border-solid border-navy'
