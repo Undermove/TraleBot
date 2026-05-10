@@ -15,7 +15,6 @@ using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
-using Infrastructure.Telegram.Services;
 using Infrastructure.Services;
 using Infrastructure.Translation;
 using Infrastructure.Translation.GoogleTranslation;
