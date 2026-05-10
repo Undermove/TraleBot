@@ -38,7 +38,7 @@ export default function SentenceSlot({ state, chip, hint, onTap, 'data-testid': 
         onClick={onTap}
         disabled={isPreset}
         data-testid={testId}
-        className={`h-[48px] min-w-[52px] px-3 rounded-lg flex items-center justify-center font-geo text-[15px] font-semibold transition-all duration-75 active:scale-95
+        className={`h-[48px] min-w-[52px] px-3 rounded-lg flex items-center justify-center font-geo text-[15px] font-semibold transition-all duration-75 active:scale-95 whitespace-nowrap
           ${bg} ${border} ${textColor}`}
       >
         {chip?.text ?? ''}

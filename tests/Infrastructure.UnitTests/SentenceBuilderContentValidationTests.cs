@@ -533,22 +533,25 @@ public class SentenceBuilderContentValidationTests
                     string.Join(" ", b.Items ?? new List<string>())
                 }));
 
-        var hasSov = theoryText.Contains("SOV", StringComparison.OrdinalIgnoreCase)
-                     || theoryText.Contains("Subject-Object-Verb", StringComparison.OrdinalIgnoreCase);
-        hasSov.ShouldBeTrue(
-            "Lesson 7 theory must mention 'SOV' or 'Subject-Object-Verb' explicitly");
+        // Theory must explain canonical sentence order (verb at the end). The
+        // owner asked us to drop linguistic abbreviations (SOV / NOM / DAT)
+        // from user-facing copy on 2026-05-10, so we now check for the plain
+        // Russian description instead.
+        var hasOrder = theoryText.Contains("подл.→доп.→глагол", StringComparison.OrdinalIgnoreCase)
+                       || theoryText.Contains("подлежащее → дополнение → глагол", StringComparison.OrdinalIgnoreCase)
+                       || theoryText.Contains("глагол стоит в конце", StringComparison.OrdinalIgnoreCase);
+        hasOrder.ShouldBeTrue(
+            "Lesson 7 theory must explain canonical word order (verb at the end) in plain Russian — no SOV abbreviation");
 
         var hasVerbClasses = theoryText.Contains("Класс 1", StringComparison.OrdinalIgnoreCase)
-                             || theoryText.Contains("Кл.1", StringComparison.OrdinalIgnoreCase)
-                             || theoryText.Contains("Class 1", StringComparison.OrdinalIgnoreCase);
+                             || theoryText.Contains("класса 1", StringComparison.OrdinalIgnoreCase);
         hasVerbClasses.ShouldBeTrue(
-            "Lesson 7 theory must mention Class 1 (transitive) verbs");
+            "Lesson 7 theory must mention Class 1 (transitive) verbs in Russian");
 
         var hasClass2 = theoryText.Contains("Класс 2", StringComparison.OrdinalIgnoreCase)
-                        || theoryText.Contains("Кл.2", StringComparison.OrdinalIgnoreCase)
-                        || theoryText.Contains("Class 2", StringComparison.OrdinalIgnoreCase);
+                        || theoryText.Contains("класса 2", StringComparison.OrdinalIgnoreCase);
         hasClass2.ShouldBeTrue(
-            "Lesson 7 theory must mention Class 2 (intransitive) verbs");
+            "Lesson 7 theory must mention Class 2 (intransitive) verbs in Russian");
     }
 
     [Test]

@@ -6,7 +6,7 @@ interface Props {
 
 export default function ChipPool({ children }: Props) {
   return (
-    <div className="grid grid-cols-3 gap-2" data-testid="chip-pool">
+    <div className="flex flex-wrap gap-2" data-testid="chip-pool">
       {children}
     </div>
   )

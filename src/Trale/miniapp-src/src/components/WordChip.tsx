@@ -34,7 +34,7 @@ export default function WordChip({ text, state, onTap }: Props) {
     <button
       onClick={onTap}
       disabled={state === 'disabled'}
-      className={`min-h-[44px] min-w-[44px] px-[14px] py-[10px] rounded-lg border-[1.5px] font-geo text-[15px] font-semibold transition-all duration-75 active:scale-95
+      className={`min-h-[44px] min-w-[44px] px-[14px] py-[10px] rounded-lg border-[1.5px] font-geo text-[15px] font-semibold transition-all duration-75 active:scale-95 whitespace-nowrap
         ${bg} ${textColor} ${borderColor} ${opacity} ${shakeClass}`}
       style={{ boxShadow: shadow }}
     >
