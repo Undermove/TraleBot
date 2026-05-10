@@ -1,0 +1,209 @@
+{
+  "lesson_id": "cafe7",
+  "title": "Конструктор предложений — «Я хочу кофе»",
+  "lexicon": [
+    {
+      "lemma": "მინდა",
+      "ru": "я хочу (букв. мне хочется)"
+    },
+    {
+      "lemma": "ყავა",
+      "ru": "кофе"
+    },
+    {
+      "lemma": "ჩაი",
+      "ru": "чай"
+    },
+    {
+      "lemma": "წყალი",
+      "ru": "вода"
+    }
+  ],
+  "questions": [
+    {
+      "id": "cafe7-l1-q01",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "ყავა",
+      "question": "Собери предложение: Я хочу кофе",
+      "targetSentence": {
+        "ru": "Я хочу кофе"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ყავა"
+      ],
+      "presetPositions": [
+        {
+          "position": 0,
+          "token": "მე"
+        },
+        {
+          "position": 1,
+          "token": "მინდა"
+        }
+      ],
+      "chipPool": [
+        "მე",
+        "შენ",
+        "მინდა",
+        "ყავა",
+        "ჩაი",
+        "წყალი"
+      ],
+      "hints": {
+        "2": "ყавα = кофе"
+      },
+      "explanation": "მINDA + объект в именительном (без -ს)."
+    },
+    {
+      "id": "cafe7-l1-q02",
+      "questionType": "sentence-builder",
+      "level": 1,
+      "lemma": "ჩაი",
+      "question": "Собери предложение: Я хочу чай",
+      "targetSentence": {
+        "ru": "Я хочу чай"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ჩაი"
+      ],
+      "presetPositions": [
+        {
+          "position": 0,
+          "token": "მე"
+        },
+        {
+          "position": 1,
+          "token": "მინდა"
+        }
+      ],
+      "chipPool": [
+        "მე",
+        "შენ",
+        "მინდა",
+        "ჩაი",
+        "ყავა",
+        "წყალი"
+      ],
+      "hints": {
+        "2": "NOM, без -ს"
+      },
+      "explanation": "ЧАΙ (чай) — именительный, без окончания -ს."
+    },
+    {
+      "id": "cafe7-l2-q01",
+      "questionType": "sentence-builder",
+      "level": 2,
+      "lemma": "ხინკალი",
+      "question": "Собери предложение: Один кофе и хинкали",
+      "targetSentence": {
+        "ru": "Один кофе и хинкали"
+      },
+      "correctOrder": [
+        "ერთი",
+        "ყავა",
+        "და",
+        "ხინკალი"
+      ],
+      "presetPositions": [
+        {
+          "position": 1,
+          "token": "ყავა"
+        },
+        {
+          "position": 2,
+          "token": "და"
+        }
+      ],
+      "chipPool": [
+        "ერთი",
+        "ყავა",
+        "და",
+        "ხინკალი",
+        "ჩაი",
+        "ხაჭაპური",
+        "მინდა"
+      ],
+      "hints": {
+        "0": "Числительное",
+        "3": "Название блюда"
+      },
+      "explanation": "ерТΙ = один; дА = и; объект в именительном."
+    },
+    {
+      "id": "cafe7-l2-q02",
+      "questionType": "sentence-builder",
+      "level": 2,
+      "lemma": "ლიმონით",
+      "question": "Собери предложение: Я хочу чай с лимоном",
+      "targetSentence": {
+        "ru": "Я хочу чай с лимоном"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ჩაი",
+        "ლიმონით"
+      ],
+      "presetPositions": [
+        {
+          "position": 0,
+          "token": "მე"
+        },
+        {
+          "position": 2,
+          "token": "ჩაი"
+        }
+      ],
+      "chipPool": [
+        "მე",
+        "მინდა",
+        "ჩაი",
+        "ლიმონით",
+        "შაქრით",
+        "ყავა",
+        "წყალი"
+      ],
+      "hints": {
+        "1": "მINDA = я хочу",
+        "3": "с лимоном"
+      },
+      "explanation": "лΙМОNΙТ — инструментальный падеж (с лимоном)."
+    },
+    {
+      "id": "cafe7-l3-q01",
+      "questionType": "sentence-builder",
+      "level": 3,
+      "lemma": "ხაჭაპური",
+      "question": "Собери предложение: Я хочу хачапури с сыром",
+      "targetSentence": {
+        "ru": "Я хочу хачапури с сыром"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ხაჭაპური",
+        "ყველით"
+      ],
+      "presetPositions": [],
+      "chipPool": [
+        "მე",
+        "შენ",
+        "მინდა",
+        "ხაჭაპური",
+        "ხინკალი",
+        "ყველით",
+        "ლიმონით"
+      ],
+      "hints": {
+        "1": "მINDA = я хочу",
+        "3": "с сыром"
+      },
+      "explanation": "ყVΕLΙТ — инструментальный падеж (с сыром)."
+    }
+  ]
+}
