@@ -46,7 +46,8 @@
 
 **Чек-лист по ролям:**
 
-- [ ] **methodist** — для каждого из 5 модулей подобрать 5–7 русско-грузинских пар × 3 уровня (L1: один пустой слот / L2: два слота / L3: половина предложения). Сохранить в `design-specs/80-sentence-builder-spread-content.md`. Cases — фокус на эргативе и дативе. Present Tense — SOV с глаголами Класса 1 и 2 (читать, писать, видеть, идти). Cafe/Shopping/Taxi — по одному ключевому предложению на модуль («Я хочу кофе», «Сколько стоит этот чай», «Поехали в Батуми»).
+- [x] **methodist** — для каждого из 5 модулей подобрать 5–7 русско-грузинских пар × 3 уровня (L1: один пустой слот / L2: два слота / L3: половина предложения). Сохранить в `design-specs/80-sentence-builder-spread-content.md`. Cases — фокус на эргативе и дативе. Present Tense — SOV с глаголами Класса 1 и 2 (читать, писать, видеть, идти). Cafe/Shopping/Taxi — по одному ключевому предложению на модуль («Я хочу кофе», «Сколько стоит этот чай», «Поехали в Батуми»).
+  → already done in design-specs/80-sentence-builder-spread-content.md (написано orchestrator-агентом 2026-05-09 как substitute; methodist верифицировал содержимое 2026-05-10 — контент принят, требует native-reviewer pass)
 - [ ] **native-reviewer** — для каждого предложения проверить единственный корректный порядок слов, дистракторы реально сбивают, регистр естественный (нейтральный разговорный, без книжных архаизмов).
 - [x] **tech-lead-breakdown** — разбить на task-issues по одному lesson на модуль:
   1. Cases lesson N+1 sentence-builder + JSON + theory-блок + ModuleRegistry MaxLessons +1.
@@ -76,7 +77,8 @@
 **Чек-лист по ролям:**
 
 - [ ] **designer** — обновить `design-specs/79-sentence-builder.md` (или создать `design-specs/81-sentence-builder-deeper.md`) с новым interaction model (tap-only sequential), layout-правилами для 7+ слотов и low-fi схемами L4/L5 уровней. Перевести §81 в `[designed]`.
-- [ ] **methodist** — для каждого из 6 модулей подобрать пары на L4 (только глагол preset, остальное пусто, 3-5 слотов) и L5 (ничего preset, 5+ слотов). По 2-3 L4 + 1-2 L5 на модуль = 18-30 новых пар суммарно. Сохранить как `design-specs/81-sentence-builder-deeper-content.md`.
+- [x] **methodist** — для каждого из 6 модулей подобрать пары на L4 (только глагол preset, остальное пусто, 3-5 слотов) и L5 (ничего preset, 5+ слотов). По 2-3 L4 + 1-2 L5 на модуль = 18-30 новых пар суммарно. Сохранить как `design-specs/81-sentence-builder-deeper-content.md`.
+  → done by methodist 2026-05-10: создано design-specs/81-sentence-builder-deeper-content.md с 18 L4 + 9 L5 парами (27 итого) по 6 модулям; зафиксированы позиции глагола-якоря per module; чеклист для native-reviewer включён в файл; педагогическое ревью опубликовано комментарием на #885
 - [ ] **native-reviewer** — особое внимание на L5: длинные предложения с нуля должны иметь единственный корректный порядок слов; на L4 проверить, что глагол как якорь действительно подсказывает только время/число, не больше.
 - [ ] **tech-lead-breakdown** — разбить на task-issues:
   1. Frontend: `SentenceBuilderCard` interaction refactor — tap-only sequential auto-insert. Возврат чипа через tap по filled slot. Удалить старый chip-selected state. Обновить Playwright specs.
