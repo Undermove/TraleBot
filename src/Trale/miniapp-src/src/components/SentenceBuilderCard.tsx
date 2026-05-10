@@ -128,7 +128,10 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
       >
         <div className="mn-eyebrow mb-2 relative z-[1]">Собери предложение</div>
         <div className="h-px bg-jewelInk/15 mb-2 relative z-[1]" />
-        <div className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight relative z-[1]">
+        <div
+          data-testid="question-text"
+          className={`font-sans font-extrabold text-jewelInk leading-tight relative z-[1] ${correctOrder.length >= 7 ? 'text-[18px]' : 'text-[22px]'}`}
+        >
           {targetRu}
         </div>
       </div>
