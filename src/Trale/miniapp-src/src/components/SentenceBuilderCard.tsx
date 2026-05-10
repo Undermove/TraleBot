@@ -207,9 +207,21 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
         <FeedbackBanner
           isCorrect={isAllCorrect}
           body={
-            isAllCorrect
-              ? 'Отличная работа!'
-              : 'Посмотри правильный порядок слов выше'
+            isAllCorrect ? (
+              'Отличная работа!'
+            ) : (
+              <div>
+                <div className="text-[13px] uppercase tracking-widest font-extrabold opacity-75 mb-1">
+                  Должно было быть
+                </div>
+                <div
+                  data-testid="sentence-builder-correct-answer"
+                  className="font-geo text-[18px] font-semibold leading-snug whitespace-normal break-words"
+                >
+                  {correctOrder.join(' ')}
+                </div>
+              </div>
+            )
           }
           topMargin="mt-4"
         />
