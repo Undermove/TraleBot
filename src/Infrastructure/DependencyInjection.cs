@@ -113,17 +113,15 @@ public static class DependencyInjection
         services.AddScoped<IBotCommand, GeorgianRepetitionModulesCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsOfMovementCommand>();
         services.AddScoped<IBotCommand, GeorgianVerbsLessonCommand>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand2>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand3>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand4>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand5>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand6>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand7>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand8>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand9>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand10>();
-        services.AddScoped<IBotCommand, GeorgianVerbsQuizCommand11>();
+        for (var lessonId = 1; lessonId <= 11; lessonId++)
+        {
+            var capturedId = lessonId;
+            services.AddScoped<IBotCommand>(sp => new GeorgianVerbsQuizStartCommand(
+                capturedId,
+                sp.GetRequiredService<ITelegramBotClient>(),
+                sp.GetRequiredService<IGeorgianQuizSessionService>(),
+                sp.GetRequiredService<IGeorgianQuestionsLoaderFactory>()));
+        }
         services.AddScoped<IBotCommand, GeorgianVerbsQuizAnswerCommand>();
         return services;
     }
