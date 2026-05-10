@@ -15,7 +15,6 @@ using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using Infrastructure.Telegram.BotCommands.Quiz;
 using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
-using Infrastructure.Telegram.Services;
 using Infrastructure.Services;
 using Infrastructure.Translation;
 using Infrastructure.Translation.GoogleTranslation;
@@ -78,8 +77,7 @@ public static class DependencyInjection
         // Georgian quiz services
         services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
         services.AddSingleton<IGeorgianQuestionsLoaderFactory, GeorgianQuestionsLoaderFactory>();
-        // SRS service removed per request
-        
+
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, StopCommand>();
