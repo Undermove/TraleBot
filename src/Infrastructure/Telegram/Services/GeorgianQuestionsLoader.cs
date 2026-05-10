@@ -38,7 +38,7 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
             _cachedQuestions = LoadAllQuestions();
         }
 
-        var random = new Random();
+        var random = Random.Shared;
         var shuffled = _cachedQuestions.OrderBy(_ => random.Next()).ToList();
         
         // Возвращаем 12 случайных вопросов
