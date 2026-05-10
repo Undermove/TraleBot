@@ -35,6 +35,12 @@ public class MiniAppUserProgress
     public string CompletedLessonsJson { get; set; } = "{}";
 
     /// <summary>
+    /// JSON map of sentenceBuilder questionId -> number of times answered correctly.
+    /// Used by the progression gate to unlock L4/L5 questions once L3/L4 mastery threshold is met.
+    /// </summary>
+    public string SentenceBuilderProgressJson { get; set; } = "{}";
+
+    /// <summary>
     /// Total XP spent on treats in the treat shop.
     /// Available XP = Xp - XpSpent.
     /// </summary>

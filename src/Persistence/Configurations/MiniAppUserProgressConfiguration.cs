@@ -37,6 +37,11 @@ public class MiniAppUserProgressConfiguration : IEntityTypeConfiguration<MiniApp
             .HasColumnType("text")
             .HasDefaultValue("{}");
 
+        builder.Property(x => x.SentenceBuilderProgressJson)
+            .IsRequired()
+            .HasColumnType("text")
+            .HasDefaultValue("{}");
+
         builder.Property(x => x.XpSpent)
             .IsRequired()
             .HasDefaultValue(0);
