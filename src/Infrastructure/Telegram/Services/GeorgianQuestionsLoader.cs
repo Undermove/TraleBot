@@ -31,7 +31,7 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
             _fileName, _questionsFilePath, File.Exists(_questionsFilePath));
     }
 
-    public List<QuizQuestionData> LoadQuestionsForLesson(int lessonId)
+    public List<QuizQuestionData> LoadQuestions()
     {
         if (_cachedQuestions == null)
         {

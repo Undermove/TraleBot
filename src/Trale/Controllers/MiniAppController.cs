@@ -425,7 +425,7 @@ public class MiniAppController : Controller
 
     private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader, int lessonId)
     {
-        return loader.LoadQuestionsForLesson(lessonId).Select(q => new
+        return loader.LoadQuestions().Select(q => new
         {
             id = q.Id,
             lemma = q.Lemma,

@@ -19,7 +19,7 @@ public class GeorgianVerbsQuizStartCommand(
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var questions = _questionsLoader.LoadQuestionsForLesson(lessonId);
+        var questions = _questionsLoader.LoadQuestions();
         if (questions.Count == 0)
         {
             await client.EditMessageTextAsync(
