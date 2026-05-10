@@ -269,6 +269,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddReferrals` | Referral entity + FK. |
 | `AddLastFedAtUtc` | Last-fed timestamp. |
 | `AddLastTreatIndex` | Last-treat index for rotation. |
+| `AddSentenceBuilderProgressJson` | Per-user sentence-builder mastery progress (questionId → correct-count map) for L4/L5 progression gate. |
 
 ---
 
