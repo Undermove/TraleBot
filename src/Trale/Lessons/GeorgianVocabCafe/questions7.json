@@ -177,7 +177,7 @@
     {
       "id": "cafe7-l3-q01",
       "questionType": "sentence-builder",
-      "level": 3,
+      "level": 5,
       "lemma": "ხაჭაპური",
       "question": "Собери предложение: Я хочу хачапури с сыром",
       "targetSentence": {
@@ -204,6 +204,158 @@
         "3": "с сыром"
       },
       "explanation": "ყVΕLΙТ — инструментальный падеж (с сыром)."
+    },
+    {
+      "id": "cafe7-l4-q01",
+      "questionType": "sentence-builder",
+      "level": 4,
+      "lemma": "ცხელი",
+      "question": "Собери предложение: Я хочу горячий чай с лимоном",
+      "targetSentence": {
+        "ru": "Я хочу горячий чай с лимоном"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ცხელი",
+        "ჩაი",
+        "ლიმონით"
+      ],
+      "presetPositions": [
+        {
+          "position": 1,
+          "token": "მინდა"
+        }
+      ],
+      "chipPool": [
+        "მე",
+        "მინდა",
+        "ცხელი",
+        "ჩაი",
+        "ლიმონით",
+        "შენ",
+        "ცივი",
+        "ყავა",
+        "შაქრით"
+      ],
+      "hints": {
+        "0": "S перед მINDA",
+        "4": "Инстр. = с чем"
+      },
+      "explanation": "S + მINDA + adj-NOM + NOM + Instr."
+    },
+    {
+      "id": "cafe7-l4-q02",
+      "questionType": "sentence-builder",
+      "level": 4,
+      "lemma": "ხინკალი",
+      "question": "Собери предложение: Я хочу два хинкали и хачапури",
+      "targetSentence": {
+        "ru": "Я хочу два хинкали и хачапури"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ორი",
+        "ხინკალი",
+        "და",
+        "ხაჭაპური"
+      ],
+      "presetPositions": [
+        {
+          "position": 1,
+          "token": "მინდა"
+        }
+      ],
+      "chipPool": [
+        "მე",
+        "მინდა",
+        "ორი",
+        "ხინკალი",
+        "და",
+        "ხაჭაპური",
+        "სამი",
+        "ხინკალს",
+        "ყავა",
+        "ლიმონათი"
+      ],
+      "hints": {
+        "2": "Числит. перед объектом",
+        "4": "DА = и"
+      },
+      "explanation": "S + მINDA + Num + NOM + და + NOM."
+    },
+    {
+      "id": "cafe7-l4-q03",
+      "questionType": "sentence-builder",
+      "level": 4,
+      "lemma": "ნამცხვარი",
+      "question": "Собери предложение: Я хочу горячий кофе и торт",
+      "targetSentence": {
+        "ru": "Я хочу горячий кофе и торт"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ცხელი",
+        "ყავა",
+        "და",
+        "ნამცხვარი"
+      ],
+      "presetPositions": [
+        {
+          "position": 1,
+          "token": "მინდა"
+        }
+      ],
+      "chipPool": [
+        "მე",
+        "მინდა",
+        "ცხელი",
+        "ყავა",
+        "და",
+        "ნამცხვარი",
+        "ცივი",
+        "ჩაი",
+        "ხინკალი",
+        "ლიმონით"
+      ],
+      "hints": {
+        "2": "Прил. без -ს перед NOM"
+      },
+      "explanation": "S + მINDA + adj-NOM + NOM + და + NOM."
+    },
+    {
+      "id": "cafe7-l5-q01",
+      "questionType": "sentence-builder",
+      "level": 5,
+      "lemma": "მინდა",
+      "question": "Собери предложение: Я хочу горячий кофе с молоком",
+      "targetSentence": {
+        "ru": "Я хочу горячий кофе с молоком"
+      },
+      "correctOrder": [
+        "მე",
+        "მინდა",
+        "ცხელი",
+        "ყავა",
+        "რძით"
+      ],
+      "presetPositions": [],
+      "chipPool": [
+        "მე",
+        "მინდა",
+        "ცხელი",
+        "ყავა",
+        "რძით",
+        "შენ",
+        "ცივი",
+        "ჩაი",
+        "ლიმონით",
+        "შაქრით"
+      ],
+      "hints": {},
+      "explanation": "S–V(მINDA)–adj-NOM–Instr. Конвенция: მINDA сразу после S."
     }
   ]
 }
