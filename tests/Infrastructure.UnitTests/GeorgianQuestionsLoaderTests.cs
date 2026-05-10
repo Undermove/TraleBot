@@ -47,7 +47,7 @@ public class GeorgianQuestionsLoaderTests
         var (loader, path) = CreateLoaderFromJson(json);
         try
         {
-            var questions = loader.LoadQuestionsForLesson(1);
+            var questions = loader.LoadQuestions();
 
             questions.ShouldNotBeEmpty();
             var q = questions[0];
@@ -87,7 +87,7 @@ public class GeorgianQuestionsLoaderTests
         var (loader, path) = CreateLoaderFromJson(json);
         try
         {
-            var questions = loader.LoadQuestionsForLesson(1);
+            var questions = loader.LoadQuestions();
 
             questions.ShouldNotBeEmpty();
             var sb = questions[0].SentenceBuilder!;
@@ -134,7 +134,7 @@ public class GeorgianQuestionsLoaderTests
         var (loader, path) = CreateLoaderFromJson(json, mockLogger.Object);
         try
         {
-            loader.LoadQuestionsForLesson(1);
+            loader.LoadQuestions();
 
             mockLogger.Verify(
                 x => x.Log(
@@ -175,7 +175,7 @@ public class GeorgianQuestionsLoaderTests
         var (loader, path) = CreateLoaderFromJson(json);
         try
         {
-            var questions = loader.LoadQuestionsForLesson(1);
+            var questions = loader.LoadQuestions();
             questions.ShouldBeEmpty();
         }
         finally { File.Delete(path); }

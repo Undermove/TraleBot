@@ -1,6 +1,6 @@
 import React from 'react'
 
-export type WordChipState = 'default' | 'selected' | 'correct' | 'incorrect' | 'disabled'
+export type WordChipState = 'default' | 'shaking' | 'correct' | 'incorrect' | 'disabled'
 
 interface Props {
   text: string
@@ -10,9 +10,7 @@ interface Props {
 
 export default function WordChip({ text, state, onTap }: Props) {
   const bg =
-    state === 'selected'
-      ? 'bg-gold'
-      : state === 'correct'
+    state === 'correct'
       ? 'bg-navy'
       : state === 'incorrect'
       ? 'bg-ruby'
@@ -30,13 +28,14 @@ export default function WordChip({ text, state, onTap }: Props) {
 
   const shadow = state === 'correct' || state === 'incorrect' ? '' : '2px 2px 0 #15100A'
   const opacity = state === 'disabled' ? 'opacity-40' : ''
+  const shakeClass = state === 'shaking' ? 'animate-shake' : ''
 
   return (
     <button
       onClick={onTap}
       disabled={state === 'disabled'}
       className={`min-h-[44px] min-w-[44px] px-[14px] py-[10px] rounded-lg border-[1.5px] font-geo text-[15px] font-semibold transition-all duration-75 active:scale-95
-        ${bg} ${textColor} ${borderColor} ${opacity}`}
+        ${bg} ${textColor} ${borderColor} ${opacity} ${shakeClass}`}
       style={{ boxShadow: shadow }}
     >
       {text}

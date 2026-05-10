@@ -7,7 +7,7 @@ namespace Infrastructure.Telegram.CommonComponents;
 
 public static class MenuKeyboard
 {
-    public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage, string miniAppUrl = null, bool isOwner = false)
+    public static InlineKeyboardMarkup GetMenuKeyboard(Language currentLanguage, string? miniAppUrl = null, bool isOwner = false)
     {
         var buttons = new List<InlineKeyboardButton[]>();
 

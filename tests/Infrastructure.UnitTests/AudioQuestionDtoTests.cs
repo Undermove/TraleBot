@@ -41,7 +41,7 @@ public class AudioQuestionDtoTests
         try
         {
             var loader = new GeorgianQuestionsLoader(NullLogger<GeorgianQuestionsLoader>.Instance, tmpFile);
-            var questions = loader.LoadQuestionsForLesson(1);
+            var questions = loader.LoadQuestions();
 
             questions.ShouldNotBeEmpty();
             var q = questions[0];
@@ -80,7 +80,7 @@ public class AudioQuestionDtoTests
         try
         {
             var loader = new GeorgianQuestionsLoader(NullLogger<GeorgianQuestionsLoader>.Instance, tmpFile);
-            var questions = loader.LoadQuestionsForLesson(1);
+            var questions = loader.LoadQuestions();
 
             questions.ShouldNotBeEmpty();
             var q = questions[0];

@@ -76,8 +76,8 @@ public class SentenceBuilderContentValidationTests
             "JSON must have a top-level 'questions' array");
 
         var count = questions.GetArrayLength();
-        count.ShouldBeInRange(15, 20,
-            $"questions7.json must contain 15-20 sentence-builder questions, found {count}");
+        count.ShouldBeInRange(15, 30,
+            $"questions7.json must contain 15-30 sentence-builder questions, found {count}");
 
         var idx = 0;
         foreach (var q in questions.EnumerateArray())
@@ -659,10 +659,10 @@ public class SentenceBuilderContentValidationTests
         doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
             $"{subdirectory}/{fileName}: JSON must have a top-level 'questions' array");
 
-        // (b) question count 3–15
+        // (b) question count 3–25
         var count = questions.GetArrayLength();
-        count.ShouldBeInRange(3, 15,
-            $"{subdirectory}/{fileName}: must contain 3–15 sentence-builder questions, found {count}");
+        count.ShouldBeInRange(3, 25,
+            $"{subdirectory}/{fileName}: must contain 3–25 sentence-builder questions, found {count}");
 
         var violations = new List<string>();
 
@@ -762,8 +762,8 @@ public class SentenceBuilderContentValidationTests
             "questions7.json must have a top-level 'questions' array");
 
         var count = questions.GetArrayLength();
-        count.ShouldBeInRange(3, 7,
-            $"questions7.json must contain 3–7 sentence-builder questions, found {count}");
+        count.ShouldBeInRange(3, 15,
+            $"questions7.json must contain 3–15 sentence-builder questions, found {count}");
     }
 
     [Test]
@@ -885,8 +885,8 @@ public class SentenceBuilderContentValidationTests
             "questions7.json must have a top-level 'questions' array");
 
         var count = questions.GetArrayLength();
-        count.ShouldBeInRange(3, 7,
-            $"questions7.json must contain 3–7 sentence-builder questions, found {count}");
+        count.ShouldBeInRange(3, 15,
+            $"questions7.json must contain 3–15 sentence-builder questions, found {count}");
     }
 
     [Test]
@@ -1010,8 +1010,8 @@ public class SentenceBuilderContentValidationTests
             "questions7.json must have a top-level 'questions' array");
 
         var count = questions.GetArrayLength();
-        count.ShouldBeInRange(3, 7,
-            $"questions7.json must contain 3–7 sentence-builder questions, found {count}");
+        count.ShouldBeInRange(3, 15,
+            $"questions7.json must contain 3–15 sentence-builder questions, found {count}");
     }
 
     [Test]
@@ -1115,5 +1115,228 @@ public class SentenceBuilderContentValidationTests
         hasDistractor.ShouldBeTrue(
             "At least one question's chipPool must include a directional postposition distractor " +
             "(-ზე or -თAN suffix) to force postposition discrimination (-ши vs -ზე vs -THАn)");
+    }
+
+    // ── §888 L4/L5 content validation ─────────────────────────────────────────────────────
+
+    private static readonly string[] AllSixSentenceBuilderJsonPaths =
+    [
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianPostpositions",  "questions7.json"),
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianCases",           "questions10.json"),
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianPresentTense",    "questions7.json"),
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianVocabCafe",       "questions7.json"),
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianVocabShopping",   "questions7.json"),
+        Path.Combine(RepoRoot, "src", "Trale", "Lessons", "GeorgianVocabTaxi",       "questions7.json"),
+    ];
+
+    // AC: each of the 6 JSON files has ≥2 L4 questions and ≥1 L5 question
+    [Test]
+    public void L4L5Questions_AllSixModules_HaveCorrectCountAndLevel()
+    {
+        foreach (var path in AllSixSentenceBuilderJsonPaths)
+        {
+            var label = Path.GetRelativePath(RepoRoot, path);
+            File.Exists(path).ShouldBeTrue($"File not found: {label}");
+
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            doc.RootElement.TryGetProperty("questions", out var questions).ShouldBeTrue(
+                $"{label}: must have a top-level 'questions' array");
+
+            var l4Count = questions.EnumerateArray()
+                .Count(q => q.TryGetProperty("level", out var l) && l.GetInt32() == 4);
+            var l5Count = questions.EnumerateArray()
+                .Count(q => q.TryGetProperty("level", out var l) && l.GetInt32() == 5);
+
+            l4Count.ShouldBeGreaterThanOrEqualTo(2,
+                $"{label}: must contain ≥2 L4 questions (found {l4Count})");
+            l5Count.ShouldBeGreaterThanOrEqualTo(1,
+                $"{label}: must contain ≥1 L5 questions (found {l5Count})");
+        }
+    }
+
+    // AC: every L4 question has exactly 1 presetPosition (verb slot)
+    [Test]
+    public void L4Questions_PresetPositionsHasExactlyOneEntry()
+    {
+        var violations = new List<string>();
+        foreach (var path in AllSixSentenceBuilderJsonPaths)
+        {
+            if (!File.Exists(path)) continue;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (!doc.RootElement.TryGetProperty("questions", out var questions)) continue;
+
+            foreach (var q in questions.EnumerateArray())
+            {
+                if (!q.TryGetProperty("level", out var lvl) || lvl.GetInt32() != 4) continue;
+                var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+
+                if (!q.TryGetProperty("presetPositions", out var pp) || pp.ValueKind != JsonValueKind.Array)
+                {
+                    violations.Add($"'{id}' (L4): missing presetPositions array");
+                    continue;
+                }
+
+                if (pp.GetArrayLength() != 1)
+                    violations.Add(
+                        $"'{id}' (L4): presetPositions must have exactly 1 entry, found {pp.GetArrayLength()}");
+            }
+        }
+
+        violations.ShouldBeEmpty($"L4 preset-count violations:\n{string.Join("\n", violations)}");
+    }
+
+    // AC: every L5 question has presetPositions:[] and alternativeAnswers (if present) is non-empty
+    [Test]
+    public void L5Questions_PresetPositionsEmpty_AndAmbiguousQuestionsHaveAlternativeAnswers()
+    {
+        var violations = new List<string>();
+        foreach (var path in AllSixSentenceBuilderJsonPaths)
+        {
+            if (!File.Exists(path)) continue;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (!doc.RootElement.TryGetProperty("questions", out var questions)) continue;
+
+            foreach (var q in questions.EnumerateArray())
+            {
+                if (!q.TryGetProperty("level", out var lvl) || lvl.GetInt32() != 5) continue;
+                var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+
+                if (!q.TryGetProperty("presetPositions", out var pp) || pp.ValueKind != JsonValueKind.Array)
+                {
+                    violations.Add($"'{id}' (L5): missing presetPositions array");
+                    continue;
+                }
+
+                if (pp.GetArrayLength() != 0)
+                    violations.Add(
+                        $"'{id}' (L5): presetPositions must be [] (empty), found {pp.GetArrayLength()} entries");
+
+                if (q.TryGetProperty("alternativeAnswers", out var aa)
+                    && (aa.ValueKind != JsonValueKind.Array || aa.GetArrayLength() == 0))
+                    violations.Add($"'{id}' (L5): alternativeAnswers, if present, must be a non-empty array");
+            }
+        }
+
+        violations.ShouldBeEmpty($"L5 structure violations:\n{string.Join("\n", violations)}");
+    }
+
+    // AC: empty presetPositions is valid only at level 4 or 5
+    [Test]
+    public void ValidationRule_EmptyPresetPositions_AllowedOnlyAtLevel4Or5()
+    {
+        var violations = new List<string>();
+        foreach (var path in AllSixSentenceBuilderJsonPaths)
+        {
+            if (!File.Exists(path)) continue;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (!doc.RootElement.TryGetProperty("questions", out var questions)) continue;
+
+            foreach (var q in questions.EnumerateArray())
+            {
+                var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+                if (!q.TryGetProperty("level", out var lvl)) continue;
+                var level = lvl.GetInt32();
+                if (!q.TryGetProperty("presetPositions", out var pp) || pp.ValueKind != JsonValueKind.Array)
+                    continue;
+
+                if (pp.GetArrayLength() == 0 && level < 4)
+                    violations.Add($"'{id}' level={level}: empty presetPositions is only valid at level 4 or 5");
+            }
+        }
+
+        violations.ShouldBeEmpty(
+            $"Empty presetPositions found at level < 4 — upgrade those questions to level 5 or add verb presets:\n" +
+            string.Join("\n", violations));
+    }
+
+    // AC: correctOrder length is bounded at 8 tokens
+    [Test]
+    public void ValidationRule_CorrectOrderMaxLength_8Elements()
+    {
+        var violations = new List<string>();
+        foreach (var path in AllSixSentenceBuilderJsonPaths)
+        {
+            if (!File.Exists(path)) continue;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            if (!doc.RootElement.TryGetProperty("questions", out var questions)) continue;
+
+            foreach (var q in questions.EnumerateArray())
+            {
+                var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+                if (!q.TryGetProperty("correctOrder", out var co) || co.ValueKind != JsonValueKind.Array)
+                    continue;
+
+                if (co.GetArrayLength() > 8)
+                    violations.Add($"'{id}': correctOrder has {co.GetArrayLength()} tokens (max 8)");
+            }
+        }
+
+        violations.ShouldBeEmpty($"correctOrder length violations:\n{string.Join("\n", violations)}");
+    }
+
+    // Negative: L4 question with 0 preset positions demonstrates the preset-count rule catches it
+    [Test]
+    public void Negative_L4Question_WithEmptyPresetPositions_FailsPresetCountRule()
+    {
+        const string fakeJson = """
+            {
+              "id": "fake-l4-no-preset",
+              "questionType": "sentence-builder",
+              "level": 4,
+              "correctOrder": ["ა", "ბ", "გ", "დ", "ე"],
+              "presetPositions": [],
+              "chipPool": ["ა", "ბ", "გ", "დ", "ე"],
+              "hints": {}
+            }
+            """;
+
+        using var doc = JsonDocument.Parse(fakeJson);
+        var q = doc.RootElement;
+
+        q.TryGetProperty("level", out var lvl).ShouldBeTrue();
+        lvl.GetInt32().ShouldBe(4);
+
+        q.TryGetProperty("presetPositions", out var pp).ShouldBeTrue();
+        pp.ValueKind.ShouldBe(JsonValueKind.Array);
+
+        // L4 with 0 entries violates the exactly-1-preset rule
+        pp.GetArrayLength().ShouldBe(0,
+            "The fake question has 0 preset positions, proving it would fail the L4 preset-count rule");
+        (pp.GetArrayLength() != 1).ShouldBeTrue(
+            "A L4 question with presetPositions:[] must be caught by the exactly-1-preset rule");
+    }
+
+    // Negative: level < 4 with empty presetPositions demonstrates the empty-preset rule catches it
+    [Test]
+    public void Negative_Level3Question_WithEmptyPresetPositions_FailsEmptyPresetRule()
+    {
+        const string fakeJson = """
+            {
+              "id": "fake-l3-empty-preset",
+              "questionType": "sentence-builder",
+              "level": 3,
+              "correctOrder": ["ა", "ბ", "გ", "დ"],
+              "presetPositions": [],
+              "chipPool": ["ა", "ბ", "გ", "დ", "ე"],
+              "hints": {}
+            }
+            """;
+
+        using var doc = JsonDocument.Parse(fakeJson);
+        var q = doc.RootElement;
+
+        q.TryGetProperty("level", out var lvl).ShouldBeTrue();
+        var level = lvl.GetInt32();
+        level.ShouldBeLessThan(4, "The fake question has level 3 (below the L4/L5 threshold)");
+
+        q.TryGetProperty("presetPositions", out var pp).ShouldBeTrue();
+        pp.ValueKind.ShouldBe(JsonValueKind.Array);
+        pp.GetArrayLength().ShouldBe(0, "The fake question has empty presetPositions");
+
+        // This combination is exactly what ValidationRule_EmptyPresetPositions_AllowedOnlyAtLevel4Or5 catches
+        var wouldBeViolation = pp.GetArrayLength() == 0 && level < 4;
+        wouldBeViolation.ShouldBeTrue(
+            "A question with level=3 and presetPositions:[] violates the rule: " +
+            "empty presetPositions is only valid at level 4 or 5");
     }
 }

@@ -68,7 +68,7 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 | `GeorgianRepetitionModulesCommand` | `/georgianrepetitionmodules` | Show menu of Georgian modules available in the bot chat (not the mini-app). |
 | `GeorgianVerbsOfMovementCommand` | `/georgianverbsofmovement` | Show the Verbs of Movement index (L1–L11 via bot; L12 audio-choice is mini-app only). |
 | `GeorgianVerbsLessonCommand` | `/georgianverbslesson{1..11}` | Render theory text for the selected VoM lesson. |
-| `GeorgianVerbsQuizCommand1` .. `GeorgianVerbsQuizCommand11` | `/georgianverbsquizstart{1..11}` | Start the quiz for the corresponding lesson. |
+| `GeorgianVerbsQuizStartCommand` | `/georgianverbsquizstart{1..11}` | Start the quiz for the corresponding lesson (parameterised; 11 DI registrations). |
 | `GeorgianVerbsQuizAnswerCommand` | `/georgianverbsquizanswer` | Grade a VoM quiz answer. |
 
 Command string constants live in `src/Infrastructure/Telegram/Models/CommandNames.cs`.
@@ -269,6 +269,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddReferrals` | Referral entity + FK. |
 | `AddLastFedAtUtc` | Last-fed timestamp. |
 | `AddLastTreatIndex` | Last-treat index for rotation. |
+| `AddSentenceBuilderProgressJson` | Per-user sentence-builder mastery progress (questionId → correct-count map) for L4/L5 progression gate. |
 
 ---
 

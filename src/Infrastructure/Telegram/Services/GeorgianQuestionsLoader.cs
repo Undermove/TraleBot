@@ -31,14 +31,14 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
             _fileName, _questionsFilePath, File.Exists(_questionsFilePath));
     }
 
-    public List<QuizQuestionData> LoadQuestionsForLesson(int lessonId)
+    public List<QuizQuestionData> LoadQuestions()
     {
         if (_cachedQuestions == null)
         {
             _cachedQuestions = LoadAllQuestions();
         }
 
-        var random = new Random();
+        var random = Random.Shared;
         var shuffled = _cachedQuestions.OrderBy(_ => random.Next()).ToList();
         
         // Возвращаем 12 случайных вопросов
@@ -153,7 +153,7 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
         var sb = new SentenceBuilderQuestion();
 
         if (el.TryGetProperty("targetSentence", out var ts) && ts.TryGetProperty("ru", out var ru))
-            sb.TargetSentence = new TargetSentenceData { Ru = ru.GetString() ?? string.Empty };
+            sb.TargetSentence = new TargetSentenceData(ru.GetString() ?? string.Empty);
 
         if (el.TryGetProperty("level", out var lvl))
             sb.Level = lvl.GetInt32();
@@ -169,7 +169,7 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
             foreach (var pos in pp.EnumerateArray())
             {
                 if (pos.TryGetProperty("position", out var p) && pos.TryGetProperty("token", out var tok))
-                    sb.PresetPositions.Add(new PresetPosition { Position = p.GetInt32(), Token = tok.GetString() ?? string.Empty });
+                    sb.PresetPositions.Add(new PresetPosition(p.GetInt32(), tok.GetString() ?? string.Empty));
             }
         }
 
