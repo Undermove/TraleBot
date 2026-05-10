@@ -326,7 +326,7 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-test('L1 happy path — chip tap → slot fill → Проверить → FeedbackBanner სწორია! → Далее', async ({
+test('L1 happy path — chip tap auto-fills slot → Проверить → FeedbackBanner სწორია! → Далее', async ({
   page,
 }) => {
   await setupApiMocks(page, proMeResponse, mockL1Question)
@@ -345,11 +345,8 @@ test('L1 happy path — chip tap → slot fill → Проверить → Feedba
   // Wait for SentenceBuilderCard to render
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
 
-  // Tap chip 'სახლში'
+  // Tap chip 'სახლში' — auto-fills slot-1 (tap-only; no separate slot click needed)
   await page.getByRole('button', { name: 'სახლში' }).click()
-
-  // Tap the empty slot (slot-1)
-  await page.locator('[data-testid="slot-1"]').click()
 
   // Проверить should now be enabled
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
@@ -387,11 +384,10 @@ test('L2 incomplete answer — Проверить aria-disabled; tap is no-op', 
 
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
 
-  // Fill only one of two empty slots
+  // Tap one chip → auto-fills slot-1 (first empty); slot-2 still empty
   await page.getByRole('button', { name: 'მაღაზიაში' }).click()
-  await page.locator('[data-testid="slot-1"]').click()
 
-  // Проверить should still be aria-disabled
+  // Проверить should still be aria-disabled (slot-2 still empty)
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
   await expect(verifyBtn).toHaveAttribute('aria-disabled', 'true')
 
@@ -444,9 +440,8 @@ test('Chip return — tap filled slot returns chip to pool; slot reverts to dash
 
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
 
-  // Fill slot-1 with 'სახლში'
+  // Tap chip 'სახლში' — auto-fills slot-1
   await page.getByRole('button', { name: 'სახლში' }).click()
-  await page.locator('[data-testid="slot-1"]').click()
 
   // Chip should be in slot — the pool must NOT contain the chip button any more
   await expect(
@@ -491,7 +486,6 @@ test('Free user — Postpositions L1 shows paywall component; tap-target ≥ 44p
   await expect(page.locator('[data-testid="sentence-builder-card"]')).not.toBeVisible()
 
   // Verify tap-target ≥ 44px for the CTA button
-  // The paywall CTA ("купить" / "Купить за X ⭐") should be ≥ 44px tall
   const cta = paywallDialog.locator('button').filter({ hasText: /купить/i }).first()
   await expect(cta).toBeVisible()
   const box = await cta.boundingBox()
@@ -513,7 +507,7 @@ test('Practice screen — sentence-builder questionType routes to SentenceBuilde
   })
 })
 
-test('WordChip — default/selected/disabled state classes; tap-target ≥ 44px in 375px viewport', async ({
+test('WordChip — default state classes; tap-target ≥ 44px in 375px viewport; disabled state after verify', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 })
@@ -534,12 +528,10 @@ test('WordChip — default/selected/disabled state classes; tap-target ≥ 44px 
   // default state has bg-cream class
   await expect(chip).toHaveClass(/bg-cream/)
 
-  // selected state: tap chip → gold bg
+  // tap chip → auto-fills slot (no intermediate selected/gold state)
   await chip.click()
-  await expect(chip).toHaveClass(/bg-gold/)
 
-  // place chip, verify, then check disabled state
-  await page.locator('[data-testid="slot-1"]').click()
+  // Verify immediately (chip is now in the slot)
   await page.getByRole('button', { name: /Проверить/i }).click()
 
   // after check — remaining chips in pool have disabled state (opacity-40)
@@ -560,10 +552,9 @@ test('SentenceSlot — incorrect state shows hint text below slot with ruby styl
 
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
 
-  // Place wrong chip 'ვარ' in slot-1 (correct is 'სახლში')
+  // Tap wrong chip 'ვარ' — auto-fills slot-1 (correct is 'სახლში')
   // exact: true avoids matching 'მივდივარ' (preset slot) which also contains 'ვარ'
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვარ', exact: true }).click()
-  await page.locator('[data-testid="slot-1"]').click()
 
   // Проверить should be enabled now (slot is filled)
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
@@ -587,9 +578,9 @@ test('incorrect answer shows ruby slot fill and hint', async ({ page }) => {
 
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
 
-  // Place wrong chip (exact: true avoids matching 'მივდივარ' preset slot)
+  // Tap wrong chip (exact: true avoids matching 'მივდივარ' preset slot)
+  // — auto-fills slot-1
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვარ', exact: true }).click()
-  await page.locator('[data-testid="slot-1"]').click()
   await page.getByRole('button', { name: /Проверить/i }).click()
 
   // Ruby fill on incorrect slot
@@ -680,8 +671,6 @@ test('SentenceBuilderCard — error fallback renders for question with missing c
 })
 
 // ─── Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner ──
-// AC from issue #876 qa-prep: "Negative case: unordered chip answer in Cases L10
-// → ruby slot highlight + answer recorded in «Мои ошибки»"
 
 test('Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner', async ({
   page,
@@ -701,10 +690,8 @@ test('Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner'
 
   await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible({ timeout: 10_000 })
 
-  // Slot 0 is empty (ergative subject კაcMА). Place wrong chip კაcI (nominative) instead.
-  // Use exact:true to avoid matching კაcIS or კАcIT in the pool
+  // Slot 0 is empty (ergative subject კაcMА). Tap wrong chip კაcI (nominative) — auto-fills slot-0.
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'კაცი', exact: true }).click()
-  await page.locator('[data-testid="slot-0"]').click()
 
   // Проверить should be enabled (slot is filled)
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
@@ -730,8 +717,6 @@ test('Cases L10 — wrong chip order → ruby slot and incorrect FeedbackBanner'
 
 // ─── Shopping L7 mock data (issue #879) ─────────────────────────────────────
 
-// L1 price question: presets at positions 0 (რა) and 1 (ღირს), empty slot = 2 (ჩაი)
-// chipPool includes ყავა (coffee) and პური (bread) as price-related distractors
 const mockShoppingL7Question = [
   {
     id: 'shopping7-l1-q01',
@@ -826,9 +811,6 @@ async function navigateToShoppingL7(page: any) {
   await practiceBtn.click()
 }
 
-// ─── Shopping L7 — price distractor chip in slot → ruby slot + incorrect FeedbackBanner ──
-// AC from issue #879 qa-prep: place ყავა (coffee) in the tea slot → ruby highlight + "არასწორია!"
-
 test('Shopping L7 — price distractor chip in slot → ruby slot + incorrect FeedbackBanner', async ({
   page,
 }) => {
@@ -849,9 +831,8 @@ test('Shopping L7 — price distractor chip in slot → ruby slot + incorrect Fe
     timeout: 10_000,
   })
 
-  // Slot 2 is empty (ჩაი = tea). Place price distractor ყავა (coffee) instead.
+  // Slot 2 is empty (ჩაი = tea). Tap price distractor ყავა (coffee) — auto-fills slot-2.
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ყავა', exact: true }).click()
-  await page.locator('[data-testid="slot-2"]').click()
 
   // Проверить should be enabled (slot is filled)
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
@@ -877,7 +858,6 @@ test('Shopping L7 — price distractor chip in slot → ruby slot + incorrect Fe
 
 // ─── PresentTense L7 mock data (issue #877) ──────────────────────────────────
 
-// SOV question: preset slot 0 (subject), empty slots 1 (object) and 2 (verb)
 const mockPresentTenseL7Question = [
   {
     id: 'present7-l1-q01',
@@ -971,8 +951,6 @@ async function navigateToPresentTenseL7(page: any) {
 
 // ─── Cafe L7 mock data (issue #878) ─────────────────────────────────────────
 
-// L1 coffee question: presets at positions 0 (მე) and 1 (მINDA), empty slot = 2 (ყАVА)
-// chipPool includes ჩАΙ (tea) and წყАLΙ (water) as distractors
 const mockCafeL7Question = [
   {
     id: 'cafe7-l1-q01',
@@ -1008,11 +986,11 @@ const mockCafeCatalog = {
           short: 'L7',
           theory: {
             title: 'Конструктор предложений: заказ в кафе',
-            goal: 'Собирать фразы-заказы по шаблону «мINDA X».',
+            goal: 'Собирать фразы-заказы по шаблону «მINDA X».',
             blocks: [
               {
                 type: 'paragraph',
-                text: 'Шаблон заказа: мINDA + существительное. Я хочу = мINDA.',
+                text: 'Шаблон заказа: მINDA + существительное. Я хочу = მINDA.',
               },
             ],
           },
@@ -1065,9 +1043,6 @@ async function navigateToCafeL7(page: any) {
   await practiceBtn.click()
 }
 
-// ─── Cafe L7 — distractor chip (tea) in wrong slot → ruby slot + incorrect FeedbackBanner ──
-// AC from issue #878 qa-prep: place ჩАΙ (tea) in the coffee slot → ruby highlight + "არАsworIA!"
-
 test('Cafe L7 — distractor chip (tea) in wrong slot → ruby slot + incorrect FeedbackBanner', async ({
   page,
 }) => {
@@ -1088,9 +1063,8 @@ test('Cafe L7 — distractor chip (tea) in wrong slot → ruby slot + incorrect 
     timeout: 10_000,
   })
 
-  // Slot 2 is empty (coffee: ყАVА). Place distractor ჩАΙ (tea) instead.
+  // Slot 2 is empty (coffee: ყАVА). Tap distractor ჩАΙ (tea) — auto-fills slot-2.
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ჩაი', exact: true }).click()
-  await page.locator('[data-testid="slot-2"]').click()
 
   // Проверить should be enabled (slot is filled)
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
@@ -1114,10 +1088,6 @@ test('Cafe L7 — distractor chip (tea) in wrong slot → ruby slot + incorrect 
   expect(completeLessonPayload.correct).toBe(0)
 })
 
-// ─── PresentTense L7 — wrong order → ruby slot + incorrect FeedbackBanner ───
-// AC from issue #877 qa-prep: tap VSO arrangement (verb before object) →
-// ruby slot highlight + FeedbackBanner "არასწორია!" + lesson-complete correct: 0
-
 test('PresentTense L7 — wrong order → ruby slot + incorrect FeedbackBanner', async ({
   page,
 }) => {
@@ -1138,13 +1108,11 @@ test('PresentTense L7 — wrong order → ruby slot + incorrect FeedbackBanner',
     timeout: 10_000,
   })
 
-  // Tap verb ვკითხულობ first → placed in slot-1 (wrong: SVO instead of SOV)
+  // Tap verb ვკითხულობ first → auto-fills slot-1 (wrong: SVO instead of SOV)
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვკითხულობ', exact: true }).click()
-  await page.locator('[data-testid="slot-1"]').click()
 
-  // Tap object წიგნს → placed in slot-2
+  // Tap object წიგნს → auto-fills slot-2
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'წიგნს', exact: true }).click()
-  await page.locator('[data-testid="slot-2"]').click()
 
   // Проверить must be enabled (both empty slots filled)
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
@@ -1170,8 +1138,6 @@ test('PresentTense L7 — wrong order → ruby slot + incorrect FeedbackBanner',
 
 // ─── Taxi L7 mock data (issue #880) ──────────────────────────────────────────
 
-// L1 destination question: preset at position 0 (წავიდეთ), empty slot = 1 (ბათუმshi)
-// chipPool includes -ზე and -თAN postposition distractors to force discrimination
 const mockTaxiL7Question = [
   {
     id: 'taxi7-l1-q01',
@@ -1263,9 +1229,6 @@ async function navigateToTaxiL7(page: any) {
   await practiceBtn.click()
 }
 
-// ─── Taxi L7 — wrong city in destination slot → ruby slot + incorrect FeedbackBanner ──
-// AC from issue #880 qa-prep: wrong destination city → ruby highlight + "არასწორია!"
-
 test('Taxi L7 — destination chip placed in wrong position → ruby slot + incorrect FeedbackBanner', async ({
   page,
 }) => {
@@ -1286,9 +1249,8 @@ test('Taxi L7 — destination chip placed in wrong position → ruby slot + inco
     timeout: 10_000,
   })
 
-  // Slot 1 is empty (correct = ბათუმში). Place wrong city (თბილისshi) instead.
+  // Slot 1 is empty (correct = ბათუმshi). Tap wrong city (თბილისshi) — auto-fills slot-1.
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'თბილისში', exact: true }).click()
-  await page.locator('[data-testid="slot-1"]').click()
 
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
   await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
@@ -1304,9 +1266,6 @@ test('Taxi L7 — destination chip placed in wrong position → ruby slot + inco
   expect(completeLessonPayload).toBeTruthy()
   expect(completeLessonPayload.correct).toBe(0)
 })
-
-// ─── Taxi L7 — wrong postposition (-ზე vs -ში) in destination slot → ruby highlight ──
-// AC from issue #880 qa-prep: wrong postposition form → ruby slot
 
 test('Taxi L7 — wrong postposition distractor (-ზე vs -ში) in destination slot → ruby highlight', async ({
   page,
@@ -1328,9 +1287,8 @@ test('Taxi L7 — wrong postposition distractor (-ზე vs -ში) in destinat
     timeout: 10_000,
   })
 
-  // Slot 1 is empty (correct = ბათუმshi). Place postposition distractor ბათუმზე (-ზе) instead.
+  // Slot 1 is empty (correct = ბათუმshi). Tap postposition distractor ბათუმზე (-ზе) — auto-fills slot-1.
   await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ბათუმზე', exact: true }).click()
-  await page.locator('[data-testid="slot-1"]').click()
 
   const verifyBtn = page.getByRole('button', { name: /Проверить/i })
   await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
@@ -1345,4 +1303,152 @@ test('Taxi L7 — wrong postposition distractor (-ზე vs -ში) in destinat
 
   expect(completeLessonPayload).toBeTruthy()
   expect(completeLessonPayload.correct).toBe(0)
+})
+
+// ─── Tap-only: new interaction model tests ────────────────────────────────────
+
+test('tap-only: chip tap auto-fills first empty slot without two-step selection', async ({
+  page,
+}) => {
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // Single tap on chip → chip must immediately appear in slot; no slot click needed
+  const chip = page.getByRole('button', { name: 'სახლში' })
+  await chip.click()
+
+  // Chip must NOT be in pool anymore (auto-placed)
+  await expect(
+    page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'სახლში' })
+  ).toHaveCount(0)
+
+  // Slot-1 must show the chip token
+  await expect(page.locator('[data-testid="slot-1"]')).toContainText('სახლში')
+
+  // No chip-selected class anywhere in the DOM
+  await expect(page.locator('.chip-selected')).toHaveCount(0)
+
+  // Проверить should now be enabled
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+})
+
+test('tap-only: second chip fills second empty slot in sequential order', async ({ page }) => {
+  await setupApiMocks(page, proMeResponse, mockL2Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // First chip tap → fills slot-1 (first empty; slot-0 is preset)
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'მაღაზიაში', exact: true }).click()
+  await expect(page.locator('[data-testid="slot-1"]')).toContainText('მაღაზიაში')
+
+  // Second chip tap → fills slot-2 (next empty in order)
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'მიდიხარ', exact: true }).click()
+  await expect(page.locator('[data-testid="slot-2"]')).toContainText('მიდიხარ')
+
+  // All slots filled → Проверить enabled
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+})
+
+test('tap-only: tap filled slot returns chip to pool; slot becomes next empty target', async ({
+  page,
+}) => {
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // Fill slot-1 with 'სახლში'
+  await page.getByRole('button', { name: 'სახლში' }).click()
+  await expect(page.locator('[data-testid="slot-1"]')).toContainText('სახლში')
+
+  // Tap filled slot-1 → chip returns to pool
+  await page.locator('[data-testid="slot-1"]').click()
+
+  // 'სახლში' should be back in pool
+  await expect(
+    page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'სახლში' })
+  ).toBeVisible()
+
+  // Slot-1 should be empty (Проверить disabled)
+  await expect(page.locator('[data-testid="slot-1"]')).not.toContainText('სახლში')
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).toHaveAttribute('aria-disabled', 'true')
+
+  // Tapping 'სახლში' again re-fills slot-1 (it's the next empty target)
+  await page.getByRole('button', { name: 'სახლში' }).click()
+  await expect(page.locator('[data-testid="slot-1"]')).toContainText('სახლში')
+})
+
+test('tap-only: distractor tap when all slots full triggers shake; slots unchanged', async ({
+  page,
+}) => {
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // Fill the only empty slot
+  await page.getByRole('button', { name: 'სახლში' }).click()
+  await expect(page.locator('[data-testid="slot-1"]')).toContainText('სახლში')
+
+  // All slots are now filled → Проверить enabled
+  const verifyBtn = page.getByRole('button', { name: /Проверить/i })
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+
+  // Tap distractor chip 'ვარ' when all slots full → shake animation fires
+  const distractor = page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვარ', exact: true })
+  await distractor.click()
+
+  // animate-shake class should briefly appear on the chip
+  await expect(distractor).toHaveClass(/animate-shake/, { timeout: 300 })
+
+  // Slot contents should be unchanged
+  await expect(page.locator('[data-testid="slot-1"]')).toContainText('სახლში')
+
+  // Проверить should still be enabled (no slot mutation occurred)
+  await expect(verifyBtn).not.toHaveAttribute('aria-disabled', 'true')
+})
+
+test('tap-only: shake on distractor tap with full slots — no slot mutation, no console errors', async ({
+  page,
+}) => {
+  const consoleErrors: string[] = []
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') consoleErrors.push(msg.text())
+  })
+
+  await setupApiMocks(page, proMeResponse, mockL1Question)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+  await navigateToPractice(page, 1)
+
+  await expect(page.locator('[data-testid="sentence-builder-card"]')).toBeVisible()
+
+  // Fill the only empty slot
+  await page.getByRole('button', { name: 'სახლში' }).click()
+
+  // Tap distractor when all slots filled
+  await page.locator('[data-testid="chip-pool"]').getByRole('button', { name: 'ვარ', exact: true }).click()
+
+  // Wait for animation to complete
+  await page.waitForTimeout(250)
+
+  // No console errors
+  expect(consoleErrors).toHaveLength(0)
+
+  // Slot still contains the original chip
+  await expect(page.locator('[data-testid="slot-1"]')).toContainText('სახლში')
 })
