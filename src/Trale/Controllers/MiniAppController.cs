@@ -119,7 +119,7 @@ public class MiniAppController : Controller
                 return NotFound(new { error = "Unknown lesson" });
             }
             var loader = _questionsLoaderFactory.CreateForModuleLesson(moduleDef.Directory, lessonId);
-            return Ok(MapQuestions(loader, lessonId));
+            return Ok(MapQuestions(loader));
         }
 
         return NotFound(new { error = "Unknown module" });
@@ -423,7 +423,7 @@ public class MiniAppController : Controller
         });
     }
 
-    private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader, int lessonId)
+    private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader)
     {
         return loader.LoadQuestions().Select(q => new
         {
