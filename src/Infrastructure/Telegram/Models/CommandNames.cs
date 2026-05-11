@@ -35,6 +35,9 @@ public static class CommandNames
     public const string OfferTrial = "/offertrial";
     public const string ActivateTrial = "/activatetrial";
     
+    // notification commands
+    public const string Notifications = "/notifications";
+
     // achievements commands
     public const string Achievements = "/achievements";
     public const string AchievementsIcon = "📊";

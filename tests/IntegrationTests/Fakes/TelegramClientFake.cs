@@ -2,6 +2,7 @@
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
+using Telegram.Bot.Requests;
 using Telegram.Bot.Requests.Abstractions;
 #pragma warning disable 67
 namespace IntegrationTests.Fakes;
@@ -12,9 +13,15 @@ public class TelegramClientFake : ITelegramBotClient
 	// ReSharper disable once CollectionNeverQueried.Local
 	private readonly List<IRequest> _requests = new();
 
+	public List<string> SentMessages { get; } = new();
+
+	public void Reset() => SentMessages.Clear();
+
 	public Task<TResponse> MakeRequestAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new())
 	{
 		_requests.Add(request);
+		if (request is SendMessageRequest msgRequest)
+			SentMessages.Add(msgRequest.Text);
 		return Task.FromResult(default(TResponse)!);
 	}
 
