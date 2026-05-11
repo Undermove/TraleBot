@@ -126,6 +126,7 @@ public class NotificationDispatcherService(
             Source = source
         };
         db.NotificationTriggers.Add(trigger);
+        user.NotificationTriggers.Add(trigger);
         return trigger;
     }
 

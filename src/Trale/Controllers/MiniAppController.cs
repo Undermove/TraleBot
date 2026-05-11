@@ -705,6 +705,8 @@ public class MiniAppController : Controller
         };
     }
 
+    public sealed record UpdateNotificationsRequest(bool? Enabled);
+
     private async Task<User> ResolveUserAsync(CancellationToken ct)
     {
         var initData = Request.Headers.TryGetValue(InitDataHeader, out var values)
@@ -724,5 +726,3 @@ public class MiniAppController : Controller
         return user;
     }
 }
-
-public sealed record UpdateNotificationsRequest(bool? Enabled);
