@@ -41,7 +41,7 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			services.RemoveAll(typeof(BotConfiguration));
 			services.AddSingleton(new BotConfiguration
 			{
-				Token = null!,
+				Token = "test_bot_token",
 				HostAddress = null!,
 				WebhookToken = "test_token",
 				PaymentProviderToken = null!,
