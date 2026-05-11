@@ -8,12 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Trale.HostedServices;
 
-/// <summary>
-/// Periodically evaluates notification triggers (holiday, coins, streak) and
-/// dispatches Telegram messages to eligible users. Runs every 3600 seconds.
-/// Uses IServiceScopeFactory because NotificationDispatcherService depends on
-/// a scoped EF Core DbContext.
-/// </summary>
+// IServiceScopeFactory required: NotificationDispatcherService depends on a scoped EF Core DbContext.
 public class NotificationWorker(
     IServiceScopeFactory scopeFactory,
     ILogger<NotificationWorker> logger) : BackgroundService

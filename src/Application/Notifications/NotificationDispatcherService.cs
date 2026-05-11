@@ -4,19 +4,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Notifications;
 
-/// <summary>
-/// Evaluates three notification triggers (Holiday, Coins, Streak) for every user
-/// who has notifications enabled and sends at most one Telegram message per user per run.
-/// Date comparisons use UTC+4 (Tbilisi timezone).
-/// </summary>
 public class NotificationDispatcherService(
     ITraleDbContext db,
     HolidayCalendarService holidayCalendar,
     ITelegramMessageSender sender,
     TimeProvider timeProvider)
 {
+    // Tbilisi time (UTC+4) is the canonical day boundary for holiday and streak checks.
     private static readonly TimeZoneInfo TbilisiTz =
         TimeZoneInfo.FindSystemTimeZoneById("Asia/Tbilisi");
+
+    private const int MinPendingXpForCoinNudge = 50;
 
     public async Task ExecuteAsync(CancellationToken ct)
     {
@@ -26,7 +24,7 @@ public class NotificationDispatcherService(
 
         var users = await db.Users
             .Include(u => u.NotificationTriggers)
-            .Where(u => u.NotificationsEnabled)
+            .Where(u => u.IsActive && u.NotificationsEnabled)
             .ToListAsync(ct);
 
         var userIds = users.Select(u => u.Id).ToList();
@@ -72,7 +70,7 @@ public class NotificationDispatcherService(
         DateTime utcNow, CancellationToken ct)
     {
         var availableXp = progress.Xp - progress.XpSpent;
-        if (availableXp < 50) return false;
+        if (availableXp < MinPendingXpForCoinNudge) return false;
 
         if (IsWithin7Days(progress.LastFedAtUtc, utcNow)) return false;
 
