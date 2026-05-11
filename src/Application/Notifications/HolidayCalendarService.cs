@@ -15,7 +15,7 @@ public class HolidayCalendarService
             NameRu: "День грузинского языка (Деда-эна)",
             NameKa: "დედა-ენის დღე",
             GreetingKa: "ქართული ენის დღე გილოცავთ!",
-            Transliteration: "Картули эnis дге гилоцавт!",
+            Transliteration: "Картули энис дге гилоцавт!",
             TranslationRu: "Поздравляем с Днём грузинского языка!"
         )),
         (5, 5, new HolidayInfo(
