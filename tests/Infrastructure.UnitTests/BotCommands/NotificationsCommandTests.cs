@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.MiniApp.Services;
 using Domain.Entities;
 using Infrastructure.Telegram.BotCommands;
 using Infrastructure.Telegram.Models;
@@ -19,7 +20,7 @@ namespace Infrastructure.UnitTests.BotCommands;
 public class NotificationsCommandTests
 {
     private Mock<ITelegramBotClient> _mockClient = null!;
-    private Mock<ITraleDbContext> _mockDb = null!;
+    private Mock<UpdateNotificationsSettingsService> _mockService = null!;
     private List<string> _capturedTexts = null!;
 
     [SetUp]
@@ -37,14 +38,16 @@ public class NotificationsCommandTests
             })
             .ReturnsAsync(new TgMessage { MessageId = 1 });
 
-        _mockDb = new Mock<ITraleDbContext>();
-        _mockDb
-            .Setup(db => db.SaveChangesAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(1);
+        // Pass a mock ITraleDbContext so Castle DynamicProxy can satisfy the constructor.
+        var mockDb = new Mock<ITraleDbContext>();
+        _mockService = new Mock<UpdateNotificationsSettingsService>(mockDb.Object);
+        _mockService
+            .Setup(s => s.ExecuteAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(UpdateNotificationsSettingsResult.Success);
     }
 
     private NotificationsCommand BuildCommand() =>
-        new(_mockClient.Object, _mockDb.Object);
+        new(_mockClient.Object, _mockService.Object);
 
     private static TelegramRequest BuildRequest(string text, bool notificationsEnabled = true)
     {
@@ -150,27 +153,31 @@ public class NotificationsCommandTests
         _capturedTexts.ShouldContain(t => t.Contains("Уведомления включены"));
     }
 
-    // ── on / off set correct flag ─────────────────────────────────────────────
+    // ── Delegates to UpdateNotificationsSettingsService ───────────────────────
 
     [Test]
-    public async Task NotificationsOff_SetsNotificationsEnabledFalse()
+    public async Task NotificationsOff_DelegatesToService_WithEnabledFalse()
     {
         var command = BuildCommand();
         var request = BuildRequest("/notifications off", notificationsEnabled: true);
 
         await command.Execute(request, CancellationToken.None);
 
-        request.User!.NotificationsEnabled.ShouldBeFalse();
+        _mockService.Verify(
+            s => s.ExecuteAsync(request.User!.Id, false, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Test]
-    public async Task NotificationsOn_SetsNotificationsEnabledTrue()
+    public async Task NotificationsOn_DelegatesToService_WithEnabledTrue()
     {
         var command = BuildCommand();
         var request = BuildRequest("/notifications on", notificationsEnabled: false);
 
         await command.Execute(request, CancellationToken.None);
 
-        request.User!.NotificationsEnabled.ShouldBeTrue();
+        _mockService.Verify(
+            s => s.ExecuteAsync(request.User!.Id, true, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

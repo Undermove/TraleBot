@@ -11,7 +11,7 @@ public enum UpdateNotificationsSettingsResult
 
 public class UpdateNotificationsSettingsService(ITraleDbContext dbContext)
 {
-    public async Task<UpdateNotificationsSettingsResult> ExecuteAsync(
+    public virtual async Task<UpdateNotificationsSettingsResult> ExecuteAsync(
         Guid userId, bool enabled, CancellationToken ct)
     {
         var user = await dbContext.Users

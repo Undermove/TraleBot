@@ -1,10 +1,12 @@
-using Application.Common;
+using Application.MiniApp.Services;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands;
 
-public class NotificationsCommand(ITelegramBotClient client, ITraleDbContext db) : IBotCommand
+public class NotificationsCommand(
+    ITelegramBotClient client,
+    UpdateNotificationsSettingsService updateNotificationsService) : IBotCommand
 {
     private const string OffReply = "Уведомления отключены. Включить: /notifications on";
     private const string OnReply = "Уведомления включены. Отключить: /notifications off";
@@ -26,14 +28,12 @@ public class NotificationsCommand(ITelegramBotClient client, ITraleDbContext db)
         string replyText;
         if (arg.Equals("off", StringComparison.OrdinalIgnoreCase))
         {
-            request.User.NotificationsEnabled = false;
-            await db.SaveChangesAsync(token);
+            await updateNotificationsService.ExecuteAsync(request.User.Id, false, token);
             replyText = OffReply;
         }
         else if (arg.Equals("on", StringComparison.OrdinalIgnoreCase))
         {
-            request.User.NotificationsEnabled = true;
-            await db.SaveChangesAsync(token);
+            await updateNotificationsService.ExecuteAsync(request.User.Id, true, token);
             replyText = OnReply;
         }
         else
