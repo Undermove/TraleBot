@@ -62,6 +62,11 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 |---|---|---|
 | `AchievementsCommand` | `/achievements`, 📊 icon | Show achievements + stats. |
 
+### Notifications
+| Class | Command / trigger | Purpose |
+|---|---|---|
+| `NotificationsCommand` | `/notifications on\|off` | Opt-in / opt-out of push notifications; sets `User.NotificationsEnabled` and replies with confirmation. |
+
 ### Georgian module content
 | Class | Command / trigger | Purpose |
 |---|---|---|
