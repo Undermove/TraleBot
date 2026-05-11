@@ -57,6 +57,7 @@ public static class DependencyInjection
 
         // Notification services
         services.AddSingleton<HolidayCalendarService>();
+        services.AddScoped<NotificationDispatcherService>();
 
         // Admin queries (services per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetAdminStatsQuery>();

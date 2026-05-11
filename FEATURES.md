@@ -220,6 +220,7 @@ Location: `src/Trale/HostedServices/`.
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
+| `NotificationWorker` | Every 3600s | Evaluate Holiday/Coins/Streak triggers and dispatch Telegram notifications via `NotificationDispatcherService`. |
 
 ---
 
@@ -362,6 +363,7 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `FeedTreatService` — buy & feed a treat
 - `AchievementsService` / `GetAchievementsQuery` — achievements
 - `HolidayCalendarService` — returns `HolidayInfo?` for 8 V1 Georgian holidays (7 fixed-date + Julian/Orthodox Easter via Meeus algorithm); singleton in Application DI
+- `NotificationDispatcherService` — evaluates 3 triggers (Holiday, Coins, Streak) per user with NotificationsEnabled=true; sends at most one Telegram message per user per run; date comparisons in UTC+4 (Tbilisi)
 
 ### Feature flags
 - `BotConfiguration.MiniAppEnabled` — toggles mini-app menu button and Georgian returning-user `/start`.
