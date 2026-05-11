@@ -6,6 +6,7 @@ using Application.Common.Interfaces.Achievements;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
+using Application.Notifications;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -53,6 +54,9 @@ public static class DependencyInjection
         services.AddScoped<TryActivateReferralService>();
         services.AddScoped<ProcessPendingReferralsService>();
         services.AddScoped<GetReferralInfoQuery>();
+
+        // Notification services
+        services.AddSingleton<HolidayCalendarService>();
 
         // Admin queries (services per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetAdminStatsQuery>();
