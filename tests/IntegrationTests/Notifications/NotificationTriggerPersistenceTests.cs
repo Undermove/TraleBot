@@ -38,7 +38,7 @@ public class NotificationTriggerPersistenceTests : TestBase
             .FirstOrDefaultAsync(t => t.Id == trigger.Id);
 
         // Assert
-        loaded.ShouldNotBeNull();
+        loaded.Should().NotBeNull();
         loaded!.UserId.Should().Be(user.Id);
         loaded.Source.Should().Be(NotificationSource.Holiday);
         loaded.LastSentAt.Should().BeNull();

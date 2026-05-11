@@ -20,6 +20,7 @@ public interface ITraleDbContext
     DbSet<MiniAppUserProgress> MiniAppUserProgresses { get; }
     DbSet<Payment> Payments { get; }
     DbSet<Referral> Referrals { get; }
+    DbSet<NotificationTrigger> NotificationTriggers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);
