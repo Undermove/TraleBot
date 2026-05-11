@@ -1,4 +1,4 @@
-using Application.Admin;
+using Application.Common;
 using Infrastructure.Telegram;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;

@@ -18,7 +18,7 @@ public class NotificationWorker(
     IServiceScopeFactory scopeFactory,
     ILogger<NotificationWorker> logger) : BackgroundService
 {
-    private static readonly TimeSpan Interval = TimeSpan.FromSeconds(3600);
+    private static readonly TimeSpan Interval = TimeSpan.FromHours(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

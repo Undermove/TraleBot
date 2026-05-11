@@ -1,4 +1,4 @@
-using Application.Admin;
+using Application.Common;
 using Application.Notifications;
 using Application.UnitTests.Common;
 using Domain.Entities;
