@@ -151,6 +151,38 @@
 
 ---
 
+### #900 — Тесты: unit + integration для NotificationDispatcherService
+
+**Что проверяем:** полный набор автотестов для диспетчера нотификаций написан и проходит зелёным — все BDD-сценарии (#1–#6) покрыты кодом.
+
+**Проверка через тест-раннер:**
+
+Запусти в терминале:
+
+`dotnet test TraleBot.sln --filter "Notification"`
+
+Все тесты должны пройти зелёным. Ключевые классы и тест-кейсы, которые должны присутствовать:
+
+- `NotificationDispatcherServiceTests` (юнит, Application.UnitTests):
+  - `HolidayTrigger_WhenLastSentAtIsToday_SkipsSend` — Сценарий 5: праздник не дублируется в тот же день
+  - `CoinsTrigger_WhenCooldownLessThan7Days_SkipsSend` — Сценарий 2: кулдаун 7 дней соблюдается
+  - `CoinsTrigger_WhenXpQualifies_SendsMessageContainingBomboraText` — Сценарий 2b: текст содержит «ბომბორა გახარდება!»
+  - `StreakTrigger_OnDay7_SendsAndUpdatesNextMilestoneTo30` — Сценарий 3: 7-й день стрика, milestone → 30
+  - `StreakTrigger_OnDay30_MessageContainsGeorgianNumeralWithParenthetical` — Сценарий 3b: «ოცდაათი (20+10) დღე»
+  - `Dispatcher_UserWithNotificationsDisabled_SendsZeroMessages` — Сценарий 4: `NotificationsEnabled=false`
+  - `Dispatcher_OrdinaryDay_NoTriggersQualify_SendsNothing` — Сценарий 6: обычный день без триггеров
+- `NotificationDispatcherIntegrationTests` (интеграционный, IntegrationTests, Testcontainers):
+  - `Dispatcher_EndToEnd_SeedUserWithHolidayDate_SendsOnceAndPersistsLastSentAt` — end-to-end: посев пользователя, запуск воркера, проверка Telegram-вызова и сохранения `LastSentAt`
+  - `Dispatcher_RunTwiceSameDay_SendsOnlyOnce` — повторный запуск в тот же день не дублирует сообщение
+
+**Проверка полного набора тестов:**
+
+Запусти `dotnet test TraleBot.sln` (без фильтра). Итоговая строка должна быть вида `Passed! - Failed: 0`. Любые упавшие тесты — сигнал блокера.
+
+**Если что-то не так:** при ошибках Testcontainers убедись, что Docker запущен и в окружении выставлены `TESTCONTAINERS_RYUK_DISABLED=true` и `TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal`. Для диагностики конкретного теста используй: `dotnet test --filter "Dispatcher_RunTwiceSameDay" -v d`.
+
+---
+
 ## Связанные артефакты
 
 - Эпик: #894 (§82 Контекстные пуш-нотификации)
