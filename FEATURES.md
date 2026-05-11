@@ -361,6 +361,7 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `ProcessPendingReferralsService` — batch runner for the worker
 - `FeedTreatService` — buy & feed a treat
 - `AchievementsService` / `GetAchievementsQuery` — achievements
+- `HolidayCalendarService` — returns `HolidayInfo?` for 8 V1 Georgian holidays (7 fixed-date + Julian/Orthodox Easter via Meeus algorithm); singleton in Application DI
 
 ### Feature flags
 - `BotConfiguration.MiniAppEnabled` — toggles mini-app menu button and Georgian returning-user `/start`.

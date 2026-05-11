@@ -1,4 +1,5 @@
 using Application.Notifications;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
 namespace Application.UnitTests.Notifications;
@@ -127,6 +128,21 @@ public class HolidayCalendarServiceTests
         result.GreetingKa.ShouldNotBeNullOrWhiteSpace($"{label} GreetingKa must not be empty");
         result.Transliteration.ShouldNotBeNullOrWhiteSpace($"{label} Transliteration must not be empty");
         result.TranslationRu.ShouldNotBeNullOrWhiteSpace($"{label} TranslationRu must not be empty");
+    }
+
+    // --- DI registration ---
+
+    [Test]
+    public void HolidayCalendarService_RegisteredAsSingleton_ReturnsSameInstanceTwice()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<HolidayCalendarService>();
+        var provider = services.BuildServiceProvider();
+
+        var instance1 = provider.GetRequiredService<HolidayCalendarService>();
+        var instance2 = provider.GetRequiredService<HolidayCalendarService>();
+
+        instance1.ShouldBeSameAs(instance2);
     }
 
     // --- Negative cases ---
