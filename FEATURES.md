@@ -62,6 +62,11 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 |---|---|---|
 | `AchievementsCommand` | `/achievements`, 📊 icon | Show achievements + stats. |
 
+### Notifications
+| Class | Command / trigger | Purpose |
+|---|---|---|
+| `NotificationsCommand` | `/notifications on\|off` | Opt-in / opt-out of push notifications; sets `User.NotificationsEnabled` and replies with confirmation. |
+
 ### Georgian module content
 | Class | Command / trigger | Purpose |
 |---|---|---|
@@ -138,6 +143,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `SentenceSlot.tsx` | Single droppable slot in the sentence-builder (empty / preset / filled states). |
 | `ChipPool.tsx` | Scrollable pool of WordChip tokens for sentence-builder drag-to-slot interaction. |
 | `WordChip.tsx` | Tappable chip representing one Georgian word token; selected/used states. |
+| `NotificationSettings.tsx` | Уведомления master toggle in Profile screen. Three sub-label rows (Праздники, Накопленные монеты, Стрик-достижения) with muted state when toggle is off. Calls `PATCH /api/miniapp/notifications`. |
 
 ### Data (`src/data/`)
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
@@ -190,6 +196,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. |
 | DELETE | `/api/miniapp/vocabulary/{id}` | Delete a vocabulary entry. |
 | POST | `/api/miniapp/translate` | Translate a word and add to vocabulary. |
+| PATCH | `/api/miniapp/notifications` | Update user notification preference (`NotificationsEnabled`). Backed by `UpdateNotificationsSettingsService`. |
 
 ### `AdminController` — `/api/admin` (owner-gated)
 | Method | Path | Purpose |
@@ -220,6 +227,7 @@ Location: `src/Trale/HostedServices/`.
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
+| `NotificationWorker` | Every 3600s | Evaluate Holiday/Coins/Streak triggers and dispatch Telegram notifications via `NotificationDispatcherService`. |
 
 ---
 
@@ -270,6 +278,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddLastFedAtUtc` | Last-fed timestamp. |
 | `AddLastTreatIndex` | Last-treat index for rotation. |
 | `AddSentenceBuilderProgressJson` | Per-user sentence-builder mastery progress (questionId → correct-count map) for L4/L5 progression gate. |
+| `AddNotificationTrigger` | NotificationTrigger entity (Holiday/Coins/Streak sources, LastSentAt cooldown, NextStreakMilestone) + User.NotificationsEnabled flag. |
 
 ---
 
@@ -360,6 +369,8 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `ProcessPendingReferralsService` — batch runner for the worker
 - `FeedTreatService` — buy & feed a treat
 - `AchievementsService` / `GetAchievementsQuery` — achievements
+- `HolidayCalendarService` — returns `HolidayInfo?` for 8 V1 Georgian holidays (7 fixed-date + Julian/Orthodox Easter via Meeus algorithm); singleton in Application DI
+- `NotificationDispatcherService` — evaluates 3 triggers (Holiday, Coins, Streak) per user with NotificationsEnabled=true; sends at most one Telegram message per user per run; date comparisons in UTC+4 (Tbilisi)
 
 ### Feature flags
 - `BotConfiguration.MiniAppEnabled` — toggles mini-app menu button and Georgian returning-user `/start`.

@@ -23,7 +23,9 @@ public class User
     public virtual ICollection<Achievement> Achievements { get; set; }
     public virtual ICollection<ShareableQuiz> ShareableQuizzes { get; set; }
     public virtual ICollection<Payment> Payments { get; set; }
-    
+    public virtual ICollection<NotificationTrigger> NotificationTriggers { get; set; }
+    public bool NotificationsEnabled { get; set; } = true;
+
     public bool IsActivePremium()
     {
         if (AccountType != UserAccountType.Premium) return false;

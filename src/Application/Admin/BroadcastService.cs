@@ -170,11 +170,6 @@ public class BroadcastSegment
     public int? ActiveWithinDays { get; set; }
 }
 
-public interface ITelegramMessageSender
-{
-    Task<bool> SendTextAsync(long telegramId, string text, bool includeMiniAppButton, CancellationToken ct);
-}
-
 public class BroadcastPreview
 {
     public int TotalRecipients { get; init; }

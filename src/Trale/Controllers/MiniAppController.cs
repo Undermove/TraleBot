@@ -56,6 +56,7 @@ public class MiniAppController : Controller
     private readonly MonetizationMetrics _metrics;
     private readonly ILogger<MiniAppController> _logger;
     private readonly FeedTreatService _feedTreatService;
+    private readonly UpdateNotificationsSettingsService _updateNotificationsService;
 
     public MiniAppController(
         IGeorgianQuestionsLoaderFactory questionsLoaderFactory,
@@ -66,7 +67,8 @@ public class MiniAppController : Controller
         ITelegramBotClient telegramBotClient,
         MonetizationMetrics metrics,
         ILogger<MiniAppController> logger,
-        FeedTreatService feedTreatService)
+        FeedTreatService feedTreatService,
+        UpdateNotificationsSettingsService updateNotificationsService)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
         _dbContext = dbContext;
@@ -77,6 +79,7 @@ public class MiniAppController : Controller
         _metrics = metrics;
         _logger = logger;
         _feedTreatService = feedTreatService;
+        _updateNotificationsService = updateNotificationsService;
     }
 
     [HttpGet("ping")]
@@ -153,8 +156,29 @@ public class MiniAppController : Controller
             subscriptionPlan = result.SubscriptionPlan,
             subscribedUntil = result.SubscribedUntil,
             hasAccess = result.IsPro || result.IsTrialActive,
-            isOwner = result.IsOwner
+            isOwner = result.IsOwner,
+            notificationsEnabled = user.NotificationsEnabled
         });
+    }
+
+    [HttpPatch("notifications")]
+    public async Task<IActionResult> UpdateNotifications(
+        [FromBody] UpdateNotificationsRequest req, CancellationToken ct)
+    {
+        if (req.Enabled is null)
+            return BadRequest(new { error = "enabled_required" });
+
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+            return Unauthorized(new { error = "not_authenticated" });
+
+        var result = await _updateNotificationsService.ExecuteAsync(user.Id, req.Enabled.Value, ct);
+
+        return result switch
+        {
+            UpdateNotificationsSettingsResult.Success => Ok(new { ok = true }),
+            _ => Unauthorized(new { error = "user_not_found" })
+        };
     }
 
     [HttpGet("plans")]
@@ -680,6 +704,8 @@ public class MiniAppController : Controller
             _ => Ok(new { status = "failure" })
         };
     }
+
+    public sealed record UpdateNotificationsRequest(bool? Enabled);
 
     private async Task<User> ResolveUserAsync(CancellationToken ct)
     {

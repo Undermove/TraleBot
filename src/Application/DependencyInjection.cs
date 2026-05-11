@@ -6,6 +6,7 @@ using Application.Common.Interfaces.Achievements;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
+using Application.Notifications;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -47,12 +48,17 @@ public static class DependencyInjection
         services.AddScoped<GetActivityDaysQuery>();
         services.AddScoped<GetUserVocabularyQuery>();
         services.AddScoped<FeedTreatService>();
+        services.AddScoped<UpdateNotificationsSettingsService>();
 
         // Referral services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<RecordReferralLinkService>();
         services.AddScoped<TryActivateReferralService>();
         services.AddScoped<ProcessPendingReferralsService>();
         services.AddScoped<GetReferralInfoQuery>();
+
+        // Notification services
+        services.AddSingleton<HolidayCalendarService>();
+        services.AddScoped<NotificationDispatcherService>();
 
         // Admin queries (services per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetAdminStatsQuery>();

@@ -29,6 +29,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<MiniAppUserProgress> MiniAppUserProgresses { get; set; } = null!;
     public DbSet<Payment> Payments { get; set; } = null!;
     public DbSet<Referral> Referrals { get; set; } = null!;
+    public DbSet<NotificationTrigger> NotificationTriggers { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -49,6 +50,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new MiniAppUserProgressConfiguration());
         modelBuilder.ApplyConfiguration(new PaymentConfiguration());
         modelBuilder.ApplyConfiguration(new ReferralConfiguration());
+        modelBuilder.ApplyConfiguration(new NotificationTriggerConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

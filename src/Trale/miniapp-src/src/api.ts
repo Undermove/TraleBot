@@ -42,6 +42,7 @@ export interface MeResponse {
   level?: string | null
   progress?: ProgressDto
   isPro?: boolean
+  notificationsEnabled?: boolean
 }
 
 export interface LessonCompleteResponse {
@@ -268,6 +269,12 @@ export const api = {
       answerIndex: number
       explanation: string
     }>>(`/api/miniapp/modules/${moduleId}/lessons/${lessonId}/questions`),
+
+  updateNotifications: (enabled: boolean) =>
+    request<{ ok: boolean }>('/api/miniapp/notifications', {
+      method: 'PATCH',
+      body: JSON.stringify({ enabled })
+    }),
 
   deleteVocabularyEntry: async (id: string): Promise<void> => {
     const headers: Record<string, string> = {
