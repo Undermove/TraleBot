@@ -30,6 +30,16 @@ if ! git ls-remote --exit-code --heads origin "${BRANCH}" > /dev/null 2>&1; then
     exit 0
 fi
 
+# Drop any uncommitted changes left over from a concurrent run-pipeline tick.
+# Real incident on 2026-05-10: 18:00 run-qa.sh kicked off while 17:00's
+# refactor phase was still mid-flight, leaving FEATURES.md dirty in the
+# working tree. `git checkout main` then aborted with «local changes to
+# … would be overwritten», and no PR was opened. Anything truly important
+# would already be committed by run_agent's pre/post commit hooks, so a
+# hard reset here is safe.
+git reset --hard HEAD 2>/dev/null || true
+git clean -fd 2>/dev/null || true
+
 git checkout main
 git reset --hard origin/main
 git checkout -B "${BRANCH}" "origin/${BRANCH}"
