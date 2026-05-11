@@ -30,10 +30,14 @@ public class NotificationDispatcherService(
             .Where(u => u.NotificationsEnabled)
             .ToListAsync(ct);
 
+        var userIds = users.Select(u => u.Id).ToList();
+        var progresses = await db.MiniAppUserProgresses
+            .Where(p => userIds.Contains(p.UserId))
+            .ToDictionaryAsync(p => p.UserId, ct);
+
         foreach (var user in users)
         {
-            var progress = await db.MiniAppUserProgresses
-                .FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
+            var progress = progresses.GetValueOrDefault(user.Id);
 
             bool sent = await TryHoliday(user, holiday, todayTbilisi, utcNow, ct);
             if (!sent && progress != null)
