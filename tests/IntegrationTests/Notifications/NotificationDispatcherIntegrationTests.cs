@@ -38,6 +38,32 @@ public class NotificationDispatcherIntegrationTests : TestBase
         trigger!.LastSentAt.Should().NotBeNull();
     }
 
+    [Test]
+    public async Task Dispatcher_RunTwiceSameDay_SendsOnlyOnce()
+    {
+        using var scope = _testServer.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ITraleDbContext>();
+
+        var user = Create.User(901_001L, "NotifUser2");
+        user.NotificationsEnabled = true;
+        await db.Users.AddAsync(user);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var fakeSender = new FakeSender();
+        var holidayCalendar = scope.ServiceProvider.GetRequiredService<HolidayCalendarService>();
+        var fakeTime = new FixedTimeProvider(new DateTimeOffset(2026, 1, 6, 20, 0, 0, TimeSpan.Zero));
+
+        var dispatcher = new NotificationDispatcherService(db, holidayCalendar, fakeSender, fakeTime);
+
+        // First run — should send
+        await dispatcher.ExecuteAsync(CancellationToken.None);
+        fakeSender.CallCount.Should().Be(1);
+
+        // Second run on the same Tbilisi day — should NOT send again
+        await dispatcher.ExecuteAsync(CancellationToken.None);
+        fakeSender.CallCount.Should().Be(1, "dispatcher must not re-send on same day");
+    }
+
     private sealed class FakeSender : ITelegramMessageSender
     {
         public int CallCount { get; private set; }
