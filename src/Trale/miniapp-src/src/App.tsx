@@ -57,6 +57,7 @@ export default function App() {
   const [trialDaysLeft, setTrialDaysLeft] = useState(0)
   const [isOwner, setIsOwner] = useState(false)
   const [telegramId, setTelegramId] = useState<number | null>(null)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
   const [vocabularyCount, setVocabularyCount] = useState<number>(0)
 
@@ -79,6 +80,7 @@ export default function App() {
           setIsOwner((meData as any).isOwner ?? false)
           setTelegramId((meData as any).telegramId ?? null)
           setVocabularyCount((meData as any).vocabularyCount ?? 0)
+          setNotificationsEnabled((meData as any).notificationsEnabled ?? true)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
@@ -326,6 +328,7 @@ export default function App() {
             isPro={isPro}
             isOwner={isOwner}
             telegramId={telegramId}
+            notificationsEnabled={notificationsEnabled}
             onPurchaseSuccess={handleProPurchaseSuccess}
             navigate={navigate}
           />

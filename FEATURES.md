@@ -143,6 +143,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `SentenceSlot.tsx` | Single droppable slot in the sentence-builder (empty / preset / filled states). |
 | `ChipPool.tsx` | Scrollable pool of WordChip tokens for sentence-builder drag-to-slot interaction. |
 | `WordChip.tsx` | Tappable chip representing one Georgian word token; selected/used states. |
+| `NotificationSettings.tsx` | Уведомления master toggle in Profile screen. Three sub-label rows (Праздники, Накопленные монеты, Стрик-достижения) with muted state when toggle is off. Calls `PATCH /api/miniapp/notifications`. |
 
 ### Data (`src/data/`)
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
@@ -195,6 +196,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. |
 | DELETE | `/api/miniapp/vocabulary/{id}` | Delete a vocabulary entry. |
 | POST | `/api/miniapp/translate` | Translate a word and add to vocabulary. |
+| PATCH | `/api/miniapp/notifications` | Update user notification preference (`NotificationsEnabled`). Backed by `UpdateNotificationsSettingsService`. |
 
 ### `AdminController` — `/api/admin` (owner-gated)
 | Method | Path | Purpose |

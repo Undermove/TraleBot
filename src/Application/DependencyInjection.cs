@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<GetActivityDaysQuery>();
         services.AddScoped<GetUserVocabularyQuery>();
         services.AddScoped<FeedTreatService>();
+        services.AddScoped<UpdateNotificationsSettingsService>();
 
         // Referral services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<RecordReferralLinkService>();

@@ -6,6 +6,7 @@ import KilimProgress from '../components/KilimProgress'
 import AlphabetGrid from '../components/AlphabetGrid'
 import LetterPopover from '../components/LetterPopover'
 import GeorgianNameCard from '../components/GeorgianNameCard'
+import NotificationSettings from '../components/NotificationSettings'
 import { AlphabetLetterDto, CatalogDto, ProgressState, Screen } from '../types'
 import { api } from '../api'
 
@@ -16,6 +17,7 @@ interface Props {
   isPro: boolean
   isOwner?: boolean
   telegramId?: number | null
+  notificationsEnabled?: boolean
   onPurchaseSuccess: () => void
   navigate: (s: Screen) => void
 }
@@ -52,7 +54,7 @@ function pickEncouragement(streak: number, totalLessons: number): string {
   return `Ты уже знаешь много. Бомбора гордится.`
 }
 
-export default function Profile({ catalog, progress, isPro, isOwner = false, telegramId, onPurchaseSuccess, navigate }: Props) {
+export default function Profile({ catalog, progress, isPro, isOwner = false, telegramId, notificationsEnabled, onPurchaseSuccess, navigate }: Props) {
   const [showPaywall, setShowPaywall] = useState(false)
   const [activityDates, setActivityDates] = useState<Set<string>>(new Set())
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null)
@@ -355,6 +357,9 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
             </div>
           </div>
         </button>
+
+        {/* Notifications master toggle */}
+        <NotificationSettings initialEnabled={notificationsEnabled ?? true} />
 
         {/* Referral — invite friends, get bonus */}
         <ReferralCard />
