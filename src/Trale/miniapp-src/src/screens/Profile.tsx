@@ -491,8 +491,7 @@ function ReferralCard() {
       <div className="jewel-tile px-4 py-4">
         <div className="relative z-[1]">
           <div className="font-sans text-[13px] text-jewelInk-mid mb-3 leading-snug">
-            Друг получит 60 дней триала вместо 30. Ты — {data.bonusLabel}, когда он
-            пройдёт первый урок или добавит 5 слов.
+            {data.bonusLabel}
           </div>
           <div className="flex items-center gap-2 mb-3 jewel-tile px-3 py-2">
             <div className="relative z-[1] flex-1 min-w-0 font-sans text-[12px] text-jewelInk truncate">
@@ -519,13 +518,11 @@ function ReferralCard() {
               Пригласил: {data.invitedCount} · активных: {data.activatedCount}
             </div>
           )}
-          <div className="mt-2 font-sans text-[10px] text-jewelInk-hint">
-            {data.trialCapReached
-              ? 'Максимум бонусов получен. Оформи Pro — и получай +30 дней за каждого друга'
-              : data.todayActivated >= data.dailyLimit
-                ? 'Сегодня лимит достигнут, бонусы продолжатся завтра'
-                : `До ${data.dailyLimit} бонусов в день · до ${data.yearlyLimit} в год`}
-          </div>
+          {data.limitsLabel && (
+            <div className="mt-2 font-sans text-[10px] text-jewelInk-hint">
+              {data.limitsLabel}
+            </div>
+          )}
         </div>
       </div>
     </div>

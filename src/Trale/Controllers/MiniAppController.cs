@@ -414,6 +414,7 @@ public class MiniAppController : Controller
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
             bonusLabel = info.BonusLabel,
+            limitsLabel = info.LimitsLabel,
             todayActivated = info.TodayActivated,
             dailyLimit = info.DailyLimit,
             yearActivated = info.YearActivated,

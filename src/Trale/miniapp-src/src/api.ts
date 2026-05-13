@@ -201,6 +201,7 @@ export const api = {
       invitedCount: number
       activatedCount: number
       bonusLabel: string
+      limitsLabel: string | null
       todayActivated: number
       dailyLimit: number
       yearActivated: number

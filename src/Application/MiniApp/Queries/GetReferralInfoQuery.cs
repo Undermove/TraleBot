@@ -36,21 +36,43 @@ public class GetReferralInfoQuery(ITraleDbContext db)
                           && r.ActivatedAtUtc != null
                           && r.ActivatedAtUtc >= yearAgo, ct);
 
-        string bonusLabel;
-        if (user.IsPro && user.SubscriptionPlan == SubscriptionPlan.Lifetime)
+        var isLifetime = user.IsPro && user.SubscriptionPlan == SubscriptionPlan.Lifetime;
+        var isTrialOrFree = !user.IsPro;
+        var inviteeTotalTrial = User.TrialDays + RecordReferralLinkService.RefereeTrialBonusDays;
+        var dailyCap = TryActivateReferralService.DailyActivationCap;
+        var yearlyCap = TryActivateReferralService.YearlyActivationCap;
+        var trialCap = TryActivateReferralService.TrialLifetimeActivationCap;
+        var proBonus = TryActivateReferralService.ReferrerProBonusDays;
+        var trialBonus = TryActivateReferralService.ReferrerTrialBonusDays;
+        var trialCapReached = isTrialOrFree && activated >= trialCap;
+
+        // Single self-contained sentence describing who gets what.
+        string bonusLabel = isLifetime
+            ? $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. У тебя Lifetime — бонусы не начисляются, но счётчик приглашённых растёт."
+            : user.IsPro
+                ? $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. Тебе — +{proBonus} дней Pro, когда друг пройдёт первый урок или добавит 5 слов."
+                : $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. Тебе — +{trialBonus} дней триала, когда друг пройдёт первый урок или добавит 5 слов.";
+
+        // Cap line — state-specific. Null hides the line in UI.
+        string? limitsLabel;
+        if (isLifetime)
         {
-            bonusLabel = "счётчик друзей (Lifetime — без бонуса)";
+            limitsLabel = null;
         }
-        else if (user.IsPro)
+        else if (isTrialOrFree)
         {
-            bonusLabel = $"+{TryActivateReferralService.ReferrerProBonusDays} дней Pro за каждого активного друга";
+            limitsLabel = trialCapReached
+                ? $"Максимум бонусов получен ({trialCap} друга). Оформи Pro — и получай +{proBonus} дней за каждого следующего."
+                : $"Бонус начисляется за первых {trialCap} друзей. Дальше — оформи Pro, и бонусы продолжатся.";
+        }
+        else if (todayActivated >= dailyCap)
+        {
+            limitsLabel = "Дневной лимит достигнут, бонусы продолжатся завтра.";
         }
         else
         {
-            bonusLabel = $"+{TryActivateReferralService.ReferrerTrialBonusDays} дней триала за каждого активного друга";
+            limitsLabel = $"До {dailyCap} друзей в день · до {yearlyCap} в год.";
         }
-
-        var isTrialOrFree = !user.IsPro;
 
         return new GetReferralInfoResult
         {
@@ -58,12 +80,13 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             InvitedCount = invited,
             ActivatedCount = activated,
             BonusLabel = bonusLabel,
+            LimitsLabel = limitsLabel,
             TodayActivated = todayActivated,
-            DailyLimit = TryActivateReferralService.DailyActivationCap,
+            DailyLimit = dailyCap,
             YearActivated = yearActivated,
-            YearlyLimit = TryActivateReferralService.YearlyActivationCap,
-            TrialCapReached = isTrialOrFree && activated >= TryActivateReferralService.TrialLifetimeActivationCap,
-            TrialLimit = TryActivateReferralService.TrialLifetimeActivationCap
+            YearlyLimit = yearlyCap,
+            TrialCapReached = trialCapReached,
+            TrialLimit = trialCap
         };
     }
 }
@@ -74,6 +97,7 @@ public class GetReferralInfoResult
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
     public string BonusLabel { get; init; } = "";
+    public string? LimitsLabel { get; init; }
     public int TodayActivated { get; init; }
     public int DailyLimit { get; init; }
     public int YearActivated { get; init; }
