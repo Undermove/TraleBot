@@ -48,8 +48,8 @@ const expiredProMeResponse = {
 
 const proMeResponse = { ...expiredProMeResponse, isPro: true, hasAccess: true }
 
-// Minimal catalog: one launch (free-tier) module and one Pro module so we can
-// assert the Pro one is gated. "cases" is in PRO_MODULE_IDS; "alphabet-progressive" is not.
+// Minimal catalog: one launch (free-tier) module, one Pro module, and the
+// personal vocabulary module so we can assert each gating type.
 const catalog = {
   botUsername: 'TraleBot',
   miniAppEnabled: true,
@@ -71,6 +71,13 @@ const catalog = {
       lessons: [
         { id: 1, title: 'L1', short: 'L1', theory: { title: 'L1', goal: 'g', blocks: [] } },
       ],
+    },
+    {
+      id: 'my-vocabulary',
+      title: 'Мой словарь',
+      emoji: '📒',
+      description: 'Личный словарь',
+      lessons: [],
     },
   ],
 }
@@ -107,6 +114,29 @@ test('expired-Pro user sees Pro module locked and paywall opens on tap', async (
   // Tapping a locked tile opens the paywall sheet.
   await proTile.click()
   await expect(page.getByRole('dialog', { name: 'Про-доступ' })).toBeVisible()
+})
+
+test('expired-Pro user sees my-vocabulary locked and paywall opens on tap', async ({ page }) => {
+  await setupApi(page, expiredProMeResponse)
+  await page.goto('/?playwright=1')
+
+  const vocabTile = page.getByTestId('module-tile-my-vocabulary')
+  await expect(vocabTile).toBeVisible()
+  await expect(vocabTile.locator('span[aria-label="Про-доступ"]')).toBeVisible()
+
+  await vocabTile.click()
+  await expect(page.getByRole('dialog', { name: 'Про-доступ' })).toBeVisible()
+})
+
+test('trial user has full access to my-vocabulary', async ({ page }) => {
+  const trialMe = { ...expiredProMeResponse, isPro: false, isTrialActive: true, trialDaysLeft: 20, hasAccess: true }
+  await setupApi(page, trialMe)
+  await page.goto('/?playwright=1')
+
+  const vocabTile = page.getByTestId('module-tile-my-vocabulary')
+  await expect(vocabTile).toBeVisible()
+  // No lock badge for trial users.
+  await expect(vocabTile.locator('span[aria-label="Про-доступ"]')).toBeHidden()
 })
 
 test('active-Pro user can tap a Pro module without paywall', async ({ page }) => {

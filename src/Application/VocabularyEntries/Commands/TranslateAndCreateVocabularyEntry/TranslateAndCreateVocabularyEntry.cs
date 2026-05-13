@@ -26,6 +26,13 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
         {
             var user = await GetUser(request, ct);
 
+            // Hard entitlement gate: translation in chat is for paid subscribers and trial users.
+            // Lapsed Pro / expired trial → user sees a renewal prompt, not a translation.
+            if (!user.HasMiniAppAccess())
+            {
+                return new CreateVocabularyEntryResult.SubscriptionRequired();
+            }
+
             if (IsContainsEmoji(request.Word))
             {
                 return new CreateVocabularyEntryResult.EmojiDetected();

@@ -42,6 +42,13 @@ export interface MeResponse {
   level?: string | null
   progress?: ProgressDto
   isPro?: boolean
+  isTrialActive?: boolean
+  trialDaysLeft?: number
+  isOwner?: boolean
+  telegramId?: number
+  hasAccess?: boolean
+  subscriptionPlan?: string | null
+  subscribedUntil?: string | null
 }
 
 export interface LessonCompleteResponse {

@@ -430,13 +430,8 @@ function ReferralCard() {
     shareText: string
     invitedCount: number
     activatedCount: number
-    bonusLabel: string
-    todayActivated: number
-    dailyLimit: number
-    yearActivated: number
-    yearlyLimit: number
-    trialCapReached: boolean
-    trialLimit: number
+    rules: string[]
+    capReached: boolean
   } | null>(null)
   const [copied, setCopied] = useState(false)
 

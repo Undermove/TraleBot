@@ -253,6 +253,8 @@ export default function App() {
             todayLessons={todayLessons}
             userLevel={userLevel ?? 'beginner'}
             isPro={isPro}
+            isTrialActive={isTrialActive}
+            trialDaysLeft={trialDaysLeft}
             onPurchaseSuccess={handleProPurchaseSuccess}
             onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
             navigate={navigate}
