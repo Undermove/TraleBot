@@ -1,6 +1,7 @@
 using Application.MiniApp.Commands;
 using Application.UnitTests.Common;
 using Application.UnitTests.DSL;
+using Domain.Entities;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
@@ -69,6 +70,40 @@ public class ActivateProStarsCommandTests : CommandTestsBase
 
         var unchanged = Context.Users.First(u => u.Id == user.Id);
         unchanged.ProPurchasedAtUtc.ShouldBe(originalDate);
+    }
+
+    [Test]
+    public async Task ShouldStackPlanOnRemainingTrial_WhenUserPurchasesDuringTrial()
+    {
+        var user = await CreateFreeUser();
+        var registeredAt = DateTime.UtcNow.AddDays(-5);
+        user.RegisteredAtUtc = registeredAt;
+        await Context.SaveChangesAsync();
+
+        await _sut.Handle(
+            new ActivateProStars { UserId = user.Id, Payload = "Stars_Pro_Month" },
+            CancellationToken.None);
+
+        var updated = Context.Users.First(u => u.Id == user.Id);
+        updated.SubscribedUntil.ShouldBe(registeredAt.AddDays(User.TrialDays).AddDays(30));
+    }
+
+    [Test]
+    public async Task ShouldNotStackTrial_WhenTrialAlreadyExpired()
+    {
+        var user = await CreateFreeUser();
+        user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-User.TrialDays - 10);
+        await Context.SaveChangesAsync();
+
+        var before = DateTime.UtcNow;
+        await _sut.Handle(
+            new ActivateProStars { UserId = user.Id, Payload = "Stars_Pro_Month" },
+            CancellationToken.None);
+        var after = DateTime.UtcNow;
+
+        var updated = Context.Users.First(u => u.Id == user.Id);
+        updated.SubscribedUntil.ShouldNotBeNull();
+        updated.SubscribedUntil!.Value.ShouldBeInRange(before.AddDays(30), after.AddDays(30));
     }
 
     [Test]

@@ -5,11 +5,14 @@ namespace Domain.Entities;
 
 public class User
 {
+    public const int TrialDays = 30;
+
     public Guid Id { get; set; }
     public long TelegramId { get; set; }
     public UserAccountType AccountType { get; set; }
     public DateTime? SubscribedUntil { get; set; }
     public DateTime RegisteredAtUtc { get; set; }
+    public DateTime TrialEndsAtUtc => RegisteredAtUtc.AddDays(TrialDays);
     public Guid UserSettingsId { get; set; }
     public required bool InitialLanguageSet { get; set; }
     public bool IsActive { get; set; }

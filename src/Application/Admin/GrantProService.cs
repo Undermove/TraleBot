@@ -37,6 +37,7 @@ public class GrantProService(ITraleDbContext db, ILoggerFactory loggerFactory)
         }
 
         var now = DateTime.UtcNow;
+        var wasAlreadyPro = user.IsPro;
         user.IsPro = true;
         user.SubscriptionPlan = plan;
         if (!user.ProPurchasedAtUtc.HasValue) user.ProPurchasedAtUtc = now;
@@ -47,9 +48,11 @@ public class GrantProService(ITraleDbContext db, ILoggerFactory loggerFactory)
         }
         else if (planInfo.DurationDays.HasValue)
         {
-            var startFrom = user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > now
-                ? user.SubscribedUntil.Value
-                : now;
+            var startFrom = now;
+            if (user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > startFrom)
+                startFrom = user.SubscribedUntil.Value;
+            if (!wasAlreadyPro && user.TrialEndsAtUtc > startFrom)
+                startFrom = user.TrialEndsAtUtc;
             user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
         }
 

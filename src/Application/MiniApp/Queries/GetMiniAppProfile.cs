@@ -39,11 +39,8 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 .Where(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage)
                 .CountAsync(ct);
 
-            // 30-day free trial from registration
-            const int trialDays = 30;
             var now = DateTime.UtcNow;
-            var trialEndsAt = user.RegisteredAtUtc.AddDays(trialDays);
-            var trialDaysLeft = (int)Math.Ceiling((trialEndsAt - now).TotalDays);
+            var trialDaysLeft = (int)Math.Ceiling((user.TrialEndsAtUtc - now).TotalDays);
             var isTrialActive = !user.IsPro && trialDaysLeft > 0;
 
             // Owner has English fallback and debug tooling
