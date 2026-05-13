@@ -25,26 +25,12 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var activated = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == userId && r.ActivatedAtUtc != null, ct);
 
-        var todayActivated = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == userId
-                          && r.ActivatedAtUtc != null
-                          && r.ActivatedAtUtc >= DateTime.UtcNow.Date, ct);
-
-        var yearAgo = DateTime.UtcNow.AddDays(-365);
-        var yearActivated = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == userId
-                          && r.ActivatedAtUtc != null
-                          && r.ActivatedAtUtc >= yearAgo, ct);
-
         var isLifetime = user.IsPro && user.SubscriptionPlan == SubscriptionPlan.Lifetime;
-        var isTrialOrFree = !user.IsPro;
         var inviteeTotalTrial = User.TrialDays + RecordReferralLinkService.RefereeTrialBonusDays;
-        var dailyCap = TryActivateReferralService.DailyActivationCap;
-        var yearlyCap = TryActivateReferralService.YearlyActivationCap;
-        var trialCap = TryActivateReferralService.TrialLifetimeActivationCap;
+        var lifetimeCap = TryActivateReferralService.LifetimeActivationCap;
         var proBonus = TryActivateReferralService.ReferrerProBonusDays;
         var trialBonus = TryActivateReferralService.ReferrerTrialBonusDays;
-        var trialCapReached = isTrialOrFree && activated >= trialCap;
+        var capReached = !isLifetime && activated >= lifetimeCap;
 
         // Single self-contained sentence describing who gets what.
         string bonusLabel = isLifetime
@@ -53,25 +39,17 @@ public class GetReferralInfoQuery(ITraleDbContext db)
                 ? $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. Тебе — +{proBonus} дней Pro, когда друг пройдёт первый урок или добавит 5 слов."
                 : $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. Тебе — +{trialBonus} дней триала, когда друг пройдёт первый урок или добавит 5 слов.";
 
-        // Cap line — state-specific. Null hides the line in UI.
+        // Cap line — null hides the line in UI.
         string? limitsLabel;
         if (isLifetime)
         {
             limitsLabel = null;
         }
-        else if (isTrialOrFree)
-        {
-            limitsLabel = trialCapReached
-                ? $"Максимум бонусов получен ({trialCap} друга). Оформи Pro — и получай +{proBonus} дней за каждого следующего."
-                : $"Бонус начисляется за первых {trialCap} друзей. Дальше — оформи Pro, и бонусы продолжатся.";
-        }
-        else if (todayActivated >= dailyCap)
-        {
-            limitsLabel = "Дневной лимит достигнут, бонусы продолжатся завтра.";
-        }
         else
         {
-            limitsLabel = $"До {dailyCap} друзей в день · до {yearlyCap} в год.";
+            limitsLabel = capReached
+                ? $"Максимум бонусов получен ({lifetimeCap} друга)."
+                : $"Бонус начисляется за первых {lifetimeCap} друзей.";
         }
 
         return new GetReferralInfoResult
@@ -81,12 +59,8 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             ActivatedCount = activated,
             BonusLabel = bonusLabel,
             LimitsLabel = limitsLabel,
-            TodayActivated = todayActivated,
-            DailyLimit = dailyCap,
-            YearActivated = yearActivated,
-            YearlyLimit = yearlyCap,
-            TrialCapReached = trialCapReached,
-            TrialLimit = trialCap
+            LifetimeCap = lifetimeCap,
+            CapReached = capReached
         };
     }
 }
@@ -98,10 +72,6 @@ public class GetReferralInfoResult
     public int ActivatedCount { get; init; }
     public string BonusLabel { get; init; } = "";
     public string? LimitsLabel { get; init; }
-    public int TodayActivated { get; init; }
-    public int DailyLimit { get; init; }
-    public int YearActivated { get; init; }
-    public int YearlyLimit { get; init; }
-    public bool TrialCapReached { get; init; }
-    public int TrialLimit { get; init; }
+    public int LifetimeCap { get; init; }
+    public bool CapReached { get; init; }
 }

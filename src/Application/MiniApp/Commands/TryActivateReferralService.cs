@@ -21,14 +21,9 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
     public const int ReferrerProBonusDays = 30;
     public const int ReferrerTrialBonusDays = 7;
     private const int MinSecondsBetweenRegistrationAndActivation = 3600; // 1 hour
-    private const int DailyActivationCapPerReferrer = 5;
-    private const int YearlyActivationCapPerReferrer = 12;
-    /// <summary>Trial/free users can only earn this many activations total — ever.
-    /// 3 × 7 = 21 bonus days + 30 base trial ≈ 2 months free. After that, go Pro.</summary>
-    public const int TrialLifetimeActivationCap = 3;
-
-    public const int DailyActivationCap = DailyActivationCapPerReferrer;
-    public const int YearlyActivationCap = YearlyActivationCapPerReferrer;
+    /// <summary>Hard lifetime cap on bonus-earning activations per referrer.
+    /// Lifetime-plan users are exempt (they earn no bonus anyway).</summary>
+    public const int LifetimeActivationCap = 3;
 
     public async Task<TryActivateReferralResult> ExecuteAsync(
         Referral referral, string trigger, CancellationToken ct)
@@ -43,41 +38,20 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
             return TryActivateReferralResult.TooEarly;
         }
 
-        // Anti-fraud: cap daily activations per referrer
-        var startOfDay = now.Date;
-        var todayActivations = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
-                          && r.ActivatedAtUtc != null
-                          && r.ActivatedAtUtc >= startOfDay, ct);
-        if (todayActivations >= DailyActivationCapPerReferrer)
-        {
-            return TryActivateReferralResult.DailyCapReached;
-        }
-
-        // Anti-fraud: cap yearly activations per referrer
-        var yearAgo = now.AddDays(-365);
-        var yearActivations = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
-                          && r.ActivatedAtUtc != null
-                          && r.ActivatedAtUtc >= yearAgo, ct);
-        if (yearActivations >= YearlyActivationCapPerReferrer)
-        {
-            return TryActivateReferralResult.YearlyCapReached;
-        }
-
         var referrer = await db.Users.FirstOrDefaultAsync(u => u.Id == referral.ReferrerUserId, ct);
         if (referrer == null) return TryActivateReferralResult.ReferrerGone;
 
-        // Trial/free users have a hard lifetime cap on activations (≈2 months free total)
-        var isTrialOrFree = !referrer.IsPro;
-        if (isTrialOrFree)
+        // Hard lifetime cap of 3 bonus-earning activations. Lifetime users are exempt
+        // because they earn zero bonus — the counter is informational only for them.
+        var isLifetime = referrer.IsPro && referrer.SubscriptionPlan == SubscriptionPlan.Lifetime;
+        if (!isLifetime)
         {
             var totalActivations = await db.Referrals
                 .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
                               && r.ActivatedAtUtc != null, ct);
-            if (totalActivations >= TrialLifetimeActivationCap)
+            if (totalActivations >= LifetimeActivationCap)
             {
-                return TryActivateReferralResult.TrialCapReached;
+                return TryActivateReferralResult.LifetimeCapReached;
             }
         }
 
@@ -116,8 +90,6 @@ public enum TryActivateReferralResult
     AlreadyActivated,
     NoPendingReferral,
     TooEarly,
-    DailyCapReached,
-    YearlyCapReached,
-    TrialCapReached,
+    LifetimeCapReached,
     ReferrerGone
 }

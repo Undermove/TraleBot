@@ -202,12 +202,8 @@ export const api = {
       activatedCount: number
       bonusLabel: string
       limitsLabel: string | null
-      todayActivated: number
-      dailyLimit: number
-      yearActivated: number
-      yearlyLimit: number
-      trialCapReached: boolean
-      trialLimit: number
+      lifetimeCap: number
+      capReached: boolean
     }>('/api/miniapp/referral'),
 
   adminStats: () => request<AdminStats>('/api/admin/stats'),
