@@ -232,7 +232,8 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        if (user.IsPro)
+        // Active-Pro users skip invoice creation; expired-Pro users CAN re-purchase to renew.
+        if (user.HasActivePro())
         {
             return Ok(new { ok = true, alreadyPro = true });
         }

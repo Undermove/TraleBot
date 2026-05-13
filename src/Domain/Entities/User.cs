@@ -29,7 +29,7 @@ public class User
     public virtual ICollection<Achievement> Achievements { get; set; }
     public virtual ICollection<ShareableQuiz> ShareableQuizzes { get; set; }
     public virtual ICollection<Payment> Payments { get; set; }
-    
+
     public bool IsActivePremium()
     {
         if (AccountType != UserAccountType.Premium) return false;
@@ -37,4 +37,45 @@ public class User
         if (!SubscribedUntil.HasValue) return true;
         return SubscribedUntil.Value.Date > DateTime.UtcNow;
     }
+
+    // ============================================================================
+    // Mini-app entitlement model — single source of truth.
+    // Mini-app code MUST go through these helpers instead of inspecting IsPro /
+    // SubscribedUntil / TrialBonusDays directly. Keeps the "is the user paid?"
+    // and "is the user on trial?" logic in one place so expiry is handled uniformly.
+    // ============================================================================
+
+    public bool IsLifetime => IsPro && SubscriptionPlan == Entities.SubscriptionPlan.Lifetime;
+
+    /// <summary>User currently has a non-expired paid subscription (or Lifetime).</summary>
+    public bool HasActivePro(DateTime now)
+    {
+        if (!IsPro) return false;
+        if (IsLifetime) return true;
+        return SubscribedUntil.HasValue && SubscribedUntil.Value > now;
+    }
+
+    public bool HasActivePro() => HasActivePro(DateTime.UtcNow);
+
+    /// <summary>User purchased Pro at some point but the subscription has lapsed.
+    /// They're the renewal-prompt audience.</summary>
+    public bool HasExpiredPro(DateTime now) => IsPro && !HasActivePro(now);
+    public bool HasExpiredPro() => HasExpiredPro(DateTime.UtcNow);
+
+    /// <summary>True if user is in their free trial window. False if they ever became Pro
+    /// (even if that subscription has since expired — once Pro, always counted as having used the trial).</summary>
+    public bool HasActiveTrial(DateTime now) => !IsPro && TrialEndsAtUtc > now;
+    public bool HasActiveTrial() => HasActiveTrial(DateTime.UtcNow);
+
+    /// <summary>The single entitlement check: should the user be allowed to use Pro-gated features?</summary>
+    public bool HasMiniAppAccess(DateTime now) => HasActivePro(now) || HasActiveTrial(now);
+    public bool HasMiniAppAccess() => HasMiniAppAccess(DateTime.UtcNow);
+
+    /// <summary>Days remaining in the trial, ceiling. Zero if trial is not active.</summary>
+    public int TrialDaysLeft(DateTime now)
+    {
+        if (!HasActiveTrial(now)) return 0;
+        return (int)Math.Ceiling((TrialEndsAtUtc - now).TotalDays);
+    }
+    public int TrialDaysLeft() => TrialDaysLeft(DateTime.UtcNow);
 }

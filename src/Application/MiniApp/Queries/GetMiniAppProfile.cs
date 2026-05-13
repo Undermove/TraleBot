@@ -40,8 +40,10 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 .CountAsync(ct);
 
             var now = DateTime.UtcNow;
-            var trialDaysLeft = (int)Math.Ceiling((user.TrialEndsAtUtc - now).TotalDays);
-            var isTrialActive = !user.IsPro && trialDaysLeft > 0;
+            // Entitlement state — single source of truth lives on User entity.
+            var hasActivePro = user.HasActivePro(now);
+            var isTrialActive = user.HasActiveTrial(now);
+            var trialDaysLeft = user.TrialDaysLeft(now);
 
             // Owner has English fallback and debug tooling
             const long ownerTelegramId = 309149393;
@@ -55,9 +57,9 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 VocabularyCount = vocabCount,
                 Level = progress.Level,
                 Progress = progressCalculator.SerializeProgress(progress),
-                IsPro = user.IsPro,
+                IsPro = hasActivePro,
                 IsTrialActive = isTrialActive,
-                TrialDaysLeft = isTrialActive ? trialDaysLeft : 0,
+                TrialDaysLeft = trialDaysLeft,
                 SubscriptionPlan = user.SubscriptionPlan?.ToString(),
                 SubscribedUntil = user.SubscribedUntil,
                 IsOwner = isOwner

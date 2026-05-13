@@ -32,7 +32,9 @@ public class GetReferralInfoQuery(ITraleDbContext db)
                           && r.ActivatedAtUtc != null
                           && r.ActivatedAtUtc >= yearAgo, ct);
 
-        var isLifetime = user.IsPro && user.SubscriptionPlan == SubscriptionPlan.Lifetime;
+        var now = DateTime.UtcNow;
+        var isLifetime = user.IsLifetime;
+        var hasActivePro = user.HasActivePro(now);
         var inviteeTotalTrial = User.TrialDays + RecordReferralLinkService.RefereeTrialBonusDays;
         var dailyCap = TryActivateReferralService.DailyActivationCap;
         var yearlyCap = TryActivateReferralService.YearlyActivationCap;
@@ -52,7 +54,8 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         }
         else
         {
-            var yourBonus = user.IsPro
+            // Pro-expired users earn the trial-style bonus, matching the activator logic.
+            var yourBonus = hasActivePro
                 ? $"+{proBonus} дней Pro"
                 : $"+{trialBonus} дней триала";
             rules.Add($"Ты получишь {yourBonus} за каждого активного друга. Бонусы стакаются.");

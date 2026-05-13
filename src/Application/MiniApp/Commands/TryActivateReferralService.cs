@@ -61,16 +61,17 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
         var referrer = await db.Users.FirstOrDefaultAsync(u => u.Id == referral.ReferrerUserId, ct);
         if (referrer == null) return TryActivateReferralResult.ReferrerGone;
 
-        // Apply the referrer reward
+        // Apply the referrer reward based on their CURRENT entitlement (not stored IsPro flag —
+        // a user with expired Pro should earn the trial-style bonus, not the Pro one).
         int days;
-        if (referrer.IsPro && referrer.SubscriptionPlan == SubscriptionPlan.Lifetime)
+        if (referrer.IsLifetime)
         {
-            days = 0; // Lifetime gets nothing extra — counter only
+            days = 0; // Lifetime gets nothing extra — counter only.
         }
-        else if (referrer.IsPro && referrer.SubscribedUntil.HasValue)
+        else if (referrer.HasActivePro(now))
         {
             days = ReferrerProBonusDays;
-            referrer.SubscribedUntil = referrer.SubscribedUntil.Value.AddDays(days);
+            referrer.SubscribedUntil = referrer.SubscribedUntil!.Value.AddDays(days);
         }
         else
         {
