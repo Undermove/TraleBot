@@ -21,9 +21,8 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
     public const int ReferrerProBonusDays = 30;
     public const int ReferrerTrialBonusDays = 7;
     private const int MinSecondsBetweenRegistrationAndActivation = 3600; // 1 hour
-    /// <summary>Hard lifetime cap on bonus-earning activations per referrer.
-    /// Lifetime-plan users are exempt (they earn no bonus anyway).</summary>
-    public const int LifetimeActivationCap = 3;
+    public const int DailyActivationCap = 5;
+    public const int YearlyActivationCap = 12;
 
     public async Task<TryActivateReferralResult> ExecuteAsync(
         Referral referral, string trigger, CancellationToken ct)
@@ -38,22 +37,29 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
             return TryActivateReferralResult.TooEarly;
         }
 
+        // Anti-fraud: per-day and per-year activation caps per referrer.
+        var startOfDay = now.Date;
+        var todayActivations = await db.Referrals
+            .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
+                          && r.ActivatedAtUtc != null
+                          && r.ActivatedAtUtc >= startOfDay, ct);
+        if (todayActivations >= DailyActivationCap)
+        {
+            return TryActivateReferralResult.DailyCapReached;
+        }
+
+        var yearAgo = now.AddDays(-365);
+        var yearActivations = await db.Referrals
+            .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
+                          && r.ActivatedAtUtc != null
+                          && r.ActivatedAtUtc >= yearAgo, ct);
+        if (yearActivations >= YearlyActivationCap)
+        {
+            return TryActivateReferralResult.YearlyCapReached;
+        }
+
         var referrer = await db.Users.FirstOrDefaultAsync(u => u.Id == referral.ReferrerUserId, ct);
         if (referrer == null) return TryActivateReferralResult.ReferrerGone;
-
-        // Hard lifetime cap of 3 bonus-earning activations. Lifetime users are exempt
-        // because they earn zero bonus — the counter is informational only for them.
-        var isLifetime = referrer.IsPro && referrer.SubscriptionPlan == SubscriptionPlan.Lifetime;
-        if (!isLifetime)
-        {
-            var totalActivations = await db.Referrals
-                .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
-                              && r.ActivatedAtUtc != null, ct);
-            if (totalActivations >= LifetimeActivationCap)
-            {
-                return TryActivateReferralResult.LifetimeCapReached;
-            }
-        }
 
         // Apply the referrer reward
         int days;
@@ -69,7 +75,10 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
         else
         {
             days = ReferrerTrialBonusDays;
-            referrer.RegisteredAtUtc = referrer.RegisteredAtUtc.AddDays(-days);
+            // Shift RegisteredAtUtc forward so TrialEndsAtUtc = RegisteredAt + 30 extends by `days`.
+            // For active trials this stacks (more remaining days). For expired trials the bonus
+            // is absorbed silently — those users should upgrade to Pro to earn meaningful bonuses.
+            referrer.RegisteredAtUtc = referrer.RegisteredAtUtc.AddDays(days);
         }
 
         referral.ActivatedAtUtc = now;
@@ -90,6 +99,7 @@ public enum TryActivateReferralResult
     AlreadyActivated,
     NoPendingReferral,
     TooEarly,
-    LifetimeCapReached,
+    DailyCapReached,
+    YearlyCapReached,
     ReferrerGone
 }

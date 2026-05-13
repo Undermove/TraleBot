@@ -26,12 +26,20 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var activated = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == userId && r.ActivatedAtUtc != null, ct);
 
+        var yearAgo = DateTime.UtcNow.AddDays(-365);
+        var yearActivated = await db.Referrals
+            .CountAsync(r => r.ReferrerUserId == userId
+                          && r.ActivatedAtUtc != null
+                          && r.ActivatedAtUtc >= yearAgo, ct);
+
         var isLifetime = user.IsPro && user.SubscriptionPlan == SubscriptionPlan.Lifetime;
         var inviteeTotalTrial = User.TrialDays + RecordReferralLinkService.RefereeTrialBonusDays;
-        var lifetimeCap = TryActivateReferralService.LifetimeActivationCap;
+        var dailyCap = TryActivateReferralService.DailyActivationCap;
+        var yearlyCap = TryActivateReferralService.YearlyActivationCap;
         var proBonus = TryActivateReferralService.ReferrerProBonusDays;
         var trialBonus = TryActivateReferralService.ReferrerTrialBonusDays;
-        var capReached = !isLifetime && activated >= lifetimeCap;
+        // "Cap reached" for hiding the card = non-Lifetime users who hit the yearly limit.
+        var capReached = !isLifetime && yearActivated >= yearlyCap;
 
         // Rules rendered as a plain bullet list in the UI. Each entry = one line.
         var rules = new List<string>
@@ -47,9 +55,9 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             var yourBonus = user.IsPro
                 ? $"+{proBonus} дней Pro"
                 : $"+{trialBonus} дней триала";
-            rules.Add($"Ты получишь {yourBonus} за каждого активного друга.");
+            rules.Add($"Ты получишь {yourBonus} за каждого активного друга. Бонусы стакаются.");
             rules.Add("Активным считается тот, кто прошёл первый урок или добавил 5 слов.");
-            rules.Add($"Можно пригласить до {lifetimeCap} друзей.");
+            rules.Add($"Можно пригласить до {dailyCap} друзей в день, до {yearlyCap} в год.");
         }
 
         return new GetReferralInfoResult
@@ -58,7 +66,6 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             InvitedCount = invited,
             ActivatedCount = activated,
             Rules = rules,
-            LifetimeCap = lifetimeCap,
             CapReached = capReached
         };
     }
@@ -70,6 +77,5 @@ public class GetReferralInfoResult
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
     public IReadOnlyList<string> Rules { get; init; } = new List<string>();
-    public int LifetimeCap { get; init; }
     public bool CapReached { get; init; }
 }

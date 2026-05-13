@@ -414,7 +414,6 @@ public class MiniAppController : Controller
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
             rules = info.Rules,
-            lifetimeCap = info.LifetimeCap,
             capReached = info.CapReached
         });
     }

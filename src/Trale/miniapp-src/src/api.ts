@@ -201,7 +201,6 @@ export const api = {
       invitedCount: number
       activatedCount: number
       rules: string[]
-      lifetimeCap: number
       capReached: boolean
     }>('/api/miniapp/referral'),
 
