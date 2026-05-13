@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,24 +33,23 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var trialBonus = TryActivateReferralService.ReferrerTrialBonusDays;
         var capReached = !isLifetime && activated >= lifetimeCap;
 
-        // Single self-contained sentence describing who gets what.
-        string bonusLabel = isLifetime
-            ? $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. У тебя Lifetime — бонусы не начисляются, но счётчик приглашённых растёт."
-            : user.IsPro
-                ? $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. Тебе — +{proBonus} дней Pro, когда друг пройдёт первый урок или добавит 5 слов."
-                : $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}. Тебе — +{trialBonus} дней триала, когда друг пройдёт первый урок или добавит 5 слов.";
-
-        // Cap line — null hides the line in UI.
-        string? limitsLabel;
+        // Rules rendered as a plain bullet list in the UI. Each entry = one line.
+        var rules = new List<string>
+        {
+            $"Друг получит {inviteeTotalTrial} дней триала вместо {User.TrialDays}."
+        };
         if (isLifetime)
         {
-            limitsLabel = null;
+            rules.Add("У тебя Lifetime — бонус не начисляется, но счётчик приглашённых растёт.");
         }
         else
         {
-            limitsLabel = capReached
-                ? $"Максимум бонусов получен ({lifetimeCap} друга)."
-                : $"Бонус начисляется за первых {lifetimeCap} друзей.";
+            var yourBonus = user.IsPro
+                ? $"+{proBonus} дней Pro"
+                : $"+{trialBonus} дней триала";
+            rules.Add($"Ты получишь {yourBonus} за каждого активного друга.");
+            rules.Add("Активным считается тот, кто прошёл первый урок или добавил 5 слов.");
+            rules.Add($"Можно пригласить до {lifetimeCap} друзей.");
         }
 
         return new GetReferralInfoResult
@@ -57,8 +57,7 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             ReferrerTelegramId = user.TelegramId,
             InvitedCount = invited,
             ActivatedCount = activated,
-            BonusLabel = bonusLabel,
-            LimitsLabel = limitsLabel,
+            Rules = rules,
             LifetimeCap = lifetimeCap,
             CapReached = capReached
         };
@@ -70,8 +69,7 @@ public class GetReferralInfoResult
     public long ReferrerTelegramId { get; init; }
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
-    public string BonusLabel { get; init; } = "";
-    public string? LimitsLabel { get; init; }
+    public IReadOnlyList<string> Rules { get; init; } = new List<string>();
     public int LifetimeCap { get; init; }
     public bool CapReached { get; init; }
 }

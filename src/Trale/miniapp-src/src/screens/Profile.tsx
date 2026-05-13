@@ -450,6 +450,9 @@ function ReferralCard() {
   }, [])
 
   if (!data) return null
+  // When the referrer has used up their bonus slots, drop the whole card —
+  // owner wants no visual reminder of an exhausted feature.
+  if (data.capReached) return null
 
   async function copy() {
     if (!data) return
@@ -490,9 +493,9 @@ function ReferralCard() {
       <div className="mn-eyebrow mb-2">пригласи друга</div>
       <div className="jewel-tile px-4 py-4">
         <div className="relative z-[1]">
-          <div className="font-sans text-[13px] text-jewelInk-mid mb-3 leading-snug">
-            {data.bonusLabel}
-          </div>
+          <ul className="font-sans text-[13px] text-jewelInk-mid mb-3 leading-snug list-disc pl-5 space-y-1">
+            {data.rules.map((line, i) => <li key={i}>{line}</li>)}
+          </ul>
           <div className="flex items-center gap-2 mb-3 jewel-tile px-3 py-2">
             <div className="relative z-[1] flex-1 min-w-0 font-sans text-[12px] text-jewelInk truncate">
               {data.link}
@@ -516,11 +519,6 @@ function ReferralCard() {
           {data.invitedCount > 0 && (
             <div className="mt-3 font-sans text-[11px] text-jewelInk-mid">
               Пригласил: {data.invitedCount} · активных: {data.activatedCount}
-            </div>
-          )}
-          {data.limitsLabel && (
-            <div className="mt-2 font-sans text-[10px] text-jewelInk-hint">
-              {data.limitsLabel}
             </div>
           )}
         </div>

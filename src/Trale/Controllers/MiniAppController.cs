@@ -413,8 +413,7 @@ public class MiniAppController : Controller
             shareText,
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
-            bonusLabel = info.BonusLabel,
-            limitsLabel = info.LimitsLabel,
+            rules = info.Rules,
             lifetimeCap = info.LifetimeCap,
             capReached = info.CapReached
         });

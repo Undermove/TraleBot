@@ -200,8 +200,7 @@ export const api = {
       shareText: string
       invitedCount: number
       activatedCount: number
-      bonusLabel: string
-      limitsLabel: string | null
+      rules: string[]
       lifetimeCap: number
       capReached: boolean
     }>('/api/miniapp/referral'),
