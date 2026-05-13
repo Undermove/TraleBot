@@ -107,6 +107,50 @@ public class ActivateProStarsCommandTests : CommandTestsBase
     }
 
     [Test]
+    public async Task ShouldRenewSubscription_WhenExpiredProUserPurchasesAgain()
+    {
+        // Subscription lapsed 5 days ago — user clicked Buy from the paywall.
+        var user = await CreateFreeUser();
+        user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-60);
+        user.IsPro = true;
+        user.SubscriptionPlan = SubscriptionPlan.Month;
+        user.SubscribedUntil = DateTime.UtcNow.AddDays(-5);
+        user.TrialBonusDays = 0;
+        await Context.SaveChangesAsync();
+
+        var before = DateTime.UtcNow;
+        await _sut.Handle(
+            new ActivateProStars { UserId = user.Id, Payload = "Stars_Pro_Month" },
+            CancellationToken.None);
+        var after = DateTime.UtcNow;
+
+        var updated = Context.Users.First(u => u.Id == user.Id);
+        // Renewal starts from now (not from the lapsed expiry) — user gets a fresh 30 days.
+        updated.SubscribedUntil!.Value.ShouldBeInRange(before.AddDays(30), after.AddDays(30));
+        updated.HasActivePro().ShouldBeTrue();
+        updated.HasMiniAppAccess().ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task ShouldExtendActiveSubscription_WhenActiveProUserPurchasesAgain()
+    {
+        var user = await CreateFreeUser();
+        user.IsPro = true;
+        user.SubscriptionPlan = SubscriptionPlan.Month;
+        var currentExpiry = DateTime.UtcNow.AddDays(10);
+        user.SubscribedUntil = currentExpiry;
+        await Context.SaveChangesAsync();
+
+        await _sut.Handle(
+            new ActivateProStars { UserId = user.Id, Payload = "Stars_Pro_Month" },
+            CancellationToken.None);
+
+        var updated = Context.Users.First(u => u.Id == user.Id);
+        // Active subs extend from the current expiry, not from now.
+        updated.SubscribedUntil.ShouldBe(currentExpiry.AddDays(30));
+    }
+
+    [Test]
     public async Task ShouldReturnUserNotFound_WhenUserDoesNotExist()
     {
         var result = await _sut.Handle(
