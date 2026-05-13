@@ -61,17 +61,23 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
         var referrer = await db.Users.FirstOrDefaultAsync(u => u.Id == referral.ReferrerUserId, ct);
         if (referrer == null) return TryActivateReferralResult.ReferrerGone;
 
-        // Apply the referrer reward based on their CURRENT entitlement (not stored IsPro flag —
-        // a user with expired Pro should earn the trial-style bonus, not the Pro one).
+        // Apply the referrer reward. Anyone who's ever bought Pro (excl. Lifetime)
+        // gets the +30d Pro bonus — extends an active sub or reactivates a lapsed one.
+        // Free/trial users get +7d that accumulates into TrialBonusDays.
         int days;
         if (referrer.IsLifetime)
         {
             days = 0; // Lifetime gets nothing extra — counter only.
         }
-        else if (referrer.HasActivePro(now))
+        else if (referrer.IsPro)
         {
             days = ReferrerProBonusDays;
-            referrer.SubscribedUntil = referrer.SubscribedUntil!.Value.AddDays(days);
+            // For active sub: extend from current expiry. For lapsed sub: restart from now,
+            // effectively reactivating Pro access on the strength of the referral.
+            var startFrom = referrer.SubscribedUntil.HasValue && referrer.SubscribedUntil.Value > now
+                ? referrer.SubscribedUntil.Value
+                : now;
+            referrer.SubscribedUntil = startFrom.AddDays(days);
         }
         else
         {

@@ -123,12 +123,10 @@ public class ReferralLifecycleTests : CommandTestsBase
     }
 
     [Test]
-    public async Task ExpiredProUserInvitesFriend_FallsBackToTrialBonus()
+    public async Task ExpiredProUserInvitesFriend_ReactivatesSubscriptionForProBonus()
     {
-        // Edge case to document: user paid for Pro, sub lapsed, then a friend activates.
-        // Current behaviour: TrialBonusDays += 7 (entitlement helper picks trial-style
-        // because HasActivePro is false). The 7 days are absorbed but don't translate to
-        // access until the user buys again — they remain in the renewal-prompt audience.
+        // User paid for Pro, sub lapsed, then a friend activates.
+        // Expected: Pro reactivates for ReferrerProBonusDays starting from now.
         var user = await CreateFreeUser();
         user.TelegramId = 103;
         user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-60);
@@ -138,16 +136,48 @@ public class ReferralLifecycleTests : CommandTestsBase
         user.TrialBonusDays = 0;
         await Context.SaveChangesAsync();
 
+        var before = DateTime.UtcNow;
         var referral = await Invite(Context.Users.First(u => u.Id == user.Id));
         var result = await _activator.ExecuteAsync(referral, "first_lesson", CancellationToken.None);
+        var after = DateTime.UtcNow;
 
         result.ShouldBe(TryActivateReferralResult.Activated);
         var updated = Context.Users.First(u => u.Id == user.Id);
-        updated.HasExpiredPro().ShouldBeTrue();
-        updated.TrialBonusDays.ShouldBe(TryActivateReferralService.ReferrerTrialBonusDays);
-        // Critically: TrialBonusDays did NOT grant access (IsPro stored flag stays true).
-        updated.HasActiveTrial().ShouldBeFalse();
-        updated.HasMiniAppAccess().ShouldBeFalse();
+        updated.SubscribedUntil.ShouldNotBeNull();
+        updated.SubscribedUntil!.Value.ShouldBeInRange(
+            before.AddDays(TryActivateReferralService.ReferrerProBonusDays),
+            after.AddDays(TryActivateReferralService.ReferrerProBonusDays));
+        updated.HasActivePro().ShouldBeTrue();
+        updated.HasMiniAppAccess().ShouldBeTrue();
+        // Trial-bonus path was NOT taken — the user's TrialBonusDays stays untouched.
+        updated.TrialBonusDays.ShouldBe(0);
+    }
+
+    [Test]
+    public async Task ExpiredProUserActivatesMultipleFriends_BonusStacksFromReactivation()
+    {
+        var user = await CreateFreeUser();
+        user.TelegramId = 113;
+        user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-60);
+        user.IsPro = true;
+        user.SubscriptionPlan = SubscriptionPlan.Month;
+        user.SubscribedUntil = DateTime.UtcNow.AddDays(-2);
+        await Context.SaveChangesAsync();
+
+        var before = DateTime.UtcNow;
+        var r1 = await Invite(Context.Users.First(u => u.Id == user.Id));
+        await _activator.ExecuteAsync(r1, "first_lesson", CancellationToken.None);
+        var r2 = await Invite(Context.Users.First(u => u.Id == user.Id));
+        await _activator.ExecuteAsync(r2, "vocab_5", CancellationToken.None);
+        var after = DateTime.UtcNow;
+
+        var updated = Context.Users.First(u => u.Id == user.Id);
+        // First activation: starts from now (sub expired) → now+30.
+        // Second activation: starts from previous SubscribedUntil (future) → +30 more.
+        updated.SubscribedUntil!.Value.ShouldBeInRange(
+            before.AddDays(2 * TryActivateReferralService.ReferrerProBonusDays),
+            after.AddDays(2 * TryActivateReferralService.ReferrerProBonusDays));
+        updated.HasActivePro().ShouldBeTrue();
     }
 
     [Test]
