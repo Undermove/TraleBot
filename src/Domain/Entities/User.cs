@@ -12,7 +12,10 @@ public class User
     public UserAccountType AccountType { get; set; }
     public DateTime? SubscribedUntil { get; set; }
     public DateTime RegisteredAtUtc { get; set; }
-    public DateTime TrialEndsAtUtc => RegisteredAtUtc.AddDays(TrialDays);
+    /// <summary>Cumulative bonus trial days earned via referrals (own or as a referee).
+    /// Added to the base 30-day window so bonuses stack and survive trial expiry.</summary>
+    public int TrialBonusDays { get; set; }
+    public DateTime TrialEndsAtUtc => RegisteredAtUtc.AddDays(TrialDays + TrialBonusDays);
     public Guid UserSettingsId { get; set; }
     public required bool InitialLanguageSet { get; set; }
     public bool IsActive { get; set; }

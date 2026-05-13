@@ -39,9 +39,10 @@ public class RecordReferralLinkService(ITraleDbContext db, ILoggerFactory logger
 
         var now = DateTime.UtcNow;
 
-        // Referee bonus: shift RegisteredAtUtc *forward* so trialDaysLeft = (RegisteredAt + 30 - now)
-        // includes the bonus days. (Earlier shift was a sign bug — gave 0 days instead of 60.)
-        newUser.RegisteredAtUtc = newUser.RegisteredAtUtc.AddDays(RefereeTrialBonusDays);
+        // Referee bonus: accumulate trial days into TrialBonusDays.
+        // TrialEndsAtUtc = RegisteredAtUtc + TrialDays + TrialBonusDays, so the bonus
+        // stacks cleanly and RegisteredAtUtc stays as the real registration timestamp.
+        newUser.TrialBonusDays += RefereeTrialBonusDays;
 
         db.Referrals.Add(new Referral
         {

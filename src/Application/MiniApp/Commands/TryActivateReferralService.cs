@@ -75,10 +75,9 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
         else
         {
             days = ReferrerTrialBonusDays;
-            // Shift RegisteredAtUtc forward so TrialEndsAtUtc = RegisteredAt + 30 extends by `days`.
-            // For active trials this stacks (more remaining days). For expired trials the bonus
-            // is absorbed silently — those users should upgrade to Pro to earn meaningful bonuses.
-            referrer.RegisteredAtUtc = referrer.RegisteredAtUtc.AddDays(days);
+            // Accumulate into TrialBonusDays — additive, stacks across activations
+            // and survives trial expiry without rewriting the user's registration date.
+            referrer.TrialBonusDays += days;
         }
 
         referral.ActivatedAtUtc = now;
