@@ -18,11 +18,11 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<TryActivateReferralService>();
 
-    public const int ReferrerProBonusDays = 30;
+    public const int ReferrerProBonusDays = 14;
     public const int ReferrerTrialBonusDays = 7;
     private const int MinSecondsBetweenRegistrationAndActivation = 3600; // 1 hour
     public const int DailyActivationCap = 5;
-    public const int YearlyActivationCap = 12;
+    public const int YearlyActivationCap = 6;
 
     public async Task<TryActivateReferralResult> ExecuteAsync(
         Referral referral, string trigger, CancellationToken ct)
@@ -62,8 +62,8 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
         if (referrer == null) return TryActivateReferralResult.ReferrerGone;
 
         // Apply the referrer reward. Anyone who's ever bought Pro (excl. Lifetime)
-        // gets the +30d Pro bonus — extends an active sub or reactivates a lapsed one.
-        // Free/trial users get +7d that accumulates into TrialBonusDays.
+        // gets ReferrerProBonusDays — extends an active sub or reactivates a lapsed one.
+        // Free/trial users get ReferrerTrialBonusDays added to TrialBonusDays.
         int days;
         if (referrer.IsLifetime)
         {

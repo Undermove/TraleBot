@@ -55,6 +55,7 @@ export default function App() {
   const [isPro, setIsPro] = useState(false)
   const [isTrialActive, setIsTrialActive] = useState(false)
   const [trialDaysLeft, setTrialDaysLeft] = useState(0)
+  const [shouldShowReferralExtensionCta, setShouldShowReferralExtensionCta] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
   const [telegramId, setTelegramId] = useState<number | null>(null)
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
@@ -76,6 +77,7 @@ export default function App() {
           setIsPro(meData.isPro ?? false)
           setIsTrialActive((meData as any).isTrialActive ?? false)
           setTrialDaysLeft((meData as any).trialDaysLeft ?? 0)
+          setShouldShowReferralExtensionCta((meData as any).shouldShowReferralExtensionCta ?? false)
           setIsOwner((meData as any).isOwner ?? false)
           setTelegramId((meData as any).telegramId ?? null)
           setVocabularyCount((meData as any).vocabularyCount ?? 0)
@@ -255,6 +257,7 @@ export default function App() {
             isPro={isPro}
             isTrialActive={isTrialActive}
             trialDaysLeft={trialDaysLeft}
+            shouldShowReferralExtensionCta={shouldShowReferralExtensionCta}
             onPurchaseSuccess={handleProPurchaseSuccess}
             onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
             navigate={navigate}

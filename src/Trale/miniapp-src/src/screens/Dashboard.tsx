@@ -3,6 +3,7 @@ import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProBadge from '../components/ProBadge'
 import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
+import ReferralExtensionCta from '../components/ReferralExtensionCta'
 import DashboardTopBar from '../components/DashboardTopBar'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import TreatShop from '../components/TreatShop'
@@ -21,6 +22,7 @@ interface Props {
   isPro: boolean
   isTrialActive?: boolean
   trialDaysLeft?: number
+  shouldShowReferralExtensionCta?: boolean
   onPurchaseSuccess: () => void
   onProgressUpdate?: (patch: Partial<ProgressState>) => void
   navigate: (s: Screen) => void
@@ -74,7 +76,7 @@ function isSectionUnlocked(
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, shouldShowReferralExtensionCta = false, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
   const isBeginner = userLevel === 'beginner'
   const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
@@ -380,7 +382,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           <>
           {/* Trial banner — visible while trial is active (not for Pro users) */}
           {isTrialActive && !isPro && trialDaysLeft > 0 && (
-            <div className="px-5 pt-2 pb-1">
+            <div className="px-5 pt-2 pb-1 flex flex-col gap-2">
               <div
                 className="jewel-tile px-4 py-3 flex items-center gap-3"
                 style={{ background: '#FBF6EC' }}
@@ -402,6 +404,39 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                   купить
                 </button>
               </div>
+              {/* Within the last few days of trial, surface the extension CTA so the user
+                  can earn +7d by inviting a friend instead of paying. */}
+              {shouldShowReferralExtensionCta && <ReferralExtensionCta variant="block" />}
+            </div>
+          )}
+
+          {/* Trial-expired banner — no active Pro AND no active trial.
+              Shows "Pro закончился / триал истёк" with both buy and extend-via-referral options. */}
+          {!isPro && !isTrialActive && shouldShowReferralExtensionCta && (
+            <div className="px-5 pt-2 pb-1 flex flex-col gap-2">
+              <div
+                className="jewel-tile px-4 py-3 flex items-center gap-3"
+                data-testid="trial-expired-banner"
+                style={{ background: '#FBF6EC' }}
+              >
+                <div className="relative z-[1] text-[22px] leading-none shrink-0">🔒</div>
+                <div className="relative z-[1] flex-1 min-w-0">
+                  <div className="font-sans text-[13px] font-extrabold text-jewelInk leading-tight">
+                    Бесплатный доступ закончился
+                  </div>
+                  <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
+                    Оформи Pro или пригласи друга — продли доступ бесплатно.
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPaywall({ trigger: 'module' })}
+                  className="relative z-[1] shrink-0 px-3 py-1.5 rounded-lg font-sans text-[11px] font-extrabold"
+                  style={{ background: '#F5B820', color: '#15100A', border: '1.5px solid #15100A' }}
+                >
+                  купить
+                </button>
+              </div>
+              <ReferralExtensionCta variant="block" />
             </div>
           )}
           {sections.map((section) => {

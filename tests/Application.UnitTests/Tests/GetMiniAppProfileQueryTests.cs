@@ -116,4 +116,55 @@ public class GetMiniAppProfileQueryTests : CommandTestsBase
         result.IsTrialActive.ShouldBeTrue();
         result.TrialDaysLeft.ShouldBe(24);
     }
+
+    [Test]
+    public async Task ShouldShowReferralExtensionCta_WhenTrialEndsSoon()
+    {
+        // ~2 days left → within the threshold.
+        var user = await CreateFreeUser();
+        user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-User.TrialDays + 2);
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.Handle(new GetMiniAppProfile { UserId = user.Id }, CancellationToken.None);
+
+        result.ShouldShowReferralExtensionCta.ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task ShouldNotShowReferralExtensionCta_WhenTrialFresh()
+    {
+        var user = await CreateFreeUser();
+        user.RegisteredAtUtc = DateTime.UtcNow;
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.Handle(new GetMiniAppProfile { UserId = user.Id }, CancellationToken.None);
+
+        result.ShouldShowReferralExtensionCta.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task ShouldShowReferralExtensionCta_WhenTrialExpired()
+    {
+        var user = await CreateFreeUser();
+        user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-User.TrialDays - 5);
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.Handle(new GetMiniAppProfile { UserId = user.Id }, CancellationToken.None);
+
+        result.ShouldShowReferralExtensionCta.ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task ShouldNotShowReferralExtensionCta_ForLifetimeUser()
+    {
+        var user = await CreateFreeUser();
+        user.IsPro = true;
+        user.SubscriptionPlan = SubscriptionPlan.Lifetime;
+        user.SubscribedUntil = null;
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.Handle(new GetMiniAppProfile { UserId = user.Id }, CancellationToken.None);
+
+        result.ShouldShowReferralExtensionCta.ShouldBeFalse();
+    }
 }
