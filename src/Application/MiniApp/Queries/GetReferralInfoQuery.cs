@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,45 +26,51 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var activated = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == userId && r.ActivatedAtUtc != null, ct);
 
-        var todayActivated = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == userId
-                          && r.ActivatedAtUtc != null
-                          && r.ActivatedAtUtc >= DateTime.UtcNow.Date, ct);
-
         var yearAgo = DateTime.UtcNow.AddDays(-365);
         var yearActivated = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == userId
                           && r.ActivatedAtUtc != null
                           && r.ActivatedAtUtc >= yearAgo, ct);
 
-        string bonusLabel;
-        if (user.IsPro && user.SubscriptionPlan == SubscriptionPlan.Lifetime)
+        var now = DateTime.UtcNow;
+        var isLifetime = user.IsLifetime;
+        // Pro bonus is earned by anyone who ever bought Pro (excl. Lifetime) — including
+        // expired-Pro users, whose +30d will reactivate their subscription.
+        var earnsProBonus = user.IsPro && !isLifetime;
+        var inviteeTotalTrial = User.TrialDays + RecordReferralLinkService.RefereeTrialBonusDays;
+        var dailyCap = TryActivateReferralService.DailyActivationCap;
+        var yearlyCap = TryActivateReferralService.YearlyActivationCap;
+        var proBonus = TryActivateReferralService.ReferrerProBonusDays;
+        var trialBonus = TryActivateReferralService.ReferrerTrialBonusDays;
+        // "Cap reached" for hiding the card = non-Lifetime users who hit the yearly limit.
+        var capReached = !isLifetime && yearActivated >= yearlyCap;
+
+        // Rules rendered as a plain bullet list in the UI. Each entry = one line.
+        var rules = new List<string>
         {
-            bonusLabel = "счётчик друзей (Lifetime — без бонуса)";
-        }
-        else if (user.IsPro)
+            $"Друг получит {inviteeTotalTrial} дней триала вместо {User.TrialDays}."
+        };
+        if (isLifetime)
         {
-            bonusLabel = $"+{TryActivateReferralService.ReferrerProBonusDays} дней Pro за каждого активного друга";
+            rules.Add("У тебя Lifetime — бонус не начисляется, но счётчик приглашённых растёт.");
         }
         else
         {
-            bonusLabel = $"+{TryActivateReferralService.ReferrerTrialBonusDays} дней триала за каждого активного друга";
+            var yourBonus = earnsProBonus
+                ? $"+{proBonus} дней Pro"
+                : $"+{trialBonus} дней триала";
+            rules.Add($"Ты получишь {yourBonus} за каждого активного друга. Бонусы стакаются.");
+            rules.Add("Активным считается тот, кто прошёл первый урок или добавил 5 слов.");
+            rules.Add($"Можно пригласить до {dailyCap} друзей в день, до {yearlyCap} в год.");
         }
-
-        var isTrialOrFree = !user.IsPro;
 
         return new GetReferralInfoResult
         {
             ReferrerTelegramId = user.TelegramId,
             InvitedCount = invited,
             ActivatedCount = activated,
-            BonusLabel = bonusLabel,
-            TodayActivated = todayActivated,
-            DailyLimit = TryActivateReferralService.DailyActivationCap,
-            YearActivated = yearActivated,
-            YearlyLimit = TryActivateReferralService.YearlyActivationCap,
-            TrialCapReached = isTrialOrFree && activated >= TryActivateReferralService.TrialLifetimeActivationCap,
-            TrialLimit = TryActivateReferralService.TrialLifetimeActivationCap
+            Rules = rules,
+            CapReached = capReached
         };
     }
 }
@@ -73,11 +80,6 @@ public class GetReferralInfoResult
     public long ReferrerTelegramId { get; init; }
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
-    public string BonusLabel { get; init; } = "";
-    public int TodayActivated { get; init; }
-    public int DailyLimit { get; init; }
-    public int YearActivated { get; init; }
-    public int YearlyLimit { get; init; }
-    public bool TrialCapReached { get; init; }
-    public int TrialLimit { get; init; }
+    public IReadOnlyList<string> Rules { get; init; } = new List<string>();
+    public bool CapReached { get; init; }
 }

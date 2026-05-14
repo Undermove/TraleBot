@@ -10,11 +10,17 @@ public class UserBuilder
     private Language _currentLanguage = Language.English;
     private bool _initialLanguageSet;
     private DateTime _subscriptionEndDate;
+    private bool _isPro;
+    private SubscriptionPlan? _subscriptionPlan;
 
     public UserBuilder WithPremiumAccountType()
     {
         _accountType = UserAccountType.Premium;
         _subscriptionEndDate = DateTime.UtcNow.AddDays(1);
+        // Premium test users are also Pro in the new Stars model — HasActivePro/HasMiniAppAccess
+        // should return true so mini-app entitlement gates don't reject them.
+        _isPro = true;
+        _subscriptionPlan = SubscriptionPlan.Month;
         return this;
     }
     
@@ -47,7 +53,11 @@ public class UserBuilder
                 UserId = _userId,
                 CurrentLanguage = _currentLanguage
             },
-            SubscribedUntil = _subscriptionEndDate
+            SubscribedUntil = _subscriptionEndDate,
+            IsPro = _isPro,
+            SubscriptionPlan = _subscriptionPlan,
+            // Recent registration so HasActiveTrial defaults to true for free users in tests.
+            RegisteredAtUtc = DateTime.UtcNow
         };
     }
 }

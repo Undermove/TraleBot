@@ -34,6 +34,7 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator, Bot
             CreateVocabularyEntryResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             CreateVocabularyEntryResult.TranslationFailure => client.HandleFailure(request, token),
             CreateVocabularyEntryResult.PremiumRequired premiumRequired => client.HandlePremiumRequired(request, request.User.Settings.CurrentLanguage, premiumRequired.TargetLanguage, token),
+            CreateVocabularyEntryResult.SubscriptionRequired => client.HandleSubscriptionRequired(request, miniAppUrl, token),
             _ => throw new ArgumentOutOfRangeException(nameof(result))
         });
     }

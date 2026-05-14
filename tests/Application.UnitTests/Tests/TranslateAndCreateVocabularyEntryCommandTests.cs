@@ -97,6 +97,73 @@ a paucity of useful answers to the problem of traffic congestion at rush hour
     }
     
     [Test]
+    public async Task ShouldReturnSubscriptionRequired_WhenUserHasNoActiveProOrTrial()
+    {
+        // Lapsed Pro: registered ages ago, paid once, sub expired.
+        var lapsedUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        lapsedUser.RegisteredAtUtc = DateTime.UtcNow.AddDays(-90);
+        lapsedUser.IsPro = true;
+        lapsedUser.SubscriptionPlan = SubscriptionPlan.Month;
+        lapsedUser.SubscribedUntil = DateTime.UtcNow.AddDays(-3);
+        Context.Users.Add(lapsedUser);
+        await Context.SaveChangesAsync();
+
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
+        {
+            UserId = lapsedUser.Id,
+            Word = "paucity"
+        }, CancellationToken.None);
+
+        result.ShouldBeOfType<CreateVocabularyEntryResult.SubscriptionRequired>();
+        Context.VocabularyEntries.Count(v => v.UserId == lapsedUser.Id).ShouldBe(0);
+        _languageTranslatorMock.Verify(
+            s => s.Translate(It.IsAny<string>(), It.IsAny<Language>(), It.IsAny<CancellationToken>()),
+            Times.Never,
+            "translator must not be called when the user is not entitled");
+    }
+
+    [Test]
+    public async Task ShouldTranslate_WhenUserIsOnActiveTrial()
+    {
+        // Newly registered user (no payment) — has 30-day free trial, must be able to translate.
+        var trialUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        trialUser.RegisteredAtUtc = DateTime.UtcNow;
+        trialUser.IsPro = false;
+        trialUser.TrialBonusDays = 0;
+        Context.Users.Add(trialUser);
+        await Context.SaveChangesAsync();
+        _languageTranslatorMock
+            .Setup(s => s.Translate("paucity", Language.English, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Success("недостаточность", "недостаточность", "ex"));
+
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
+        {
+            UserId = trialUser.Id,
+            Word = "paucity"
+        }, CancellationToken.None);
+
+        result.ShouldBeOfType<CreateVocabularyEntryResult.TranslationSuccess>();
+    }
+
+    [Test]
+    public async Task ShouldReturnSubscriptionRequired_WhenTrialAlsoExpired()
+    {
+        var staleUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        staleUser.RegisteredAtUtc = DateTime.UtcNow.AddDays(-31);
+        staleUser.IsPro = false;
+        Context.Users.Add(staleUser);
+        await Context.SaveChangesAsync();
+
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateAndCreateVocabularyEntry
+        {
+            UserId = staleUser.Id,
+            Word = "paucity"
+        }, CancellationToken.None);
+
+        result.ShouldBeOfType<CreateVocabularyEntryResult.SubscriptionRequired>();
+    }
+
+    [Test]
     public async Task ShouldTranslateEnglishWordEvenIfCurrentLanguageIsGeorgian()
     {
         var userWithCurrentLanguageGeorgian = Create.User().WithPremiumAccountType().WithCurrentLanguage(Language.Georgian).Build();

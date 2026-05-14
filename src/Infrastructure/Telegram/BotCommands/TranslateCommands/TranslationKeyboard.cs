@@ -155,7 +155,7 @@ public static class TranslationKeyboard
         CancellationToken token)
     {
         await client.SendTextMessageAsync(
-            request.UserTelegramId, 
+            request.UserTelegramId,
             text: """
                   Бесплатный аккаунт позволяет вести словарь только на одном языке.
 
@@ -168,6 +168,40 @@ public static class TranslationKeyboard
                     InlineKeyboardButton.WithCallbackData("Подробнее о Премиуме", CommandNames.Pay)
                 }
             }),
+            cancellationToken: token);
+    }
+
+    /// <summary>
+    /// User has no entitlement (Pro expired or trial ran out). Send a renewal message
+    /// with a WebApp button that opens the mini-app paywall directly (?paywall=1
+    /// auto-opens the bottom sheet on Dashboard mount).
+    /// </summary>
+    public static async Task HandleSubscriptionRequired(
+        this ITelegramBotClient client,
+        TelegramRequest request,
+        string? miniAppUrl,
+        CancellationToken token)
+    {
+        var rows = new List<InlineKeyboardButton[]>();
+        if (!string.IsNullOrEmpty(miniAppUrl))
+        {
+            var paywallUrl = miniAppUrl.TrimEnd('/') + "/?paywall=1";
+            rows.Add(new[]
+            {
+                InlineKeyboardButton.WithWebApp(
+                    "🚀 Продлить подписку",
+                    new WebAppInfo { Url = paywallUrl })
+            });
+        }
+
+        await client.SendTextMessageAsync(
+            request.UserTelegramId,
+            text: """
+                  Перевод слов и личный словарь — для подписчиков. У тебя сейчас нет активной подписки или триала.
+
+                  Открой приложение и продли, чтобы продолжить.
+                  """,
+            replyMarkup: rows.Count > 0 ? new InlineKeyboardMarkup(rows) : null,
             cancellationToken: token);
     }
     

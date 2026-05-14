@@ -57,10 +57,13 @@ public class ActivateProStars : IRequest<ActivateProStarsResult>
                 }
                 else if (planInfo.DurationDays.HasValue)
                 {
-                    // If user already has active subscription, extend from the later of (now, current expiry)
-                    var startFrom = user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > now
-                        ? user.SubscribedUntil.Value
-                        : now;
+                    // Extend from the latest of: now, existing paid expiry, remaining free trial.
+                    // Trial-period purchases stack instead of forfeiting the trial days.
+                    var startFrom = now;
+                    if (user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > startFrom)
+                        startFrom = user.SubscribedUntil.Value;
+                    if (!wasAlreadyPro && user.TrialEndsAtUtc > startFrom)
+                        startFrom = user.TrialEndsAtUtc;
                     user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
                 }
             }

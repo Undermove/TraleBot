@@ -93,7 +93,10 @@ public class BroadcastService(
                     var planInfo = SubscriptionPlans.ByPlan(plan.Value);
                     if (planInfo?.DurationDays != null)
                     {
-                        user.SubscribedUntil = now.AddDays(planInfo.DurationDays.Value);
+                        // !user.IsPro guard above means the recipient is in (or past) the free trial —
+                        // stack the gifted plan on top of whatever trial days remain.
+                        var startFrom = user.TrialEndsAtUtc > now ? user.TrialEndsAtUtc : now;
+                        user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
                     }
                 }
                 granted++;

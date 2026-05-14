@@ -232,7 +232,8 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        if (user.IsPro)
+        // Active-Pro users skip invoice creation; expired-Pro users CAN re-purchase to renew.
+        if (user.HasActivePro())
         {
             return Ok(new { ok = true, alreadyPro = true });
         }
@@ -413,13 +414,8 @@ public class MiniAppController : Controller
             shareText,
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
-            bonusLabel = info.BonusLabel,
-            todayActivated = info.TodayActivated,
-            dailyLimit = info.DailyLimit,
-            yearActivated = info.YearActivated,
-            yearlyLimit = info.YearlyLimit,
-            trialCapReached = info.TrialCapReached,
-            trialLimit = info.TrialLimit
+            rules = info.Rules,
+            capReached = info.CapReached
         });
     }
 

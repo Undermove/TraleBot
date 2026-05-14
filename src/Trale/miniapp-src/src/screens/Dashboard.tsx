@@ -514,17 +514,17 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                         : 120 + currentIdx * 50
 
                       const isProLocked = !hasAccess && PRO_MODULE_IDS.has(m.id)
-                      const isVocabAtLimit = !hasAccess && m.id === 'my-vocabulary' && (progress.completedLessons['my-vocabulary']?.length ?? 0) >= 50
+                      // Personal vocabulary is fully gated behind subscription — no free quota.
+                      const isVocabLocked = !hasAccess && m.id === 'my-vocabulary'
+                      const isVocabAtLimit = false // Legacy free-tier limit retired; gating is now binary.
 
                       return (
                         <button
                           key={m.id}
                           data-testid={`module-tile-${m.id}`}
                           onClick={() => {
-                            if (isProLocked) {
+                            if (isProLocked || isVocabLocked) {
                               setPaywall({ trigger: 'module' })
-                            } else if (isVocabAtLimit) {
-                              setPaywall({ trigger: 'vocabulary_limit' })
                             } else if (m.id === 'my-vocabulary') {
                               navigate({ kind: 'vocabulary-list' })
                             } else {
@@ -538,7 +538,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                             {/* Icon medallion */}
                             <div className="shrink-0 relative">
                               <div
-                                className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center${isProLocked ? ' opacity-60' : ''}`}
+                                className={`w-12 h-12 rounded-xl ${accentBg} border-[1.5px] border-jewelInk flex items-center justify-center${(isProLocked || isVocabLocked) ? ' opacity-60' : ''}`}
                                 style={{ boxShadow: '2px 2px 0 #15100A' }}
                               >
                                 <span className="font-geo text-[24px] font-extrabold text-cream leading-none">
@@ -563,7 +563,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                                     {moduleGeo}
                                   </span>
                                 )}
-                                {(isProLocked || isVocabAtLimit) && (
+                                {(isProLocked || isVocabLocked) && (
                                   <span className="shrink-0 ml-auto">
                                     <ProBadge />
                                   </span>
@@ -590,7 +590,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                               ) : (
                                 <div className="mt-1">
                                   <span className="font-sans text-[12px] text-jewelInk-mid">
-                                    {isVocabAtLimit ? '50 слов — лимит Free' : 'твои слова · квизы на выбор'}
+                                    {isVocabLocked ? 'для подписчиков' : 'твои слова · квизы на выбор'}
                                   </span>
                                 </div>
                               )}

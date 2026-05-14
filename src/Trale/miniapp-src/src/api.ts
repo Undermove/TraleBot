@@ -42,6 +42,13 @@ export interface MeResponse {
   level?: string | null
   progress?: ProgressDto
   isPro?: boolean
+  isTrialActive?: boolean
+  trialDaysLeft?: number
+  isOwner?: boolean
+  telegramId?: number
+  hasAccess?: boolean
+  subscriptionPlan?: string | null
+  subscribedUntil?: string | null
 }
 
 export interface LessonCompleteResponse {
@@ -200,13 +207,8 @@ export const api = {
       shareText: string
       invitedCount: number
       activatedCount: number
-      bonusLabel: string
-      todayActivated: number
-      dailyLimit: number
-      yearActivated: number
-      yearlyLimit: number
-      trialCapReached: boolean
-      trialLimit: number
+      rules: string[]
+      capReached: boolean
     }>('/api/miniapp/referral'),
 
   adminStats: () => request<AdminStats>('/api/admin/stats'),

@@ -21,14 +21,8 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
     public const int ReferrerProBonusDays = 30;
     public const int ReferrerTrialBonusDays = 7;
     private const int MinSecondsBetweenRegistrationAndActivation = 3600; // 1 hour
-    private const int DailyActivationCapPerReferrer = 5;
-    private const int YearlyActivationCapPerReferrer = 12;
-    /// <summary>Trial/free users can only earn this many activations total — ever.
-    /// 3 × 7 = 21 bonus days + 30 base trial ≈ 2 months free. After that, go Pro.</summary>
-    public const int TrialLifetimeActivationCap = 3;
-
-    public const int DailyActivationCap = DailyActivationCapPerReferrer;
-    public const int YearlyActivationCap = YearlyActivationCapPerReferrer;
+    public const int DailyActivationCap = 5;
+    public const int YearlyActivationCap = 12;
 
     public async Task<TryActivateReferralResult> ExecuteAsync(
         Referral referral, string trigger, CancellationToken ct)
@@ -43,24 +37,23 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
             return TryActivateReferralResult.TooEarly;
         }
 
-        // Anti-fraud: cap daily activations per referrer
+        // Anti-fraud: per-day and per-year activation caps per referrer.
         var startOfDay = now.Date;
         var todayActivations = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
                           && r.ActivatedAtUtc != null
                           && r.ActivatedAtUtc >= startOfDay, ct);
-        if (todayActivations >= DailyActivationCapPerReferrer)
+        if (todayActivations >= DailyActivationCap)
         {
             return TryActivateReferralResult.DailyCapReached;
         }
 
-        // Anti-fraud: cap yearly activations per referrer
         var yearAgo = now.AddDays(-365);
         var yearActivations = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
                           && r.ActivatedAtUtc != null
                           && r.ActivatedAtUtc >= yearAgo, ct);
-        if (yearActivations >= YearlyActivationCapPerReferrer)
+        if (yearActivations >= YearlyActivationCap)
         {
             return TryActivateReferralResult.YearlyCapReached;
         }
@@ -68,34 +61,30 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
         var referrer = await db.Users.FirstOrDefaultAsync(u => u.Id == referral.ReferrerUserId, ct);
         if (referrer == null) return TryActivateReferralResult.ReferrerGone;
 
-        // Trial/free users have a hard lifetime cap on activations (≈2 months free total)
-        var isTrialOrFree = !referrer.IsPro;
-        if (isTrialOrFree)
-        {
-            var totalActivations = await db.Referrals
-                .CountAsync(r => r.ReferrerUserId == referral.ReferrerUserId
-                              && r.ActivatedAtUtc != null, ct);
-            if (totalActivations >= TrialLifetimeActivationCap)
-            {
-                return TryActivateReferralResult.TrialCapReached;
-            }
-        }
-
-        // Apply the referrer reward
+        // Apply the referrer reward. Anyone who's ever bought Pro (excl. Lifetime)
+        // gets the +30d Pro bonus — extends an active sub or reactivates a lapsed one.
+        // Free/trial users get +7d that accumulates into TrialBonusDays.
         int days;
-        if (referrer.IsPro && referrer.SubscriptionPlan == SubscriptionPlan.Lifetime)
+        if (referrer.IsLifetime)
         {
-            days = 0; // Lifetime gets nothing extra — counter only
+            days = 0; // Lifetime gets nothing extra — counter only.
         }
-        else if (referrer.IsPro && referrer.SubscribedUntil.HasValue)
+        else if (referrer.IsPro)
         {
             days = ReferrerProBonusDays;
-            referrer.SubscribedUntil = referrer.SubscribedUntil.Value.AddDays(days);
+            // For active sub: extend from current expiry. For lapsed sub: restart from now,
+            // effectively reactivating Pro access on the strength of the referral.
+            var startFrom = referrer.SubscribedUntil.HasValue && referrer.SubscribedUntil.Value > now
+                ? referrer.SubscribedUntil.Value
+                : now;
+            referrer.SubscribedUntil = startFrom.AddDays(days);
         }
         else
         {
             days = ReferrerTrialBonusDays;
-            referrer.RegisteredAtUtc = referrer.RegisteredAtUtc.AddDays(-days);
+            // Accumulate into TrialBonusDays — additive, stacks across activations
+            // and survives trial expiry without rewriting the user's registration date.
+            referrer.TrialBonusDays += days;
         }
 
         referral.ActivatedAtUtc = now;
@@ -118,6 +107,5 @@ public enum TryActivateReferralResult
     TooEarly,
     DailyCapReached,
     YearlyCapReached,
-    TrialCapReached,
     ReferrerGone
 }
