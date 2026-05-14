@@ -81,30 +81,35 @@ public class BroadcastService(
         {
             if (plan.HasValue)
             {
-                var wasAlreadyPro = user.IsPro;
-                user.IsPro = true;
-                user.SubscriptionPlan = plan.Value;
-                user.ProPurchasedAtUtc ??= now;
-                if (plan.Value == SubscriptionPlan.Lifetime)
+                // Never downgrade a Lifetime subscriber via a bulk grant of a shorter plan.
+                var isLifetimeDowngrade = user.IsLifetime && plan.Value != SubscriptionPlan.Lifetime;
+                if (!isLifetimeDowngrade)
                 {
-                    user.SubscribedUntil = null;
-                }
-                else
-                {
-                    var planInfo = SubscriptionPlans.ByPlan(plan.Value);
-                    if (planInfo?.DurationDays != null)
+                    var wasAlreadyPro = user.IsPro;
+                    user.IsPro = true;
+                    user.SubscriptionPlan = plan.Value;
+                    user.ProPurchasedAtUtc ??= now;
+                    if (plan.Value == SubscriptionPlan.Lifetime)
                     {
-                        // Stack gifted plan on top of: active paid expiry, then remaining trial.
-                        // Mirrors GrantProService so expired-Pro users (IsPro=true but lapsed) also renew.
-                        var startFrom = now;
-                        if (user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > startFrom)
-                            startFrom = user.SubscribedUntil.Value;
-                        if (!wasAlreadyPro && user.TrialEndsAtUtc > startFrom)
-                            startFrom = user.TrialEndsAtUtc;
-                        user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
+                        user.SubscribedUntil = null;
                     }
+                    else
+                    {
+                        var planInfo = SubscriptionPlans.ByPlan(plan.Value);
+                        if (planInfo?.DurationDays != null)
+                        {
+                            // Stack gifted plan on top of: active paid expiry, then remaining trial.
+                            // Mirrors GrantProService so expired-Pro users (IsPro=true but lapsed) also renew.
+                            var startFrom = now;
+                            if (user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > startFrom)
+                                startFrom = user.SubscribedUntil.Value;
+                            if (!wasAlreadyPro && user.TrialEndsAtUtc > startFrom)
+                                startFrom = user.TrialEndsAtUtc;
+                            user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
+                        }
+                    }
+                    granted++;
                 }
-                granted++;
             }
 
             var ok = await telegramSender.SendTextAsync(
