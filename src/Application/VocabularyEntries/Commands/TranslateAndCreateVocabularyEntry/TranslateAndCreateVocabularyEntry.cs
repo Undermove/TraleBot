@@ -56,13 +56,6 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
 
             var targetLanguage = wordLanguage == Language.Russian ? user.Settings.CurrentLanguage : wordLanguage;
 
-            if (!user.HasMiniAppAccess() && targetLanguage != user.Settings.CurrentLanguage)
-            {
-                return new CreateVocabularyEntryResult.PremiumRequired(
-                    user.Settings.CurrentLanguage,
-                    targetLanguage);
-            }
-
             var translationResult = await languageTranslator.Translate(request.Word, targetLanguage, ct);
             return translationResult switch
             {
