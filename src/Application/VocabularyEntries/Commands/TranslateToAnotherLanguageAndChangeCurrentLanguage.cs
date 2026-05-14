@@ -22,7 +22,7 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguage: IRequest<Change
             object?[] keyValues = { request.VocabularyEntryId };
             var sourceEntry = await context.VocabularyEntries.FindAsync(keyValues, cancellationToken: ct);
 
-            if (!request.User.IsActivePremium())
+            if (!request.User.HasActivePro())
             {
                 return new ChangeAndTranslationResult.PremiumRequired(user.Settings.CurrentLanguage, request.TargetLanguage, request.VocabularyEntryId);
             }

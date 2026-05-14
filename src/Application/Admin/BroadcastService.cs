@@ -79,8 +79,9 @@ public class BroadcastService(
 
         foreach (var user in users)
         {
-            if (plan.HasValue && !user.IsPro)
+            if (plan.HasValue)
             {
+                var wasAlreadyPro = user.IsPro;
                 user.IsPro = true;
                 user.SubscriptionPlan = plan.Value;
                 user.ProPurchasedAtUtc ??= now;
@@ -93,9 +94,13 @@ public class BroadcastService(
                     var planInfo = SubscriptionPlans.ByPlan(plan.Value);
                     if (planInfo?.DurationDays != null)
                     {
-                        // !user.IsPro guard above means the recipient is in (or past) the free trial —
-                        // stack the gifted plan on top of whatever trial days remain.
-                        var startFrom = user.TrialEndsAtUtc > now ? user.TrialEndsAtUtc : now;
+                        // Stack gifted plan on top of: active paid expiry, then remaining trial.
+                        // Mirrors GrantProService so expired-Pro users (IsPro=true but lapsed) also renew.
+                        var startFrom = now;
+                        if (user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > startFrom)
+                            startFrom = user.SubscribedUntil.Value;
+                        if (!wasAlreadyPro && user.TrialEndsAtUtc > startFrom)
+                            startFrom = user.TrialEndsAtUtc;
                         user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
                     }
                 }
