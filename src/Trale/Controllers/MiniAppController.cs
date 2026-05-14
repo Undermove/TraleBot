@@ -416,6 +416,7 @@ public class MiniAppController : Controller
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
             rules = info.Rules,
+            bonusShortLabel = info.BonusShortLabel,
             capReached = info.CapReached
         });
     }

@@ -45,23 +45,28 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         // "Cap reached" for hiding the card = non-Lifetime users who hit the yearly limit.
         var capReached = !isLifetime && yearActivated >= yearlyCap;
 
+        // Short bonus label used by the trial banner / paywall CTA — matches the exact reward
+        // the activator will hand out so banner copy never contradicts the rules section.
+        var bonusShortLabel = isLifetime
+            ? ""
+            : earnsProBonus
+                ? $"+{proBonus} дней Pro"
+                : $"+{trialBonus} дней триала";
+
         // Rules rendered as a plain bullet list in the UI. Each entry = one line.
         var rules = new List<string>
         {
-            $"Друг получит {inviteeTotalTrial} дней триала вместо {User.TrialDays}."
+            $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}."
         };
         if (isLifetime)
         {
-            rules.Add("У тебя Lifetime — бонус не начисляется, но счётчик приглашённых растёт.");
+            rules.Add("У тебя Lifetime — бонусы не начисляются, но счётчик приглашённых растёт.");
         }
         else
         {
-            var yourBonus = earnsProBonus
-                ? $"+{proBonus} дней Pro"
-                : $"+{trialBonus} дней триала";
-            rules.Add($"Ты получишь {yourBonus} за каждого активного друга. Бонусы стакаются.");
-            rules.Add("Активным считается тот, кто прошёл первый урок или добавил 5 слов.");
-            rules.Add($"Можно пригласить до {dailyCap} друзей в день, до {yearlyCap} в год.");
+            rules.Add($"Тебе — {bonusShortLabel} за каждого активного друга. Бонусы стакаются.");
+            rules.Add("«Активный» — друг прошёл первый урок, добавил 5 слов или оформил подписку.");
+            rules.Add($"Лимиты: до {dailyCap} друзей в день, до {yearlyCap} в год.");
         }
 
         return new GetReferralInfoResult
@@ -70,6 +75,7 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             InvitedCount = invited,
             ActivatedCount = activated,
             Rules = rules,
+            BonusShortLabel = bonusShortLabel,
             CapReached = capReached
         };
     }
@@ -81,5 +87,9 @@ public class GetReferralInfoResult
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
     public IReadOnlyList<string> Rules { get; init; } = new List<string>();
+    /// <summary>Short bonus label matching what the activator awards ("+7 дней триала",
+    /// "+30 дней Pro", or empty for Lifetime). Used by banner/paywall CTAs to keep
+    /// the promise consistent with the rules section.</summary>
+    public string BonusShortLabel { get; init; } = "";
     public bool CapReached { get; init; }
 }
