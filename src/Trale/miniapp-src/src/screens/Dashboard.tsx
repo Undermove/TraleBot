@@ -425,7 +425,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                     Бесплатный доступ закончился
                   </div>
                   <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
-                    Оформи Pro или продли бесплатно — пригласи друга и получи +7 дней.
+                    Оформи Pro или пригласи друга — продли доступ бесплатно.
                   </div>
                 </div>
                 <button
