@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Admin;
@@ -138,13 +139,19 @@ public class AdminController : Controller
     public async Task<IActionResult> BroadcastPreview(
         [FromQuery] int? activeWithinDays,
         [FromQuery] int minVocab = 0,
+        [FromQuery] DateTime? registeredAfterUtc = null,
+        [FromQuery] DateTime? registeredBeforeUtc = null,
+        [FromQuery] string? proStatus = null,
         CancellationToken ct = default)
     {
         if (!await IsOwnerAsync(ct)) return NotFound();
         var segment = new BroadcastSegment
         {
             ActiveWithinDays = activeWithinDays,
-            MinVocabularyCount = minVocab
+            MinVocabularyCount = minVocab,
+            RegisteredAfterUtc = registeredAfterUtc,
+            RegisteredBeforeUtc = registeredBeforeUtc,
+            ProStatus = ParseProStatus(proStatus)
         };
         var preview = await _broadcast.PreviewAsync(segment, ct);
         return Ok(preview);
@@ -154,6 +161,9 @@ public class AdminController : Controller
     {
         public int? ActiveWithinDays { get; set; }
         public int MinVocabularyCount { get; set; }
+        public DateTime? RegisteredAfterUtc { get; set; }
+        public DateTime? RegisteredBeforeUtc { get; set; }
+        public string? ProStatus { get; set; }
         public string Message { get; set; } = string.Empty;
         public string? GrantPlan { get; set; }
         public bool DryRun { get; set; } = true;
@@ -167,13 +177,23 @@ public class AdminController : Controller
         var segment = new BroadcastSegment
         {
             ActiveWithinDays = req.ActiveWithinDays,
-            MinVocabularyCount = req.MinVocabularyCount
+            MinVocabularyCount = req.MinVocabularyCount,
+            RegisteredAfterUtc = req.RegisteredAfterUtc,
+            RegisteredBeforeUtc = req.RegisteredBeforeUtc,
+            ProStatus = ParseProStatus(req.ProStatus)
         };
         var result = await _broadcast.ExecuteAsync(
             segment, req.Message, req.GrantPlan, req.DryRun, req.IncludeMiniAppButton, ct);
         if (result.Error != null) return BadRequest(result);
         return Ok(result);
     }
+
+    private static BroadcastProFilter ParseProStatus(string? v) => v switch
+    {
+        "active" => BroadcastProFilter.ActiveProOnly,
+        "free" => BroadcastProFilter.NoActiveProOnly,
+        _ => BroadcastProFilter.Any
+    };
 
     /// <summary>
     /// Returns true ONLY if the request is authenticated via X-Telegram-Init-Data

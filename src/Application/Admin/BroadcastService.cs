@@ -142,6 +142,38 @@ public class BroadcastService(
                 db.VocabularyEntries.Count(v => v.UserId == u.Id) >= minVocab);
         }
 
+        // Filter by registration date range — for targeting cohorts (e.g. signups May 1-5).
+        if (segment.RegisteredAfterUtc.HasValue)
+        {
+            var since = segment.RegisteredAfterUtc.Value;
+            users = users.Where(u => u.RegisteredAtUtc >= since);
+        }
+        if (segment.RegisteredBeforeUtc.HasValue)
+        {
+            var until = segment.RegisteredBeforeUtc.Value;
+            users = users.Where(u => u.RegisteredAtUtc < until);
+        }
+
+        // Filter by Pro entitlement. "active" = currently has Pro access (Lifetime or
+        // non-expired SubscribedUntil). "free" = the complement — never paid, in trial,
+        // or lapsed subscriber. Mirrors User.HasActivePro semantics so a renewal push
+        // can target exactly the people who'd benefit from it.
+        var nowUtc = DateTime.UtcNow;
+        if (segment.ProStatus == BroadcastProFilter.ActiveProOnly)
+        {
+            users = users.Where(u =>
+                u.IsPro &&
+                (u.SubscriptionPlan == SubscriptionPlan.Lifetime ||
+                 (u.SubscribedUntil.HasValue && u.SubscribedUntil.Value > nowUtc)));
+        }
+        else if (segment.ProStatus == BroadcastProFilter.NoActiveProOnly)
+        {
+            users = users.Where(u =>
+                !u.IsPro ||
+                (u.SubscriptionPlan != SubscriptionPlan.Lifetime &&
+                 (!u.SubscribedUntil.HasValue || u.SubscribedUntil.Value <= nowUtc)));
+        }
+
         // Filter by activity recency (only when explicitly requested)
         if (segment.ActiveWithinDays.HasValue && segment.ActiveWithinDays.Value > 0)
         {
@@ -171,6 +203,22 @@ public class BroadcastSegment
 
     /// <summary>Optional recency filter — null/0 means no recency filter (waking dormant users).</summary>
     public int? ActiveWithinDays { get; set; }
+
+    /// <summary>Lower bound of the registration date range (inclusive UTC). Null = no lower bound.</summary>
+    public DateTime? RegisteredAfterUtc { get; set; }
+
+    /// <summary>Upper bound of the registration date range (exclusive UTC). Null = no upper bound.</summary>
+    public DateTime? RegisteredBeforeUtc { get; set; }
+
+    /// <summary>Filter by Pro entitlement. Default Any = no filter.</summary>
+    public BroadcastProFilter ProStatus { get; set; } = BroadcastProFilter.Any;
+}
+
+public enum BroadcastProFilter
+{
+    Any,
+    ActiveProOnly,
+    NoActiveProOnly
 }
 
 public interface ITelegramMessageSender
