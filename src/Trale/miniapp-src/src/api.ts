@@ -237,10 +237,19 @@ export const api = {
       method: 'POST'
     }),
 
-  adminBroadcastPreview: (opts: { activeWithinDays?: number | null; minVocab?: number }) => {
+  adminBroadcastPreview: (opts: {
+    activeWithinDays?: number | null
+    minVocab?: number
+    registeredAfterUtc?: string | null
+    registeredBeforeUtc?: string | null
+    proStatus?: 'active' | 'free' | null
+  }) => {
     const params = new URLSearchParams()
     if (opts.activeWithinDays != null) params.set('activeWithinDays', String(opts.activeWithinDays))
     if (opts.minVocab) params.set('minVocab', String(opts.minVocab))
+    if (opts.registeredAfterUtc) params.set('registeredAfterUtc', opts.registeredAfterUtc)
+    if (opts.registeredBeforeUtc) params.set('registeredBeforeUtc', opts.registeredBeforeUtc)
+    if (opts.proStatus) params.set('proStatus', opts.proStatus)
     return request<{ totalRecipients: number; sampleTelegramIds: number[] }>(
       `/api/admin/broadcast/preview?${params}`
     )
@@ -248,6 +257,9 @@ export const api = {
   adminBroadcast: (body: {
     activeWithinDays?: number | null
     minVocabularyCount?: number
+    registeredAfterUtc?: string | null
+    registeredBeforeUtc?: string | null
+    proStatus?: 'active' | 'free' | null
     message: string
     grantPlan: string | null
     dryRun: boolean

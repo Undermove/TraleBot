@@ -236,17 +236,42 @@ function BroadcastPanel() {
   const [minVocab, setMinVocab] = useState(10)
   const [useActivity, setUseActivity] = useState(false)
   const [days, setDays] = useState(365)
-  const [grantPlan, setGrantPlan] = useState<string>('Lifetime')
+  const [useRegisteredRange, setUseRegisteredRange] = useState(false)
+  const [registeredAfterDate, setRegisteredAfterDate] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() - 1)
+    return d.toISOString().slice(0, 10) // YYYY-MM-DD
+  })
+  const [registeredBeforeDate, setRegisteredBeforeDate] = useState('') // empty = no upper bound
+  const [proStatus, setProStatus] = useState<'any' | 'active' | 'free'>('any')
+  // Default: no Pro grant — broadcast is just a message. Owner picks a plan explicitly.
+  const [grantPlan, setGrantPlan] = useState<string>('')
   const [includeMiniAppButton, setIncludeMiniAppButton] = useState(true)
   const [message, setMessage] = useState('')
   const [preview, setPreview] = useState<{ totalRecipients: number; sampleTelegramIds: number[] } | null>(null)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<string | null>(null)
 
+  // Build UTC midnight ISO strings for the registration range. Empty = no bound.
+  const registeredAfterUtcIso = useRegisteredRange && registeredAfterDate
+    ? new Date(registeredAfterDate + 'T00:00:00Z').toISOString()
+    : null
+  const registeredBeforeUtcIso = useRegisteredRange && registeredBeforeDate
+    ? new Date(registeredBeforeDate + 'T00:00:00Z').toISOString()
+    : null
+  const proStatusParam: 'active' | 'free' | null = proStatus === 'any' ? null : proStatus
+
   function segmentSummary() {
     const parts: string[] = []
     if (minVocab > 0) parts.push(`словарь ≥ ${minVocab}`)
     if (useActivity) parts.push(`активные за ${days}д`)
+    if (useRegisteredRange) {
+      const a = registeredAfterDate || '…'
+      const b = registeredBeforeDate || 'сейчас'
+      parts.push(`зарегались ${a} → ${b}`)
+    }
+    if (proStatus === 'active') parts.push('только с активной подпиской')
+    if (proStatus === 'free') parts.push('только без активной подписки')
     if (parts.length === 0) parts.push('все юзеры')
     return parts.join(' + ')
   }
@@ -255,6 +280,9 @@ function BroadcastPanel() {
     return {
       activeWithinDays: useActivity ? days : null,
       minVocabularyCount: minVocab,
+      registeredAfterUtc: registeredAfterUtcIso,
+      registeredBeforeUtc: registeredBeforeUtcIso,
+      proStatus: proStatusParam,
       message,
       grantPlan: grantPlan || null,
       dryRun,
@@ -268,7 +296,10 @@ function BroadcastPanel() {
     try {
       const p = await api.adminBroadcastPreview({
         activeWithinDays: useActivity ? days : null,
-        minVocab
+        minVocab,
+        registeredAfterUtc: registeredAfterUtcIso,
+        registeredBeforeUtc: registeredBeforeUtcIso,
+        proStatus: proStatusParam
       })
       setPreview(p)
     } catch {
@@ -357,6 +388,51 @@ function BroadcastPanel() {
             />
             <span className="font-sans text-[12px] text-jewelInk-mid">дней</span>
           </label>
+
+          {/* Registration-date range — for cohort targeting (e.g. signups May 1-5). */}
+          <div className="flex flex-col gap-1.5">
+            <label className="flex gap-2 items-center">
+              <input
+                type="checkbox"
+                checked={useRegisteredRange}
+                onChange={(e) => setUseRegisteredRange(e.target.checked)}
+              />
+              <span className="font-sans text-[12px] text-jewelInk-mid">+ зарегались в интервал</span>
+            </label>
+            <div className="flex gap-2 items-center pl-6">
+              <span className="font-sans text-[11px] text-jewelInk-mid">с</span>
+              <input
+                type="date"
+                value={registeredAfterDate}
+                disabled={!useRegisteredRange}
+                onChange={(e) => setRegisteredAfterDate(e.target.value)}
+                className="px-2 py-1 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] disabled:opacity-50"
+              />
+              <span className="font-sans text-[11px] text-jewelInk-mid">по</span>
+              <input
+                type="date"
+                value={registeredBeforeDate}
+                disabled={!useRegisteredRange}
+                placeholder="сейчас"
+                onChange={(e) => setRegisteredBeforeDate(e.target.value)}
+                className="px-2 py-1 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] disabled:opacity-50"
+              />
+            </div>
+          </div>
+
+          {/* Pro entitlement filter */}
+          <div className="flex gap-2 items-center">
+            <span className="font-sans text-[12px] text-jewelInk-mid">подписка:</span>
+            <select
+              value={proStatus}
+              onChange={(e) => setProStatus(e.target.value as 'any' | 'active' | 'free')}
+              className="px-2 py-1.5 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] bg-cream"
+            >
+              <option value="any">не важно</option>
+              <option value="active">только с активной</option>
+              <option value="free">только без активной</option>
+            </select>
+          </div>
 
           <div className="flex justify-between items-center">
             <span className="font-sans text-[11px] text-jewelInk-mid">
