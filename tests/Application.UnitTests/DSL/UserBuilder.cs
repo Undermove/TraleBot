@@ -9,7 +9,7 @@ public class UserBuilder
     private UserAccountType _accountType = UserAccountType.Free;
     private Language _currentLanguage = Language.English;
     private bool _initialLanguageSet;
-    private DateTime _subscriptionEndDate;
+    private DateTime? _subscriptionEndDate;
     private bool _isPro;
     private SubscriptionPlan? _subscriptionPlan;
     private DateTime _registeredAtUtc = DateTime.UtcNow;
@@ -25,6 +25,13 @@ public class UserBuilder
         return this;
     }
     
+    public UserBuilder WithLifetime()
+    {
+        _isPro = true;
+        _subscriptionPlan = SubscriptionPlan.Lifetime;
+        return this;
+    }
+
     public UserBuilder WithExpiredTrial()
     {
         _accountType = UserAccountType.Free;
