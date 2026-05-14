@@ -44,6 +44,7 @@ export interface MeResponse {
   isPro?: boolean
   isTrialActive?: boolean
   trialDaysLeft?: number
+  shouldShowReferralExtensionCta?: boolean
   isOwner?: boolean
   telegramId?: number
   hasAccess?: boolean

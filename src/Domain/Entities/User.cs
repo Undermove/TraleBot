@@ -78,4 +78,21 @@ public class User
         return (int)Math.Ceiling((TrialEndsAtUtc - now).TotalDays);
     }
     public int TrialDaysLeft() => TrialDaysLeft(DateTime.UtcNow);
+
+    /// <summary>How many days before trial end we start surfacing the "extend via referral" CTA.</summary>
+    public const int TrialExtensionCtaThresholdDays = 3;
+
+    /// <summary>Should the "Продли бесплатно — пригласи друга" CTA be visible to this user?
+    /// Visible when: trial is ending within TrialExtensionCtaThresholdDays OR there's no
+    /// active entitlement at all (trial ended, never paid, or Pro lapsed) — and the user
+    /// isn't on Lifetime (no value in extending an unlimited plan).</summary>
+    public bool ShouldShowReferralExtensionCta(DateTime now)
+    {
+        if (IsLifetime) return false;
+        if (HasActivePro(now)) return false; // Pro user has plenty of time — surface elsewhere.
+        if (HasActiveTrial(now)) return TrialDaysLeft(now) <= TrialExtensionCtaThresholdDays;
+        // No active trial and no active Pro → the renewal-prompt audience.
+        return true;
+    }
+    public bool ShouldShowReferralExtensionCta() => ShouldShowReferralExtensionCta(DateTime.UtcNow);
 }

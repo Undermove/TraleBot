@@ -150,6 +150,7 @@ public class MiniAppController : Controller
             isPro = result.IsPro,
             isTrialActive = result.IsTrialActive,
             trialDaysLeft = result.TrialDaysLeft,
+            shouldShowReferralExtensionCta = result.ShouldShowReferralExtensionCta,
             subscriptionPlan = result.SubscriptionPlan,
             subscribedUntil = result.SubscribedUntil,
             hasAccess = result.IsPro || result.IsTrialActive,
