@@ -13,7 +13,7 @@ public class ChangeCurrentLanguage : IRequest<ChangeLanguageResult>
     {
         public async Task<ChangeLanguageResult> Handle(ChangeCurrentLanguage request, CancellationToken ct)
         {
-            if (!request.User.HasActivePro())
+            if (!request.User.HasMiniAppAccess())
             {
                 return new ChangeLanguageResult.PremiumRequired(request.User.Settings.CurrentLanguage, request.TargetLanguage);
             }
