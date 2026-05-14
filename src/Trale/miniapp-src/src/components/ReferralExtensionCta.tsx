@@ -14,8 +14,8 @@ interface Props {
  * or already ended; not Lifetime, not active Pro). Tapping shares the user's
  * referral deep-link via Telegram. The bonus shown (`bonusShortLabel`) comes
  * from /api/miniapp/referral so the banner promise always matches the
- * activator's actual reward — +7d trial for free/trial users, +30d Pro for
- * lapsed-Pro users.
+ * activator's actual reward — see TryActivateReferralService.Referrer*BonusDays
+ * constants for the canonical numbers.
  */
 export default function ReferralExtensionCta({ variant }: Props) {
   const [data, setData] = useState<{ link: string; shareText: string; bonusShortLabel: string } | null>(null)

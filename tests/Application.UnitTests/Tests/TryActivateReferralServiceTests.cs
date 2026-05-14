@@ -221,7 +221,7 @@ public class TryActivateReferralServiceTests : CommandTestsBase
     }
 
     [Test]
-    public async Task ShouldReturnYearlyCapReached_WhenReferrerHas12ActivationsThisYear()
+    public async Task ShouldReturnYearlyCapReached_WhenReferrerHitsYearlyActivationCap()
     {
         var referrer = await CreateFreeUser();
         referrer.RegisteredAtUtc = DateTime.UtcNow.AddDays(-1);

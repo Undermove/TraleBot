@@ -87,9 +87,9 @@ public class GetReferralInfoResult
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
     public IReadOnlyList<string> Rules { get; init; } = new List<string>();
-    /// <summary>Short bonus label matching what the activator awards ("+7 дней триала",
-    /// "+30 дней Pro", or empty for Lifetime). Used by banner/paywall CTAs to keep
-    /// the promise consistent with the rules section.</summary>
+    /// <summary>Short bonus label matching what the activator awards
+    /// ("+{trialBonus} дней триала", "+{proBonus} дней Pro", or empty for Lifetime).
+    /// Used by banner/paywall CTAs to keep the promise consistent with the rules section.</summary>
     public string BonusShortLabel { get; init; } = "";
     public bool CapReached { get; init; }
 }
