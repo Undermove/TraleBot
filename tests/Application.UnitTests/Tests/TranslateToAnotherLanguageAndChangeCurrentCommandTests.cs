@@ -69,18 +69,18 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
     }
     
     [Test]
-    public async Task ShouldReturnNeedPremiumWhenRequestFromFreeUser()
+    public async Task ShouldReturnNeedPremiumWhenRequestFromExpiredTrialUser()
     {
-        var freeUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        var freeUser = Create.User().WithExpiredTrial().WithCurrentLanguage(Language.English).Build();
         Context.Users.Add(freeUser);
-        
+
         const string? expectedWord = "недостаточность";
         const string expectedDefinition = "ნაკლებობა";
         const string expectedExample = "რეალურად, 20 წლის წინ ჩვენ ვცხოვრობდით მსოფლიოში, სადაც პრობლემა";
         _aiTranslationServicesMock
             .Setup(service => service.Translate(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
-        
+
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
             User = freeUser,
@@ -90,5 +90,37 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
 
         result.ShouldBeOfType<ChangeAndTranslationResult.PremiumRequired>();
         freeUser.Settings.CurrentLanguage.ShouldBe(Language.English);
+    }
+
+    [Test]
+    public async Task ShouldTranslateWhenRequestFromTrialUser()
+    {
+        var trialUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        var trialEntry = Create.VocabularyEntry()
+            .WithUser(trialUser)
+            .WithWord("недостаточность")
+            .WithDefinition("paucity")
+            .WithExample("example")
+            .WithLanguage(Language.English)
+            .Build();
+        Context.Users.Add(trialUser);
+        Context.VocabularyEntries.Add(trialEntry);
+        await Context.SaveChangesAsync();
+
+        const string expectedDefinition = "ნაკლებობა";
+        const string expectedExample = "მაგალითი";
+        _aiTranslationServicesMock
+            .Setup(service => service.Translate("недостаточность", Language.Georgian, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
+
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateToAnotherLanguageAndChangeCurrentLanguage
+        {
+            User = trialUser,
+            TargetLanguage = Language.Georgian,
+            VocabularyEntryId = trialEntry.Id
+        }, CancellationToken.None);
+
+        result.ShouldBeOfType<ChangeAndTranslationResult.TranslationSuccess>();
+        trialUser.Settings.CurrentLanguage.ShouldBe(Language.Georgian);
     }
 }

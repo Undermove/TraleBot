@@ -79,27 +79,37 @@ public class BroadcastService(
 
         foreach (var user in users)
         {
-            if (plan.HasValue && !user.IsPro)
+            if (plan.HasValue)
             {
-                user.IsPro = true;
-                user.SubscriptionPlan = plan.Value;
-                user.ProPurchasedAtUtc ??= now;
-                if (plan.Value == SubscriptionPlan.Lifetime)
+                // Never downgrade a Lifetime subscriber via a bulk grant of a shorter plan.
+                var isLifetimeDowngrade = user.IsLifetime && plan.Value != SubscriptionPlan.Lifetime;
+                if (!isLifetimeDowngrade)
                 {
-                    user.SubscribedUntil = null;
-                }
-                else
-                {
-                    var planInfo = SubscriptionPlans.ByPlan(plan.Value);
-                    if (planInfo?.DurationDays != null)
+                    var wasAlreadyPro = user.IsPro;
+                    user.IsPro = true;
+                    user.SubscriptionPlan = plan.Value;
+                    user.ProPurchasedAtUtc ??= now;
+                    if (plan.Value == SubscriptionPlan.Lifetime)
                     {
-                        // !user.IsPro guard above means the recipient is in (or past) the free trial —
-                        // stack the gifted plan on top of whatever trial days remain.
-                        var startFrom = user.TrialEndsAtUtc > now ? user.TrialEndsAtUtc : now;
-                        user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
+                        user.SubscribedUntil = null;
                     }
+                    else
+                    {
+                        var planInfo = SubscriptionPlans.ByPlan(plan.Value);
+                        if (planInfo?.DurationDays != null)
+                        {
+                            // Stack gifted plan on top of: active paid expiry, then remaining trial.
+                            // Mirrors GrantProService so expired-Pro users (IsPro=true but lapsed) also renew.
+                            var startFrom = now;
+                            if (user.SubscribedUntil.HasValue && user.SubscribedUntil.Value > startFrom)
+                                startFrom = user.SubscribedUntil.Value;
+                            if (!wasAlreadyPro && user.TrialEndsAtUtc > startFrom)
+                                startFrom = user.TrialEndsAtUtc;
+                            user.SubscribedUntil = startFrom.AddDays(planInfo.DurationDays.Value);
+                        }
+                    }
+                    granted++;
                 }
-                granted++;
             }
 
             var ok = await telegramSender.SendTextAsync(
