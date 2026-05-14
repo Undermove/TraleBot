@@ -44,6 +44,7 @@ export interface MeResponse {
   isPro?: boolean
   isTrialActive?: boolean
   trialDaysLeft?: number
+  shouldShowReferralExtensionCta?: boolean
   isOwner?: boolean
   telegramId?: number
   hasAccess?: boolean
@@ -208,6 +209,7 @@ export const api = {
       invitedCount: number
       activatedCount: number
       rules: string[]
+      bonusShortLabel: string
       capReached: boolean
     }>('/api/miniapp/referral'),
 

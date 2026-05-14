@@ -391,6 +391,94 @@ public class UserEntitlementTests
 
     // ----- HasMiniAppAccess "renewal pain" scenario -----
 
+    // ----- ShouldShowReferralExtensionCta -----
+
+    [Test]
+    public void ExtensionCta_HiddenForLifetime()
+    {
+        var user = NewUser(u =>
+        {
+            u.IsPro = true;
+            u.SubscriptionPlan = SubscriptionPlan.Lifetime;
+        });
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeFalse();
+    }
+
+    [Test]
+    public void ExtensionCta_HiddenForActivePro()
+    {
+        var user = NewUser(u =>
+        {
+            u.IsPro = true;
+            u.SubscriptionPlan = SubscriptionPlan.Month;
+            u.SubscribedUntil = Now.AddDays(20);
+        });
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeFalse();
+    }
+
+    [Test]
+    public void ExtensionCta_HiddenForFreshTrial()
+    {
+        // 28 days left — nothing to worry about yet.
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-2));
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeFalse();
+    }
+
+    [Test]
+    public void ExtensionCta_VisibleWhenTrialEndsWithinThreshold()
+    {
+        // ~3 days left (User.TrialExtensionCtaThresholdDays).
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-User.TrialDays + User.TrialExtensionCtaThresholdDays));
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeTrue();
+    }
+
+    [Test]
+    public void ExtensionCta_VisibleOnLastDayOfTrial()
+    {
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-User.TrialDays + 1).AddHours(-1));
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeTrue();
+    }
+
+    [Test]
+    public void ExtensionCta_VisibleForExpiredTrial()
+    {
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-User.TrialDays - 5));
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeTrue();
+    }
+
+    [Test]
+    public void ExtensionCta_VisibleForExpiredPro()
+    {
+        var user = NewUser(u =>
+        {
+            u.IsPro = true;
+            u.SubscriptionPlan = SubscriptionPlan.Month;
+            u.SubscribedUntil = Now.AddDays(-2);
+            u.RegisteredAtUtc = Now.AddDays(-60);
+        });
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeTrue();
+    }
+
+    [Test]
+    public void ExtensionCta_RespectsTrialBonusDays()
+    {
+        // User has 2 days base trial left but +10 bonus days → 12 days remaining → CTA hidden.
+        var user = NewUser(u =>
+        {
+            u.RegisteredAtUtc = Now.AddDays(-User.TrialDays + 2);
+            u.TrialBonusDays = 10;
+        });
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeFalse();
+    }
+
     [Test]
     public void RenewalScenario_ExpiredProUserBuysAgain_HasActiveProBecomesTrue()
     {

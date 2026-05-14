@@ -44,6 +44,7 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
             var hasActivePro = user.HasActivePro(now);
             var isTrialActive = user.HasActiveTrial(now);
             var trialDaysLeft = user.TrialDaysLeft(now);
+            var shouldShowReferralExtensionCta = user.ShouldShowReferralExtensionCta(now);
 
             // Owner has English fallback and debug tooling
             const long ownerTelegramId = 309149393;
@@ -60,6 +61,7 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 IsPro = hasActivePro,
                 IsTrialActive = isTrialActive,
                 TrialDaysLeft = trialDaysLeft,
+                ShouldShowReferralExtensionCta = shouldShowReferralExtensionCta,
                 SubscriptionPlan = user.SubscriptionPlan?.ToString(),
                 SubscribedUntil = user.SubscribedUntil,
                 IsOwner = isOwner
@@ -79,6 +81,8 @@ public class GetMiniAppProfileResult
     public bool IsPro { get; init; }
     public bool IsTrialActive { get; init; }
     public int TrialDaysLeft { get; init; }
+    /// <summary>Mini-app should surface the "extend trial via referral" CTA in the banner/paywall.</summary>
+    public bool ShouldShowReferralExtensionCta { get; init; }
     public string? SubscriptionPlan { get; init; }
     public DateTime? SubscribedUntil { get; init; }
     public bool IsOwner { get; init; }
