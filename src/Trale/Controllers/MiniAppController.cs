@@ -31,8 +31,6 @@ public class MiniAppController : Controller
 {
     private const string InitDataHeader = "X-Telegram-Init-Data";
 
-    private const int StarsProPrice = 150;
-
     // Additional tester who gets test pricing alongside the owner.
     private const long ExtraTestPricingId = 866427565;
 
