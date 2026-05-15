@@ -12,8 +12,7 @@ namespace Application.MiniApp.Queries;
 public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
 {
     public required Guid UserId { get; init; }
-    /// <summary>Set to BotConfiguration.OwnerTelegramId so the handler doesn't need
-    /// to depend on Infrastructure. Zero means "no owner configured" → isOwner=false.</summary>
+    // Passed from controller so Application doesn't depend on BotConfiguration; 0 → isOwner=false.
     public long OwnerTelegramId { get; init; }
 
     public class Handler(
