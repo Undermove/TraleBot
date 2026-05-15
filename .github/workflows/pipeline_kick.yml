@@ -1,0 +1,48 @@
+name: Kick pipeline run
+
+# Dispatched manually (from the Tycoon UI or GitHub UI) when the owner wants to
+# trigger a single pipeline iteration immediately instead of waiting for the
+# next cron tick. Ensures the bombora-agents container is up, then runs
+# /scripts/run-pipeline.sh inside it in detached mode.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Pipeline mode (auto = decide from sprint state, plan = force planning phases, build = force build phases)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - plan
+          - build
+
+jobs:
+  kick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure container is running
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+          password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
+          script_stop: true
+          script: |
+            cd /usr/local/tralebot/agents
+            docker compose up -d bombora-agents
+            # Give the container a moment to settle before we exec into it.
+            sleep 3
+            docker ps --filter name=bombora-agents --format '{{.Names}} {{.Status}}'
+
+      - name: Trigger run-pipeline.sh in detached mode
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.TRALEBOT_SERVER_HOST }}
+          username: ${{ secrets.TRALEBOT_SERVER_USERNAME }}
+          password: ${{ secrets.TRALEBOT_SERVER_USER_PASSWORD }}
+          script: |
+            # Detached so SSH doesn't block while the pipeline runs (~30-60s per phase).
+            docker exec -d bombora-agents /bin/bash -c "su -s /bin/bash agent -c '/scripts/run-pipeline.sh ${{ inputs.mode }} >> /logs/agents.log 2>&1'"
+            echo "✅ pipeline kicked in mode: ${{ inputs.mode }}"
