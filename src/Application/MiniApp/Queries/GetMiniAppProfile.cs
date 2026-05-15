@@ -74,10 +74,10 @@ public class GetMiniAppProfileResult
 {
     public bool Authenticated { get; init; }
     public long TelegramId { get; init; }
-    public string Language { get; init; }
+    public string? Language { get; init; }
     public int VocabularyCount { get; init; }
-    public string Level { get; init; }
-    public object Progress { get; init; }
+    public string? Level { get; init; }
+    public object? Progress { get; init; }
     public bool IsPro { get; init; }
     public bool IsTrialActive { get; init; }
     public int TrialDaysLeft { get; init; }
