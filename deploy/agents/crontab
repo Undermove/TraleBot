@@ -14,10 +14,6 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Дневные прогоны — каждый час с 11:00 до 17:00 в auto-режиме.
 # Один прогон = один час = одна фаза или один кусок dev-loop'а.
-# Время выбрано чтобы пайплайн крутился, пока владелец бодрствует и
-# может смерджить PR в main без гонки с cron'ом — у предыдущей ночной
-# схемы регулярно случался кейс «owner мерджит pre-PR в main в 02:30,
-# а cron уже стартанул в 02:00 на старом main → нечего работать».
 0 11 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
 0 12 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
 0 13 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
@@ -28,3 +24,11 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Вечерний QA — собирает результаты дня и открывает PR
 0 18 * * * su -s /bin/bash agent -c '/scripts/run-qa.sh >> /logs/agents.log 2>&1'
+
+# Ночные прогоны — каждые 2 часа с 22:00 до 04:00.
+# Включены чтобы пайплайн не простаивал ночью; гонка с owner-мерджем в 02:30
+# теперь решена тем, что pre-PR закрывается в 18:00, до этого окна.
+0 22 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0  0 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0  2 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
+0  4 * * * su -s /bin/bash agent -c '/scripts/run-pipeline.sh auto >> /logs/agents.log 2>&1'
