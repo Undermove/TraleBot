@@ -182,7 +182,7 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
       </div>
 
       {/* Chip pool */}
-      <ChipPool>
+      <ChipPool useGrid={correctOrder.length >= 7}>
         {chips.map((chip, i) => {
           if (chip.inSlot) return null
           const chipState =
