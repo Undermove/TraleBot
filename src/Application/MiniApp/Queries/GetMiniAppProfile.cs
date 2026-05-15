@@ -12,6 +12,8 @@ namespace Application.MiniApp.Queries;
 public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
 {
     public required Guid UserId { get; init; }
+    // Passed from controller so Application doesn't depend on BotConfiguration; 0 → isOwner=false.
+    public long OwnerTelegramId { get; init; }
 
     public class Handler(
         ITraleDbContext dbContext,
@@ -46,9 +48,7 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
             var trialDaysLeft = user.TrialDaysLeft(now);
             var shouldShowReferralExtensionCta = user.ShouldShowReferralExtensionCta(now);
 
-            // Owner has English fallback and debug tooling
-            const long ownerTelegramId = 309149393;
-            var isOwner = user.TelegramId == ownerTelegramId;
+            var isOwner = request.OwnerTelegramId != 0 && user.TelegramId == request.OwnerTelegramId;
 
             return new GetMiniAppProfileResult
             {
@@ -74,10 +74,10 @@ public class GetMiniAppProfileResult
 {
     public bool Authenticated { get; init; }
     public long TelegramId { get; init; }
-    public string Language { get; init; }
+    public string? Language { get; init; }
     public int VocabularyCount { get; init; }
-    public string Level { get; init; }
-    public object Progress { get; init; }
+    public string? Level { get; init; }
+    public object? Progress { get; init; }
     public bool IsPro { get; init; }
     public bool IsTrialActive { get; init; }
     public int TrialDaysLeft { get; init; }

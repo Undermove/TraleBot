@@ -11,6 +11,8 @@ interface Props {
   onAnswer: (isCorrect: boolean) => void
 }
 
+const LONG_SENTENCE_THRESHOLD = 7
+
 export default function SentenceBuilderCard({ question, onAnswer }: Props) {
   const correctOrder = question.correctOrder ?? []
   const chipPoolTokens = question.chipPool ?? []
@@ -130,7 +132,7 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
         <div className="h-px bg-jewelInk/15 mb-2 relative z-[1]" />
         <div
           data-testid="question-text"
-          className={`font-sans font-extrabold text-jewelInk leading-tight relative z-[1] ${correctOrder.length >= 7 ? 'text-[18px]' : 'text-[22px]'}`}
+          className={`font-sans font-extrabold text-jewelInk leading-tight relative z-[1] ${correctOrder.length >= LONG_SENTENCE_THRESHOLD ? 'text-[18px]' : 'text-[22px]'}`}
         >
           {targetRu}
         </div>
@@ -182,7 +184,7 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
       </div>
 
       {/* Chip pool */}
-      <ChipPool>
+      <ChipPool useGrid={correctOrder.length >= LONG_SENTENCE_THRESHOLD}>
         {chips.map((chip, i) => {
           if (chip.inSlot) return null
           const chipState =

@@ -16,10 +16,6 @@ public class AdminController : Controller
 {
     private const string InitDataHeader = "X-Telegram-Init-Data";
 
-    // Hardcoded owner Telegram ID for now (matches GetMiniAppProfile.cs).
-    // BotConfiguration.OwnerTelegramId can override via env BOTCONFIGURATION__OWNERTELEGRAMID.
-    private const long DefaultOwnerTelegramId = 309149393;
-
     private readonly ITraleDbContext _dbContext;
     private readonly BotConfiguration _botConfig;
     private readonly GetAdminStatsQuery _statsQuery;
@@ -212,8 +208,7 @@ public class AdminController : Controller
             return false;
         }
 
-        var ownerId = _botConfig.OwnerTelegramId != 0 ? _botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
-        if (telegramId.Value != ownerId)
+        if (_botConfig.OwnerTelegramId == 0 || telegramId.Value != _botConfig.OwnerTelegramId)
         {
             return false;
         }
