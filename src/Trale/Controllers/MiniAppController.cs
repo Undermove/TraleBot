@@ -33,19 +33,13 @@ public class MiniAppController : Controller
 
     private const int StarsProPrice = 150;
 
-    /// <summary>
-    /// Telegram user IDs that get a symbolic 1-star price on all subscription plans —
-    /// used exclusively to validate the end-to-end Stars checkout flow against real
-    /// Telegram infrastructure without paying full fare each time. All other users
-    /// see the normal <see cref="SubscriptionPlans"/> prices.
-    /// </summary>
-    private static readonly HashSet<long> TestPricingTelegramIds = new()
-    {
-        309149393, // owner
-        866427565,
-    };
-
     private const int TestPricingStars = 1;
+
+    /// <summary>
+    /// Built from BotConfiguration._testPricingTelegramIds union OwnerTelegramId.
+    /// Gets a 1-star symbolic price to validate the Stars checkout flow without paying full fare.
+    /// </summary>
+    private readonly HashSet<long> _testPricingTelegramIds;
 
     private readonly IGeorgianQuestionsLoaderFactory _questionsLoaderFactory;
     private readonly ITraleDbContext _dbContext;
@@ -77,6 +71,9 @@ public class MiniAppController : Controller
         _metrics = metrics;
         _logger = logger;
         _feedTreatService = feedTreatService;
+        _testPricingTelegramIds = new HashSet<long>(botConfig.TestPricingTelegramIds);
+        if (botConfig.OwnerTelegramId != 0)
+            _testPricingTelegramIds.Add(botConfig.OwnerTelegramId);
     }
 
     [HttpGet("ping")]
@@ -165,7 +162,7 @@ public class MiniAppController : Controller
         // plan cards, matching what Purchase() will then charge them. Anonymous /
         // unresolved callers fall through to normal SubscriptionPlans prices.
         var user = await ResolveUserAsync(ct);
-        var applyTestPricing = user != null && TestPricingTelegramIds.Contains(user.TelegramId);
+        var applyTestPricing = user != null && _testPricingTelegramIds.Contains(user.TelegramId);
 
         var plans = SubscriptionPlans.All.Select(p => new
         {
@@ -250,7 +247,7 @@ public class MiniAppController : Controller
             return BadRequest(new { error = "invalid_plan" });
         }
 
-        if (TestPricingTelegramIds.Contains(user.TelegramId))
+        if (_testPricingTelegramIds.Contains(user.TelegramId))
         {
             _logger.LogWarning(
                 "Test pricing applied: user {TelegramId} ({UserId}) purchasing {Plan} at {Stars}⭐ instead of {OriginalStars}⭐",

@@ -42,4 +42,11 @@ public class BotConfiguration
     /// Set via env var BOTCONFIGURATION__OWNERTELEGRAMID. Defaults to 0 (disabled).
     /// </summary>
     public long OwnerTelegramId { get; init; }
+
+    /// <summary>
+    /// Telegram user IDs that see a 1-star test price for all subscription plans.
+    /// Used to validate the end-to-end Stars checkout without paying full fare.
+    /// Configure via BOTCONFIGURATION__TESTPRICINGTELEGRAMIDS or appsettings.local.json.
+    /// </summary>
+    public long[] TestPricingTelegramIds { get; init; } = Array.Empty<long>();
 }
