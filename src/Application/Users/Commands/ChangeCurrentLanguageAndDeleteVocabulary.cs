@@ -14,7 +14,7 @@ public class ChangeCurrentLanguageAndDeleteVocabulary : IRequest<ChangeCurrentLa
     {
         public async Task<ChangeCurrentLanguageAndDeleteVocabularyResult> Handle(ChangeCurrentLanguageAndDeleteVocabulary request, CancellationToken ct)
         {
-            if (request.User.IsActivePremium())
+            if (request.User.HasMiniAppAccess())
             {
                 return new ChangeCurrentLanguageAndDeleteVocabularyResult.NoActionNeeded();
             }
