@@ -30,14 +30,6 @@ public class User
     public virtual ICollection<ShareableQuiz> ShareableQuizzes { get; set; }
     public virtual ICollection<Payment> Payments { get; set; }
 
-    public bool IsActivePremium()
-    {
-        if (AccountType != UserAccountType.Premium) return false;
-        // Lifetime subscription: SubscribedUntil is null (see GrantProService).
-        if (!SubscribedUntil.HasValue) return true;
-        return SubscribedUntil.Value.Date > DateTime.UtcNow;
-    }
-
     // ============================================================================
     // Mini-app entitlement model — single source of truth.
     // Mini-app code MUST go through these helpers instead of inspecting IsPro /

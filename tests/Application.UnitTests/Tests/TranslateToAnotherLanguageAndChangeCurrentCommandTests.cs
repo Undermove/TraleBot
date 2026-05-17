@@ -69,26 +69,48 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
     }
     
     [Test]
-    public async Task ShouldReturnNeedPremiumWhenRequestFromFreeUser()
+    public async Task ShouldReturnNeedPremiumWhenRequestFromExpiredTrialUser()
     {
-        var freeUser = Create.User().WithCurrentLanguage(Language.English).Build();
-        Context.Users.Add(freeUser);
-        
+        var expiredUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        expiredUser.RegisteredAtUtc = DateTime.UtcNow.AddDays(-60); // trial expired
+        Context.Users.Add(expiredUser);
+
+        var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateToAnotherLanguageAndChangeCurrentLanguage
+        {
+            User = expiredUser,
+            TargetLanguage = Language.Georgian,
+            VocabularyEntryId = _existingVocabularyEntry.Id
+        }, CancellationToken.None);
+
+        result.ShouldBeOfType<ChangeAndTranslationResult.PremiumRequired>();
+        expiredUser.Settings.CurrentLanguage.ShouldBe(Language.English);
+    }
+
+    [Test]
+    public async Task ShouldAllowTrialUser_ToTranslateAndChangeLanguage()
+    {
+        var trialUser = Create.User().WithCurrentLanguage(Language.English).Build(); // RegisteredAtUtc=now → in trial
+        Context.Users.Add(trialUser);
+
         const string? expectedWord = "недостаточность";
         const string expectedDefinition = "ნაკლებობა";
         const string expectedExample = "რეალურად, 20 წლის წინ ჩვენ ვცხოვრობდით მსოფლიოში, სადაც პრობლემა";
         _aiTranslationServicesMock
             .Setup(service => service.Translate(expectedWord, Language.Georgian, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new TranslationResult.Success(expectedDefinition, expectedDefinition, expectedExample));
-        
+        Context.VocabularyEntries.Add(Create.VocabularyEntry()
+            .WithUser(trialUser).WithWord(expectedWord).WithLanguage(Language.English).Build());
+        await Context.SaveChangesAsync();
+        var trialEntry = Context.VocabularyEntries.Local.First(e => e.UserId == trialUser.Id);
+
         var result = await _createVocabularyEntryCommandHandler.Handle(new TranslateToAnotherLanguageAndChangeCurrentLanguage
         {
-            User = freeUser,
+            User = trialUser,
             TargetLanguage = Language.Georgian,
-            VocabularyEntryId = _existingVocabularyEntry.Id
+            VocabularyEntryId = trialEntry.Id
         }, CancellationToken.None);
 
-        result.ShouldBeOfType<ChangeAndTranslationResult.PremiumRequired>();
-        freeUser.Settings.CurrentLanguage.ShouldBe(Language.English);
+        result.ShouldBeOfType<ChangeAndTranslationResult.TranslationSuccess>();
+        trialUser.Settings.CurrentLanguage.ShouldBe(Language.Georgian);
     }
 }
