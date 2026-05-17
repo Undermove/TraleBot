@@ -167,4 +167,31 @@ public class GetMiniAppProfileQueryTests : CommandTestsBase
 
         result.ShouldShowReferralExtensionCta.ShouldBeFalse();
     }
+
+    [Test]
+    public async Task ShouldReportIsOwner_WhenOwnerTelegramIdMatches()
+    {
+        var user = await CreateFreeUser();
+        user.TelegramId = 12345L;
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.Handle(
+            new GetMiniAppProfile { UserId = user.Id, OwnerTelegramId = 12345L },
+            CancellationToken.None);
+
+        result.IsOwner.ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task ShouldReportIsOwnerFalse_WhenOwnerTelegramIdIsZero()
+    {
+        var user = await CreateFreeUser();
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.Handle(
+            new GetMiniAppProfile { UserId = user.Id, OwnerTelegramId = 0 },
+            CancellationToken.None);
+
+        result.IsOwner.ShouldBeFalse();
+    }
 }

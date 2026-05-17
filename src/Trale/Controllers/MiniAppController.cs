@@ -131,7 +131,8 @@ public class MiniAppController : Controller
 
         var result = await _mediator.Send(new GetMiniAppProfile
         {
-            UserId = user.Id
+            UserId = user.Id,
+            OwnerTelegramId = _botConfig.OwnerTelegramId
         }, ct);
 
         return Ok(new
