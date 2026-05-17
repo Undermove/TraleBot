@@ -31,8 +31,6 @@ public class MiniAppController : Controller
 {
     private const string InitDataHeader = "X-Telegram-Init-Data";
 
-    private const int StarsProPrice = 150;
-
     private const int TestPricingStars = 1;
 
     /// <summary>
