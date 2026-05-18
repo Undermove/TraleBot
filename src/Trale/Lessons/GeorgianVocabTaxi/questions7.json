@@ -20,6 +20,10 @@
       "id": "taxi7-l1-q01",
       "questionType": "sentence-builder",
       "level": 1,
+      "question": "Собери предложение: Давайте поедем в Батуми",
+      "targetSentence": {
+        "ru": "Давайте поедем в Батуми"
+      },
       "correctOrder": [
         "წავიდეთ",
         "ბათუმში"
@@ -46,6 +50,10 @@
       "id": "taxi7-l1-q02",
       "questionType": "sentence-builder",
       "level": 1,
+      "question": "Собери предложение: Давайте поедем в Тбилиси",
+      "targetSentence": {
+        "ru": "Давайте поедем в Тбилиси"
+      },
       "correctOrder": [
         "წავიდეთ",
         "თბილისში"
@@ -72,6 +80,10 @@
       "id": "taxi7-l1-q03",
       "questionType": "sentence-builder",
       "level": 1,
+      "question": "Собери предложение: Давайте поедем в аэропорт",
+      "targetSentence": {
+        "ru": "Давайте поедем в аэропорт"
+      },
       "correctOrder": [
         "წავიდეთ",
         "აეროპორტში"
@@ -98,6 +110,10 @@
       "id": "taxi7-l2-q01",
       "questionType": "sentence-builder",
       "level": 2,
+      "question": "Собери предложение: Мы едем в Кахетию",
+      "targetSentence": {
+        "ru": "Мы едем в Кахетию"
+      },
       "correctOrder": [
         "ჩვენ",
         "მივდივართ",
@@ -127,6 +143,10 @@
       "id": "taxi7-l2-q02",
       "questionType": "sentence-builder",
       "level": 2,
+      "question": "Собери предложение: Мы — на такси в Батуми",
+      "targetSentence": {
+        "ru": "Мы — на такси в Батуми"
+      },
       "correctOrder": [
         "ჩვენ",
         "ტაქსით",
@@ -156,6 +176,10 @@
       "id": "taxi7-l3-q01",
       "questionType": "sentence-builder",
       "level": 5,
+      "question": "Собери предложение: Давайте поедем на такси в Батуми",
+      "targetSentence": {
+        "ru": "Давайте поедем на такси в Батуми"
+      },
       "correctOrder": [
         "ჩვენ",
         "ტაქსით",
