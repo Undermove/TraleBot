@@ -12,6 +12,7 @@ public class UserBuilder
     private DateTime _subscriptionEndDate;
     private bool _isPro;
     private SubscriptionPlan? _subscriptionPlan;
+    private DateTime _registeredAtUtc = DateTime.UtcNow;
 
     public UserBuilder WithPremiumAccountType()
     {
@@ -24,6 +25,12 @@ public class UserBuilder
         return this;
     }
     
+    public UserBuilder WithExpiredTrial()
+    {
+        _registeredAtUtc = DateTime.UtcNow.AddDays(-60);
+        return this;
+    }
+
     public UserBuilder WithCurrentLanguage(Language language)
     {
         _currentLanguage = language;
@@ -57,7 +64,8 @@ public class UserBuilder
             IsPro = _isPro,
             SubscriptionPlan = _subscriptionPlan,
             // Recent registration so HasActiveTrial defaults to true for free users in tests.
-            RegisteredAtUtc = DateTime.UtcNow
+            // Use WithExpiredTrial() to get a user outside the trial window.
+            RegisteredAtUtc = _registeredAtUtc
         };
     }
 }
