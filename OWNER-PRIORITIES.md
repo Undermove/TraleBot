@@ -54,13 +54,14 @@
 - [ ] **designer** — оформить `design-specs/82-contextual-notifications.md` со следующим содержанием: схема push-templates (заголовок/тело/CTA) для каждого из трёх источников, mockup в Telegram-стиле, mini-app экран опции «Отключить уведомления» в Profile, ergonomics CTA-кнопки (что открывается при нажатии на пуш).
 - [ ] **methodist** — для праздничного источника собрать таблицу: дата, название (рус), название (груз), фраза-поздравление (груз) + транслитерация + перевод, культурный контекст в 1-2 строки. Минимум 8 праздников: Тбилисоба (4 ноября), Гиоргоба (23 ноября), Пасха грузинская, Рождество (7 января), Мариамоба, Деда-эна (14 апреля, День матери-языка), Шотаоба, ещё пара. Сохранить в `design-specs/82-holiday-calendar.md`.
 - [ ] **native-reviewer** — проверить, что каждая фраза-поздравление грамматически верна, естественна в современной речи (не книжный архаизм), и культурно уместна на этот праздник. Прокомментировать любые сомнительные пары.
-- [ ] **tech-lead-breakdown** — разбить на task-issues (целиться на ≤4 часа каждая):
+- [x] **tech-lead-breakdown** — разбить на task-issues (целиться на ≤4 часа каждая):
   1. Backend: модель `NotificationTrigger` + миграция (Sources: holiday, coins, streak; LastSentAt; Cooldown).
   2. Backend: `HolidayCalendarService` с фиксированной/вычисляемой датой + JSON-источник из методиста.
   3. Backend: `NotificationDispatcher` — раз в час cron проверяет триггеры, шлёт через Telegram Bot API.
   4. Backend: opt-in/opt-out через бот-команду `/notifications off|on`.
   5. Frontend: Profile-секция «Уведомления» — toggle on/off, отдельные галки для трёх источников.
   6. Тесты: unit для HolidayCalendarService (фиксированные даты, подвижные через формулу), integration для NotificationDispatcher (отправка по cron).
+  → done by tech-lead 2026-05-21: создал issues #895–#900 (breakdown выполнен, epic #894 помечен epic-broken-down)
 - [ ] **developer** — реализовать в порядке tech-lead'а. Backend сначала (1-4), потом frontend (5), потом тесты (6).
 - [ ] **qa** — пройти full-suite после каждого PR. Особо проверить: вручную через `@traletest_bot` отправить себе тестовый push (методом подмены сегодняшней даты на дату праздника в HolidayCalendarService для теста) — увидеть, что пришло сообщение, открывается мини-апп, грузинская фраза читается.
 - [ ] **product** — после полной готовности убрать §82 из файла, обновить ROADMAP §82 в `[done]`. Снять пометку owner-priority.
