@@ -35,7 +35,7 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var now = DateTime.UtcNow;
         var isLifetime = user.IsLifetime;
         // Pro bonus is earned by anyone who ever bought Pro (excl. Lifetime) — including
-        // expired-Pro users, whose +30d will reactivate their subscription.
+        // expired-Pro users, whose referral bonus reactivates their subscription.
         var earnsProBonus = user.IsPro && !isLifetime;
         var inviteeTotalTrial = User.TrialDays + RecordReferralLinkService.RefereeTrialBonusDays;
         var dailyCap = TryActivateReferralService.DailyActivationCap;
