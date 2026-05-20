@@ -21,16 +21,15 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user == null) return null;
 
-        var invited = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == userId, ct);
-        var activated = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == userId && r.ActivatedAtUtc != null, ct);
-
         var yearAgo = DateTime.UtcNow.AddDays(-365);
-        var yearActivated = await db.Referrals
-            .CountAsync(r => r.ReferrerUserId == userId
-                          && r.ActivatedAtUtc != null
-                          && r.ActivatedAtUtc >= yearAgo, ct);
+        var activatedDates = await db.Referrals
+            .Where(r => r.ReferrerUserId == userId)
+            .Select(r => r.ActivatedAtUtc)
+            .ToListAsync(ct);
+
+        var invited = activatedDates.Count;
+        var activated = activatedDates.Count(a => a != null);
+        var yearActivated = activatedDates.Count(a => a != null && a >= yearAgo);
 
         var isLifetime = user.IsLifetime;
         // Pro bonus is earned by anyone who ever bought Pro (excl. Lifetime) — including
