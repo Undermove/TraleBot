@@ -32,7 +32,6 @@ public class GetReferralInfoQuery(ITraleDbContext db)
                           && r.ActivatedAtUtc != null
                           && r.ActivatedAtUtc >= yearAgo, ct);
 
-        var now = DateTime.UtcNow;
         var isLifetime = user.IsLifetime;
         // Pro bonus is earned by anyone who ever bought Pro (excl. Lifetime) — including
         // expired-Pro users, whose referral bonus reactivates their subscription.
