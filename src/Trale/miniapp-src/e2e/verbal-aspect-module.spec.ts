@@ -95,13 +95,23 @@ const verbalAspectCatalog = {
 
 const verbalAspectQuestions = [
   {
-    id: 'va1-q01',
+    id: 'va_q01',
     lemma: 'ვწერდი',
-    question: 'Какой вид глагола у «ვწერდი»?',
-    options: ['Несовершенный', 'Совершенный'],
+    question: '«Я писал письма каждый день» — несовершенный вид, прошедшее. Выберите грузинскую форму:',
+    options: ['ვწერდი', 'დავწერე', 'ვწერ'],
     answer_index: 0,
-    explanation: 'ვწერდი — имперфект, несовершенный вид.',
-    questionType: 'choice',
+    explanation: 'ვწერდი — имперфект. Ячейка таблицы 2×2: Несовершенный вид / Прошедшее = Imperfect (несов. прошл.).',
+    questionType: 'multiple-choice',
+    answerIndex: 0,
+  },
+  {
+    id: 'va_q02',
+    lemma: 'დავწერე',
+    question: '«Я написал письмо» — совершенный вид, завершённое. Выберите грузинскую форму:',
+    options: ['დავწერე', 'ვწერდი', 'ვწერ'],
+    answer_index: 0,
+    explanation: 'დავწერე — аорист. Ячейка таблицы 2×2: Совершенный вид / Прошедшее = Aorist (сов. прошл.).',
+    questionType: 'multiple-choice',
     answerIndex: 0,
   },
 ]
@@ -217,4 +227,42 @@ test('future-cell contains only placeholder text, no Georgian verb form', async 
   // Must NOT contain Georgian script (active form like და, ვწ etc.)
   const cellText = await disabledCell.textContent()
   expect(cellText).not.toMatch(/[ა-ჰ]/)
+})
+
+test('practice-questions-visible-during-module-walkthrough', async ({ page }) => {
+  await setupVerbalAspectMocks(page)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  // Navigate to lesson theory first
+  await navigateToVerbalAspectTheory(page)
+  await expect(page.locator('[data-testid="lesson-theory"]')).toBeVisible({ timeout: 10_000 })
+
+  // Click "к практике" to enter practice mode
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+
+  // Practice screen must render with the recognition question visible
+  const questionText = page.getByText(/несовершенный вид, прошедшее/i)
+  await expect(questionText).toBeVisible({ timeout: 10_000 })
+
+  // All three option buttons must be visible (ვწერდი, დავწერე, ვწერ)
+  const optionButtons = page.getByRole('button').filter({ hasText: /ვწერდი|დავწერე|ვწერ/ })
+  await expect(optionButtons).toHaveCount(3)
+
+  // Select the correct answer (first option: ვწერდი)
+  await optionButtons.filter({ hasText: 'ვწერდი' }).first().click()
+
+  // For choice questions, click "проверить" to submit the answer
+  const checkBtn = page.getByRole('button', { name: /проверить/i })
+  await expect(checkBtn).toBeVisible({ timeout: 5_000 })
+  await checkBtn.click()
+
+  // Verify green feedback banner appears — "სწორია!" = correct
+  const feedbackBanner = page.getByText(/სწორია/i)
+  await expect(feedbackBanner).toBeVisible({ timeout: 5_000 })
+
+  // Explanation must mention the aspect table cell
+  await expect(page.getByText(/имперфект/i)).toBeVisible()
 })
