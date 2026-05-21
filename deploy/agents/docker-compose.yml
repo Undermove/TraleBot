@@ -34,6 +34,10 @@ services:
       # `dotnet test` skips all IntegrationTests because Testcontainers can't
       # reach a Docker daemon from inside bombora-agents.
       - /var/run/docker.sock:/var/run/docker.sock
+      # Bind-mount scripts so edits to *.sh are picked up by the next run
+      # without rebuilding the image. The Dockerfile still COPYs them as
+      # a fallback for environments without this mount.
+      - ./scripts:/scripts:ro
     extra_hosts:
       # TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal resolves correctly
       # on Docker Desktop (Mac/Windows) but not on Linux Docker Engine without
