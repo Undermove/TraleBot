@@ -298,6 +298,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `imperfect` | `GeorgianImperfect` | 6 (L6 audio-choice) | ✅ |
 | `verbs-of-movement` | `GeorgianVerbsOfMovement` | 12 (L12 audio-choice) | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
+| `verbal-aspect` | `GeorgianVerbalAspect` | 1 (theory-first: 2×2 aspect table, key-row, preverb disclaimer) | ✅ |
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 6 (L6 audio-choice) | ✅ |
 | `postpositions` | `GeorgianPostpositions` | 7 (L6 audio-choice; L7 sentence-builder — конструктор предложений) | ✅ |

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import RevealKaniOverlay from '../components/RevealKaniOverlay'
-import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
+import { AspectTableCellDto, CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
 
 interface Props {
   catalog: CatalogDto
@@ -90,7 +90,7 @@ export default function LessonTheory({
         </div>
 
         {/* Theory blocks */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4" data-testid="lesson-theory">
           {theory.blocks.map((b, i) => (
             <TheoryBlock key={i} block={b} />
           ))}
@@ -214,5 +214,80 @@ function TheoryBlock({ block }: { block: TheoryBlockDto }) {
     )
   }
 
+  if (block.type === 'table' && block.table) {
+    const { colHeader1, colHeader2, rows } = block.table
+    return (
+      <div className="jewel-tile px-4 py-4">
+        <div className="relative z-[1]">
+          <div className="mn-eyebrow mb-3">таблица видов</div>
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr>
+                  <th className="pb-2 pr-2 font-sans text-[11px] font-bold text-jewelInk-mid uppercase tracking-wide w-[35%]" />
+                  <th className="pb-2 pr-2 font-sans text-[11px] font-bold text-navy uppercase tracking-wide">
+                    {colHeader1}
+                  </th>
+                  <th className="pb-2 font-sans text-[11px] font-bold text-navy uppercase tracking-wide">
+                    {colHeader2}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, ri) => (
+                  <tr key={ri} className="border-t border-jewelInk/10">
+                    <td className="py-3 pr-2 font-sans text-[12px] font-semibold text-jewelInk-mid leading-tight align-top">
+                      {row.label}
+                    </td>
+                    <td className="py-3 pr-2 align-top">
+                      <AspectTableCell cell={row.cell1} />
+                    </td>
+                    <td className="py-3 align-top">
+                      <AspectTableCell cell={row.cell2} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return null
+}
+
+function AspectTableCell({ cell }: { cell: AspectTableCellDto }) {
+  if (cell.disabled) {
+    return (
+      <div
+        data-testid="aspect-table-cell"
+        data-disabled
+        className="rounded-lg bg-jewelInk/8 border border-dashed border-jewelInk/20 px-2 py-2 min-h-[56px] flex items-center justify-center"
+      >
+        <span className="font-sans text-[11px] text-jewelInk-mid text-center leading-snug italic">
+          {cell.placeholder}
+        </span>
+      </div>
+    )
+  }
+  return (
+    <div
+      data-testid="aspect-table-cell"
+      className="rounded-lg bg-navy/6 border border-navy/15 px-2 py-2"
+    >
+      <div className="font-geo text-[18px] font-bold text-navy leading-tight">
+        {cell.ge}
+      </div>
+      <div className="mt-0.5 px-1.5 py-0.5 bg-ruby/15 rounded text-ruby inline-block">
+        <span className="font-sans text-[9px] font-bold uppercase tracking-wider">
+          {cell.translit}
+        </span>
+      </div>
+      <div className="mt-1 font-sans text-[12px] text-jewelInk leading-snug">
+        {cell.ru}
+      </div>
+    </div>
+  )
 }

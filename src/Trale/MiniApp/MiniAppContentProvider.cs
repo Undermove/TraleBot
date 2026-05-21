@@ -145,6 +145,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                 BuildPreverbsModule(),
                 BuildImperfectModule(),
                 BuildAoristModule(),
+                BuildVerbalAspectModule(),
                 BuildFutureTenseModule(),
                 BuildPronounDeclensionModule(),
                 BuildConditionalsModule(),
@@ -480,6 +481,49 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("— გუშინ რა გააკეთე?", "— Что ты сделал вчера?"),
                         Example("— ვიარე ბაზარში და ვიყიდე პური", "— Я сходил на рынок и купил хлеб"),
                         Paragraph("Переворот эргатива работает и в 1л./2л.! «Я написал письмо»: მე остаётся в именительном — потому что у 1л./2л. именительный = эргативный (синкретизм). Только 3-е лицо меняет форму в эргативе: ის → მან (ед.ч.) и ისინი → მათ (мн.ч.).")
+                    })
+            }
+        };
+    }
+
+    private static ModuleDto BuildVerbalAspectModule()
+    {
+        return new ModuleDto
+        {
+            Id = "verbal-aspect", Title = "Вид глагола", Emoji = "🔄",
+            Description = "Несовершенный и совершенный вид — ключ к грузинским временам",
+            Lessons = new List<LessonDto>
+            {
+                Lesson(1, "Вид глагола — обзор", "Вид: несов./сов.", "Вид глагола: несовершенный и совершенный",
+                    "Понять разницу между несовершенным (продолжение/повторение) и совершенным (завершённость) видом.",
+                    new List<TheoryBlockDto>
+                    {
+                        AspectTable(new AspectTableDto
+                        {
+                            ColHeader1 = "Прошедшее",
+                            ColHeader2 = "Настоящее + Будущее",
+                            Rows = new List<AspectTableRowDto>
+                            {
+                                new AspectTableRowDto
+                                {
+                                    Label = "Несовершенный вид",
+                                    Cell1 = new AspectTableCellDto { Ge = "ვწერდი", Translit = "vts'erdi", Ru = "я писал" },
+                                    Cell2 = new AspectTableCellDto { Ge = "ვწერ", Translit = "vts'er", Ru = "я пишу" }
+                                },
+                                new AspectTableRowDto
+                                {
+                                    Label = "Совершенный вид",
+                                    Cell1 = new AspectTableCellDto { Ge = "დავწერე", Translit = "davts'ere", Ru = "я написал" },
+                                    Cell2 = new AspectTableCellDto
+                                    {
+                                        Disabled = true,
+                                        Placeholder = "Будущее время — разберём в следующем модуле"
+                                    }
+                                }
+                            }
+                        }),
+                        Paragraph("Несовершенный = действие продолжается или повторяется; Совершенный = действие завершено или однократно."),
+                        Paragraph("Вид выражается превербами და-, გა-, შე-... а не разными словами.")
                     })
             }
         };
@@ -2202,6 +2246,8 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
         }
     };
 
+    private static TheoryBlockDto AspectTable(AspectTableDto table) => new() { Type = "table", Table = table };
+
     private static TheoryBlockDto Paragraph(string text) => new() { Type = "paragraph", Text = text };
 
     private static TheoryBlockDto List(params string[] items) => new()
@@ -2365,6 +2411,30 @@ public class TheoryBlockDto
     public string Ge { get; set; }
     public string Ru { get; set; }
     public List<AlphabetLetterDto> Letters { get; set; }
+    public AspectTableDto Table { get; set; }
+}
+
+public class AspectTableDto
+{
+    public string ColHeader1 { get; set; } = string.Empty;
+    public string ColHeader2 { get; set; } = string.Empty;
+    public List<AspectTableRowDto> Rows { get; set; } = new();
+}
+
+public class AspectTableRowDto
+{
+    public string Label { get; set; } = string.Empty;
+    public AspectTableCellDto Cell1 { get; set; } = new();
+    public AspectTableCellDto Cell2 { get; set; } = new();
+}
+
+public class AspectTableCellDto
+{
+    public string Ge { get; set; }
+    public string Translit { get; set; }
+    public string Ru { get; set; }
+    public bool Disabled { get; set; }
+    public string Placeholder { get; set; }
 }
 
 public class AlphabetLetterDto

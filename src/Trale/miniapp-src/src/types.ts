@@ -87,13 +87,34 @@ export interface LessonTheoryDto {
   blocks: TheoryBlockDto[]
 }
 
+export interface AspectTableCellDto {
+  ge?: string | null
+  translit?: string | null
+  ru?: string | null
+  disabled?: boolean
+  placeholder?: string | null
+}
+
+export interface AspectTableRowDto {
+  label: string
+  cell1: AspectTableCellDto
+  cell2: AspectTableCellDto
+}
+
+export interface AspectTableDto {
+  colHeader1: string
+  colHeader2: string
+  rows: AspectTableRowDto[]
+}
+
 export interface TheoryBlockDto {
-  type: 'paragraph' | 'list' | 'example' | 'letters'
+  type: 'paragraph' | 'list' | 'example' | 'letters' | 'table'
   text?: string
   items?: string[]
   ge?: string
   ru?: string
   letters?: AlphabetLetterDto[]
+  table?: AspectTableDto
 }
 
 export interface AlphabetLetterDto {
@@ -109,6 +130,6 @@ export const PRO_MODULE_IDS: ReadonlySet<string> = new Set([
   'intro', 'numbers',
   'pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives',
   'cafe', 'shopping', 'taxi', 'doctor', 'emergency',
-  'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',
+  'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist', 'verbal-aspect',
   'pronoun-declension', 'conditionals', 'imperative',
 ])
