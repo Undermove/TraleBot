@@ -76,16 +76,14 @@ public class VerbalAspectQuestionsLoaderTests
         imperfectQ.ValueKind.ShouldNotBe(JsonValueKind.Undefined,
             "One recognition question must be tagged 'imperfect'");
         var imperfectAnswer = GetCorrectAnswer(imperfectQ);
-        imperfectAnswer.ShouldContain("ვწერდი",
-            "Imperfect recognition correct answer must be ვწერდი (Imperfect = несов. прошл.)");
+        imperfectAnswer.ShouldContain("ვწერდი");
 
         // Aorist recognition → correct answer is დავწერე
         var aoristQ = recognition.FirstOrDefault(q => HasTag(q, "aorist"));
         aoristQ.ValueKind.ShouldNotBe(JsonValueKind.Undefined,
             "One recognition question must be tagged 'aorist'");
         var aoristAnswer = GetCorrectAnswer(aoristQ);
-        aoristAnswer.ShouldContain("დავწერე",
-            "Aorist recognition correct answer must be დავწერე (Aorist = сов. прошл.)");
+        aoristAnswer.ShouldContain("დავწერე");
     }
 
     // ── AC 3: context questions feedback has explicit aspect reference ──────────
@@ -102,14 +100,12 @@ public class VerbalAspectQuestionsLoaderTests
         var imperfectCtx = context.FirstOrDefault(q => HasTag(q, "imperfect"));
         imperfectCtx.ValueKind.ShouldNotBe(JsonValueKind.Undefined,
             "One context question must be tagged 'imperfect'");
-        GetExplanation(imperfectCtx).ShouldContain("несовершенный вид",
-            "Imperfect context question feedback must contain 'несовершенный вид'");
+        GetExplanation(imperfectCtx).ShouldContain("несовершенный вид");
 
         var aoristCtx = context.FirstOrDefault(q => HasTag(q, "aorist"));
         aoristCtx.ValueKind.ShouldNotBe(JsonValueKind.Undefined,
             "One context question must be tagged 'aorist'");
-        GetExplanation(aoristCtx).ShouldContain("совершенный вид",
-            "Aorist context question feedback must contain 'совершенный вид'");
+        GetExplanation(aoristCtx).ShouldContain("совершенный вид");
     }
 
     // ── AC 4: habitual/once questions correct answers and feedback markers ──────
@@ -120,22 +116,16 @@ public class VerbalAspectQuestionsLoaderTests
         var habitual = _questions.FirstOrDefault(q => HasTag(q, "habitual"));
         habitual.ValueKind.ShouldNotBe(JsonValueKind.Undefined,
             "There must be at least one question tagged 'habitual'");
-        GetCorrectAnswer(habitual).ShouldContain("ვწერდი",
-            "Habitual question must have ვწერდი (Imperfect) as correct answer");
-        GetExplanation(habitual).ShouldContain("ყოველ დღეს",
-            "Habitual question feedback must contain 'ყოველ დღეს'");
-        GetExplanation(habitual).ShouldContain("несовершенный вид",
-            "Habitual question feedback must contain 'несовершенный вид'");
+        GetCorrectAnswer(habitual).ShouldContain("ვწერდი");
+        GetExplanation(habitual).ShouldContain("ყოველ დღეს");
+        GetExplanation(habitual).ShouldContain("несовершенный вид");
 
         var once = _questions.FirstOrDefault(q => HasTag(q, "once"));
         once.ValueKind.ShouldNotBe(JsonValueKind.Undefined,
             "There must be at least one question tagged 'once'");
-        GetCorrectAnswer(once).ShouldContain("დავწერე",
-            "Once question must have დავწერე (Aorist) as correct answer");
-        GetExplanation(once).ShouldContain("однократное",
-            "Once question feedback must contain 'однократное'");
-        GetExplanation(once).ShouldContain("совершенный вид",
-            "Once question feedback must contain 'совершенный вид'");
+        GetCorrectAnswer(once).ShouldContain("დავწერე");
+        GetExplanation(once).ShouldContain("однократное");
+        GetExplanation(once).ShouldContain("совершенный вид");
     }
 
     // ── AC (negative): distractors are verb forms of the same verb ─────────────
@@ -154,9 +144,7 @@ public class VerbalAspectQuestionsLoaderTests
             foreach (var opt in opts.EnumerateArray())
             {
                 var optStr = opt.GetString() ?? string.Empty;
-                optStr.ShouldContain("წერ",
-                    $"Question '{id}': option '{optStr}' must be a form of the verb 'писать' (root 'წერ'). " +
-                    "Distractors must not use cross-semantic vocabulary.");
+                optStr.ShouldContain("წერ");
             }
         }
     }
