@@ -8,7 +8,7 @@ using Testcontainers.PostgreSql;
 
 namespace IntegrationTests;
 
-public class TestBase
+public abstract class TestBase
 {
     protected TraleTestApplication _testServer = null!;
     private PostgreSqlContainer _postgresqlContainer = null!;
