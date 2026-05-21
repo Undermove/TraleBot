@@ -114,6 +114,46 @@ const verbalAspectQuestions = [
     questionType: 'multiple-choice',
     answerIndex: 0,
   },
+  {
+    id: 'va_q03',
+    lemma: 'ვწერდი',
+    question: '«Когда зазвонил телефон, я _____ письмо» — фоновое продолжительное действие. Выберите форму:',
+    options: ['ვწერდი', 'დავწერე', 'ვწერ'],
+    answer_index: 0,
+    explanation: 'Фоновое действие продолжалось → продолжительное → несовершенный вид → Imperfect (ვწერდი).',
+    questionType: 'multiple-choice',
+    answerIndex: 0,
+  },
+  {
+    id: 'va_q04',
+    lemma: 'დავწერე',
+    question: '«Вчера я _____ письмо другу» — завершённое однократное действие. Выберите форму:',
+    options: ['დავწერე', 'ვწერდი', 'ვწერ'],
+    answer_index: 0,
+    explanation: 'Завершённое действие → совершенный вид → Aorist (დავწერე). Действие однократно и завершено.',
+    questionType: 'multiple-choice',
+    answerIndex: 0,
+  },
+  {
+    id: 'va_q05',
+    lemma: 'ვწერდი',
+    question: '«ყოველ დღეს я _____ в дневнике» — хабитуальное регулярное действие. Выберите форму:',
+    options: ['ვწერდი', 'დავწერე', 'ვწერ'],
+    answer_index: 0,
+    explanation: 'ყოველ დღეს → несовершенный вид → Imperfect (ვწერდი). Регулярное хабитуальное действие выражается имперфектом.',
+    questionType: 'multiple-choice',
+    answerIndex: 0,
+  },
+  {
+    id: 'va_q06',
+    lemma: 'დავწერე',
+    question: '«Однажды я _____ длинное письмо» — разовое действие. Выберите форму:',
+    options: ['დავწერე', 'ვწერდი', 'ვწერ'],
+    answer_index: 0,
+    explanation: 'Разовое действие: однократное → совершенный вид → Aorist (დავწერე). Не хабитуальное.',
+    questionType: 'multiple-choice',
+    answerIndex: 0,
+  },
 ]
 
 async function setupVerbalAspectMocks(page: any) {
@@ -265,4 +305,94 @@ test('practice-questions-visible-during-module-walkthrough', async ({ page }) =>
 
   // Explanation must mention the aspect table cell
   await expect(page.getByText(/имперфект/i)).toBeVisible()
+})
+
+test('incorrect-answer-shows-red-feedback-with-correct-answer-revealed', async ({ page }) => {
+  await setupVerbalAspectMocks(page)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToVerbalAspectTheory(page)
+  await expect(page.locator('[data-testid="lesson-theory"]')).toBeVisible({ timeout: 10_000 })
+
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+
+  // Recognition question appears (Q1: «Я писал письма каждый день»)
+  await expect(page.getByText(/несовершенный вид, прошедшее/i)).toBeVisible({ timeout: 10_000 })
+
+  // Select wrong answer: 'დავწერე' (index 1, incorrect for va_q01 where correct is ვწერდი)
+  const wrongOption = page.getByRole('button').filter({ hasText: 'დავწერე' }).first()
+  await expect(wrongOption).toBeVisible({ timeout: 5_000 })
+  await wrongOption.click()
+
+  const checkBtn = page.getByRole('button', { name: /проверить/i })
+  await expect(checkBtn).toBeVisible({ timeout: 5_000 })
+  await checkBtn.click()
+
+  // Red feedback banner must appear — "არასწორია!" is the Georgian for "incorrect"
+  await expect(page.getByText('არასწორია!')).toBeVisible({ timeout: 5_000 })
+
+  // Explanation reveals the correct answer in context (имперфект)
+  await expect(page.getByText(/имперфект/i)).toBeVisible()
+})
+
+test('correct-answers-produce-green-feedback-for-recognition-context-habitual-questions', async ({
+  page,
+}) => {
+  await setupVerbalAspectMocks(page)
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
+
+  await navigateToVerbalAspectTheory(page)
+  await expect(page.locator('[data-testid="lesson-theory"]')).toBeVisible({ timeout: 10_000 })
+
+  const practiceBtn = page.getByRole('button', { name: /к практике/i })
+  await expect(practiceBtn).toBeVisible({ timeout: 10_000 })
+  await practiceBtn.click()
+
+  // Helper: click correct option by text, submit, optionally assert green, then proceed
+  async function answerCorrectly(correctText: string, assertGreen: boolean) {
+    const btn = page.getByRole('button').filter({ hasText: correctText }).first()
+    await expect(btn).toBeVisible({ timeout: 10_000 })
+    await btn.click()
+    const check = page.getByRole('button', { name: /проверить/i })
+    await expect(check).toBeVisible({ timeout: 5_000 })
+    await check.click()
+    if (assertGreen) {
+      await expect(page.getByText('სწორია!')).toBeVisible({ timeout: 5_000 })
+    }
+    const next = page.getByRole('button', { name: /дальше →/i })
+    await expect(next).toBeVisible({ timeout: 5_000 })
+    await next.click()
+    // Wait for transition: feedback banner must disappear before interacting with next question
+    await expect(page.getByText('სწორია!')).not.toBeVisible({ timeout: 5_000 })
+  }
+
+  // Q1 — Recognition (Несовершенный вид / Прошедшее): ვწერდი is correct
+  await expect(page.getByText(/несовершенный вид, прошедшее/i)).toBeVisible({ timeout: 10_000 })
+  await answerCorrectly('ვწერდი', true) // verify green for recognition
+
+  // Q2 — Recognition (Совершенный вид / Прошедшее): დავწერე is correct; no assertion needed
+  await expect(page.getByText(/совершенный вид, завершённое/i)).toBeVisible({ timeout: 10_000 })
+  await answerCorrectly('დავწერე', false)
+
+  // Q3 — Context (background imperfect): ვწერდი is correct
+  await expect(page.getByText(/Когда зазвонил телефон/i)).toBeVisible({ timeout: 10_000 })
+  await answerCorrectly('ვწერდი', true) // verify green for context
+
+  // Q4 — Context (perfective aorist): დავწერე is correct; no assertion needed
+  await expect(page.getByText(/Вчера я/i)).toBeVisible({ timeout: 10_000 })
+  await answerCorrectly('დავწერე', false)
+
+  // Q5 — Habitual (ყოველ დღეს): ვწერდი is correct
+  await expect(page.getByText(/ყოველ დღეს/i)).toBeVisible({ timeout: 10_000 })
+  const habitualBtn = page.getByRole('button').filter({ hasText: 'ვწერდი' }).first()
+  await expect(habitualBtn).toBeVisible({ timeout: 5_000 })
+  await habitualBtn.click()
+  const checkHabitual = page.getByRole('button', { name: /проверить/i })
+  await checkHabitual.click()
+  // Green feedback must appear for habitual question
+  await expect(page.getByText('სწორია!')).toBeVisible({ timeout: 5_000 })
 })
