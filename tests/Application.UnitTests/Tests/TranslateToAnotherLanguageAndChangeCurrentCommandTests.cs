@@ -71,7 +71,8 @@ public class TranslateToAnotherLanguageAndChangeCurrentLanguageCommandTests : Co
     [Test]
     public async Task ShouldReturnNeedPremiumWhenRequestFromFreeUser()
     {
-        var freeUser = Create.User().WithCurrentLanguage(Language.English).Build();
+        // Trial expired and no Pro — HasMiniAppAccess() returns false.
+        var freeUser = Create.User().WithExpiredTrial().WithCurrentLanguage(Language.English).Build();
         Context.Users.Add(freeUser);
         
         const string? expectedWord = "недостаточность";
