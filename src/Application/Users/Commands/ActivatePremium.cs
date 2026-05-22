@@ -35,19 +35,27 @@ public class ActivatePremium : IRequest<PremiumActivationStatus>
 
             if (request.IsTrial)
             {
+                // Old manual-trial path. Trial is now automatic via RegisteredAtUtc (30 days),
+                // so this path is only kept for backwards compat with the bot's /activate_trial command.
+                // Do NOT set IsPro — the user stays on the automatic trial entitlement.
                 user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddMonths(1);
             }
             else
             {
+                // Paid subscription via old invoice path (pre-Stars). Mirror what ActivateProStars does.
+                user.IsPro = true;
                 switch (request.SubscriptionTerm)
                 {
                     case SubscriptionTerm.Month:
+                        user.SubscriptionPlan = Domain.Entities.SubscriptionPlan.Month;
                         user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddMonths(1);
                         break;
                     case SubscriptionTerm.ThreeMonth:
+                        user.SubscriptionPlan = Domain.Entities.SubscriptionPlan.Quarter;
                         user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddMonths(3);
                         break;
                     case SubscriptionTerm.Year:
+                        user.SubscriptionPlan = Domain.Entities.SubscriptionPlan.Year;
                         user.SubscribedUntil = request.InvoiceCreatedAdUtc!.Value.AddYears(1);
                         break;
                     default:
