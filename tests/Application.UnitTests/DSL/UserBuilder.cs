@@ -9,7 +9,7 @@ public class UserBuilder
     private UserAccountType _accountType = UserAccountType.Free;
     private Language _currentLanguage = Language.English;
     private bool _initialLanguageSet;
-    private DateTime _subscriptionEndDate;
+    private DateTime? _subscriptionEndDate;
     private bool _isPro;
     private SubscriptionPlan? _subscriptionPlan;
     private DateTime _registerAtUtc = DateTime.UtcNow;
@@ -17,7 +17,7 @@ public class UserBuilder
     public UserBuilder WithPremiumAccountType()
     {
         _accountType = UserAccountType.Premium;
-        _subscriptionEndDate = DateTime.UtcNow.AddDays(1);
+        _subscriptionEndDate = DateTime.UtcNow.AddDays(30);
         // Premium test users are also Pro in the new Stars model — HasActivePro/HasMiniAppAccess
         // should return true so mini-app entitlement gates don't reject them.
         _isPro = true;
