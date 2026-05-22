@@ -24,7 +24,7 @@ public class TranslateAndDeleteVocabulary : IRequest<ChangeAndTranslationResult>
             object?[] keyValues = { request.VocabularyEntryId };
             var sourceEntry = await context.VocabularyEntries.FindAsync(keyValues, cancellationToken: ct);
 
-            if (request.User.IsActivePremium())
+            if (request.User.HasMiniAppAccess())
             {
                 return new ChangeAndTranslationResult.NoActionNeeded();
             }
