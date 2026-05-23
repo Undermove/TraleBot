@@ -1,0 +1,85 @@
+# Bootstrap для read-only роли `agent_ro` в Postgres.
+#
+# Запускается отдельным Job'ом после каждого деплоя БД. SQL идемпотентный:
+# роль создаётся если её нет, пароль и гранты переустанавливаются всегда,
+# поэтому ротация пароля = bump секрета AGENT_RO_PASSWORD + re-run workflow.
+#
+# Все $VAR — плейсхолдеры под envsubst в .github/workflows/kubernetes_deploy_db.yml,
+# реальные значения приходят из GitHub Secrets и НИКОГДА не должны попадать в этот файл.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-bootstrap-sql
+data:
+  bootstrap.sql: |
+    -- Создаём роль только если её ещё нет. \gexec выполняет результат SELECT'а
+    -- как SQL — пустой SELECT (ничего не возвращает) если роль уже есть.
+    SELECT 'CREATE ROLE agent_ro LOGIN'
+    WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'agent_ro')\gexec
+
+    -- Дальше всё идемпотентно: пароль и гранты переустанавливаются всегда.
+    -- :'agent_ro_password' и :"db_name" — psql-переменные, передаются через -v.
+    -- :'...' квотит как SQL-литерал, :"..." как идентификатор — защита от инъекции.
+    ALTER ROLE agent_ro WITH LOGIN PASSWORD :'agent_ro_password';
+    GRANT CONNECT ON DATABASE :"db_name" TO agent_ro;
+    GRANT USAGE ON SCHEMA public TO agent_ro;
+    GRANT SELECT ON ALL TABLES IN SCHEMA public TO agent_ro;
+    GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO agent_ro;
+
+    -- ВАЖНО: новые таблицы, которые EF создаст после bootstrap'а, по умолчанию
+    -- не будут видны agent_ro. ALTER DEFAULT PRIVILEGES чинит это для будущих
+    -- объектов, созданных текущим юзером (admin Postgres'а).
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO agent_ro;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON SEQUENCES TO agent_ro;
+
+    -- Hard-stop на запись на уровне сессии: даже если кто-то даст agent_ro INSERT
+    -- по ошибке, любой запрос на запись упадёт с read-only transaction error.
+    ALTER ROLE agent_ro SET default_transaction_read_only = on;
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-bootstrap
+spec:
+  # Job сам подметётся через час после Completed — не засоряем кластер.
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: psql
+          image: postgres:16-alpine
+          env:
+            # Подключение под админом БД — теми же кредами, что и сам StatefulSet.
+            # Резолвится через DNS headless-сервиса `postgres` в том же namespace.
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              value: $POSTGRES_USER
+            - name: PGPASSWORD
+              value: $POSTGRES_PASSWORD
+            - name: PGDATABASE
+              value: $POSTGRES_DB
+            - name: AGENT_RO_PASSWORD
+              value: $AGENT_RO_PASSWORD
+          command:
+            - psql
+            - -v
+            - ON_ERROR_STOP=1
+            - -v
+            - agent_ro_password=$(AGENT_RO_PASSWORD)
+            - -v
+            - db_name=$(PGDATABASE)
+            - -f
+            - /sql/bootstrap.sql
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+      volumes:
+        - name: sql
+          configMap:
+            name: db-bootstrap-sql

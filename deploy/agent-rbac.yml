@@ -1,0 +1,50 @@
+# RBAC для внешнего read-only доступа к Postgres через kubectl port-forward.
+#
+# Идея: на локальной машине, где бегают Claude Code агенты, лежит отдельный
+# kubeconfig под этот ServiceAccount. Агент может только пробросить порт до
+# pod/postgres-0 и больше ничего. Дальше он подключается через psql под
+# agent_ro (read-only роль в самой БД, см. postgres-bootstrap.yml).
+#
+# Два уровня защиты:
+# 1) RBAC ограничивает что в кластере вообще можно потрогать.
+# 2) agent_ro в БД гарантирует read-only даже если RBAC обойдут.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-readonly
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-portforward-postgres
+rules:
+  # list нужен чтобы `kubectl port-forward pod/postgres-0` смог найти под.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+
+  # Главное право — пробросить порт. resourceNames намеренно whitelist'ит
+  # ровно один под, чтобы скомпрометированный kubeconfig не дал доступ
+  # к произвольным подам в namespace.
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["create"]
+    resourceNames: ["postgres-0"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-portforward-postgres
+subjects:
+  - kind: ServiceAccount
+    name: agent-readonly
+    namespace: tralebot-prod
+roleRef:
+  kind: Role
+  name: agent-portforward-postgres
+  apiGroup: rbac.authorization.k8s.io
