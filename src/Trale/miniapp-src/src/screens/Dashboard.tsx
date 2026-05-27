@@ -119,14 +119,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
   ]
 
-  // Per-section collapse state (persisted in localStorage)
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('bombora_collapsed')
-      return saved ? JSON.parse(saved) : {}
-    } catch { return {} }
-  })
-
   // Sections currently playing the one-time unlock animation
   const [animatingSections, setAnimatingSections] = useState<Set<string>>(new Set())
   // Temporary mascot cheer after unlock sequence (step 5: 500ms in, lasts 2s)
@@ -165,13 +157,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           'bombora_unlocked_once',
           JSON.stringify([...prevSeen, ...newlyUnlocked])
         )
-        // Auto-expand newly unlocked sections so tiles are visible
-        setCollapsedSections((prev) => {
-          const next = { ...prev }
-          for (const key of newlyUnlocked) next[key] = false
-          try { localStorage.setItem('bombora_collapsed', JSON.stringify(next)) } catch {}
-          return next
-        })
         setAnimatingSections(new Set(newlyUnlocked))
         // Bombora cheers at 500ms (step 5 of animation sequence)
         const cheerTimer = setTimeout(() => {
@@ -214,15 +199,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     }
     prevProgressRef.current = progress
   }, [progress.xp, progress.streak])
-
-  // Toggle using the current visual state so beginner defaults are respected
-  function toggleSection(key: string, currentlyCollapsed: boolean) {
-    setCollapsedSections((prev) => {
-      const next = { ...prev, [key]: !currentlyCollapsed }
-      try { localStorage.setItem('bombora_collapsed', JSON.stringify(next)) } catch {}
-      return next
-    })
-  }
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
@@ -447,11 +423,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
             const isLocked = false
             const isAnimatingUnlock = animatingSections.has(section.key)
 
-            // Determine collapsed state: localStorage overrides beginner defaults
-            const hasUserInteracted = Object.prototype.hasOwnProperty.call(collapsedSections, section.key)
-            const defaultCollapsed = isBeginner && section.key !== 'basics' && section.key !== 'myvocab'
-            const isUserCollapsed = hasUserInteracted ? collapsedSections[section.key] === true : defaultCollapsed
-
             // Compute locked hint: show when previous section is ≥80% done
             let lockedHint: string | null = null
             if (isLocked) {
@@ -497,10 +468,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                     </svg>
                   </div>
                 ) : (
-                  /* Unlocked — tappable to collapse/expand, gold pulse animation on first unlock */
-                  <button
-                    onClick={() => toggleSection(section.key, isUserCollapsed)}
-                    className={`w-full px-5 pt-4 pb-3 flex items-center gap-3 active:opacity-70 transition-opacity${isAnimatingUnlock ? ' unlock-pulse' : ''}`}
+                  /* Unlocked — always expanded; gold pulse animation on first unlock */
+                  <div
+                    className={`w-full px-5 pt-4 pb-3 flex items-center gap-3${isAnimatingUnlock ? ' unlock-pulse' : ''}`}
                   >
                     <div className="mn-eyebrow">{section.label}</div>
                     <div className="font-geo text-[10px] text-jewelInk-hint font-semibold">{section.geoLabel}</div>
@@ -508,13 +478,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                     <div className="font-sans text-[11px] font-semibold text-jewelInk-mid tabular-nums">
                       {section.modules.length}
                     </div>
-                    <svg
-                      width="12" height="12" viewBox="0 0 24 24" fill="none"
-                      className={`shrink-0 text-jewelInk-mid transition-transform duration-200 ease-out ${isUserCollapsed ? '-rotate-90' : ''}`}
-                    >
-                      <path d="M6 9 L12 15 L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
+                  </div>
                 )}
 
                 {/* Hint below locked header — appears when previous section is ≥80% done */}
@@ -524,8 +488,8 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                   </div>
                 )}
 
-                {/* Module tiles — hidden when locked or collapsed */}
-                {!isLocked && !isUserCollapsed && (
+                {/* Module tiles — always visible (sections can't be collapsed) */}
+                {!isLocked && (
                   <section className="px-5 flex flex-col gap-3 pb-2">
                     {section.modules.map((m, tileIdx) => {
                       const currentIdx = globalIdx++
