@@ -21,6 +21,8 @@ NS="${TRALEBOT_NAMESPACE:-tralebot-prod}"
 POD="${TRALEBOT_POD:-postgres-0}"
 DB="${TRALEBOT_DB:-tralebot_db}"
 DB_USER="${TRALEBOT_DB_USER:-agent_ro}"
+# Стартовый порт. Если занят (например локальный docker-postgres другого
+# проекта), скрипт сам найдёт свободный — see free-port loop ниже.
 LOCAL_PORT="${TRALEBOT_LOCAL_PORT:-5433}"
 LOG="/tmp/tralebot-pgpf.log"
 
@@ -39,6 +41,23 @@ if ! command -v psql >/dev/null 2>&1; then
   exit 1
 fi
 
+# Ищем свободный локальный порт начиная с LOCAL_PORT. КРИТИЧНО: если порт уже
+# кем-то слушается (частый кейс — docker-postgres другого проекта на 5433),
+# kubectl не сможет на него забиндиться, а psql молча уйдёт в ЧУЖУЮ базу. Раньше
+# это давало загадочный "password authentication failed for user agent_ro".
+# Поэтому форвардим только на заведомо свободный порт.
+for _ in $(seq 0 20); do
+  nc -z localhost "$LOCAL_PORT" 2>/dev/null || break
+  LOCAL_PORT=$((LOCAL_PORT + 1))
+done
+if nc -z localhost "$LOCAL_PORT" 2>/dev/null; then
+  echo "ERROR: не нашёл свободный локальный порт в диапазоне." >&2
+  exit 2
+fi
+if [ "$LOCAL_PORT" != "${TRALEBOT_LOCAL_PORT:-5433}" ]; then
+  echo "note: порт $((LOCAL_PORT)) (дефолтный занят), форвардим на него." >&2
+fi
+
 KUBECONFIG="$KUBECONFIG_FILE" \
   kubectl port-forward "pod/${POD}" "${LOCAL_PORT}:5432" -n "$NS" \
   >"$LOG" 2>&1 &
@@ -51,14 +70,18 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# Ждём пока порт начнёт принимать соединения. Максимум ~6 секунд.
+# Ждём готовности ИМЕННО нашего туннеля: kubectl пишет "Forwarding from
+# 127.0.0.1:PORT" когда забиндился. Проверять по nc недостаточно — посторонний
+# слушатель на том же порту обманул бы проверку (и psql ушёл бы не туда).
 for _ in $(seq 1 20); do
-  nc -z localhost "$LOCAL_PORT" 2>/dev/null && break
+  grep -q "Forwarding from .*:${LOCAL_PORT} " "$LOG" 2>/dev/null && break
+  # Если kubectl уже упал (например порт перехватили в гонке) — не ждём зря.
+  kill -0 "$PF_PID" 2>/dev/null || break
   sleep 0.3
 done
 
-if ! nc -z localhost "$LOCAL_PORT" 2>/dev/null; then
-  echo "ERROR: port-forward не поднялся за 6с. Лог:" >&2
+if ! grep -q "Forwarding from .*:${LOCAL_PORT} " "$LOG" 2>/dev/null; then
+  echo "ERROR: port-forward не поднялся за ~6с. Лог:" >&2
   cat "$LOG" >&2
   exit 2
 fi
