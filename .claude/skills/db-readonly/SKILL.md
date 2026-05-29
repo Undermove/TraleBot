@@ -22,10 +22,11 @@ Read-only канал в продовую Postgres TraleBot для Claude Code а
 ```
 
 Скрипт сам:
-1. Поднимает `kubectl port-forward pod/postgres-0 5433:5432 -n tralebot-prod` под service-account'ом `agent-readonly` (RBAC разрешает port-forward ТОЛЬКО до postgres-0, больше никуда).
-2. Ждёт пока порт начнёт слушать.
-3. Запускает `psql -h localhost -p 5433 -U agent_ro -d tralebot_db -c "<твой SQL>"` — пароль подхватывается из `~/.pgpass` автоматически.
-4. Убивает port-forward в trap'е (любой выход — нормальный или с ошибкой — закрывает туннель).
+1. Находит свободный локальный порт начиная с 5433 (если 5433 занят — например локальным docker-postgres другого проекта — берёт 5434, 5435, …). Это важно: на занятый порт kubectl не забиндится, а psql молча ушёл бы в ЧУЖУЮ базу и упал с `password authentication failed for user agent_ro`.
+2. Поднимает `kubectl port-forward pod/postgres-0 <порт>:5432 -n tralebot-prod` под service-account'ом `agent-readonly` (RBAC разрешает port-forward ТОЛЬКО до postgres-0, больше никуда).
+3. Ждёт строку `Forwarding from …` в логе kubectl — то есть готовности ИМЕННО нашего туннеля (проверка по `nc` ненадёжна: посторонний слушатель на том же порту обманул бы её).
+4. Запускает `psql -h localhost -p <порт> -U agent_ro -d tralebot_db -c "<твой SQL>"` — пароль подхватывается из `~/.pgpass` автоматически.
+5. Убивает port-forward в trap'е (любой выход — нормальный или с ошибкой — закрывает туннель).
 
 Многострочные запросы — заключай в одинарные кавычки. Внутри SQL — двойные кавычки для имён таблиц/колонок в PascalCase (например `"Users"`), потому что они так созданы EF Core'ом и без кавычек Postgres приведёт их к нижнему регистру.
 
@@ -94,8 +95,10 @@ chmod 600 ~/.kube/tralebot-readonly.conf
 
 Пароль `agent_ro` хранится в твоём 1Password как `TraleBot · agent_ro · prod` (или похоже — см. свою заметку «Как сгенерить пароль для read-only юзера agent_ro» в PrivateNotes).
 
+Порт в записи — `*` (а не конкретный 5433), потому что скрипт может выбрать другой свободный порт, и пароль должен подхватываться независимо от него:
+
 ```bash
-echo "localhost:5433:tralebot_db:agent_ro:<ПАРОЛЬ_ИЗ_1PASSWORD>" > ~/.pgpass
+echo "localhost:*:tralebot_db:agent_ro:<ПАРОЛЬ_ИЗ_1PASSWORD>" > ~/.pgpass
 chmod 600 ~/.pgpass
 ```
 
@@ -124,4 +127,4 @@ chmod 600 ~/.pgpass
 - `TRALEBOT_POD` — имя пода (default `postgres-0`)
 - `TRALEBOT_DB` — имя БД (default `tralebot_db`)
 - `TRALEBOT_DB_USER` — имя юзера для psql (default `agent_ro`)
-- `TRALEBOT_LOCAL_PORT` — на каком локальном порту слушать port-forward (default `5433`)
+- `TRALEBOT_LOCAL_PORT` — стартовый локальный порт для port-forward (default `5433`); если занят, скрипт сам инкрементит до первого свободного
