@@ -788,6 +788,14 @@ phase_dev() {
     pick_title=$(echo "${pick_line}" | cut -f2-)
     echo ">>> [dev] picker selected #${pick_num}: ${pick_title}"
     local phase_id="dev-${pick_num}"
+
+    # Mark the task live so the Dev Tycoon board can highlight it while the
+    # developer agent works (the board reads the agent:running label, same as
+    # the epic-kickoff path). Cleared right after the agent returns, below.
+    gh label create agent:running --color fbca04 \
+        --description "An agent is actively working on this issue right now" 2>/dev/null || true
+    gh issue edit "${pick_num}" --add-label "agent:running" 2>/dev/null || true
+
     local instruction
     instruction="$(context_prefix)Read .claude/agents/developer.md AND ARCHITECTURE.md.
 
@@ -810,6 +818,10 @@ DO NOT pick a different task. DO NOT touch issues outside this scope.
 At the very end output '=== SUMMARY ===' with: task picked, files changed, tests added, dotnet test result."
 
     run_agent "${phase_id}" "developer" 100 "${instruction}"
+
+    # Clear the live marker — agent finished this task (done, stuck, or partial);
+    # the board should no longer show it as in-flight.
+    gh issue edit "${pick_num}" --remove-label "agent:running" 2>/dev/null || true
 
     # If the developer hit max-turns, mark the task `dev-stuck` so the next
     # dev iteration's picker skips it. Without this, dev-loop would just
