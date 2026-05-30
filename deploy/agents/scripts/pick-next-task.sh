@@ -13,16 +13,17 @@ set -euo pipefail
 # stdout (and exit 0) means «no eligible task; dev loop should stop».
 #
 # Selection rules, in order:
-#   1. The active sprint plan is the first issue with label `sprint-plan`,
-#      `auto-approved` if any exists; otherwise the first open `sprint-plan`.
-#      If neither exists → exit empty.
-#   2. Epic order = the order they appear in the sprint plan body (parsed
-#      from `## Эпик #N` headings). The publish-plan phase writes one such
-#      heading per included epic.
-#   3. Within an epic, tasks are open issues whose title starts
-#      `epic-<EPIC>:`. Sorted ascending by issue number — backend (lower
-#      number, created first by breakdown) comes before frontend, then
-#      content, then tests. This is the convention breakdown emits.
+#   1. Epics to build come from two sources: the active sprint plan (first
+#      open `sprint-plan`, `auto-approved` preferred) AND every epic in the
+#      game's "Doing" column (label `epic:doing`). A sprint plan is NOT
+#      required — epics kicked off from Dev Tycoon build on their own. If
+#      neither source yields an epic → exit empty.
+#   2. Epic order = sprint-plan body order (`## Эпик #N` headings) first, then
+#      Doing epics not already listed. De-duplicated, order-preserving.
+#   3. A task belongs to an epic when it carries the `epic-<EPIC>` LABEL (set
+#      by both the nightly breakdown and the kickoff) or, as a fallback, its
+#      title starts `epic-<EPIC>:`. Sorted ascending by issue number — backend
+#      (lower number, created first) before frontend, then content, then tests.
 #   4. A task is eligible when it has label `qa-prepared` AND lacks all of
 #      `done` (already shipped tonight), `dev-stuck` (a previous dev iteration
 #      hit max-turns; needs human triage, skip), and `agent:running` (another
@@ -33,18 +34,28 @@ set -euo pipefail
 #   5. The script returns the first eligible task across all epics in
 #      order. If nothing matches → exit empty.
 
+# Epics to build come from two sources, plan first:
+#   1. The active sprint plan's `## Эпик #N` headings (the nightly flow).
+#   2. Epics in the game's "Doing" column (label `epic:doing`) — these are
+#      kicked off from Dev Tycoon and may have NO sprint plan at all.
+# Either source alone is enough; a sprint plan is no longer required, so epics
+# moved to Doing in the game get built even without a published plan.
+PLAN_EPICS=""
 SPRINT=$(gh issue list --label sprint-plan --label auto-approved --state open --limit 1 --json number --jq '.[0].number // empty' 2>/dev/null)
 if [ -z "${SPRINT}" ]; then
     SPRINT=$(gh issue list --label sprint-plan --state open --limit 1 --json number --jq '.[0].number // empty' 2>/dev/null)
 fi
-[ -z "${SPRINT}" ] && exit 0
+if [ -n "${SPRINT}" ]; then
+    # Declared order from the body. Patterns: `## Эпик #NNN` / `## Epic #NNN`.
+    PLAN_EPICS=$(gh issue view "${SPRINT}" --json body --jq '.body' 2>/dev/null \
+            | grep -oiE '##[[:space:]]+(Эпик|Epic)[[:space:]]+#[0-9]+' \
+            | grep -oE '[0-9]+')
+fi
+DOING_EPICS=$(gh issue list --label epic --label "epic:doing" --state open --limit 50 \
+             --json number --jq '.[].number' 2>/dev/null)
 
-# Extract epic numbers from the body in declared order. Patterns supported:
-#   `## Эпик #NNN: …`  (the publish-plan template)
-#   `## Epic #NNN: …`  (English fallback)
-EPICS=$(gh issue view "${SPRINT}" --json body --jq '.body' 2>/dev/null \
-        | grep -oiE '##[[:space:]]+(Эпик|Epic)[[:space:]]+#[0-9]+' \
-        | grep -oE '[0-9]+')
+# Plan epics (priority order) then Doing epics, de-duplicated, order-preserving.
+EPICS=$(printf '%s\n%s\n' "${PLAN_EPICS}" "${DOING_EPICS}" | awk 'NF && !seen[$0]++')
 
 [ -z "${EPICS}" ] && exit 0
 
@@ -53,8 +64,15 @@ ALL_TASKS_JSON=$(gh issue list --label task --state open --limit 200 --json numb
 
 for EPIC in ${EPICS}; do
     # Filter to tasks under this epic, sort ascending, drop done/dev-stuck/non-qa-prepared.
+    # Associate a task with its epic by the `epic-<N>` LABEL — both the nightly
+    # breakdown and the Dev Tycoon epic-kickoff set it reliably. The old title
+    # convention (`epic-<N>: …`) is kept as a fallback; the kickoff path titles
+    # tasks `[epic-<N>] …`, which the label match covers.
     PICK=$(echo "${ALL_TASKS_JSON}" | jq -r --arg epic "${EPIC}" '
-        [.[] | select(.title | startswith("epic-" + $epic + ":"))]
+        [.[] | select(
+            ((.labels // []) | map(.name) | contains(["epic-" + $epic]))
+            or (.title | startswith("epic-" + $epic + ":"))
+        )]
         | sort_by(.number)
         | .[]
         | select((.labels // []) | map(.name) | contains(["qa-prepared"]))
