@@ -49,6 +49,14 @@ echo "  Branch: ${BRANCH}"
 echo "  Started: $(date)"
 echo "============================================"
 
+# gh resolves the target GitHub repo from the git remote of the current
+# directory, so we must be inside the repo before any gh call below (the
+# branch is still created later, after the idempotency checks).
+cd "$REPO_DIR" || {
+    echo "Repo dir not found: ${REPO_DIR}"
+    exit 1
+}
+
 # 1. Fetch epic.
 EPIC_JSON=$(gh issue view "$EPIC_NUM" --json title,body,labels 2>&1) || {
     echo "Failed to fetch epic #${EPIC_NUM}: $EPIC_JSON"
@@ -123,6 +131,7 @@ EOF
         --dangerously-skip-permissions \
         --max-turns "${MAX_TURNS_PER_AGENT:-20}" \
         --output-format stream-json \
+        --verbose \
         || echo "[warn] ${agent} exited non-zero (continuing to next agent)"
 }
 
