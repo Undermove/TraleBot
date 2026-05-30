@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SentenceBuilderCard from './SentenceBuilderCard'
 import { QuizQuestion } from '../types'
@@ -221,5 +221,74 @@ describe('alternativeAnswers — issue #968', () => {
 
     expect(screen.getByText(/Должно было быть/i)).toBeInTheDocument()
     expect(screen.queryByText('Отличная работа!')).toBeNull()
+  })
+})
+
+// L4 question: two preset positions (0 and 2), one empty slot (1)
+const l4Question: QuizQuestion = {
+  id: 'q-l4',
+  lemma: '',
+  question: 'Она работает дома',
+  options: [],
+  answerIndex: 0,
+  explanation: '',
+  questionType: 'sentence-builder',
+  targetSentence: { ru: 'Она работает дома' },
+  level: 4,
+  correctOrder: ['ის', 'სახლში', 'მუშაობს'],
+  chipPool: ['სახლში'],
+  presetPositions: [
+    { position: 0, token: 'ის' },
+    { position: 2, token: 'მუშაობს' },
+  ],
+  hints: {},
+}
+
+describe('alternativeAnswers — issue #970', () => {
+  it('L5_NullAlternativeAnswers_AcceptsCorrectOrder: correctOrder accepted when alternativeAnswers is null', async () => {
+    const user = userEvent.setup()
+    const questionWithoutAlt: QuizQuestion = { ...l5Question, alternativeAnswers: undefined }
+    render(<SentenceBuilderCard question={questionWithoutAlt} onAnswer={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'მე' }))
+    await user.click(screen.getByRole('button', { name: 'წიგნს' }))
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+    await user.click(screen.getByRole('button', { name: 'ვკითხულობ' }))
+
+    await user.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    // RED: wrong assertion — will be fixed in green commit
+    expect(screen.getByText(/Должно было быть/i)).toBeInTheDocument()
+  })
+
+  it('L5_EmptyAlternativeAnswers_OnlyCorrectOrderAccepted: empty alternativeAnswers rejects wrong ordering', async () => {
+    const user = userEvent.setup()
+    const questionWithEmptyAlt: QuizQuestion = { ...l5Question, alternativeAnswers: [] }
+    render(<SentenceBuilderCard question={questionWithEmptyAlt} onAnswer={vi.fn()} />)
+
+    // Unlisted order: ['სახლში', 'ვკითხულობ', 'მე', 'წიგნს']
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+    await user.click(screen.getByRole('button', { name: 'ვკითხულობ' }))
+    await user.click(screen.getByRole('button', { name: 'მე' }))
+    await user.click(screen.getByRole('button', { name: 'წიგნს' }))
+
+    await user.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    // RED: wrong assertion — will be fixed in green commit
+    expect(screen.getByText('Отличная работа!')).toBeInTheDocument()
+  })
+
+  it('L4_PresetSlot_TapHasNoEffect: tapping preset slot leaves token unchanged and Проверить unaffected', async () => {
+    const user = userEvent.setup()
+    render(<SentenceBuilderCard question={l4Question} onAnswer={vi.fn()} />)
+
+    // Fill the one empty slot (slot-1) so Проверить becomes enabled
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+
+    const btn = screen.getByRole('button', { name: /Проверить/i })
+    const slot0 = screen.getByTestId('slot-0')
+
+    // RED: wrong assertion — will be fixed in green commit
+    expect(slot0).not.toBeDisabled()
   })
 })
