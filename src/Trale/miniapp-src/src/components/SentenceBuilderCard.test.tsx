@@ -115,3 +115,111 @@ describe('SentenceBuilderCard', () => {
     })
   })
 })
+
+// L5 question: no preset slots, 4 tokens, 2 alternativeAnswers orderings
+// correctOrder: ['მე', 'წიგნს', 'სახლში', 'ვკითხულობ']
+// alternativeAnswers[0]: ['მე', 'სახლში', 'წიგნს', 'ვკითხულობ']
+// alternativeAnswers[1]: ['წიგნს', 'მე', 'სახლში', 'ვკითხულობ']
+const l5Question: QuizQuestion = {
+  id: 'q-l5',
+  lemma: '',
+  question: 'Я читаю книгу дома',
+  options: [],
+  answerIndex: 0,
+  explanation: '',
+  questionType: 'sentence-builder',
+  targetSentence: { ru: 'Я читаю книгу дома' },
+  level: 5,
+  correctOrder: ['მე', 'წიგნს', 'სახლში', 'ვკითხულობ'],
+  chipPool: ['მე', 'წიგნს', 'სახლში', 'ვკითხულობ'],
+  presetPositions: [],
+  hints: {},
+  alternativeAnswers: [
+    ['მე', 'სახლში', 'წიგნს', 'ვკითხულობ'],
+    ['წიგნს', 'მე', 'სახლში', 'ვკითხულობ'],
+  ],
+}
+
+describe('alternativeAnswers — issue #968', () => {
+  it('handleVerify_AcceptsCorrectOrder_Always: correctOrder always accepted as correct', async () => {
+    const user = userEvent.setup()
+    render(<SentenceBuilderCard question={l5Question} onAnswer={vi.fn()} />)
+
+    // Tap chips in correctOrder: ['მე', 'წიგნს', 'სახლში', 'ვკითხულობ']
+    await user.click(screen.getByRole('button', { name: 'მე' }))
+    await user.click(screen.getByRole('button', { name: 'წიგნს' }))
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+    await user.click(screen.getByRole('button', { name: 'ვკითხულობ' }))
+
+    await user.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    // Should show correct — no "Должно было быть" text
+    expect(screen.queryByText(/Должно было быть/i)).toBeNull()
+    expect(screen.getByText('Отличная работа!')).toBeInTheDocument()
+  })
+
+  it('handleVerify_AcceptsAlternativeOrdering_AsCorrect: alternativeAnswers[0] accepted', async () => {
+    const user = userEvent.setup()
+    render(<SentenceBuilderCard question={l5Question} onAnswer={vi.fn()} />)
+
+    // Tap in order matching alternativeAnswers[0]: ['მე', 'სახლში', 'წიგნს', 'ვკითხულობ']
+    await user.click(screen.getByRole('button', { name: 'მე' }))
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+    await user.click(screen.getByRole('button', { name: 'წიგნს' }))
+    await user.click(screen.getByRole('button', { name: 'ვკითხულობ' }))
+
+    await user.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(screen.queryByText(/Должно было быть/i)).toBeNull()
+    expect(screen.getByText('Отличная работа!')).toBeInTheDocument()
+  })
+
+  it('handleVerify_AcceptsSecondAlternative_AsCorrect: alternativeAnswers[1] accepted', async () => {
+    const user = userEvent.setup()
+    render(<SentenceBuilderCard question={l5Question} onAnswer={vi.fn()} />)
+
+    // Tap in order matching alternativeAnswers[1]: ['წიგნს', 'მე', 'სახლში', 'ვკითხულობ']
+    await user.click(screen.getByRole('button', { name: 'წიგნს' }))
+    await user.click(screen.getByRole('button', { name: 'მე' }))
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+    await user.click(screen.getByRole('button', { name: 'ვკითხულობ' }))
+
+    await user.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(screen.queryByText(/Должно было быть/i)).toBeNull()
+    expect(screen.getByText('Отличная работа!')).toBeInTheDocument()
+  })
+
+  it('handleVerify_UnlistedOrdering_IsRejected: ordering not in correctOrder or alternativeAnswers rejected', async () => {
+    const user = userEvent.setup()
+    render(<SentenceBuilderCard question={l5Question} onAnswer={vi.fn()} />)
+
+    // Tap in an unlisted order: ['სახლში', 'ვკითხულობ', 'მე', 'წიგნს']
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+    await user.click(screen.getByRole('button', { name: 'ვკითხულობ' }))
+    await user.click(screen.getByRole('button', { name: 'მე' }))
+    await user.click(screen.getByRole('button', { name: 'წიგნს' }))
+
+    await user.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(screen.getByText(/Должно было быть/i)).toBeInTheDocument()
+    expect(screen.queryByText('Отличная работа!')).toBeNull()
+  })
+
+  it('handleVerify_NoAlternativeAnswers_RejectsNonCorrectOrderAnswer: without alternativeAnswers non-matching rejected', async () => {
+    const user = userEvent.setup()
+    const questionWithoutAlt: QuizQuestion = { ...l5Question, alternativeAnswers: undefined }
+    render(<SentenceBuilderCard question={questionWithoutAlt} onAnswer={vi.fn()} />)
+
+    // Tap in order matching alternativeAnswers[0] (but alternativeAnswers is absent) → should be wrong
+    await user.click(screen.getByRole('button', { name: 'მე' }))
+    await user.click(screen.getByRole('button', { name: 'სახლში' }))
+    await user.click(screen.getByRole('button', { name: 'წიგნს' }))
+    await user.click(screen.getByRole('button', { name: 'ვკითხულობ' }))
+
+    await user.click(screen.getByRole('button', { name: /Проверить/i }))
+
+    expect(screen.getByText(/Должно было быть/i)).toBeInTheDocument()
+    expect(screen.queryByText('Отличная работа!')).toBeNull()
+  })
+})
