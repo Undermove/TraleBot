@@ -804,12 +804,18 @@ phase_dev() {
     echo ">>> [dev] picker selected #${pick_num}: ${pick_title}"
     local phase_id="dev-${pick_num}"
 
-    # Mark the task live so the Dev Tycoon board can highlight it while the
-    # developer agent works (the board reads the agent:running label, same as
-    # the epic-kickoff path). Cleared right after the agent returns, below.
+    # Move the card into the "Разработка" (dev) column and mark it live so the
+    # Dev Tycoon board reflects what's happening. The board derives a task's
+    # column from its `stage:<x>` label; without this the card sits in spec/qa
+    # and only jumps to "Готово" at the end, never travelling through dev.
+    # `agent:running` is the live highlight (cleared after the agent returns).
+    gh label create "stage:dev" --color 1d76db \
+        --description "Task is in development" 2>/dev/null || true
     gh label create agent:running --color fbca04 \
         --description "An agent is actively working on this issue right now" 2>/dev/null || true
-    gh issue edit "${pick_num}" --add-label "agent:running" 2>/dev/null || true
+    gh issue edit "${pick_num}" \
+        --add-label "stage:dev" --add-label "agent:running" \
+        --remove-label "stage:spec" --remove-label "stage:qa" 2>/dev/null || true
 
     local instruction
     instruction="$(context_prefix)Read .claude/agents/developer.md AND ARCHITECTURE.md.
