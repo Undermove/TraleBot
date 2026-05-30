@@ -154,7 +154,7 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
             state = 'preset'
           } else if (token !== null) {
             if (phase === 'checked') {
-              state = token === correctOrder[i] ? 'correct' : 'incorrect'
+              state = isAllCorrect ? 'correct' : (token === correctOrder[i] ? 'correct' : 'incorrect')
             } else {
               state = 'filled'
             }
