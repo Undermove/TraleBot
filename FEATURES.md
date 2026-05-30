@@ -202,6 +202,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | POST | `/api/admin/users/{telegramId}/revoke-pro` | Revoke Pro. |
 | GET | `/api/admin/broadcast/preview` | Preview broadcast target. |
 | POST | `/api/admin/broadcast` | Send broadcast. |
+| POST | `/api/admin/winback` | Win-back campaign broadcast (cohort May 13 2026, dryRun param). |
 
 ### Other controllers
 | Controller | Path | Purpose |
@@ -361,6 +362,8 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `TryActivateReferralService` — activate once engagement threshold met
 - `ProcessPendingReferralsService` — batch runner for the worker
 - `FeedTreatService` — buy & feed a treat
+- `WinBackBroadcastService` — win-back campaign broadcaster (cohort May 13 2026; dryRun mode)
+- `WinBackTargetingService` — targets eligible dormant users for win-back (cohort + inactivity filter + dedup)
 - `AchievementsService` / `GetAchievementsQuery` — achievements
 
 ### Feature flags

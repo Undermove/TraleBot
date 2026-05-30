@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<RevokeProService>();
         services.AddScoped<BroadcastService>();
         services.AddScoped<WinBackTargetingService>();
+        services.AddScoped<WinBackBroadcastService>();
 
         return services;
     }
