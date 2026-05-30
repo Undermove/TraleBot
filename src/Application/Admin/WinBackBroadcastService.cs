@@ -27,20 +27,16 @@ public class WinBackBroadcastService(
             return new WinBackResult(Sent: candidates.Count, Skipped: 0, Failed: 0);
         }
 
-        var userIds = candidates.Select(c => c.UserId).ToHashSet();
-        var users = await db.Users
-            .Where(u => userIds.Contains(u.Id))
-            .ToListAsync(ct);
-
         var sent = 0;
         var failed = 0;
+        var sentUserIds = new List<Guid>();
 
-        foreach (var user in users)
+        foreach (var candidate in candidates)
         {
-            var ok = await sender.SendTextAsync(user.TelegramId, MessageText, includeMiniAppButton: true, ct);
+            var ok = await sender.SendTextAsync(candidate.TelegramId, MessageText, includeMiniAppButton: true, ct);
             if (ok)
             {
-                user.SetWinBackSent(DateTime.UtcNow);
+                sentUserIds.Add(candidate.UserId);
                 sent++;
             }
             else
@@ -49,8 +45,14 @@ public class WinBackBroadcastService(
             }
         }
 
-        if (sent > 0)
+        if (sentUserIds.Count > 0)
         {
+            var now = DateTime.UtcNow;
+            var sentUsers = await db.Users
+                .Where(u => sentUserIds.Contains(u.Id))
+                .ToListAsync(ct);
+            foreach (var user in sentUsers)
+                user.SetWinBackSent(now);
             await db.SaveChangesAsync(ct);
         }
 
