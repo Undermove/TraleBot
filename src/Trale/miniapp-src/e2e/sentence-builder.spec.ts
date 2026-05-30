@@ -1600,7 +1600,7 @@ test('no-scroll layout: 8-slot exercise — document.documentElement.scrollWidth
   expect(scrollWidth).toBe(innerWidth)
 })
 
-test('no-scroll layout: ChipPool has CSS grid-template-columns with 3 columns at 375px', async ({
+test('no-scroll layout: ChipPool uses flex-wrap so long Georgian words are never clipped at 375px', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 })
@@ -1614,10 +1614,14 @@ test('no-scroll layout: ChipPool has CSS grid-template-columns with 3 columns at
   const pool = page.locator('[data-testid="chip-pool"]')
   await expect(pool).toBeVisible()
 
-  const cols = await pool.evaluate(el => window.getComputedStyle(el).gridTemplateColumns)
-  // 3-column grid: computed value is "Xpx Xpx Xpx"
-  const colList = cols.trim().split(/\s+/).filter(Boolean)
-  expect(colList).toHaveLength(3)
+  // ChipPool switched from grid-cols-3 to flex-wrap (2026-05-10) to prevent
+  // long Georgian words (e.g. მასწავლებელი) from being clipped at column edges.
+  const style = await pool.evaluate(el => {
+    const cs = window.getComputedStyle(el)
+    return { display: cs.display, flexWrap: cs.flexWrap }
+  })
+  expect(style.display).toBe('flex')
+  expect(style.flexWrap).toBe('wrap')
 })
 
 test('no-scroll layout: question text uses T7 size (18px) for 7-slot exercise', async ({
