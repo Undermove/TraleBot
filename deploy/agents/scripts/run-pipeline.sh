@@ -47,6 +47,21 @@ set -e
 [ -f /etc/environment ] && source /etc/environment
 
 MODE="${1:-auto}"
+
+# Single-instance guard. Two run-pipeline.sh invocations must never run at the
+# same time: in build mode they race on the shared nightly branch and can pick
+# the same task twice; in auto/plan mode the planning phases duplicate epics.
+# This happened in the wild when a cron tick and a manual "run now" overlapped.
+# Take an exclusive, non-blocking flock on a fixed file held for this process's
+# whole lifetime — a second invocation finds the lock taken and exits cleanly
+# instead of stacking. PIPELINE_NO_LOCK=1 escapes the guard for smoke tests.
+if [ "${PIPELINE_NO_LOCK:-0}" != "1" ]; then
+    exec 200>/tmp/run-pipeline.lock
+    if ! flock -n 200; then
+        echo ">>> run-pipeline.sh ($MODE) skipped: another run is already active ($(date))."
+        exit 0
+    fi
+fi
 TODAY=$(date '+%Y-%m-%d')
 HOUR_STAMP=$(date '+%Y-%m-%d_%H-%M')
 BRANCH="${BRANCH_OVERRIDE:-agents/nightly-${TODAY}}"
