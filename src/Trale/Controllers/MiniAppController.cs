@@ -31,8 +31,6 @@ public class MiniAppController : Controller
 {
     private const string InitDataHeader = "X-Telegram-Init-Data";
 
-    private const int StarsProPrice = 150;
-
     /// <summary>
     /// Telegram user IDs that get a symbolic 1-star price on all subscription plans —
     /// used exclusively to validate the end-to-end Stars checkout flow against real
