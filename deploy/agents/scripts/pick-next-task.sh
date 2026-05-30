@@ -23,9 +23,13 @@ set -euo pipefail
 #      `epic-<EPIC>:`. Sorted ascending by issue number — backend (lower
 #      number, created first by breakdown) comes before frontend, then
 #      content, then tests. This is the convention breakdown emits.
-#   4. A task is eligible when it has label `qa-prepared` AND lacks both
-#      `done` (already shipped tonight) and `dev-stuck` (a previous dev
-#      iteration hit max-turns; needs human triage, skip).
+#   4. A task is eligible when it has label `qa-prepared` AND lacks all of
+#      `done` (already shipped tonight), `dev-stuck` (a previous dev iteration
+#      hit max-turns; needs human triage, skip), and `agent:running` (another
+#      agent has already claimed it — don't double-build the same task). The
+#      dev loop sets `agent:running` while working and clears it on return; a
+#      claim left stale by a killed run needs the label removed by hand, same
+#      as `dev-stuck`.
 #   5. The script returns the first eligible task across all epics in
 #      order. If nothing matches → exit empty.
 
@@ -56,6 +60,7 @@ for EPIC in ${EPICS}; do
         | select((.labels // []) | map(.name) | contains(["qa-prepared"]))
         | select((.labels // []) | map(.name) | contains(["done"]) | not)
         | select((.labels // []) | map(.name) | contains(["dev-stuck"]) | not)
+        | select((.labels // []) | map(.name) | contains(["agent:running"]) | not)
         | "\(.number)\t\(.title)"
     ' 2>/dev/null | head -1)
     if [ -n "${PICK}" ]; then
