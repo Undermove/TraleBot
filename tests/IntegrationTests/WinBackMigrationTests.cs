@@ -1,7 +1,7 @@
-using Application.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using FluentAssertions;
+using Persistence;
 
 namespace IntegrationTests;
 
@@ -11,7 +11,7 @@ public class WinBackMigrationTests : TestBase
     public async Task Migration_AddWinBackSentAtUtcToUser_AppliesCleanly()
     {
         using var scope = _testServer.Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<ITraleDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<TraleDbContext>();
 
         var connection = db.Database.GetDbConnection();
         await connection.OpenAsync();
