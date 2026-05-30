@@ -257,8 +257,8 @@ describe('alternativeAnswers — issue #970', () => {
 
     await user.click(screen.getByRole('button', { name: /Проверить/i }))
 
-    // RED: wrong assertion — will be fixed in green commit
-    expect(screen.getByText(/Должно было быть/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Должно было быть/i)).toBeNull()
+    expect(screen.getByText('Отличная работа!')).toBeInTheDocument()
   })
 
   it('L5_EmptyAlternativeAnswers_OnlyCorrectOrderAccepted: empty alternativeAnswers rejects wrong ordering', async () => {
@@ -274,8 +274,8 @@ describe('alternativeAnswers — issue #970', () => {
 
     await user.click(screen.getByRole('button', { name: /Проверить/i }))
 
-    // RED: wrong assertion — will be fixed in green commit
-    expect(screen.getByText('Отличная работа!')).toBeInTheDocument()
+    expect(screen.getByText(/Должно было быть/i)).toBeInTheDocument()
+    expect(screen.queryByText('Отличная работа!')).toBeNull()
   })
 
   it('L4_PresetSlot_TapHasNoEffect: tapping preset slot leaves token unchanged and Проверить unaffected', async () => {
@@ -286,9 +286,21 @@ describe('alternativeAnswers — issue #970', () => {
     await user.click(screen.getByRole('button', { name: 'სახლში' }))
 
     const btn = screen.getByRole('button', { name: /Проверить/i })
-    const slot0 = screen.getByTestId('slot-0')
+    expect(btn).not.toHaveAttribute('aria-disabled', 'true')
 
-    // RED: wrong assertion — will be fixed in green commit
-    expect(slot0).not.toBeDisabled()
+    const slot0 = screen.getByTestId('slot-0')
+    // Preset slot is disabled — non-interactive at HTML level
+    expect(slot0).toBeDisabled()
+    // Preset token remains unchanged
+    expect(slot0).toHaveTextContent('ის')
+
+    // Attempt click on disabled preset slot via fireEvent (bypasses userEvent disabled guard)
+    fireEvent.click(slot0)
+
+    // Token still present in slot; chip-pool has no 'ის' (it was never in chipPool)
+    expect(slot0).toHaveTextContent('ის')
+    expect(within(screen.getByTestId('chip-pool')).queryByRole('button', { name: 'ის' })).toBeNull()
+    // Проверить remains enabled
+    expect(btn).not.toHaveAttribute('aria-disabled', 'true')
   })
 })
