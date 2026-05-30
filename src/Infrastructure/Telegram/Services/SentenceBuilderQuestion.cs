@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Infrastructure.Telegram.Services;
 
 public class SentenceBuilderQuestion
@@ -8,6 +10,8 @@ public class SentenceBuilderQuestion
     public List<string> ChipPool { get; set; } = new();
     public List<PresetPosition> PresetPositions { get; set; } = new();
     public Dictionary<string, string> Hints { get; set; } = new();
+    [JsonPropertyName("alternativeAnswers")]
+    public List<List<string>>? AlternativeAnswers { get; set; }
 }
 
 public record TargetSentenceData(string Ru);

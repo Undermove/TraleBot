@@ -46,6 +46,7 @@ export interface QuizQuestion {
   chipPool?: string[]
   presetPositions?: Array<{ position: number; token: string }>
   hints?: Record<string, string>
+  alternativeAnswers?: string[][]
 }
 
 export interface ProgressState {

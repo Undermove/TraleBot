@@ -110,8 +110,12 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
 
   function handleVerify() {
     if (!allSlotsFilled) return
-    const allCorrect = slots.every((token, i) => token === correctOrder[i])
-    setIsAllCorrect(allCorrect)
+    const alternativeAnswers = question.alternativeAnswers ?? []
+    const matchesCorrectOrder = slots.every((token, i) => token === correctOrder[i])
+    const matchesAlternative = alternativeAnswers.some(
+      (alt) => alt.length === slots.length && slots.every((token, i) => token === alt[i])
+    )
+    setIsAllCorrect(matchesCorrectOrder || matchesAlternative)
     setPhase('checked')
   }
 

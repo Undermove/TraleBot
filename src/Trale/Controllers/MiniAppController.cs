@@ -440,7 +440,8 @@ public class MiniAppController : Controller
             chipPool = q.SentenceBuilder?.ChipPool,
             presetPositions = q.SentenceBuilder?.PresetPositions
                 .Select(p => new { position = p.Position, token = p.Token }),
-            hints = q.SentenceBuilder?.Hints
+            hints = q.SentenceBuilder?.Hints,
+            alternativeAnswers = q.SentenceBuilder?.AlternativeAnswers
         });
     }
 

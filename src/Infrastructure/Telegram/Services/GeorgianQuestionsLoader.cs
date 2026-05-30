@@ -179,6 +179,16 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
                 sb.Hints[hint.Name] = hint.Value.GetString() ?? string.Empty;
         }
 
+        if (el.TryGetProperty("alternativeAnswers", out var altAnswers) && altAnswers.ValueKind == JsonValueKind.Array)
+        {
+            sb.AlternativeAnswers = altAnswers.EnumerateArray()
+                .Where(inner => inner.ValueKind == JsonValueKind.Array)
+                .Select(inner => inner.EnumerateArray()
+                    .Select(t => t.GetString() ?? string.Empty)
+                    .ToList())
+                .ToList();
+        }
+
         var chipSet = new HashSet<string>(sb.ChipPool);
         var missingTokens = sb.CorrectOrder.Where(t => !chipSet.Contains(t)).ToList();
         if (missingTokens.Count > 0)
