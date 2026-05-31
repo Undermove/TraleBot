@@ -122,6 +122,7 @@ public static class DependencyInjection
                 sp.GetRequiredService<IGeorgianQuestionsLoaderFactory>()));
         }
         services.AddScoped<IBotCommand, GeorgianVerbsQuizAnswerCommand>();
+        services.AddScoped<IBotCommand, NotificationsCommand>();
         return services;
     }
 }

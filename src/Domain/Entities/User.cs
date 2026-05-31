@@ -22,6 +22,7 @@ public class User
     public bool IsPro { get; set; }
     public DateTime? ProPurchasedAtUtc { get; set; }
     public DateTime? WinBackSentAtUtc { get; private set; }
+    public bool NotificationsEnabled { get; set; } = true;
     public SubscriptionPlan? SubscriptionPlan { get; set; }
     public virtual UserSettings Settings { get; set; }
     public virtual ICollection<VocabularyEntry> VocabularyEntries { get; set; }

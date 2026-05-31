@@ -47,6 +47,11 @@ public static class CommandNames
     public const string ChangeCurrentLanguageAndDeleteVocabulary = "/chadl";
     public const string SetInitialLanguage = "/setinitiallanguage";
     
+    // notifications commands
+    public const string Notifications = "/notifications";
+    public const string NotificationsOff = "/notifications off";
+    public const string NotificationsOn = "/notifications on";
+
     // georgian language learning commands - repetition modules
     public const string GeorgianRepetitionModules = "/georgianrepetitionmodules";
     public const string GeorgianVerbsOfMovement = "/georgianverbsofmovement";
