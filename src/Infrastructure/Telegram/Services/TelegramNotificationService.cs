@@ -1,27 +1,33 @@
 using Application.Common.Interfaces;
-using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using DomainUser = Domain.Entities.User;
+using Achievement = Domain.Entities.Achievement;
 
 namespace Infrastructure.Telegram.Services;
 
-public class TelegramNotificationService: IUserNotificationService
+public class TelegramNotificationService : IUserNotificationService
 {
     private readonly ITelegramBotClient _client;
+    private readonly BotConfiguration _config;
 
-    public TelegramNotificationService(ITelegramBotClient client)
+    public TelegramNotificationService(ITelegramBotClient client, BotConfiguration config)
     {
         _client = client;
+        _config = config;
     }
 
-    public async Task SendDailyReturnPushAsync(long telegramId, string moduleName, string moduleId, int lessonId, string variant, CancellationToken ct)
+    public async Task SendDailyReturnPushAsync(DomainUser user, string moduleName, string moduleId, int lessonId, string variant, CancellationToken ct)
     {
         var text = variant == "A"
             ? $"Бомбора по тебе скучает 🐶 Продолжишь {moduleName} сегодня?"
             : $"{moduleName} ждёт продолжения 📖 Вернёшься?";
 
-        await _client.SendTextMessageAsync(telegramId, text, cancellationToken: ct);
+        // stub: no deep link, no 403 handling, no retry — full impl in green commit
+        await _client.SendTextMessageAsync(user.TelegramId, text, cancellationToken: ct);
     }
 
     public async Task NotifyAboutUnlockedAchievementAsync(Achievement achievement, CancellationToken ct)

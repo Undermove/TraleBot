@@ -66,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<WinBackTargetingService>();
         services.AddScoped<WinBackBroadcastService>();
         services.AddScoped<DailyReturnNotificationService>();
+        services.AddScoped<IDailyReturnDispatch>(sp => sp.GetRequiredService<DailyReturnNotificationService>());
 
         return services;
     }

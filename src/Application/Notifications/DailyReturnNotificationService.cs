@@ -10,7 +10,7 @@ namespace Application.Notifications;
 public class DailyReturnNotificationService(
     ITraleDbContext db,
     IUserNotificationService notificationService,
-    ILoggerFactory loggerFactory)
+    ILoggerFactory loggerFactory) : IDailyReturnDispatch
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<DailyReturnNotificationService>();
     private const string Source = "daily_return";
@@ -79,7 +79,7 @@ public class DailyReturnNotificationService(
             var variant = Random.Shared.NextDouble() < 0.5 ? "A" : "B";
 
             await notificationService.SendDailyReturnPushAsync(
-                user.TelegramId,
+                user,
                 moduleId,
                 moduleId,
                 nextLessonId,
