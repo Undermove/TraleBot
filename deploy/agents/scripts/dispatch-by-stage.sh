@@ -61,6 +61,14 @@ echo "  Branch: ${BRANCH}"
 echo "  Started: $(date)"
 echo "============================================"
 
+# gh resolves the target GitHub repo from the git remote of the current
+# directory, so we must be inside the repo before any gh call below (the work
+# branch is still created later, after the idempotency check).
+cd "$REPO_DIR" || {
+    echo "Repo dir not found: ${REPO_DIR}"
+    exit 1
+}
+
 # 1. Pull issue details (also implicitly checks issue exists / we have auth).
 ISSUE_JSON=$(gh issue view "$ISSUE_NUM" --json title,body,labels 2>&1) || {
     echo "Failed to fetch issue #${ISSUE_NUM}: $ISSUE_JSON"
@@ -141,6 +149,7 @@ claude \
     --dangerously-skip-permissions \
     --max-turns "${MAX_TURNS:-30}" \
     --output-format stream-json \
+    --verbose \
     || {
         echo "claude exited non-zero"
         # Continue to push whatever was committed before the error.
