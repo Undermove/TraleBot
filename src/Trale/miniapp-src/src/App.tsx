@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { CatalogDto, ProgressState, Screen } from './types'
 import { defaultProgress, progressFromDto } from './progress'
 import { api } from './api'
+import { parseDeepLinkParams } from './utils/deepLink'
 import Dashboard from './screens/Dashboard'
 import ModuleMap from './screens/ModuleMap'
 import LessonTheory from './screens/LessonTheory'
@@ -83,6 +84,20 @@ export default function App() {
           setVocabularyCount((meData as any).vocabularyCount ?? 0)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
+        const deepLink = parseDeepLinkParams(window.location.search)
+        if (deepLink) {
+          const mod = catalogData.modules.find((m) => m.id === deepLink.moduleId)
+          const lesson = mod?.lessons.find((l) => l.id === deepLink.lessonId)
+          if (mod && lesson && hasLevel) {
+            api.trackEvent('push_clicked', { moduleId: deepLink.moduleId, lessonId: String(deepLink.lessonId) }).catch(() => {})
+            const url = new URL(window.location.href)
+            url.searchParams.delete('moduleId')
+            url.searchParams.delete('lessonId')
+            window.history.replaceState({}, '', url.toString())
+            setScreen({ kind: 'lesson-theory', moduleId: deepLink.moduleId, lessonId: deepLink.lessonId, fromDeepLink: true })
+            return
+          }
+        }
         setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
       })
       .catch(() => {
@@ -124,7 +139,7 @@ export default function App() {
       ) {
         setScreen({ kind: 'dashboard' })
       } else if (screen.kind === 'lesson-theory') {
-        setScreen({ kind: 'module', moduleId: screen.moduleId })
+        setScreen(screen.fromDeepLink ? { kind: 'dashboard' } : { kind: 'module', moduleId: screen.moduleId })
       } else if (screen.kind === 'practice') {
         setScreen({ kind: 'lesson-theory', moduleId: screen.moduleId, lessonId: screen.lessonId })
       } else if (screen.kind === 'vocabulary-quiz') {

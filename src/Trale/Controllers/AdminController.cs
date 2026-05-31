@@ -29,6 +29,7 @@ public class AdminController : Controller
     private readonly GrantProService _grantPro;
     private readonly RevokeProService _revokePro;
     private readonly BroadcastService _broadcast;
+    private readonly WinBackBroadcastService _winBack;
 
     public AdminController(
         ITraleDbContext dbContext,
@@ -39,7 +40,8 @@ public class AdminController : Controller
         GetUserDetailQuery userDetailQuery,
         GrantProService grantPro,
         RevokeProService revokePro,
-        BroadcastService broadcast)
+        BroadcastService broadcast,
+        WinBackBroadcastService winBack)
     {
         _dbContext = dbContext;
         _botConfig = botConfig;
@@ -50,6 +52,7 @@ public class AdminController : Controller
         _grantPro = grantPro;
         _revokePro = revokePro;
         _broadcast = broadcast;
+        _winBack = winBack;
     }
 
     [HttpGet("stats")]
@@ -186,6 +189,14 @@ public class AdminController : Controller
             segment, req.Message, req.GrantPlan, req.DryRun, req.IncludeMiniAppButton, ct);
         if (result.Error != null) return BadRequest(result);
         return Ok(result);
+    }
+
+    [HttpPost("winback")]
+    public async Task<IActionResult> WinBack([FromQuery] bool dryRun = false, CancellationToken ct = default)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var result = await _winBack.ExecuteAsync(dryRun, ct);
+        return Ok(new { sent = result.Sent, skipped = result.Skipped, failed = result.Failed });
     }
 
     private static BroadcastProFilter ParseProStatus(string? v) => v switch

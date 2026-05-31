@@ -25,6 +25,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Persistence\Persistence.csproj" />
+      <ProjectReference Include="..\..\src\Trale\Trale.csproj" />
     </ItemGroup>
 
 

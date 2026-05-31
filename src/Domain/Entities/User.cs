@@ -21,6 +21,8 @@ public class User
     public bool IsActive { get; set; }
     public bool IsPro { get; set; }
     public DateTime? ProPurchasedAtUtc { get; set; }
+    public DateTime? WinBackSentAtUtc { get; private set; }
+    public bool NotificationsEnabled { get; set; } = true;
     public SubscriptionPlan? SubscriptionPlan { get; set; }
     public virtual UserSettings Settings { get; set; }
     public virtual ICollection<VocabularyEntry> VocabularyEntries { get; set; }
@@ -95,4 +97,6 @@ public class User
         return true;
     }
     public bool ShouldShowReferralExtensionCta() => ShouldShowReferralExtensionCta(DateTime.UtcNow);
+
+    public void SetWinBackSent(DateTime utcNow) => WinBackSentAtUtc = utcNow;
 }

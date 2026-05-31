@@ -223,6 +223,34 @@ namespace Persistence.Migrations
                     b.ToTable("MiniAppUserProgresses");
                 });
 
+            modelBuilder.Entity("Domain.Entities.NotificationTrigger", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Variant")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Source");
+
+                    b.ToTable("NotificationTriggers");
+                });
+
             modelBuilder.Entity("Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -485,6 +513,11 @@ namespace Persistence.Migrations
                     b.Property<bool>("IsPro")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("NotificationsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<DateTime?>("ProPurchasedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -506,6 +539,9 @@ namespace Persistence.Migrations
 
                     b.Property<Guid>("UserSettingsId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("WinBackSentAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

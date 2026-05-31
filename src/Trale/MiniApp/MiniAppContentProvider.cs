@@ -145,6 +145,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                 BuildPreverbsModule(),
                 BuildImperfectModule(),
                 BuildAoristModule(),
+                BuildVerbalAspectModule(),
                 BuildFutureTenseModule(),
                 BuildPronounDeclensionModule(),
                 BuildConditionalsModule(),
@@ -480,6 +481,38 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("— გუშინ რა გააკეთე?", "— Что ты сделал вчера?"),
                         Example("— ვიარე ბაზარში და ვიყიდე პური", "— Я сходил на рынок и купил хлеб"),
                         Paragraph("Переворот эргатива работает и в 1л./2л.! «Я написал письмо»: მე остаётся в именительном — потому что у 1л./2л. именительный = эргативный (синкретизм). Только 3-е лицо меняет форму в эргативе: ის → მან (ед.ч.) и ისინი → მათ (мн.ч.).")
+                    })
+            }
+        };
+    }
+
+    private static ModuleDto BuildVerbalAspectModule()
+    {
+        return new ModuleDto
+        {
+            Id = "verbal-aspect",
+            Title = "Вид глагола",
+            Emoji = "⚡",
+            Description = "Несовершенный и Совершенный — что менялось и что завершилось",
+            Lessons = new List<LessonDto>
+            {
+                Lesson(1, "Два вида — одна таблица", "ვწერდი / ვწერ / დავწერე", "Вид глагола: таблица 2×2",
+                    "Понять разницу между несовершенным и совершенным видом на одном глаголе.",
+                    new List<TheoryBlockDto>
+                    {
+                        Paragraph("Грузинский глагол бывает двух видов: несовершенный (действие длилось или повторялось) и совершенный (действие завершено или произошло один раз). Посмотрим на глагол ვწერ- (писать)."),
+                        VerbalAspectTable(
+                            new[] { "Несовершенный", "Совершенный" },
+                            new[] { "Прошлое", "Настоящее+Будущее" },
+                            new List<VerbalAspectTableCellDto>
+                            {
+                                new() { Ge = "ვწერდი", Translit = "v-ts'erdi", Ru = "я писал" },
+                                new() { Ge = "ვწერ", Translit = "v-ts'er", Ru = "я пишу" },
+                                new() { Ge = "დავწერე", Translit = "da-v-ts'ere", Ru = "я написал" },
+                                new() { Disabled = true, PlaceholderText = "Будущее время — разберём в следующем модуле" }
+                            }),
+                        Paragraph("Несовершенный = действие продолжается или повторяется; Совершенный = действие завершено или однократно."),
+                        Paragraph("Вид выражается превербами და-, გა-, შე- и другими — не разными словами, как в русском.")
                     })
             }
         };
@@ -2233,6 +2266,17 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             .ToList()
     };
 
+    private static TheoryBlockDto VerbalAspectTable(
+        string[] rowHeaders,
+        string[] colHeaders,
+        List<VerbalAspectTableCellDto> cells) => new()
+    {
+        Type = "verbal-aspect-table",
+        RowHeaders = rowHeaders.ToList(),
+        ColHeaders = colHeaders.ToList(),
+        Cells = cells
+    };
+
     private static readonly List<AlphabetLetterDto> AllAlphabetLetters = BuildAllAlphabetLetters();
 
     private static readonly Dictionary<string, AlphabetLetterDto> AlphabetLetterCatalog =
@@ -2365,6 +2409,18 @@ public class TheoryBlockDto
     public string Ge { get; set; }
     public string Ru { get; set; }
     public List<AlphabetLetterDto> Letters { get; set; }
+    public List<string> RowHeaders { get; set; }
+    public List<string> ColHeaders { get; set; }
+    public List<VerbalAspectTableCellDto> Cells { get; set; }
+}
+
+public class VerbalAspectTableCellDto
+{
+    public string Ge { get; set; }
+    public string Translit { get; set; }
+    public string Ru { get; set; }
+    public bool Disabled { get; set; }
+    public string PlaceholderText { get; set; }
 }
 
 public class AlphabetLetterDto

@@ -21,5 +21,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithOne(ve => ve.User)
             .HasForeignKey(ve => ve.UserId);
         builder.Property(u => u.SubscriptionPlan).HasConversion<int?>();
+        builder.Property(u => u.WinBackSentAtUtc).IsRequired(false);
+        builder.Property(u => u.NotificationsEnabled).IsRequired().HasDefaultValue(true);
     }
 }

@@ -61,6 +61,7 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 | Class | Command / trigger | Purpose |
 |---|---|---|
 | `AchievementsCommand` | `/achievements`, 📊 icon | Show achievements + stats. |
+| `NotificationsCommand` | `/notifications on` / `/notifications off` | Opt in or out of push notifications. Sets `NotificationsEnabled` on User. |
 
 ### Georgian module content
 | Class | Command / trigger | Purpose |
@@ -163,6 +164,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
+- `deepLink.ts` — Parse `?moduleId=X&lessonId=Y` deep-link query params into typed `DeepLinkParams`; used by App.tsx on mount to route push-notification CTAs directly to the target lesson.
 
 ---
 
@@ -202,6 +204,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | POST | `/api/admin/users/{telegramId}/revoke-pro` | Revoke Pro. |
 | GET | `/api/admin/broadcast/preview` | Preview broadcast target. |
 | POST | `/api/admin/broadcast` | Send broadcast. |
+| POST | `/api/admin/winback` | Win-back campaign broadcast (cohort May 13 2026, dryRun param). |
 
 ### Other controllers
 | Controller | Path | Purpose |
@@ -220,6 +223,7 @@ Location: `src/Trale/HostedServices/`.
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
+| `ReturnPushWorker` | Daily 10:00 UTC | Send D1+ return push to eligible users via `DailyReturnNotificationService`. |
 
 ---
 
@@ -271,6 +275,8 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddLastTreatIndex` | Last-treat index for rotation. |
 | `AddSentenceBuilderProgressJson` | Per-user sentence-builder mastery progress (questionId → correct-count map) for L4/L5 progression gate. |
 | `AddTrialBonusDays` | Cumulative referral trial-bonus days on User; lets bonuses stack and survive trial expiry without rewriting RegisteredAtUtc. |
+| `AddWinBackSentAtUtcToUser` | Nullable win-back sent timestamp on User for deduplication — ensures each user receives at most one win-back push. |
+| `AddNotificationTriggerAndNotificationsEnabled` | `NotificationsEnabled` flag on User (default true) for opt-out; `NotificationTriggers` table with `UserId`, `Source`, `LastSentAt`, `Variant` for D1+ push deduplication. |
 
 ---
 
@@ -298,6 +304,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `imperfect` | `GeorgianImperfect` | 6 (L6 audio-choice) | ✅ |
 | `verbs-of-movement` | `GeorgianVerbsOfMovement` | 12 (L12 audio-choice) | ✅ |
 | `aorist` | `GeorgianAorist` | 6 | ✅ |
+| `verbal-aspect` | `GeorgianVerbalAspect` | 1 (L1 theory: 2×2 aspect table ვწერდი/ვწერ/დავწერე + disabled Future cell; practice: multiple-choice on aspect categories) | ✅ |
 | `future-tense` | `GeorgianFutureTense` | 2 (L1–L2; L3–L4 in #317) | ✅ |
 | `pronoun-declension` | `GeorgianPronounDeclension` | 6 (L6 audio-choice) | ✅ |
 | `postpositions` | `GeorgianPostpositions` | 7 (L6 audio-choice; L7 sentence-builder — конструктор предложений) | ✅ |
@@ -360,6 +367,9 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `TryActivateReferralService` — activate once engagement threshold met
 - `ProcessPendingReferralsService` — batch runner for the worker
 - `FeedTreatService` — buy & feed a treat
+- `WinBackBroadcastService` — win-back campaign broadcaster (cohort May 13 2026; dryRun mode)
+- `WinBackTargetingService` — targets eligible dormant users for win-back (cohort + inactivity filter + dedup)
+- `DailyReturnNotificationService` — D1+ retention push: eligibility (30h inactivity + CompletedLessons + NotificationsEnabled), 7-day cooldown, next-lesson resolution, A/B variant
 - `AchievementsService` / `GetAchievementsQuery` — achievements
 
 ### Feature flags

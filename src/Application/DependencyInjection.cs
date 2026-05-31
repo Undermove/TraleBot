@@ -6,6 +6,7 @@ using Application.Common.Interfaces.Achievements;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
+using Application.Notifications;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -62,6 +63,10 @@ public static class DependencyInjection
         services.AddScoped<GrantProService>();
         services.AddScoped<RevokeProService>();
         services.AddScoped<BroadcastService>();
+        services.AddScoped<WinBackTargetingService>();
+        services.AddScoped<WinBackBroadcastService>();
+        services.AddScoped<DailyReturnNotificationService>();
+        services.AddScoped<IDailyReturnDispatch>(sp => sp.GetRequiredService<DailyReturnNotificationService>());
 
         return services;
     }

@@ -3,7 +3,7 @@ export type Screen =
   | { kind: 'onboarding' }
   | { kind: 'dashboard' }
   | { kind: 'module'; moduleId: string }
-  | { kind: 'lesson-theory'; moduleId: string; lessonId: number }
+  | { kind: 'lesson-theory'; moduleId: string; lessonId: number; fromDeepLink?: boolean }
   | { kind: 'practice'; moduleId: string; lessonId: number }
   | {
       kind: 'result'
@@ -46,6 +46,7 @@ export interface QuizQuestion {
   chipPool?: string[]
   presetPositions?: Array<{ position: number; token: string }>
   hints?: Record<string, string>
+  alternativeAnswers?: string[][]
 }
 
 export interface ProgressState {
@@ -87,13 +88,24 @@ export interface LessonTheoryDto {
   blocks: TheoryBlockDto[]
 }
 
+export interface VerbalAspectTableCellDto {
+  ge?: string
+  translit?: string
+  ru?: string
+  disabled?: boolean
+  placeholderText?: string
+}
+
 export interface TheoryBlockDto {
-  type: 'paragraph' | 'list' | 'example' | 'letters'
+  type: 'paragraph' | 'list' | 'example' | 'letters' | 'verbal-aspect-table'
   text?: string
   items?: string[]
   ge?: string
   ru?: string
   letters?: AlphabetLetterDto[]
+  rowHeaders?: string[]
+  colHeaders?: string[]
+  cells?: VerbalAspectTableCellDto[]
 }
 
 export interface AlphabetLetterDto {
