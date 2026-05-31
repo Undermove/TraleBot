@@ -18,9 +18,16 @@ public class TestBase
     [OneTimeSetUp]
     public async Task OneTimeSetUp()
     {
-        // Start PostgreSQL container
+        // Start PostgreSQL container.
+        // WithAutoRemove instead of WithCleanUp: the agent runner mounts the
+        // host Docker socket and spawns Postgres as a sibling container, where
+        // Ryuk (what WithCleanUp relies on) doesn't run reliably — stopped
+        // Postgres containers piled up indefinitely. AutoRemove sets Docker's
+        // `--rm` flag so the daemon deletes the container the moment it stops,
+        // regardless of Ryuk or whether DisposeAsync runs (e.g. if the test
+        // process is killed mid-run). The two options are mutually exclusive.
         _postgresqlContainer = new PostgreSqlBuilder()
-            .WithCleanUp(true)
+            .WithAutoRemove(true)
             .WithImage("postgres:16.1")
             .Build();
 
