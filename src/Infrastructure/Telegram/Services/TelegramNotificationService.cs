@@ -15,9 +15,13 @@ public class TelegramNotificationService: IUserNotificationService
         _client = client;
     }
 
-    public Task SendDailyReturnPushAsync(long telegramId, string moduleName, string moduleId, int lessonId, string variant, CancellationToken ct)
+    public async Task SendDailyReturnPushAsync(long telegramId, string moduleName, string moduleId, int lessonId, string variant, CancellationToken ct)
     {
-        throw new NotImplementedException();
+        var text = variant == "A"
+            ? $"Бомбора по тебе скучает 🐶 Продолжишь {moduleName} сегодня?"
+            : $"{moduleName} ждёт продолжения 📖 Вернёшься?";
+
+        await _client.SendTextMessageAsync(telegramId, text, cancellationToken: ct);
     }
 
     public async Task NotifyAboutUnlockedAchievementAsync(Achievement achievement, CancellationToken ct)

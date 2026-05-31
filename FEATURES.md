@@ -366,6 +366,7 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `FeedTreatService` — buy & feed a treat
 - `WinBackBroadcastService` — win-back campaign broadcaster (cohort May 13 2026; dryRun mode)
 - `WinBackTargetingService` — targets eligible dormant users for win-back (cohort + inactivity filter + dedup)
+- `DailyReturnNotificationService` — D1+ retention push: eligibility (30h inactivity + CompletedLessons + NotificationsEnabled), 7-day cooldown, next-lesson resolution, A/B variant
 - `AchievementsService` / `GetAchievementsQuery` — achievements
 
 ### Feature flags
