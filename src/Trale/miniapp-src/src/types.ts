@@ -88,13 +88,24 @@ export interface LessonTheoryDto {
   blocks: TheoryBlockDto[]
 }
 
+export interface VerbalAspectTableCellDto {
+  ge?: string
+  translit?: string
+  ru?: string
+  disabled?: boolean
+  placeholderText?: string
+}
+
 export interface TheoryBlockDto {
-  type: 'paragraph' | 'list' | 'example' | 'letters'
+  type: 'paragraph' | 'list' | 'example' | 'letters' | 'verbal-aspect-table'
   text?: string
   items?: string[]
   ge?: string
   ru?: string
   letters?: AlphabetLetterDto[]
+  rowHeaders?: string[]
+  colHeaders?: string[]
+  cells?: VerbalAspectTableCellDto[]
 }
 
 export interface AlphabetLetterDto {

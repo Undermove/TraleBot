@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import RevealKaniOverlay from '../components/RevealKaniOverlay'
-import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
+import { CatalogDto, ProgressState, Screen, TheoryBlockDto, VerbalAspectTableCellDto } from '../types'
 
 interface Props {
   catalog: CatalogDto
@@ -209,6 +209,68 @@ function TheoryBlock({ block }: { block: TheoryBlockDto }) {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (block.type === 'verbal-aspect-table' && block.cells && block.rowHeaders && block.colHeaders) {
+    const { cells, rowHeaders, colHeaders } = block
+    return (
+      <div className="jewel-tile px-4 py-4">
+        <div className="relative z-[1]">
+          <div className="mn-eyebrow mb-3">таблица видов</div>
+          <div className="grid gap-1" style={{ gridTemplateColumns: `auto repeat(${colHeaders.length}, 1fr)` }}>
+            {/* Header row */}
+            <div />
+            {colHeaders.map((h, i) => (
+              <div key={i} className="text-center font-sans text-[11px] font-bold text-ruby uppercase tracking-wide py-1">
+                {h}
+              </div>
+            ))}
+            {/* Data rows */}
+            {rowHeaders.map((rowH, rowIdx) => (
+              <React.Fragment key={rowIdx}>
+                <div className="font-sans text-[11px] font-bold text-jewelInk-soft uppercase tracking-wide flex items-center pr-2">
+                  {rowH}
+                </div>
+                {colHeaders.map((_, colIdx) => {
+                  const cell: VerbalAspectTableCellDto = cells[rowIdx * colHeaders.length + colIdx]
+                  if (!cell) return <div key={colIdx} />
+                  if (cell.disabled) {
+                    return (
+                      <div
+                        key={colIdx}
+                        data-disabled="true"
+                        className="rounded-lg bg-jewelInk/8 border border-dashed border-jewelInk/20 p-2 flex items-center justify-center min-h-[64px]"
+                      >
+                        <span className="font-sans text-[11px] text-jewelInk-soft text-center leading-tight">
+                          {cell.placeholderText}
+                        </span>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div
+                      key={colIdx}
+                      data-cell-type="verbal-aspect-active"
+                      className="rounded-lg bg-cream border border-jewelInk/15 p-2 flex flex-col items-center min-h-[64px] justify-center gap-0.5"
+                    >
+                      <div className="font-geo text-[18px] font-bold text-navy leading-tight">
+                        {cell.ge}
+                      </div>
+                      <div className="font-sans text-[10px] text-ruby font-bold">
+                        {cell.translit}
+                      </div>
+                      <div className="font-sans text-[10px] text-jewelInk-soft">
+                        {cell.ru}
+                      </div>
+                    </div>
+                  )
+                })}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </div>
     )

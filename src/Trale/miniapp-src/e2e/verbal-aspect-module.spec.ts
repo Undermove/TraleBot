@@ -29,9 +29,9 @@ const mockVerbalAspectCatalog = {
                 rowHeaders: ['Несовершенный', 'Совершенный'],
                 colHeaders: ['Прошлое', 'Настоящее+Будущее'],
                 cells: [
-                  { ge: 'ვწერდი', translit: 'v-ts'erdi', ru: 'я писал' },
-                  { ge: 'ვწერ', translit: 'v-ts'er', ru: 'я пишу' },
-                  { ge: 'დავწერე', translit: 'da-v-ts'ere', ru: 'я написал' },
+                  { ge: 'ვწერდი', translit: "v-ts'erdi", ru: 'я писал' },
+                  { ge: 'ვწერ', translit: "v-ts'er", ru: 'я пишу' },
+                  { ge: 'დავწერე', translit: "da-v-ts'ere", ru: 'я написал' },
                   {
                     disabled: true,
                     placeholderText: 'Будущее время — разберём в следующем модуле',
@@ -112,11 +112,24 @@ async function navigateToVerbalAspectTheory(page: any) {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    ;(window as any).Telegram = {
+      WebApp: {
+        initData: 'user=%7B%22id%22%3A123456%7D',
+        BackButton: { show: () => {}, hide: () => {}, onClick: () => {}, offClick: () => {} },
+        MainButton: { show: () => {}, hide: () => {} },
+      },
+    }
+  })
+})
+
 test('theory-block renders 2x2 table with three active cells and one grey Future placeholder', async ({
   page,
 }) => {
   await setupMocks(page)
-  await page.goto('/')
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
   await navigateToVerbalAspectTheory(page)
 
   // Three active cells (no data-disabled attribute)
@@ -131,7 +144,8 @@ test('theory-block renders 2x2 table with three active cells and one grey Future
 
 test('theory-block contains key-row text and preverb disclaimer', async ({ page }) => {
   await setupMocks(page)
-  await page.goto('/')
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
   await navigateToVerbalAspectTheory(page)
 
   // Key row: Несовершенный = ...
@@ -147,7 +161,8 @@ test('theory-block contains key-row text and preverb disclaimer', async ({ page 
 
 test('future-cell contains only placeholder text, no Georgian verb form', async ({ page }) => {
   await setupMocks(page)
-  await page.goto('/')
+  await page.goto('/?playwright=1')
+  await page.waitForLoadState('networkidle')
   await navigateToVerbalAspectTheory(page)
 
   const disabledCell = page.locator('[data-disabled="true"]')
