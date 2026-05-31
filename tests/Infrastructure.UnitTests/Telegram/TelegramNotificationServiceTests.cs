@@ -65,7 +65,7 @@ public class TelegramNotificationServiceTests
         var user = BuildUser();
         var sut = BuildSut();
 
-        await sut.SendDailyReturnPushAsync(user, "Алфавит", "alphabet-progressive", 4, "A", CancellationToken.None);
+        await sut.SendDailyReturnPushAsync(user, "alphabet-progressive", 4, "A", CancellationToken.None);
 
         capturedMarkup.ShouldNotBeNull();
         var button = capturedMarkup!.InlineKeyboard.First().First();
@@ -86,7 +86,7 @@ public class TelegramNotificationServiceTests
         var sut = BuildSut();
 
         await Should.NotThrowAsync(() =>
-            sut.SendDailyReturnPushAsync(user, "Алфавит", "alphabet-progressive", 4, "A", CancellationToken.None));
+            sut.SendDailyReturnPushAsync(user, "alphabet-progressive", 4, "A", CancellationToken.None));
 
         user.IsActive.ShouldBe(false);
     }
@@ -111,13 +111,13 @@ public class TelegramNotificationServiceTests
         var sut = BuildSut();
 
         await Should.NotThrowAsync(() =>
-            sut.SendDailyReturnPushAsync(user, "Алфавит", "alphabet-progressive", 4, "A", CancellationToken.None));
+            sut.SendDailyReturnPushAsync(user, "alphabet-progressive", 4, "A", CancellationToken.None));
 
         callCount.ShouldBe(2);
     }
 
     [Test]
-    public async Task SendDailyReturnPushAsync_MessageTextContainsModuleName()
+    public async Task SendDailyReturnPushAsync_MessageTextIsNonEmpty()
     {
         string? capturedText = null;
         _mockClient.Reset();
@@ -133,9 +133,9 @@ public class TelegramNotificationServiceTests
         var user = BuildUser();
         var sut = BuildSut();
 
-        await sut.SendDailyReturnPushAsync(user, "Алфавит", "alphabet-progressive", 4, "A", CancellationToken.None);
+        await sut.SendDailyReturnPushAsync(user, "alphabet-progressive", 4, "A", CancellationToken.None);
 
         capturedText.ShouldNotBeNull();
-        capturedText!.ShouldContain("Алфавит");
+        capturedText!.ShouldNotBeEmpty();
     }
 }

@@ -21,7 +21,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
         _notificationServiceMock = new Mock<IUserNotificationService>();
         _notificationServiceMock
             .Setup(s => s.SendDailyReturnPushAsync(
-                It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<User>(), It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -62,7 +62,6 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
                 It.Is<User>(u => u.TelegramId == TestTelegramId),
-                It.IsAny<string>(),
                 "alphabet-progressive",
                 4,
                 It.IsAny<string>(),
@@ -92,7 +91,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
 
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
-                It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<User>(), It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -106,7 +105,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
 
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
-                It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<User>(), It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -128,7 +127,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
 
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
-                It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<User>(), It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -151,7 +150,6 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
                 It.Is<User>(u => u.TelegramId == TestTelegramId),
-                It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<int>(),
                 It.IsAny<string>(),
@@ -184,7 +182,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
 
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
-                It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<User>(), It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -197,10 +195,10 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
         string? capturedVariant = null;
         _notificationServiceMock
             .Setup(s => s.SendDailyReturnPushAsync(
-                It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<User>(), It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback<User, string, string, int, string, CancellationToken>(
-                (_, _, _, _, variant, _) => capturedVariant = variant)
+            .Callback<User, string, int, string, CancellationToken>(
+                (_, _, _, variant, _) => capturedVariant = variant)
             .Returns(Task.CompletedTask);
 
         await _sut.DispatchAsync(CancellationToken.None);
@@ -219,7 +217,6 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
                 It.Is<User>(u => u.TelegramId == TestTelegramId),
-                It.IsAny<string>(),
                 "alphabet-progressive",
                 4,
                 It.IsAny<string>(),
@@ -236,7 +233,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
 
         _notificationServiceMock.Verify(
             s => s.SendDailyReturnPushAsync(
-                It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<User>(), It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }

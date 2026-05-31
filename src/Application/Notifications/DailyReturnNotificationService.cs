@@ -81,7 +81,6 @@ public class DailyReturnNotificationService(
             await notificationService.SendDailyReturnPushAsync(
                 user,
                 moduleId,
-                moduleId,
                 nextLessonId,
                 variant,
                 ct);

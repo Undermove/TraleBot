@@ -10,5 +10,4 @@ public class NotificationTrigger
     public string Source { get; set; }
     public DateTime LastSentAt { get; set; }
     public string? Variant { get; set; }
-    public User? User { get; set; }
 }

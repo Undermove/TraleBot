@@ -20,11 +20,11 @@ public class TelegramNotificationService : IUserNotificationService
         _config = config;
     }
 
-    public async Task SendDailyReturnPushAsync(DomainUser user, string moduleName, string moduleId, int lessonId, string variant, CancellationToken ct)
+    public async Task SendDailyReturnPushAsync(DomainUser user, string moduleId, int lessonId, string variant, CancellationToken ct)
     {
         var text = variant == "A"
-            ? $"Бомбора по тебе скучает 🐶 Продолжишь {moduleName} сегодня?"
-            : $"{moduleName} ждёт продолжения 📖 Вернёшься?";
+            ? "Бомбора по тебе скучает 🐶 Продолжишь урок сегодня?"
+            : "Твой урок ждёт продолжения 📖 Вернёшься?";
 
         var deepLinkUrl = $"{_config.NormalizedHost()}/?moduleId={moduleId}&lessonId={lessonId}";
         var keyboard = new InlineKeyboardMarkup(
