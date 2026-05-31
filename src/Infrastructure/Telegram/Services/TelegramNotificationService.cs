@@ -15,6 +15,11 @@ public class TelegramNotificationService: IUserNotificationService
         _client = client;
     }
 
+    public Task SendDailyReturnPushAsync(long telegramId, string moduleName, string moduleId, int lessonId, string variant, CancellationToken ct)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task NotifyAboutUnlockedAchievementAsync(Achievement achievement, CancellationToken ct)
     {
         var userTelegramId = achievement.User.TelegramId;
