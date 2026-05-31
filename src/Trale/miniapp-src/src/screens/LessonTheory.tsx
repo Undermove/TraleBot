@@ -58,7 +58,7 @@ export default function LessonTheory({
   }
 
   return (
-    <div className="flex flex-col min-h-full bg-cream">
+    <div data-testid="lesson-screen" className="flex flex-col min-h-full bg-cream">
       <Header
         progress={progress}
         onBack={() => navigate({ kind: 'module', moduleId })}

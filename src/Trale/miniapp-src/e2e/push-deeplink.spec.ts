@@ -53,16 +53,23 @@ async function setupApiMocks(page: any, trackFn?: (body: any) => void) {
   await page.route('**/api/miniapp/content', (r: any) => r.fulfill({ json: catalog }))
   await page.route('**/api/miniapp/me', (r: any) => r.fulfill({ json: meWithProgress }))
   await page.route('**/api/miniapp/activity-days*', (r: any) => r.fulfill({ json: { dates: [] } }))
-  await page.route('**/api/miniapp/track', async (r: any) => {
+  await page.route('**/api/miniapp/track', (r: any) => {
     if (trackFn) {
-      const body = await r.request().postDataJSON().catch(() => null)
-      trackFn(body)
+      try {
+        const body = r.request().postDataJSON()
+        trackFn(body)
+      } catch {}
     }
-    await r.fulfill({ json: { ok: true } })
+    r.fulfill({ json: { ok: true } })
   })
 }
 
 test.beforeEach(async ({ page }) => {
+  // Block the real telegram-web-app.js so our addInitScript mock is not overridden.
+  // The real script overwrites window.Telegram.WebApp and removes the BackButton
+  // hook we set up to capture the registered handler.
+  await page.route('https://telegram.org/js/telegram-web-app.js', (r) => r.fulfill({ body: '', contentType: 'text/javascript' }))
+
   // Simulate Telegram WebApp context so isInsideTelegram() returns true
   await page.addInitScript(() => {
     ;(window as any).Telegram = {
@@ -85,7 +92,7 @@ test.beforeEach(async ({ page }) => {
 
 test('opens correct lesson screen when valid moduleId+lessonId params present', async ({ page }) => {
   await setupApiMocks(page)
-  await page.goto('/?moduleId=alphabet-progressive&lessonId=3')
+  await page.goto('/?playwright=1&moduleId=alphabet-progressive&lessonId=3')
 
   // Should show lesson screen directly, not dashboard
   await expect(page.getByTestId('lesson-screen')).toBeVisible({ timeout: 10_000 })
@@ -96,7 +103,7 @@ test('tracks push_clicked event with moduleId and lessonId on deep-link open', a
   const trackCalls: any[] = []
   await setupApiMocks(page, (body) => trackCalls.push(body))
 
-  await page.goto('/?moduleId=alphabet-progressive&lessonId=3')
+  await page.goto('/?playwright=1&moduleId=alphabet-progressive&lessonId=3')
   await expect(page.getByTestId('lesson-screen')).toBeVisible({ timeout: 10_000 })
 
   // Wait briefly for the track call to complete
@@ -115,7 +122,7 @@ test('falls back to Dashboard on unknown moduleId', async ({ page }) => {
   const consoleErrors: string[] = []
   page.on('pageerror', (err) => consoleErrors.push(err.message))
 
-  await page.goto('/?moduleId=nonexistent&lessonId=99')
+  await page.goto('/?playwright=1&moduleId=nonexistent&lessonId=99')
 
   await expect(page.getByTestId('dashboard')).toBeVisible({ timeout: 10_000 })
   // No unhandled JS errors
@@ -124,7 +131,7 @@ test('falls back to Dashboard on unknown moduleId', async ({ page }) => {
 
 test('back button returns to Dashboard from deep-linked lesson', async ({ page }) => {
   await setupApiMocks(page)
-  await page.goto('/?moduleId=alphabet-progressive&lessonId=3')
+  await page.goto('/?playwright=1&moduleId=alphabet-progressive&lessonId=3')
   await expect(page.getByTestId('lesson-screen')).toBeVisible({ timeout: 10_000 })
 
   // Trigger the Telegram WebApp back button
@@ -138,6 +145,6 @@ test('back button returns to Dashboard from deep-linked lesson', async ({ page }
 
 test('falls back to Dashboard when only moduleId is present', async ({ page }) => {
   await setupApiMocks(page)
-  await page.goto('/?moduleId=alphabet-progressive')
+  await page.goto('/?playwright=1&moduleId=alphabet-progressive')
   await expect(page.getByTestId('dashboard')).toBeVisible({ timeout: 10_000 })
 })

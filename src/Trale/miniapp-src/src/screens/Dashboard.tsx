@@ -202,7 +202,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   }, [progress.xp, progress.streak])
 
   return (
-    <div className="flex flex-col min-h-full bg-cream">
+    <div data-testid="dashboard" className="flex flex-col min-h-full bg-cream">
       {/* ══ Kilim + stats bar ══ */}
       <DashboardTopBar
         progress={progress}

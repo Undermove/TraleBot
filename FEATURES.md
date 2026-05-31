@@ -164,6 +164,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
+- `deepLink.ts` — Parse `?moduleId=X&lessonId=Y` deep-link query params into typed `DeepLinkParams`; used by App.tsx on mount to route push-notification CTAs directly to the target lesson.
 
 ---
 

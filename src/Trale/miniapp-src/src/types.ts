@@ -3,7 +3,7 @@ export type Screen =
   | { kind: 'onboarding' }
   | { kind: 'dashboard' }
   | { kind: 'module'; moduleId: string }
-  | { kind: 'lesson-theory'; moduleId: string; lessonId: number }
+  | { kind: 'lesson-theory'; moduleId: string; lessonId: number; fromDeepLink?: boolean }
   | { kind: 'practice'; moduleId: string; lessonId: number }
   | {
       kind: 'result'

@@ -294,7 +294,13 @@ export const api = {
     if (!resp.ok) {
       throw new ApiError(resp.status, await resp.text().catch(() => ''))
     }
-  }
+  },
+
+  trackEvent: (event: string, data?: Record<string, unknown>) =>
+    request<{ ok: boolean }>('/api/miniapp/track', {
+      method: 'POST',
+      body: JSON.stringify({ event, ...data })
+    }),
 }
 
 export interface AdminStats {
