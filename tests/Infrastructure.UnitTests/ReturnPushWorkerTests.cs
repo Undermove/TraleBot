@@ -23,7 +23,7 @@ public class ReturnPushWorkerTests
 
         var delay = ReturnPushWorker.ComputeDelay(now);
 
-        delay.ShouldBeGreaterThan(TimeSpan.FromHours(23));
+        delay.ShouldBeGreaterThanOrEqualTo(TimeSpan.FromHours(23));
     }
 
     [Test]

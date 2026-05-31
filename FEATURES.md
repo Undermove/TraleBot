@@ -222,6 +222,7 @@ Location: `src/Trale/HostedServices/`.
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
+| `ReturnPushWorker` | Daily 10:00 UTC | Send D1+ return push to eligible users via `DailyReturnNotificationService`. |
 
 ---
 

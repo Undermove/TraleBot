@@ -21,9 +21,29 @@ public class ReturnPushWorker(
 
     protected virtual TimeSpan GetNextRunDelay() => ComputeDelay(DateTime.UtcNow);
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // stub — implemented in green commit
-        return Task.CompletedTask;
+        logger.LogInformation("ReturnPushWorker started");
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await Task.Delay(GetNextRunDelay(), stoppingToken);
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var service = scope.ServiceProvider.GetRequiredService<IDailyReturnDispatch>();
+                await service.DispatchAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "ReturnPushWorker iteration failed");
+            }
+        }
+
+        logger.LogInformation("ReturnPushWorker stopped");
     }
 }

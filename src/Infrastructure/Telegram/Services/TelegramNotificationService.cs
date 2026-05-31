@@ -26,24 +26,46 @@ public class TelegramNotificationService : IUserNotificationService
             ? $"Бомбора по тебе скучает 🐶 Продолжишь {moduleName} сегодня?"
             : $"{moduleName} ждёт продолжения 📖 Вернёшься?";
 
-        // stub: no deep link, no 403 handling, no retry — full impl in green commit
-        await _client.SendTextMessageAsync(user.TelegramId, text, cancellationToken: ct);
+        var deepLinkUrl = $"{_config.NormalizedHost()}/?moduleId={moduleId}&lessonId={lessonId}";
+        var keyboard = new InlineKeyboardMarkup(
+            InlineKeyboardButton.WithWebApp("▶️ Продолжить", new WebAppInfo { Url = deepLinkUrl }));
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            try
+            {
+                await _client.SendTextMessageAsync(user.TelegramId, text, replyMarkup: keyboard, cancellationToken: ct);
+                await Task.Delay(50, ct); // rate limit: ~20 msg/sec safe for bulk
+                return;
+            }
+            catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+            {
+                user.IsActive = false;
+                return;
+            }
+            catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+            {
+                var retryAfter = ex.Parameters?.RetryAfter ?? 1;
+                await Task.Delay(retryAfter * 1000, ct);
+                // loop to retry once
+            }
+        }
     }
 
     public async Task NotifyAboutUnlockedAchievementAsync(Achievement achievement, CancellationToken ct)
     {
         var userTelegramId = achievement.User.TelegramId;
-        
+
         await _client.SendTextMessageAsync(
             userTelegramId,
             "✅Открыто новое достижение!",
             cancellationToken: ct);
-        
+
         await _client.SendTextMessageAsync(
             userTelegramId,
             achievement.Icon,
             cancellationToken: ct);
-        
+
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
@@ -51,7 +73,7 @@ public class TelegramNotificationService : IUserNotificationService
                 InlineKeyboardButton.WithCallbackData("📊Посмотреть все достижения", $"{CommandNames.Achievements}")
             }
         });
-        
+
         await _client.SendTextMessageAsync(
             userTelegramId,
             $"{achievement.Icon}{achievement.Name} – {achievement.Description}",
