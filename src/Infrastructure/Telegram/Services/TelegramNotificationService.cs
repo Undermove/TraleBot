@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.Services;
@@ -57,15 +58,65 @@ public class TelegramNotificationService : IUserNotificationService
             cancellationToken: ct);
     }
 
-    public Task SendDailyReturnPushAsync(
-        User user,
+    public async Task SendDailyReturnPushAsync(
+        Domain.Entities.User user,
         string moduleName,
         string moduleId,
         int lessonId,
         string variant,
         CancellationToken ct)
     {
-        // Implemented in the green step of TDD for #952.
-        throw new NotImplementedException();
+        var text = BuildDailyReturnPushText(moduleName, variant);
+        var keyboard = BuildDailyReturnPushKeyboard(moduleId, lessonId);
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Daily return push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Daily return push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    internal static string BuildDailyReturnPushText(string moduleName, string variant)
+        => variant == "B"
+            ? $"{moduleName} ждёт продолжения 📖 Вернёшься?"
+            : $"Бомбора по тебе скучает 🐶 Продолжишь {moduleName} сегодня?";
+
+    private InlineKeyboardMarkup BuildDailyReturnPushKeyboard(string moduleId, int lessonId)
+    {
+        var host = _botConfig.NormalizedHost();
+        var url = $"{host}/?moduleId={moduleId}&lessonId={lessonId}";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Продолжить урок", new WebAppInfo { Url = url })
+            }
+        });
     }
 }
