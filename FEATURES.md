@@ -272,6 +272,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddLastTreatIndex` | Last-treat index for rotation. |
 | `AddSentenceBuilderProgressJson` | Per-user sentence-builder mastery progress (questionId → correct-count map) for L4/L5 progression gate. |
 | `AddTrialBonusDays` | Cumulative referral trial-bonus days on User; lets bonuses stack and survive trial expiry without rewriting RegisteredAtUtc. |
+| `AddUserNotificationsEnabled` | Per-user notifications opt-out flag on User (default on); toggled from the mini-app Profile, honoured by the D1+ return-push dispatch. |
 
 ---
 
