@@ -4,6 +4,11 @@ set -e
 # Load environment
 source /etc/environment
 
+# Per-role model routing (heavy=Opus for developer/tech-lead, light=Sonnet for
+# product/designer). Shared with the pipeline; override via PIPELINE_MODEL_*.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+source "${SCRIPT_DIR}/model-utils.sh"
+
 AGENT_NAME="$1"
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M')
 LOG_FILE="/logs/${AGENT_NAME}_${TIMESTAMP}.log"
@@ -55,8 +60,9 @@ BRANCH="${BRANCH_PREFIX}/${TIMESTAMP}"
 git checkout -b "${BRANCH}"
 
 # Run Claude Code
-echo "Running Claude Code for ${AGENT_NAME}..."
+echo "Running Claude Code for ${AGENT_NAME} (model=$(resolve_model "${AGENT_NAME}"))..."
 claude \
+    $(agent_model_args "${AGENT_NAME}") \
     -p "${INSTRUCTION}" \
     --dangerously-skip-permissions \
     --max-turns "${MAX_TURNS:-30}" \

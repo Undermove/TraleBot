@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+# Shared claim-label helpers (stale `agent:running` reclaim). Sourced from the
+# script's own dir so host bind-mount edits apply without an image rebuild.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+# shellcheck source=claim-utils.sh
+source "${SCRIPT_DIR}/claim-utils.sh"
+
 # pick-next-task.sh — deterministic task picker for the dev loop.
 #
 # Walks the active sprint plan's epics in declared order and returns the
@@ -28,9 +34,11 @@ set -euo pipefail
 #      `done` (already shipped tonight), `dev-stuck` (a previous dev iteration
 #      hit max-turns; needs human triage, skip), and `agent:running` (another
 #      agent has already claimed it — don't double-build the same task). The
-#      dev loop sets `agent:running` while working and clears it on return; a
-#      claim left stale by a killed run needs the label removed by hand, same
-#      as `dev-stuck`.
+#      dev loop sets `agent:running` while working and clears it on return. A
+#      claim left stale by a HARD-KILLED run (OOM / container stop / reboot —
+#      the EXIT trap never fired) is reclaimed automatically below once it is
+#      older than STALE_CLAIM_MINUTES, so a crash mid-build self-heals on the
+#      next pass instead of stalling the epic until a human intervenes.
 #   5. The script returns the first eligible task across all epics in
 #      order. If nothing matches → exit empty.
 
@@ -61,6 +69,23 @@ EPICS=$(printf '%s\n%s\n' "${PLAN_EPICS}" "${DOING_EPICS}" | awk 'NF && !seen[$0
 
 # Pre-fetch all open task issues once (cheaper than per-epic queries).
 ALL_TASKS_JSON=$(gh issue list --label task --state open --limit 200 --json number,title,labels 2>/dev/null)
+
+# Self-heal dead claims before selecting. Any open task still wearing
+# `agent:running` from a run that was hard-killed (so its EXIT trap never
+# cleared the label) would otherwise be skipped forever. Reclaim the stale
+# ones, then re-fetch so the eligibility filter below sees the cleared labels.
+RUNNING_NUMS=$(echo "${ALL_TASKS_JSON}" \
+    | jq -r '.[] | select((.labels // []) | map(.name) | contains(["agent:running"])) | .number' 2>/dev/null)
+RECLAIMED_ANY=0
+for N in ${RUNNING_NUMS}; do
+    if reclaim_if_stale "${N}"; then
+        echo "pick-next-task: reclaimed stale ${RUNNING_LABEL} on #${N}" >&2
+        RECLAIMED_ANY=1
+    fi
+done
+if [ "${RECLAIMED_ANY}" -eq 1 ]; then
+    ALL_TASKS_JSON=$(gh issue list --label task --state open --limit 200 --json number,title,labels 2>/dev/null)
+fi
 
 for EPIC in ${EPICS}; do
     # Filter to tasks under this epic, sort ascending, drop done/dev-stuck/non-qa-prepared.

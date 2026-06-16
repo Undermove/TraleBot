@@ -180,6 +180,12 @@ agent_plugin_args() {
     done
 }
 
+# --- Per-role model selection -------------------------------------------------
+# Heavy (Opus) for code roles, light (Sonnet) for planning / review / text.
+# Shared with the dispatch + legacy runners via model-utils.sh — see it for the
+# full rationale and the PIPELINE_MODEL_HEAVY / PIPELINE_MODEL_LIGHT overrides.
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/model-utils.sh"
+
 # --- Shared context (built once per pipeline invocation) ----------------------
 build_shared_context() {
     {
@@ -258,7 +264,7 @@ run_agent() {
     local stderr_file="${LOG_DIR}/${phase_id}.stderr.log"
 
     echo ""
-    echo ">>> [${phase_id}] starting at $(date) (agent=${agent}, max_turns=${max_turns})"
+    echo ">>> [${phase_id}] starting at $(date) (agent=${agent}, model=$(resolve_model "${agent}"), max_turns=${max_turns})"
 
     # Commit any leftover from a previous phase before starting fresh.
     if ! git diff --quiet || ! git diff --staged --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
@@ -272,6 +278,7 @@ run_agent() {
     # shellcheck disable=SC2046
     claude \
         $(agent_plugin_args "${agent}") \
+        $(agent_model_args "${agent}") \
         -p "${instruction}" \
         --dangerously-skip-permissions \
         --max-turns "${max_turns}" \
