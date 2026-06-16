@@ -22,16 +22,26 @@ set -e
 # Args:
 #   $1 — GitHub issue number of the epic
 #
-# Idempotency: skip if the epic already has `agent:running`. Label is
-# set at the start and cleared in the EXIT trap.
+# Idempotency: skip if the epic already has a LIVE `agent:running` claim.
+# Label is set at the start and cleared in the EXIT trap; a claim stranded by
+# a hard-killed run is auto-reclaimed once stale (see claim-utils.sh).
 
 [ -f /etc/environment ] && source /etc/environment
+
+# Shared claim-label helpers (stale `agent:running` reclaim).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+source "${SCRIPT_DIR}/claim-utils.sh"
 
 EPIC_NUM="$1"
 if [[ -z "$EPIC_NUM" ]]; then
     echo "Usage: dispatch-by-epic.sh <epic_number>"
     exit 1
 fi
+
+# Per-role model routing. In this kickoff flow only tech-lead (epic breakdown)
+# runs heavy/Opus; product / designer / methodist are light/Sonnet planning
+# text. Shared with the pipeline via model-utils.sh; override via PIPELINE_MODEL_*.
+source "${SCRIPT_DIR}/model-utils.sh"
 
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
 LOG_FILE="/logs/dispatch_epic_${EPIC_NUM}_${TIMESTAMP}.log"
@@ -72,10 +82,16 @@ if ! echo "$LABELS" | grep -qx "epic"; then
     exit 1
 fi
 
-# 2. Idempotency.
+# 2. Idempotency. Live claim → another dispatch is in flight, skip. A claim
+#    stranded by a hard-killed run (EXIT trap never fired) is reclaimed once
+#    stale so the epic can be kicked off again instead of jamming forever.
 if echo "$LABELS" | grep -qx "$RUNNING_LABEL"; then
-    echo "Epic #${EPIC_NUM} already has '${RUNNING_LABEL}' — another dispatch in flight. Skipping."
-    exit 0
+    if reclaim_if_stale "$EPIC_NUM"; then
+        echo "Epic #${EPIC_NUM} had a STALE '${RUNNING_LABEL}' claim — reclaimed it, continuing."
+    else
+        echo "Epic #${EPIC_NUM} already has '${RUNNING_LABEL}' — another dispatch in flight. Skipping."
+        exit 0
+    fi
 fi
 
 gh label create "$RUNNING_LABEL" --color "fbca04" --description "An agent is actively working on this issue right now" 2>/dev/null || true
@@ -103,7 +119,7 @@ run_agent() {
 
     echo ""
     echo "--------------------------------------------"
-    echo "  → ${agent} (${stage_label})"
+    echo "  → ${agent} (${stage_label}, model=$(resolve_model "${agent}"))"
     echo "--------------------------------------------"
 
     local instruction
@@ -127,6 +143,7 @@ EOF
 )
 
     claude \
+        $(agent_model_args "$agent") \
         -p "$instruction" \
         --dangerously-skip-permissions \
         --max-turns "${MAX_TURNS_PER_AGENT:-20}" \

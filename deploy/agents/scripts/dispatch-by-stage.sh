@@ -25,6 +25,10 @@ set -e
 
 [ -f /etc/environment ] && source /etc/environment
 
+# Shared claim-label helpers (stale `agent:running` reclaim).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+source "${SCRIPT_DIR}/claim-utils.sh"
+
 ISSUE_NUM="$1"
 STAGE="$2"
 
@@ -45,6 +49,10 @@ case "$STAGE" in
         ;;
 esac
 
+# Per-role model routing (heavy=Opus for dev/review, light=Sonnet for spec/qa).
+# Shared with the pipeline via model-utils.sh; override via PIPELINE_MODEL_*.
+source "${SCRIPT_DIR}/model-utils.sh"
+
 TIMESTAMP=$(date '+%Y-%m-%d_%H-%M-%S')
 LOG_FILE="/logs/dispatch_${ISSUE_NUM}_${STAGE}_${TIMESTAMP}.log"
 REPO_DIR="${REPO_DIR:-/workspace/repo}"
@@ -56,7 +64,7 @@ mkdir -p /logs
 exec > >(tee "$LOG_FILE") 2>&1
 
 echo "============================================"
-echo "  Dispatch · issue #${ISSUE_NUM} → ${STAGE} (${AGENT})"
+echo "  Dispatch · issue #${ISSUE_NUM} → ${STAGE} (${AGENT}, model=$(resolve_model "${AGENT}"))"
 echo "  Branch: ${BRANCH}"
 echo "  Started: $(date)"
 echo "============================================"
@@ -78,10 +86,17 @@ TITLE=$(echo "$ISSUE_JSON" | jq -r '.title')
 BODY=$(echo "$ISSUE_JSON" | jq -r '.body // ""')
 LABELS=$(echo "$ISSUE_JSON" | jq -r '.labels[].name')
 
-# 2. Idempotency check.
+# 2. Idempotency check. A live claim means another dispatch is in flight —
+#    skip. But a claim left behind by a hard-killed run (EXIT trap never fired)
+#    would block this task forever, so reclaim it if it's gone stale and carry
+#    on instead of bailing.
 if echo "$LABELS" | grep -qx "$RUNNING_LABEL"; then
-    echo "Issue #${ISSUE_NUM} already has '${RUNNING_LABEL}' label — another dispatch is in flight. Skipping."
-    exit 0
+    if reclaim_if_stale "$ISSUE_NUM"; then
+        echo "Issue #${ISSUE_NUM} had a STALE '${RUNNING_LABEL}' claim — reclaimed it, continuing."
+    else
+        echo "Issue #${ISSUE_NUM} already has '${RUNNING_LABEL}' label — another dispatch is in flight. Skipping."
+        exit 0
+    fi
 fi
 
 # Ensure the running label exists in the repo (idempotent).
@@ -145,6 +160,7 @@ EOF
 
 # 7. Run the agent.
 claude \
+    $(agent_model_args "$AGENT") \
     -p "$INSTRUCTION" \
     --dangerously-skip-permissions \
     --max-turns "${MAX_TURNS:-30}" \
