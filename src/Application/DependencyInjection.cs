@@ -6,6 +6,8 @@ using Application.Common.Interfaces.Achievements;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
+using Application.Common.Interfaces;
+using Application.Notifications;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -22,6 +24,11 @@ public static class DependencyInjection
 
         services.AddTransient<IQuizCreator, QuizCreator>();
         services.AddTransient<IQuizVocabularyEntriesAdvisor, QuizVocabularyEntriesAdvisor>();
+
+        // Daily-return push targeting (#940). Bound to the interface the worker resolves.
+        services.AddScoped<DailyReturnNotificationService>();
+        services.AddScoped<IDailyReturnNotificationService>(
+            sp => sp.GetRequiredService<DailyReturnNotificationService>());
 
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();
