@@ -351,6 +351,25 @@ public class MiniAppController : Controller
         };
     }
 
+    public class SetNotificationsRequest
+    {
+        public bool Enabled { get; set; }
+    }
+
+    [HttpPost("notifications")]
+    public async Task<IActionResult> SetNotifications([FromBody] SetNotificationsRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        user.NotificationsEnabled = request.Enabled;
+        await _dbContext.SaveChangesAsync(ct);
+        return Ok(new { notificationsEnabled = user.NotificationsEnabled });
+    }
+
     public class LessonCompleteRequest
     {
         public string ModuleId { get; set; } = string.Empty;

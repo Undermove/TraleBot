@@ -64,10 +64,12 @@ public class TelegramNotificationService : IUserNotificationService
         string moduleId,
         int lessonId,
         string variant,
+        int availableXp,
         CancellationToken ct)
     {
-        var text = BuildDailyReturnPushText(moduleName, variant);
-        var keyboard = BuildDailyReturnPushKeyboard(moduleId, lessonId);
+        var text = BuildDailyReturnPushText(moduleName, variant, availableXp)
+                   + "\n\n" + GeorgianDidYouKnow.Pick();
+        var keyboard = BuildDailyReturnPushKeyboard(variant, moduleId, lessonId);
 
         try
         {
@@ -102,20 +104,58 @@ public class TelegramNotificationService : IUserNotificationService
         await Task.Delay(BulkSendDelay, ct);
     }
 
-    internal static string BuildDailyReturnPushText(string moduleName, string variant)
-        => variant == "B"
-            ? $"{moduleName} ждёт продолжения 📖 Вернёшься?"
-            : $"Бомбора по тебе скучает 🐶 Продолжишь {moduleName} сегодня?";
+    // Cheapest treat in the shop (Дзвали / косточка). Mirrors
+    // FeedTreatService.TreatPrices[0]; kept local to avoid an Application ref here.
+    private const int CheapestTreatXp = 10;
 
-    private InlineKeyboardMarkup BuildDailyReturnPushKeyboard(string moduleId, int lessonId)
+    /// <summary>
+    /// Builds the push copy. The module name is only ever placed inside «…» quotes
+    /// (a title position that doesn't decline), so it stays grammatical for any
+    /// module — plural ("Глаголы"), singular ("Кафе") alike. The "feed"/"earn"
+    /// variants lean on the real mechanic: XP earned in lessons buys treats for Bombora.
+    /// </summary>
+    internal static string BuildDailyReturnPushText(string moduleName, string variant, int availableXp)
+    {
+        var quoted = $"«{moduleName}»";
+        return variant switch
+        {
+            // You already have enough XP for a treat — nudge to come feed Bombora.
+            "feed" when availableXp >= CheapestTreatXp =>
+                $"Бомбора заждалась угощения 🐶 У тебя ⭐ {availableXp} XP — хватит на лакомство. Зайдёшь покормить?",
+            // Not enough XP yet (or "earn") — invite to do a lesson and earn it.
+            "feed" or "earn" =>
+                "Бомбора проголодалась 🐶 Пройди урок, заработай XP и угости её косточкой 🦴",
+            // Continue a specific module by name.
+            "module" =>
+                $"Продолжим {quoted}? 📖 Бомбора ждёт",
+            // Soft "miss you" nudge (default).
+            _ =>
+                "Бомбора по тебе скучает 🐶 Заглянешь на пару минут?",
+        };
+    }
+
+    private InlineKeyboardMarkup BuildDailyReturnPushKeyboard(string variant, string moduleId, int lessonId)
     {
         var host = _botConfig.NormalizedHost();
-        var url = $"{host}/?moduleId={moduleId}&lessonId={lessonId}";
+        // Deep-link straight to the relevant screen, not just into the app: the
+        // "feed" nudge opens the dashboard (where Bombora is fed), every other
+        // variant jumps right into the lesson via ?screen=practice.
+        string url, label;
+        if (variant == "feed")
+        {
+            url = $"{host}/?screen=feed";
+            label = "Покормить Бомбору 🦴";
+        }
+        else
+        {
+            url = $"{host}/?screen=practice&moduleId={moduleId}&lessonId={lessonId}";
+            label = "Продолжить урок 📖";
+        }
         return new InlineKeyboardMarkup(new[]
         {
             new[]
             {
-                InlineKeyboardButton.WithWebApp("Продолжить урок", new WebAppInfo { Url = url })
+                InlineKeyboardButton.WithWebApp(label, new WebAppInfo { Url = url })
             }
         });
     }

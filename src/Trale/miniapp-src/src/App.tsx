@@ -43,6 +43,35 @@ function incrementTodayLessons(): number {
   return next
 }
 
+// Deep-link routing: a push opens the WebApp at e.g.
+// ?screen=practice&moduleId=…&lessonId=… (or ?screen=feed). Resolve that to a
+// concrete screen — validated against the catalog — so the notification lands on
+// the actual lesson / dashboard, not just "the app".
+function parseDeepLink(catalog: CatalogDto): Screen | null {
+  try {
+    const p = new URLSearchParams(window.location.search)
+    const target = p.get('screen')
+    const moduleId = p.get('moduleId')
+    const lessonIdRaw = p.get('lessonId')
+    const lessonId = lessonIdRaw ? parseInt(lessonIdRaw, 10) : null
+
+    if (target === 'feed') return { kind: 'dashboard' } // Bombora is fed on the dashboard
+    if (target === 'vocabulary') return { kind: 'vocabulary-list' }
+
+    if (moduleId) {
+      const mod = catalog.modules.find((m) => m.id === moduleId)
+      if (!mod) return null
+      if (lessonId != null && Number.isFinite(lessonId) && mod.lessons.some((l) => l.id === lessonId)) {
+        return { kind: 'practice', moduleId, lessonId }
+      }
+      return { kind: 'module', moduleId }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
   const [progress, setProgress] = useState<ProgressState>(defaultProgress)
@@ -83,7 +112,12 @@ export default function App() {
           setVocabularyCount((meData as any).vocabularyCount ?? 0)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
-        setScreen(hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' })
+        const deepLink = hasLevel ? parseDeepLink(catalogData) : null
+        if (deepLink) {
+          // Consume the params so a later refresh/back doesn't re-force the deep-link.
+          window.history.replaceState({}, '', window.location.pathname)
+        }
+        setScreen(deepLink ?? (hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' }))
       })
       .catch(() => {
         if (cancelled) return

@@ -20,6 +20,10 @@ public class User
     public required bool InitialLanguageSet { get; set; }
     public bool IsActive { get; set; }
     public bool IsPro { get; set; }
+    // Whether the user wants retention/return push notifications. Default on;
+    // toggled from the mini-app Profile. The daily-return dispatch skips users
+    // who turn this off.
+    public bool NotificationsEnabled { get; set; } = true;
     public DateTime? ProPurchasedAtUtc { get; set; }
     public SubscriptionPlan? SubscriptionPlan { get; set; }
     public virtual UserSettings Settings { get; set; }

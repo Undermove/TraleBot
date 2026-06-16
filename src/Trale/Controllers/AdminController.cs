@@ -1,8 +1,10 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Admin;
 using Application.Common;
+using Application.Common.Interfaces;
 using Infrastructure.Telegram;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +31,7 @@ public class AdminController : Controller
     private readonly GrantProService _grantPro;
     private readonly RevokeProService _revokePro;
     private readonly BroadcastService _broadcast;
+    private readonly IUserNotificationService _notifications;
 
     public AdminController(
         ITraleDbContext dbContext,
@@ -39,7 +42,8 @@ public class AdminController : Controller
         GetUserDetailQuery userDetailQuery,
         GrantProService grantPro,
         RevokeProService revokePro,
-        BroadcastService broadcast)
+        BroadcastService broadcast,
+        IUserNotificationService notifications)
     {
         _dbContext = dbContext;
         _botConfig = botConfig;
@@ -50,6 +54,7 @@ public class AdminController : Controller
         _grantPro = grantPro;
         _revokePro = revokePro;
         _broadcast = broadcast;
+        _notifications = notifications;
     }
 
     [HttpGet("stats")]
@@ -133,6 +138,48 @@ public class AdminController : Controller
         if (!await IsOwnerAsync(ct)) return NotFound();
         var ok = await _revokePro.ExecuteAsync(telegramId, ct);
         return ok ? Ok(new { ok = true }) : NotFound(new { error = "user_not_found" });
+    }
+
+    public class TestReturnPushRequest
+    {
+        public string? ModuleName { get; set; }
+        public string? ModuleId { get; set; }
+        public int? LessonId { get; set; }
+        public string? Variant { get; set; }
+    }
+
+    /// <summary>
+    /// Fires the real D1+ return push (the same code ReturnPushWorker sends daily)
+    /// to the owner's own Telegram, so the copy + deep-link button can be tested
+    /// on demand without waiting for the 10:00 UTC schedule. Owner-only.
+    /// </summary>
+    [HttpPost("notifications/test-return-push")]
+    public async Task<IActionResult> TestReturnPush([FromBody] TestReturnPushRequest? req, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+
+        var ownerId = _botConfig.OwnerTelegramId != 0 ? _botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
+        var owner = await _dbContext.Users.FirstOrDefaultAsync(u => u.TelegramId == ownerId, ct);
+        if (owner == null) return NotFound(new { error = "owner_user_not_found" });
+
+        // Honour the opt-out, exactly like the daily dispatch would: a user who
+        // turned notifications off in Profile gets skipped (no push sent).
+        if (!owner.NotificationsEnabled)
+            return Ok(new { ok = false, reason = "notifications_disabled" });
+
+        // Real spendable XP (Xp − XpSpent), so the "feed" copy shows your actual balance.
+        var progress = await _dbContext.MiniAppUserProgresses
+            .FirstOrDefaultAsync(p => p.UserId == owner.Id, ct);
+        var availableXp = progress != null ? Math.Max(0, progress.Xp - progress.XpSpent) : 0;
+
+        var allowed = new[] { "miss", "module", "feed", "earn" };
+        var variant = allowed.Contains(req?.Variant) ? req!.Variant! : "feed";
+        var moduleName = string.IsNullOrWhiteSpace(req?.ModuleName) ? "Падежи" : req!.ModuleName!.Trim();
+        var moduleId = string.IsNullOrWhiteSpace(req?.ModuleId) ? "cases" : req!.ModuleId!.Trim();
+        var lessonId = req?.LessonId is int l && l > 0 ? l : 1;
+
+        await _notifications.SendDailyReturnPushAsync(owner, moduleName, moduleId, lessonId, variant, availableXp, ct);
+        return Ok(new { ok = true, sentTo = ownerId, variant, availableXp, moduleName, moduleId, lessonId });
     }
 
     [HttpGet("broadcast/preview")]

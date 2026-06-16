@@ -64,7 +64,8 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 ShouldShowReferralExtensionCta = shouldShowReferralExtensionCta,
                 SubscriptionPlan = user.SubscriptionPlan?.ToString(),
                 SubscribedUntil = user.SubscribedUntil,
-                IsOwner = isOwner
+                IsOwner = isOwner,
+                NotificationsEnabled = user.NotificationsEnabled
             };
         }
     }
@@ -86,4 +87,5 @@ public class GetMiniAppProfileResult
     public string? SubscriptionPlan { get; init; }
     public DateTime? SubscribedUntil { get; init; }
     public bool IsOwner { get; init; }
+    public bool NotificationsEnabled { get; init; }
 }

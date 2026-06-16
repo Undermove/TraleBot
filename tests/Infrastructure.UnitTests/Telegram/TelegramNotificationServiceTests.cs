@@ -81,34 +81,51 @@ public class TelegramNotificationServiceTests
         var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
         var user = BuildUser();
 
-        await service.SendDailyReturnPushAsync(user, "Алфавит", "alphabet", 7, "A", default);
+        await service.SendDailyReturnPushAsync(user, "Алфавит", "alphabet", 7, "miss", 50, default);
 
         captured.ShouldHaveSingleItem();
         var markup = ReflectMarkup(captured[0]);
         markup.ShouldNotBeNull();
         var button = markup.InlineKeyboard.SelectMany(r => r).Single();
         button.WebApp.ShouldNotBeNull();
-        button.WebApp.Url.ShouldBe($"{TestHost}/?moduleId=alphabet&lessonId=7");
+        // Deep-links straight into the lesson screen, not just the app.
+        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=practice&moduleId=alphabet&lessonId=7");
     }
 
     [Test]
-    public async Task SendDailyReturnPushAsync_MessageTextContainsModuleName()
+    public async Task SendDailyReturnPushAsync_FeedVariant_DeepLinksToFeedScreen()
     {
         var (client, captured) = BuildMockClient();
         var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
 
-        await service.SendDailyReturnPushAsync(BuildUser(), "Числа", "numbers", 3, "A", default);
+        await service.SendDailyReturnPushAsync(BuildUser(), "Падежи", "cases", 2, "feed", 120, default);
 
-        ReflectText(captured.Single()).ShouldNotBeNull().ShouldContain("Числа");
+        var button = ReflectMarkup(captured.Single())!.InlineKeyboard.SelectMany(r => r).Single();
+        button.WebApp.ShouldNotBeNull();
+        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=feed");
     }
 
     [Test]
-    public async Task SendDailyReturnPushAsync_OnVariantA_UsesVariantACopy()
+    public async Task SendDailyReturnPushAsync_ModuleVariant_ContainsModuleNameInQuotes()
     {
         var (client, captured) = BuildMockClient();
         var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
 
-        await service.SendDailyReturnPushAsync(BuildUser(), "Падежи", "cases", 2, "A", default);
+        await service.SendDailyReturnPushAsync(BuildUser(), "Числа", "numbers", 3, "module", 0, default);
+
+        var text = ReflectText(captured.Single());
+        text.ShouldNotBeNull();
+        text.ShouldContain("«Числа»");   // module name only ever appears in title quotes
+        text.ShouldContain("Продолжим");
+    }
+
+    [Test]
+    public async Task SendDailyReturnPushAsync_MissVariant_UsesMissCopy()
+    {
+        var (client, captured) = BuildMockClient();
+        var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
+
+        await service.SendDailyReturnPushAsync(BuildUser(), "Падежи", "cases", 2, "miss", 0, default);
 
         var text = ReflectText(captured.Single());
         text.ShouldNotBeNull();
@@ -116,16 +133,31 @@ public class TelegramNotificationServiceTests
     }
 
     [Test]
-    public async Task SendDailyReturnPushAsync_OnVariantB_UsesVariantBCopy()
+    public async Task SendDailyReturnPushAsync_FeedVariant_WithEnoughXp_ShowsXpAndTreat()
     {
         var (client, captured) = BuildMockClient();
         var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
 
-        await service.SendDailyReturnPushAsync(BuildUser(), "Падежи", "cases", 2, "B", default);
+        await service.SendDailyReturnPushAsync(BuildUser(), "Падежи", "cases", 2, "feed", 120, default);
 
         var text = ReflectText(captured.Single());
         text.ShouldNotBeNull();
-        text.ShouldContain("ждёт продолжения");
+        text.ShouldContain("120");        // shows the real spendable XP
+        text.ShouldContain("лакомство");
+    }
+
+    [Test]
+    public async Task SendDailyReturnPushAsync_FeedVariant_WithoutEnoughXp_FallsBackToEarnCopy()
+    {
+        var (client, captured) = BuildMockClient();
+        var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
+
+        await service.SendDailyReturnPushAsync(BuildUser(), "Падежи", "cases", 2, "feed", 3, default);
+
+        var text = ReflectText(captured.Single());
+        text.ShouldNotBeNull();
+        text.ShouldContain("заработай XP");   // not enough → invite to earn, no misleading number
+        text.ShouldNotContain("3 XP");
     }
 
     [Test]
@@ -138,7 +170,7 @@ public class TelegramNotificationServiceTests
         var service = new TelegramNotificationService(mock.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
         var user = BuildUser();
 
-        await service.SendDailyReturnPushAsync(user, "Алфавит", "alphabet", 1, "A", default);
+        await service.SendDailyReturnPushAsync(user, "Алфавит", "alphabet", 1, "A", 50, default);
 
         user.IsActive.ShouldBeFalse();
     }
@@ -163,7 +195,7 @@ public class TelegramNotificationServiceTests
         var service = new TelegramNotificationService(mock.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
 
         var sw = Stopwatch.StartNew();
-        await service.SendDailyReturnPushAsync(BuildUser(), "Алфавит", "alphabet", 1, "A", default);
+        await service.SendDailyReturnPushAsync(BuildUser(), "Алфавит", "alphabet", 1, "A", 50, default);
         sw.Stop();
 
         calls.ShouldBe(2);
@@ -176,12 +208,26 @@ public class TelegramNotificationServiceTests
         var (client, captured) = BuildMockClient();
         var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
 
-        await service.SendDailyReturnPushAsync(BuildUser(), "Алфавит", "alphabet", 1, "A", default);
+        await service.SendDailyReturnPushAsync(BuildUser(), "Алфавит", "alphabet", 1, "A", 50, default);
 
         var markup = ReflectMarkup(captured.Single());
         markup.ShouldNotBeNull();
         var button = markup.InlineKeyboard.SelectMany(r => r).Single();
         button.WebApp.ShouldNotBeNull();
         button.Url.ShouldBeNull(); // not a plain URL button
+    }
+
+    [Test]
+    public async Task SendDailyReturnPushAsync_AppendsGeorgianDidYouKnowFact()
+    {
+        var (client, captured) = BuildMockClient();
+        var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
+
+        await service.SendDailyReturnPushAsync(BuildUser(), "Падежи", "cases", 2, "miss", 0, default);
+
+        var text = ReflectText(captured.Single());
+        text.ShouldNotBeNull();
+        text.ShouldContain("💡");          // every push also teaches a Georgian word/fact
+        text.ShouldContain("скучает");      // ...without dropping the variant copy
     }
 }
