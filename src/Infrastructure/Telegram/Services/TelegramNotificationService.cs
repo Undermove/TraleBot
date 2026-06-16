@@ -1,34 +1,48 @@
 using Application.Common.Interfaces;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
+using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.Services;
 
-public class TelegramNotificationService: IUserNotificationService
+public class TelegramNotificationService : IUserNotificationService
 {
-    private readonly ITelegramBotClient _client;
+    /// <summary>Pause between bulk sends. Telegram allows ~30 msg/s globally; 50 ms = 20 msg/s leaves headroom.</summary>
+    internal static readonly TimeSpan BulkSendDelay = TimeSpan.FromMilliseconds(50);
 
-    public TelegramNotificationService(ITelegramBotClient client)
+    private readonly ITelegramBotClient _client;
+    private readonly BotConfiguration _botConfig;
+    private readonly ILogger<TelegramNotificationService> _logger;
+
+    public TelegramNotificationService(
+        ITelegramBotClient client,
+        BotConfiguration botConfig,
+        ILogger<TelegramNotificationService>? logger = null)
     {
         _client = client;
+        _botConfig = botConfig;
+        _logger = logger ?? NullLogger<TelegramNotificationService>.Instance;
     }
 
     public async Task NotifyAboutUnlockedAchievementAsync(Achievement achievement, CancellationToken ct)
     {
         var userTelegramId = achievement.User.TelegramId;
-        
+
         await _client.SendTextMessageAsync(
             userTelegramId,
             "✅Открыто новое достижение!",
             cancellationToken: ct);
-        
+
         await _client.SendTextMessageAsync(
             userTelegramId,
             achievement.Icon,
             cancellationToken: ct);
-        
+
         var keyboard = new InlineKeyboardMarkup(new[]
         {
             new[]
@@ -36,11 +50,113 @@ public class TelegramNotificationService: IUserNotificationService
                 InlineKeyboardButton.WithCallbackData("📊Посмотреть все достижения", $"{CommandNames.Achievements}")
             }
         });
-        
+
         await _client.SendTextMessageAsync(
             userTelegramId,
             $"{achievement.Icon}{achievement.Name} – {achievement.Description}",
             replyMarkup: keyboard,
             cancellationToken: ct);
+    }
+
+    public async Task SendDailyReturnPushAsync(
+        Domain.Entities.User user,
+        string moduleName,
+        string moduleId,
+        int lessonId,
+        string variant,
+        int availableXp,
+        CancellationToken ct)
+    {
+        var text = BuildDailyReturnPushText(moduleName, variant, availableXp)
+                   + "\n\n" + GeorgianDidYouKnow.Pick();
+        var keyboard = BuildDailyReturnPushKeyboard(variant, moduleId, lessonId);
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Daily return push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Daily return push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    // Cheapest treat in the shop (Дзвали / косточка). Mirrors
+    // FeedTreatService.TreatPrices[0]; kept local to avoid an Application ref here.
+    private const int CheapestTreatXp = 10;
+
+    /// <summary>
+    /// Builds the push copy. The module name is only ever placed inside «…» quotes
+    /// (a title position that doesn't decline), so it stays grammatical for any
+    /// module — plural ("Глаголы"), singular ("Кафе") alike. The "feed"/"earn"
+    /// variants lean on the real mechanic: XP earned in lessons buys treats for Bombora.
+    /// </summary>
+    internal static string BuildDailyReturnPushText(string moduleName, string variant, int availableXp)
+    {
+        var quoted = $"«{moduleName}»";
+        return variant switch
+        {
+            // You already have enough XP for a treat — nudge to come feed Bombora.
+            "feed" when availableXp >= CheapestTreatXp =>
+                $"Бомбора заждалась угощения 🐶 У тебя ⭐ {availableXp} XP — хватит на лакомство. Зайдёшь покормить?",
+            // Not enough XP yet (or "earn") — invite to do a lesson and earn it.
+            "feed" or "earn" =>
+                "Бомбора проголодалась 🐶 Пройди урок, заработай XP и угости её косточкой 🦴",
+            // Continue a specific module by name.
+            "module" =>
+                $"Продолжим {quoted}? 📖 Бомбора ждёт",
+            // Soft "miss you" nudge (default).
+            _ =>
+                "Бомбора по тебе скучает 🐶 Заглянешь на пару минут?",
+        };
+    }
+
+    private InlineKeyboardMarkup BuildDailyReturnPushKeyboard(string variant, string moduleId, int lessonId)
+    {
+        var host = _botConfig.NormalizedHost();
+        // Deep-link straight to the relevant screen, not just into the app: the
+        // "feed" nudge opens the dashboard (where Bombora is fed), every other
+        // variant jumps right into the lesson via ?screen=practice.
+        string url, label;
+        if (variant == "feed")
+        {
+            url = $"{host}/?screen=feed";
+            label = "Покормить Бомбору 🦴";
+        }
+        else
+        {
+            url = $"{host}/?screen=practice&moduleId={moduleId}&lessonId={lessonId}";
+            label = "Продолжить урок 📖";
+        }
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp(label, new WebAppInfo { Url = url })
+            }
+        });
     }
 }

@@ -356,6 +356,9 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           </div>
         </button>
 
+        {/* Notifications on/off */}
+        <NotificationsToggle />
+
         {/* Referral — invite friends, get bonus */}
         <ReferralCard />
 
@@ -657,6 +660,69 @@ function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; da
           ))}
         </div>
       ))}
+    </div>
+  )
+}
+
+function NotificationsToggle() {
+  const [enabled, setEnabled] = useState<boolean | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    api
+      .me()
+      .then((m) => {
+        if (!cancelled) setEnabled(m.notificationsEnabled ?? true)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function toggle() {
+    if (enabled == null || busy) return
+    const next = !enabled
+    setBusy(true)
+    setEnabled(next) // optimistic
+    try {
+      const r = await api.setNotifications(next)
+      setEnabled(r.notificationsEnabled)
+    } catch {
+      setEnabled(!next) // revert on failure
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="jewel-tile w-full px-4 py-3 mt-3">
+      <div className="relative z-[1] flex items-center justify-between gap-3">
+        <div>
+          <div className="font-sans text-[14px] font-bold text-jewelInk">🔔 Уведомления</div>
+          <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
+            {enabled === false
+              ? 'Выключены — Бомбора не будет напоминать о себе'
+              : 'Напоминания вернуться к урокам'}
+          </div>
+        </div>
+        <button
+          onClick={toggle}
+          disabled={enabled == null || busy}
+          aria-pressed={!!enabled}
+          aria-label="Переключить уведомления"
+          className={`shrink-0 w-12 h-7 rounded-full transition-colors relative ${
+            enabled ? 'bg-jewelInk' : 'bg-jewelInk/20'
+          } disabled:opacity-50`}
+        >
+          <span
+            className={`absolute top-0.5 w-6 h-6 rounded-full bg-cream transition-all ${
+              enabled ? 'left-[22px]' : 'left-0.5'
+            }`}
+          />
+        </button>
+      </div>
     </div>
   )
 }

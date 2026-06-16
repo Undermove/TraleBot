@@ -20,6 +20,25 @@ export default function AdminScreen({ progress, navigate }: Props) {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState<'recent_signup' | 'recent_activity' | 'vocab_count'>('recent_activity')
   const [usersLoading, setUsersLoading] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushMsg, setPushMsg] = useState<string | null>(null)
+
+  async function sendTestPush(variant: 'miss' | 'module' | 'feed' | 'earn') {
+    setPushBusy(true)
+    setPushMsg(null)
+    try {
+      const r = await api.adminTestReturnPush({ variant })
+      if (r.ok === false) {
+        setPushMsg('🔕 Уведомления выключены в Профиле — пуш не отправлен (так же его пропустит и авто-рассылка).')
+      } else {
+        setPushMsg(`Отправил «${variant}» (XP: ${r.availableXp ?? '—'}) — проверь чат с ботом 📲`)
+      }
+    } catch (e) {
+      setPushMsg('Ошибка: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setPushBusy(false)
+    }
+  }
 
   // Initial load: stats + chart + first batch of users
   useEffect(() => {
@@ -128,6 +147,37 @@ export default function AdminScreen({ progress, navigate }: Props) {
               <Tile label="Слов на юзера" value={`${stats.averageVocabularyPerUser}`} />
               <Tile label="Новых сегодня" value={fmt(stats.newUsersToday)} />
               <Tile label="За неделю" value={fmt(stats.newUsersWeek)} />
+            </div>
+
+            {/* Notifications test (D1+ return push) */}
+            <div className="mn-eyebrow mb-2">🔔 Нотификации · тест</div>
+            <div className="jewel-tile px-4 py-4 mb-5">
+              <div className="relative z-[1]">
+                <div className="font-sans text-[12px] text-jewelInk-mid mb-3">
+                  Отправить себе реальный «вернись»-пуш (тот же код, что шлёт
+                  ReturnPushWorker в 10:00 UTC) — проверить текст и кнопку с deep-link.
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    ['feed', '🦴 Покормить (XP)'],
+                    ['earn', '📚 Заработать XP'],
+                    ['miss', '🐶 Скучаю'],
+                    ['module', '📖 Продолжить модуль'],
+                  ] as const).map(([v, label]) => (
+                    <button
+                      key={v}
+                      onClick={() => sendTestPush(v)}
+                      disabled={pushBusy}
+                      className="px-3 py-2 rounded font-sans text-[12px] font-bold border-[1.5px] bg-cream text-jewelInk border-jewelInk/25 disabled:opacity-50"
+                    >
+                      {pushBusy ? '…' : label}
+                    </button>
+                  ))}
+                </div>
+                {pushMsg && (
+                  <div className="font-sans text-[12px] text-jewelInk-mid mt-3">{pushMsg}</div>
+                )}
+              </div>
             </div>
 
             {/* Signups chart */}

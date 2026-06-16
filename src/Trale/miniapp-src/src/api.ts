@@ -50,6 +50,7 @@ export interface MeResponse {
   hasAccess?: boolean
   subscriptionPlan?: string | null
   subscribedUntil?: string | null
+  notificationsEnabled?: boolean
 }
 
 export interface LessonCompleteResponse {
@@ -111,6 +112,13 @@ export const api = {
   content: () => request<CatalogDto>('/api/miniapp/content'),
 
   me: () => request<MeResponse>('/api/miniapp/me'),
+
+  setNotifications: (enabled: boolean) =>
+    request<{ notificationsEnabled: boolean }>('/api/miniapp/notifications', {
+      method: 'POST',
+      body: JSON.stringify({ enabled })
+    }),
+
 
   completeLesson: (payload: {
     moduleId: string
@@ -238,6 +246,20 @@ export const api = {
     request<{ ok: boolean }>(`/api/admin/users/${telegramId}/revoke-pro`, {
       method: 'POST'
     }),
+
+  adminTestReturnPush: (body?: {
+    moduleName?: string
+    moduleId?: string
+    lessonId?: number
+    variant?: 'miss' | 'module' | 'feed' | 'earn'
+  }) =>
+    request<{ ok: boolean; reason?: string; sentTo?: number; variant?: string; availableXp?: number }>(
+      `/api/admin/notifications/test-return-push`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body ?? {})
+      }
+    ),
 
   adminBroadcastPreview: (opts: {
     activeWithinDays?: number | null
