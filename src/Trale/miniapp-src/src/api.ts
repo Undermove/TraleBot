@@ -51,6 +51,8 @@ export interface MeResponse {
   subscriptionPlan?: string | null
   subscribedUntil?: string | null
   notificationsEnabled?: boolean
+  /** Active contextual-onboarding hint key (or null/absent). See OnboardingNudge. */
+  onboardingHint?: string | null
 }
 
 export interface LessonCompleteResponse {
@@ -129,6 +131,12 @@ export const api = {
     request<LessonCompleteResponse>('/api/miniapp/progress/lesson-complete', {
       method: 'POST',
       body: JSON.stringify(payload)
+    }),
+
+  markOnboardingHintSeen: (hintKey: string) =>
+    request<{ ok: boolean }>('/api/miniapp/onboarding/hint-seen', {
+      method: 'POST',
+      body: JSON.stringify({ hintKey })
     }),
 
   vocabulary: () => request<VocabularyListResponse>('/api/miniapp/vocabulary'),

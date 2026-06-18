@@ -41,6 +41,13 @@ public class MiniAppUserProgress
     public string SentenceBuilderProgressJson { get; set; } = "{}";
 
     /// <summary>
+    /// JSON state for the contextual onboarding engine: which hint keys were already
+    /// surfaced and when the last one was shown (for the time-spread gating).
+    /// Null until the first hint is shown. See <c>Application.Onboarding</c>.
+    /// </summary>
+    public string? OnboardingHintsJson { get; set; }
+
+    /// <summary>
     /// Total XP spent on treats in the treat shop.
     /// Available XP = Xp - XpSpent.
     /// </summary>

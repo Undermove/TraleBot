@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
 using Application.Common.Interfaces.MiniApp;
+using Application.Onboarding;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +51,13 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
             const long ownerTelegramId = 309149393;
             var isOwner = user.TelegramId == ownerTelegramId;
 
+            // Contextual onboarding: the next gentle nudge for this user (or null), time-spread
+            // so only one new hint surfaces per ~20h. The mini-app marks it seen when shown.
+            var onboardingHint = OnboardingHints.ResolveActiveHint(
+                OnboardingState.BuildSignals(progress, vocabCount),
+                OnboardingState.Parse(progress.OnboardingHintsJson),
+                now);
+
             return new GetMiniAppProfileResult
             {
                 Authenticated = true,
@@ -65,7 +73,8 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 SubscriptionPlan = user.SubscriptionPlan?.ToString(),
                 SubscribedUntil = user.SubscribedUntil,
                 IsOwner = isOwner,
-                NotificationsEnabled = user.NotificationsEnabled
+                NotificationsEnabled = user.NotificationsEnabled,
+                OnboardingHint = onboardingHint
             };
         }
     }
@@ -88,4 +97,6 @@ public class GetMiniAppProfileResult
     public DateTime? SubscribedUntil { get; init; }
     public bool IsOwner { get; init; }
     public bool NotificationsEnabled { get; init; }
+    /// <summary>Active contextual-onboarding hint key for this user, or null. See Application.Onboarding.</summary>
+    public string? OnboardingHint { get; init; }
 }

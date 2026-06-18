@@ -154,7 +154,8 @@ public class MiniAppController : Controller
             subscriptionPlan = result.SubscriptionPlan,
             subscribedUntil = result.SubscribedUntil,
             hasAccess = result.IsPro || result.IsTrialActive,
-            isOwner = result.IsOwner
+            isOwner = result.IsOwner,
+            onboardingHint = result.OnboardingHint
         });
     }
 
@@ -406,6 +407,29 @@ public class MiniAppController : Controller
             CompleteLessonProgressResult.InvalidRequest => BadRequest(new { error = "invalid_request" }),
             _ => BadRequest(new { error = "unknown" })
         };
+    }
+
+    public class HintSeenRequest
+    {
+        public string HintKey { get; set; } = string.Empty;
+    }
+
+    [HttpPost("onboarding/hint-seen")]
+    public async Task<IActionResult> MarkOnboardingHintSeen([FromBody] HintSeenRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var ok = await _mediator.Send(new Application.MiniApp.Commands.MarkOnboardingHintSeen
+        {
+            UserId = user.Id,
+            HintKey = request.HintKey
+        }, ct);
+
+        return ok ? Ok(new { ok = true }) : BadRequest(new { error = "invalid_hint" });
     }
 
     [HttpGet("referral")]
