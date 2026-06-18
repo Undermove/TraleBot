@@ -12,7 +12,8 @@ public record OnboardingSignals(
     int DistinctRealModules,
     int AvailableXp,
     int TotalTreatsGiven,
-    int VocabularyCount);
+    int VocabularyCount,
+    bool CompletedWelcome);
 
 /// <summary>Persisted state: which hints were already surfaced and when the last one was shown.</summary>
 public record OnboardingHintState(IReadOnlySet<string> Seen, DateTime? LastShownAt);
@@ -45,6 +46,14 @@ public static class OnboardingHints
 
     public static string? ResolveActiveHint(OnboardingSignals signals, OnboardingHintState state, DateTime nowUtc)
     {
+        // Only users who went through the new welcome lesson are in this onboarding journey.
+        // Everyone who registered before it (all existing/active users) never has welcome
+        // completed, so this keeps the nudges away from established users entirely.
+        if (!signals.CompletedWelcome)
+        {
+            return null;
+        }
+
         // One new nudge per window — keeps the onboarding gentle and time-spread.
         if (state.LastShownAt is { } last && nowUtc - last < MinGapBetweenHints)
         {

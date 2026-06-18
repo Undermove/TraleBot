@@ -72,10 +72,11 @@ public class OnboardingStateTests
         signals.AvailableXp.ShouldBe(30);
         signals.TotalTreatsGiven.ShouldBe(2);
         signals.VocabularyCount.ShouldBe(5);
+        signals.CompletedWelcome.ShouldBeTrue();
     }
 
     [Test]
-    public void BuildSignals_treats_only_welcome_as_zero_real_lessons()
+    public void BuildSignals_treats_only_welcome_as_zero_real_lessons_but_marks_welcome_done()
     {
         var progress = new MiniAppUserProgress
         {
@@ -87,5 +88,22 @@ public class OnboardingStateTests
 
         signals.RealLessonsCompleted.ShouldBe(0);
         signals.DistinctRealModules.ShouldBe(0);
+        signals.CompletedWelcome.ShouldBeTrue();
+    }
+
+    [Test]
+    public void BuildSignals_marks_welcome_not_done_for_a_pre_welcome_user()
+    {
+        // Established user who progressed before the welcome lesson existed.
+        var progress = new MiniAppUserProgress
+        {
+            CompletedLessonsJson = """{"alphabet-progressive":[1,2,3],"numbers":[1]}""",
+            Xp = 80,
+        };
+
+        var signals = OnboardingState.BuildSignals(progress, vocabularyCount: 0);
+
+        signals.RealLessonsCompleted.ShouldBe(4);
+        signals.CompletedWelcome.ShouldBeFalse();
     }
 }

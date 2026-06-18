@@ -5,7 +5,7 @@ import ProBadge from '../components/ProBadge'
 import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
 import ReferralExtensionCta from '../components/ReferralExtensionCta'
 import DashboardTopBar from '../components/DashboardTopBar'
-import OnboardingNudge from '../components/OnboardingNudge'
+import OnboardingSpotlight from '../components/OnboardingSpotlight'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import TreatShop from '../components/TreatShop'
 import FeedingAnimation from '../components/FeedingAnimation'
@@ -217,16 +217,13 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         onOpenTreatShop={() => setTreatShopOpen(true)}
       />
 
-      {/* ══ Contextual onboarding nudge (one at a time, time-spread by the backend) ══ */}
+      {/* ══ Contextual onboarding spotlight (one at a time, time-spread by the backend).
+            Highlights the real element to tap so the user learns the actual gesture. ══ */}
       {onboardingHint && !nudgeDismissed && (
-        <OnboardingNudge
+        <OnboardingSpotlight
           hint={onboardingHint}
-          catalog={catalog}
-          progress={progress}
-          navigate={navigate}
-          onFeed={() => setTreatShopOpen(true)}
-          onClose={() => setNudgeDismissed(true)}
           onShown={(h) => onHintSeen?.(h)}
+          onDismiss={() => setNudgeDismissed(true)}
         />
       )}
 
@@ -299,6 +296,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
               {/* ── Feed button ── */}
               <div className="mt-3 flex justify-center" onClick={(e) => e.stopPropagation()}>
                 <button
+                  data-testid="dashboard-feed-button"
                   onClick={() => setTreatShopOpen(true)}
                   className="px-4 py-2 rounded-xl font-sans text-[13px] font-extrabold bg-gold text-jewelInk border-[1.5px] border-jewelInk active:scale-95 transition-transform flex items-center gap-2"
                   style={{ boxShadow: '2px 2px 0 #15100A' }}
@@ -311,6 +309,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
               {suggestion && (
                 <button
+                  data-testid="dashboard-suggestion"
                   onClick={() => navigate(suggestion.screen)}
                   className="jewel-tile jewel-pressable mt-4 w-full text-left px-5 py-4 flex items-center gap-4"
                 >

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
-// The dashboard surfaces the backend-chosen contextual onboarding nudge, and acting on it
-// navigates to the right place. me() decides which hint (if any) is active.
+// The dashboard surfaces the backend-chosen onboarding hint as a spotlight over the REAL
+// element to tap (so the user learns the actual gesture). me() decides which hint is active.
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -56,7 +56,7 @@ async function setupApi(page: any, me: typeof meWithHint) {
   await page.route('**/api/miniapp/activity-days*', (route: any) => route.fulfill({ json: { dates: [] } }))
 }
 
-test('dashboard shows the active onboarding nudge and acting on it opens the lesson', async ({ page }) => {
+test('spotlight highlights the real element; tapping it (not a CTA) opens the lesson', async ({ page }) => {
   let hintSeen = false
   await setupApi(page, meWithHint)
   await page.route('**/api/miniapp/onboarding/hint-seen', (route: any) => {
@@ -66,22 +66,20 @@ test('dashboard shows the active onboarding nudge and acting on it opens the les
 
   await page.goto('/?playwright=1')
 
-  // The nudge for the active hint is shown...
-  const nudge = page.getByTestId('onboarding-nudge-first_lesson')
-  await expect(nudge).toBeVisible()
-
-  // ...and the app reported it shown (so the backend won't repeat it).
+  // The spotlight overlay for the active hint is shown...
+  await expect(page.getByTestId('onboarding-spotlight-first_lesson')).toBeVisible()
+  // ...and the app reported it shown.
   await expect.poll(() => hintSeen).toBe(true)
 
-  // Acting on it opens the first lesson.
-  await page.getByTestId('onboarding-nudge-cta').click()
+  // There is no separate CTA — the user taps the REAL highlighted element.
+  await page.getByTestId('dashboard-suggestion').click()
   await expect(page.getByRole('button', { name: 'к практике →' })).toBeVisible()
 })
 
-test('no nudge is shown when me() returns no hint', async ({ page }) => {
+test('no spotlight is shown when me() returns no hint', async ({ page }) => {
   await setupApi(page, { ...meWithHint, onboardingHint: null as any })
   await page.goto('/?playwright=1')
 
   await expect(page.getByTestId('module-tile-alphabet-progressive')).toBeVisible()
-  await expect(page.getByTestId('onboarding-nudge-first_lesson')).toHaveCount(0)
+  await expect(page.getByTestId('onboarding-spotlight-first_lesson')).toHaveCount(0)
 })
