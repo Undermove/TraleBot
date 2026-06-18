@@ -291,9 +291,14 @@ export default function App() {
             // awards the first XP (flipping the entry gate to the dashboard) without
             // touching the real alphabet progression. Navigate regardless of the API
             // result so a transient failure doesn't trap the user on the welcome screen.
+            // Re-fetch me() afterwards: completing welcome unlocks the first onboarding
+            // hint, but the initial me() (taken before welcome) returned none — without a
+            // refresh the dashboard spotlight only appears after a manual reload.
             api
               .completeLesson({ moduleId: 'welcome', lessonId: 1, correct: 1, total: 1 })
               .then((res) => setProgress(progressFromDto(res.progress)))
+              .then(() => api.me())
+              .then((meData) => setOnboardingHint((meData as any).onboardingHint ?? null))
               .catch(() => {})
               .finally(() => navigate({ kind: 'dashboard' }))
           }}
@@ -329,6 +334,7 @@ export default function App() {
             shouldShowReferralExtensionCta={shouldShowReferralExtensionCta}
             onboardingHint={onboardingHint}
             onHintSeen={(h) => api.markOnboardingHintSeen(h).catch(() => {})}
+            onHintDismiss={() => setOnboardingHint(null)}
             onPurchaseSuccess={handleProPurchaseSuccess}
             onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
             navigate={navigate}
