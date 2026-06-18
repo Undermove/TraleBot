@@ -5,6 +5,7 @@ import ProBadge from '../components/ProBadge'
 import ProPaywall, { PaywallTrigger } from '../components/ProPaywall'
 import ReferralExtensionCta from '../components/ReferralExtensionCta'
 import DashboardTopBar from '../components/DashboardTopBar'
+import OnboardingNudge from '../components/OnboardingNudge'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import TreatShop from '../components/TreatShop'
 import FeedingAnimation from '../components/FeedingAnimation'
@@ -23,6 +24,10 @@ interface Props {
   isTrialActive?: boolean
   trialDaysLeft?: number
   shouldShowReferralExtensionCta?: boolean
+  /** Active contextual-onboarding hint key (or null) — surfaces a single gentle nudge. */
+  onboardingHint?: string | null
+  /** Reports the nudge as shown so the backend doesn't surface it again. */
+  onHintSeen?: (hint: string) => void
   onPurchaseSuccess: () => void
   onProgressUpdate?: (patch: Partial<ProgressState>) => void
   navigate: (s: Screen) => void
@@ -76,7 +81,7 @@ function isSectionUnlocked(
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, shouldShowReferralExtensionCta = false, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, shouldShowReferralExtensionCta = false, onboardingHint = null, onHintSeen, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
   const isBeginner = userLevel === 'beginner'
   const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
@@ -127,6 +132,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   // Milestone banner — shown when XP or streak crosses a threshold for the first time
   const [milestone, setMilestone] = useState<{ type: 'xp' | 'streak'; value: number } | null>(null)
   const prevProgressRef = useRef<ProgressState | null>(null)
+
+  // Contextual onboarding nudge — dismissed for the rest of this session once closed/acted on.
+  const [nudgeDismissed, setNudgeDismissed] = useState(false)
 
   // Treat shop state
   const [treatShopOpen, setTreatShopOpen] = useState(false)
@@ -208,6 +216,19 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         onNavigateProfile={() => navigate({ kind: 'profile' })}
         onOpenTreatShop={() => setTreatShopOpen(true)}
       />
+
+      {/* ══ Contextual onboarding nudge (one at a time, time-spread by the backend) ══ */}
+      {onboardingHint && !nudgeDismissed && (
+        <OnboardingNudge
+          hint={onboardingHint}
+          catalog={catalog}
+          progress={progress}
+          navigate={navigate}
+          onFeed={() => setTreatShopOpen(true)}
+          onClose={() => setNudgeDismissed(true)}
+          onShown={(h) => onHintSeen?.(h)}
+        />
+      )}
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
       <section className="px-5 pt-3 pb-4">

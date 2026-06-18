@@ -91,6 +91,7 @@ export default function App() {
   const [telegramId, setTelegramId] = useState<number | null>(null)
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
   const [vocabularyCount, setVocabularyCount] = useState<number>(0)
+  const [onboardingHint, setOnboardingHint] = useState<string | null>(null)
 
   // Load catalog + progress from backend on mount
   useEffect(() => {
@@ -114,6 +115,7 @@ export default function App() {
           setIsOwner((meData as any).isOwner ?? false)
           setTelegramId((meData as any).telegramId ?? null)
           setVocabularyCount((meData as any).vocabularyCount ?? 0)
+          setOnboardingHint((meData as any).onboardingHint ?? null)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         const deepLink = hasLevel ? parseDeepLink(catalogData) : null
@@ -325,6 +327,8 @@ export default function App() {
             isTrialActive={isTrialActive}
             trialDaysLeft={trialDaysLeft}
             shouldShowReferralExtensionCta={shouldShowReferralExtensionCta}
+            onboardingHint={onboardingHint}
+            onHintSeen={(h) => api.markOnboardingHintSeen(h).catch(() => {})}
             onPurchaseSuccess={handleProPurchaseSuccess}
             onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
             navigate={navigate}

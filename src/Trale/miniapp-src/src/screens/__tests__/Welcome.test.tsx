@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import Welcome from './Welcome'
+import Welcome from '../Welcome'
 
 // Walks the happy path: meet the letter → listening task → name task → win.
 async function playThrough(user: ReturnType<typeof userEvent.setup>) {
