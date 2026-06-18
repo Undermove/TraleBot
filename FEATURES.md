@@ -274,6 +274,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddTrialBonusDays` | Cumulative referral trial-bonus days on User; lets bonuses stack and survive trial expiry without rewriting RegisteredAtUtc. |
 | `AddUserNotificationsEnabled` | Per-user notifications opt-out flag on User (default on); toggled from the mini-app Profile, honoured by the D1+ return-push dispatch. |
 | `AddNotificationTriggers` | NotificationTrigger table (per-source last-sent timestamp + variant) backing the 7-day cooldown of the D1+ return-push dispatch. |
+| `MakeNotificationTriggerUnique` | Dedups existing rows and makes the NotificationTrigger (UserId, Source) index unique, so the atomic claim-before-send can't double-fire the return push across overlapping dispatch runs (incident 2026-06-17). |
 
 ---
 
