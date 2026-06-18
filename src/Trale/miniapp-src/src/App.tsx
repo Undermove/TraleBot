@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { CatalogDto, ProgressState, Screen } from './types'
 import { defaultProgress, progressFromDto } from './progress'
+import { resolveEntryScreen, hasEarnedXp } from './entryFlow'
 import { api } from './api'
 import Dashboard from './screens/Dashboard'
 import ModuleMap from './screens/ModuleMap'
@@ -16,6 +17,7 @@ import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
 import LandingScreen from './screens/LandingScreen'
 import Onboarding, { UserLevel } from './screens/Onboarding'
+import Welcome from './screens/Welcome'
 import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
 
@@ -97,9 +99,11 @@ export default function App() {
       .then(([catalogData, meData]) => {
         if (cancelled) return
         setCatalog(catalogData)
+        let loadedProgress = defaultProgress
         if (meData?.authenticated && meData.progress) {
           setAuthenticated(true)
-          setProgress(progressFromDto(meData.progress))
+          loadedProgress = progressFromDto(meData.progress)
+          setProgress(loadedProgress)
           if (meData.level === 'beginner' || meData.level === 'intermediate') {
             setUserLevel(meData.level)
           }
@@ -117,7 +121,10 @@ export default function App() {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
           window.history.replaceState({}, '', window.location.pathname)
         }
-        setScreen(deepLink ?? (hasLevel ? { kind: 'dashboard' } : { kind: 'onboarding' }))
+        // A push deep-link wins; otherwise resolveEntryScreen decides — a brand-new
+        // user (level but no XP) gets the welcome lesson, and the dashboard hub is
+        // revealed only once that first XP is earned. See entryFlow.resolveEntryScreen.
+        setScreen(deepLink ?? resolveEntryScreen({ hasLevel, progress: loadedProgress, catalog: catalogData }))
       })
       .catch(() => {
         if (cancelled) return
@@ -144,7 +151,15 @@ export default function App() {
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
     if (!tg?.BackButton) return
-    const canBack = screen.kind !== 'dashboard' && screen.kind !== 'loading'
+    // The welcome lesson is the brand-new-user entry point and, while the user
+    // hasn't earned any XP, so is the first lesson — no back button on either, so
+    // they can't slip past the soft onboarding into the hidden hub.
+    const inPreXpFirstLesson = !hasEarnedXp(progress) && screen.kind === 'lesson-theory'
+    const canBack =
+      screen.kind !== 'dashboard' &&
+      screen.kind !== 'loading' &&
+      screen.kind !== 'welcome' &&
+      !inPreXpFirstLesson
     if (canBack) {
       tg.BackButton.show()
     } else {
@@ -181,7 +196,7 @@ export default function App() {
         tg.BackButton.offClick(handler)
       } catch {}
     }
-  }, [screen])
+  }, [screen, progress.xp])
 
   if (loadError) {
     return (
@@ -266,6 +281,22 @@ export default function App() {
   )
 
   switch (screen.kind) {
+    case 'welcome':
+      return (
+        <Welcome
+          onFinish={() => {
+            // The welcome lesson is recorded under its own "welcome" module id, so it
+            // awards the first XP (flipping the entry gate to the dashboard) without
+            // touching the real alphabet progression. Navigate regardless of the API
+            // result so a transient failure doesn't trap the user on the welcome screen.
+            api
+              .completeLesson({ moduleId: 'welcome', lessonId: 1, correct: 1, total: 1 })
+              .then((res) => setProgress(progressFromDto(res.progress)))
+              .catch(() => {})
+              .finally(() => navigate({ kind: 'dashboard' }))
+          }}
+        />
+      )
     case 'onboarding':
       return (
         <Onboarding
@@ -275,7 +306,9 @@ export default function App() {
             if (authenticated) {
               api.setLevel(level).catch(() => {})
             }
-            navigate({ kind: 'dashboard' })
+            // Fresh user → welcome lesson (one-letter quick win); the dashboard hub is
+            // revealed only after that first XP is earned.
+            navigate(resolveEntryScreen({ hasLevel: true, progress, catalog }))
           }}
         />
       )
