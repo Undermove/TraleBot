@@ -35,6 +35,51 @@ public class TraleDbContext : DbContext, ITraleDbContext
     {
         return await Database.BeginTransactionAsync(cancellationToken);
     }
+
+    public async Task<bool> TryClaimNotificationTriggerAsync(
+        long userId, string source, string? variant, DateTime now, DateTime cutoff, CancellationToken cancellationToken)
+    {
+        if (Database.IsNpgsql())
+        {
+            // Single-statement atomic claim. The unique (UserId, Source) index turns the
+            // second concurrent caller into an ON CONFLICT: it refreshes the row only when the
+            // previous send is older than the cooldown cutoff, otherwise it touches nothing.
+            // Affected-row count is 1 exactly when THIS caller inserted or refreshed the slot,
+            // and 0 when a fresh trigger already exists — so concurrent runs can't both "win".
+            var affected = await Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "NotificationTriggers" ("Id", "UserId", "Source", "LastSentAt", "Variant")
+                VALUES ({Guid.NewGuid()}, {userId}, {source}, {now}, {variant})
+                ON CONFLICT ("UserId", "Source") DO UPDATE
+                    SET "LastSentAt" = EXCLUDED."LastSentAt", "Variant" = EXCLUDED."Variant"
+                    WHERE "NotificationTriggers"."LastSentAt" <= {cutoff}
+                """, cancellationToken);
+            return affected > 0;
+        }
+
+        // Non-relational providers (EF in-memory unit tests) can't run the raw upsert and don't
+        // enforce the unique index. Emulate the claim with tracked entities; these tests are
+        // single-threaded, so atomicity isn't needed — only the same win/lose decision.
+        var existing = await NotificationTriggers
+            .FirstOrDefaultAsync(t => t.UserId == userId && t.Source == source, cancellationToken);
+        if (existing is null)
+        {
+            NotificationTriggers.Add(new NotificationTrigger
+            {
+                Id = Guid.NewGuid(), UserId = userId, Source = source, LastSentAt = now, Variant = variant
+            });
+            await SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        if (existing.LastSentAt <= cutoff)
+        {
+            existing.LastSentAt = now;
+            existing.Variant = variant;
+            await SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        return false;
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
