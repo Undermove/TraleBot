@@ -18,6 +18,10 @@ public class NotificationTriggerConfiguration : IEntityTypeConfiguration<Notific
         // UserId stores the Telegram ID (long), not the User PK (Guid). No FK relationship:
         // HasPrincipalKey(TelegramId) would promote TelegramId to an alternate key, breaking
         // EF identity tracking in tests that share TelegramId values.
-        builder.HasIndex(x => new { x.UserId, x.Source });
+        //
+        // Unique: one trigger row per (user, source). This is the backstop that lets
+        // TryClaimNotificationTriggerAsync use INSERT … ON CONFLICT so concurrent/overlapping
+        // dispatch runs can't each insert a row and double-send (incident 2026-06-17).
+        builder.HasIndex(x => new { x.UserId, x.Source }).IsUnique();
     }
 }

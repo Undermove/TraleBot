@@ -48,28 +48,12 @@ public class DailyReturnNotificationService(
         if (users.Count == 0) return;
 
         var userMap = users.ToDictionary(u => u.Id);
-        var telegramIds = users.Select(u => u.TelegramId).ToList();
-
-        var triggers = await db.NotificationTriggers
-            .Where(t => telegramIds.Contains(t.UserId) && t.Source == Source)
-            .ToListAsync(ct);
-        var triggerMap = triggers.ToDictionary(t => t.UserId);
+        var cooldownCutoff = now - CooldownPeriod;
 
         foreach (var progress in progressList)
         {
             if (!userMap.TryGetValue(progress.UserId, out var user))
                 continue;
-
-            triggerMap.TryGetValue(user.TelegramId, out var trigger);
-
-            // Cooldown: skip if pinged within the last 7 days.
-            if (trigger != null && trigger.LastSentAt > now - CooldownPeriod)
-            {
-                _logger.LogInformation(
-                    "User {TelegramId} skipped — daily-return cooldown (lastSentAt={LastSentAt})",
-                    user.TelegramId, trigger.LastSentAt);
-                continue;
-            }
 
             var completedLessons = ParseCompletedLessons(progress.CompletedLessonsJson);
             var validModules = completedLessons
@@ -88,27 +72,22 @@ public class DailyReturnNotificationService(
             var availableXp = Math.Max(0, progress.Xp - progress.XpSpent);
             var variant = availableXp >= CheapestTreatXp ? "feed" : "earn";
 
+            // Claim the slot BEFORE sending: the cooldown check and the trigger write are now a
+            // single atomic step, so two overlapping dispatch runs can't both pass the check and
+            // both send (the 2026-06-17 double-send). Losing the claim means another run already
+            // sent it, or the 7-day cooldown is still active — either way, skip.
+            var claimed = await db.TryClaimNotificationTriggerAsync(
+                user.TelegramId, Source, variant, DateTime.UtcNow, cooldownCutoff, ct);
+            if (!claimed)
+            {
+                _logger.LogInformation(
+                    "User {TelegramId} skipped — daily-return already claimed (cooldown or concurrent run)",
+                    user.TelegramId);
+                continue;
+            }
+
             await notificationService.SendDailyReturnPushAsync(
                 user, moduleId, moduleId, nextLessonId, variant, availableXp, ct);
-
-            var sentAt = DateTime.UtcNow;
-            if (trigger != null)
-            {
-                trigger.LastSentAt = sentAt;
-                trigger.Variant = variant;
-            }
-            else
-            {
-                db.NotificationTriggers.Add(new NotificationTrigger
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.TelegramId,
-                    Source = Source,
-                    LastSentAt = sentAt,
-                    Variant = variant
-                });
-            }
-            await db.SaveChangesAsync(ct);
         }
     }
 
