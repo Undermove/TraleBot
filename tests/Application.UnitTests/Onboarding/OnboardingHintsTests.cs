@@ -13,8 +13,8 @@ public class OnboardingHintsTests
 
     private static OnboardingSignals Signals(
         int realLessons = 0, int distinctModules = 0, int availableXp = 0,
-        int treatsGiven = 0, int vocab = 0) =>
-        new(realLessons, distinctModules, availableXp, treatsGiven, vocab);
+        int treatsGiven = 0, int vocab = 0, bool completedWelcome = true) =>
+        new(realLessons, distinctModules, availableXp, treatsGiven, vocab, completedWelcome);
 
     private static OnboardingHintState State(DateTime? lastShownAt = null, params string[] seen) =>
         new(new HashSet<string>(seen), lastShownAt);
@@ -24,6 +24,18 @@ public class OnboardingHintsTests
     {
         OnboardingHints.ResolveActiveHint(Signals(realLessons: 0), State(), Now)
             .ShouldBe(OnboardingHints.FirstLesson);
+    }
+
+    [Test]
+    public void Existing_user_who_never_did_the_welcome_lesson_gets_no_hints()
+    {
+        // An established user (registered before the welcome lesson) would otherwise match
+        // feed_bombora — but no welcome means they're not in the onboarding journey at all.
+        OnboardingHints.ResolveActiveHint(
+                Signals(realLessons: 40, availableXp: 200, treatsGiven: 0, vocab: 0, completedWelcome: false),
+                State(),
+                Now)
+            .ShouldBeNull();
     }
 
     [Test]

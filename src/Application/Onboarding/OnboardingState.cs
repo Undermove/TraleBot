@@ -60,13 +60,15 @@ public static class OnboardingState
         var realLessons = realModules.Sum(kv => kv.Value.Count);
         var distinctModules = realModules.Count;
         var availableXp = Math.Max(0, progress.Xp - progress.XpSpent);
+        var completedWelcome = completed.TryGetValue(WelcomeModuleId, out var w) && w.Count > 0;
 
         return new OnboardingSignals(
             RealLessonsCompleted: realLessons,
             DistinctRealModules: distinctModules,
             AvailableXp: availableXp,
             TotalTreatsGiven: progress.TotalTreatsGiven,
-            VocabularyCount: vocabularyCount);
+            VocabularyCount: vocabularyCount,
+            CompletedWelcome: completedWelcome);
     }
 
     private static Dictionary<string, List<int>> ParseCompletedLessons(string json)
