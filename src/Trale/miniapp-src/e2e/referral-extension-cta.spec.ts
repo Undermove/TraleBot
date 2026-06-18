@@ -10,10 +10,12 @@ const baseMe = {
   level: 'intermediate',
   vocabularyCount: 0,
   progress: {
-    xp: 0,
+    // xp > 0 so the user is past the first-lesson gate and lands on the
+    // dashboard, where the referral CTA / trial banners under test live.
+    xp: 200,
     streak: 0,
     lastPlayedAtUtc: null,
-    completedLessons: {},
+    completedLessons: { 'alphabet-progressive': [1] },
     xpSpent: 0,
     totalTreatsGiven: 0,
     lastFedAtUtc: null,

@@ -93,6 +93,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
 | `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
+| `Welcome.tsx` | `welcome` | Soft-onboarding first lesson: meet letter ა (name + sound + audio), a listening task and a name task; awards the first XP before the hub is revealed. |
 | `LandingScreen.tsx` | n/a | Marketing page when Telegram context is missing. |
 | `AdminScreen.tsx` | `admin` (owner only) | Bot stats dashboard. |
 | `AdminUserScreen.tsx` | `admin-user` (owner only) | Inspect a single user; grant/revoke Pro. |
