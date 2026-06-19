@@ -55,6 +55,9 @@ public static class DependencyInjection
         services.AddScoped<GetUserVocabularyQuery>();
         services.AddScoped<FeedTreatService>();
 
+        // Acquisition attribution (per ARCHITECTURE.md, no MediatR)
+        services.AddScoped<RecordAcquisitionSourceService>();
+
         // Referral services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<RecordReferralLinkService>();
         services.AddScoped<TryActivateReferralService>();

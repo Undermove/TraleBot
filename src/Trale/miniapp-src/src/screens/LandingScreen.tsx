@@ -136,7 +136,9 @@ const FAQ_ITEMS = [
 // ── Main screen ──────────────────────────────────────────────────────────────
 
 export default function LandingScreen({ botUsername }: Props) {
-  const tgLink = `https://t.me/${botUsername ?? 'trale_bot'}`
+  // ?start=site tags everyone who opens the bot from this landing, so acquisition
+  // analytics can tell site visitors apart from channel/post/direct traffic.
+  const tgLink = `https://t.me/${botUsername ?? 'trale_bot'}?start=site`
 
   return (
     <div className="flex flex-col min-h-full bg-cream">

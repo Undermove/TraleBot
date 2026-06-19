@@ -55,9 +55,10 @@ public class StartCommandShould
             MiniAppEnabled = miniAppEnabled
         };
 
-        // RecordReferralLinkService is never called in the returning-user /start flow
-        // (only triggered when args contain "ref_" prefix). Safe to pass null.
-        return new StartCommand(_mockClient.Object, _mockMediator.Object, botConfig, null!, NullLoggerFactory.Instance);
+        // RecordReferralLinkService / RecordAcquisitionSourceService are never called
+        // in the returning-user /start flow (only on "ref_" / source-tag args). Safe
+        // to pass null.
+        return new StartCommand(_mockClient.Object, _mockMediator.Object, botConfig, null!, null!, NullLoggerFactory.Instance);
     }
 
     private static TelegramRequest BuildReturningUserRequest(long telegramId, Language language)

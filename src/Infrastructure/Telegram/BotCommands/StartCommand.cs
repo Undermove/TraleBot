@@ -17,6 +17,7 @@ public class StartCommand(
     IMediator mediator,
     BotConfiguration botConfig,
     RecordReferralLinkService referralRecorder,
+    RecordAcquisitionSourceService acquisitionRecorder,
     ILoggerFactory loggerFactory) : IBotCommand
 {
     private const string ReferralPrefix = "ref_";
@@ -64,12 +65,12 @@ public class StartCommand(
                         user.Id, referrerTelegramId, refResult);
                 }
             }
-            else
+            else if (Guid.TryParse(arg, out var shareableQuizId))
             {
                 var result = await mediator.Send(new CreateQuizFromShareableCommand
                 {
                     UserId = request.User?.Id ?? user!.Id,
-                    ShareableQuizId = Guid.Parse(arg)
+                    ShareableQuizId = shareableQuizId
                 }, token);
 
                 await (result switch
@@ -80,6 +81,17 @@ public class StartCommand(
                 });
 
                 return;
+            }
+            else
+            {
+                // Any other payload is an acquisition source tag from a deep-link,
+                // e.g. t.me/trale_bot?start=site. First-touch only — the service
+                // ignores it if malformed or the user already has a source. Falls
+                // through to the normal welcome flow below.
+                var srcResult = await acquisitionRecorder.ExecuteAsync(user!.Id, arg, token);
+                _logger.LogInformation(
+                    "Acquisition source from /start: user {User} tag {Tag} → {Result}",
+                    user.Id, arg, srcResult);
             }
         }
 

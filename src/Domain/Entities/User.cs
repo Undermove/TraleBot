@@ -26,6 +26,15 @@ public class User
     public bool NotificationsEnabled { get; set; } = true;
     public DateTime? ProPurchasedAtUtc { get; set; }
     public SubscriptionPlan? SubscriptionPlan { get; set; }
+
+    /// <summary>
+    /// First-touch acquisition source, captured from the /start deep-link payload
+    /// (e.g. "site", "channel_neuralfordevs") or the mini-app start_param. Null for
+    /// users who arrived before attribution shipped or with no source tag. Set once
+    /// and never overwritten, so it reflects where the user originally came from.
+    /// Sanitized to [A-Za-z0-9_-], lower-cased, max 64 chars.
+    /// </summary>
+    public string? AcquisitionSource { get; set; }
     public virtual UserSettings Settings { get; set; }
     public virtual ICollection<VocabularyEntry> VocabularyEntries { get; set; }
     public virtual ICollection<Quiz> Quizzes { get; set; }
