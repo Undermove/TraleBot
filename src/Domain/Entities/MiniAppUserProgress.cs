@@ -48,6 +48,15 @@ public class MiniAppUserProgress
     public string? OnboardingHintsJson { get; set; }
 
     /// <summary>
+    /// JSON array of ISO-8601 UTC timestamps, one per distinct UTC day the user
+    /// played the mini-app. Backs the profile activity heatmap: mini-app plays
+    /// otherwise leave only the single <see cref="LastPlayedAtUtc"/> point, so
+    /// without this log a daily learner would light up just one cell.
+    /// Null until the first play after this column shipped.
+    /// </summary>
+    public string? ActivityDaysJson { get; set; }
+
+    /// <summary>
     /// Total XP spent on treats in the treat shop.
     /// Available XP = Xp - XpSpent.
     /// </summary>

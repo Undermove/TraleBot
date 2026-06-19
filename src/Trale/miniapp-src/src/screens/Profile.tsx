@@ -209,9 +209,12 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           <div className="relative z-[1]">
             <StreakHeatmap activityDates={activityDates} days={35} />
             <div className="font-sans text-[11px] text-jewelInk-mid text-center mt-2">
-              {activityDates.size > 0
-                ? `${activityDates.size} ${plural(activityDates.size, 'день', 'дня', 'дней')} с активностью`
-                : 'Сделай первый шаг — добавь слово или пройди урок'}
+              {(() => {
+                const activeCount = activeDaysInWindow(activityDates, 35)
+                return activeCount > 0
+                  ? `${activeCount} ${plural(activeCount, 'день', 'дня', 'дней')} с активностью`
+                  : 'Сделай первый шаг — добавь слово или пройди урок'
+              })()}
             </div>
           </div>
         </div>
@@ -601,27 +604,61 @@ function plural(n: number, one: string, two: string, many: string): string {
 // Georgian weekday abbreviations Mon–Sun: ორ/სამ/ოთხ/ხუთ/პარ/შაბ/კვირ
 const WEEKDAY_LABELS = ['ო', 'ს', 'ო', 'ხ', 'პ', 'შ', 'კ']
 
-function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; days: number }) {
+// Mon-first column index (0=Mon … 6=Sun) for a date — matches WEEKDAY_LABELS order.
+export function mondayFirstColumn(d: Date): number {
+  return (d.getDay() + 6) % 7
+}
+
+// Count of distinct local days with activity inside the last `days` window.
+// Drives the caption so the number always matches the lit cells the user sees.
+export function activeDaysInWindow(activityDates: Set<string>, days: number): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  let n = 0
+  for (let i = 0; i < days; i++) {
+    const d = new Date(today)
+    d.setDate(today.getDate() - i)
+    if (activityDates.has(localDateKey(d))) n++
+  }
+  return n
+}
+
+export function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; days: number }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Map getDay() (0=Sun…6=Sat) to Mon-first column index
-  const todayColumnIndex = (today.getDay() + 6) % 7
+  const todayColumnIndex = mondayFirstColumn(today)
 
-  const cells: { date: string; active: boolean; isToday: boolean }[] = []
+  // The `days` calendar days ending today.
+  const dayCells: { date: string; active: boolean; isToday: boolean }[] = []
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today)
     d.setDate(today.getDate() - i)
     const key = localDateKey(d)
-    cells.push({
+    dayCells.push({
       date: key,
       active: activityDates.has(key),
       isToday: i === 0
     })
   }
 
-  // Render as 5 rows × 7 columns (oldest top-left, today bottom-right)
-  const rows: typeof cells[] = []
+  // Pad so every column lines up with its weekday label: leading blanks before the
+  // first day's weekday, trailing blanks after today to finish the last week row.
+  // (Previously today was always forced into the last column, so the labels lied
+  // unless today happened to be Sunday.)
+  const firstDay = new Date(today)
+  firstDay.setDate(today.getDate() - (days - 1))
+  const leading = mondayFirstColumn(firstDay)
+  const trailing = 6 - todayColumnIndex
+
+  type Cell = { date: string; active: boolean; isToday: boolean } | null
+  const cells: Cell[] = [
+    ...Array.from<unknown, Cell>({ length: leading }, () => null),
+    ...dayCells,
+    ...Array.from<unknown, Cell>({ length: trailing }, () => null)
+  ]
+
+  const rows: Cell[][] = []
   for (let i = 0; i < cells.length; i += 7) {
     rows.push(cells.slice(i, i + 7))
   }
@@ -646,18 +683,22 @@ function StreakHeatmap({ activityDates, days }: { activityDates: Set<string>; da
       </div>
       {rows.map((row, ri) => (
         <div key={ri} className="flex gap-1.5">
-          {row.map((c) => (
-            <div
-              key={c.date}
-              title={c.date}
-              className="w-6 h-6 rounded border-[1.5px] border-jewelInk"
-              style={{
-                background: c.active ? '#1B5FB0' : 'rgba(21,16,10,0.06)',
-                outline: c.isToday ? '2px solid #F5B820' : 'none',
-                outlineOffset: c.isToday ? '1px' : undefined
-              }}
-            />
-          ))}
+          {row.map((c, ci) =>
+            c === null ? (
+              <div key={`blank-${ri}-${ci}`} className="w-6 h-6" />
+            ) : (
+              <div
+                key={c.date}
+                title={c.date}
+                className="w-6 h-6 rounded border-[1.5px] border-jewelInk"
+                style={{
+                  background: c.active ? '#1B5FB0' : 'rgba(21,16,10,0.06)',
+                  outline: c.isToday ? '2px solid #F5B820' : 'none',
+                  outlineOffset: c.isToday ? '1px' : undefined
+                }}
+              />
+            )
+          )}
         </div>
       ))}
     </div>

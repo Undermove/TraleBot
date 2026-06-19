@@ -42,6 +42,15 @@ public class GetActivityDaysQuery(ITraleDbContext db)
             .Select(p => p.LastPlayedAtUtc)
             .ToListAsync(ct);
 
+        // Per-day mini-app play log — the primary source for the heatmap. Without it
+        // daily play contributes only the single LastPlayedAtUtc point above, so a
+        // learner with a long streak would still light up just one cell.
+        var activityDaysJson = await db.MiniAppUserProgresses
+            .Where(p => p.UserId == userId)
+            .Select(p => p.ActivityDaysJson)
+            .FirstOrDefaultAsync(ct);
+        var playDays = ParseActivityDays(activityDaysJson).Where(d => d >= since);
+
         var achievementDates = await db.Achievements
             .Where(a => a.UserId == userId && a.DateAddedUtc >= since)
             .Select(a => a.DateAddedUtc)
@@ -50,6 +59,7 @@ public class GetActivityDaysQuery(ITraleDbContext db)
         var all = vocabDates
             .Concat(quizDates)
             .Concat(lastPlayed.Where(d => d.HasValue).Select(d => d!.Value))
+            .Concat(playDays)
             .Concat(achievementDates);
 
         // Return ISO 8601 timestamps with explicit UTC marker. Frontend converts
@@ -58,5 +68,32 @@ public class GetActivityDaysQuery(ITraleDbContext db)
             .OrderBy(d => d)
             .Select(d => DateTime.SpecifyKind(d, DateTimeKind.Utc).ToString("yyyy-MM-ddTHH:mm:ssZ"))
             .ToList();
+    }
+
+    // ActivityDaysJson is a JSON array of ISO-8601 UTC timestamps written by the
+    // mini-app on each played day. Malformed/empty json yields no dates.
+    private static List<DateTime> ParseActivityDays(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new();
+        try
+        {
+            var raw = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? new();
+            var result = new List<DateTime>(raw.Count);
+            foreach (var s in raw)
+            {
+                if (DateTime.TryParse(s, null,
+                        System.Globalization.DateTimeStyles.AdjustToUniversal |
+                        System.Globalization.DateTimeStyles.AssumeUniversal,
+                        out var dt))
+                {
+                    result.Add(DateTime.SpecifyKind(dt, DateTimeKind.Utc));
+                }
+            }
+            return result;
+        }
+        catch
+        {
+            return new();
+        }
     }
 }

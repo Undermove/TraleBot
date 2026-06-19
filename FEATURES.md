@@ -277,6 +277,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddNotificationTriggers` | NotificationTrigger table (per-source last-sent timestamp + variant) backing the 7-day cooldown of the D1+ return-push dispatch. |
 | `MakeNotificationTriggerUnique` | Dedups existing rows and makes the NotificationTrigger (UserId, Source) index unique, so the atomic claim-before-send can't double-fire the return push across overlapping dispatch runs (incident 2026-06-17). |
 | `AddOnboardingHintsJson` | Adds nullable OnboardingHintsJson to MiniAppUserProgress — persisted state (seen hints + lastShownAt) for the contextual, time-spread onboarding nudges. |
+| `AddActivityDaysJson` | Adds nullable ActivityDaysJson to MiniAppUserProgress — per-day mini-app play log (one UTC timestamp per played day) so the profile activity heatmap lights one cell per played day instead of only the single LastPlayedAtUtc point. |
 
 ---
 
