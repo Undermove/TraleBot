@@ -56,6 +56,7 @@ public class MiniAppController : Controller
     private readonly MonetizationMetrics _metrics;
     private readonly ILogger<MiniAppController> _logger;
     private readonly FeedTreatService _feedTreatService;
+    private readonly RecordAcquisitionSourceService _acquisitionRecorder;
 
     public MiniAppController(
         IGeorgianQuestionsLoaderFactory questionsLoaderFactory,
@@ -66,7 +67,8 @@ public class MiniAppController : Controller
         ITelegramBotClient telegramBotClient,
         MonetizationMetrics metrics,
         ILogger<MiniAppController> logger,
-        FeedTreatService feedTreatService)
+        FeedTreatService feedTreatService,
+        RecordAcquisitionSourceService acquisitionRecorder)
     {
         _questionsLoaderFactory = questionsLoaderFactory;
         _dbContext = dbContext;
@@ -77,6 +79,7 @@ public class MiniAppController : Controller
         _metrics = metrics;
         _logger = logger;
         _feedTreatService = feedTreatService;
+        _acquisitionRecorder = acquisitionRecorder;
     }
 
     [HttpGet("ping")]
@@ -737,6 +740,18 @@ public class MiniAppController : Controller
         var user = await _dbContext.Users
             .Include(u => u.Settings)
             .FirstOrDefaultAsync(u => u.TelegramId == telegramId.Value, ct);
+
+        // First-touch attribution for users who arrive straight into the mini-app via
+        // a t.me/bot/app?startapp=<source> deep-link. Only when the user has no source
+        // yet; the service no-ops otherwise, so this stays a one-time write.
+        if (user != null && string.IsNullOrEmpty(user.AcquisitionSource))
+        {
+            var startParam = TelegramInitDataValidator.TryGetStartParam(initData);
+            if (startParam != null)
+            {
+                await _acquisitionRecorder.ExecuteAsync(user.Id, startParam, ct);
+            }
+        }
 
         return user;
     }

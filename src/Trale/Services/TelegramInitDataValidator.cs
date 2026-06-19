@@ -79,4 +79,18 @@ public static class TelegramInitDataValidator
 
         return null;
     }
+
+    /// <summary>
+    /// Extracts the mini-app start_param (from a t.me/bot/app?startapp=... deep-link)
+    /// out of initData. Does NOT validate the hash — call only after
+    /// <see cref="ValidateAndGetUserId"/> has authenticated the same initData string.
+    /// Returns null when absent.
+    /// </summary>
+    public static string? TryGetStartParam(string initData)
+    {
+        if (string.IsNullOrWhiteSpace(initData)) return null;
+        var parsed = HttpUtility.ParseQueryString(initData);
+        var startParam = parsed["start_param"];
+        return string.IsNullOrWhiteSpace(startParam) ? null : startParam;
+    }
 }
