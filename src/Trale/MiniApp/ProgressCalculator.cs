@@ -65,6 +65,7 @@ public class ProgressCalculator : IProgressCalculator
             }
         }
         progress.LastPlayedAtUtc = DateTime.UtcNow;
+        RecordActivityDay(progress, DateTime.UtcNow);
 
         // Record completion — only on 100%, skip "vocabulary" pseudo-module
         var lessonCompleted = false;
@@ -99,6 +100,52 @@ public class ProgressCalculator : IProgressCalculator
             lastFedAtUtc = progress.LastFedAtUtc,
             lastTreatIndex = progress.LastTreatIndex
         };
+    }
+
+    // Append nowUtc to the activity-days log unless this UTC day is already recorded.
+    // Stored as a JSON array of ISO-8601 UTC timestamps (one per played UTC day);
+    // the frontend localizes each to the user's date for the heatmap. Bounded to the
+    // most recent year so the column can't grow without limit.
+    private static void RecordActivityDay(MiniAppUserProgress progress, DateTime nowUtc)
+    {
+        var days = ParseActivityDays(progress.ActivityDaysJson);
+
+        var today = nowUtc.Date;
+        if (days.Exists(d => d.Date == today)) return;
+
+        days.Add(nowUtc);
+        days.Sort();
+        var cutoff = today.AddDays(-366);
+        days.RemoveAll(d => d.Date < cutoff);
+
+        progress.ActivityDaysJson = JsonSerializer.Serialize(
+            days.ConvertAll(d => DateTime.SpecifyKind(d, DateTimeKind.Utc)
+                .ToString("yyyy-MM-ddTHH:mm:ssZ")));
+    }
+
+    private static List<DateTime> ParseActivityDays(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new();
+        try
+        {
+            var raw = JsonSerializer.Deserialize<List<string>>(json) ?? new();
+            var result = new List<DateTime>(raw.Count);
+            foreach (var s in raw)
+            {
+                if (DateTime.TryParse(s, null,
+                        System.Globalization.DateTimeStyles.AdjustToUniversal |
+                        System.Globalization.DateTimeStyles.AssumeUniversal,
+                        out var dt))
+                {
+                    result.Add(DateTime.SpecifyKind(dt, DateTimeKind.Utc));
+                }
+            }
+            return result;
+        }
+        catch
+        {
+            return new();
+        }
     }
 
     private static Dictionary<string, List<int>> ParseCompletedLessons(string json)
