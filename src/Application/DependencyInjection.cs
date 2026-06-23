@@ -8,6 +8,7 @@ using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
 using Application.Common.Interfaces;
 using Application.Notifications;
+using Application.Notifications.Holidays;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -29,6 +30,9 @@ public static class DependencyInjection
         services.AddScoped<DailyReturnNotificationService>();
         services.AddScoped<IDailyReturnNotificationService>(
             sp => sp.GetRequiredService<DailyReturnNotificationService>());
+
+        // Holiday catalog (#894 / #992). Pure stateless lookup — singleton.
+        services.AddSingleton<IHolidayCalendarService, HolidayCalendarService>();
 
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();
