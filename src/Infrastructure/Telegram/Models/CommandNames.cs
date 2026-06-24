@@ -38,6 +38,9 @@ public static class CommandNames
     // achievements commands
     public const string Achievements = "/achievements";
     public const string AchievementsIcon = "📊";
+
+    // notifications commands
+    public const string Notifications = "/notifications";
     
     // language commands
     public const string ChangeTranslationLanguage = "/changetranslation";
