@@ -42,6 +42,7 @@ builder.Services.AddHostedService<CreateWebhook>();
 builder.Services.AddHostedService<IdempotencyCleanupService>();
 builder.Services.AddHostedService<Trale.HostedServices.PendingReferralsWorker>();
 builder.Services.AddHostedService<ReturnPushWorker>();
+builder.Services.AddHostedService<HourlyNotificationWorker>();
 
 builder.WebHost.UseUrls("http://*:1402/");
 var app = builder.Build();

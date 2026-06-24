@@ -222,6 +222,7 @@ Location: `src/Trale/HostedServices/`.
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
 | `ReturnPushWorker` | Daily at 10:00 UTC | Dispatch D1+ return push to users who started a lesson but didn't return (#940). |
+| `HourlyNotificationWorker` | Every top-of-hour UTC | Fan-out tick for contextual pushes — calls `IHolidayNotificationService` / `ICoinsNotificationService` / `IStreakNotificationService` with fault-isolation. Holiday push uses `TbilisiMorningWindow` to fire only at 09:xx Tbilisi (#997, epic #894). |
 
 ---
 
