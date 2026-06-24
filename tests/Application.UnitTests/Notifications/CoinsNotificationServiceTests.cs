@@ -59,13 +59,21 @@ public class CoinsNotificationServiceTests : CommandTestsBase
         return user;
     }
 
-    private void VerifyPushSent(Times times, int? expectedXp = null) =>
+    private void VerifyPushSent(Times times) =>
         _notificationServiceMock.Verify(
             s => s.SendCoinsStalePushAsync(
                 It.Is<User>(u => u.TelegramId == TestTelegramId),
-                expectedXp.HasValue ? It.Is<int>(x => x == expectedXp.Value) : It.IsAny<int>(),
+                It.IsAny<int>(),
                 It.IsAny<CancellationToken>()),
             times);
+
+    private void VerifyPushSentWithXp(int expectedXp) =>
+        _notificationServiceMock.Verify(
+            s => s.SendCoinsStalePushAsync(
+                It.Is<User>(u => u.TelegramId == TestTelegramId),
+                expectedXp,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
 
     [Test]
     public async Task DispatchAsync_BalanceAtThresholdAndStaleFeeding_SendsPushAndRecordsTrigger()
@@ -75,7 +83,7 @@ public class CoinsNotificationServiceTests : CommandTestsBase
 
         await _sut.DispatchAsync(CancellationToken.None);
 
-        VerifyPushSent(Times.Once(), expectedXp: 50);
+        VerifyPushSentWithXp(50);
         var trigger = Context.NotificationTriggers
             .FirstOrDefault(t => t.UserId == TestTelegramId && t.Source == "coins");
         trigger.ShouldNotBeNull();
@@ -90,7 +98,7 @@ public class CoinsNotificationServiceTests : CommandTestsBase
 
         await _sut.DispatchAsync(CancellationToken.None);
 
-        VerifyPushSent(Times.Once(), expectedXp: 80);
+        VerifyPushSentWithXp(80);
     }
 
     [Test]

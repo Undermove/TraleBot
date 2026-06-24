@@ -200,6 +200,66 @@ public class TelegramNotificationService : IUserNotificationService
         });
     }
 
+    public async Task SendCoinsStalePushAsync(Domain.Entities.User user, int availableXp, CancellationToken ct)
+    {
+        var text = BuildCoinsStalePushText(availableXp);
+        var keyboard = BuildCoinsStaleKeyboard();
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Coins-stale push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Coins-stale push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    /// <summary>
+    /// AC2b copy. Carries the Georgian phrase, Russian-letter transliteration and translation
+    /// so users who can't read Mkhedruli still get the joke; the XP hint anchors the nudge in
+    /// concrete numbers ("у тебя 80 XP — хватит на угощение").
+    /// </summary>
+    internal static string BuildCoinsStalePushText(int availableXp) =>
+        $"У тебя ⭐ {availableXp} XP — хватит на угощение для Бомборы 🦴\n" +
+        "ბომბორა გახარდება! — Бомбора гахардэба! — Бомбора обрадуется!\n" +
+        "Заглянешь покормить?";
+
+    private InlineKeyboardMarkup BuildCoinsStaleKeyboard()
+    {
+        var url = $"{_botConfig.NormalizedHost()}/?screen=feed";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Покормить Бомбору 🦴", new WebAppInfo { Url = url })
+            }
+        });
+    }
+
     private InlineKeyboardMarkup BuildDailyReturnPushKeyboard(string variant, string moduleId, int lessonId)
     {
         var host = _botConfig.NormalizedHost();

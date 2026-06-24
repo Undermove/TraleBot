@@ -36,6 +36,12 @@ public static class DependencyInjection
         services.AddScoped<IStreakNotificationService>(
             sp => sp.GetRequiredService<StreakNotificationService>());
 
+        // Coins-stale push (epic #894, §82, #994). Same registration shape as the streak service
+        // so HourlyNotificationWorker can fan it out via DispatchSafelyAsync<ICoinsNotificationService>.
+        services.AddScoped<CoinsNotificationService>();
+        services.AddScoped<ICoinsNotificationService>(
+            sp => sp.GetRequiredService<CoinsNotificationService>());
+
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();
         services.AddScoped<ITranslationModule, GeorgianTranslationModule>();

@@ -32,4 +32,13 @@ public interface IUserNotificationService
     /// delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
     /// </summary>
     Task SendStreakMilestonePushAsync(User user, int milestone, CancellationToken ct);
+
+    /// <summary>
+    /// Coins-stale push (epic #894, §82, #994): the user has <paramref name="availableXp"/>
+    /// spendable XP but hasn't fed Bombora in 7+ days. Body carries the «ბომბორა გახარდება»
+    /// phrase with transliteration and translation; the WebApp button deep-links to
+    /// <c>?screen=feed</c>. 403 → user flagged inactive; 429 → single retry after the
+    /// suggested delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
+    /// </summary>
+    Task SendCoinsStalePushAsync(User user, int availableXp, CancellationToken ct);
 }
