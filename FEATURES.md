@@ -378,6 +378,8 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `DailyReturnNotificationService` — D1+ return push, picks least-progressed module, claim-before-send (#940)
 - `StreakNotificationService` — streak-milestone push at exact 7 / 30 / 100 days; per-milestone `streak_{n}` trigger (epic #894, §82, #995)
 - `CoinsNotificationService` — coins-stale push when ≥50 spendable XP + no feeding in 7d; 7-day cooldown via `coins` trigger (epic #894, §82, #994)
+- `HolidayCalendarService` — pure lookup over the V1 Georgian holiday catalog (9 fixed dates + Julian Easter) used by the holiday push (epic #894, §82, #992)
+- `HolidayNotificationService` — celebratory push on Georgian holidays; 24h cooldown via `holiday` trigger with `Variant=Holiday.Key` (epic #894, §82, #993)
 
 ### Feature flags
 - `BotConfiguration.MiniAppEnabled` — toggles mini-app menu button and Georgian returning-user `/start`.

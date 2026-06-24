@@ -8,6 +8,7 @@ using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
 using Application.Common.Interfaces;
 using Application.Notifications;
+using Application.Notifications.Holidays;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -41,6 +42,16 @@ public static class DependencyInjection
         services.AddScoped<CoinsNotificationService>();
         services.AddScoped<ICoinsNotificationService>(
             sp => sp.GetRequiredService<CoinsNotificationService>());
+
+        // Holiday catalog (#894 / #992). Pure stateless lookup — singleton.
+        services.AddSingleton<IHolidayCalendarService, HolidayCalendarService>();
+
+        // Holiday push dispatcher (#894 / §82, #993). Reads today's Tbilisi holiday from
+        // the calendar service and fans out the celebratory push to opted-in active users
+        // with a 24h per-day cooldown.
+        services.AddScoped<HolidayNotificationService>();
+        services.AddScoped<IHolidayNotificationService>(
+            sp => sp.GetRequiredService<HolidayNotificationService>());
 
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();

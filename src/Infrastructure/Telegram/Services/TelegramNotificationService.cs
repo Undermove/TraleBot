@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Notifications.Holidays;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using Microsoft.Extensions.Logging;
@@ -256,6 +257,62 @@ public class TelegramNotificationService : IUserNotificationService
             new[]
             {
                 InlineKeyboardButton.WithWebApp("Покормить Бомбору 🦴", new WebAppInfo { Url = url })
+            }
+        });
+    }
+
+    public async Task SendHolidayPushAsync(Domain.Entities.User user, Holiday holiday, CancellationToken ct)
+    {
+        var text = BuildHolidayPushText(holiday);
+        var keyboard = BuildHolidayPushKeyboard();
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Holiday push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Holiday push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    // Spec §82 §«Структура пуша»: Russian name on its own line, then Georgian phrase,
+    // then transliteration — translation. Easter already carries the traditional phrase
+    // ("ქრისტე აღდგა!"), so the same template works without an Easter-specific branch.
+    internal static string BuildHolidayPushText(Holiday holiday) =>
+        $"{holiday.RussianName}\n{holiday.GeorgianPhrase}\n{holiday.Transliteration} — {holiday.Translation}";
+
+    private InlineKeyboardMarkup BuildHolidayPushKeyboard()
+    {
+        var url = _botConfig.NormalizedHost() + "/";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Открыть мини-апп", new WebAppInfo { Url = url })
             }
         });
     }

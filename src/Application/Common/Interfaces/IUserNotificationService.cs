@@ -1,3 +1,4 @@
+using Application.Notifications.Holidays;
 using Domain.Entities;
 
 namespace Application.Common.Interfaces;
@@ -41,4 +42,11 @@ public interface IUserNotificationService
     /// suggested delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
     /// </summary>
     Task SendCoinsStalePushAsync(User user, int availableXp, CancellationToken ct);
+
+    /// <summary>
+    /// Holiday push (epic #894, §82, #993). Body: «{RussianName}\n{GeorgianPhrase}\n{Transliteration} — {Translation}».
+    /// Mini-app button opens the host without a deep-link. 403 → user flagged inactive;
+    /// 429 → single retry after the suggested delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
+    /// </summary>
+    Task SendHolidayPushAsync(User user, Holiday holiday, CancellationToken ct);
 }
