@@ -134,6 +134,72 @@ public class TelegramNotificationService : IUserNotificationService
         };
     }
 
+    public async Task SendStreakMilestonePushAsync(Domain.Entities.User user, int milestone, CancellationToken ct)
+    {
+        var text = BuildStreakMilestoneText(milestone);
+        var keyboard = BuildStreakMilestoneKeyboard();
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Streak milestone push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Streak milestone push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    /// <summary>
+    /// Push copy for the streak milestones. Each milestone gets the Georgian numeral
+    /// in script plus a methodist note: 30 spells out the vigesimal breakdown (20+10),
+    /// 100 explicitly contrasts the "simple hundred" ასი with the vigesimal tens.
+    /// Unknown milestones fall back to a neutral congratulations.
+    /// </summary>
+    internal static string BuildStreakMilestoneText(int milestone) => milestone switch
+    {
+        7 => "7 дней без перерыва! По-грузински: შვიდი დღე — семь дней. Так держать!",
+        30 => "30 дней без перерыва! По-грузински: ოცდაათი (20+10) დღე — тридцать дней. " +
+              "В грузинском десятки — виджезимальные: 20+10 = 30.",
+        100 => "100 дней! По-грузински: ასი დღე — сто дней. ასი — одна сотня, простая форма " +
+               "(контраст с виджезимальным 30).",
+        _ => $"{milestone} дней без перерыва! Так держать 🎉",
+    };
+
+    private InlineKeyboardMarkup BuildStreakMilestoneKeyboard()
+    {
+        var url = _botConfig.NormalizedHost() + "/";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Открыть мини-апп", new WebAppInfo { Url = url })
+            }
+        });
+    }
+
     private InlineKeyboardMarkup BuildDailyReturnPushKeyboard(string variant, string moduleId, int lessonId)
     {
         var host = _botConfig.NormalizedHost();

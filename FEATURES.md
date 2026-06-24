@@ -375,6 +375,8 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `ProcessPendingReferralsService` — batch runner for the worker
 - `FeedTreatService` — buy & feed a treat
 - `AchievementsService` / `GetAchievementsQuery` — achievements
+- `DailyReturnNotificationService` — D1+ return push, picks least-progressed module, claim-before-send (#940)
+- `StreakNotificationService` — streak-milestone push at exact 7 / 30 / 100 days; per-milestone `streak_{n}` trigger (epic #894, §82, #995)
 
 ### Feature flags
 - `BotConfiguration.MiniAppEnabled` — toggles mini-app menu button and Georgian returning-user `/start`.

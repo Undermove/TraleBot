@@ -30,6 +30,12 @@ public static class DependencyInjection
         services.AddScoped<IDailyReturnNotificationService>(
             sp => sp.GetRequiredService<DailyReturnNotificationService>());
 
+        // Streak-milestone push (epic #894, §82, #995). HourlyNotificationWorker resolves the
+        // interface; the concrete type is exposed too so tests / future direct callers can grab it.
+        services.AddScoped<StreakNotificationService>();
+        services.AddScoped<IStreakNotificationService>(
+            sp => sp.GetRequiredService<StreakNotificationService>());
+
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();
         services.AddScoped<ITranslationModule, GeorgianTranslationModule>();
