@@ -40,6 +40,32 @@ export default function AdminScreen({ progress, navigate }: Props) {
     }
   }
 
+  async function sendContextPush(kind: 'holiday' | 'coins' | 'streak', milestone?: 7 | 30 | 100) {
+    setPushBusy(true)
+    setPushMsg(null)
+    try {
+      const r =
+        kind === 'holiday'
+          ? await api.adminTestHolidayPush()
+          : kind === 'coins'
+            ? await api.adminTestCoinsPush()
+            : await api.adminTestStreakPush(milestone ?? 7)
+      if (r.ok === false) {
+        setPushMsg('🔕 Уведомления выключены в Профиле — пуш не отправлен (так же его пропустит и авто-рассылка).')
+      } else if (kind === 'holiday') {
+        setPushMsg(`Отправил праздничный пуш (${(r as { RussianName?: string }).RussianName ?? '—'}) — проверь чат с ботом 📲`)
+      } else if (kind === 'coins') {
+        setPushMsg(`Отправил «голодную Бомбору» (XP: ${(r as { availableXp?: number }).availableXp ?? '—'}) — проверь чат с ботом 📲`)
+      } else {
+        setPushMsg(`Отправил стрик-пуш (${(r as { milestone?: number }).milestone ?? milestone} дней) — проверь чат с ботом 📲`)
+      }
+    } catch (e) {
+      setPushMsg('Ошибка: ' + (e instanceof Error ? e.message : String(e)))
+    } finally {
+      setPushBusy(false)
+    }
+  }
+
   // Initial load: stats + chart + first batch of users
   useEffect(() => {
     let cancelled = false
@@ -171,6 +197,48 @@ export default function AdminScreen({ progress, navigate }: Props) {
                       className="px-3 py-2 rounded font-sans text-[12px] font-bold border-[1.5px] bg-cream text-jewelInk border-jewelInk/25 disabled:opacity-50"
                     >
                       {pushBusy ? '…' : label}
+                    </button>
+                  ))}
+                </div>
+                {pushMsg && (
+                  <div className="font-sans text-[12px] text-jewelInk-mid mt-3">{pushMsg}</div>
+                )}
+              </div>
+            </div>
+
+            {/* §82 contextual pushes test (holiday / coins / streak) */}
+            <div className="mn-eyebrow mb-2">🎉 §82 пуши · тест</div>
+            <div className="jewel-tile px-4 py-4 mb-5">
+              <div className="relative z-[1]">
+                <div className="font-sans text-[12px] text-jewelInk-mid mb-3">
+                  Отправить себе реальные §82-пуши, минуя утреннее окно и кулдауны
+                  (праздник берётся сегодняшний по календарю, иначе — образец).
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <button
+                    onClick={() => sendContextPush('holiday')}
+                    disabled={pushBusy}
+                    className="px-3 py-2 rounded font-sans text-[12px] font-bold border-[1.5px] bg-cream text-jewelInk border-jewelInk/25 disabled:opacity-50"
+                  >
+                    {pushBusy ? '…' : '🎉 Праздник'}
+                  </button>
+                  <button
+                    onClick={() => sendContextPush('coins')}
+                    disabled={pushBusy}
+                    className="px-3 py-2 rounded font-sans text-[12px] font-bold border-[1.5px] bg-cream text-jewelInk border-jewelInk/25 disabled:opacity-50"
+                  >
+                    {pushBusy ? '…' : '🦴 Голодная Бомбора'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {([7, 30, 100] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => sendContextPush('streak', m)}
+                      disabled={pushBusy}
+                      className="px-3 py-2 rounded font-sans text-[12px] font-bold border-[1.5px] bg-cream text-jewelInk border-jewelInk/25 disabled:opacity-50"
+                    >
+                      {pushBusy ? '…' : `🔥 Стрик ${m}`}
                     </button>
                   ))}
                 </div>
