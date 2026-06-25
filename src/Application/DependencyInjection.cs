@@ -8,6 +8,7 @@ using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
 using Application.Common.Interfaces;
 using Application.Notifications;
+using Application.Notifications.Holidays;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
@@ -29,6 +30,28 @@ public static class DependencyInjection
         services.AddScoped<DailyReturnNotificationService>();
         services.AddScoped<IDailyReturnNotificationService>(
             sp => sp.GetRequiredService<DailyReturnNotificationService>());
+
+        // Streak-milestone push (epic #894, §82, #995). HourlyNotificationWorker resolves the
+        // interface; the concrete type is exposed too so tests / future direct callers can grab it.
+        services.AddScoped<StreakNotificationService>();
+        services.AddScoped<IStreakNotificationService>(
+            sp => sp.GetRequiredService<StreakNotificationService>());
+
+        // Coins-stale push (epic #894, §82, #994). Same registration shape as the streak service
+        // so HourlyNotificationWorker can fan it out via DispatchSafelyAsync<ICoinsNotificationService>.
+        services.AddScoped<CoinsNotificationService>();
+        services.AddScoped<ICoinsNotificationService>(
+            sp => sp.GetRequiredService<CoinsNotificationService>());
+
+        // Holiday catalog (#894 / #992). Pure stateless lookup — singleton.
+        services.AddSingleton<IHolidayCalendarService, HolidayCalendarService>();
+
+        // Holiday push dispatcher (#894 / §82, #993). Reads today's Tbilisi holiday from
+        // the calendar service and fans out the celebratory push to opted-in active users
+        // with a 24h per-day cooldown.
+        services.AddScoped<HolidayNotificationService>();
+        services.AddScoped<IHolidayNotificationService>(
+            sp => sp.GetRequiredService<HolidayNotificationService>());
 
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();

@@ -83,6 +83,7 @@ public class CreateWebhook : IHostedService
                     new BotCommand { Command = "app", Description = "🚀 Открыть приложение" },
                     new BotCommand { Command = "start", Description = "🚀 Открыть приложение" },
                     new BotCommand { Command = "menu", Description = "📋 Меню в чате" },
+                    new BotCommand { Command = "notifications", Description = "🔔 Уведомления вкл/выкл" },
                     new BotCommand { Command = "help", Description = "💬 Поддержка" }
                 },
                 cancellationToken: cancellationToken);

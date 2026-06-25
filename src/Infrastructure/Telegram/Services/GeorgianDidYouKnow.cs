@@ -5,7 +5,8 @@ namespace Infrastructure.Telegram.Services;
 /// <summary>
 /// A rotating "interesting fact" about Georgian, appended to the daily return
 /// push so the nudge actually teaches something. A fresh random fact is picked on
-/// every send and labelled "Интересный факт N/48", so repeats are obvious-rare.
+/// every send and labelled just "Интересный факт N" (no running total — an N/M
+/// pair can accidentally read as an unfortunate number combo).
 ///
 /// These are meant to be genuinely interesting — etymology, roots, surprising
 /// quirks — not dry word→translation lines. Georgian words carry a Cyrillic
@@ -68,7 +69,7 @@ internal static class GeorgianDidYouKnow
     ];
 
     private static string Label(int i)
-        => $"💡 Интересный факт {i + 1}/{Facts.Length}\n{Facts[i]}";
+        => $"💡 Интересный факт {i + 1}\n{Facts[i]}";
 
     /// <summary>A fresh random fact each call — keeps repeated pushes from feeling stale.</summary>
     internal static string Pick()

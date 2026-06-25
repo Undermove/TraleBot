@@ -230,4 +230,79 @@ public class TelegramNotificationServiceTests
         text.ShouldContain("💡");          // every push also teaches a Georgian word/fact
         text.ShouldContain("скучает");      // ...without dropping the variant copy
     }
+
+    [Test]
+    public async Task SendCoinsStalePushAsync_TextContainsGeorgianPhraseTranslitAndTranslation()
+    {
+        var (client, captured) = BuildMockClient();
+        var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
+
+        await service.SendCoinsStalePushAsync(BuildUser(), availableXp: 120, default);
+
+        var text = ReflectText(captured.Single());
+        text.ShouldNotBeNull();
+        // AC2b: the Georgian phrase plus its Russian-letter transliteration and translation.
+        text.ShouldContain("ბომბორა გახარდება");
+        text.ShouldContain("Бомбора гахардэба");
+        text.ShouldContain("Бомбора обрадуется");
+        text.ShouldContain("120"); // spendable XP shows the actual balance hint
+    }
+
+    [Test]
+    public async Task SendCoinsStalePushAsync_KeyboardOpensFeedScreen()
+    {
+        var (client, captured) = BuildMockClient();
+        var service = new TelegramNotificationService(client.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
+
+        await service.SendCoinsStalePushAsync(BuildUser(), availableXp: 50, default);
+
+        var markup = ReflectMarkup(captured.Single());
+        markup.ShouldNotBeNull();
+        var button = markup.InlineKeyboard.SelectMany(r => r).Single();
+        button.WebApp.ShouldNotBeNull();
+        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=feed");
+        button.Url.ShouldBeNull(); // WebApp button, not a plain URL
+    }
+
+    [Test]
+    public async Task SendCoinsStalePushAsync_On403_SetsUserIsActiveFalseAndDoesNotThrow()
+    {
+        var mock = new Mock<ITelegramBotClient>();
+        mock
+            .Setup(c => c.MakeRequestAsync(It.IsAny<TgRequest>(), It.IsAny<System.Threading.CancellationToken>()))
+            .ThrowsAsync(new ApiRequestException("Forbidden: bot was blocked by the user", 403));
+        var service = new TelegramNotificationService(mock.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
+        var user = BuildUser();
+
+        await service.SendCoinsStalePushAsync(user, availableXp: 70, default);
+
+        user.IsActive.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task SendCoinsStalePushAsync_OnTooManyRequests_RetriesAfterDelay()
+    {
+        var calls = 0;
+        var mock = new Mock<ITelegramBotClient>();
+        mock
+            .Setup(c => c.MakeRequestAsync(It.IsAny<TgRequest>(), It.IsAny<System.Threading.CancellationToken>()))
+            .Returns<TgRequest, System.Threading.CancellationToken>((_, _) =>
+            {
+                calls++;
+                if (calls == 1)
+                    throw new ApiRequestException(
+                        "Too Many Requests: retry after 1",
+                        429,
+                        new ResponseParameters { RetryAfter = 1 });
+                return System.Threading.Tasks.Task.FromResult(new Message { MessageId = calls });
+            });
+        var service = new TelegramNotificationService(mock.Object, BuildBotConfig(), NullLogger<TelegramNotificationService>.Instance);
+
+        var sw = Stopwatch.StartNew();
+        await service.SendCoinsStalePushAsync(BuildUser(), availableXp: 70, default);
+        sw.Stop();
+
+        calls.ShouldBe(2);
+        sw.Elapsed.ShouldBeGreaterThanOrEqualTo(System.TimeSpan.FromMilliseconds(900));
+    }
 }

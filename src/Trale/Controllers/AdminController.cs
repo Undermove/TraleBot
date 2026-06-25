@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Admin;
 using Application.Common;
 using Application.Common.Interfaces;
+using Application.Notifications;
+using Application.Notifications.Holidays;
 using Infrastructure.Telegram;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +35,7 @@ public class AdminController : Controller
     private readonly RevokeProService _revokePro;
     private readonly BroadcastService _broadcast;
     private readonly IUserNotificationService _notifications;
+    private readonly IHolidayCalendarService _holidayCalendar;
 
     public AdminController(
         ITraleDbContext dbContext,
@@ -43,7 +47,8 @@ public class AdminController : Controller
         GrantProService grantPro,
         RevokeProService revokePro,
         BroadcastService broadcast,
-        IUserNotificationService notifications)
+        IUserNotificationService notifications,
+        IHolidayCalendarService holidayCalendar)
     {
         _dbContext = dbContext;
         _botConfig = botConfig;
@@ -55,6 +60,7 @@ public class AdminController : Controller
         _revokePro = revokePro;
         _broadcast = broadcast;
         _notifications = notifications;
+        _holidayCalendar = holidayCalendar;
     }
 
     [HttpGet("stats")]
@@ -180,6 +186,85 @@ public class AdminController : Controller
 
         await _notifications.SendDailyReturnPushAsync(owner, moduleName, moduleId, lessonId, variant, availableXp, ct);
         return Ok(new { ok = true, sentTo = ownerId, variant, availableXp, moduleName, moduleId, lessonId });
+    }
+
+    /// <summary>
+    /// Fires the §82 Holiday push to the owner's own Telegram for EVERY holiday in the
+    /// catalog (9 fixed + Easter), bypassing the worker's morning window + 24h cooldown,
+    /// so the real copy of each one can be reviewed on demand. A small delay between
+    /// sends keeps Telegram from 429-ing the single chat. Owner-only.
+    /// </summary>
+    [HttpPost("notifications/test-holiday-push")]
+    public async Task<IActionResult> TestHolidayPush(CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+
+        var ownerId = _botConfig.OwnerTelegramId != 0 ? _botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
+        var owner = await _dbContext.Users.FirstOrDefaultAsync(u => u.TelegramId == ownerId, ct);
+        if (owner == null) return NotFound(new { error = "owner_user_not_found" });
+        if (!owner.NotificationsEnabled)
+            return Ok(new { ok = false, reason = "notifications_disabled" });
+
+        var holidays = _holidayCalendar.AllHolidays();
+        var sent = new List<string>(holidays.Count);
+        foreach (var holiday in holidays)
+        {
+            await _notifications.SendHolidayPushAsync(owner, holiday, ct);
+            sent.Add(holiday.Key);
+            await Task.Delay(400, ct);
+        }
+
+        return Ok(new { ok = true, sentTo = ownerId, count = sent.Count, holidays = sent });
+    }
+
+    /// <summary>
+    /// Fires the §82 Coins-stale push to the owner, bypassing the 7-day cooldown +
+    /// "no feeding in 7d" gate. Uses the owner's real spendable XP. Owner-only.
+    /// </summary>
+    [HttpPost("notifications/test-coins-push")]
+    public async Task<IActionResult> TestCoinsPush(CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+
+        var ownerId = _botConfig.OwnerTelegramId != 0 ? _botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
+        var owner = await _dbContext.Users.FirstOrDefaultAsync(u => u.TelegramId == ownerId, ct);
+        if (owner == null) return NotFound(new { error = "owner_user_not_found" });
+        if (!owner.NotificationsEnabled)
+            return Ok(new { ok = false, reason = "notifications_disabled" });
+
+        var progress = await _dbContext.MiniAppUserProgresses
+            .FirstOrDefaultAsync(p => p.UserId == owner.Id, ct);
+        var availableXp = progress != null ? Math.Max(0, progress.Xp - progress.XpSpent) : 0;
+
+        await _notifications.SendCoinsStalePushAsync(owner, availableXp, ct);
+        return Ok(new { ok = true, sentTo = ownerId, availableXp });
+    }
+
+    public class TestStreakPushRequest
+    {
+        public int? Milestone { get; set; }
+    }
+
+    /// <summary>
+    /// Fires the §82 Streak-milestone push to the owner, bypassing the milestone +
+    /// 7-day cooldown gate. Milestone defaults to 7 (allowed: 7/30/100). Owner-only.
+    /// </summary>
+    [HttpPost("notifications/test-streak-push")]
+    public async Task<IActionResult> TestStreakPush([FromBody] TestStreakPushRequest? req, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+
+        var ownerId = _botConfig.OwnerTelegramId != 0 ? _botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
+        var owner = await _dbContext.Users.FirstOrDefaultAsync(u => u.TelegramId == ownerId, ct);
+        if (owner == null) return NotFound(new { error = "owner_user_not_found" });
+        if (!owner.NotificationsEnabled)
+            return Ok(new { ok = false, reason = "notifications_disabled" });
+
+        var allowed = new[] { 7, 30, 100 };
+        var milestone = req?.Milestone is int m && allowed.Contains(m) ? m : 7;
+
+        await _notifications.SendStreakMilestonePushAsync(owner, milestone, ct);
+        return Ok(new { ok = true, sentTo = ownerId, milestone });
     }
 
     [HttpGet("broadcast/preview")]

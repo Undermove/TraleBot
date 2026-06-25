@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.Notifications.Holidays;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
 using Microsoft.Extensions.Logging;
@@ -132,6 +133,197 @@ public class TelegramNotificationService : IUserNotificationService
             _ =>
                 "Бомбора по тебе скучает 🐶 Заглянешь на пару минут?",
         };
+    }
+
+    public async Task SendStreakMilestonePushAsync(Domain.Entities.User user, int milestone, CancellationToken ct)
+    {
+        var text = BuildStreakMilestoneText(milestone);
+        var keyboard = BuildStreakMilestoneKeyboard();
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Streak milestone push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Streak milestone push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    /// <summary>
+    /// Push copy for the streak milestones. Each milestone gets the Georgian numeral
+    /// in script plus a methodist note: 30 spells out the vigesimal breakdown (20+10),
+    /// 100 explicitly contrasts the "simple hundred" ასი with the vigesimal tens.
+    /// Unknown milestones fall back to a neutral congratulations.
+    /// </summary>
+    internal static string BuildStreakMilestoneText(int milestone) => milestone switch
+    {
+        7 => "7 дней без перерыва! По-грузински: შვიდი დღე — семь дней. Так держать!",
+        30 => "30 дней без перерыва! По-грузински: ოცდაათი (20+10) დღე — тридцать дней. " +
+              "В грузинском десятки — виджезимальные: 20+10 = 30.",
+        100 => "100 дней! По-грузински: ასი დღე — сто дней. ასი — одна сотня, простая форма " +
+               "(контраст с виджезимальным 30).",
+        _ => $"{milestone} дней без перерыва! Так держать 🎉",
+    };
+
+    private InlineKeyboardMarkup BuildStreakMilestoneKeyboard()
+    {
+        var url = _botConfig.NormalizedHost() + "/";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Открыть мини-апп", new WebAppInfo { Url = url })
+            }
+        });
+    }
+
+    public async Task SendCoinsStalePushAsync(Domain.Entities.User user, int availableXp, CancellationToken ct)
+    {
+        var text = BuildCoinsStalePushText(availableXp);
+        var keyboard = BuildCoinsStaleKeyboard();
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Coins-stale push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Coins-stale push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    /// <summary>
+    /// AC2b copy. Carries the Georgian phrase, Russian-letter transliteration and translation
+    /// so users who can't read Mkhedruli still get the joke; the XP hint anchors the nudge in
+    /// concrete numbers ("у тебя 80 XP — хватит на угощение").
+    /// </summary>
+    internal static string BuildCoinsStalePushText(int availableXp) =>
+        $"У тебя ⭐ {availableXp} XP — хватит на угощение для Бомборы 🦴\n" +
+        "ბომბორა გახარდება! — Бомбора гахардэба! — Бомбора обрадуется!\n" +
+        "Заглянешь покормить?";
+
+    private InlineKeyboardMarkup BuildCoinsStaleKeyboard()
+    {
+        var url = $"{_botConfig.NormalizedHost()}/?screen=feed";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Покормить Бомбору 🦴", new WebAppInfo { Url = url })
+            }
+        });
+    }
+
+    public async Task SendHolidayPushAsync(Domain.Entities.User user, Holiday holiday, CancellationToken ct)
+    {
+        var text = BuildHolidayPushText(holiday);
+        var keyboard = BuildHolidayPushKeyboard();
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Holiday push for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Holiday push for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
+    // Spec §82 §«Структура пуша»: Russian name on its own line, then Georgian phrase,
+    // then transliteration — translation. Easter already carries the traditional phrase
+    // ("ქრისტე აღდგა!"), so the same template works without an Easter-specific branch.
+    internal static string BuildHolidayPushText(Holiday holiday)
+    {
+        var title = string.IsNullOrEmpty(holiday.Title) ? holiday.RussianName : holiday.Title;
+        var fact = string.IsNullOrEmpty(holiday.Fact) ? "" : $"\n\n{holiday.Fact}";
+        return
+            $"{holiday.Emoji} {title}{fact}\n\n" +
+            $"А поздравить близких в Грузии можно так:\n" +
+            $"{holiday.GeorgianPhrase}\n" +
+            $"{holiday.Transliteration} — {holiday.Translation}\n\n" +
+            $"А чтобы запомнить — отметь день небольшим упражнением 😀";
+    }
+
+    private InlineKeyboardMarkup BuildHolidayPushKeyboard()
+    {
+        var url = _botConfig.NormalizedHost() + "/";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Открыть мини-апп", new WebAppInfo { Url = url })
+            }
+        });
     }
 
     private InlineKeyboardMarkup BuildDailyReturnPushKeyboard(string variant, string moduleId, int lessonId)

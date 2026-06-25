@@ -1,3 +1,4 @@
+using Application.Notifications.Holidays;
 using Domain.Entities;
 
 namespace Application.Common.Interfaces;
@@ -23,4 +24,29 @@ public interface IUserNotificationService
         string variant,
         int availableXp,
         CancellationToken ct);
+
+    /// <summary>
+    /// Streak-milestone push (epic #894, §82). <paramref name="milestone"/> is one of 7 / 30 / 100;
+    /// the copy carries the matching Georgian numeral plus a methodist note (30 — vigesimal
+    /// breakdown 20+10; 100 — contrast with the vigesimal tens). Mini-app button opens the host
+    /// without a deep-link. 403 → user flagged inactive; 429 → single retry after the suggested
+    /// delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
+    /// </summary>
+    Task SendStreakMilestonePushAsync(User user, int milestone, CancellationToken ct);
+
+    /// <summary>
+    /// Coins-stale push (epic #894, §82, #994): the user has <paramref name="availableXp"/>
+    /// spendable XP but hasn't fed Bombora in 7+ days. Body carries the «ბომბორა გახარდება»
+    /// phrase with transliteration and translation; the WebApp button deep-links to
+    /// <c>?screen=feed</c>. 403 → user flagged inactive; 429 → single retry after the
+    /// suggested delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
+    /// </summary>
+    Task SendCoinsStalePushAsync(User user, int availableXp, CancellationToken ct);
+
+    /// <summary>
+    /// Holiday push (epic #894, §82, #993). Body: «{RussianName}\n{GeorgianPhrase}\n{Transliteration} — {Translation}».
+    /// Mini-app button opens the host without a deep-link. 403 → user flagged inactive;
+    /// 429 → single retry after the suggested delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
+    /// </summary>
+    Task SendHolidayPushAsync(User user, Holiday holiday, CancellationToken ct);
 }

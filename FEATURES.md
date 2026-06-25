@@ -62,6 +62,11 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 |---|---|---|
 | `AchievementsCommand` | `/achievements`, 📊 icon | Show achievements + stats. |
 
+### Notifications
+| Class | Command / trigger | Purpose |
+|---|---|---|
+| `NotificationsCommand` | `/notifications`, `/notifications on`, `/notifications off` | Bot-command shortcut to flip `User.NotificationsEnabled` without opening the mini-app. No arg → status. |
+
 ### Georgian module content
 | Class | Command / trigger | Purpose |
 |---|---|---|
@@ -222,6 +227,7 @@ Location: `src/Trale/HostedServices/`.
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
 | `ReturnPushWorker` | Daily at 10:00 UTC | Dispatch D1+ return push to users who started a lesson but didn't return (#940). |
+| `HourlyNotificationWorker` | Every top-of-hour UTC | Fan-out tick for contextual pushes — calls `IHolidayNotificationService` / `ICoinsNotificationService` / `IStreakNotificationService` with fault-isolation. Holiday push uses `TbilisiMorningWindow` to fire only at 09:xx Tbilisi (#997, epic #894). |
 
 ---
 
@@ -369,6 +375,11 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `ProcessPendingReferralsService` — batch runner for the worker
 - `FeedTreatService` — buy & feed a treat
 - `AchievementsService` / `GetAchievementsQuery` — achievements
+- `DailyReturnNotificationService` — D1+ return push, picks least-progressed module, claim-before-send (#940)
+- `StreakNotificationService` — streak-milestone push at exact 7 / 30 / 100 days; per-milestone `streak_{n}` trigger (epic #894, §82, #995)
+- `CoinsNotificationService` — coins-stale push when ≥50 spendable XP + no feeding in 7d; 7-day cooldown via `coins` trigger (epic #894, §82, #994)
+- `HolidayCalendarService` — pure lookup over the V1 Georgian holiday catalog (9 fixed dates + Julian Easter) used by the holiday push (epic #894, §82, #992)
+- `HolidayNotificationService` — celebratory push on Georgian holidays; 24h cooldown via `holiday` trigger with `Variant=Holiday.Key` (epic #894, §82, #993)
 
 ### Feature flags
 - `BotConfiguration.MiniAppEnabled` — toggles mini-app menu button and Georgian returning-user `/start`.

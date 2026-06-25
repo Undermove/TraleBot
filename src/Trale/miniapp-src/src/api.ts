@@ -269,6 +269,24 @@ export const api = {
       }
     ),
 
+  adminTestHolidayPush: () =>
+    request<{ ok: boolean; reason?: string; sentTo?: number; count?: number; holidays?: string[] }>(
+      `/api/admin/notifications/test-holiday-push`,
+      { method: 'POST' }
+    ),
+
+  adminTestCoinsPush: () =>
+    request<{ ok: boolean; reason?: string; sentTo?: number; availableXp?: number }>(
+      `/api/admin/notifications/test-coins-push`,
+      { method: 'POST' }
+    ),
+
+  adminTestStreakPush: (milestone: 7 | 30 | 100) =>
+    request<{ ok: boolean; reason?: string; sentTo?: number; milestone?: number }>(
+      `/api/admin/notifications/test-streak-push`,
+      { method: 'POST', body: JSON.stringify({ milestone }) }
+    ),
+
   adminBroadcastPreview: (opts: {
     activeWithinDays?: number | null
     minVocab?: number
