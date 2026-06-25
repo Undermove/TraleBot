@@ -270,7 +270,7 @@ export const api = {
     ),
 
   adminTestHolidayPush: () =>
-    request<{ ok: boolean; reason?: string; sentTo?: number; holiday?: string; RussianName?: string }>(
+    request<{ ok: boolean; reason?: string; sentTo?: number; count?: number; holidays?: string[] }>(
       `/api/admin/notifications/test-holiday-push`,
       { method: 'POST' }
     ),

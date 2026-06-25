@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -187,19 +188,11 @@ public class AdminController : Controller
         return Ok(new { ok = true, sentTo = ownerId, variant, availableXp, moduleName, moduleId, lessonId });
     }
 
-    /// <summary>A representative holiday for the test button on days with no real one.</summary>
-    private static readonly Holiday SampleHoliday = new(
-        "sample",
-        "Тестовый праздник",
-        "სატესტო დღესასწაული",
-        "გილოცავ დღესასწაულს",
-        "гилоцав дгесасцаулс",
-        "поздравляю с праздником");
-
     /// <summary>
-    /// Fires the §82 Holiday push to the owner's own Telegram, bypassing the hourly
-    /// worker's morning window + 24h cooldown so the copy + button can be checked on
-    /// demand. Uses today's Tbilisi holiday if there is one, else a sample. Owner-only.
+    /// Fires the §82 Holiday push to the owner's own Telegram for EVERY holiday in the
+    /// catalog (9 fixed + Easter), bypassing the worker's morning window + 24h cooldown,
+    /// so the real copy of each one can be reviewed on demand. A small delay between
+    /// sends keeps Telegram from 429-ing the single chat. Owner-only.
     /// </summary>
     [HttpPost("notifications/test-holiday-push")]
     public async Task<IActionResult> TestHolidayPush(CancellationToken ct)
@@ -212,11 +205,16 @@ public class AdminController : Controller
         if (!owner.NotificationsEnabled)
             return Ok(new { ok = false, reason = "notifications_disabled" });
 
-        var tbilisiDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(TbilisiMorningWindow.TbilisiOffsetHours));
-        var holiday = _holidayCalendar.GetHolidayFor(tbilisiDate) ?? SampleHoliday;
+        var holidays = _holidayCalendar.AllHolidays();
+        var sent = new List<string>(holidays.Count);
+        foreach (var holiday in holidays)
+        {
+            await _notifications.SendHolidayPushAsync(owner, holiday, ct);
+            sent.Add(holiday.Key);
+            await Task.Delay(400, ct);
+        }
 
-        await _notifications.SendHolidayPushAsync(owner, holiday, ct);
-        return Ok(new { ok = true, sentTo = ownerId, holiday = holiday.Key, holiday.RussianName });
+        return Ok(new { ok = true, sentTo = ownerId, count = sent.Count, holidays = sent });
     }
 
     /// <summary>

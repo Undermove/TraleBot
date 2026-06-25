@@ -302,8 +302,17 @@ public class TelegramNotificationService : IUserNotificationService
     // Spec §82 §«Структура пуша»: Russian name on its own line, then Georgian phrase,
     // then transliteration — translation. Easter already carries the traditional phrase
     // ("ქრისტე აღდგა!"), so the same template works without an Easter-specific branch.
-    internal static string BuildHolidayPushText(Holiday holiday) =>
-        $"{holiday.RussianName}\n{holiday.GeorgianPhrase}\n{holiday.Transliteration} — {holiday.Translation}";
+    internal static string BuildHolidayPushText(Holiday holiday)
+    {
+        var title = string.IsNullOrEmpty(holiday.Title) ? holiday.RussianName : holiday.Title;
+        var fact = string.IsNullOrEmpty(holiday.Fact) ? "" : $"\n\n{holiday.Fact}";
+        return
+            $"{holiday.Emoji} {title}{fact}\n\n" +
+            $"А поздравить близких в Грузии можно так:\n" +
+            $"{holiday.GeorgianPhrase}\n" +
+            $"{holiday.Transliteration} — {holiday.Translation}\n\n" +
+            $"А чтобы запомнить — отметь день небольшим упражнением 😀";
+    }
 
     private InlineKeyboardMarkup BuildHolidayPushKeyboard()
     {

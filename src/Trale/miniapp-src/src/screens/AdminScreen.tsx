@@ -53,7 +53,7 @@ export default function AdminScreen({ progress, navigate }: Props) {
       if (r.ok === false) {
         setPushMsg('🔕 Уведомления выключены в Профиле — пуш не отправлен (так же его пропустит и авто-рассылка).')
       } else if (kind === 'holiday') {
-        setPushMsg(`Отправил праздничный пуш (${(r as { RussianName?: string }).RussianName ?? '—'}) — проверь чат с ботом 📲`)
+        setPushMsg(`Отправил все праздники (${(r as { count?: number }).count ?? '—'} шт.) — проверь чат с ботом 📲`)
       } else if (kind === 'coins') {
         setPushMsg(`Отправил «голодную Бомбору» (XP: ${(r as { availableXp?: number }).availableXp ?? '—'}) — проверь чат с ботом 📲`)
       } else {
@@ -211,8 +211,8 @@ export default function AdminScreen({ progress, navigate }: Props) {
             <div className="jewel-tile px-4 py-4 mb-5">
               <div className="relative z-[1]">
                 <div className="font-sans text-[12px] text-jewelInk-mid mb-3">
-                  Отправить себе реальные §82-пуши, минуя утреннее окно и кулдауны
-                  (праздник берётся сегодняшний по календарю, иначе — образец).
+                  Отправить себе реальные §82-пуши, минуя утреннее окно и кулдауны.
+                  «Праздники» прогоняют весь календарь — 9 праздников + Пасху подряд.
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-2">
                   <button
@@ -220,7 +220,7 @@ export default function AdminScreen({ progress, navigate }: Props) {
                     disabled={pushBusy}
                     className="px-3 py-2 rounded font-sans text-[12px] font-bold border-[1.5px] bg-cream text-jewelInk border-jewelInk/25 disabled:opacity-50"
                   >
-                    {pushBusy ? '…' : '🎉 Праздник'}
+                    {pushBusy ? '…' : '🎉 Все праздники'}
                   </button>
                   <button
                     onClick={() => sendContextPush('coins')}

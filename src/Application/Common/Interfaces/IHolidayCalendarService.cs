@@ -10,4 +10,7 @@ namespace Application.Common.Interfaces;
 public interface IHolidayCalendarService
 {
     Holiday? GetHolidayFor(DateOnly tbilisiDate);
+
+    /// <summary>Every holiday in the catalog (fixed dates + Easter) — for admin test/preview.</summary>
+    IReadOnlyList<Holiday> AllHolidays();
 }
