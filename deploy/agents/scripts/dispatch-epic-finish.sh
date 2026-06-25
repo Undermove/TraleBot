@@ -45,7 +45,10 @@ LOG_FILE="/logs/epic_finish_${EPIC_NUM}_${TIMESTAMP}.log"
 REPO_DIR="${REPO_DIR:-/workspace/repo}"
 BRANCH="${BRANCH_OVERRIDE:-agents/nightly-${TODAY}}"
 RUNNING_LABEL="agent:running"
-MAX_TURNS_PER_TASK="${MAX_TURNS_PER_TASK:-${MAX_TURNS:-60}}"
+# Finish-flow does whole-task TDD from scratch, so it must NOT silently inherit
+# the cheap per-stage MAX_TURNS=30 cap (meant for small dispatch-by-stage steps).
+# Decoupled with its own default; override per-run with MAX_TURNS_PER_TASK=…
+MAX_TURNS_PER_TASK="${MAX_TURNS_PER_TASK:-120}"
 
 mkdir -p /logs
 exec > >(tee "$LOG_FILE") 2>&1
@@ -53,6 +56,7 @@ exec > >(tee "$LOG_FILE") 2>&1
 echo "============================================"
 echo "  Epic finish · #${EPIC_NUM} → nightly branch ${BRANCH}"
 echo "  Started: $(date)"
+echo "  Turn budget per task: ${MAX_TURNS_PER_TASK} (max-turns)"
 echo "============================================"
 
 # gh resolves the repo from the cwd remote — be inside the repo for every call.
@@ -85,6 +89,24 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# 2b. Reuse an already-open PR for THIS epic instead of spawning a fresh
+#     agents/nightly-<today> branch every run. Without this, a finish run on a
+#     new day opened a brand-new branch+PR while the previous epic's PR sat
+#     unmerged — orphan duplicates (#980, #998) that never converged. We match
+#     the finish-flow PR by its stable title ("Доделка эпика #<N> · …") and only
+#     among agents/nightly-* heads, then continue on that same branch.
+EPIC_OPEN_PR=$(gh pr list --state open --limit 50 --json number,headRefName,title 2>/dev/null \
+    | jq -r --arg n "$EPIC_NUM" '
+        [.[] | select((.headRefName | startswith("agents/nightly-"))
+                      and (.title | test("эпика #" + $n + "([^0-9]|$)")))][0]
+        | select(. != null) | "\(.number)\t\(.headRefName)"' 2>/dev/null || true)
+EPIC_PR_NUMBER=$(printf '%s' "$EPIC_OPEN_PR" | cut -f1)
+EPIC_PR_BRANCH=$(printf '%s' "$EPIC_OPEN_PR" | cut -f2)
+if [ -n "$EPIC_PR_BRANCH" ]; then
+    echo ">>> Reusing open PR #${EPIC_PR_NUMBER} for epic #${EPIC_NUM} on branch '${EPIC_PR_BRANCH}' (not opening a new nightly branch)."
+    BRANCH="$EPIC_PR_BRANCH"
+fi
+
 # 3. Check out the shared nightly branch, seeded from its remote tip if present
 #    (so earlier WIP is here) else freshly off main.
 git fetch origin --quiet || true
@@ -102,6 +124,15 @@ UNFINISHED=$(echo "$CHILDREN_JSON" | jq -r '
 TOTAL_CHILDREN=$(echo "$CHILDREN_JSON" | jq -r 'length' 2>/dev/null || echo 0)
 
 echo ">>> Epic #${EPIC_NUM} has ${TOTAL_CHILDREN} open child task(s); unfinished: $(echo ${UNFINISHED} | tr '\n' ' ' | sed 's/ $//')"
+
+# 4b. If there's nothing left to build and a PR is already open, don't run a
+# finish pass that would only churn — the one thing missing is the human merge.
+# Nudge for it and bail (the EXIT trap clears the epic claim).
+if [ -z "$(printf '%s' "$UNFINISHED" | tr -d '[:space:]')" ] && [ -n "$EPIC_PR_NUMBER" ]; then
+    echo ">>> All child tasks already done; PR #${EPIC_PR_NUMBER} open — nothing to finish, waiting on merge."
+    gh issue comment "$EPIC_NUM" --body "✅ Все задачи эпика #${EPIC_NUM} готовы — доделывать нечего. Осталось за тобой: проверь CI и **смержи PR #${EPIC_PR_NUMBER}**, затем передвинь эпик в Done. _(finish-flow ничего не запускал, чтобы не крутить вхолостую.)_" >/dev/null 2>&1 || true
+    exit 0
+fi
 
 FINISHED_NOW=""
 STILL_OPEN=""
@@ -173,13 +204,26 @@ EOF
         git commit -m "[developer] finish #${TASK} (epic #${EPIC_NUM}, leftover changes)" || true
     fi
 
+    # Pull the run's terminal reason + turn count from the just-streamed result
+    # line (tee'd into $LOG_FILE) so a stuck task can say WHY, not just "stuck".
+    RESULT_LINE=$(grep '"type":"result"' "$LOG_FILE" 2>/dev/null | tail -1 || true)
+    NUM_TURNS=$(printf '%s' "$RESULT_LINE" | jq -r '.num_turns // "?"' 2>/dev/null || echo "?")
+    TERMINAL=$(printf '%s' "$RESULT_LINE" | jq -r '.terminal_reason // .subtype // "?"' 2>/dev/null || echo "?")
+
     # Did the task reach 'done'? (The agent adds it on success.)
     if gh issue view "$TASK" --json labels --jq '.labels[].name' 2>/dev/null | grep -qx "done"; then
-        echo ">>> #${TASK} is now done."
+        echo ">>> #${TASK} is now done (turns=${NUM_TURNS}/${MAX_TURNS_PER_TASK})."
         FINISHED_NOW="${FINISHED_NOW} #${TASK}"
     else
-        echo ">>> #${TASK} still not done (likely hit max-turns) — tagging dev-stuck for owner review."
+        echo ">>> #${TASK} still not done (terminal=${TERMINAL}, turns=${NUM_TURNS}/${MAX_TURNS_PER_TASK}) — tagging dev-stuck."
         gh issue edit "$TASK" --add-label "dev-stuck" >/dev/null 2>&1 || true
+        # Actionable hint so the owner sees the lever: raise the budget vs split.
+        if [ "${TERMINAL}" = "max_turns" ] || [ "${TERMINAL}" = "error_max_turns" ]; then
+            HINT="Упёрся в потолок ходов (**${NUM_TURNS}/${MAX_TURNS_PER_TASK}**). Варианты: подними бюджет — перезапусти «Доделать эпик» с \`MAX_TURNS_PER_TASK=$((MAX_TURNS_PER_TASK + 60))\`, либо раздроби задачу на куски по 1–2 часа. Частичная работа уже на ветке — следующий прогон продолжит с места."
+        else
+            HINT="Прогон завершился как \`${TERMINAL}\` за ${NUM_TURNS} ходов, но метка done не выставлена. Загляни в лог \`${LOG_FILE##*/}\` — возможно, упали тесты или задача недопонята."
+        fi
+        gh issue comment "$TASK" --body "🚧 **Доделка не дошла до done.** ${HINT}" >/dev/null 2>&1 || true
         STILL_OPEN="${STILL_OPEN} #${TASK}"
     fi
 done

@@ -863,7 +863,7 @@ At the very end output '=== SUMMARY ===' with: task picked, files changed, tests
             --description "Dev agent hit max-turns on this task; needs human triage before retrying" \
             2>/dev/null || true
         gh issue edit "${pick_num}" --add-label dev-stuck 2>/dev/null || true
-        gh issue comment "${pick_num}" --body "🚧 Dev iteration hit max-turns (${HOUR_STAMP}). Tagged \`dev-stuck\`; the picker will skip this task until a human reviews and removes the label. Logs: ${LOG_DIR}/${phase_id}.log" 2>/dev/null || true
+        gh issue comment "${pick_num}" --body "🚧 Dev iteration упёрся в потолок ходов (**max-turns=${max_turns}**, ${HOUR_STAMP}). Повесил \`dev-stuck\` — пикер будет его скипать, пока человек не разберётся. Два рычага: либо **подними бюджет** (перезапусти с \`MAX_TURNS=$((max_turns + 30))\`), либо **раздроби задачу** на куски по 1–2 часа (часто scope слишком крупный или зависимость не готова — напр. Tests взяли раньше Frontend). Лог: ${LOG_DIR}/${phase_id}.log" 2>/dev/null || true
     fi
 }
 
