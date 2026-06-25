@@ -35,6 +35,8 @@ public class HolidayNotificationServiceTests : TestBase
         private readonly Holiday? _holiday;
         public StubHolidayCalendarService(Holiday? holiday) => _holiday = holiday;
         public Holiday? GetHolidayFor(DateOnly tbilisiDate) => _holiday;
+        public IReadOnlyList<Holiday> AllHolidays() =>
+            _holiday is null ? System.Array.Empty<Holiday>() : new[] { _holiday };
     }
 
     private WebApplicationFactory<Program> WithStubbedHoliday(Holiday? holiday)
