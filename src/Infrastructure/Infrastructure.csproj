@@ -19,7 +19,7 @@
         <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.5" />
         <PackageReference Include="OpenAI" Version="2.10.0" />
         <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.7.0-rc.1" />
-        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
+        <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
         <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
         <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.0" />
@@ -28,6 +28,8 @@
         <PackageReference Include="Prometheus.Client.HttpRequestDurations" Version="3.6.0" />
         <PackageReference Include="Telegram.Bot" Version="19.0.0" />
         <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
+        <!-- Security pin: overrides transitive 8.0.2 pulled via Microsoft.AspNetCore.Authentication (CVE-2026-33116, CVE-2026-26171) -->
+        <PackageReference Include="System.Security.Cryptography.Xml" Version="8.0.3" />
     </ItemGroup>
 
     <ItemGroup>
