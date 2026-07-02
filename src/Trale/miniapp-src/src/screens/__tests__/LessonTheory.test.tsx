@@ -305,3 +305,106 @@ describe('LessonTheory — alphabet-progressive L1 preview split', () => {
     expect(screen.getByText('გამარჯობა')).toBeInTheDocument()
   })
 })
+
+describe('LessonTheory — non-alphabet first-visit accordion', () => {
+  it('hides theory blocks behind «📖 Объяснение» on first visit to a non-alphabet module', async () => {
+    const user = userEvent.setup()
+    const paragraph: TheoryBlockDto = { type: 'paragraph', text: 'Падеж — это форма слова.' }
+    const example: TheoryBlockDto = { type: 'example', ge: 'წიგნი', ru: 'книга' }
+    const catalog = makeCatalog({
+      moduleId: 'cases-nominative',
+      lessonId: 1,
+      blocks: [paragraph, example],
+    })
+
+    render(
+      <LessonTheory
+        catalog={catalog}
+        moduleId="cases-nominative"
+        lessonId={1}
+        progress={makeProgress()}
+        navigate={vi.fn()}
+      />
+    )
+
+    // Title card is shown (goal is part of it).
+    expect(screen.getByText(/Запомнить первые буквы алфавита/)).toBeInTheDocument()
+
+    // Theory content is hidden inside the closed accordion.
+    expect(screen.queryByText(/Падеж — это форма слова\./)).not.toBeInTheDocument()
+    expect(screen.queryByText('წიგნი')).not.toBeInTheDocument()
+
+    const trigger = screen.getByRole('button', { name: /Объяснение/ })
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+
+    // Tapping the trigger reveals the theory blocks.
+    await user.click(trigger)
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText(/Падеж — это форма слова\./)).toBeInTheDocument()
+    expect(screen.getByText('წიგნი')).toBeInTheDocument()
+
+    // CTA is «Поехали →» on first visit.
+    expect(screen.getByRole('button', { name: /Поехали/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /к практике/i })).not.toBeInTheDocument()
+  })
+
+  it('renders the full expanded layout for a non-alphabet lesson that is already completed', () => {
+    const paragraph: TheoryBlockDto = { type: 'paragraph', text: 'Повторение — мать учения.' }
+    const catalog = makeCatalog({
+      moduleId: 'cases-nominative',
+      lessonId: 1,
+      blocks: [paragraph],
+    })
+
+    render(
+      <LessonTheory
+        catalog={catalog}
+        moduleId="cases-nominative"
+        lessonId={1}
+        progress={makeProgress({ completedLessons: { 'cases-nominative': [1] } })}
+        navigate={vi.fn()}
+      />
+    )
+
+    // Theory is expanded — no accordion trigger.
+    expect(screen.getByText(/Повторение — мать учения\./)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Объяснение/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /к практике/i })).toBeInTheDocument()
+  })
+
+  it('non-alphabet first visit uses «Объяснение» accordion even when a letters block is present', async () => {
+    const user = userEvent.setup()
+    const letters = ['ა', 'ბ'].map(letter)
+    const paragraph: TheoryBlockDto = { type: 'paragraph', text: 'Смешанный урок.' }
+    // Non-alphabet module that happens to include a letters block in theory —
+    // the alphabet preview split must NOT be applied here.
+    const catalog = makeCatalog({
+      moduleId: 'intro',
+      lessonId: 1,
+      blocks: [{ type: 'letters', letters }, paragraph],
+    })
+
+    render(
+      <LessonTheory
+        catalog={catalog}
+        moduleId="intro"
+        lessonId={1}
+        progress={makeProgress()}
+        navigate={vi.fn()}
+      />
+    )
+
+    // No preview letters up front — everything is hidden behind «📖 Объяснение».
+    expect(screen.queryByText('ა')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Смешанный урок\./)).not.toBeInTheDocument()
+
+    const trigger = screen.getByRole('button', { name: /Объяснение/ })
+    expect(trigger).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Остальные буквы/ })).not.toBeInTheDocument()
+
+    await user.click(trigger)
+    expect(screen.getByText('ა')).toBeInTheDocument()
+    expect(screen.getByText(/Смешанный урок\./)).toBeInTheDocument()
+  })
+})
