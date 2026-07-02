@@ -63,6 +63,9 @@ export default function LessonTheory({
     moduleId === 'alphabet-progressive' && lessonId === module.lessons[0]?.id
   // Preview-split layout: first 3 letters up front, rest behind an accordion.
   const showAlphabetPreview = isAlphabetL1 && isFirstVisit
+  // Non-alphabet first-visit gate: hide the whole theory behind «📖 Объяснение»
+  // so the title card and CTA are what the user sees first.
+  const showTheoryAccordion = !isAlphabetL1 && isFirstVisit
 
   const lettersBlock = theory.blocks.find((b) => b.type === 'letters')
   const previewLetters = lettersBlock?.letters?.slice(0, 3) ?? []
@@ -108,6 +111,12 @@ export default function LessonTheory({
             restBlocks={restBlocks}
             hasLettersBlock={Boolean(lettersBlock)}
           />
+        ) : showTheoryAccordion && theory.blocks.length > 0 ? (
+          <TheoryAccordion label="Объяснение">
+            {theory.blocks.map((b, i) => (
+              <TheoryBlock key={i} block={b} />
+            ))}
+          </TheoryAccordion>
         ) : (
           <div className="flex flex-col gap-4">
             {theory.blocks.map((b, i) => (

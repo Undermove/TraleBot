@@ -89,7 +89,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 |---|---|---|
 | `Dashboard.tsx` | `dashboard` | Main hub: launch-path bar, module tiles, streak, XP, mascot. |
 | `ModuleMap.tsx` | `module` | Lesson list for a module. |
-| `LessonTheory.tsx` | `lesson-theory` | Theory blocks + reveal overlay; launches Practice. On first visit to alphabet-progressive L1 renders a preview-split: 3 letter cards up front + a «📖 Остальные буквы» accordion hiding the rest. |
+| `LessonTheory.tsx` | `lesson-theory` | Theory blocks + reveal overlay; launches Practice. On first visit to alphabet-progressive L1 renders a preview-split: 3 letter cards up front + a «📖 Остальные буквы» accordion hiding the rest. On first visit to every other lesson (non alphabet L1) hides the theory under a plain «📖 Объяснение» accordion. CTA reads «Поехали →» on first visit, «к практике →» once completed. |
 | `Practice.tsx` | `practice` | Question-answer loop for a lesson. |
 | `Result.tsx` | `result` | Lesson result summary with kilim strip. |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |

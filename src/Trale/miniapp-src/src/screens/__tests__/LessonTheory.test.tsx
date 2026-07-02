@@ -181,7 +181,7 @@ describe('LessonTheory — alphabet-progressive L1 preview split', () => {
     expect(screen.getByText(/Только текст\./)).toBeInTheDocument()
   })
 
-  it('renders the full expanded layout for alphabet-progressive lesson 2 (gate does not apply)', () => {
+  it('alphabet-progressive lesson 2 first visit uses the «📖 Объяснение» accordion (preview split is L1-only)', () => {
     const letters = ['ვ', 'ზ', 'თ', 'ი'].map(letter)
     const paragraph: TheoryBlockDto = { type: 'paragraph', text: 'Продолжаем алфавит.' }
     // Lesson 2 is the target — put L1 as a stub with empty theory so module.lessons[0].id === 1.
@@ -221,12 +221,12 @@ describe('LessonTheory — alphabet-progressive L1 preview split', () => {
       />
     )
 
-    // Everything is expanded: all letters and the paragraph are directly visible,
-    // no accordion trigger renders.
-    letters.forEach((l) => expect(screen.getByText(l.letter)).toBeInTheDocument())
-    expect(screen.getByText(/Продолжаем алфавит\./)).toBeInTheDocument()
+    // Preview split does NOT fire (that's L1-only) — everything is folded under
+    // the plain «📖 Объяснение» accordion instead.
+    letters.forEach((l) => expect(screen.queryByText(l.letter)).not.toBeInTheDocument())
+    expect(screen.queryByText(/Продолжаем алфавит\./)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Остальные буквы/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Объяснение/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Объяснение/ })).toBeInTheDocument()
   })
 
   it('renders the full layout when alphabet L1 is already completed (no first-visit gate)', () => {
