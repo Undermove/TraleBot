@@ -9,6 +9,7 @@ import OnboardingSpotlight from '../components/OnboardingSpotlight'
 import MilestoneBanner, { XP_MILESTONES, STREAK_MILESTONES } from '../components/MilestoneBanner'
 import TreatShop from '../components/TreatShop'
 import FeedingAnimation from '../components/FeedingAnimation'
+import FirstLessonHeroCta from '../components/FirstLessonHeroCta'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 
@@ -231,6 +232,22 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         {(() => {
           const { greeting, mascotMood: baseMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
           const availableXp = Math.max(0, progress.xp - progress.xpSpent)
+          // #1002: brand-new user gate — no completed lessons in any module.
+          // Drives a single, unambiguous conversion action (FirstLessonHeroCta)
+          // instead of the regular suggestion tile; mascot shrinks to 80px and
+          // the bowl indicator is hidden (nothing to show at 0 progress).
+          const isNewUser = Object.keys(progress.completedLessons).length === 0
+          const firstModule = catalog.modules.find((m) => m.lessons.length > 0) ?? null
+          const firstLesson = firstModule ? firstModule.lessons[0] : null
+          const heroFirstLesson = isNewUser && firstModule && firstLesson
+            ? {
+                moduleId: firstModule.id,
+                lessonId: firstLesson.id,
+                title: firstLesson.title,
+                moduleTitle: firstModule.title,
+              }
+            : null
+          const mascotSize = heroFirstLesson ? 80 : 120
           const hoursSinceFed = progress.lastFedAtUtc
             ? (Date.now() - new Date(progress.lastFedAtUtc).getTime()) / (1000 * 60 * 60)
             : null
@@ -268,19 +285,24 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 onClick={() => navigate({ kind: 'profile' })}
                 className="w-full flex flex-col items-center gap-2 text-center active:opacity-80 transition-opacity"
               >
-                <div className="relative">
-                  <Mascot mood={mascotMood} satietyTier={satietyTier} size={120} />
-                  {/* Bowl indicator */}
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className={`w-3 h-3 rounded-full border-2 transition-all ${
-                          i < bowlFill ? 'bg-gold border-gold shadow-sm' : 'bg-cream-deep border-jewelInk/30'
-                        }`}
-                      />
-                    ))}
-                  </div>
+                <div className="relative" data-testid="dashboard-mascot">
+                  <Mascot mood={mascotMood} satietyTier={satietyTier} size={mascotSize} />
+                  {/* Bowl indicator — hidden for brand-new users (nothing to fill yet). */}
+                  {!heroFirstLesson && (
+                    <div
+                      className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1"
+                      data-testid="dashboard-bowl-indicator"
+                    >
+                      {[0, 1, 2].map((i) => (
+                        <div
+                          key={i}
+                          className={`w-3 h-3 rounded-full border-2 transition-all ${
+                            i < bowlFill ? 'bg-gold border-gold shadow-sm' : 'bg-cream-deep border-jewelInk/30'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="font-sans font-extrabold text-[20px] leading-[1.1] text-jewelInk tracking-tight">
@@ -306,7 +328,20 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 </button>
               </div>
 
-              {suggestion && (
+              {heroFirstLesson && (
+                <FirstLessonHeroCta
+                  firstLesson={heroFirstLesson}
+                  onStart={() =>
+                    navigate({
+                      kind: 'lesson-theory',
+                      moduleId: heroFirstLesson.moduleId,
+                      lessonId: heroFirstLesson.lessonId,
+                    })
+                  }
+                />
+              )}
+
+              {!heroFirstLesson && suggestion && (
                 <button
                   data-testid="dashboard-suggestion"
                   onClick={() => navigate(suggestion.screen)}
