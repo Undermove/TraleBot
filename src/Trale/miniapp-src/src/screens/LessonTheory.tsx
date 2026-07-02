@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 import RevealKaniOverlay from '../components/RevealKaniOverlay'
+import TheoryAccordion from '../components/TheoryAccordion'
 import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
 
 interface Props {
@@ -57,6 +58,17 @@ export default function LessonTheory({
     )
   }
 
+  const isFirstVisit = !(progress.completedLessons[moduleId] ?? []).includes(lessonId)
+  const isAlphabetL1 =
+    moduleId === 'alphabet-progressive' && lessonId === module.lessons[0]?.id
+  // Preview-split layout: first 3 letters up front, rest behind an accordion.
+  const showAlphabetPreview = isAlphabetL1 && isFirstVisit
+
+  const lettersBlock = theory.blocks.find((b) => b.type === 'letters')
+  const previewLetters = lettersBlock?.letters?.slice(0, 3) ?? []
+  const restLetters = lettersBlock?.letters?.slice(3) ?? []
+  const restBlocks = theory.blocks.filter((b) => b !== lettersBlock)
+
   return (
     <div className="flex flex-col min-h-full bg-cream">
       <Header
@@ -89,12 +101,20 @@ export default function LessonTheory({
           </div>
         </div>
 
-        {/* Theory blocks */}
-        <div className="flex flex-col gap-4">
-          {theory.blocks.map((b, i) => (
-            <TheoryBlock key={i} block={b} />
-          ))}
-        </div>
+        {showAlphabetPreview ? (
+          <AlphabetPreviewLayout
+            previewLetters={previewLetters}
+            restLetters={restLetters}
+            restBlocks={restBlocks}
+            hasLettersBlock={Boolean(lettersBlock)}
+          />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {theory.blocks.map((b, i) => (
+              <TheoryBlock key={i} block={b} />
+            ))}
+          </div>
+        )}
 
         <div className="mn-kilim opacity-70 mt-6" />
       </article>
@@ -108,13 +128,60 @@ export default function LessonTheory({
           variant="primary"
           onClick={() => navigate({ kind: 'practice', moduleId, lessonId })}
         >
-          к практике →
+          {isFirstVisit ? 'Поехали →' : 'к практике →'}
         </Button>
       </div>
 
       {/* Reveal moment: letter ქ connection to ქართული (Georgian) */}
       {showReveal && (
         <RevealKaniOverlay onClose={() => setShowReveal(false)} />
+      )}
+    </div>
+  )
+}
+
+interface AlphabetPreviewLayoutProps {
+  previewLetters: NonNullable<TheoryBlockDto['letters']>
+  restLetters: NonNullable<TheoryBlockDto['letters']>
+  restBlocks: TheoryBlockDto[]
+  hasLettersBlock: boolean
+}
+
+function AlphabetPreviewLayout({
+  previewLetters,
+  restLetters,
+  restBlocks,
+  hasLettersBlock,
+}: AlphabetPreviewLayoutProps) {
+  // If there's no letters block at all, fall back to a plain «📖 Объяснение»
+  // accordion that hides every theory block.
+  if (!hasLettersBlock) {
+    if (restBlocks.length === 0) return null
+    return (
+      <TheoryAccordion label="Объяснение">
+        {restBlocks.map((b, i) => (
+          <TheoryBlock key={i} block={b} />
+        ))}
+      </TheoryAccordion>
+    )
+  }
+
+  const hasHiddenContent = restLetters.length > 0 || restBlocks.length > 0
+
+  return (
+    <div className="flex flex-col gap-4">
+      {previewLetters.length > 0 && (
+        <TheoryBlock block={{ type: 'letters', letters: previewLetters }} />
+      )}
+      {hasHiddenContent && (
+        <TheoryAccordion label="Остальные буквы">
+          {restLetters.length > 0 && (
+            <TheoryBlock block={{ type: 'letters', letters: restLetters }} />
+          )}
+          {restBlocks.map((b, i) => (
+            <TheoryBlock key={i} block={b} />
+          ))}
+        </TheoryAccordion>
       )}
     </div>
   )
