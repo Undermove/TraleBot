@@ -145,6 +145,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `ChipPool.tsx` | Scrollable pool of WordChip tokens for sentence-builder drag-to-slot interaction. |
 | `WordChip.tsx` | Tappable chip representing one Georgian word token; selected/used states. |
 | `TheoryAccordion.tsx` | Collapsible section used on LessonTheory to hide secondary theory behind a tap on first visit (label «📖 Объяснение» / «📖 Остальные буквы»). |
+| `FirstLessonHeroCta.tsx` | Navy hero-CTA rendered on the Dashboard for brand-new users (`completedLessons === {}`). Surfaces «გამარჯობა!» + first lesson title; tap navigates to lesson-theory of the first module's first lesson. |
 
 ### Data (`src/data/`)
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
