@@ -535,6 +535,15 @@ input:focus-visible {
   animation: goldFlash 600ms ease-in-out both;
 }
 
+/* ModuleMap pristine-module pulse ring — first lesson circle pulses so users
+   see where the path starts. Uses --pulse-start / --pulse-end CSS vars set
+   inline per accent so the same keyframe works for navy/ruby/gold. */
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0   var(--pulse-start, rgba(27,95,176,0.4)), 2px 2px 0 #15100A; }
+  70%  { box-shadow: 0 0 0 8px var(--pulse-end,   rgba(27,95,176,0)),   2px 2px 0 #15100A; }
+  100% { box-shadow: 0 0 0 0   var(--pulse-end,   rgba(27,95,176,0)),   2px 2px 0 #15100A; }
+}
+
 /* Full-viewport-width kilim strip — breaks out of max-width:480px container.
    Used only on LandingScreen where kilim must span the full browser window. */
 .mn-kilim-full {
