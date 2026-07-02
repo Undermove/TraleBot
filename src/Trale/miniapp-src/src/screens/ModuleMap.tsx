@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
 import { CatalogDto, ProgressState, Screen } from '../types'
+
+const moduleStartedKey = (moduleId: string) => `bombora_module_started_${moduleId}`
 
 interface Props {
   catalog: CatalogDto
@@ -37,6 +39,31 @@ export default function ModuleMap({
   const completed = new Set(progress.completedLessons[moduleId] ?? [])
   const done = completed.size
   const firstIncomplete = lessons.find((l) => !completed.has(l.id))?.id ?? -1
+
+  // Pristine = no completed lessons in this module AND user hasn't tapped anything yet.
+  // Tracked in localStorage so the pulse survives a reload but disappears after the
+  // first interaction (per-moduleId so other modules keep pulsing independently).
+  const isModulePristine = () => {
+    if (done > 0) return false
+    try {
+      return !localStorage.getItem(moduleStartedKey(moduleId))
+    } catch {
+      return true
+    }
+  }
+  const [isPristine, setIsPristine] = useState<boolean>(isModulePristine)
+  useEffect(() => {
+    setIsPristine(isModulePristine())
+    // moduleId change re-evaluates; done recomputed each render is fine.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduleId, done])
+
+  const markModuleStarted = () => {
+    try {
+      localStorage.setItem(moduleStartedKey(moduleId), '1')
+    } catch {}
+    setIsPristine(false)
+  }
 
   const geoLabels: Record<string, string> = {
     'alphabet-progressive': 'ანბანი',
@@ -213,6 +240,7 @@ export default function ModuleMap({
             const isCurrent = lesson.id === firstIncomplete
             const isEven = idx % 2 === 0
             const topY = idx * STEP_Y
+            const isFirstAndPulsing = idx === 0 && isPristine
 
             // Circle positioning: even = left of center, odd = right
             const circleLeft = isEven
@@ -248,18 +276,31 @@ export default function ModuleMap({
                 ? '2px 2px 0 #15100A'
                 : '1px 1px 0 rgba(21,16,10,0.25)'
 
+            // Pulse ring vars — accentHex with alpha 40% at start, transparent at peak.
+            // Only applied to the first circle when the module is pristine (see spec §936).
+            const pulseVars: React.CSSProperties = isFirstAndPulsing
+              ? ({
+                  ['--pulse-start' as any]: `${accentHex}66`,
+                  ['--pulse-end' as any]: `${accentHex}00`,
+                  animation: 'pulse-ring 1.5s ease-out infinite',
+                } as React.CSSProperties)
+              : {}
+
+            const onLessonTap = () => {
+              if (isPristine) markModuleStarted()
+              navigate({
+                kind: 'lesson-theory',
+                moduleId,
+                lessonId: lesson.id,
+              })
+            }
+
             return (
               <div key={lesson.id} className="absolute" style={{ top: topY, left: 0, right: 0, height: CIRCLE_SIZE }}>
                 {/* Tappable circle */}
                 <button
                   data-testid={`lesson-btn-${lesson.id}`}
-                  onClick={() =>
-                    navigate({
-                      kind: 'lesson-theory',
-                      moduleId,
-                      lessonId: lesson.id
-                    })
-                  }
+                  onClick={onLessonTap}
                   className={`absolute ${circleBg} border-[1.5px] ${circleBorder} rounded-full flex items-center justify-center transition-transform active:scale-95`}
                   style={{
                     width: CIRCLE_SIZE,
@@ -267,7 +308,8 @@ export default function ModuleMap({
                     top: 0,
                     left: circleLeft,
                     boxShadow: circleShadow,
-                    WebkitTapHighlightColor: 'transparent'
+                    WebkitTapHighlightColor: 'transparent',
+                    ...pulseVars,
                   }}
                 >
                   {isDone ? (
@@ -293,13 +335,7 @@ export default function ModuleMap({
 
                 {/* Label next to circle */}
                 <button
-                  onClick={() =>
-                    navigate({
-                      kind: 'lesson-theory',
-                      moduleId,
-                      lessonId: lesson.id
-                    })
-                  }
+                  onClick={onLessonTap}
                   className="absolute flex flex-col justify-center"
                   style={{
                     top: 0,
@@ -326,6 +362,17 @@ export default function ModuleMap({
                   >
                     {lesson.short}
                   </div>
+                  {isFirstAndPulsing && (
+                    <span
+                      className={`inline-flex items-center gap-1 font-sans text-[10px] font-extrabold ${accentText} rounded-md px-1.5 py-0.5 mt-1 self-start border`}
+                      style={{
+                        backgroundColor: `${accentHex}1A`,
+                        borderColor: `${accentHex}4D`,
+                      }}
+                    >
+                      ▶ Начни здесь
+                    </span>
+                  )}
                 </button>
               </div>
             )

@@ -89,7 +89,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 |---|---|---|
 | `Dashboard.tsx` | `dashboard` | Main hub: launch-path bar, module tiles, streak, XP, mascot. |
 | `ModuleMap.tsx` | `module` | Lesson list for a module. |
-| `LessonTheory.tsx` | `lesson-theory` | Theory blocks + reveal overlay; launches Practice. |
+| `LessonTheory.tsx` | `lesson-theory` | Theory blocks + reveal overlay; launches Practice. On first visit to alphabet-progressive L1 renders a preview-split: 3 letter cards up front + a «📖 Остальные буквы» accordion hiding the rest. On first visit to every other lesson (non alphabet L1) hides the theory under a plain «📖 Объяснение» accordion. CTA reads «Поехали →» on first visit, «к практике →» once completed. |
 | `Practice.tsx` | `practice` | Question-answer loop for a lesson. |
 | `Result.tsx` | `result` | Lesson result summary with kilim strip. |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |
@@ -144,6 +144,8 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `SentenceSlot.tsx` | Single droppable slot in the sentence-builder (empty / preset / filled states). |
 | `ChipPool.tsx` | Scrollable pool of WordChip tokens for sentence-builder drag-to-slot interaction. |
 | `WordChip.tsx` | Tappable chip representing one Georgian word token; selected/used states. |
+| `TheoryAccordion.tsx` | Collapsible section used on LessonTheory to hide secondary theory behind a tap on first visit (label «📖 Объяснение» / «📖 Остальные буквы»). |
+| `FirstLessonHeroCta.tsx` | Navy hero-CTA rendered on the Dashboard for brand-new users (`completedLessons === {}`). Surfaces «გამარჯობა!» + first lesson title; tap navigates to lesson-theory of the first module's first lesson. |
 
 ### Data (`src/data/`)
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
