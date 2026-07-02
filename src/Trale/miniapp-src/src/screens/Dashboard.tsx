@@ -314,19 +314,30 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 </div>
               </button>
 
-              {/* ── Feed button ── */}
-              <div className="mt-3 flex justify-center" onClick={(e) => e.stopPropagation()}>
-                <button
-                  data-testid="dashboard-feed-button"
-                  onClick={() => setTreatShopOpen(true)}
-                  className="px-4 py-2 rounded-xl font-sans text-[13px] font-extrabold bg-gold text-jewelInk border-[1.5px] border-jewelInk active:scale-95 transition-transform flex items-center gap-2"
-                  style={{ boxShadow: '2px 2px 0 #15100A' }}
-                >
-                  <span className="text-[16px] leading-none">🍖</span>
-                  <span>Покормить</span>
-                  <span className="text-jewelInk/70 font-bold">· ⭐ {availableXp}</span>
-                </button>
-              </div>
+              {/* ── Feed button (or hint when there's no XP to spend, #1001) ── */}
+              {availableXp > 0 ? (
+                <div className="mt-3 flex justify-center" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    data-testid="dashboard-feed-button"
+                    onClick={() => setTreatShopOpen(true)}
+                    className="px-4 py-2 rounded-xl font-sans text-[13px] font-extrabold bg-gold text-jewelInk border-[1.5px] border-jewelInk active:scale-95 transition-transform flex items-center gap-2"
+                    style={{ boxShadow: '2px 2px 0 #15100A' }}
+                  >
+                    <span className="text-[16px] leading-none">🍖</span>
+                    <span>Покормить</span>
+                    <span className="text-jewelInk/70 font-bold">· ⭐ {availableXp}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-3 flex justify-center">
+                  <p
+                    data-testid="dashboard-feed-hint"
+                    className="font-sans text-[12px] text-center text-jewelInk-hint leading-snug px-6"
+                  >
+                    Заработай XP первым уроком — получишь угощения для Бомборы
+                  </p>
+                </div>
+              )}
 
               {heroFirstLesson && (
                 <FirstLessonHeroCta
