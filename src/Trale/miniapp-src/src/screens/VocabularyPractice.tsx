@@ -55,6 +55,21 @@ export default function VocabularyPractice({
   const [typedAnswer, setTypedAnswer] = useState('')
   const [correctCount, setCorrectCount] = useState(0)
   const [isCurrentCorrect, setIsCurrentCorrect] = useState(false)
+  // Per-answer server credit: XP accumulated mid-quiz, plus the in-flight call
+  // so lesson-complete on the final question never races it.
+  const answerXpRef = React.useRef(0)
+  const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
+
+  function reportAnswer(correct: boolean) {
+    if (!authenticated) return
+    pendingAnswerRef.current = api
+      .recordAnswer({ correct })
+      .then((r) => {
+        answerXpRef.current += r.xpEarned
+        setProgress(progressFromDto(r.progress))
+      })
+      .catch(() => {})
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -198,6 +213,7 @@ export default function VocabularyPractice({
     setPhase('checked')
     const correct = current.options[selected] === current.correct
     setIsCurrentCorrect(correct)
+    reportAnswer(correct)
     if (correct) setCorrectCount((c) => c + 1)
     if (current.wordId) {
       api.recordVocabularyAnswer({
@@ -214,6 +230,7 @@ export default function VocabularyPractice({
     setPhase('checked')
     const correct = trimmed.toLowerCase() === current.correct.toLowerCase()
     setIsCurrentCorrect(correct)
+    reportAnswer(correct)
     if (correct) setCorrectCount((c) => c + 1)
     if (current.wordId) {
       api.recordVocabularyAnswer({
@@ -231,6 +248,7 @@ export default function VocabularyPractice({
 
       if (authenticated) {
         try {
+          await pendingAnswerRef.current
           const r = await api.completeLesson({
             moduleId: 'vocabulary',
             lessonId: 0,
@@ -238,7 +256,7 @@ export default function VocabularyPractice({
             total
           })
           setProgress(progressFromDto(r.progress))
-          xpEarned = r.xpEarned
+          xpEarned = r.xpEarned + answerXpRef.current
         } catch {
           setProgress({ ...progress, xp: progress.xp + xpEarned })
         }

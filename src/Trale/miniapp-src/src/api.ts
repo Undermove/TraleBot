@@ -133,6 +133,12 @@ export const api = {
       body: JSON.stringify(payload)
     }),
 
+  recordAnswer: (payload: { correct: boolean }) =>
+    request<LessonCompleteResponse>('/api/miniapp/progress/answer', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+
   markOnboardingHintSeen: (hintKey: string) =>
     request<{ ok: boolean }>('/api/miniapp/onboarding/hint-seen', {
       method: 'POST',

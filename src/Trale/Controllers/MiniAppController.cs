@@ -412,6 +412,37 @@ public class MiniAppController : Controller
         };
     }
 
+    public class ProgressAnswerRequest
+    {
+        public bool Correct { get; set; }
+    }
+
+    [HttpPost("progress/answer")]
+    public async Task<IActionResult> RecordAnswer([FromBody] ProgressAnswerRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var result = await _mediator.Send(new RecordLessonAnswer
+        {
+            UserId = user.Id,
+            Correct = request.Correct
+        }, ct);
+
+        return result switch
+        {
+            RecordLessonAnswerResult.Success s => Ok(new
+            {
+                xpEarned = s.XpEarned,
+                progress = s.Progress
+            }),
+            _ => BadRequest(new { error = "unknown" })
+        };
+    }
+
     public class HintSeenRequest
     {
         public string HintKey { get; set; } = string.Empty;

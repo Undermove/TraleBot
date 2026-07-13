@@ -42,7 +42,41 @@ public class ProgressCalculator : IProgressCalculator
 
         progress.Xp += xpEarned;
 
-        // Streak
+        RegisterActivity(progress);
+
+        // Record completion — only on 100%, skip "vocabulary" pseudo-module
+        var lessonCompleted = false;
+        if (isPerfect && lessonId > 0 && moduleId != "vocabulary")
+        {
+            if (!lessons.Contains(lessonId))
+            {
+                lessons.Add(lessonId);
+                lessons.Sort();
+                lessonCompleted = true;
+            }
+            completed[moduleId] = lessons;
+            progress.CompletedLessonsJson = JsonSerializer.Serialize(completed);
+        }
+
+        progress.UpdatedAtUtc = DateTime.UtcNow;
+
+        return new ProgressUpdate(xpEarned, lessonCompleted);
+    }
+
+    public AnswerUpdate RecordAnswer(MiniAppUserProgress progress, bool correct)
+    {
+        var xpEarned = correct ? LearningConstants.XpRewards.CorrectAnswer : 0;
+        progress.Xp += xpEarned;
+
+        RegisterActivity(progress);
+        progress.UpdatedAtUtc = DateTime.UtcNow;
+
+        return new AnswerUpdate(xpEarned);
+    }
+
+    // Marks "the user trained now": streak, LastPlayedAtUtc and the heatmap day.
+    private static void RegisterActivity(MiniAppUserProgress progress)
+    {
         var todayUtc = DateTime.UtcNow.Date;
         if (progress.LastPlayedAtUtc == null)
         {
@@ -66,24 +100,6 @@ public class ProgressCalculator : IProgressCalculator
         }
         progress.LastPlayedAtUtc = DateTime.UtcNow;
         RecordActivityDay(progress, DateTime.UtcNow);
-
-        // Record completion — only on 100%, skip "vocabulary" pseudo-module
-        var lessonCompleted = false;
-        if (isPerfect && lessonId > 0 && moduleId != "vocabulary")
-        {
-            if (!lessons.Contains(lessonId))
-            {
-                lessons.Add(lessonId);
-                lessons.Sort();
-                lessonCompleted = true;
-            }
-            completed[moduleId] = lessons;
-            progress.CompletedLessonsJson = JsonSerializer.Serialize(completed);
-        }
-
-        progress.UpdatedAtUtc = DateTime.UtcNow;
-
-        return new ProgressUpdate(xpEarned, lessonCompleted);
     }
 
     public object SerializeProgress(MiniAppUserProgress progress)
