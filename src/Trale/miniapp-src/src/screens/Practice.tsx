@@ -58,6 +58,21 @@ export default function Practice({
   const [wrongQuestions, setWrongQuestions] = useState<QuizQuestion[]>([])
   // For shake animation on wrong type answer
   const [shakeInput, setShakeInput] = useState(false)
+  // Per-answer server credit: XP accumulated mid-lesson, plus the in-flight call
+  // so lesson-complete on the final question never races it.
+  const answerXpRef = React.useRef(0)
+  const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
+
+  function reportAnswer(correct: boolean) {
+    if (!authenticated) return
+    pendingAnswerRef.current = api
+      .recordAnswer({ correct })
+      .then((r) => {
+        answerXpRef.current += r.xpEarned
+        setProgress(progressFromDto(r.progress))
+      })
+      .catch(() => {})
+  }
 
   function applyOfflineProgress(isPerfect: boolean, xpEarned: number) {
     const updatedProgress = { ...progress, xp: progress.xp + xpEarned }
@@ -175,15 +190,17 @@ export default function Practice({
       setWrongQuestions((prev) => [...prev, current])
     }
     const newWrongQuestions = isCorrect ? wrongQuestions : [...wrongQuestions, current]
+    reportAnswer(isCorrect)
 
     if (index + 1 >= total) {
       const isPerfect = newCorrectCount === total
       let xpEarned = isPerfect ? 20 : 0
       if (authenticated) {
         try {
+          await pendingAnswerRef.current
           const r = await api.completeLesson({ moduleId, lessonId, correct: newCorrectCount, total })
           setProgress(progressFromDto(r.progress))
-          xpEarned = r.xpEarned
+          xpEarned = r.xpEarned + answerXpRef.current
         } catch {
           applyOfflineProgress(isPerfect, xpEarned)
         }
@@ -200,6 +217,7 @@ export default function Practice({
       if (typedAnswer.trim() === '') return
       setPhase('checked')
       const correct = typedAnswer.trim().toLowerCase() === correctAnswer.toLowerCase()
+      reportAnswer(correct)
       if (correct) {
         setCorrectCount((c) => c + 1)
       } else {
@@ -210,7 +228,9 @@ export default function Practice({
     } else {
       if (selected === null) return
       setPhase('checked')
-      if (selected === current.answerIndex) {
+      const correct = selected === current.answerIndex
+      reportAnswer(correct)
+      if (correct) {
         setCorrectCount((c) => c + 1)
       } else {
         setWrongQuestions((prev) => [...prev, current])
@@ -226,6 +246,7 @@ export default function Practice({
 
       if (authenticated) {
         try {
+          await pendingAnswerRef.current
           const r = await api.completeLesson({
             moduleId,
             lessonId,
@@ -233,7 +254,7 @@ export default function Practice({
             total
           })
           setProgress(progressFromDto(r.progress))
-          xpEarned = r.xpEarned
+          xpEarned = r.xpEarned + answerXpRef.current
         } catch {
           applyOfflineProgress(isPerfect, xpEarned)
         }

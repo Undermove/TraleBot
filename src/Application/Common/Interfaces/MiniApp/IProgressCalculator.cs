@@ -11,7 +11,11 @@ public interface IProgressCalculator
         int correct,
         int total);
 
+    AnswerUpdate RecordAnswer(MiniAppUserProgress progress, bool correct);
+
     object SerializeProgress(MiniAppUserProgress progress);
 }
 
 public record ProgressUpdate(int XpEarned, bool LessonCompleted);
+
+public record AnswerUpdate(int XpEarned);

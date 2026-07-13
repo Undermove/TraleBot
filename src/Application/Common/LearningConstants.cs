@@ -8,6 +8,7 @@ public static class LearningConstants
         public const int PerfectRepeat = 10;
         public const int IncompleteFirstAttempt = 0;
         public const int IncompleteRepeat = 5;
+        public const int CorrectAnswer = 1;
     }
 
     public static class Quiz
