@@ -8,6 +8,14 @@ RUN npm ci
 COPY src/Trale/miniapp-src/ ./
 RUN npm run build
 
+# Stage 1b: static SEO pages (grammar reference) → same wwwroot, alongside the SPA.
+# Pure HTML generated at build time from site/content; owns sitemap.xml. See site/README.md.
+WORKDIR /build/site
+COPY site/package.json site/package-lock.json ./
+RUN npm ci
+COPY site/ ./
+RUN npm run build
+
 # Stage 2: build the .NET solution, pulling in the freshly built static assets
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
