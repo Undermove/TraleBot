@@ -468,7 +468,22 @@ export default function LandingScreen({ botUsername }: Props) {
           Мини-апп работает внутри бота @trale_bot
         </div>
 
-        <div className="mt-8 font-sans text-[10px] font-bold text-jewelInk-hint uppercase tracking-widest">
+        <nav
+          aria-label="Разделы сайта"
+          className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 font-sans text-[13px] font-semibold text-jewelInk-mid"
+        >
+          <a href="/grammar/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Грамматика грузинского
+          </a>
+          <a href="/privacy.html" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Конфиденциальность
+          </a>
+          <a href="/terms.html" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Условия
+          </a>
+        </nav>
+
+        <div className="mt-4 font-sans text-[10px] font-bold text-jewelInk-hint uppercase tracking-widest">
           TraleBot · ბომბორა · 2026
         </div>
       </section>

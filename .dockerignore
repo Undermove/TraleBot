@@ -1,0 +1,7 @@
+# Host-side installs must never leak into the image: npm ci runs inside the build stages.
+**/node_modules
+**/bin
+**/obj
+**/test-results
+**/playwright-report
+.git

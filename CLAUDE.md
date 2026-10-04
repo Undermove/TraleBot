@@ -135,6 +135,23 @@ Frontend в `src/Trale/miniapp-src/` (React 18 + Vite + TypeScript + Tailwind). 
 - Загрузчик: `GeorgianQuestionsLoader` (берёт subdirectory из ModuleDefinition)
 - Тип `sentence-builder` (§79) — DTO в `src/Infrastructure/Telegram/Services/SentenceBuilderQuestion.cs`, UI в `src/Trale/miniapp-src/src/components/SentenceBuilder*.tsx`
 
+## Сайт vs мини-апп (SEO-страницы в `site/`)
+
+На tralebot.com живут два продукта с разными правилами:
+
+- **Мини-апп** — React-SPA из `src/Trale/miniapp-src/`, корень домена `/`, данные через `/api/miniapp/*`. Работает только с JavaScript, индексация ему не нужна.
+- **Статический сайт** — `site/` (генератор `site/build.mjs`, контент в `site/content/<раздел>/*.md`). Собирается при сборке Docker-образа в тот же `src/Trale/wwwroot/` и отдаётся тем же `UseStaticFiles`. URL вида `/grammar/`, `/grammar/<slug>/`. Генератор владеет `sitemap.xml`.
+
+Правила:
+
+1. **Статические страницы не тянут рантайм аппа.** Чистый HTML + инлайн CSS, никакого JS, никаких запросов к `/api`. Никаких импортов из `miniapp-src/`. Текст должен быть в исходнике страницы, а не в заглушке «включите JavaScript».
+2. **Мини-апп не трогаем ради сайта.** Его маршруты, `index.html`, `assets/`, поведение не меняются. Генератор чистит и пишет только свои разделы (`/grammar/` и т.д.) и `sitemap.xml`. Новый раздел не может называться `api`, `assets`, `audio`, `metrics`, `healthz`.
+3. **Грамматические данные только из базы проекта.** Ничего не генерировать, не достраивать недостающие формы по аналогии и не брать из своих знаний о грузинском. Источник — `src/Trale/Lessons/**/*.json` и теория в `MiniAppContentProvider.cs`. Если данных для страницы нет, страница не создаётся или ячейка остаётся пустой, и это фиксируется в отчёте. **Полных таблиц спряжения в проекте сейчас нет** — страницы `/verbs/<глагол>` без такой базы делать нельзя.
+4. **Ручные страницы по темам** (падежи, алфавит, послелоги) пишет автор проекта. Агент делает каркас, вёрстку, meta и перелинковку; черновой текст помечается `draft: true` во front matter (страница собирается с `noindex`, не попадает в sitemap).
+5. Каждая страница: уникальные `title` и `description`, canonical, Open Graph, кнопка «Открыть в Telegram» с диплинком `?start=seo_<раздел>_<slug>` (тег попадает в AcquisitionSource).
+
+Команды: `cd site && npm ci && npm run build` (пишет в `../src/Trale/wwwroot`), `npm test`. Проверка после сборки: `dotnet run --project src/Trale` и открыть `http://localhost:1402/grammar/`.
+
 ## Agent-Driven Development
 
 Проект развивается ночными Claude-агентами в Docker-контейнере (`deploy/agents/`). Промпты агентов — в `.claude/agents/`. Cron в Тбилиси: 01:00–08:00 ежечасно (`run-pipeline.sh auto`), 09:00 — `run-qa.sh` открывает PR.

@@ -1,0 +1,18 @@
+{
+  "siteName": "TraleBot",
+  "baseUrl": "https://tralebot.com",
+  "botUsername": "trale_bot",
+  "locale": "ru_RU",
+  "language": "ru",
+  "author": "Dmitry Afonchenko",
+  "ogImage": "/og/grammar.png",
+  "verification": {
+    "google": "",
+    "yandex": ""
+  },
+  "extraSitemapUrls": [
+    { "path": "/", "changefreq": "weekly", "priority": "1.0" },
+    { "path": "/privacy.html", "changefreq": "yearly", "priority": "0.2" },
+    { "path": "/terms.html", "changefreq": "yearly", "priority": "0.2" }
+  ]
+}

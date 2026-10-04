@@ -1,0 +1,17 @@
+{
+  "name": "tralebot-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Static SEO pages for tralebot.com (grammar reference). Built at image build time into src/Trale/wwwroot, served by the same ASP.NET static-files middleware as the mini-app. No runtime coupling with the mini-app.",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "marked": "^18.0.0"
+  }
+}

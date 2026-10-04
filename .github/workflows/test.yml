@@ -33,3 +33,26 @@ jobs:
 
       - name: Run tests
         run: dotnet test --no-build --configuration Release --logger "console;verbosity=normal"
+
+  site:
+    name: Static site (site/)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: site
+
+      - name: Build and test static pages
+        run: npm test
+        working-directory: site
