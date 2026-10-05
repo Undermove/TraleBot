@@ -943,6 +943,105 @@ public class MiniAppController : Controller
         return state == null ? NotFound(new { error = "Unknown verb" }) : Ok(VerbProgressDto(state));
     }
 
+    // ── Verb sessions: the verb as the learner's own thing ───────────────────
+
+    public class VerbSessionRequest
+    {
+        public Guid SessionId { get; set; }
+        /// <summary>The composed session (JSON); needed with the first report of a session.</summary>
+        public Newtonsoft.Json.Linq.JToken Plan { get; set; }
+        public int Scene { get; set; }
+        public int Done { get; set; }
+        public List<VerbProgressItem> Forms { get; set; }
+        public bool Finished { get; set; }
+        public List<string> Scenes { get; set; }
+        public bool StoryCompleted { get; set; }
+        public int ExamAsked { get; set; }
+        public int ExamCorrect { get; set; }
+    }
+
+    /// <summary>
+    /// Everything the verb view and the session director need about one verb for this learner:
+    /// form progress, level, what was played before, the learner in general and the unfinished session.
+    /// </summary>
+    [HttpGet("verbs/{id}/learning")]
+    public async Task<IActionResult> GetVerbLearning(string id, [FromServices] VerbLearningService learning, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+
+        var state = await learning.GetAsync(user, id, AlphabetLessons, DateTime.UtcNow, ct);
+        return state == null ? NotFound(new { error = "Unknown verb" }) : Ok(VerbLearningDto(state));
+    }
+
+    /// <summary>
+    /// Reports where a session is: answered forms, position, and — once — that it is finished.
+    /// Idempotent: the mini-app replays a report until it gets through; a finished session is credited once.
+    /// </summary>
+    [HttpPost("verbs/{id}/session")]
+    public async Task<IActionResult> SaveVerbSession(
+        string id,
+        [FromBody] VerbSessionRequest request,
+        [FromServices] VerbLearningService learning,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+
+        var forms = request?.Forms ?? new List<VerbProgressItem>();
+        if (request == null || request.SessionId == Guid.Empty || forms.Count > VerbProgressService.MaxBatchSize)
+        {
+            return BadRequest(new { error = "invalid_session" });
+        }
+
+        var report = new VerbSessionReport(
+            request.SessionId,
+            request.Plan?.ToString(Newtonsoft.Json.Formatting.None),
+            request.Scene,
+            request.Done,
+            forms.Where(f => f != null).Select(f => new VerbFormStep(f.Tense, f.Person, f.Step, f.Reviews, f.At.UtcDateTime)).ToList(),
+            request.Finished,
+            request.Scenes ?? new List<string>(),
+            request.StoryCompleted,
+            request.ExamAsked,
+            request.ExamCorrect);
+        var outcome = await learning.SaveAsync(user, id, report, AlphabetLessons, DateTime.UtcNow, ct);
+        return outcome == null
+            ? NotFound(new { error = "Unknown verb or session" })
+            : Ok(new { state = VerbLearningDto(outcome.State), xpEarned = outcome.XpEarned, progress = outcome.Progress });
+    }
+
+    private static int AlphabetLessons => ModuleRegistry.Get(LearningConstants.Modules.Alphabet)?.MaxLessons ?? 0;
+
+    private static object VerbLearningDto(VerbLearningState s) => new
+    {
+        progress = VerbProgressDto(s.Progress),
+        level = VerbLevelRules.Key(s.Level),
+        memory = new
+        {
+            sessionsPlayed = s.Memory.SessionsPlayed,
+            recentScenes = s.Memory.RecentScenes,
+            storyCompleted = s.Memory.StoryCompleted,
+            examPassed = s.Memory.ExamPassed
+        },
+        learner = new
+        {
+            level = s.Learner.Level,
+            canType = s.Learner.CanType,
+            dictionarySize = s.Learner.DictionarySize,
+            dictionaryVerbs = s.Learner.DictionaryVerbs,
+            verbsLearned = s.Learner.VerbsLearned
+        },
+        session = s.Session == null ? null : new
+        {
+            id = s.Session.Id,
+            // Stored as the mini-app sent it; handed back as JSON, not as a string.
+            plan = Newtonsoft.Json.Linq.JToken.Parse(s.Session.PlanJson),
+            scene = s.Session.Scene,
+            done = s.Session.Done
+        }
+    };
+
     private static object VerbProgressDto(VerbProgressState s) => new
     {
         verbId = s.Lemma,

@@ -8,7 +8,7 @@ import { closeTopOverlay, hasOverlay } from './ui/overlayStack'
 import type { VerbDto } from './types'
 import * as mockedApi from '../api'
 
-// Карточка целиком на глаголах настоящего каталога: вход в лесенку, таблица, игры, комикс —
+// Карточка целиком на глаголах настоящего каталога: уровень и вход в сессию, таблица —
 // и что из этого остаётся у неполного и у непроверенного глагола.
 
 vi.mock('../api', async () => (await import('./testing/sheetApi')).sheetApi())
@@ -31,14 +31,16 @@ describe('VerbSheet on catalog verbs', () => {
     api.fetchVerbStories.mockResolvedValue({ stories: [] })
   })
 
-  it('puts what matters first: the learn button, then the table; games and the comic come after', async () => {
+  it('puts what matters first: level and one play button, then the table; no games row and no comic cover', async () => {
     api.fetchVerbStories.mockResolvedValue({ stories: [storyFixture] })
     await open(verbByLemma('მიდის'))
 
     const learn = await screen.findByText('Выучить играя')
-    const story = await screen.findByTestId(`verb-story-${storyFixture.id}`)
 
-    expect(order(learn, screen.getByTestId('verb-tense-present'), screen.getByTestId('verb-games'), story, screen.getByText(/Источник форм/))).toBe(true)
+    expect(order(screen.getByTestId('verb-level'), learn, screen.getByTestId('verb-tense-present'), screen.getByText(/Источник форм/))).toBe(true)
+    expect(screen.getByTestId('session-entry-about').textContent).toContain('2–3 минуты')
+    expect(screen.queryByTestId('verb-games')).toBeNull()
+    expect(screen.queryByTestId(`verb-story-${storyFixture.id}`)).toBeNull()
   })
 
   it('shows a partial verb with the tenses it has, says which are missing, and still offers to learn it', async () => {
@@ -62,27 +64,27 @@ describe('VerbSheet on catalog verbs', () => {
     expect(screen.queryByTestId('verb-partial')).toBeNull()
   })
 
-  it('offers neither the ladder nor games on an unverified verb and does not ask for its progress', async () => {
+  it('offers no play on an unverified verb and does not ask for its progress', async () => {
     await open(verbByLemma('წერს', { status: 'generated', source: null }))
     await act(async () => {})
 
     expect(screen.getByTestId('verb-unverified')).toBeTruthy()
     expect(screen.queryByText('Выучить играя')).toBeNull()
     expect(screen.queryByTestId('verb-games')).toBeNull()
-    expect(api.fetchVerbProgress).not.toHaveBeenCalled()
+    expect(api.fetchVerbLearning).not.toHaveBeenCalled()
   })
 
-  it('Back closes the layers from the top: rules, then the ladder, then the card', async () => {
+  it('Back closes the layers from the top: rules, then the session, then the card', async () => {
     const onClose = await open(verbByLemma('წერს'))
     fireEvent.click(await screen.findByText('Выучить играя'))
     expect(screen.getByText(/Как играть · 1 из/)).toBeTruthy()
 
     act(() => { closeTopOverlay() })
     expect(screen.queryByText(/Как играть · 1 из/)).toBeNull()
-    expect(screen.getByTestId('verb-ladder')).toBeTruthy()
+    expect(screen.getByTestId('verb-session')).toBeTruthy()
 
     act(() => { closeTopOverlay() })
-    expect(screen.queryByTestId('verb-ladder')).toBeNull()
+    expect(screen.queryByTestId('verb-session')).toBeNull()
     expect(screen.getByTestId('verb-sheet')).toBeTruthy()
     expect(onClose).not.toHaveBeenCalled()
 
@@ -90,20 +92,18 @@ describe('VerbSheet on catalog verbs', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
   })
 
-  it('Back closes an open game or comic before the card', async () => {
+  it('a verb with a comic opens its first session on the comic, and Back closes it before the card', async () => {
     api.fetchVerbStories.mockResolvedValue({ stories: [storyFixture] })
-    rulesSeen('story'); rulesSeen('verb_bones')
+    rulesSeen('story')
     const onClose = await open(verbByLemma('მიდის'))
 
-    fireEvent.click(screen.getByTestId('verb-game-bones'))
-    act(() => { closeTopOverlay() })
-    expect(screen.queryByTestId('verb-game-screen')).toBeNull()
-
-    fireEvent.click(await screen.findByTestId(`verb-story-${storyFixture.id}`))
+    fireEvent.click(await screen.findByText('Выучить играя'))
     expect(screen.getByTestId('story-reader')).toBeTruthy()
+    expect(screen.getByTestId('verb-session').getAttribute('data-scene')).toBe('story')
+
     act(() => { closeTopOverlay() })
     expect(screen.queryByTestId('story-reader')).toBeNull()
-
+    expect(screen.queryByTestId('verb-session')).toBeNull()
     expect(onClose).not.toHaveBeenCalled()
     expect(hasOverlay()).toBe(true)
   })

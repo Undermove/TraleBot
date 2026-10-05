@@ -5,10 +5,11 @@ import { VerbForm } from '../parts'
 import { PERSONS, type TenseKey, type VerbDto } from '../types'
 import { SHORT_TIME } from '../meaning'
 import { MeaningText } from '../parts'
-import { Coach, GameShell, OptionButton, PULSE, useFirstTime } from '../ui/GameShell'
+import { Coach, GameShell, OptionButton, PULSE, useFirstTime, type SceneHooks } from '../ui/GameShell'
+import { SOLID_STEP, STEP } from '../ladder/engine'
 import { BoneIcon, iconMarkup } from '../ui/icons'
 import { bad, floater, good, haptic } from '../ui/juice'
-import { COLS, boneCount, boneRows, bonesNear, cellSlot, digOptions, digs, plantBones } from './boneField'
+import { ALL_PERSONS, boneCount, boneRows, bonesNear, cellSlot as slotAt, digOptions as optionsAt, digs as digsAt, plantBones } from './boneField'
 import { describeSlot, slotMeaning, slotsOf, variantsOf, type Rng } from './common'
 
 const BONE = iconMarkup(BoneIcon, 24)
@@ -17,8 +18,20 @@ const BONE = iconMarkup(BoneIcon, 24)
  * «Косточки»: таблица спряжения как поле. Чтобы раскопать клетку, набери её форму.
  * Пустая клетка показывает, сколько косточек рядом, — по цифрам решаешь, где копать дальше.
  */
-export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbDto; onExit: () => void; rng?: Rng }) {
-  const rows = useMemo(() => boneRows(verb), [verb])
+export default function Bones({ verb, onExit, rng = Math.random, scene }: {
+  verb: VerbDto; onExit: () => void; rng?: Rng
+  /** В сессии: маленькое поле (часть времён и лиц) и куда сообщать ответы. typing: false — только выбор из четырёх. */
+  scene?: SceneHooks & { tenses: TenseKey[]; persons: number[]; typing: boolean }
+}) {
+  const rows = useMemo(() => scene?.tenses ?? boneRows(verb), [verb, scene?.tenses])
+  const persons = scene?.persons ?? ALL_PERSONS
+  const COLS = persons.length
+  const cellSlot = (r: readonly TenseKey[], i: number) => slotAt(r, i, persons)
+  const digs = (v: VerbDto, r: readonly TenseKey[], i: number, typed: string) => digsAt(v, r, i, typed, persons)
+  const digOptions = (v: VerbDto, r: readonly TenseKey[], i: number, random: Rng) => optionsAt(v, r, i, random, persons)
+  const choiceOnly = !!scene && !scene.typing
+  /** Клетки, в которых уже ошибались: ответ по клетке засчитывается один раз. */
+  const missedCells = useRef(new Set<number>())
   const cells = rows.length * COLS
   const total = boneCount(cells)
   const [bones, setBones] = useState(() => plantBones(cells, rng))
@@ -56,6 +69,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
     setNote(null); setTyped(''); setOptions(null)
     if (open.has(i)) { setPeek(i); setCell(null); return }
     setCell(i); setPeek(null)
+    if (choiceOnly) setOptions(digOptions(verb, rows, i, rng))
   }
 
   function dig(value: string) {
@@ -64,11 +78,20 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
     if (digs(verb, rows, cell, value)) {
       played()
       const el = grid.current?.querySelector(`[data-cell="${cell}"]`) ?? null
-      if (bones.has(cell)) { good(el, found + 1 === total ? 'big' : 'small', BONE); floater(BONE, el) } else haptic('tap')
+      const last = bones.has(cell) && found + 1 === total
+      if (bones.has(cell)) { good(el, last ? 'big' : 'small', BONE); floater(BONE, el) } else haptic('tap')
       setOpen(new Set([...open, cell])); setPeek(cell); setCell(null); setNote(null); setOptions(null)
+      if (scene) {
+        // Набрал сам — это уже «сказать самому»; выбрал из четырёх — узнавание.
+        if (!missedCells.current.has(cell)) scene.onResult(cellSlot(rows, cell), true, options ? SOLID_STEP : STEP.TYPE)
+        scene.onStep()
+        if (last) setTimeout(scene.onDone, 1400)
+      }
       return
     }
     bad()
+    if (scene && !missedCells.current.has(cell)) scene.onResult(cellSlot(rows, cell), false, SOLID_STEP)
+    missedCells.current.add(cell)
     // Не наказываем: говорим, что значит набранное, и даём выбрать из четырёх.
     const hit = slotsOf(verb, value.trim(), Object.keys(verb.tenses) as TenseKey[])[0]
     setNote(hit ? `— это ${describeSlot(verb, hit)}. Нужно другое — выбери из четырёх.` : '— такого слова у этого глагола нет. Выбери из четырёх.')
@@ -86,23 +109,26 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
       right={<span key={found} className="inline-block j-bump"><BoneIcon /> {found}/{total}</span>}
       help={[
         `Я закопал ${total} косточек в таблице глагола «${verb.ru}». Строка — когда, столбец — кто.`,
-        'Нажми любую клетку. Я скажу по-русски, что в ней. Набери это по-грузински — клетка раскопается.',
+        choiceOnly
+          ? 'Нажми любую клетку. Я скажу по-русски, что в ней. Выбери это слово по-грузински — клетка раскопается.'
+          : 'Нажми любую клетку. Я скажу по-русски, что в ней. Набери это по-грузински — клетка раскопается.',
         'В пустой клетке появится цифра: столько косточек в соседних клетках. По цифрам ищи, где копать дальше.',
-        'Не помнишь слово — нажми «Не помню — дай варианты» и выбери из четырёх.'
+        ...(choiceOnly ? [] : ['Не помню слово — нажми «Не помню — дай варианты» и выбери из четырёх.'])
       ]}
     >
       <div className="px-3 flex-1 flex flex-col gap-3 pb-3">
         <div ref={grid} className="grid gap-1" style={{ gridTemplateColumns: `66px repeat(${COLS}, minmax(0, 1fr))` }}>
           <div />
-          {PERSONS.map(p => <div key={p} className="text-center text-[12px] font-bold text-jewelInk-mid">{p}</div>)}
+          {persons.map(p => <div key={p} className="text-center text-[12px] font-bold text-jewelInk-mid">{PERSONS[p]}</div>)}
           {rows.map((t, r) => (
             <React.Fragment key={t}>
               <div className="text-[11px] font-bold leading-[1.1] text-jewelInk-mid flex items-center break-words min-w-0">{SHORT_TIME[t]}</div>
-              {PERSONS.map((p, c) => {
+              {persons.map((who, c) => {
+                const p = PERSONS[who]
                 const i = r * COLS + c
                 const isOpen = open.has(i)
                 const bone = bones.has(i)
-                const near = bonesNear(bones, rows.length, i)
+                const near = bonesNear(bones, rows.length, i, COLS)
                 return (
                   <button
                     key={c}
@@ -111,7 +137,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
                     data-state={isOpen ? (bone ? 'bone' : 'empty') : 'closed'}
                     aria-label={`${p}, ${SHORT_TIME[t]}`}
                     onClick={() => select(i)}
-                    className={`h-9 rounded-lg border-[1.5px] border-jewelInk flex items-center justify-center
+                    className={`${scene ? 'h-14' : 'h-9'} rounded-lg border-[1.5px] border-jewelInk flex items-center justify-center
                       ${isOpen ? 'j-flip' : ''}
                       ${isOpen ? (bone ? 'bg-gold' : 'bg-cream-deep') : cell === i ? 'bg-navy-wash' : 'bg-cream-tile'}
                       ${peek === i || cell === i ? 'ring-2 ring-navy' : ''}
@@ -131,7 +157,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
         {won ? (
           <div className="text-center py-3" data-testid="bones-won">
             <div className="text-[18px] font-extrabold text-navy j-pop">Все косточки найдены за {tries} {plural(tries)}</div>
-            <div className="mt-3"><Button onClick={restart}>Закопать заново</Button></div>
+            {!scene && <div className="mt-3"><Button onClick={restart}>Закопать заново</Button></div>}
           </div>
         ) : cell === null && (
           peek !== null ? peekCard() : first
@@ -153,6 +179,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
               </div>
             )}
             {first && !note && !options && <Coach>Набери это по-грузински и нажми «Копать».</Coach>}
+            {first && !note && choiceOnly && <Coach>Выбери слово, которое это значит, — клетка раскопается.</Coach>}
             {options ? (
               <div className="grid grid-cols-2 gap-2 pb-2">
                 {options.map(o => <OptionButton key={o} onClick={() => { setTyped(o); dig(o) }}>{o}</OptionButton>)}
@@ -180,7 +207,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
   function peekCard() {
     if (peek === null) return null
     const at = cellSlot(rows, peek)
-    const near = bonesNear(bones, rows.length, peek)
+    const near = bonesNear(bones, rows.length, peek, COLS)
     return (
       <div
         key={peek} data-testid="bones-peek"

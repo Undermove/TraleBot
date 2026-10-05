@@ -53,6 +53,11 @@ export function makeTimeRound(verb: VerbDto, persons: number, rng: Rng = Math.ra
     person = Math.floor(rng() * persons)
     if (!prev || prev.stop !== stop || prev.person !== person) break
   }
+  return timeRoundFor(verb, stop, person, persons, rng)
+}
+
+/** Раунд про заданную клетку: в сессии, что спрашивать, решает постановщик. persons — сколько лиц уже в игре. */
+export function timeRoundFor(verb: VerbDto, stop: number, person: number, persons: number, rng: Rng = Math.random): TimeRound {
   const answer = formOf(verb, STOPS[stop].tense, person)
   const sameWho = STOPS.map(s => formOf(verb, s.tense, person))
   const sameWhen = PERSONS.slice(0, Math.max(persons, 2)).map((_, p) => formOf(verb, STOPS[stop].tense, p))

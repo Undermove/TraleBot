@@ -35,4 +35,7 @@
     </ItemGroup>
     
 
+  <ItemGroup>
+    <None Include="..\Fixtures\verb-level-cases.json" Link="Fixtures\verb-level-cases.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

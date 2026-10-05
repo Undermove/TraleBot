@@ -7,14 +7,14 @@ import type { VerbFormProgressDto, VerbProgressStepDto } from './types'
 // Поэтому пропавшая сеть посреди занятия ничего не теряет: очередь уйдёт со следующим ответом
 // или при следующем открытии глагола.
 
-type Pending = Record<string, VerbProgressStepDto>
+export type Pending = Record<string, VerbProgressStepDto>
 
 const storeKey = (verbId: string) => `verb_ladder_pending_v1:${verbId}`
 /** Запас на случай, когда localStorage недоступен: очередь живёт хотя бы до закрытия мини-аппа. */
 const memory: Record<string, Pending> = {}
 let storageWorks = true
 
-function readPending(verbId: string): Pending {
+export function readPending(verbId: string): Pending {
   if (storageWorks) {
     try {
       const raw = localStorage.getItem(storeKey(verbId))
@@ -26,7 +26,7 @@ function readPending(verbId: string): Pending {
   return memory[verbId] ?? {}
 }
 
-function writePending(verbId: string, pending: Pending) {
+export function writePending(verbId: string, pending: Pending) {
   memory[verbId] = pending
   if (!storageWorks) return
   try {
@@ -38,7 +38,7 @@ function writePending(verbId: string, pending: Pending) {
 }
 
 /** Убираем из очереди то, что сервер принял, — но не ответы, которые человек дал, пока шёл запрос. */
-function dropSent(verbId: string, sent: Pending) {
+export function dropSent(verbId: string, sent: Pending) {
   const now = readPending(verbId)
   for (const [key, step] of Object.entries(sent)) {
     if (now[key]?.at === step.at) delete now[key]

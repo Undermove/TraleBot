@@ -2,11 +2,13 @@ import React, { useRef, useState } from 'react'
 import Mascot from '../../components/Mascot'
 import { PERSONS, type VerbDto } from '../types'
 import { MeaningText } from '../parts'
-import { Coach, GameShell, OptionButton, PULSE, useFirstTime } from '../ui/GameShell'
+import { Coach, GameShell, OptionButton, PULSE, useFirstTime, type SceneHooks } from '../ui/GameShell'
 import { BoneIcon, FlagIcon, iconMarkup } from '../ui/icons'
 import { bad, floater, good } from '../ui/juice'
 import { describeSlot, slotMeaning, type Rng } from './common'
-import { PERSON_STEP, STOPS, locate, makeTimeRound, personsFor } from './timeRounds'
+import { PERSON_STEP, STOPS, locate, makeTimeRound, personsFor, timeRoundFor } from './timeRounds'
+import { SOLID_STEP } from '../ladder/engine'
+import type { Slot } from './common'
 import { useLater } from './useLater'
 
 const BONE = iconMarkup(BoneIcon)
@@ -17,10 +19,23 @@ interface Said { form: string; ok: boolean; text: string }
  * «Машина времени»: какую форму нажмёшь — туда Бомбора и поедет.
  * Вчера — «я писал(а)», сейчас — «я пишу», завтра — «я буду писать». Ошибки нет: он просто окажется не там.
  */
-export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb: VerbDto; onExit: () => void; rng?: Rng }) {
+export default function TimeMachine({ verb, onExit, rng = Math.random, scene }: {
+  verb: VerbDto; onExit: () => void; rng?: Rng
+  /** В сессии: клетки по раундам и куда сообщать ответы. Без этого — свободная игра. */
+  scene?: SceneHooks & { targets: Slot[] }
+}) {
   const [correct, setCorrect] = useState(0)
   const persons = personsFor(correct)
-  const [round, setRound] = useState(() => makeTimeRound(verb, 1, rng))
+  /** Лица, которые в сессии уже в игре, — из них же берутся соблазны. */
+  const scenePersons = scene ? Math.max(2, ...scene.targets.map(t => t.person + 1)) : 0
+  const sceneRound = (n: number) => {
+    const t = scene!.targets[n]
+    return timeRoundFor(verb, STOPS.findIndex(s => s.tense === t.tense), t.person, scenePersons, rng)
+  }
+  const [index, setIndex] = useState(scene ? Math.min(scene.startAt, scene.targets.length - 1) : 0)
+  const [round, setRound] = useState(() => (scene ? sceneRound(index) : makeTimeRound(verb, 1, rng)))
+  /** В этом раунде уже ошибались: ответ засчитывается один раз. */
+  const missed = useRef(false)
   const [pos, setPos] = useState(1)
   const [said, setSaid] = useState<Said | null>(null)
   /** Какое лицо только что добавилось — говорим об этом один раунд. */
@@ -41,6 +56,8 @@ export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb:
     setPos(at.stop)
     if (!ok) {
       bad()
+      if (scene && !missed.current) scene.onResult({ tense: target.tense, person: round.person }, false, SOLID_STEP)
+      missed.current = true
       const stop = STOPS[at.stop]
       setSaid({
         form, ok,
@@ -53,8 +70,19 @@ export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb:
     const grew = personsFor(n) > persons
     setSaid({ form, ok, text: 'Он на месте!' })
     setCorrect(n)
-    later(() => { good(dog.current, n % PERSON_STEP === 0 ? 'big' : 'small', BONE); floater('+1', dog.current) }, 420)
+    if (scene) {
+      if (!missed.current) scene.onResult({ tense: target.tense, person: round.person }, true, SOLID_STEP)
+      scene.onStep()
+    }
+    later(() => { good(dog.current, !scene && n % PERSON_STEP === 0 ? 'big' : 'small', BONE); floater('+1', dog.current) }, 420)
     later(() => {
+      if (scene) {
+        const next = index + 1
+        if (next >= scene.targets.length) return scene.onDone()
+        missed.current = false
+        setIndex(next); setSaid(null); setRound(sceneRound(next))
+        return
+      }
       setSaid(null)
       setAdded(grew ? personsFor(n) - 1 : null)
       setRound(makeTimeRound(verb, personsFor(n), rng, round))
@@ -69,7 +97,7 @@ export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb:
         'На дорожке три остановки: вчера, сейчас и завтра. Флажок показывает, куда мне надо попасть.',
         'Сверху написано по-русски, что нужно сказать. Нажми грузинское слово, которое это значит.',
         'Я поеду туда, куда ведёт выбранное слово. Не туда — скажу, что оно значило, и можно пробовать ещё.',
-        'Сначала всё про «я». Каждые четыре верных ответа добавляется ещё кто-то: «ты», «он»…'
+        ...(scene ? [] : ['Сначала всё про «я». Каждые четыре верных ответа добавляется ещё кто-то: «ты», «он»…'])
       ]}
     >
       <div className="px-5 flex-1 flex flex-col gap-4 justify-center">

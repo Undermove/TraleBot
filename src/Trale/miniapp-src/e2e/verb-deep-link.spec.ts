@@ -60,11 +60,20 @@ async function setupApi(page: any, card: object, meResponse: object = me) {
   )
   await page.route('**/api/miniapp/activity-days*', (route: any) => route.fulfill({ json: { dates: [] } }))
   await page.route('**/api/miniapp/vocabulary', (route: any) => route.fulfill({ json: { items: [], starterItems: [] } }))
-  // The card itself, and the parts of the sheet that ask the API on their own (ladder entry, comics).
+  // The card itself, and the parts of the sheet that ask the API on their own (session entry, comics).
   await page.route('**/api/miniapp/verbs/**', (route: any) => {
     const path = decodeURIComponent(new URL(route.request().url()).pathname)
     if (path.endsWith('/progress')) return route.fulfill({ json: { verbId: 'წერს', canLearn: true, total: 0, forms: [] } })
     if (path.endsWith('/stories')) return route.fulfill({ json: { stories: [] } })
+    if (path.endsWith('/learning')) {
+      return route.fulfill({
+        json: {
+          progress: { verbId: 'წერს', canLearn: true, total: 0, forms: [] }, level: 'new', session: null,
+          memory: { sessionsPlayed: 0, recentScenes: [], storyCompleted: false, examPassed: false },
+          learner: { level: 'beginner', canType: false, dictionarySize: 0, dictionaryVerbs: 0, verbsLearned: 0 },
+        },
+      })
+    }
     if (path.endsWith('/verbs/summary')) return route.fulfill({ json: { dictionaryVerbs: 0 } })
     verbRequests.push(path)
     return route.fulfill({ json: card })

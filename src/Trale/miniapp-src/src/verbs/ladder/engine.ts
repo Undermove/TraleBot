@@ -266,7 +266,7 @@ export function distractors(
   return result
 }
 
-function makeTask(item: LadderItem, step: number, review: boolean, items: LadderItem[], progress: Progress, rng: Rng): Task {
+export function makeTask(item: LadderItem, step: number, review: boolean, items: LadderItem[], progress: Progress, rng: Rng): Task {
   const options = (n: number) => shuffle([item, ...distractors(item, items, progress, n, rng)], rng)
   switch (taskStep(item, step)) {
     case STEP.MEANING:
@@ -359,4 +359,79 @@ export function withGap(sentence: string, form: string, reveal: boolean) {
     done = true
     return reveal ? word : word.replace(form, '_____')
   }).join('')
+}
+
+// ── Сессии: те же ступени, но задание выбирает не лесенка, а постановщик сессии (session/plan.ts) ──
+
+/** Виды заданий, из которых постановщик собирает сцены-квизы. */
+export type TaskKind = 'intro' | 'meaning' | 'form' | 'gap' | 'build' | 'type'
+
+/** Ступень, до которой задание такого вида может поднять форму: выбором из вариантов форму не «выучить». */
+export const KIND_CEILING: Record<Exclude<TaskKind, 'intro'>, number> = {
+  meaning: STEP.FORM, form: STEP.GAP, gap: STEP.BUILD, build: STEP.TYPE, type: STEP.MASTERED
+}
+
+/**
+ * Задание заданного вида для формы. Если у формы нет материала (живой фразы) — ближайшее попроще:
+ * собрать → вставить → выбрать.
+ */
+export function taskOfKind(kind: TaskKind, item: LadderItem, items: LadderItem[], progress: Progress, rng: Rng = Math.random): Task {
+  if (kind === 'intro') {
+    const sentence = [...item.sentences].sort((a, b) => tokens(a.ka).length - tokens(b.ka).length)[0]
+    const twin = items.find(i => i.key !== item.key && stepOf(progress, i) > STEP.NEW && i.variants.some(v => item.variants.includes(v)))
+    return { type: 'intro', item, sentence, twin }
+  }
+  const review = stepOf(progress, item) >= STEP.MASTERED
+  const options = (n: number) => shuffle([item, ...distractors(item, items, progress, n, rng)], rng)
+  if (kind === 'build' && item.buildable.length) return makeTask({ ...item, sentences: item.buildable }, STEP.BUILD, review, items, progress, rng)
+  if ((kind === 'build' || kind === 'gap') && item.sentences.length) {
+    return { type: 'gap', item, sentence: pick(item.sentences, rng), options: options(3), review }
+  }
+  if (kind === 'type') return { type: 'type', item, review }
+  return kind === 'meaning'
+    ? { type: 'meaning', item, options: options(2), review }
+    : { type: 'form', item, options: options(3), review }
+}
+
+/**
+ * Ответ в сцене сессии — та же модель ступеней, что у лесенки, с двумя оговорками:
+ * 1) сцена поднимает форму не выше своего потолка (игра на узнавание не делает форму «выученной»);
+ * 2) незнакомую форму засчитывают только сцены, которые её показывают (знакомство, комикс) — introduce.
+ * null — состояние не изменилось, сохранять нечего.
+ */
+export function settleCapped(
+  item: LadderItem, state: FormState | undefined, ok: boolean, ceiling: number, introduceNew = false
+): FormState | null {
+  if (!state || state.step === STEP.NEW) {
+    if (!introduceNew) return null
+    return ok ? settleCapped(item, introduce(), true, ceiling) ?? introduce() : introduce()
+  }
+  if (!ok) {
+    // Выученную форму ошибка возвращает в игру; остальные — на ступень ниже.
+    const next = settle(item, state, false)
+    return next.step === state.step ? null : next
+  }
+  if (state.step >= STEP.MASTERED) return state.due ? settle(item, state, true) : null
+  if (state.step >= ceiling) return null
+  const up = settle(item, state, true)
+  const step = Math.min(up.step, ceiling)
+  return { ...up, step, best: Math.max(state.best, step) }
+}
+
+/** Главные времена, с которых начинают: сейчас, сделал, сделаю. Остальные — вторым кругом. */
+const FIRST_TENSES: TenseKey[] = ['present', 'aorist', 'future']
+
+/**
+ * В каком порядке сессии знакомят с формами: сначала «я» — сейчас, сделал, сделаю; потом те же три
+ * времени для «он» и «ты»; потом остальные времена для «я»; и так расширяясь по лицам и временам.
+ */
+export function introOrder(items: LadderItem[]): LadderItem[] {
+  const rank = (i: LadderItem) => {
+    const person = PERSON_ORDER.indexOf(i.person)
+    const first = FIRST_TENSES.includes(i.tense)
+    // Круги: (я,он,ты × первые времена) → (я × остальные) → (мы,они,вы × первые) → всё остальное по лицам.
+    const round = first ? (person < 3 ? 0 : 2) : (person === 0 ? 1 : 3)
+    return round * 1000 + person * 10 + CARD_TENSES.indexOf(i.tense)
+  }
+  return [...items].sort((a, b) => rank(a) - rank(b))
 }

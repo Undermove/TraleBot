@@ -451,3 +451,20 @@ export function fetchVerbsInProgress() {
 export function fetchVerbStories(id: string) {
   return request<{ stories: import('./verbs/story/types').VerbStoryDto[] }>(`/api/miniapp/verbs/${encodeURIComponent(id)}/stories`)
 }
+
+// ── Сессии по глаголу: уровень, память постановщика, начатая сессия ──
+import type { VerbLearningDto, VerbSessionReportDto, VerbSessionSavedDto } from './verbs/session/types'
+
+/** Всё, что нужно виду глагола и постановщику сессии: прогресс форм, уровень, что уже играли. */
+export function fetchVerbLearning(id: string) {
+  return request<VerbLearningDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/learning`)
+}
+
+/** Где сейчас сессия (после каждого ответа) и — один раз — что она закончена. Повторная отправка безвредна. */
+export function saveVerbSession(id: string, report: VerbSessionReportDto) {
+  return request<VerbSessionSavedDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/session`, {
+    method: 'POST',
+    body: JSON.stringify(report),
+    keepalive: true
+  })
+}

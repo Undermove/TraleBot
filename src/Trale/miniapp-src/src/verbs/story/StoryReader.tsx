@@ -4,7 +4,8 @@ import GeorgianKeyboard from '../../components/GeorgianKeyboard'
 import Mascot from '../../components/Mascot'
 import { parseVerbForm } from '../../api'
 import { cyr } from '../types'
-import { Coach, GameShell, OptionButton, PULSE, useFirstTime } from '../ui/GameShell'
+import { Coach, GameShell, OptionButton, PULSE, useFirstTime, type SceneHooks } from '../ui/GameShell'
+import { SOLID_STEP, STEP } from '../ladder/engine'
 import { LockIcon } from '../ui/icons'
 import { bad, good, haptic } from '../ui/juice'
 import { OVERLAY, useOverlay } from '../ui/overlayStack'
@@ -18,7 +19,6 @@ import './story.css'
 // пока не сказана реплика текущего. Неверная форма — не «ошибка»: Бомбора объясняет,
 // что она значит, и можно пробовать снова.
 
-export const storyDoneKey = (id: string) => `verb_story_done_${id}`
 
 const HELP = [
   'Это комикс. Под каждой картинкой — реплика, в которой не хватает одного слова.',
@@ -32,9 +32,15 @@ const COACH = {
   build: 'Нажимай слова по порядку, чтобы получилась фраза, и нажми «Сказать».'
 }
 
-export default function StoryReader({ story, onExit }: { story: VerbStoryDto; onExit: () => void }) {
+export default function StoryReader({ story, onExit, scene }: {
+  story: VerbStoryDto; onExit: () => void
+  /** В сессии: с какого кадра продолжить и куда сообщать ответы. То, что комикс дочитан, сессия сохраняет на сервере. */
+  scene?: SceneHooks
+}) {
   const frames = story.frames
-  const [at, setAt] = useState(0)
+  const [at, setAt] = useState(scene ? Math.min(scene.startAt, frames.length - 1) : 0)
+  /** В этом кадре уже ошибались: ответ засчитывается один раз. */
+  const missed = useRef(false)
   const [note, setNote] = useState<string | null>(null)
   const [tried, setTried] = useState<string[]>([])
   const [typed, setTyped] = useState('')
@@ -79,9 +85,12 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
     firstTime[frame.mode][1]()
     const last = at === frames.length - 1
     good(last ? null : frameEls.current[at], last ? 'big' : 'small')
-    if (last) {
-      try { localStorage.setItem(storyDoneKey(story.id), '1') } catch {}
+    if (scene) {
+      // Комикс показывает форму в деле — это и есть знакомство с ней. Выбрал — узнал; набрал или собрал — сказал сам.
+      scene.onResult(frame.target, !missed.current, frame.mode === 'choose' ? SOLID_STEP : STEP.TYPE, true)
+      scene.onStep()
     }
+    missed.current = false
     setAt(at + 1)
     setNote(null); setTried([]); setTyped(''); setKeyboard(false); setBuilt([]); setRevealed(false)
   }
@@ -90,6 +99,7 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
     if (!frame) return
     if (option.form === frame.target.form) return solved()
     bad()
+    missed.current = true
     setTried(t => [...t, option.form])
     setNote(explainWrong(option, frame.target))
   }
@@ -108,6 +118,7 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
     setChecking(false)
     if (current.current !== at) return
     bad()
+    missed.current = true
     setNote(text); setTyped('')
   }
 
@@ -258,8 +269,12 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
                   ))}
                 </div>
                 <div className="mt-4 flex flex-col gap-2">
-                  <Button onClick={onExit}>Готово</Button>
-                  <Button variant="ghost" onClick={restart}>Пройти ещё раз</Button>
+                  {scene
+                    ? <Button onClick={scene.onDone}>Дальше</Button>
+                    : <>
+                        <Button onClick={onExit}>Готово</Button>
+                        <Button variant="ghost" onClick={restart}>Пройти ещё раз</Button>
+                      </>}
                 </div>
                 <div className="mt-3 text-[11px] text-jewelInk-hint">
                   Фразы — из корпуса{' '}

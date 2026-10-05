@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { createContext, useContext, useState } from 'react'
 import Mascot from '../../components/Mascot'
 import Button from '../../components/Button'
 import { CloseIcon, PointIcon } from './icons'
@@ -74,9 +74,64 @@ export function HelpButton({ id, help }: { id: string; help: string[] }) {
 /** Отступ шапки: в полноэкранном мини-аппе сверху лежат кнопки Telegram и вырез экрана. */
 export const SAFE_TOP = 'calc(var(--safe-t, 0px) + 16px)'
 
+/**
+ * Сцена идёт внутри сессии: шапку рисует сессия — крестик и полоска этой сессии.
+ * Полоска растёт после каждого ответа и назад не идёт; счёта «выучено из N» в ней нет.
+ */
+export interface SessionChromeValue {
+  /** Пройденная часть сессии, 0..1. */
+  fraction: number
+  onExit: () => void
+}
+export const SessionChrome = createContext<SessionChromeValue | null>(null)
+
+/** Что сцена сообщает сессии. Один и тот же набор у квиза, игр и комикса. */
+export interface SceneHooks {
+  /** С какого шага начать: сессию продолжают после перезагрузки. */
+  startAt: number
+  /**
+   * Ответ по клетке таблицы. ceiling — до какой ступени такой ответ может поднять форму;
+   * introduceNew — сцена показывает форму впервые (знакомство, комикс).
+   */
+  onResult: (cell: { tense: string; person: number }, ok: boolean, ceiling: number, introduceNew?: boolean) => void
+  /** Задание пройдено — шаг полоски. */
+  onStep: () => void
+  onDone: () => void
+}
+
+export function SessionHeader({ id, help }: { id?: string; help?: string[] }) {
+  const chrome = useContext(SessionChrome)
+  if (!chrome) return null
+  const percent = Math.round(Math.max(0, Math.min(1, chrome.fraction)) * 100)
+  return (
+    <div className="px-5 pb-2 flex items-center gap-3" style={{ paddingTop: SAFE_TOP }}>
+      <button onClick={chrome.onExit} aria-label="Закрыть" className="w-11 h-11 -ml-2 flex items-center justify-center"><CloseIcon size={20} /></button>
+      <div className="flex-1 h-3 rounded-full bg-cream-deep border border-jewelInk/30 overflow-hidden">
+        <div
+          data-testid="session-bar" data-percent={percent}
+          className="h-full bg-navy transition-all duration-500 ease-out"
+          // Пустая полоска не видна вовсе — оставляем каплю, чтобы было понятно, что это полоска.
+          style={{ width: `${Math.max(4, percent)}%` }}
+        />
+      </div>
+      {id && help && <HelpButton id={id} help={help} />}
+    </div>
+  )
+}
+
 export function GameShell({ id, title, onExit, right, help, children }: {
   id: string; title: string; onExit: () => void; right?: React.ReactNode; help: string[]; children: React.ReactNode
 }) {
+  const inSession = useContext(SessionChrome) !== null
+  if (inSession) {
+    return (
+      <div className="j-root flex flex-col min-h-[100dvh]">
+        <SessionHeader id={id} help={help} />
+        <div className="px-5 -mt-1 pb-1 text-center text-[12px] font-bold text-jewelInk-hint">{title}</div>
+        {children}
+      </div>
+    )
+  }
   return (
     <div className="j-root flex flex-col min-h-[100dvh]">
       <div className="px-5 pb-2 flex items-center gap-3" style={{ paddingTop: SAFE_TOP }}>

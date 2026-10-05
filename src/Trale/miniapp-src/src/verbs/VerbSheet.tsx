@@ -5,9 +5,7 @@ import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, TITLE_TERM, cyr, type
 import { meaningOf } from './meaning'
 import { Coach, KindChip, MeaningText, VerbForm } from './parts'
 import { OVERLAY, useOverlay } from './ui/overlayStack'
-import VerbGames from './games/VerbGames'
-import LadderEntry from './ladder/LadderEntry'
-import VerbStories from './story/VerbStories'
+import SessionEntry from './session/SessionEntry'
 
 interface Props {
   verbId: string
@@ -170,7 +168,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             </div>
           )}
 
-          <LadderEntry verb={verb} />
+          <SessionEntry verb={verb} />
 
           {hint && <Coach>Это главные формы. Нажми «ты» или «он» — таблица покажет те же времена для другого лица.</Coach>}
 
@@ -211,9 +209,6 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             )}
             {rare && rows(rareTenses)}
           </div>
-
-          <VerbGames verb={verb} />
-          <VerbStories verbId={verb.id} />
 
           {verb.source && (
             <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">

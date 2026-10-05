@@ -94,7 +94,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `Result.tsx` | `result` | Lesson result summary with kilim strip. If the lesson had catalog verbs: «в этом уроке были глаголы» with up to three verbs, each opening its verb card (`verbs/lesson/LessonVerbsLine`). |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
-| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter (can be pre-selected: dashboard line, deep link); the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet`: six main forms, person switcher, collapsed rare tenses and explanation, «не проверено» note for model-made verbs, and entries to the verb ladder (`LadderEntry`), verb games (`VerbGames`) and comic stories (`VerbStories`). Deep link `?screen=verb&verbId=<lemma>[&tense=&person=]` opens the dictionary with the verb card on top. |
+| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter (can be pre-selected: dashboard line, deep link); the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet`: six main forms, person switcher, collapsed rare tenses and explanation, «не проверено» note for model-made verbs, the verb level and one play button (`verbs/session/SessionEntry`) that starts a session composed by the app. Deep link `?screen=verb&verbId=<lemma>[&tense=&person=]` opens the dictionary with the verb card on top. |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
 | `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
@@ -170,15 +170,20 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
 
-### Verb games (`src/verbs/games/`)
-Three quick client-side games built from one verb's paradigm; opened from the "Игры с этим глаголом" row on the verb card (`VerbSheet`), full-screen over it. No dashboard tile, no saved progress. A game is offered only when `availableGames` (`availability.ts`) says the verb's data supports it — always requires `status: verified` and a Russian translation.
+### Verb sessions (`src/verbs/session/`) and their scenes
+One button on the verb card — «Выучить играя» (label follows the state: «Продолжить игру», «Играть дальше», «Сыграть и сдать экзамен», «Сыграть ещё») — starts a 2–3 minute session of at most three short scenes. The learner never picks a game: `planSession` (`session/plan.ts`, a pure function) composes the session from the verb's level, per-form progress, what the verb supports and what the learner can do (no typing before the alphabet is finished), and remembers past sessions so two days do not start the same way. Every scene reports per-form results into `VerbFormProgress`; the header bar shows only this session and grows after every task. Session position, level and the director's memory live on the server (`UserVerb`, `VerbSession`), so a reload or another device continues from the same place. A finished session earns XP and marks the day active, once.
 
 | File | Purpose |
 |---|---|
-| `VerbGames.tsx` | The games row on the verb card and the full-screen host; renders nothing when no game fits the verb. |
-| `TimeMachine.tsx` | «Машина времени»: three stops (aorist / present / future); the tapped form sends the mascot to the stop it really belongs to. Starts with «я», adds a person every 4 correct answers. Needs all six persons in the three tenses with no form shared between cells. |
-| `Bones.tsx` | «Косточки»: the conjugation table as a minesweeper-style field; a cell is dug by typing its form on the Georgian keyboard or picking from four options. Needs at least three complete main tenses. |
-| `Builder.tsx` | «Конструктор»: assemble a form from preverb + person marker + root + ending; rows unlock in stages (ending → person marker → preverb). Only for `pattern` verbs whose forms split cleanly (future = preverb + present). |
+| `session/plan.ts` | The session director: learner situation → up to three scenes with targets, sizes, time estimate and a machine-readable reason. Hard caps: 3 scenes, 3 new forms, 180 s. |
+| `session/Session.tsx` | The session shell: session bar, scene switching, save after every answer (`session/sync.ts`), resume, finish. |
+| `session/QuizScene.tsx` | Quiz scenes from a given task list: meeting new forms («Новое слово»), recognition, real sentences (gap / build), warm-up of due forms, and the exam (one attempt per question; passing it makes the verb «выучен»). |
+| `session/Finish.tsx` | The finish screen: what was in play as plain phrases with their Georgian forms, XP, the verb level (`session/LevelBadge.tsx`), «Ещё одну» / «Готово». |
+| `session/SessionEntry.tsx` | Level and the play button on the verb card. |
+| `games/TimeMachine.tsx` | Scene «Машина времени»: three stops (aorist / present / future); the tapped form sends the mascot to the stop it really belongs to. In a session it asks the cells the director chose. Needs all six persons in the three tenses with no form shared between cells. |
+| `games/Bones.tsx` | Scene «Косточки»: the conjugation table as a minesweeper-style field (3×3 with two bones in a session); a cell is dug by typing its form or — for learners who do not type yet — by picking from four options. |
+| `games/Builder.tsx` | Scene «Конструктор»: assemble a form from preverb + person marker + root + ending; the difficulty stage is set by the director. Only for `pattern` verbs whose forms split cleanly (future = preverb + present). |
+| `story/StoryReader.tsx` | Scene «Комикс»: the natural first session of a verb that has a story; read once (the flag is stored on the server). |
 
 ---
 
@@ -210,7 +215,9 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | GET | `/api/miniapp/verbs/progress` | Verb ladder: verbs the user is learning (started / mastered / total forms, forms due for repetition, last practised) + total `dueForms`. For a "continue verb X" entry point. |
 | GET | `/api/miniapp/verbs/{id}/progress` | Verb ladder: the user's per-form progress for one verb (step, best step, reviews, next due) and `canLearn` (false for unreviewed Generated verbs). |
 | POST | `/api/miniapp/verbs/{id}/progress` | Verb ladder: save answered steps as a batch `{forms:[{tense,person,step,reviews,at}]}`. Idempotent (last-write-wins by answer time), skips cells the verb does not have, schedules repetition of mastered forms (1–3 days). |
-| GET | `/api/miniapp/verbs/{id}/stories` | Comic stories («кадр под замком») of a verb with lines resolved from the catalog by Tatoeba sentence id; empty list when the verb has none. Shown on the verb card `VerbSheet` as a cover that opens the full-screen reader (`verbs/story/StoryReader.tsx`). Same 401/402 gate. |
+| GET | `/api/miniapp/verbs/{id}/learning` | The verb as the learner's own thing: per-form progress, `level` (new → meeting → recognising → phrases → examReady → learned, derived server-side by `VerbLevelRules`), the director's memory (sessions played, recent scenes, comic read, exam passed), the learner in general (onboarding level, `canType`, dictionary size, verbs in it, verbs learned) and the unfinished `session` (plan, scene, tasks done) to continue. |
+| POST | `/api/miniapp/verbs/{id}/session` | Session report after every answer: `{sessionId, plan, scene, done, forms, finished, scenes, storyCompleted, examAsked, examCorrect}`. Idempotent (session id comes from the mini-app; position only moves forward; form steps are last-write-wins). A finished session is credited once: +10 XP (first 5 sessions of a UTC day), streak and active day like a finished lesson; an exam with at most one mistake sets the verb to «выучен». |
+| GET | `/api/miniapp/verbs/{id}/stories` | Comic stories («кадр под замком») of a verb with lines resolved from the catalog by Tatoeba sentence id; empty list when the verb has none. Played as a scene of a verb session (`verbs/story/StoryReader.tsx`). Same 401/402 gate. |
 | POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. |
 | DELETE | `/api/miniapp/vocabulary/{id}` | Delete a vocabulary entry. |
 | POST | `/api/miniapp/translate` | Translate a word and add to vocabulary. |
@@ -308,6 +315,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddVerbCatalog` | Adds `Verbs` (lemma, title, translation, kind, card JSON, status Verified/Generated) and `VerbForms` (form → verb, tense, person index) for the mini-app «Глаголы» section. |
 | `AddVerbFormProgress` | Adds `VerbFormProgresses` — per-user progress of the verb ladder: one row per (user, verb, tense, person) with step, best step, reviews and next-due time; unique per cell, indexed by (user, next due). |
 | `AddVerbFormMeaning` | Adds nullable `Meaning` and `MeaningNote` to `VerbForms` — what a form means in plain Russian, conjugated for its verb («я хотел(а)»), and the short note that tells apart tenses whose Russian phrase is the same; shown instead of tense names in exercises, hints and the bot's parse line. |
+| `AddUserVerbsAndSessions` | Adds `UserVerbs` — one row per (user, verb): level, started at, sessions played, last played, exam passed at, recent scenes, comic read — and `VerbSessions` — one 2–3 minute play session (client-chosen id, plan JSON, scene, tasks done, finished at, XP earned); a finished session is credited once. |
 | `AddTranslationCache` | Adds `TranslationCache` (normalised key + direction unique, definition / additional info / example, source, classified flag, hit count, timestamps): repeated Georgian lookups are answered from the DB instead of the external dictionary sites. |
 
 ---

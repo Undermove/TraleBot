@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import StoryReader from './StoryReader'
-import VerbStories from './VerbStories'
 import { storyFixture as story } from './fixture'
-import { fetchVerbStories, parseVerbForm } from '../../api'
+import { parseVerbForm } from '../../api'
 import { bad, good } from '../ui/juice'
 import { seenKey } from '../ui/GameShell'
 import { rulesSeen } from '../testing/seen'
@@ -177,7 +176,6 @@ describe('StoryReader', () => {
     expect(screen.getByTestId('story-end').textContent).toContain('Конец истории')
     expect(progress()).toBe('3/3')
     expect(good).toHaveBeenLastCalledWith(null, 'big')
-    expect(localStorage.getItem('verb_story_done_go-fishing')).toBe('1')
     expect(scrolled).toHaveBeenLastCalledWith('story-end', { behavior: 'smooth', block: 'start' })
 
     fireEvent.click(screen.getByText('Готово'))
@@ -232,41 +230,5 @@ describe('StoryReader', () => {
     expect(screen.getByText(/Нажми на поле, набери пропущенное слово/)).toBeTruthy()
     expect(localStorage.getItem(seenKey('story_choose_move'))).toBe('1')
     expect(localStorage.getItem(seenKey('story_type_move'))).toBeNull()
-  })
-})
-
-describe('VerbStories', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    rulesSeen('story')
-    vi.clearAllMocks()
-  })
-
-  it('shows a cover on the verb card that costs only the placeholder, and opens the story full-screen', async () => {
-    vi.mocked(fetchVerbStories).mockResolvedValue({ stories: [story] })
-    const { container } = render(<VerbStories verbId="მიდის" />)
-
-    const cover = await screen.findByTestId('verb-story-go-fishing')
-    expect(fetchVerbStories).toHaveBeenCalledWith('მიდის')
-    expect(cover.textContent).toContain('Бомбора идёт на рыбалку')
-    expect([...document.querySelectorAll('img')].map(i => i.getAttribute('src')))
-      .toEqual(['/stories/go-fishing/d404709ff4/f1-ph.webp'])
-
-    fireEvent.click(cover)
-
-    const reader = screen.getByTestId('story-reader')
-    expect(container.contains(reader)).toBe(false)
-    expect(reader.parentElement).toBe(document.body)
-  })
-
-  it('renders nothing for a verb without stories or when the request fails', async () => {
-    vi.mocked(fetchVerbStories).mockResolvedValueOnce({ stories: [] }).mockRejectedValueOnce(new Error('402'))
-
-    const none = render(<VerbStories verbId="წერს" />)
-    const failed = render(<VerbStories verbId="წერს" />)
-    await waitFor(() => expect(fetchVerbStories).toHaveBeenCalledTimes(2))
-
-    expect(none.container.innerHTML).toBe('')
-    expect(failed.container.innerHTML).toBe('')
   })
 })

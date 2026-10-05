@@ -2,7 +2,8 @@ import React, { useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import { cyr, type TenseKey, type VerbDto } from '../types'
 import { MeaningText } from '../parts'
-import { Coach, GameShell, PULSE, useFirstTime } from '../ui/GameShell'
+import { Coach, GameShell, PULSE, useFirstTime, type SceneHooks } from '../ui/GameShell'
+import { STEP } from '../ladder/engine'
 import { LockIcon } from '../ui/icons'
 import { bad, good, haptic } from '../ui/juice'
 import { STAGE_STEP, assemble, makePuzzle, schemeOf, wrongRows, type Choice, type Puzzle } from './formParts'
@@ -30,14 +31,19 @@ const prefill = (p: Puzzle): Picked => ({
  * «Конструктор»: форма собирается из частей — приставка, показатель лица, корень, окончание.
  * Сложность растёт сама: сначала выбираешь только окончание, потом показатель лица, потом приставку.
  */
-export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs = [] }: {
+export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs = [], scene }: {
   verb: VerbDto; onExit: () => void; rng?: Rng
   /** Приставки других глаголов — ложные варианты в ряду приставок. */
   extraPreverbs?: string[]
+  /** В сессии: сколько слов собрать, с какой ступени сложности (solvedBefore) и куда сообщать ответы. */
+  scene?: SceneHooks & { rounds: number; solvedBefore: number }
 }) {
   const scheme = useMemo(() => schemeOf(verb)!, [verb])
-  const [solved, setSolved] = useState(0)
-  const [puzzle, setPuzzle] = useState(() => makePuzzle(verb, 0, rng, extraPreverbs))
+  const [solved, setSolved] = useState(scene?.startAt ?? 0)
+  /** В сессии ступень сложности задаёт постановщик и внутри сцены она не растёт. */
+  const level = (n: number) => (scene ? scene.solvedBefore : n)
+  const missed = useRef(false)
+  const [puzzle, setPuzzle] = useState(() => makePuzzle(verb, level(0), rng, extraPreverbs))
   const [picked, setPicked] = useState<Picked>(() => prefill(puzzle))
   const [result, setResult] = useState<{ ok: boolean; text?: string } | null>(null)
   /** Ступень выросла на этом задании — один раз говорим, что изменилось. */
@@ -63,10 +69,16 @@ export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs
     if (assembled === puzzle.cell.form) {
       const n = solved + 1
       setSolved(n); setResult({ ok: true }); played()
-      good(frame.current, n % STAGE_STEP === 0 ? 'big' : 'small')
+      good(frame.current, !scene && n % STAGE_STEP === 0 ? 'big' : 'small')
+      if (scene) {
+        if (!missed.current) scene.onResult(slot, true, STEP.TYPE)
+        scene.onStep()
+      }
       return
     }
     bad()
+    if (scene && !missed.current) scene.onResult(slot, false, STEP.TYPE)
+    missed.current = true
     // Не «неправильно», а что получилось: если это другая форма того же глагола — называем её.
     const other = slotsOf(verb, assembled, Object.keys(verb.tenses) as TenseKey[])[0]
     const miss = wrongRows(puzzle.cell, pick).map(k => ROWS.find(r => r.key === k)!.miss).join(' и ')
@@ -74,7 +86,9 @@ export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs
   }
 
   function next() {
-    const p = makePuzzle(verb, solved, rng, extraPreverbs, puzzle)
+    if (scene && solved >= scene.rounds) return scene.onDone()
+    missed.current = false
+    const p = makePuzzle(verb, level(solved), rng, extraPreverbs, puzzle)
     setGrew(p.stage > puzzle.stage)
     setPuzzle(p); setPicked(prefill(p)); setResult(null)
   }
@@ -92,8 +106,8 @@ export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs
       right={<span key={solved} className="inline-block j-bump">собрано {solved}</span>}
       help={[
         'Сверху по-русски написано, что нужно сказать. Собери это слово из частей.',
-        'Корень уже стоит в рамке. Сначала выбираешь только окончание — остальное я поставлю сам.',
-        'Через несколько слов добавится буква для «я» и «мы», потом приставка. Прочерк «—» значит, что в этом месте ничего нет.',
+        'Корень уже стоит в рамке. Что уже поставлено за тебя — помечено замком.',
+        'Прочерк «—» значит, что в этом месте ничего нет.',
         'Слово в рамке меняется сразу, как ты нажимаешь. Когда всё выбрано — жми «Собрать».'
       ]}
     >
