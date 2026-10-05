@@ -108,10 +108,11 @@ public class LessonVerbAnnotationTests : TestBase
     [Test]
     public async Task Verb_that_appears_only_among_wrong_options_is_not_annotated()
     {
-        // pr3_q05: the correct answer is not in the catalog, two of the wrong options are.
-        var hits = await AnnotateLesson("present-tense", 3, Viewer(withAccess: true), "pr3_q05");
+        // pr3_q01 («я люблю»): the correct answer is a verb the catalog does not hold (its table does not
+        // fit six persons), while both wrong options are forms of catalog verbs.
+        var hits = await AnnotateLesson("present-tense", 3, Viewer(withAccess: true), "pr3_q01");
 
-        hits["pr3_q05"].Should().BeNull(because: "a distractor's verb is not what the question is about");
+        hits["pr3_q01"].Should().BeNull(because: "a distractor's verb is not what the question is about");
     }
 
     [Test]
