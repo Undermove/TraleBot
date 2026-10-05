@@ -8,6 +8,8 @@
 //   sentences.raw.json  предложения Tatoeba с формами глаголов       (шаг 2)
 //   ru.json             русские переводы — пишутся руками по английским толкованиям Викисловаря
 //   ru.unsure.json      { лемма: "в чём сомнение" } — попадает в REVIEW.md, на сборку не влияет
+//   ru-forms.json       русские формы переводов для фраз «я хочу», «ты хотел(а)» (ru-forms.py + pymorphy3;
+//                       после правки ru.json его нужно пересобрать — сборка проверяет, что он не отстал)
 //   verbs.skip.json     { лемма: "почему вычеркнут" } — глаголы, вычеркнутые при вычитке
 //   sentences.skip.json [id, …] — предложения Tatoeba, вычеркнутые при вычитке
 //
@@ -34,6 +36,7 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { analyze } from './analyze.mjs'
 import { formatJson } from './format.mjs'
+import { meaningsOf } from './meanings.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = name => JSON.parse(readFileSync(resolve(here, name), 'utf8'))
@@ -45,6 +48,8 @@ const { verbs: raw, rejected, noTable } = read('verbs.raw.json')
 const frequency = read('frequency.json').verbs
 const ru = read('ru.json')
 const unsure = read('ru.unsure.json')
+// Русские формы переводов (ru-forms.py) — из них собираются фразы «я хочу», «ты хотел(а)».
+const ruForms = read('ru-forms.json')
 const skipVerbs = read('verbs.skip.json')
 const prodLookups = read('prod-lookups.json').words
 const wanted = read('wanted.json')
@@ -156,6 +161,13 @@ const modelFor = ({ v, a }) =>
 const verbs = analysed.map(entry => {
   const { v, a } = entry
   const model = modelFor(entry)
+  // Значение каждой формы простыми словами. Без русских форм глагол в каталог не идёт: упражнение
+  // осталось бы без текста.
+  const forms = ruForms[v.lemma]
+  if (!forms) fail.push(`${v.lemma}: нет русских форм в ru-forms.json — запусти python3 scripts/verbs/ru-forms.py`)
+  else if (forms.ru !== ru[v.lemma]) fail.push(`${v.lemma}: ru-forms.json собран для «${forms.ru}», а в ru.json теперь «${ru[v.lemma]}» — запусти python3 scripts/verbs/ru-forms.py`)
+  const plain = forms ? meaningsOf(forms, Object.keys(v.tenses)) : { meanings: {}, chips: {}, problems: [] }
+  for (const problem of plain.problems) fail.push(`${v.lemma} (${ru[v.lemma]}): ${problem}`)
   return {
     lemma: v.lemma,
     title: titleOf(v),
@@ -167,6 +179,10 @@ const verbs = analysed.map(entry => {
     model: model ? { id: model.v.lemma, title: titleOf(model.v), ru: ru[model.v.lemma] ?? null } : null,
     masdarWithPreverb: v.masdar.perfective.filter(m => m !== titleOf(v)),
     tenses: v.tenses,
+    // Что значит каждая форма по-русски: время → шесть фраз («я хочу», «ты хочешь», …).
+    meanings: plain.meanings,
+    // Пометки для времён, чьи фразы по-русски совпадают («я писал(а)»: один раз или долго).
+    meaningChips: plain.chips,
     alt: v.alt,
     // Формы, которые пишутся так же, как самостоятельное слово-неглагол (უნდა — и «хочет», и «надо»).
     // По ним разбор не строится: встретив такое слово во фразе, нельзя утверждать, что это глагол.

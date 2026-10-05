@@ -15,7 +15,11 @@ namespace Application.Verbs;
 public record VerbSummary(
     string Lemma, string Title, string Translation, string Kind, string PresentJson, VerbStatus Status = VerbStatus.Verified);
 
-public record VerbFormHit(string Form, string Lemma, string Title, string Translation, string Tense, int Person);
+/// <param name="Meaning">The form in plain Russian («я хотел(а)»); null when the base has no phrase for it.</param>
+/// <param name="MeaningNote">Tells apart tenses with the same phrase («один раз · сделано»); usually null.</param>
+public record VerbFormHit(
+    string Form, string Lemma, string Title, string Translation, string Tense, int Person,
+    string? Meaning = null, string? MeaningNote = null);
 
 /// <summary>
 /// Read side of the "Глаголы" section: the list, one card, and the parse of a pasted form.
@@ -89,7 +93,8 @@ public class VerbQueries(ITraleDbContext dbContext)
             .Where(f => words.Contains(f.Form))
             .OrderBy(f => f.Verb.SortOrder)
             .ThenBy(f => f.Person)
-            .Select(f => new VerbFormHit(f.Form, f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Tense, f.Person))
+            .Select(f => new VerbFormHit(
+                f.Form, f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Tense, f.Person, f.Meaning, f.MeaningNote))
             .ToListAsync(ct);
         // A form can belong to several (tense, person) cells; the first by verb order and person wins.
         var byForm = hits.GroupBy(h => h.Form).ToDictionary(g => g.Key, g => g.First());
@@ -124,7 +129,8 @@ public class VerbQueries(ITraleDbContext dbContext)
             .Where(f => f.Form == normalized)
             .OrderBy(f => f.Verb.SortOrder)
             .ThenBy(f => f.Person)
-            .Select(f => new VerbFormHit(f.Form, f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Tense, f.Person))
+            .Select(f => new VerbFormHit(
+                f.Form, f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Tense, f.Person, f.Meaning, f.MeaningNote))
             .ToListAsync(ct);
     }
 }

@@ -125,14 +125,15 @@ public class VerbStoryTests : TestBase
         var asked = story.Frames[0];
         asked.RuAdapted.Should().BeFalse();
         asked.Ru.Should().Be(asked.SourceRu);
-        asked.Target.Should().Be(new VerbStoryForm("მიდიხარ", "present", 1));
-        asked.Options.Should().Contain(new VerbStoryForm("მივდივარ", "present", 0));
+        asked.Target.Should().Be(new VerbStoryForm("მიდიხარ", "present", 1, "ты идёшь"),
+            because: "the reader explains a wrong pick by what the form means in plain Russian");
+        asked.Options.Should().Contain(new VerbStoryForm("მივდივარ", "present", 0, "я иду"));
 
         var alone = story.Frames[2];
         alone.RuAdapted.Should().BeTrue();
         alone.Ru.Should().Be("Один я пойти не смогу.");
         alone.SourceRu.Should().Be("Я не могу пойти одна.");
-        alone.Target.Should().Be(new VerbStoryForm("წავალ", "future", 0));
+        alone.Target.Should().Be(new VerbStoryForm("წავალ", "future", 0, "я буду идти"));
 
         story.Frames.Where(f => f.RuAdapted).Select(f => f.SentenceId).Should().BeEquivalentTo(new[] { 12012139L, 8090988L });
     }

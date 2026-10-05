@@ -11,7 +11,7 @@ namespace Application.Verbs;
 
 /// <summary>
 /// The verb behind a translated word or phrase, for the bot's reply: which verb, and — when a
-/// concrete form was found — its tense and person.
+/// concrete form was found — its tense and person, and what the form means in plain Russian.
 /// </summary>
 public record VerbReplyHint(
     string Lemma,
@@ -20,7 +20,9 @@ public record VerbReplyHint(
     VerbStatus Status,
     string? Form,
     string? Tense,
-    int? Person);
+    int? Person,
+    string? Meaning = null,
+    string? MeaningNote = null);
 
 /// <summary>
 /// Finds the verb to mention under a translation in the bot chat. Like
@@ -50,7 +52,8 @@ public class VerbReplyHintQuery(ITraleDbContext dbContext)
             .OrderBy(f => f.Verb.SortOrder)
             .ThenBy(f => f.Person)
             .Select(f => new VerbReplyHint(
-                f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, f.Form, f.Tense, f.Person))
+                f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, f.Form, f.Tense, f.Person,
+                f.Meaning, f.MeaningNote))
             .ToListAsync(ct);
         var byForm = words.Select(w => forms.FirstOrDefault(f => f.Form == w)).FirstOrDefault(f => f != null);
         if (byForm != null)

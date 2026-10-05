@@ -307,6 +307,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddUserAcquisitionSource` | Adds nullable AcquisitionSource to User — first-touch acquisition tag captured from the /start deep-link payload (e.g. "site") or the mini-app start_param, so registrations can be attributed to landing/channel/post/direct traffic. |
 | `AddVerbCatalog` | Adds `Verbs` (lemma, title, translation, kind, card JSON, status Verified/Generated) and `VerbForms` (form → verb, tense, person index) for the mini-app «Глаголы» section. |
 | `AddVerbFormProgress` | Adds `VerbFormProgresses` — per-user progress of the verb ladder: one row per (user, verb, tense, person) with step, best step, reviews and next-due time; unique per cell, indexed by (user, next due). |
+| `AddVerbFormMeaning` | Adds nullable `Meaning` and `MeaningNote` to `VerbForms` — what a form means in plain Russian, conjugated for its verb («я хотел(а)»), and the short note that tells apart tenses whose Russian phrase is the same; shown instead of tense names in exercises, hints and the bot's parse line. |
 | `AddTranslationCache` | Adds `TranslationCache` (normalised key + direction unique, definition / additional info / example, source, classified flag, hit count, timestamps): repeated Georgian lookups are answered from the DB instead of the external dictionary sites. |
 
 ---

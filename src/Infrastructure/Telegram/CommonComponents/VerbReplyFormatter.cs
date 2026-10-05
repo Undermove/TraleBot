@@ -12,25 +12,28 @@ namespace Infrastructure.Telegram.CommonComponents;
 /// </summary>
 public static class VerbReplyFormatter
 {
-    // Grammar terms stay, each with a short gloss — same wording as TENSES in the mini-app (verbs/types.ts).
-    private static readonly Dictionary<string, string> Tenses = new()
+    // No grammar terms in the chat: the form is explained by its plain-Russian meaning from the verb
+    // base («я хотел(а)»). When the base has none (rare tenses, verbs generated at runtime) the line
+    // falls back to the person and the plain name of the time — the same names as TENSES[..].name in
+    // the mini-app (verbs/types.ts).
+    private static readonly Dictionary<string, string> PlainTime = new()
     {
-        ["present"] = "настоящее время",
-        ["imperfect"] = "имперфект (делал — прошедшее как процесс)",
-        ["presentSubjunctive"] = "конъюнктив настоящего (чтобы делал)",
-        ["future"] = "будущее время",
-        ["conditional"] = "условное (сделал бы)",
-        ["futureSubjunctive"] = "конъюнктив будущего (если бы сделал)",
-        ["aorist"] = "аорист (сделал — прошедшее с результатом)",
-        ["optative"] = "конъюнктив аориста (должен сделать)",
-        ["perfect"] = "перфект (оказывается, сделал)",
-        ["pluperfect"] = "плюсквамперфект (должен был сделать)",
-        ["perfectSubjunctive"] = "конъюнктив перфекта (пожелания, тосты)"
+        ["present"] = "сейчас",
+        ["imperfect"] = "прошедшее: делал",
+        ["presentSubjunctive"] = "чтобы делал",
+        ["future"] = "будущее",
+        ["conditional"] = "сделал бы",
+        ["futureSubjunctive"] = "если бы сделал",
+        ["aorist"] = "прошедшее: сделал",
+        ["optative"] = "надо сделать",
+        ["perfect"] = "оказывается, сделал",
+        ["pluperfect"] = "должен был сделать",
+        ["perfectSubjunctive"] = "пожелание, тост"
     };
 
     private static readonly string[] Persons = ["я", "ты", "он/она", "мы", "вы", "они"];
 
-    /// <summary>E.g. «Разбор: {form} — аорист (…), «мы». Глагол {masdar} — писать.»</summary>
+    /// <summary>E.g. «Разбор: {form} — «мы писали» (один раз · сделано). Глагол {masdar} — писать.»</summary>
     public static string Line(VerbReplyHint hint)
     {
         var verb = $"Глагол {hint.Title} — {hint.Translation}.";
@@ -44,8 +47,18 @@ public static class VerbReplyFormatter
             return verb;
         }
 
-        var tense = Tenses.GetValueOrDefault(hint.Tense, hint.Tense);
-        return $"Разбор: {hint.Form} — {tense}, «{Persons[hint.Person.Value]}». {verb}";
+        return $"Разбор: {hint.Form} — {Meaning(hint)}. {verb}";
+    }
+
+    private static string Meaning(VerbReplyHint hint)
+    {
+        if (!string.IsNullOrEmpty(hint.Meaning))
+        {
+            return string.IsNullOrEmpty(hint.MeaningNote) ? $"«{hint.Meaning}»" : $"«{hint.Meaning}» ({hint.MeaningNote})";
+        }
+
+        var who = Persons[hint.Person!.Value];
+        return PlainTime.TryGetValue(hint.Tense!, out var time) ? $"«{who} · {time}»" : $"«{who}»";
     }
 
     /// <summary>

@@ -994,7 +994,10 @@ public class MiniAppController : Controller
         title = h.Title,
         ru = h.Translation,
         tense = h.Tense,
-        person = h.Person
+        person = h.Person,
+        // The form in plain Russian («я хотел(а)») and, rarely, a note that tells two tenses apart.
+        meaning = h.Meaning,
+        meaningNote = h.MeaningNote
     };
 
     /// <summary>Null when the caller may use the verbs section; otherwise the response to return.</summary>

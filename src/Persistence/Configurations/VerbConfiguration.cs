@@ -35,6 +35,8 @@ public class VerbFormConfiguration : IEntityTypeConfiguration<VerbForm>
 
         builder.Property(f => f.Form).HasMaxLength(64);
         builder.Property(f => f.Tense).HasMaxLength(32);
+        builder.Property(f => f.Meaning).HasMaxLength(128);
+        builder.Property(f => f.MeaningNote).HasMaxLength(64);
 
         // The parse lookup: exact form → every (verb, tense, person) it can be.
         builder.HasIndex(f => f.Form);

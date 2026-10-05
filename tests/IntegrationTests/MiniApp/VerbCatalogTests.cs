@@ -221,6 +221,47 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Card_says_what_each_main_form_means_in_plain_Russian()
+    {
+        var want = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("უნდა", CancellationToken.None)))!)!;
+        var write = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("წერს", CancellationToken.None)))!)!;
+
+        want["meanings"]!["present"]!.AsArray().Select(m => m!.GetValue<string>())
+            .Should().Equal("я хочу", "ты хочешь", "он хочет", "мы хотим", "вы хотите", "они хотят");
+        want["meanings"]!["imperfect"]![0]!.GetValue<string>().Should().Be("я хотел(а)");
+        want["meaningChips"]!.AsObject().Should().BeEmpty(because: "with two tenses no phrase repeats, so no note is needed");
+
+        write["meanings"]!["future"]![3]!.GetValue<string>().Should().Be("мы будем писать");
+        write["meanings"]!.AsObject().Select(t => t.Key).Should().BeEquivalentTo(
+            new[] { "present", "aorist", "imperfect", "optative", "conditional", "future" },
+            because: "rare tenses are not in exercises and get no phrase");
+        write["meaningChips"]!["aorist"]!.GetValue<string>().Should().Be("один раз · сделано");
+        write["meaningChips"]!["imperfect"]!.GetValue<string>().Should().Be("долго или часто");
+    }
+
+    [Test]
+    public async Task Every_main_tense_form_row_has_a_meaning_and_rare_tense_rows_have_none()
+    {
+        var main = new[] { "present", "aorist", "imperfect", "optative", "conditional", "future" };
+
+        var rows = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbForms
+            .Select(f => new { f.Tense, f.Meaning, f.MeaningNote }).ToListAsync());
+
+        rows.Where(r => main.Contains(r.Tense)).Should().OnlyContain(r => !string.IsNullOrEmpty(r.Meaning));
+        rows.Where(r => !main.Contains(r.Tense)).Should().OnlyContain(r => r.Meaning == null && r.MeaningNote == null);
+    }
+
+    [Test]
+    public async Task Form_of_a_parallel_table_means_the_same_as_its_cell_in_the_main_one()
+    {
+        // მივიდა is the aorist of "to go" with another preverb than the main table's წავიდა.
+        var hits = await InScope(sp => sp.GetRequiredService<VerbQueries>().ParseAsync("მივიდა", CancellationToken.None));
+
+        hits.Single(h => h.Lemma == "მიდის").Should().BeEquivalentTo(
+            new { Tense = "aorist", Person = 2, Meaning = "он шёл", MeaningNote = "один раз · сделано" });
+    }
+
+    [Test]
     public async Task Card_carries_the_review_status_taken_from_the_row()
     {
         var verified = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("წერს", CancellationToken.None));
@@ -254,7 +295,9 @@ public class VerbCatalogTests : TestBase
         var hits = await InScope(sp => sp.GetRequiredService<VerbQueries>().ParseAsync(" ვწერდი ", CancellationToken.None));
 
         // The same form also belongs to "to write to someone" (სწერს); the more common verb comes first.
-        hits[0].Should().BeEquivalentTo(new VerbFormHit("ვწერდი", "წერს", "წერა", "писать", "imperfect", 0));
+        hits[0].Should().BeEquivalentTo(
+            new VerbFormHit("ვწერდი", "წერს", "წერა", "писать", "imperfect", 0, "я писал(а)", "долго или часто"),
+            because: "a hit says the form in plain Russian; the note tells it from the other past that reads the same");
         hits.Should().OnlyContain(h => h.Form == "ვწერდი" && h.Tense == "imperfect" && h.Person == 0);
         hits.Select(h => h.Lemma).Should().OnlyHaveUniqueItems();
     }
@@ -302,7 +345,7 @@ public class VerbCatalogTests : TestBase
 
         hits.Keys.Should().BeEquivalentTo("მივდივარ", "მე მივდივარ სკოლაში");
         hits["მე მივდივარ სკოლაში"].Should().BeEquivalentTo(
-            new VerbFormHit("მივდივარ", "მიდის", "სვლა", "идти, уходить", "present", 0),
+            new VerbFormHit("მივდივარ", "მიდის", "სვლა", "идти, уходить", "present", 0, "я иду"),
             because: "a phrase is marked by the verb form it contains, with that form's tense and person");
     }
 

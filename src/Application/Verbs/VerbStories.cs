@@ -8,7 +8,9 @@ using System.Text.RegularExpressions;
 namespace Application.Verbs;
 
 /// <summary>A verb form with the cell of the paradigm it sits in — enough to say what the form means.</summary>
-public record VerbStoryForm(string Form, string Tense, int Person);
+/// <param name="Meaning">The form in plain Russian («ты идёшь») — what the reader shows when a wrong form is picked.</param>
+/// <param name="MeaningNote">Tells apart tenses with the same phrase; usually null.</param>
+public record VerbStoryForm(string Form, string Tense, int Person, string? Meaning = null, string? MeaningNote = null);
 
 /// <summary>One comic frame with its line already resolved from the verb catalog.</summary>
 public record VerbStoryFrame(
@@ -258,7 +260,8 @@ public class VerbStoryCatalog
     {
         if (form != null && verb.Forms.TryGetValue(form, out var cell))
         {
-            return new VerbStoryForm(form, cell.Tense, cell.Person);
+            verb.Meanings.TryGetValue((cell.Tense, cell.Person), out var meaning);
+            return new VerbStoryForm(form, cell.Tense, cell.Person, meaning.Phrase, meaning.Note);
         }
 
         problems.Add($"{what} '{form}' is not a form of '{verb.Lemma}' in the catalog");
@@ -302,7 +305,18 @@ public class VerbStoryCatalog
                     g => g.Key,
                     g => (g.First()!["ka"]!.GetValue<string>(), g.First()!["ru"]!.GetValue<string>()));
 
-            verbs[lemma] = new CatalogVerb(lemma, forms, sentences);
+            var meanings = new Dictionary<(string Tense, int Person), (string? Phrase, string? Note)>();
+            foreach (var (tense, row) in entry["meanings"] as JsonObject ?? new JsonObject())
+            {
+                var note = entry["meaningChips"]?[tense]?.GetValue<string>();
+                var phrases = row!.AsArray();
+                for (var person = 0; person < phrases.Count; person++)
+                {
+                    meanings[(tense, person)] = (phrases[person]!.GetValue<string>(), note);
+                }
+            }
+
+            verbs[lemma] = new CatalogVerb(lemma, forms, meanings, sentences);
         }
 
         return verbs;
@@ -311,6 +325,7 @@ public class VerbStoryCatalog
     private record CatalogVerb(
         string Lemma,
         IReadOnlyDictionary<string, (string Tense, int Person)> Forms,
+        IReadOnlyDictionary<(string Tense, int Person), (string? Phrase, string? Note)> Meanings,
         IReadOnlyDictionary<long, (string Ka, string Ru)> Sentences);
 
     // ReSharper disable once ClassNeverInstantiated.Local

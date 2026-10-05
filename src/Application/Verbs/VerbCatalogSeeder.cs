@@ -59,7 +59,7 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             var entry = entries[i]!.AsObject();
             var lemma = entry["lemma"]!.GetValue<string>();
             // "#status": bump when the stored card gains a field, so already seeded rows are rewritten once.
-            var hash = Hash(entry.ToJsonString(Json) + "#status");
+            var hash = Hash(entry.ToJsonString(Json) + "#meanings");
             inCatalog.Add(lemma);
 
             existing.TryGetValue(lemma, out var verb);
@@ -150,6 +150,10 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             ["oddTenses"] = entry["oddTenses"]?.DeepClone() ?? new JsonArray(),
             ["model"] = entry["model"]?.DeepClone(),
             ["tenses"] = tenses.DeepClone(),
+            // What each form means in plain Russian (tense → six phrases) and the notes that tell apart
+            // tenses with the same phrase — exercises show these instead of tense names.
+            ["meanings"] = entry["meanings"]?.DeepClone() ?? new JsonObject(),
+            ["meaningChips"] = entry["meaningChips"]?.DeepClone() ?? new JsonObject(),
             // Real sentences (Tatoeba) that contain a form of this verb — material for exercises.
             ["sentences"] = entry["sentences"]?.DeepClone() ?? new JsonArray(),
             ["source"] = entry["source"]?.DeepClone(),
@@ -173,6 +177,11 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             .Select(f => f!.GetValue<string>())
             .ToHashSet();
 
+        // The plain-Russian meaning belongs to the cell (tense, person), so forms of the parallel
+        // tables get it too: the same verb with another preverb means the same in Russian.
+        var meanings = entry["meanings"] as JsonObject;
+        var notes = entry["meaningChips"] as JsonObject;
+
         var seen = new HashSet<(string Form, string Tense, int Person)>();
         foreach (var table in tables)
         {
@@ -195,7 +204,9 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
                             VerbId = verbId,
                             Form = form,
                             Tense = tense,
-                            Person = person
+                            Person = person,
+                            Meaning = (meanings?[tense] as JsonArray)?[person]?.GetValue<string>(),
+                            MeaningNote = notes?[tense]?.GetValue<string>()
                         };
                     }
                 }

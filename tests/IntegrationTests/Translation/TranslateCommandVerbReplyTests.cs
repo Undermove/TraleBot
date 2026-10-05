@@ -42,7 +42,8 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
         var reply = await Say(910001, form);
 
         reply.Text.Should().StartWith("Определение: писать");
-        reply.Text.Should().EndWith($"Разбор: {form} — аорист (сделал — прошедшее с результатом), «мы». Глагол {title} — писать.");
+        reply.Text.Should().EndWith($"Разбор: {form} — «мы писали» (один раз · сделано). Глагол {title} — писать.",
+            because: "the chat explains a form by what it means in plain Russian, not by the name of its tense");
     }
 
     [Test]
@@ -111,5 +112,32 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
 
         VerbReplyFormatter.Line(hint).Should().EndWith("Формы не проверены.");
         VerbReplyFormatter.Line(hint with { Status = VerbStatus.Verified }).Should().NotContain("не проверены");
+    }
+
+    [Test]
+    public void Parse_line_without_a_stored_phrase_falls_back_to_the_person_and_a_plain_name_of_the_time()
+    {
+        var verb = CatalogVerb(Write);
+        var title = verb["title"]!.GetValue<string>();
+        var form = Form(verb, "aorist", 2);
+        var hint = new VerbReplyHint(Write, title, "писать", VerbStatus.Verified, form, "aorist", 2);
+
+        VerbReplyFormatter.Line(hint).Should().Be($"Разбор: {form} — «он/она · прошедшее: сделал». Глагол {title} — писать.");
+        VerbReplyFormatter.Line(hint with { Meaning = "он писал" }).Should().Be($"Разбор: {form} — «он писал». Глагол {title} — писать.");
+    }
+
+    [Test]
+    public void Parse_line_never_names_a_tense_by_its_textbook_term()
+    {
+        var verb = CatalogVerb(Write);
+        var terms = new[] { "аорист", "имперфект", "оптатив", "конъюнктив", "перфект", "масдар" };
+        foreach (var tense in verb["tenses"]!.AsObject().Select(t => t.Key))
+        {
+            var hint = new VerbReplyHint(Write, verb["title"]!.GetValue<string>(), "писать", VerbStatus.Verified, Form(verb, tense, 0), tense, 0);
+
+            var line = VerbReplyFormatter.Line(hint).ToLowerInvariant();
+
+            terms.Should().NotContain(term => line.Contains(term), because: $"tense '{tense}' must be said in plain words");
+        }
     }
 }
