@@ -94,7 +94,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `Result.tsx` | `result` | Lesson result summary with kilim strip. |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
-| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. |
+| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter; the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet` (six main forms, person switcher, collapsed rare tenses and explanation). |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
 | `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
@@ -193,6 +193,9 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | GET | `/api/miniapp/activity-days` | Daily activity series for streak. |
 | GET | `/api/miniapp/vocabulary` | User's vocabulary entries. |
 | POST | `/api/miniapp/vocabulary/quiz` | Start a vocabulary quiz. |
+| GET | `/api/miniapp/verbs` | (not used by the mini-app UI yet) List of verbs (id, masdar title, translation, kind, 1sg present). 401 without auth, 402 without trial/Pro. |
+| GET | `/api/miniapp/verbs/parse?form=` | Parse an exact Georgian form into (verb, tense, person) hits; empty list when unknown. |
+| GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source). |
 | POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. |
 | DELETE | `/api/miniapp/vocabulary/{id}` | Delete a vocabulary entry. |
 | POST | `/api/miniapp/translate` | Translate a word and add to vocabulary. |
@@ -226,6 +229,7 @@ Location: `src/Trale/HostedServices/`.
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
+| `SeedVerbCatalog` | On startup | Loads the curated verb catalog `src/Trale/Verbs/verbs.json` (built by `scripts/verbs/build-catalog.mjs` from Wiktionary) into `Verbs` / `VerbForms`; idempotent, rewrites only changed verbs. |
 | `ReturnPushWorker` | Daily at 10:00 UTC | Dispatch D1+ return push to users who started a lesson but didn't return (#940). |
 | `HourlyNotificationWorker` | Every top-of-hour UTC | Fan-out tick for contextual pushes — calls `IHolidayNotificationService` / `ICoinsNotificationService` / `IStreakNotificationService` with fault-isolation. Holiday push uses `TbilisiMorningWindow` to fire only at 09:xx Tbilisi (#997, epic #894). |
 
@@ -285,6 +289,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddOnboardingHintsJson` | Adds nullable OnboardingHintsJson to MiniAppUserProgress — persisted state (seen hints + lastShownAt) for the contextual, time-spread onboarding nudges. |
 | `AddActivityDaysJson` | Adds nullable ActivityDaysJson to MiniAppUserProgress — per-day mini-app play log (one UTC timestamp per played day) so the profile activity heatmap lights one cell per played day instead of only the single LastPlayedAtUtc point. |
 | `AddUserAcquisitionSource` | Adds nullable AcquisitionSource to User — first-touch acquisition tag captured from the /start deep-link payload (e.g. "site") or the mini-app start_param, so registrations can be attributed to landing/channel/post/direct traffic. |
+| `AddVerbCatalog` | Adds `Verbs` (lemma, title, translation, kind, card JSON, status Verified/Generated) and `VerbForms` (form → verb, tense, person index) for the mini-app «Глаголы» section. |
 
 ---
 

@@ -12,6 +12,7 @@ using Application.Notifications.Holidays;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
+using Application.Verbs;
 using Domain.Quiz;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -76,6 +77,8 @@ public static class DependencyInjection
         // MiniApp services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetActivityDaysQuery>();
         services.AddScoped<GetUserVocabularyQuery>();
+        services.AddScoped<VerbCatalogSeeder>();
+        services.AddScoped<VerbQueries>();
         services.AddScoped<FeedTreatService>();
 
         // Acquisition attribution (per ARCHITECTURE.md, no MediatR)

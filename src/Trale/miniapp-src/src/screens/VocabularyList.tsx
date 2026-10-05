@@ -5,6 +5,9 @@ import LoaderLetter from '../components/LoaderLetter'
 import Mascot from '../components/Mascot'
 import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
 import WordCard from '../components/WordCard'
+import VerbSheet from '../verbs/VerbSheet'
+import { VerbHint } from '../verbs/parts'
+import type { VerbFormHitDto } from '../verbs/types'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
 
@@ -15,7 +18,7 @@ interface Props {
 
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
 type TranslateState = 'idle' | 'translating' | 'success' | 'error'
-type Filter = 'all' | 'new' | 'weak' | 'mastered'
+type Filter = 'all' | 'new' | 'weak' | 'mastered' | 'verbs'
 type OnboardingState = 'idle' | 'adding' | 'done' | 'error'
 
 interface Toast {
@@ -32,7 +35,9 @@ export default function VocabularyList({ progress, navigate }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [translateInput, setTranslateInput] = useState('')
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
-  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string } | null>(null)
+  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string; verb?: VerbFormHitDto | null } | null>(null)
+  // Карточка глагола открывается шторкой поверх словаря — из слова, из перевода, из списка.
+  const [verbSheet, setVerbSheet] = useState<VerbFormHitDto | null>(null)
   const [activeLetter, setActiveLetter] = useState<string | null>(null)
   const [cardItem, setCardItem] = useState<VocabularyItem | null>(null)
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set())
@@ -76,6 +81,9 @@ export default function VocabularyList({ progress, navigate }: Props) {
     )
   }, [items])
 
+  // Фильтр «глаголы» появляется, когда в словаре есть хотя бы одно слово с глаголом.
+  const hasVerbs = useMemo(() => items.some((item) => item.verb), [items])
+
   const filtered = useMemo(() => {
     const lowered = search.trim().toLowerCase()
     return items.filter((item) => {
@@ -93,6 +101,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
       if (filter === 'mastered') {
         if (item.mastery === 'NotMastered') return false
       }
+      if (filter === 'verbs' && !item.verb) return false
       if (lowered && !(
         item.word.toLowerCase().includes(lowered) ||
         item.definition.toLowerCase().includes(lowered)
@@ -202,7 +211,8 @@ export default function VocabularyList({ progress, navigate }: Props) {
           word: r.word ?? word,
           definition: r.definition ?? '',
           additionalInfo: r.additionalInfo ?? '',
-          example: r.example ?? ''
+          example: r.example ?? '',
+          verb: r.verb
         })
         setTranslateState('success')
         setTranslateInput('')
@@ -431,6 +441,11 @@ export default function VocabularyList({ progress, navigate }: Props) {
                   <div className="font-sans text-[12px] text-jewelInk-mid mt-1 italic">{translateResult.example}</div>
                 )}
                 <div className="font-sans text-[11px] text-gold-deep font-bold mt-1.5">✓ добавлено в словарь</div>
+                {translateResult.verb && (
+                  <div className="mt-2.5">
+                    <VerbHint hit={translateResult.verb} onOpen={() => setVerbSheet(translateResult.verb!)} />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -468,7 +483,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
 
             {/* Filter chips */}
-            <div className="grid grid-cols-4 gap-1.5 mb-3">
+            <div className={`grid ${hasVerbs ? 'grid-cols-5' : 'grid-cols-4'} gap-1.5 mb-3`}>
               <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
                 все
               </FilterChip>
@@ -484,6 +499,11 @@ export default function VocabularyList({ progress, navigate }: Props) {
               >
                 изучено
               </FilterChip>
+              {hasVerbs && (
+                <FilterChip active={filter === 'verbs'} onClick={() => setFilter('verbs')}>
+                  глаголы
+                </FilterChip>
+              )}
             </div>
 
             {/* Alphabet index */}
@@ -565,7 +585,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
                 {/* Right zone: word content → opens card */}
                 <button
                   onClick={() => openCard(item)}
-                  className="flex-1 flex items-center gap-3 py-3 pr-4 min-h-[56px]"
+                  className="flex-1 min-w-0 flex items-center gap-3 py-3 pr-4 min-h-[56px]"
                   style={isStarterMode ? { paddingLeft: '1rem' } : undefined}
                 >
                   {isStarterMode && (
@@ -582,6 +602,15 @@ export default function VocabularyList({ progress, navigate }: Props) {
                       {russian}
                     </div>
                   </div>
+
+                  {item.verb && (
+                    <span
+                      data-testid="verb-badge"
+                      className="relative z-[1] shrink-0 px-1.5 py-0.5 rounded-md bg-navy-wash border border-jewelInk/40 font-sans text-[9px] font-bold uppercase tracking-wider text-navy"
+                    >
+                      глагол
+                    </span>
+                  )}
 
                   <div
                     className={`relative z-[1] w-2.5 h-2.5 rounded-full shrink-0 ${masteryColor} border border-jewelInk/30`}
@@ -653,6 +682,15 @@ export default function VocabularyList({ progress, navigate }: Props) {
           onClose={closeCard}
           onToggleSelect={toggle}
           onDelete={handleDelete}
+          onOpenVerb={setVerbSheet}
+        />
+      )}
+
+      {verbSheet && (
+        <VerbSheet
+          verbId={verbSheet.verbId}
+          highlight={{ tense: verbSheet.tense, person: verbSheet.person }}
+          onClose={() => setVerbSheet(null)}
         />
       )}
     </div>
@@ -696,7 +734,7 @@ function FilterChip({
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg border-[1.5px] px-3 py-2.5 min-h-[44px] flex items-center justify-center text-center font-sans text-[11px] font-bold uppercase tracking-wider transition-all duration-75 ${
+      className={`rounded-lg border-[1.5px] px-1 py-2.5 min-h-[44px] flex items-center justify-center text-center font-sans text-[11px] font-bold uppercase tracking-wider transition-all duration-75 ${
         active
           ? 'bg-navy text-cream border-jewelInk'
           : 'bg-cream-tile text-jewelInk-mid border-jewelInk/25'

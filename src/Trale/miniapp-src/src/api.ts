@@ -1,3 +1,4 @@
+import type { VerbDto, VerbFormHitDto } from './verbs/types'
 function getInitData(): string {
   const tg = (window as any).Telegram?.WebApp
   return tg?.initData ?? ''
@@ -73,6 +74,8 @@ export interface VocabularyItem {
   mastery: 'NotMastered' | 'MasteredInForwardDirection' | 'MasteredInBothDirections'
   isStarter: boolean
   audioUrl?: string
+  /** Разбор глагольной формы, если слово или фраза её содержит. */
+  verb?: VerbFormHitDto | null
 }
 
 export interface VocabularyListResponse {
@@ -176,6 +179,7 @@ export const api = {
       additionalInfo?: string
       example?: string
       vocabularyEntryId?: string
+      verb?: VerbFormHitDto | null
     }>('/api/miniapp/translate', {
       method: 'POST',
       body: JSON.stringify({ word })
@@ -403,4 +407,15 @@ export interface AdminUserDetail {
     purchasedAtUtc: string
     refundedAtUtc: string | null
   }>
+}
+
+// ── Глаголы ──────────────────────────────────────────────────────────────────
+
+export function fetchVerb(id: string) {
+  return request<VerbDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}`)
+}
+
+/** Разбор грузинской формы: какому глаголу, времени и лицу она соответствует. */
+export function parseVerbForm(form: string) {
+  return request<{ hits: VerbFormHitDto[] }>(`/api/miniapp/verbs/parse?form=${encodeURIComponent(form)}`)
 }

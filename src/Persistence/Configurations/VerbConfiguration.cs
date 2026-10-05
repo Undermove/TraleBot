@@ -1,0 +1,42 @@
+using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace Persistence.Configurations;
+
+public class VerbConfiguration : IEntityTypeConfiguration<Verb>
+{
+    public void Configure(EntityTypeBuilder<Verb> builder)
+    {
+        builder.HasKey(v => v.Id);
+
+        builder.Property(v => v.Lemma).HasMaxLength(64);
+        builder.Property(v => v.Title).HasMaxLength(64);
+        builder.Property(v => v.Translation).HasMaxLength(256);
+        builder.Property(v => v.Kind).HasMaxLength(16);
+        builder.Property(v => v.ContentHash).HasMaxLength(64);
+        builder.Property(v => v.PresentJson).HasColumnType("text");
+        builder.Property(v => v.CardJson).HasColumnType("text");
+
+        builder.HasIndex(v => v.Lemma).IsUnique();
+
+        builder.HasMany(v => v.Forms)
+            .WithOne(f => f.Verb)
+            .HasForeignKey(f => f.VerbId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class VerbFormConfiguration : IEntityTypeConfiguration<VerbForm>
+{
+    public void Configure(EntityTypeBuilder<VerbForm> builder)
+    {
+        builder.HasKey(f => f.Id);
+
+        builder.Property(f => f.Form).HasMaxLength(64);
+        builder.Property(f => f.Tense).HasMaxLength(32);
+
+        // The parse lookup: exact form → every (verb, tense, person) it can be.
+        builder.HasIndex(f => f.Form);
+    }
+}

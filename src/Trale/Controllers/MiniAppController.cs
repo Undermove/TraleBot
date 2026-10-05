@@ -8,6 +8,7 @@ using Application.MiniApp;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
+using Application.Verbs;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
 using Infrastructure.Monitoring;
@@ -542,6 +543,7 @@ public class MiniAppController : Controller
     [HttpGet("vocabulary")]
     public async Task<IActionResult> GetVocabulary(
         [FromServices] GetUserVocabularyQuery query,
+        [FromServices] VerbQueries verbs,
         CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
@@ -551,6 +553,13 @@ public class MiniAppController : Controller
         }
 
         var result = await query.ExecuteAsync(user.Id, ct);
+
+        // Verbs are a layer over the dictionary: a word or phrase that contains a known verb form
+        // carries the parse, so the mini-app can mark it and open the verb card from the word.
+        var verbHits = await verbs.FindInTextsAsync(
+            result.Items.Concat(result.StarterItems).SelectMany(i => new[] { i.Word, i.Definition }).ToList(), ct);
+        object VerbOf(string word, string definition) =>
+            verbHits.TryGetValue(word, out var hit) || verbHits.TryGetValue(definition, out hit) ? VerbHitDto(hit) : null;
 
         return Ok(new
         {
@@ -567,7 +576,8 @@ public class MiniAppController : Controller
                 successReverseCount = i.SuccessReverseCount,
                 failedCount = i.FailedCount,
                 mastery = i.Mastery,
-                isStarter = i.IsStarter
+                isStarter = i.IsStarter,
+                verb = VerbOf(i.Word, i.Definition)
             }),
             starterItems = result.StarterItems.Select(i => new
             {
@@ -582,7 +592,8 @@ public class MiniAppController : Controller
                 failedCount = i.FailedCount,
                 mastery = i.Mastery,
                 isStarter = i.IsStarter,
-                audioUrl = i.AudioUrl
+                audioUrl = i.AudioUrl,
+                verb = VerbOf(i.Word, i.Definition)
             })
         });
     }
@@ -710,7 +721,10 @@ public class MiniAppController : Controller
     }
 
     [HttpPost("translate")]
-    public async Task<IActionResult> TranslateWord([FromBody] TranslateWordRequest request, CancellationToken ct)
+    public async Task<IActionResult> TranslateWord(
+        [FromBody] TranslateWordRequest request,
+        [FromServices] VerbQueries verbs,
+        CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -729,6 +743,12 @@ public class MiniAppController : Controller
             Word = request.Word.Trim()
         }, ct);
 
+        async Task<object> VerbIn(string word, string definition)
+        {
+            var hits = await verbs.FindInTextsAsync(new[] { word, definition }, ct);
+            return hits.TryGetValue(word, out var hit) || hits.TryGetValue(definition, out hit) ? VerbHitDto(hit) : null;
+        }
+
         return result switch
         {
             CreateVocabularyEntryResult.TranslationSuccess s => Ok(new
@@ -738,7 +758,8 @@ public class MiniAppController : Controller
                 definition = s.Definition,
                 additionalInfo = s.AdditionalInfo,
                 example = s.Example,
-                vocabularyEntryId = s.VocabularyEntryId
+                vocabularyEntryId = s.VocabularyEntryId,
+                verb = await VerbIn(request.Word.Trim().ToLowerInvariant(), s.Definition)
             }),
             CreateVocabularyEntryResult.TranslationExists e => Ok(new
             {
@@ -747,13 +768,94 @@ public class MiniAppController : Controller
                 definition = e.Definition,
                 additionalInfo = e.AdditionalInfo,
                 example = e.Example,
-                vocabularyEntryId = e.VocabularyEntryId
+                vocabularyEntryId = e.VocabularyEntryId,
+                verb = await VerbIn(request.Word.Trim().ToLowerInvariant(), e.Definition)
             }),
             CreateVocabularyEntryResult.TranslationFailure => Ok(new { status = "failure" }),
             CreateVocabularyEntryResult.PromptLengthExceeded => BadRequest(new { status = "too_long" }),
             CreateVocabularyEntryResult.EmojiDetected => BadRequest(new { status = "emoji" }),
             _ => Ok(new { status = "failure" })
         };
+    }
+
+    // ── Verbs ────────────────────────────────────────────────────────────────
+    // The "Глаголы" section sits behind the same entitlement as the rest of the mini-app
+    // (trial or Pro): it is what people come for, so there is no free preview.
+
+    [HttpGet("verbs")]
+    public async Task<IActionResult> GetVerbs([FromServices] VerbQueries verbs, CancellationToken ct)
+    {
+        var denied = await DenyVerbsAccessAsync(ct);
+        if (denied != null) return denied;
+
+        var list = await verbs.ListAsync(ct);
+        return Ok(new
+        {
+            verbs = list.Select(v => new
+            {
+                id = v.Lemma,
+                title = v.Title,
+                ru = v.Translation,
+                kind = v.Kind,
+                present = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.PresentJson)
+            })
+        });
+    }
+
+    [HttpGet("verbs/parse")]
+    public async Task<IActionResult> ParseVerbForm(
+        [FromQuery] string form,
+        [FromServices] VerbQueries verbs,
+        CancellationToken ct)
+    {
+        var denied = await DenyVerbsAccessAsync(ct);
+        if (denied != null) return denied;
+
+        var hits = await verbs.ParseAsync(form ?? string.Empty, ct);
+        return Ok(new
+        {
+            hits = hits.Select(VerbHitDto)
+        });
+    }
+
+    [HttpGet("verbs/{id}")]
+    public async Task<IActionResult> GetVerb(string id, [FromServices] VerbQueries verbs, CancellationToken ct)
+    {
+        var denied = await DenyVerbsAccessAsync(ct);
+        if (denied != null) return denied;
+
+        var card = await verbs.GetCardJsonAsync(id, ct);
+        if (card == null)
+        {
+            return NotFound(new { error = "Unknown verb" });
+        }
+
+        // Stored exactly as the mini-app expects it — served as is.
+        return Content(card, "application/json");
+    }
+
+    private static object VerbHitDto(VerbFormHit h) => new
+    {
+        form = h.Form,
+        verbId = h.Lemma,
+        title = h.Title,
+        ru = h.Translation,
+        tense = h.Tense,
+        person = h.Person
+    };
+
+    /// <summary>Null when the caller may use the verbs section; otherwise the response to return.</summary>
+    private async Task<IActionResult> DenyVerbsAccessAsync(CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        return user.HasMiniAppAccess()
+            ? null
+            : StatusCode(402, new { error = "subscription_required" });
     }
 
     private async Task<User> ResolveUserAsync(CancellationToken ct)
