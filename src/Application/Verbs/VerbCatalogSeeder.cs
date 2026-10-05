@@ -17,8 +17,12 @@ namespace Application.Verbs;
 /// <summary>
 /// Loads the curated verb catalog (<c>src/Trale/Verbs/verbs.json</c>, built by
 /// <c>scripts/verbs/build-catalog.mjs</c>) into the database. Idempotent: a verb is rewritten only
-/// when its catalog entry changed, so restarts are cheap. Verbs that are not in the file
-/// (e.g. generated at a user's request) are left untouched.
+/// when its catalog entry changed, so restarts are cheap; a verb that merely moved in the catalog
+/// gets its position updated without rewriting its forms.
+/// The file is the source of truth for the verbs this seeder wrote (their <see cref="Verb.ContentHash"/>
+/// carries <see cref="CatalogMark"/>): such a verb that is no longer in the file was struck out during
+/// review (wrong forms, duplicate) and is deleted together with its forms. Verbs that came from
+/// anywhere else — generated at a user's request, or verified by another route — are left untouched.
 /// Service per ARCHITECTURE.md.
 /// </summary>
 public class VerbCatalogSeeder(ITraleDbContext dbContext)
@@ -29,26 +33,45 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public record Result(int Total, int Written);
+    /// <summary>Prefix of <see cref="Verb.ContentHash"/> for rows owned by the curated catalog.</summary>
+    public const string CatalogMark = "cat:";
+
+    public record Result(int Total, int Written, int Removed = 0);
 
     public async Task<Result> SeedAsync(string catalogJson, CancellationToken ct)
     {
         var entries = JsonNode.Parse(catalogJson)?["verbs"]?.AsArray()
                       ?? throw new InvalidOperationException("Verb catalog has no 'verbs' array");
+        if (entries.Count == 0)
+        {
+            // An empty catalog is a broken build, not an instruction to delete every verified verb.
+            throw new InvalidOperationException("Verb catalog is empty");
+        }
 
         var existing = await dbContext.Verbs.ToDictionaryAsync(v => v.Lemma, ct);
         var now = DateTime.UtcNow;
         var written = 0;
+        var moved = 0;
+        var inCatalog = new HashSet<string>();
 
         for (var i = 0; i < entries.Count; i++)
         {
             var entry = entries[i]!.AsObject();
             var lemma = entry["lemma"]!.GetValue<string>();
-            var hash = Hash(entry.ToJsonString(Json) + "#" + i);
+            var hash = Hash(entry.ToJsonString(Json));
+            inCatalog.Add(lemma);
 
             existing.TryGetValue(lemma, out var verb);
-            if (verb != null && verb.ContentHash == hash)
+            if (verb != null && verb.ContentHash == hash && verb.Status == VerbStatus.Verified)
             {
+                // Same content, possibly a new place: the catalog is ordered by how common a verb is,
+                // so adding one verb shifts many others. That must not rewrite thousands of form rows.
+                if (verb.SortOrder != i)
+                {
+                    verb.SortOrder = i;
+                    moved++;
+                }
+
                 continue;
             }
 
@@ -79,12 +102,23 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             written++;
         }
 
-        if (written > 0)
+        if (written > 0 || moved > 0)
         {
             await dbContext.SaveChangesAsync(ct);
         }
 
-        return new Result(entries.Count, written);
+        // Saved separately, after the upserts: if a removal is ever blocked (say, by a foreign key
+        // added later), the rest of the catalog is already up to date and the error is visible.
+        var removed = existing.Values
+            .Where(v => v.ContentHash.StartsWith(CatalogMark, StringComparison.Ordinal) && !inCatalog.Contains(v.Lemma))
+            .ToList();
+        if (removed.Count > 0)
+        {
+            dbContext.Verbs.RemoveRange(removed);
+            await dbContext.SaveChangesAsync(ct);
+        }
+
+        return new Result(entries.Count, written, removed.Count);
     }
 
     private static void Apply(Verb verb, JsonObject entry, int order, string hash, DateTime now)
@@ -161,6 +195,8 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
         }
     }
 
+    // The column holds 64 characters, so the mark takes the place of the last hex digits.
     private static string Hash(string value) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+        CatalogMark + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)))
+            .ToLowerInvariant()[..(64 - CatalogMark.Length)];
 }

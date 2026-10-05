@@ -30,7 +30,8 @@ public class SeedVerbCatalog(IServiceScopeFactory scopeFactory, ILogger<SeedVerb
             using var scope = scopeFactory.CreateScope();
             var seeder = scope.ServiceProvider.GetRequiredService<VerbCatalogSeeder>();
             var result = await seeder.SeedAsync(await File.ReadAllTextAsync(path, cancellationToken), cancellationToken);
-            logger.LogInformation("Verb catalog: {Total} verbs, {Written} written", result.Total, result.Written);
+            logger.LogInformation("Verb catalog: {Total} verbs, {Written} written, {Removed} removed",
+                result.Total, result.Written, result.Removed);
         }
         catch (Exception ex)
         {
