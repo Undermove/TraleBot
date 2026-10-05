@@ -108,6 +108,11 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
               <KindChip kind={verb.kind} />
               <span className="text-[12px] text-navy underline">{why ? 'скрыть' : 'что это значит?'}</span>
             </button>
+            {verb.status === 'generated' && (
+              <div data-testid="verb-unverified" className="mt-2 mx-auto max-w-[300px] rounded-lg border border-jewelInk/40 bg-gold-wash px-3 py-1.5 text-[12px] text-jewelInk-soft">
+                Не проверено: в Викисловаре таблицы этого глагола нет, формы составила нейросеть. Могут быть ошибки.
+              </div>
+            )}
           </div>
 
           {why && (
@@ -176,9 +181,11 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             {rare && rows(rareTenses)}
           </div>
 
-          <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">
-            Источник форм: Викисловарь (CC BY-SA)
-          </a>
+          {verb.source && (
+            <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">
+              Источник форм: Викисловарь (CC BY-SA)
+            </a>
+          )}
       </div>
     )
   }

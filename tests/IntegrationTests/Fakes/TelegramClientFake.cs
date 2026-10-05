@@ -12,6 +12,9 @@ public class TelegramClientFake : ITelegramBotClient
 	// ReSharper disable once CollectionNeverQueried.Local
 	private readonly List<IRequest> _requests = new();
 
+	/// <summary>Everything the bot sent, oldest first.</summary>
+	public IReadOnlyList<IRequest> Requests => _requests;
+
 	public Task<TResponse> MakeRequestAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new())
 	{
 		_requests.Add(request);

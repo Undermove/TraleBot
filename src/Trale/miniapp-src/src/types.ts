@@ -27,7 +27,7 @@ export type Screen =
   | { kind: 'profile' }
   | { kind: 'admin' }
   | { kind: 'admin-user'; telegramId: number }
-  | { kind: 'vocabulary-list' }
+  | { kind: 'vocabulary-list'; verb?: import('./verbs/deepLink').VerbLink }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
 
 export interface QuizQuestion {

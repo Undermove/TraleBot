@@ -31,7 +31,7 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 |---|---|---|
 | `VocabularyCommand` | `/vocabulary`, 📘 icon | Paginated list of saved words with mastery medals. |
 | `RemoveEntryCommand` | `/removeentry {id}` callback | Delete a vocabulary entry. |
-| `TranslateCommand` | Any free-form text without `/` | Auto-translate in current language and save. |
+| `TranslateCommand` | Any free-form text without `/` | Auto-translate in current language and save. Georgian goes through `GeorgianTranslationPipeline` (verb base → `TranslationCache` → optional agent path on Microsoft Agent Framework, off unless `TranslationAgent:Enabled` → old translator). When the word or its translation is a known verb form, the reply ends with a parse line (form, tense, person, masdar, translation; «Формы не проверены» for a Generated verb) and starts with a «Все формы» WebApp button → `?screen=verb&verb=…&tense=…&person=…`. |
 | `TranslateManuallyCommand` | `{word}-{translation}` | Record a manual pair without calling the translator. |
 | `TranslateAndDeleteVocabularyCommand` | `/tradl` callback | Translate into a new language while dropping the old vocab (free-tier path). |
 | `ChangeTranslationLanguageCommand` | `/changetranslation`, 🌐 icon | Offer to translate the last word into another language. |
@@ -94,7 +94,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `Result.tsx` | `result` | Lesson result summary with kilim strip. |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
-| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter; the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet` (six main forms, person switcher, collapsed rare tenses and explanation). |
+| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter; the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet` (six main forms, person switcher, collapsed rare tenses and explanation). Deep link `?screen=verb&verb={lemma}[&tense=&person=]` (bot's «Все формы» button, `verbs/deepLink.ts`) opens this screen with the verb card on top. A verb whose forms a model produced (`status: generated`) shows a «Не проверено» notice and no source link. |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
 | `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |

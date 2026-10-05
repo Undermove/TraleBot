@@ -18,6 +18,8 @@ import VocabularyPractice from './screens/VocabularyPractice'
 import LandingScreen from './screens/LandingScreen'
 import Onboarding, { UserLevel } from './screens/Onboarding'
 import Welcome from './screens/Welcome'
+import { parseVerbLink } from './verbs/deepLink'
+import VerbSheet from './verbs/VerbSheet'
 import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
 
@@ -59,6 +61,9 @@ function parseDeepLink(catalog: CatalogDto): Screen | null {
 
     if (target === 'feed') return { kind: 'dashboard' } // Bombora is fed on the dashboard
     if (target === 'vocabulary') return { kind: 'vocabulary-list' }
+    // Кнопка «Все формы» под переводом в чате: словарь, поверх него карточка глагола.
+    const verb = parseVerbLink(window.location.search)
+    if (verb) return { kind: 'vocabulary-list', verb }
 
     if (moduleId) {
       const mod = catalog.modules.find((m) => m.id === moduleId)
@@ -418,7 +423,19 @@ export default function App() {
     case 'admin-user':
       return <AdminUserScreen telegramId={screen.telegramId} progress={progress} navigate={navigate} />
     case 'vocabulary-list':
-      return <VocabularyList progress={progress} navigate={navigate} />
+      return (
+        <>
+          <VocabularyList progress={progress} navigate={navigate} />
+          {/* Пришли по ссылке бота на глагол: карточка поверх словаря, каким бы он ни был (пустой, грузится). */}
+          {screen.verb && (
+            <VerbSheet
+              verbId={screen.verb.verbId}
+              highlight={screen.verb.highlight}
+              onClose={() => setScreen({ kind: 'vocabulary-list' })}
+            />
+          )}
+        </>
+      )
     case 'vocabulary-quiz':
       return (
         <VocabularyPractice
