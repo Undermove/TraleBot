@@ -65,7 +65,7 @@ public class VerbCatalogTests : TestBase
         var formsBefore = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbForms.CountAsync());
         var catalog = JsonNode.Parse(CatalogJson())!;
         var first = catalog["verbs"]![0]!.AsObject();
-        first["ru"] = "писать (правка)";
+        first["ru"] = "перевод (правка)";
 
         var result = await InScope(sp =>
             sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(catalog.ToJsonString(), CancellationToken.None));
@@ -74,7 +74,123 @@ public class VerbCatalogTests : TestBase
 
         result.Written.Should().Be(1);
         formsAfter.Should().Be(formsBefore);
-        list[0].Translation.Should().Be("писать (правка)");
+        list[0].Translation.Should().Be("перевод (правка)");
+    }
+
+    [Test]
+    public async Task Moving_a_verb_in_the_catalog_updates_its_position_without_rewriting_forms()
+    {
+        var catalog = JsonNode.Parse(CatalogJson())!;
+        var verbs = catalog["verbs"]!.AsArray();
+        var last = verbs[^1]!;
+        var lastLemma = last["lemma"]!.GetValue<string>();
+        var formIdsBefore = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbForms
+            .Where(f => f.Verb.Lemma == lastLemma).Select(f => f.Id).OrderBy(id => id).ToListAsync());
+        verbs.RemoveAt(verbs.Count - 1);
+        verbs.Insert(0, last);
+
+        var result = await InScope(sp =>
+            sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(catalog.ToJsonString(), CancellationToken.None));
+        var list = await InScope(sp => sp.GetRequiredService<VerbQueries>().ListAsync(CancellationToken.None));
+        var formIdsAfter = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbForms
+            .Where(f => f.Verb.Lemma == lastLemma).Select(f => f.Id).OrderBy(id => id).ToListAsync());
+
+        result.Written.Should().Be(0, because: "the catalog is ordered by frequency, so one new verb shifts many — that must stay cheap");
+        list.Select(v => v.Lemma).Should().Equal(verbs.Select(v => v!["lemma"]!.GetValue<string>()));
+        formIdsAfter.Should().Equal(formIdsBefore);
+    }
+
+    [Test]
+    public async Task Verb_struck_out_of_the_catalog_is_removed_with_its_forms()
+    {
+        var catalog = JsonNode.Parse(CatalogJson())!;
+        var verbs = catalog["verbs"]!.AsArray();
+        var struck = verbs[^1]!["lemma"]!.GetValue<string>();
+        var itsForm = verbs[^1]!["tenses"]!["present"]![0]![0]!.GetValue<string>();
+        var formsOfOthers = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbForms
+            .CountAsync(f => f.Verb.Lemma != struck));
+        verbs.RemoveAt(verbs.Count - 1);
+
+        var result = await InScope(sp =>
+            sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(catalog.ToJsonString(), CancellationToken.None));
+        var card = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync(struck, CancellationToken.None));
+        var hits = await InScope(sp => sp.GetRequiredService<VerbQueries>().ParseAsync(itsForm, CancellationToken.None));
+        var formsLeft = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbForms.CountAsync());
+
+        result.Removed.Should().Be(1);
+        result.Written.Should().Be(0);
+        card.Should().BeNull(because: "a verb is struck out when its forms are wrong — it must stop being served as verified");
+        hits.Should().NotContain(h => h.Lemma == struck);
+        formsLeft.Should().Be(formsOfOthers);
+    }
+
+    [Test]
+    public async Task Verbs_that_did_not_come_from_the_catalog_survive_seeding()
+    {
+        // Forms are borrowed from a catalog verb: the test must not invent Georgian.
+        var donor = JsonNode.Parse(CatalogJson())!["verbs"]![0]!;
+        var form = donor["tenses"]!["present"]![0]![0]!.GetValue<string>();
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            foreach (var (lemma, status) in new[] { ("generated-verb", VerbStatus.Generated), ("approved-verb", VerbStatus.Verified) })
+            {
+                var id = Guid.NewGuid();
+                db.Verbs.Add(new Verb
+                {
+                    Id = id, Lemma = lemma, Title = lemma, Translation = "не из каталога", Kind = "pattern",
+                    PresentJson = "[]", CardJson = "{}", ContentHash = "made-elsewhere", Status = status,
+                    SortOrder = 10_000, CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
+                });
+                db.VerbForms.Add(new VerbForm { Id = Guid.NewGuid(), VerbId = id, Form = form, Tense = "present", Person = 0 });
+            }
+
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+
+        var result = await InScope(sp =>
+            sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(CatalogJson(), CancellationToken.None));
+        var survivors = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs
+            .Where(v => v.Lemma == "generated-verb" || v.Lemma == "approved-verb").Include(v => v.Forms).ToListAsync());
+
+        result.Removed.Should().Be(0, because: "only verbs the seeder itself wrote are its to delete");
+        survivors.Should().HaveCount(2);
+        survivors.Should().OnlyContain(v => v.Forms.Count == 1);
+    }
+
+    [Test]
+    public async Task Empty_catalog_is_rejected_instead_of_wiping_the_verbs()
+    {
+        var seed = () => InScope(sp =>
+            sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync("{\"verbs\":[]}", CancellationToken.None));
+
+        await seed.Should().ThrowAsync<InvalidOperationException>();
+        (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs.CountAsync())).Should().BeGreaterThan(0);
+    }
+
+    [Test]
+    public void Catalog_is_what_the_build_gates_promise()
+    {
+        var verbs = JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray();
+        var georgian = new System.Text.RegularExpressions.Regex("^[ა-ჰ]+$");
+
+        verbs.Count.Should().BeGreaterThan(150, because: "the catalog is meant to cover the common verbs, not a handful");
+        verbs.Select(v => v!["lemma"]!.GetValue<string>()).Should().OnlyHaveUniqueItems();
+        foreach (var verb in verbs)
+        {
+            var lemma = verb!["lemma"]!.GetValue<string>();
+            verb["ru"]!.GetValue<string>().Should().NotBeNullOrWhiteSpace($"{lemma} needs a Russian gloss");
+            var tables = new[] { verb["tenses"]!.AsObject() }.Concat(verb["alt"]!.AsArray().Select(t => t!.AsObject()));
+            foreach (var (tense, row) in tables.SelectMany(t => t))
+            {
+                row!.AsArray().Should().HaveCount(6, $"{lemma}.{tense} is a row of six persons");
+                row.AsArray().SelectMany(cell => cell!.AsArray()).Select(f => f!.GetValue<string>())
+                    .Should().OnlyContain(f => georgian.IsMatch(f), $"{lemma}.{tense} holds Georgian forms only");
+            }
+
+            verb["tenses"]!["present"]!.AsArray().Should().OnlyContain(cell => cell!.AsArray().Count > 0,
+                $"{lemma}: the list row and the card header are built from the present tense");
+        }
     }
 
     [Test]
@@ -117,8 +233,10 @@ public class VerbCatalogTests : TestBase
     {
         var hits = await InScope(sp => sp.GetRequiredService<VerbQueries>().ParseAsync(" ვწერდი ", CancellationToken.None));
 
-        hits.Should().ContainSingle();
+        // The same form also belongs to "to write to someone" (სწერს); the more common verb comes first.
         hits[0].Should().BeEquivalentTo(new VerbFormHit("ვწერდი", "წერს", "წერა", "писать", "imperfect", 0));
+        hits.Should().OnlyContain(h => h.Form == "ვწერდი" && h.Tense == "imperfect" && h.Person == 0);
+        hits.Select(h => h.Lemma).Should().OnlyHaveUniqueItems();
     }
 
     [Test]
