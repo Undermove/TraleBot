@@ -50,6 +50,27 @@ public static class OnboardingState
         return JsonSerializer.Serialize(dto);
     }
 
+    /// <summary>
+    /// Records a one-time interface hint as seen. Unlike <see cref="MarkSeen"/> it leaves
+    /// <c>lastShownAt</c> alone: interface hints do not delay the next onboarding step.
+    /// Returns the JSON unchanged when the hint is already there or the list is full.
+    /// </summary>
+    public static string? MarkUiHintSeen(string? json, string hintKey)
+    {
+        var state = Parse(json);
+        if (state.Seen.Contains(hintKey) || state.Seen.Count(OnboardingHints.IsUiHint) >= OnboardingHints.MaxUiHints)
+        {
+            return json;
+        }
+
+        var dto = new StateDto { Seen = state.Seen.Append(hintKey).ToList(), LastShownAt = state.LastShownAt };
+        return JsonSerializer.Serialize(dto);
+    }
+
+    /// <summary>The interface hints the user has already seen.</summary>
+    public static IReadOnlyList<string> UiHintsSeen(string? json) =>
+        Parse(json).Seen.Where(OnboardingHints.IsUiHint).OrderBy(k => k).ToList();
+
     public static OnboardingSignals BuildSignals(MiniAppUserProgress progress, int vocabularyCount)
     {
         var completed = ParseCompletedLessons(progress.CompletedLessonsJson);

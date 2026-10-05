@@ -25,6 +25,7 @@ export function sheetApi(overrides: Record<string, unknown> = {}) {
     saveVerbProgress: vi.fn(() => Promise.resolve(noProgress)),
     fetchVerbLearning: vi.fn(() => Promise.resolve(newLearning)),
     saveVerbSession: vi.fn(() => Promise.resolve({ state: newLearning, xpEarned: 0, progress: null })),
+    markUiHintSeen: vi.fn(() => Promise.resolve({ ok: true })),
     fetchVerbStories: vi.fn(() => Promise.resolve({ stories: [] })),
     parseVerbForm: vi.fn(() => Promise.resolve({ hits: [] })),
     ...overrides

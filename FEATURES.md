@@ -197,12 +197,13 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | GET | `/api/miniapp/ping` | Health check. |
 | GET | `/api/miniapp/content` | Module catalog (filtered by user level). |
 | GET | `/api/miniapp/modules/{moduleId}/lessons/{lessonId}/questions` | Lesson questions. For a caller with trial/Pro each question carries `verb` — the parse (verb, tense, person) of the catalog verb form in its correct answer, else in the built sentence, audio transcript or question text; wrong options are not searched. `null` otherwise and for callers without access. |
-| GET | `/api/miniapp/me` | Authenticated user profile (isPro, trial, subscription). |
+| GET | `/api/miniapp/me` | Authenticated user profile (isPro, trial, subscription). `uiHintsSeen` lists the one-time interface hints (`ui:…`: rules and first-move hints of verb games, the verb card's person hint, the lesson chip hint) the user has already seen, so they do not come back after a reload or on another device. |
 | GET | `/api/miniapp/plans` | Pro plan list with Stars pricing. |
 | POST | `/api/miniapp/refund` | Refund a Stars payment within the allowed window. |
 | POST | `/api/miniapp/purchase` | Create Telegram Stars invoice link. |
 | POST | `/api/miniapp/treat` | Feed mascot (spend XP on a treat). |
 | POST | `/api/miniapp/level` | Persist user level after onboarding. |
+| POST | `/api/miniapp/onboarding/hint-seen` | Mark a hint as shown: an onboarding step (starts the ~20h gap to the next one) or a one-time interface hint `ui:<id>` (stored in the same list, `MiniAppUserProgress.OnboardingHintsJson`, without starting the gap). Unknown keys are rejected. |
 | POST | `/api/miniapp/progress/lesson-complete` | Record lesson completion. |
 | GET | `/api/miniapp/referral` | Referral link + share text. |
 | GET | `/api/miniapp/activity-days` | Daily activity series for streak. |

@@ -74,7 +74,8 @@ public class GetMiniAppProfile : IRequest<GetMiniAppProfileResult>
                 SubscribedUntil = user.SubscribedUntil,
                 IsOwner = isOwner,
                 NotificationsEnabled = user.NotificationsEnabled,
-                OnboardingHint = onboardingHint
+                OnboardingHint = onboardingHint,
+                UiHintsSeen = OnboardingState.UiHintsSeen(progress.OnboardingHintsJson)
             };
         }
     }
@@ -99,4 +100,7 @@ public class GetMiniAppProfileResult
     public bool NotificationsEnabled { get; init; }
     /// <summary>Active contextual-onboarding hint key for this user, or null. See Application.Onboarding.</summary>
     public string? OnboardingHint { get; init; }
+
+    /// <summary>One-time interface hints the user has already seen (<c>ui:…</c> keys).</summary>
+    public System.Collections.Generic.IReadOnlyList<string> UiHintsSeen { get; init; } = System.Array.Empty<string>();
 }

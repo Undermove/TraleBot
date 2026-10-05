@@ -54,6 +54,8 @@ export interface MeResponse {
   notificationsEnabled?: boolean
   /** Active contextual-onboarding hint key (or null/absent). See OnboardingNudge. */
   onboardingHint?: string | null
+  /** Одноразовые подсказки интерфейса, которые человек уже видел (см. verbs/ui/hints.ts). */
+  uiHintsSeen?: string[]
 }
 
 export interface LessonCompleteResponse {
@@ -468,5 +470,13 @@ export function saveVerbSession(id: string, report: VerbSessionReportDto) {
     method: 'POST',
     body: JSON.stringify(report),
     keepalive: true
+  })
+}
+
+/** Одноразовая подсказка интерфейса показана (ключ `ui:…`) — тем же запросом, что и подсказки онбординга. */
+export function markUiHintSeen(hintKey: string) {
+  return request<{ ok: boolean }>('/api/miniapp/onboarding/hint-seen', {
+    method: 'POST',
+    body: JSON.stringify({ hintKey })
   })
 }

@@ -168,7 +168,9 @@ public class MiniAppController : Controller
             subscribedUntil = result.SubscribedUntil,
             hasAccess = result.IsPro || result.IsTrialActive,
             isOwner = result.IsOwner,
-            onboardingHint = result.OnboardingHint
+            onboardingHint = result.OnboardingHint,
+            // One-time interface hints already seen — so they do not come back after a reload or on another device.
+            uiHintsSeen = result.UiHintsSeen
         });
     }
 

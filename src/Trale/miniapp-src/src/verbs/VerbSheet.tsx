@@ -5,6 +5,7 @@ import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, TITLE_TERM, cyr, type
 import { meaningOf, meaningOfHit } from './meaning'
 import { Coach, KindChip, MeaningText, VerbForm } from './parts'
 import { OVERLAY, useOverlay } from './ui/overlayStack'
+import { hintSeen, markHintSeen } from './ui/hints'
 import SessionEntry from './session/SessionEntry'
 
 interface Props {
@@ -29,7 +30,8 @@ export interface VerbEntry {
   onDelete: () => Promise<void>
 }
 
-const HINT_KEY = 'verb_card_person_hint_seen'
+/** Подсказка «нажми „ты“ или „он“» — один раз; отметка хранится на сервере (ui/hints.ts). */
+const PERSON_HINT = 'verb_card_person'
 
 /**
  * Карточка глагола шторкой поверх любого экрана: словаря, урока, квиза.
@@ -48,9 +50,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
   const [rare, setRare] = useState(!!initialHighlight && RARE_TENSES.includes(initialHighlight.tense as TenseKey))
   const [why, setWhy] = useState(false)
   const [visible, setVisible] = useState(false)
-  const [hint, setHint] = useState(() => {
-    try { return !localStorage.getItem(HINT_KEY) } catch { return false }
-  })
+  const [hint, setHint] = useState(() => !hintSeen(PERSON_HINT))
 
   useEffect(() => { requestAnimationFrame(() => setVisible(true)) }, [])
 
@@ -69,7 +69,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
   function pickPerson(p: number) {
     setPerson(p)
     if (hint) {
-      try { localStorage.setItem(HINT_KEY, '1') } catch {}
+      markHintSeen(PERSON_HINT)
       setHint(false)
     }
   }

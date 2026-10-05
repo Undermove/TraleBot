@@ -1,14 +1,12 @@
 import React, { useState } from 'react'
 import VerbSheet from '../VerbSheet'
 import { cyr, type VerbFormHitDto } from '../types'
-import { lessonVerbs } from './lessonVerbs'
 
 /**
  * Строка на итоге урока: «В этом уроке были глаголы» и до трёх глаголов, каждый открывает
  * свою карточку. Если глаголов в уроке не было (или к ним нет доступа) — ничего не рисует.
  */
-export default function LessonVerbsLine({ moduleId, lessonId }: { moduleId: string; lessonId: number }) {
-  const [verbs] = useState(() => lessonVerbs(moduleId, lessonId))
+export default function LessonVerbsLine({ verbs }: { verbs: VerbFormHitDto[] }) {
   const [open, setOpen] = useState<VerbFormHitDto | null>(null)
   if (verbs.length === 0) return null
 

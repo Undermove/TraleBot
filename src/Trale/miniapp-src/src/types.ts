@@ -14,6 +14,8 @@ export type Screen =
       total: number
       xpEarned: number
       wrongQuestions?: QuizQuestion[]
+      /** Глаголы, которые встретились в уроке, — для строки на итоге (verbs/lesson/LessonVerbsLine). */
+      verbs?: import('./verbs/types').VerbFormHitDto[]
     }
   | { kind: 'practice-mistakes'; moduleId: string; lessonId: number; wrongQuestions: QuizQuestion[] }
   | {

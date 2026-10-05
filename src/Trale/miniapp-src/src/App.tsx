@@ -23,6 +23,7 @@ import LoaderLetter from './components/LoaderLetter'
 import VerbSheet from './verbs/VerbSheet'
 import { resolveVerbDeepLink } from './verbs/deepLink'
 import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
+import { loadSeenHints } from './verbs/ui/hints'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -118,6 +119,7 @@ export default function App() {
           setTelegramId((meData as any).telegramId ?? null)
           setVocabularyCount((meData as any).vocabularyCount ?? 0)
           setOnboardingHint((meData as any).onboardingHint ?? null)
+          loadSeenHints(meData.uiHintsSeen)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
         // ?screen=verb&verbId=… opens a verb card over the dictionary (see verbs/deepLink.ts).
@@ -385,6 +387,7 @@ export default function App() {
           total={screen.total}
           xpEarned={screen.xpEarned}
           wrongQuestions={screen.wrongQuestions}
+          verbs={screen.verbs}
           navigate={navigate}
         />
       )

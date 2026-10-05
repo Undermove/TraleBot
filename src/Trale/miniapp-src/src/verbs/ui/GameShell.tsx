@@ -3,15 +3,15 @@ import Mascot from '../../components/Mascot'
 import Button from '../../components/Button'
 import { CloseIcon, PointIcon } from './icons'
 import { OVERLAY, useOverlay } from './overlayStack'
+import { hintSeen, markHintSeen } from './hints'
 
 // Общая оболочка игр с глаголами: шапка с крестиком и счётом, правила при первом входе
 // (шторка с Бомборой, потом под кнопкой «?»), подсказка и подсветка первого хода.
 
-/** Ключ отметки «уже видел» в localStorage. */
+/** Имя отметки «уже видел» (на сервере — `ui:verb_game_seen_<id>`, см. hints.ts). */
 export const seenKey = (id: string) => `verb_game_seen_${id}`
-const wasSeen = (id: string) => { try { return !!localStorage.getItem(seenKey(id)) } catch { return true } }
-// Хранилище может быть недоступно (приватный режим, квота): подсказка тогда просто покажется ещё раз.
-const markSeen = (id: string) => { try { localStorage.setItem(seenKey(id), '1') } catch {} }
+const wasSeen = (id: string) => hintSeen(seenKey(id))
+const markSeen = (id: string) => markHintSeen(seenKey(id))
 
 /** true, пока игрок не сделал первый удачный ход в этой игре: показываем подсказки и подсветку. */
 export function useFirstTime(id: string): [boolean, () => void] {

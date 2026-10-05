@@ -4,8 +4,10 @@ import { Coach } from '../parts'
 import { PULSE } from '../ui/GameShell'
 import type { VerbFormHitDto } from '../types'
 import { meaningOfHit } from '../meaning'
+import { hintSeen, markHintSeen } from '../ui/hints'
 
-const HINT_KEY = 'verb_lesson_chip_hint_seen'
+/** Подсказка про строку «в вопросе был глагол» — один раз; отметка хранится на сервере (ui/hints.ts). */
+const CHIP_HINT = 'verb_lesson_chip'
 
 /**
  * «В этом вопросе был глагол» — строка под разбором ответа в уроке. Открывает карточку глагола
@@ -18,11 +20,9 @@ const HINT_KEY = 'verb_lesson_chip_hint_seen'
 export default function LessonVerbChip({ hit }: { hit: VerbFormHitDto }) {
   const [open, setOpen] = useState(false)
   // Подсказка — один раз за всё время: при первом появлении строки в уроке.
-  const [first] = useState(() => {
-    try { return !localStorage.getItem(HINT_KEY) } catch { return false }
-  })
+  const [first] = useState(() => !hintSeen(CHIP_HINT))
   useEffect(() => {
-    if (first) try { localStorage.setItem(HINT_KEY, '1') } catch {}
+    if (first) markHintSeen(CHIP_HINT)
   }, [first])
 
   return (

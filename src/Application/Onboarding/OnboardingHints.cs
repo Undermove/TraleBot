@@ -32,6 +32,24 @@ public static class OnboardingHints
     public const string FeedBombora = "feed_bombora";
     public const string AddVocab = "add_vocab";
 
+    /// <summary>
+    /// One-time interface hints (rules of a verb game, "tap «ты» to switch the person") share the
+    /// seen-list with the onboarding steps, so they follow the learner across reloads and devices.
+    /// They are not steps of the engine: marking one seen does not start the gap to the next step.
+    /// </summary>
+    public const string UiPrefix = "ui:";
+
+    public const int MaxUiHintLength = 64;
+
+    /// <summary>How many interface hints one user can have marked — the column must not grow without limit.</summary>
+    public const int MaxUiHints = 100;
+
+    private static readonly System.Text.RegularExpressions.Regex UiHintKey =
+        new("^ui:[a-z0-9_]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    public static bool IsUiHint(string? key) =>
+        key != null && key.Length <= MaxUiHintLength && UiHintKey.IsMatch(key);
+
     /// <summary>Priority order — the active hint is the first eligible, unseen step here.</summary>
     public static readonly IReadOnlyList<string> Order = new[]
     {

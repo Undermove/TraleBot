@@ -5,6 +5,7 @@ import { storyFixture as story } from './fixture'
 import { parseVerbForm } from '../../api'
 import { bad, good } from '../ui/juice'
 import { seenKey } from '../ui/GameShell'
+import { hintSeen, resetSeenHints } from '../ui/hints'
 import { rulesSeen } from '../testing/seen'
 
 vi.mock('../../api', async () => (await import('../testing/sheetApi')).sheetApi())
@@ -49,7 +50,7 @@ describe('StoryReader', () => {
   })
 
   it('shows the rules on the first entry only', () => {
-    localStorage.clear()
+    resetSeenHints()
     const first = render(<StoryReader story={story} onExit={() => {}} />)
     expect(screen.getByText(/Это комикс/)).toBeTruthy()
     fireEvent.click(screen.getByText('Дальше'))
@@ -228,7 +229,7 @@ describe('StoryReader', () => {
 
     expect(screen.queryByText('Нажми слово, которое стоит на месте пропуска.')).toBeNull()
     expect(screen.getByText(/Нажми на поле, набери пропущенное слово/)).toBeTruthy()
-    expect(localStorage.getItem(seenKey('story_choose_move'))).toBe('1')
-    expect(localStorage.getItem(seenKey('story_type_move'))).toBeNull()
+    expect(hintSeen(seenKey('story_choose_move'))).toBe(true)
+    expect(hintSeen(seenKey('story_type_move'))).toBe(false)
   })
 })

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import LessonVerbsLine from './LessonVerbsLine'
-import { rememberLessonVerbs, uniqueVerbs } from './lessonVerbs'
+import { uniqueVerbs } from './lessonVerbs'
 import { goHit, hit, writeVerb } from './fixtures'
 
 vi.mock('../../api', async () => (await import('../testing/sheetApi')).sheetApi({ fetchVerb: vi.fn(() => Promise.resolve(writeVerb)) }))
@@ -27,8 +27,7 @@ describe('uniqueVerbs', () => {
 
 describe('verbs line on the lesson result', () => {
   it('names the verbs of the lesson just played and opens the card on the form that was met', async () => {
-    rememberLessonVerbs('present-tense', 1, played)
-    render(<LessonVerbsLine moduleId="present-tense" lessonId={1} />)
+    render(<LessonVerbsLine verbs={uniqueVerbs(played)} />)
 
     expect(screen.getByText('в этом уроке были глаголы')).toBeTruthy()
     const verbs = screen.getAllByTestId('lesson-verbs-line-verb')
@@ -45,15 +44,7 @@ describe('verbs line on the lesson result', () => {
   })
 
   it('shows nothing when the lesson had no verbs', () => {
-    rememberLessonVerbs('numbers', 2, [{ verb: null }, {}])
-    const { container } = render(<LessonVerbsLine moduleId="numbers" lessonId={2} />)
-
-    expect(container.innerHTML).toBe('')
-  })
-
-  it('shows nothing for a result of another lesson', () => {
-    rememberLessonVerbs('present-tense', 1, played)
-    const { container } = render(<LessonVerbsLine moduleId="present-tense" lessonId={2} />)
+    const { container } = render(<LessonVerbsLine verbs={uniqueVerbs([{ verb: null }, {}])} />)
 
     expect(container.innerHTML).toBe('')
   })

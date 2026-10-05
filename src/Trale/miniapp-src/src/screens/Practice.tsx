@@ -9,7 +9,7 @@ import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
 import { api } from '../api'
 import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
-import { rememberLessonVerbs } from '../verbs/lesson/lessonVerbs'
+import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeQuestion(d: any): QuizQuestion {
@@ -96,7 +96,6 @@ export default function Practice({
     }
     const played = data.slice(0, 10).map(normalizeQuestion)
     setQuestions(played)
-    rememberLessonVerbs(moduleId, lessonId, played)
     setPhase('answering')
   }
 
@@ -210,7 +209,7 @@ export default function Practice({
           applyOfflineProgress(isPerfect, xpEarned)
         }
       }
-      navigate({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions })
+      navigate({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions, verbs: uniqueVerbs(questions) })
       return
     }
     setIndex((i) => i + 1)
@@ -274,7 +273,8 @@ export default function Practice({
         correct: finalCorrect,
         total,
         xpEarned,
-        wrongQuestions
+        wrongQuestions,
+        verbs: uniqueVerbs(questions)
       })
       return
     }

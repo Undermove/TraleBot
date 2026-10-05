@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import VerbSheet from './VerbSheet'
 import type { VerbDto } from './types'
+import { hintSeen } from './ui/hints'
+import { markUiHintSeen } from '../api'
 
 const persons = (stem: string) => ['ვ' + stem, stem, stem + 'ს', 'ვ' + stem + 'თ', stem + 'თ', stem + 'ენ'].map(f => [f])
 
@@ -58,7 +60,10 @@ describe('VerbSheet', () => {
     fireEvent.click(screen.getByTestId('verb-person-1'))
 
     expect(screen.queryByText(/Это главные формы/)).toBeNull()
-    expect(localStorage.getItem('verb_card_person_hint_seen')).toBe('1')
+    // Отметка уходит на сервер и живёт в памяти мини-аппа — на устройстве её нет.
+    expect(hintSeen('verb_card_person')).toBe(true)
+    expect(markUiHintSeen).toHaveBeenCalledWith('ui:verb_card_person')
+    expect(localStorage.length).toBe(0)
   })
 
   it('hides the explanation behind "что это значит?" and opens the model verb in the same sheet', async () => {
