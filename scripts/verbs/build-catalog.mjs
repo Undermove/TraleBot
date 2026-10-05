@@ -3,7 +3,7 @@
 // считает тип глагола, корень и глагол-образец и кладёт всё в src/Trale/Verbs/verbs.json.
 // При старте сервер загружает этот файл в базу (SeedVerbCatalog).
 // Запуск: node scripts/verbs/build-catalog.mjs
-import { readFileSync, writeFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { analyze } from './analyze.mjs'
@@ -20,16 +20,35 @@ const skip = new Set(JSON.parse(readFileSync(resolve(here, 'sentences.skip.json'
 const MAX_SENTENCES_PER_FORM = 4
 const wordsOf = text => text.match(/[ა-ჰ]+/g) ?? []
 
-function sentencesFor(tenses) {
+// Комиксы (src/Trale/Verbs/stories/*.json) берут реплики по id предложения. Такое предложение попадает
+// в карточку своего глагола всегда, даже сверх лимита на форму: иначе история осталась бы без реплики.
+const storiesDir = resolve(here, '../../src/Trale/Verbs/stories')
+const pinned = new Map()
+for (const file of existsSync(storiesDir) ? readdirSync(storiesDir).filter(f => f.endsWith('.json')) : []) {
+  const story = JSON.parse(readFileSync(resolve(storiesDir, file), 'utf8'))
+  const ids = pinned.get(story.verb) ?? new Set()
+  for (const frame of story.frames ?? []) ids.add(frame.sentence)
+  pinned.set(story.verb, ids)
+}
+
+function sentencesFor(tenses, lemma) {
   const out = []
   const perForm = new Map()
   const own = new Set(Object.values(tenses).flat(2))
+  const pins = pinned.get(lemma) ?? new Set()
   for (const s of sentences) {
     if (skip.has(s.id)) continue
     const form = wordsOf(s.ka).find(w => own.has(w))
-    if (!form || (perForm.get(form) ?? 0) >= MAX_SENTENCES_PER_FORM) continue
-    perForm.set(form, (perForm.get(form) ?? 0) + 1)
+    if (!form) continue
+    const count = perForm.get(form) ?? 0
+    if (count >= MAX_SENTENCES_PER_FORM && !pins.has(s.id)) continue
+    perForm.set(form, count + 1)
     out.push({ id: s.id, ka: s.ka, ru: s.ru, form })
+  }
+  const lost = [...pins].filter(id => !out.some(s => s.id === id))
+  if (lost.length) {
+    throw new Error(`Комикс про «${lemma}» ссылается на предложения, которых нет в выборке для этого глагола ` +
+      `(нет в sentences.raw.json, исключены в sentences.skip.json или в них нет формы глагола): ${lost.join(', ')}`)
   }
   return out
 }
@@ -57,11 +76,14 @@ const verbs = analysed.map(entry => {
     masdarWithPreverb: (v.masdar ?? []).filter(m => m !== titleOf(v)),
     tenses: v.tenses,
     alt: v.alt ?? [],
-    sentences: sentencesFor(v.tenses),
+    sentences: sentencesFor(v.tenses, v.lemma),
     source: v.source,
     revid: v.revid
   }
 })
+
+const orphans = [...pinned.keys()].filter(lemma => !verbs.some(v => v.lemma === lemma))
+if (orphans.length) throw new Error(`Комиксы ссылаются на глаголы, которых нет в каталоге: ${orphans.join(', ')}`)
 
 writeFileSync(outFile, JSON.stringify({ verbs }, null, 1) + '\n')
 console.error(`Каталог: ${verbs.length} глаголов, ${verbs.reduce((n, v) => n + v.sentences.length, 0)} предложений → ${outFile}`)

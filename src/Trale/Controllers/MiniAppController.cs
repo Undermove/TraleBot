@@ -834,6 +834,19 @@ public class MiniAppController : Controller
         return Content(card, "application/json");
     }
 
+    /// <summary>
+    /// Comic stories of a verb with their lines already resolved from the catalog. An empty list
+    /// when the verb has none (or is unknown) — the verb card then simply shows no stories.
+    /// </summary>
+    [HttpGet("verbs/{id}/stories")]
+    public async Task<IActionResult> GetVerbStories(string id, [FromServices] VerbStoryCatalog stories, CancellationToken ct)
+    {
+        var denied = await DenyVerbsAccessAsync(ct);
+        if (denied != null) return denied;
+
+        return Ok(new { stories = stories.ForVerb(id) });
+    }
+
     private static object VerbHitDto(VerbFormHit h) => new
     {
         form = h.Form,

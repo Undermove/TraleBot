@@ -40,6 +40,7 @@ builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IMiniAppCont
 builder.Services.AddScoped<Application.Common.Interfaces.MiniApp.IProgressCalculator, Trale.MiniApp.ProgressCalculator>();
 builder.Services.AddHostedService<CreateWebhook>();
 builder.Services.AddHostedService<SeedVerbCatalog>();
+builder.Services.AddHostedService<LoadVerbStories>();
 builder.Services.AddHostedService<IdempotencyCleanupService>();
 builder.Services.AddHostedService<Trale.HostedServices.PendingReferralsWorker>();
 builder.Services.AddHostedService<ReturnPushWorker>();
@@ -69,7 +70,18 @@ using (var scope = app.Services.CreateScope())
 app.UseMiddleware<ExceptionsMiddleware>();
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        // Comic frames live under a content hash (/stories/<id>/<hash>/f1-800.webp): the same URL
+        // never serves different bytes, so the browser may keep them for good.
+        if (context.Context.Request.Path.StartsWithSegments("/stories"))
+        {
+            context.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        }
+    }
+});
 
 app.MapControllers();
 await app.RunAsync();
