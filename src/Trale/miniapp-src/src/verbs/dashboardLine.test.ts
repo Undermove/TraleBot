@@ -14,6 +14,17 @@ describe('pickVerbsLine', () => {
     })
   })
 
+  it('a verb being learned comes first: «продолжить глагол X» opens that verb straight away', () => {
+    const summary = { dictionaryVerbs: 5, continueVerb: { id: 'verb-id', title: 'title', ru: 'писать', level: 'recognising' as const } }
+
+    expect(pickVerbsLine({ ...regular, summary })).toEqual({
+      id: 'continue',
+      text: 'Продолжить глагол «писать» · узнаю',
+      screen: { kind: 'vocabulary-list', filter: 'verbs', verb: { verbId: 'verb-id' } }
+    })
+    expect(pickVerbsLine({ ...regular, summary: { dictionaryVerbs: 5, continueVerb: null } })!.id).toBe('dictionary')
+  })
+
   it('says nothing when the dictionary has no verbs', () => {
     expect(pickVerbsLine({ ...regular, summary: { dictionaryVerbs: 0 } })).toBeNull()
   })

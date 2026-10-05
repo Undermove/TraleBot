@@ -82,6 +82,8 @@ export interface VocabularyListResponse {
   language: string
   items: VocabularyItem[]
   starterItems: VocabularyItem[]
+  /** «Мои глаголы»: по одному на глагол — из словаря и начатые в игре. */
+  verbs?: import('./verbs/types').MyVerbDto[]
 }
 
 export interface VocabularyQuizQuestion {
@@ -417,7 +419,7 @@ export function fetchVerb(id: string) {
 
 /** Что главная может сказать про глаголы (см. verbs/dashboardLine.ts). */
 export function fetchVerbsSummary() {
-  return request<{ dictionaryVerbs: number }>('/api/miniapp/verbs/summary')
+  return request<import('./verbs/dashboardLine').VerbsSummaryDto>('/api/miniapp/verbs/summary')
 }
 
 /** Разбор грузинской формы: какому глаголу, времени и лицу она соответствует. */

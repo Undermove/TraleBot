@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import LoaderLetter from '../components/LoaderLetter'
 import { fetchVerb } from '../api'
-import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, TITLE_TERM, cyr, type TenseKey, type VerbDto } from './types'
-import { meaningOf } from './meaning'
+import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, TITLE_TERM, cyr, type TenseKey, type VerbDto, type VerbFormHitDto } from './types'
+import { meaningOf, meaningOfHit } from './meaning'
 import { Coach, KindChip, MeaningText, VerbForm } from './parts'
 import { OVERLAY, useOverlay } from './ui/overlayStack'
 import SessionEntry from './session/SessionEntry'
@@ -12,6 +12,21 @@ interface Props {
   /** Форма, с которой пришли: карточка откроется на её лице и подсветит строку. */
   highlight?: { tense: string; person: number }
   onClose: () => void
+  /**
+   * Пришли из словаря, с записи, которая сама — форма этого глагола: вид начинается с сохранённого
+   * слова, а действия со словом (в квиз, удалить) стоят внизу, тихо.
+   */
+  entry?: VerbEntry
+}
+
+export interface VerbEntry {
+  hit: VerbFormHitDto
+  /** Что человек сохранил как перевод. */
+  russian: string
+  selected: boolean
+  onToggleSelect: () => void
+  /** Удалить запись из словаря; вид после этого закрывается. */
+  onDelete: () => Promise<void>
 }
 
 const HINT_KEY = 'verb_card_person_hint_seen'
@@ -21,10 +36,12 @@ const HINT_KEY = 'verb_card_person_hint_seen'
  * Не растёт в высоту: лицо переключается в шапке таблицы, редкие времена и пояснение
  * про тип глагола свёрнуты.
  */
-export default function VerbSheet({ verbId: initialVerbId, highlight: initialHighlight, onClose }: Props) {
+export default function VerbSheet({ verbId: initialVerbId, highlight: initialHighlight, onClose, entry: initialEntry }: Props) {
   const [verbId, setVerbId] = useState(initialVerbId)
   // Подсветка относится только к глаголу, с которого пришли; у глагола-образца её нет.
   const highlight = verbId === initialVerbId ? initialHighlight : undefined
+  const entry = verbId === initialVerbId ? initialEntry : undefined
+  const [deleting, setDeleting] = useState<'no' | 'ask' | 'busy' | 'failed'>('no')
   const [verb, setVerb] = useState<VerbDto | null>(null)
   const [failed, setFailed] = useState(false)
   const [person, setPerson] = useState(initialHighlight?.person ?? 0)
@@ -117,9 +134,29 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
     return (
       <div className="px-5 flex flex-col gap-4" style={{ paddingBottom: 'calc(var(--safe-b) + 20px)' }}>
           <div className="text-center pt-2">
-            <div className="mn-eyebrow text-navy">ზმნა · глагол</div>
-            <div className="mt-1 font-geo text-[36px] font-extrabold leading-none">{verb.title}</div>
-            <div className="mt-1 text-[14px] text-jewelInk-hint">{cyr(verb.title)} · {verb.ru}</div>
+            {entry ? (
+              // Сначала то, что человек сохранил: слово, что оно значит, от какого оно глагола.
+              <div data-testid="verb-entry">
+                <div className="mn-eyebrow text-navy">в твоём словаре · глагол</div>
+                <div className="mt-1 font-geo text-[36px] font-extrabold leading-none">{entry.hit.form}</div>
+                <div className="mt-1 text-[14px] text-jewelInk-hint">{cyr(entry.hit.form)}</div>
+                <div className="mt-2 text-[20px] font-extrabold text-navy" data-testid="verb-entry-meaning">
+                  <MeaningText meaning={meaningOfHit(entry.hit)} />
+                </div>
+                {entry.russian && entry.russian.trim().toLowerCase() !== meaningOfHit(entry.hit).text.toLowerCase() && (
+                  <div className="text-[12px] text-jewelInk-hint" data-testid="verb-entry-saved">у тебя записано: {entry.russian}</div>
+                )}
+                <div className="mt-1 text-[13px] text-jewelInk-mid">
+                  это слово глагола <span className="font-geo font-bold text-jewelInk">{verb.title}</span> — {verb.ru}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mn-eyebrow text-navy">ზმნა · глагол</div>
+                <div className="mt-1 font-geo text-[36px] font-extrabold leading-none">{verb.title}</div>
+                <div className="mt-1 text-[14px] text-jewelInk-hint">{cyr(verb.title)} · {verb.ru}</div>
+              </>
+            )}
             <button onClick={() => setWhy(!why)} className="mt-2 inline-flex items-center gap-1.5">
               <KindChip kind={verb.kind} />
               <span className="text-[12px] text-navy underline">{why ? 'скрыть' : 'что это значит?'}</span>
@@ -209,6 +246,30 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             )}
             {rare && rows(rareTenses)}
           </div>
+
+          {entry && (
+            <div className="flex flex-col items-center gap-1 text-[13px]" data-testid="verb-entry-actions">
+              {deleting === 'no' || deleting === 'failed' ? (
+                <div className="flex items-center gap-5">
+                  <button className="min-h-[44px] text-navy underline" onClick={() => { entry.onToggleSelect(); close() }}>
+                    {entry.selected ? 'Убрать из квиза' : 'Добавить в квиз'}
+                  </button>
+                  <button className="min-h-[44px] text-jewelInk-mid underline" onClick={() => setDeleting('ask')}>Удалить из словаря</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-5">
+                  <span className="text-jewelInk-mid">Удалить «{entry.hit.form}»?</span>
+                  <button
+                    className="min-h-[44px] font-bold text-ruby underline" disabled={deleting === 'busy'}
+                    onClick={() => { setDeleting('busy'); entry.onDelete().then(close).catch(() => setDeleting('failed')) }}
+                  >Удалить</button>
+                  <button className="min-h-[44px] text-navy underline" onClick={() => setDeleting('no')}>Отмена</button>
+                </div>
+              )}
+              {deleting === 'failed' && <div className="text-[12px] text-ruby">Не удалось удалить. Попробуй ещё раз.</div>}
+              <div className="text-[11px] text-jewelInk-hint text-center">Прогресс по глаголу при удалении слова не пропадёт.</div>
+            </div>
+          )}
 
           {verb.source && (
             <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">

@@ -59,6 +59,21 @@ export interface VerbFormHitDto {
   meaning?: string | null
   /** Пометка, когда у двух времён фраза одна: «один раз · сделано». Обычно нет. */
   meaningNote?: string | null
+  /** Только в словаре: запись — это сама форма глагола, а не фраза, в которой она есть. Такая запись открывает вид глагола. */
+  single?: boolean
+  /** Только в словаре: уровень знания этого глагола. */
+  level?: import('./session/types').VerbLevelKey
+}
+
+/** Один из «моих глаголов»: его формы сохранены в словаре, или с ним уже играли, или и то и другое. */
+export interface MyVerbDto {
+  id: string
+  title: string
+  ru: string
+  level: import('./session/types').VerbLevelKey
+  started: boolean
+  /** Формы этого глагола, сохранённые в словаре; пусто у глагола, начатого из урока или перевода. */
+  saved: VerbFormHitDto[]
 }
 
 /**

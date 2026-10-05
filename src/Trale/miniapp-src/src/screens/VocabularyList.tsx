@@ -6,6 +6,9 @@ import Mascot from '../components/Mascot'
 import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
 import WordCard from '../components/WordCard'
 import VerbSheet from '../verbs/VerbSheet'
+import MyVerbRows, { matchesVerb } from '../verbs/dictionary/MyVerbRows'
+import LevelBadge from '../verbs/session/LevelBadge'
+import type { MyVerbDto } from '../verbs/types'
 import { VerbHint } from '../verbs/parts'
 import type { VerbFormHitDto } from '../verbs/types'
 import { ProgressState, Screen } from '../types'
@@ -39,7 +42,9 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
   const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string; verb?: VerbFormHitDto | null } | null>(null)
   // Карточка глагола открывается шторкой поверх словаря — из слова, из перевода, из списка.
-  const [verbSheet, setVerbSheet] = useState<VerbFormHitDto | null>(null)
+  /** Открытый вид глагола; entryId — если пришли с записи словаря, которая сама — форма этого глагола. */
+  const [verbSheet, setVerbSheet] = useState<{ verbId: string; tense?: string; person?: number; entryId?: string } | null>(null)
+  const [myVerbs, setMyVerbs] = useState<MyVerbDto[]>([])
   const [activeLetter, setActiveLetter] = useState<string | null>(null)
   const [cardItem, setCardItem] = useState<VocabularyItem | null>(null)
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set())
@@ -58,6 +63,7 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
           setIsStarterMode(true)
         } else {
           setItems(r.items)
+          setMyVerbs(r.verbs ?? [])
           setIsStarterMode(false)
         }
         setPhase('ready')
@@ -84,7 +90,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   }, [items])
 
   // Фильтр «глаголы» появляется, когда в словаре есть хотя бы одно слово с глаголом.
-  const hasVerbs = useMemo(() => items.some((item) => item.verb), [items])
+  const hasVerbs = myVerbs.length > 0 || items.some((item) => item.verb)
+  const shownVerbs = useMemo(() => myVerbs.filter((v) => matchesVerb(v, search)), [myVerbs, search])
   // Открыли сразу на «глаголах», а глаголов в словаре нет — показываем все слова, а не пустой список.
   useEffect(() => {
     if (phase === 'ready' && filter === 'verbs' && !hasVerbs) setFilter('all')
@@ -127,7 +134,49 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   }
 
   function openCard(item: VocabularyItem) {
+    // Запись — сама форма глагола: сразу вид глагола (слово, уровень, игра), без промежуточной карточки слова.
+    if (item.verb?.single && !isStarterMode) {
+      setVerbSheet({ verbId: item.verb.verbId, tense: item.verb.tense, person: item.verb.person, entryId: item.id })
+      return
+    }
     setCardItem(item)
+  }
+
+  function openVerb(hit: VerbFormHitDto) {
+    setVerbSheet({ verbId: hit.verbId, tense: hit.tense, person: hit.person })
+  }
+
+  /** Строка «моего глагола»: если в словаре есть его слово — открываем с него, иначе просто глагол. */
+  function openMyVerb(verb: MyVerbDto) {
+    const entry = items.find((i) => i.verb?.single && i.verb.verbId === verb.id)
+    const first = verb.saved[0]
+    setVerbSheet({ verbId: verb.id, tense: (entry?.verb ?? first)?.tense, person: (entry?.verb ?? first)?.person, entryId: entry?.id })
+  }
+
+  /** После игры уровень глагола мог вырасти — перечитываем словарь тихо, без экрана загрузки. */
+  function closeVerb() {
+    setVerbSheet(null)
+    api.vocabulary().then((r) => {
+      if (isStarterMode || !r.items.length) return
+      setItems(r.items)
+      setMyVerbs(r.verbs ?? [])
+    }).catch(() => {})
+  }
+
+  /** Сохранённое слово для вида глагола: с ним вид начинается, и из него же — действия со словом. */
+  function verbEntry(entryId?: string) {
+    const item = entryId ? items.find((i) => i.id === entryId) : undefined
+    if (!item?.verb) return undefined
+    return {
+      hit: item.verb,
+      russian: sides(item).russian,
+      selected: selected.has(item.id),
+      onToggleSelect: () => toggle(item.id),
+      onDelete: async () => {
+        await api.deleteVocabularyEntry(item.id)
+        handleDelete(item.id)
+      }
+    }
   }
 
   function closeCard() {
@@ -449,7 +498,7 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
                 <div className="font-sans text-[11px] text-gold-deep font-bold mt-1.5">✓ добавлено в словарь</div>
                 {translateResult.verb && (
                   <div className="mt-2.5">
-                    <VerbHint hit={translateResult.verb} onOpen={() => setVerbSheet(translateResult.verb!)} />
+                    <VerbHint hit={translateResult.verb} onOpen={() => openVerb(translateResult.verb!)} />
                   </div>
                 )}
               </div>
@@ -534,7 +583,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
 
         {/* Word list */}
         <div className="flex flex-col gap-2">
-          {filtered.map((item, idx) => {
+          {filter === 'verbs' && <MyVerbRows verbs={shownVerbs} onOpen={openMyVerb} />}
+          {filter !== 'verbs' && filtered.map((item, idx) => {
             const isItemSelected = selected.has(item.id)
             const isRemoving = removingIds.has(item.id)
             const { georgian, russian } = sides(item)
@@ -609,7 +659,10 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
                     </div>
                   </div>
 
-                  {item.verb && (
+                  {item.verb?.single && item.verb.level && item.verb.level !== 'new' ? (
+                    // У слова-глагола вместо общей точки «выучено» — уровень знания глагола.
+                    <span className="relative z-[1] shrink-0" data-testid="verb-row-level"><LevelBadge level={item.verb.level} compact /></span>
+                  ) : item.verb && (
                     <span
                       data-testid="verb-badge"
                       className="relative z-[1] shrink-0 px-1.5 py-0.5 rounded-md bg-navy-wash border border-jewelInk/40 font-sans text-[9px] font-bold uppercase tracking-wider text-navy"
@@ -618,9 +671,11 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
                     </span>
                   )}
 
-                  <div
-                    className={`relative z-[1] w-2.5 h-2.5 rounded-full shrink-0 ${masteryColor} border border-jewelInk/30`}
-                  />
+                  {!item.verb?.single && (
+                    <div
+                      className={`relative z-[1] w-2.5 h-2.5 rounded-full shrink-0 ${masteryColor} border border-jewelInk/30`}
+                    />
+                  )}
 
                   {/* Chevron hint */}
                   <svg
@@ -637,7 +692,7 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
             )
           })}
 
-          {filtered.length === 0 && (
+          {(filter === 'verbs' ? shownVerbs.length === 0 : filtered.length === 0) && (
             <div className="py-10 text-center font-sans text-[14px] text-jewelInk-mid">
               {activeLetter ? 'нет слов по этому фильтру' : 'ничего не нашлось'}
             </div>
@@ -688,15 +743,16 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
           onClose={closeCard}
           onToggleSelect={toggle}
           onDelete={handleDelete}
-          onOpenVerb={setVerbSheet}
+          onOpenVerb={openVerb}
         />
       )}
 
       {verbSheet && (
         <VerbSheet
           verbId={verbSheet.verbId}
-          highlight={{ tense: verbSheet.tense, person: verbSheet.person }}
-          onClose={() => setVerbSheet(null)}
+          highlight={verbSheet.tense !== undefined && verbSheet.person !== undefined ? { tense: verbSheet.tense, person: verbSheet.person } : undefined}
+          entry={verbEntry(verbSheet.entryId)}
+          onClose={closeVerb}
         />
       )}
     </div>

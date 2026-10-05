@@ -555,6 +555,7 @@ public class MiniAppController : Controller
     public async Task<IActionResult> GetVocabulary(
         [FromServices] GetUserVocabularyQuery query,
         [FromServices] VerbQueries verbs,
+        [FromServices] MyVerbsQuery myVerbsQuery,
         CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
@@ -566,11 +567,14 @@ public class MiniAppController : Controller
         var result = await query.ExecuteAsync(user.Id, ct);
 
         // Verbs are a layer over the dictionary: a word or phrase that contains a known verb form
-        // carries the parse, so the mini-app can mark it and open the verb card from the word.
-        var verbHits = await verbs.FindInTextsAsync(
-            result.Items.Concat(result.StarterItems).SelectMany(i => new[] { i.Word, i.Definition }).ToList(), ct);
+        // carries the parse. An entry that IS a verb form opens the verb view and shows the verb's
+        // level; `verbs` is "my verbs" — one row per verb, saved in the dictionary or started elsewhere.
+        var myVerbs = await myVerbsQuery.GetAsync(user.Id, result.Items.Select(i => (i.Word, i.Definition)).ToList(), ct);
+        var entryVerbs = result.Items.Select((item, n) => (item.Id, Verb: myVerbs.Entries[n])).ToDictionary(e => e.Id, e => e.Verb);
+        var starterHits = await verbs.FindInTextsAsync(
+            result.StarterItems.SelectMany(i => new[] { i.Word, i.Definition }).ToList(), ct);
         object VerbOf(string word, string definition) =>
-            verbHits.TryGetValue(word, out var hit) || verbHits.TryGetValue(definition, out hit) ? VerbHitDto(hit) : null;
+            MyVerbsQuery.Find(word, definition, starterHits) is { } found ? VerbHitDto(found.Hit) : null;
 
         return Ok(new
         {
@@ -588,7 +592,16 @@ public class MiniAppController : Controller
                 failedCount = i.FailedCount,
                 mastery = i.Mastery,
                 isStarter = i.IsStarter,
-                verb = VerbOf(i.Word, i.Definition)
+                verb = entryVerbs[i.Id] == null ? null : DictionaryVerbDto(entryVerbs[i.Id])
+            }),
+            verbs = myVerbs.Verbs.Select(v => new
+            {
+                id = v.Lemma,
+                title = v.Title,
+                ru = v.Translation,
+                level = VerbLevelRules.Key(v.Level),
+                started = v.Started,
+                saved = v.SavedForms.Select(VerbHitDto)
             }),
             starterItems = result.StarterItems.Select(i => new
             {
@@ -666,12 +679,19 @@ public class MiniAppController : Controller
     }
 
     [HttpPost("vocabulary/answer")]
-    public async Task<IActionResult> RecordVocabularyAnswer([FromBody] VocabularyAnswerRequest request, CancellationToken ct)
+    public async Task<IActionResult> RecordVocabularyAnswer(
+        [FromBody] VocabularyAnswerRequest request, [FromServices] VerbQuizCreditService verbCredit, CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
         {
             return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        // A dictionary entry that is a single verb form stays in the quiz; a correct answer also counts for the verb.
+        if (request.Correct && request.WordId != null && user.HasMiniAppAccess())
+        {
+            await verbCredit.CreditCorrectAnswerAsync(user, request.WordId.Value, DateTime.UtcNow, ct);
         }
 
         var result = await _mediator.Send(new RecordVocabularyAnswer
@@ -832,7 +852,8 @@ public class MiniAppController : Controller
 
     /// <summary>What the dashboard may say about verbs in its "what next" block.</summary>
     [HttpGet("verbs/summary")]
-    public async Task<IActionResult> GetVerbsSummary([FromServices] DictionaryVerbsQuery dictionaryVerbs, CancellationToken ct)
+    public async Task<IActionResult> GetVerbsSummary(
+        [FromServices] DictionaryVerbsQuery dictionaryVerbs, [FromServices] MyVerbsQuery myVerbs, CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -845,9 +866,14 @@ public class MiniAppController : Controller
             return StatusCode(402, new { error = "subscription_required" });
         }
 
+        var next = await myVerbs.ContinueAsync(user.Id, ct);
         return Ok(new
         {
-            dictionaryVerbs = await dictionaryVerbs.CountAsync(user, ct)
+            dictionaryVerbs = await dictionaryVerbs.CountAsync(user, ct),
+            // The verb being learned, most recently played first — "continue verb X" on the dashboard.
+            continueVerb = next == null
+                ? null
+                : new { id = next.Lemma, title = next.Title, ru = next.Translation, level = VerbLevelRules.Key(next.Level) }
         });
     }
 
@@ -1085,6 +1111,21 @@ public class MiniAppController : Controller
 
         return Ok(new { stories = stories.ForVerb(id) });
     }
+
+    /// <summary>The parse of a dictionary entry plus what makes it "a verb of mine": is it the form alone, and the verb's level.</summary>
+    private static object DictionaryVerbDto(DictionaryVerbHit v) => new
+    {
+        form = v.Hit.Form,
+        verbId = v.Hit.Lemma,
+        title = v.Hit.Title,
+        ru = v.Hit.Translation,
+        tense = v.Hit.Tense,
+        person = v.Hit.Person,
+        meaning = v.Hit.Meaning,
+        meaningNote = v.Hit.MeaningNote,
+        single = v.Single,
+        level = VerbLevelRules.Key(v.Level)
+    };
 
     private static object VerbHitDto(VerbFormHit h) => new
     {

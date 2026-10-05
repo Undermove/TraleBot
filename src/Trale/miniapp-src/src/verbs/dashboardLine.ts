@@ -1,4 +1,5 @@
 import type { Screen } from '../types'
+import { LEVEL_NAMES, type VerbLevelKey } from './session/types'
 
 // Единственная строка про глаголы на главной — под блоком «что дальше». Не плитка и не раздел.
 
@@ -6,10 +7,12 @@ import type { Screen } from '../types'
 export interface VerbsSummaryDto {
   /** Сколько своих слов и фраз в словаре содержат форму известного глагола. */
   dictionaryVerbs: number
+  /** Глагол, который человек учит (последний, с которым играл) и ещё не выучил. */
+  continueVerb?: { id: string; title: string; ru: string; level: VerbLevelKey } | null
 }
 
 export interface VerbsLine {
-  id: 'dictionary'
+  id: 'dictionary' | 'continue'
   text: string
   screen: Screen
 }
@@ -43,12 +46,18 @@ function dictionaryLine({ dictionaryVerbs: n }: VerbsSummaryDto): VerbsLine | nu
   }
 }
 
-/**
- * Кандидаты на строку по убыванию важности; показывается первый подошедший, всегда один.
- * Когда появится прогресс по глаголу («продолжи глагол X», формы к повторению) — он встаёт
- * сюда первым элементом, остальное не меняется.
- */
-const CANDIDATES: Array<(summary: VerbsSummaryDto) => VerbsLine | null> = [dictionaryLine]
+/** «Продолжить глагол X» — открывает сразу вид этого глагола, с уровнем и кнопкой игры. */
+function continueLine({ continueVerb: verb }: VerbsSummaryDto): VerbsLine | null {
+  if (!verb) return null
+  return {
+    id: 'continue',
+    text: `Продолжить глагол «${verb.ru}» · ${LEVEL_NAMES[verb.level]}`,
+    screen: { kind: 'vocabulary-list', filter: 'verbs', verb: { verbId: verb.id } }
+  }
+}
+
+/** Кандидаты на строку по убыванию важности; показывается первый подошедший, всегда один. */
+const CANDIDATES: Array<(summary: VerbsSummaryDto) => VerbsLine | null> = [continueLine, dictionaryLine]
 
 /**
  * Какую строку про глаголы показать на главной — или никакой. Новичку и во время подсказок

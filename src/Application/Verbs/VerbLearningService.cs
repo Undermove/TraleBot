@@ -215,6 +215,31 @@ public class VerbLearningService(
     }
 
     /// <summary>
+    /// The learner practised the verb outside a session (a dictionary quiz answer): makes sure the
+    /// verb is "theirs" and its level follows the form progress. No-op for unknown or unreviewed verbs.
+    /// </summary>
+    public async Task TouchAsync(Guid userId, string lemma, DateTime now, CancellationToken ct)
+    {
+        var progress = await formProgress.GetAsync(userId, lemma, now, ct);
+        if (progress is not { CanLearn: true })
+        {
+            return;
+        }
+
+        var row = await dbContext.UserVerbs.FirstOrDefaultAsync(v => v.UserId == userId && v.Verb.Lemma == lemma, ct);
+        if (row == null)
+        {
+            var verbId = await dbContext.Verbs.Where(v => v.Lemma == lemma).Select(v => v.Id).FirstAsync(ct);
+            row = new UserVerb { Id = Guid.NewGuid(), UserId = userId, VerbId = verbId, StartedAtUtc = now };
+            dbContext.UserVerbs.Add(row);
+        }
+
+        row.Level = LevelOf(row, progress);
+        row.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
     /// The stored level never goes down; a learner who used the verb before levels existed has
     /// form progress and no row — their level is derived on the fly.
     /// </summary>

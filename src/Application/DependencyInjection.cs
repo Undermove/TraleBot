@@ -91,6 +91,8 @@ public static class DependencyInjection
         services.AddScoped<DictionaryVerbsQuery>();
         services.AddScoped<VerbProgressService>();
         services.AddScoped<VerbLearningService>();
+        services.AddScoped<MyVerbsQuery>();
+        services.AddScoped<VerbQuizCreditService>();
         services.AddSingleton<VerbStoryCatalog>();
         services.AddScoped<FeedTreatService>();
 
