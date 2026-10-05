@@ -7,15 +7,15 @@ namespace Infrastructure.Translation.Wiktionary;
 
 /// <summary>
 /// Reads a Georgian verb's conjugation out of an English Wiktionary page, as returned by
-/// <c>api.php?action=parse&amp;prop=text|revid|wikitext</c>. A C# port of
-/// <c>scripts/verbs/fetch-wiktionary.mjs</c> — the same table is located the same way, so a verb added
-/// at runtime looks exactly like a catalog one. Forms are taken only from the table; nothing is built
-/// by analogy.
+/// <c>api.php?action=parse&amp;prop=text|revid|wikitext</c>. Began as a C# port of the script that
+/// first built the catalog from live pages (<c>fetch-wiktionary.mjs</c>, since replaced by a reader of
+/// the Wiktionary dump); this is now the only reader of the live table. Forms are taken only from the
+/// table; nothing is built by analogy. <c>WiktionaryVerbParserTests</c> checks it against the catalog.
 /// </summary>
 public static class WiktionaryVerbParser
 {
     // Verbs of motion have several tables on the page (different preverbs); which one is the main.
-    // Same list as in the script. The other tables are kept as Alt, so the form index finds them too.
+    // The other tables are kept as Alt, so the form index finds them too.
     private static readonly Dictionary<string, int> MainTable = new() { ["მიდის"] = 1 };
 
     private static readonly Dictionary<string, string> Tenses = new()
@@ -75,19 +75,19 @@ public static class WiktionaryVerbParser
         var alt = tables.Where((_, i) => i != main)
             .Select(t => (IReadOnlyDictionary<string, string[][]>)ParseTable(t).Tenses)
             .ToList();
-        if (masdar == null)
-        {
-            var verbalNoun = VerbalNounParameter.Match(wikitext);
-            masdar = verbalNoun.Success ? [verbalNoun.Groups[1].Value] : [];
-        }
+        var verbalNoun = VerbalNounParameter.Match(wikitext);
+        var headMasdar = verbalNoun.Success ? verbalNoun.Groups[1].Value : null;
+        masdar ??= headMasdar != null ? [headMasdar] : [];
 
         var paradigm = new VerbParadigm(
             lemma,
             masdar,
             tenses,
             alt,
-            $"https://en.wiktionary.org/wiki/{Uri.EscapeDataString(lemma)}",
-            parse.TryGetProperty("revid", out var revid) ? revid.GetInt64() : null);
+            // Same address the catalog stores for its verbs: the Georgian section of the page.
+            $"https://en.wiktionary.org/wiki/{Uri.EscapeDataString(lemma)}#Georgian",
+            parse.TryGetProperty("revid", out var revid) ? revid.GetInt64() : null,
+            headMasdar);
         return new WiktionaryVerbPage(paradigm, Glosses(wikitext));
     }
 

@@ -51,14 +51,22 @@ const verb = {
   sentences: [], source: 'https://en.wiktionary.org/wiki/x', status: 'verified',
 }
 
-async function setupApi(page: any, card: object) {
+async function setupApi(page: any, card: object, meResponse: object = me) {
   let verbRequests: string[] = []
   await page.route('**/api/miniapp/content', (route: any) => route.fulfill({ json: catalog }))
-  await page.route('**/api/miniapp/me', (route: any) => route.fulfill({ json: me }))
+  await page.route('**/api/miniapp/me', (route: any) => route.fulfill({ json: meResponse }))
+  await page.route('**/api/miniapp/plans', (route: any) =>
+    route.fulfill({ json: { plans: [{ id: 'Month', payloadId: 'Stars_Pro_Month', stars: 100, durationDays: 30, title: '1 месяц', description: '30 дней' }] } })
+  )
   await page.route('**/api/miniapp/activity-days*', (route: any) => route.fulfill({ json: { dates: [] } }))
   await page.route('**/api/miniapp/vocabulary', (route: any) => route.fulfill({ json: { items: [], starterItems: [] } }))
+  // The card itself, and the parts of the sheet that ask the API on their own (ladder entry, comics).
   await page.route('**/api/miniapp/verbs/**', (route: any) => {
-    verbRequests.push(decodeURIComponent(new URL(route.request().url()).pathname))
+    const path = decodeURIComponent(new URL(route.request().url()).pathname)
+    if (path.endsWith('/progress')) return route.fulfill({ json: { verbId: 'წერს', canLearn: true, total: 0, forms: [] } })
+    if (path.endsWith('/stories')) return route.fulfill({ json: { stories: [] } })
+    if (path.endsWith('/verbs/summary')) return route.fulfill({ json: { dictionaryVerbs: 0 } })
+    verbRequests.push(path)
     return route.fulfill({ json: card })
   })
   return () => verbRequests
@@ -93,4 +101,14 @@ test('card of a verb whose forms a model produced says so', async ({ page }) => 
   await expect(page.getByTestId('verb-unverified')).toContainText('Не проверено')
   // No form in the link: the card opens on «я».
   await expect(page.getByTestId('verb-tense-present')).toContainText('ვწერ')
+})
+
+test('without trial or Pro the link lands on the paywall instead of a card that cannot load', async ({ page }) => {
+  const requests = await setupApi(page, verb, { ...me, isPro: false, isTrialActive: false, hasAccess: false })
+
+  await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('წერს')}&tense=aorist&person=3`)
+
+  await expect(page.getByRole('dialog', { name: 'Про-доступ' })).toBeVisible()
+  await expect(page.getByTestId('verb-sheet')).toHaveCount(0)
+  expect(requests()).toEqual([])
 })

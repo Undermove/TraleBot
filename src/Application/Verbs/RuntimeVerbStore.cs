@@ -51,6 +51,11 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
         }
 
         var analysis = VerbAnalyzer.Analyze(paradigm.Lemma, paradigm.Tenses);
+        if (status == VerbStatus.Generated && VerbAnalyzer.IsPartial(paradigm.Tenses))
+        {
+            // The analyzer's wording speaks of "the source"; a generated verb has none.
+            analysis = analysis with { Reason = analysis.Reason.Replace("В источнике есть", "Известна") };
+        }
         var model = await FindModelAsync(analysis, ct);
         var now = DateTime.UtcNow;
         var title = paradigm.Title;

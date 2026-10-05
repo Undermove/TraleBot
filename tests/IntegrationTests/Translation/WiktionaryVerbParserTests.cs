@@ -6,9 +6,9 @@ using Infrastructure.Translation.Wiktionary;
 namespace IntegrationTests.Translation;
 
 /// <summary>
-/// The parser is a port of <c>scripts/verbs/fetch-wiktionary.mjs</c>. The fixture is the real API
-/// response for a catalog verb, at the very revision the catalog was built from — so the port must
-/// read out of it exactly what the script put into <c>verbs.json</c>.
+/// The fixture is the real API response for a catalog verb. The catalog is built from the Wiktionary
+/// dump by another reader (<c>scripts/verbs/extract-kaikki.mjs</c>), so the two are independent routes
+/// to the same table: the parser must read out of the live page exactly what <c>verbs.json</c> holds.
 /// </summary>
 public class WiktionaryVerbParserTests
 {
@@ -26,7 +26,6 @@ public class WiktionaryVerbParserTests
 
         var page = WiktionaryVerbParser.Parse(Fixture, Lemma)!;
 
-        page.Paradigm.Revid.Should().Be(catalog["revid"]!.GetValue<long>(), because: "the fixture must be the revision the catalog was built from");
         JsonSerializer.SerializeToNode(page.Paradigm.Tenses)!.ToJsonString()
             .Should().Be(catalog["tenses"]!.ToJsonString());
         page.Paradigm.Title.Should().Be(catalog["title"]!.GetValue<string>());

@@ -34,31 +34,24 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
     /// <summary>Shorter Georgian words are too close to each other for "one letter off" to mean anything.</summary>
     private const int MinTypoLength = 4;
 
+    /// <summary>The verb an exact form, masdar or translation belongs to; of several, the most common one.</summary>
     /// <param name="query">A <see cref="Translation.Cache.TranslationCacheKey"/>-normalised word or phrase.</param>
     public async Task<VerbBaseMatch?> FindExactAsync(string query, CancellationToken ct)
     {
-        if (query.Length > VerbParadigm.MaxFormLength)
-        {
-            return null;
-        }
-
-        return VerbParadigm.GeorgianWord.IsMatch(query)
-            ? await FindGeorgianAsync(query, ct)
-            : await FindRussianAsync(query, ct);
+        return (await FindAllExactAsync(query, ct)).FirstOrDefault();
     }
 
-    /// <summary>Exact matches first, then the loose ones; at most a handful, best first.</summary>
+    /// <summary>
+    /// What the agent's tool returns. Every verb the query exactly is (one form can belong to several
+    /// verbs, one Russian word can translate several); only when there is none — the loose guesses.
+    /// At most <see cref="MaxResults"/>, best first: the catalog is ordered by how common a verb is.
+    /// </summary>
     public async Task<IReadOnlyList<VerbBaseMatch>> SearchAsync(string query, CancellationToken ct)
     {
-        var exact = await FindExactAsync(query, ct);
-        if (exact != null)
+        var exact = await FindAllExactAsync(query, ct);
+        if (exact.Count > 0 || query.Length > VerbParadigm.MaxFormLength)
         {
-            return [exact];
-        }
-
-        if (query.Length > VerbParadigm.MaxFormLength)
-        {
-            return [];
+            return exact;
         }
 
         return VerbParadigm.GeorgianWord.IsMatch(query)
@@ -66,41 +59,58 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
             : await FindRussianSimilarAsync(query, ct);
     }
 
-    private async Task<VerbBaseMatch?> FindGeorgianAsync(string word, CancellationToken ct)
+    private async Task<IReadOnlyList<VerbBaseMatch>> FindAllExactAsync(string query, CancellationToken ct)
     {
-        // A form can sit in several (tense, person) cells; the first by verb order and person wins,
-        // as in VerbQueries.FindInTextsAsync.
+        if (query.Length > VerbParadigm.MaxFormLength)
+        {
+            return [];
+        }
+
+        return VerbParadigm.GeorgianWord.IsMatch(query)
+            ? await FindGeorgianAsync(query, ct)
+            : await FindRussianAsync(query, ct);
+    }
+
+    private async Task<IReadOnlyList<VerbBaseMatch>> FindGeorgianAsync(string word, CancellationToken ct)
+    {
+        // A form can sit in several (tense, person) cells and in several verbs. Per verb the first
+        // cell by person wins, as in VerbQueries.FindInTextsAsync; verbs go by catalog order.
         var byForm = await dbContext.VerbForms
             .AsNoTracking()
             .Where(f => f.Form == word)
             .OrderBy(f => f.Verb.SortOrder)
+            .ThenBy(f => f.Verb.Lemma)
             .ThenBy(f => f.Person)
             .Select(f => new VerbBaseMatch(
                 f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, "form", f.Form, f.Tense, f.Person))
-            .FirstOrDefaultAsync(ct);
-        if (byForm != null)
+            .ToListAsync(ct);
+        if (byForm.Count > 0)
         {
-            return byForm;
+            return byForm.GroupBy(m => m.Lemma).Select(g => g.First()).Take(MaxResults).ToList();
         }
 
         return await dbContext.Verbs
             .AsNoTracking()
             .Where(v => v.Title == word)
             .OrderBy(v => v.SortOrder)
+            .ThenBy(v => v.Lemma)
+            .Take(MaxResults)
             .Select(v => new VerbBaseMatch(v.Lemma, v.Title, v.Translation, v.Status, "masdar", null, null, null))
-            .FirstOrDefaultAsync(ct);
+            .ToListAsync(ct);
     }
 
-    private async Task<VerbBaseMatch?> FindRussianAsync(string text, CancellationToken ct)
+    private async Task<IReadOnlyList<VerbBaseMatch>> FindRussianAsync(string text, CancellationToken ct)
     {
-        // "есть, кушать" answers both «есть» and «кушать», but not «кушать суп».
+        // "есть, кушать" answers both «есть» and «кушать», but not «кушать суп»; a gloss with a
+        // clarification — «входить (сюда)» — is another verb and does not answer plain «входить».
         var candidates = await dbContext.Verbs
             .AsNoTracking()
             .Where(v => v.Translation.ToLower().Replace("ё", "е").Contains(text))
             .OrderBy(v => v.SortOrder)
+            .ThenBy(v => v.Lemma)
             .Select(v => new VerbBaseMatch(v.Lemma, v.Title, v.Translation, v.Status, "translation", null, null, null))
             .ToListAsync(ct);
-        return candidates.FirstOrDefault(v => RussianParts(v.Translation).Contains(text));
+        return candidates.Where(v => RussianParts(v.Translation).Contains(text)).Take(MaxResults).ToList();
     }
 
     private async Task<IReadOnlyList<VerbBaseMatch>> FindGeorgianTyposAsync(string word, CancellationToken ct)
@@ -118,6 +128,7 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
             .AsNoTracking()
             .Where(f => f.Form.Length >= min && f.Form.Length <= max)
             .OrderBy(f => f.Verb.SortOrder)
+            .ThenBy(f => f.Verb.Lemma)
             .ThenBy(f => f.Person)
             .Select(f => new VerbBaseMatch(
                 f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, "typo", f.Form, f.Tense, f.Person))
@@ -136,13 +147,29 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
         var verbs = await dbContext.Verbs
             .AsNoTracking()
             .OrderBy(v => v.SortOrder)
+            .ThenBy(v => v.Lemma)
             .Select(v => new VerbBaseMatch(v.Lemma, v.Title, v.Translation, v.Status, "similar", null, null, null))
             .ToListAsync(ct);
 
+        // The longer the shared start, the better the guess; among equals a gloss without a
+        // clarification first, then the more common verb (the list is already in catalog order).
         return verbs
-            .Where(v => RussianParts(v.Translation).Any(part => SharesStem(text, part)))
+            .Select(v => (Verb: v, Best: RussianParts(v.Translation)
+                .Select(part => (Shared: SharedStem(text, WithoutClarification(part)), Plain: !part.Contains('(')))
+                .DefaultIfEmpty()
+                .Max()))
+            .Where(x => x.Best.Shared > 0)
+            .OrderByDescending(x => x.Best.Shared)
+            .ThenByDescending(x => x.Best.Plain)
+            .Select(x => x.Verb)
             .Take(MaxResults)
             .ToList();
+    }
+
+    private static string WithoutClarification(string part)
+    {
+        var bracket = part.IndexOf('(');
+        return bracket < 0 ? part : part[..bracket].TrimEnd();
     }
 
     private static IEnumerable<string> RussianParts(string translation) =>
@@ -153,7 +180,8 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
     /// candidates to the agent, which decides; suppletive pairs («шёл» — «идти») are for the agent to
     /// ask about by their infinitive.
     /// </summary>
-    private static bool SharesStem(string a, string b)
+    /// <returns>Length of the shared start when it is long enough to mean the same stem, else 0.</returns>
+    private static int SharedStem(string a, string b)
     {
         var common = 0;
         while (common < a.Length && common < b.Length && a[common] == b[common])
@@ -161,7 +189,7 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
             common++;
         }
 
-        return common >= 3 && common >= Math.Min(a.Length, b.Length) - 2;
+        return common >= 3 && common >= Math.Min(a.Length, b.Length) - 2 ? common : 0;
     }
 
     /// <summary>One substitution, insertion or deletion.</summary>

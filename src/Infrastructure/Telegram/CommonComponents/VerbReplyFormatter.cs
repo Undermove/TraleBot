@@ -50,7 +50,8 @@ public static class VerbReplyFormatter
 
     /// <summary>
     /// Opens the mini-app's dictionary with the verb card on top, on the tense and person of the form.
-    /// The link is parsed by <c>parseDeepLink</c> in <c>miniapp-src/src/App.tsx</c>.
+    /// <c>?screen=verb&amp;verbId=…[&amp;tense=…&amp;person=…]</c>, parsed by <c>miniapp-src/src/verbs/deepLink.ts</c>;
+    /// without trial or Pro it lands on the paywall instead.
     /// </summary>
     public static InlineKeyboardButton Button(VerbReplyHint hint, string miniAppUrl)
     {

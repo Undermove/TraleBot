@@ -88,6 +88,16 @@ public class VerbProposalResolver(
         VerbStatus status;
         if (page != null)
         {
+            // A verb's identity is its present "he/she" form — true of every catalog verb. Wiktionary
+            // also has pages titled by another form (a future with a preverb) that carry a table; the
+            // catalog build rejects those, and so must we, or one verb gets stored under two lemmas.
+            if (!page.Paradigm.Tenses.TryGetValue("present", out var present)
+                || present.Length != 6
+                || !present[2].Contains(lemma))
+            {
+                return null;
+            }
+
             paradigm = page.Paradigm;
             status = VerbStatus.Verified;
         }

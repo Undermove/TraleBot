@@ -87,7 +87,7 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
         link.GetLeftPart(UriPartial.Path).Should().Be("https://tralebot.test/");
         var query = System.Web.HttpUtility.ParseQueryString(link.Query);
         query["screen"].Should().Be("verb");
-        query["verb"].Should().Be(Write);
+        query["verbId"].Should().Be(Write);
         query["tense"].Should().Be("aorist");
         query["person"].Should().Be("3");
     }

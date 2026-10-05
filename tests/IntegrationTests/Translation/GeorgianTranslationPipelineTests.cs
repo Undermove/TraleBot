@@ -144,7 +144,8 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         var toolResults = FakeChatClient.ToolResults(Models.AnalystModel.Conversations.Last());
         toolResults.Should().HaveCount(2);
         var search = JsonNode.Parse(toolResults[0])!["verbs"]!.AsArray();
-        search.Should().ContainSingle();
+        // The form may belong to more than one catalog verb; the most common one comes first.
+        search.Should().NotBeEmpty();
         search[0]!["lemma"]!.GetValue<string>().Should().Be(Write);
         search[0]!["tense"]!.GetValue<string>().Should().Be("present");
         var fetched = JsonNode.Parse(toolResults[1])!;
@@ -267,6 +268,43 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     }
 
     [Test]
+    public async Task Generated_verb_with_only_some_tenses_is_special_and_does_not_speak_of_a_source()
+    {
+        await SeedCatalogWithout(Dance);
+        var verb = CatalogVerb(Dance);
+        Models.ClassifierModel.AnswerWith(ItIsAVerb);
+        Models.AnalystModel.AnswerWith(Json(new
+        {
+            outcome = "generated", lemma = Dance, russian = "танцевать",
+            generated = new { present = Enumerable.Range(0, 6).Select(p => Form(verb, "present", p)) }
+        }));
+
+        await Translate(Form(verb, "present", 0));
+
+        var stored = await StoredVerb(Dance);
+        stored!.Status.Should().Be(VerbStatus.Generated);
+        stored.Kind.Should().Be("special", because: "with a part of the tenses nothing can be said about the scheme — as in the catalog");
+        JsonNode.Parse(stored.CardJson)!["reason"]!.GetValue<string>().Should().Be("Известна только часть времён — учить формы целиком.");
+    }
+
+    [Test]
+    public async Task Wiktionary_page_titled_by_a_form_other_than_the_present_is_not_stored_as_a_verb()
+    {
+        await SeedCatalogWithout(Paint);
+        var future = Form(CatalogVerb(Paint), "future", 2);
+        // The real page of the verb, served under the title of its future form.
+        Wiktionary.Pages[future] = PaintPage;
+        Models.ClassifierModel.AnswerWith(ItIsAVerb);
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = future, russian = "рисовать" }));
+
+        await Translate(future);
+
+        (await StoredVerb(future)).Should().BeNull();
+        (await StoredVerb(Paint)).Should().BeNull();
+        Log.Paths.Should().Equal("verb-rejected>legacy");
+    }
+
+    [Test]
     public async Task Generated_forms_that_are_not_georgian_script_are_rejected_and_nothing_is_stored()
     {
         await SeedCatalogWithout(Dance);
@@ -380,8 +418,57 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         });
 
         byTypo.Should().Contain(m => m.Lemma == Write && m.Match == "typo" && m.Form == form);
-        byRussian.Should().ContainSingle().Which.Should().Match<VerbBaseMatch>(m => m.Lemma == Write && m.Match == "similar");
+        byTypo.Should().HaveCountLessThanOrEqualTo(5);
+        // Several catalog verbs have a gloss that starts like «писала»; the tool promises the closest
+        // one first and a handful at most — the agent picks.
+        byRussian.Should().HaveCountLessThanOrEqualTo(5).And.OnlyContain(m => m.Match == "similar");
+        byRussian[0].Lemma.Should().Be(Write);
         nothing.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Search_tool_returns_every_verb_an_exact_word_belongs_to_most_common_first()
+    {
+        await SeedCatalogWithout();
+        var catalog = Catalog().Select(v => v!.AsObject()).ToList();
+        // A form that the catalog lists under more than one verb, found in the catalog itself.
+        var owners = catalog
+            .SelectMany(v => v["tenses"]!.AsObject().SelectMany(t => t.Value!.AsArray())
+                .SelectMany(cell => cell!.AsArray()).Select(f => (Form: f!.GetValue<string>(), Lemma: v["lemma"]!.GetValue<string>())))
+            .Distinct()
+            .GroupBy(x => x.Form)
+            .First(g => g.Count() > 1);
+        var expected = catalog.Select(v => v["lemma"]!.GetValue<string>()).Where(l => owners.Any(o => o.Lemma == l)).ToList();
+
+        var (matches, first) = await InScope(async sp =>
+        {
+            var search = sp.GetRequiredService<VerbBaseSearch>();
+            return (await search.SearchAsync(owners.Key, CancellationToken.None),
+                await search.FindExactAsync(owners.Key, CancellationToken.None));
+        });
+
+        matches.Should().OnlyContain(m => m.Match == "form" && m.Form == owners.Key);
+        matches.Select(m => m.Lemma).Should().Equal(expected.Take(5), because: "catalog order is by how common a verb is");
+        first!.Lemma.Should().Be(expected[0]);
+    }
+
+    [Test]
+    public async Task Gloss_with_a_clarification_does_not_answer_the_plain_word()
+    {
+        await SeedCatalogWithout();
+        var catalog = Catalog().Select(v => v!.AsObject()).ToList();
+        string Lemma(string ru) => catalog.First(v => v["ru"]!.GetValue<string>() == ru)["lemma"]!.GetValue<string>();
+
+        var (plain, inflected) = await InScope(async sp =>
+        {
+            var search = sp.GetRequiredService<VerbBaseSearch>();
+            return (await search.SearchAsync("входить", CancellationToken.None),
+                await search.SearchAsync("входил", CancellationToken.None));
+        });
+
+        plain.Should().ContainSingle().Which.Lemma.Should().Be(Lemma("входить"));
+        // Both «входить» and «входить (сюда)» are offered for the inflected word, the plain gloss first.
+        inflected.Select(m => m.Lemma).Take(2).Should().Equal(Lemma("входить"), Lemma("входить (сюда)"));
     }
 
     // ── 5. Not a verb, not a translation request ─────────────────────────────────────────────────
