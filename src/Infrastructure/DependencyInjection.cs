@@ -17,6 +17,7 @@ using Infrastructure.Telegram.BotCommands.TranslateCommands;
 using Infrastructure.Telegram.Models;
 using Infrastructure.Services;
 using Infrastructure.Translation;
+using Infrastructure.Translation.Agent;
 using Infrastructure.Translation.GoogleTranslation;
 using Infrastructure.Translation.OpenAiTranslation;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddTransient<IParsingEnglishTranslator, WooordHuntParsingEnglishParsingEnglishTranslator>();
         services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiAzureTranslationService>();
+        services.AddTranslationAgent(configuration);
         services.AddHttpClient();
 
         services.AddSingleton<IPrometheusResolver, PrometheusResolver>();

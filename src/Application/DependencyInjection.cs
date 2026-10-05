@@ -56,7 +56,15 @@ public static class DependencyInjection
 
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();
-        services.AddScoped<ITranslationModule, GeorgianTranslationModule>();
+        // Georgian goes through the pipeline (verb base → cache → agents → the old module); the old
+        // module stays registered as itself — it is the pipeline's last step and its fallback.
+        services.AddScoped<GeorgianTranslationModule>();
+        services.AddScoped<ITranslationModule, Translation.Pipeline.GeorgianTranslationPipeline>();
+        services.AddScoped<Translation.Cache.TranslationCache>();
+        services.AddScoped<Translation.Pipeline.VerbProposalResolver>();
+        services.AddScoped<VerbBaseSearch>();
+        services.AddScoped<RuntimeVerbStore>();
+        services.AddScoped<VerbReplyHintQuery>();
         
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();
