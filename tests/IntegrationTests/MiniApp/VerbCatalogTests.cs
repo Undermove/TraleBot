@@ -105,6 +105,26 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Card_carries_the_review_status_taken_from_the_row()
+    {
+        var verified = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("წერს", CancellationToken.None));
+        JsonNode.Parse(verified!)!["status"]!.GetValue<string>().Should().Be("verified");
+
+        // A verb that a model produced is served with its own status even though the stored card is the same.
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            var verb = await db.Verbs.SingleAsync(v => v.Lemma == "წერს");
+            verb.Status = VerbStatus.Generated;
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+
+        var generated = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("წერს", CancellationToken.None));
+        JsonNode.Parse(generated!)!["status"]!.GetValue<string>().Should().Be("generated",
+            because: "games built from the paradigm must not be offered for unreviewed verbs");
+    }
+
+    [Test]
     public async Task Unknown_verb_has_no_card()
     {
         var json = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("არარსებული", CancellationToken.None));

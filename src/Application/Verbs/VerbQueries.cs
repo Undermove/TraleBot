@@ -1,9 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
+using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Verbs;
@@ -36,12 +40,32 @@ public class VerbQueries(ITraleDbContext dbContext)
     /// <summary>The ready-to-serve card JSON, or null when there is no such verb.</summary>
     public async Task<string?> GetCardJsonAsync(string lemma, CancellationToken ct)
     {
-        return await dbContext.Verbs
+        var row = await dbContext.Verbs
             .AsNoTracking()
             .Where(v => v.Lemma == lemma)
-            .Select(v => v.CardJson)
+            .Select(v => new { v.CardJson, v.Status })
             .FirstOrDefaultAsync(ct);
+
+        return row == null ? null : WithStatus(row.CardJson, row.Status);
     }
+
+    /// <summary>
+    /// Adds <c>status</c> ("verified" / "generated") to the stored card. It is taken from the column at
+    /// serving time, not baked into the stored JSON, so the mini-app can never see a stale value: games
+    /// built from the paradigm are offered only for verified verbs.
+    /// </summary>
+    private static string WithStatus(string cardJson, VerbStatus status)
+    {
+        var card = JsonNode.Parse(cardJson)!.AsObject();
+        card["status"] = status == VerbStatus.Verified ? "verified" : "generated";
+        return card.ToJsonString(CardJsonOptions);
+    }
+
+    private static readonly JsonSerializerOptions CardJsonOptions = new()
+    {
+        // Same as the seeder: Georgian and Russian stay readable instead of \uXXXX escapes.
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     /// <summary>
     /// For each given text (a vocabulary word or phrase) finds the first Georgian word in it that is

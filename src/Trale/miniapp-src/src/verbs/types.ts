@@ -31,6 +31,8 @@ export interface VerbDto extends VerbSummaryDto {
   /** Живые предложения (Tatoeba), в которых встречается форма этого глагола. */
   sentences: VerbSentenceDto[]
   source: string
+  /** verified — формы проверены по источнику; generated — сделаны моделью. Игры строятся только по проверенным. */
+  status?: 'verified' | 'generated'
 }
 
 export interface VerbSentenceDto {
