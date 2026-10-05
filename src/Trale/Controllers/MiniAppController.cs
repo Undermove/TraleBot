@@ -99,7 +99,11 @@ public class MiniAppController : Controller
     }
 
     [HttpGet("modules/{moduleId}/lessons/{lessonId:int}/questions")]
-    public IActionResult GetModuleLessonQuestions(string moduleId, int lessonId)
+    public async Task<IActionResult> GetModuleLessonQuestions(
+        string moduleId,
+        int lessonId,
+        [FromServices] LessonVerbAnnotator verbAnnotator,
+        CancellationToken ct)
     {
         // Legacy "alphabet" module uses the in-memory letter generator (7 auto-chunked lessons).
         // "alphabet-progressive" has its own 10 curated lesson JSONs in Lessons/GeorgianAlphabetProgressive
@@ -123,7 +127,12 @@ public class MiniAppController : Controller
                 return NotFound(new { error = "Unknown lesson" });
             }
             var loader = _questionsLoaderFactory.CreateForModuleLesson(moduleDef.Directory, lessonId);
-            return Ok(MapQuestions(loader));
+            var questions = loader.LoadQuestions();
+            // Verbs are a layer over lessons too: a question that contains a known verb form carries
+            // its parse, and the mini-app offers the verb card once the question is answered.
+            var verbHits = await verbAnnotator.AnnotateAsync(
+                await ResolveUserAsync(ct), questions.Select(LessonQuestionVerbs.ToTexts).ToList(), ct);
+            return Ok(MapQuestions(questions, verbHits));
         }
 
         return NotFound(new { error = "Unknown module" });
@@ -499,9 +508,10 @@ public class MiniAppController : Controller
         });
     }
 
-    private static IEnumerable<object> MapQuestions(IGeorgianQuestionsLoader loader)
+    private static IEnumerable<object> MapQuestions(
+        IReadOnlyList<QuizQuestionData> questions, IReadOnlyList<VerbFormHit> verbHits)
     {
-        return loader.LoadQuestions().Select(q => new
+        return questions.Select((q, i) => new
         {
             id = q.Id,
             lemma = q.Lemma,
@@ -520,7 +530,8 @@ public class MiniAppController : Controller
             chipPool = q.SentenceBuilder?.ChipPool,
             presetPositions = q.SentenceBuilder?.PresetPositions
                 .Select(p => new { position = p.Position, token = p.Token }),
-            hints = q.SentenceBuilder?.Hints
+            hints = q.SentenceBuilder?.Hints,
+            verb = verbHits[i] == null ? null : VerbHitDto(verbHits[i])
         });
     }
 
@@ -815,6 +826,27 @@ public class MiniAppController : Controller
         return Ok(new
         {
             hits = hits.Select(VerbHitDto)
+        });
+    }
+
+    /// <summary>What the dashboard may say about verbs in its "what next" block.</summary>
+    [HttpGet("verbs/summary")]
+    public async Task<IActionResult> GetVerbsSummary([FromServices] DictionaryVerbsQuery dictionaryVerbs, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        if (!user.HasMiniAppAccess())
+        {
+            return StatusCode(402, new { error = "subscription_required" });
+        }
+
+        return Ok(new
+        {
+            dictionaryVerbs = await dictionaryVerbs.CountAsync(user, ct)
         });
     }
 

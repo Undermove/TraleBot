@@ -9,9 +9,11 @@ import FeedbackBanner from './FeedbackBanner'
 interface Props {
   question: QuizQuestion
   onAnswer: (isCorrect: boolean) => void
+  /** Shown under the feedback banner once the sentence is checked. */
+  afterFeedback?: React.ReactNode
 }
 
-export default function SentenceBuilderCard({ question, onAnswer }: Props) {
+export default function SentenceBuilderCard({ question, onAnswer, afterFeedback }: Props) {
   const correctOrder = question.correctOrder ?? []
   const chipPoolTokens = question.chipPool ?? []
   const presetPositions = question.presetPositions ?? []
@@ -226,6 +228,7 @@ export default function SentenceBuilderCard({ question, onAnswer }: Props) {
           topMargin="mt-4"
         />
       )}
+      {phase === 'checked' && afterFeedback}
 
       {/* Action button */}
       <div className="mt-4">

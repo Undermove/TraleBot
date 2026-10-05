@@ -87,14 +87,14 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 ### Top-level screens (`src/screens/`)
 | File | Screen kind | Purpose |
 |---|---|---|
-| `Dashboard.tsx` | `dashboard` | Main hub: launch-path bar, module tiles, streak, XP, mascot. |
+| `Dashboard.tsx` | `dashboard` | Main hub: launch-path bar, module tiles, streak, XP, mascot. Under the "what next" suggestion there is at most one quiet verbs line (`verbs/VerbsDashboardLine`, choice in `verbs/dashboardLine.ts`): «В твоём словаре N глаголов — посмотри формы» opens the dictionary on the «глаголы» filter. Hidden for a newcomer, during onboarding hints and without trial/Pro. |
 | `ModuleMap.tsx` | `module` | Lesson list for a module. |
 | `LessonTheory.tsx` | `lesson-theory` | Theory blocks + reveal overlay; launches Practice. |
-| `Practice.tsx` | `practice` | Question-answer loop for a lesson. |
-| `Result.tsx` | `result` | Lesson result summary with kilim strip. |
+| `Practice.tsx` | `practice` | Question-answer loop for a lesson. After an answer is checked, a question about a catalog verb shows a compact «глагол … формы →» line (`verbs/lesson/LessonVerbChip`) that opens the verb card `VerbSheet` over the lesson on the tense and person of the form from the question; never shown before the answer. |
+| `Result.tsx` | `result` | Lesson result summary with kilim strip. If the lesson had catalog verbs: «в этом уроке были глаголы» with up to three verbs, each opening its verb card (`verbs/lesson/LessonVerbsLine`). |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
-| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter; the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet` (six main forms, person switcher, collapsed rare tenses and explanation). |
+| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter; the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet` (six main forms, person switcher, collapsed rare tenses and explanation). Can be opened on the «глаголы» filter (from the dashboard verbs line). Deep link `?screen=verb&verbId=<verb id>&tense=<tense key>&person=<0..5>` (`verbs/deepLink.ts`) opens the dictionary with the verb card on top, highlighted on that form; without trial/Pro it lands on the dashboard paywall instead. |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
 | `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
@@ -181,7 +181,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 |---|---|---|
 | GET | `/api/miniapp/ping` | Health check. |
 | GET | `/api/miniapp/content` | Module catalog (filtered by user level). |
-| GET | `/api/miniapp/modules/{moduleId}/lessons/{lessonId}/questions` | Lesson questions. |
+| GET | `/api/miniapp/modules/{moduleId}/lessons/{lessonId}/questions` | Lesson questions. For a caller with trial/Pro each question carries `verb` — the parse (verb, tense, person) of the catalog verb form in its correct answer, else in the built sentence, audio transcript or question text; wrong options are not searched. `null` otherwise and for callers without access. |
 | GET | `/api/miniapp/me` | Authenticated user profile (isPro, trial, subscription). |
 | GET | `/api/miniapp/plans` | Pro plan list with Stars pricing. |
 | POST | `/api/miniapp/refund` | Refund a Stars payment within the allowed window. |
@@ -194,6 +194,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | GET | `/api/miniapp/vocabulary` | User's vocabulary entries. |
 | POST | `/api/miniapp/vocabulary/quiz` | Start a vocabulary quiz. |
 | GET | `/api/miniapp/verbs` | (not used by the mini-app UI yet) List of verbs (id, masdar title, translation, kind, 1sg present). 401 without auth, 402 without trial/Pro. |
+| GET | `/api/miniapp/verbs/summary` | What the dashboard may say about verbs: `dictionaryVerbs` — how many of the user's own dictionary entries contain a known verb form. 401 without auth, 402 without trial/Pro. |
 | GET | `/api/miniapp/verbs/parse?form=` | Parse an exact Georgian form into (verb, tense, person) hits; empty list when unknown. |
 | GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source). |
 | POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. |

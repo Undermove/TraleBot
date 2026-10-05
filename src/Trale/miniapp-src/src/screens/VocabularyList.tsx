@@ -14,6 +14,8 @@ import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
 interface Props {
   progress: ProgressState
   navigate: (s: Screen) => void
+  /** Фильтр, с которым открыть словарь (с главной — сразу «глаголы»). */
+  initialFilter?: 'verbs'
 }
 
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
@@ -26,12 +28,12 @@ interface Toast {
   message: string
 }
 
-export default function VocabularyList({ progress, navigate }: Props) {
+export default function VocabularyList({ progress, navigate, initialFilter }: Props) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [items, setItems] = useState<VocabularyItem[]>([])
   const [isStarterMode, setIsStarterMode] = useState(false)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<Filter>(initialFilter ?? 'all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [translateInput, setTranslateInput] = useState('')
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
@@ -83,6 +85,10 @@ export default function VocabularyList({ progress, navigate }: Props) {
 
   // Фильтр «глаголы» появляется, когда в словаре есть хотя бы одно слово с глаголом.
   const hasVerbs = useMemo(() => items.some((item) => item.verb), [items])
+  // Открыли сразу на «глаголах», а глаголов в словаре нет — показываем все слова, а не пустой список.
+  useEffect(() => {
+    if (phase === 'ready' && filter === 'verbs' && !hasVerbs) setFilter('all')
+  }, [phase, filter, hasVerbs])
 
   const filtered = useMemo(() => {
     const lowered = search.trim().toLowerCase()

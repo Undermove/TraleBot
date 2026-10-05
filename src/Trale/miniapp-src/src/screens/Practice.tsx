@@ -8,6 +8,8 @@ import SentenceBuilderCard from '../components/SentenceBuilderCard'
 import { ProgressState, QuizQuestion, Screen } from '../types'
 import { progressFromDto } from '../progress'
 import { api } from '../api'
+import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
+import { rememberLessonVerbs } from '../verbs/lesson/lessonVerbs'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeQuestion(d: any): QuizQuestion {
@@ -27,6 +29,7 @@ function normalizeQuestion(d: any): QuizQuestion {
     chipPool: d.chipPool,
     presetPositions: d.presetPositions,
     hints: d.hints,
+    verb: d.verb ?? null,
   }
 }
 
@@ -91,7 +94,9 @@ export default function Practice({
       setPhase('error')
       return
     }
-    setQuestions(data.slice(0, 10).map(normalizeQuestion))
+    const played = data.slice(0, 10).map(normalizeQuestion)
+    setQuestions(played)
+    rememberLessonVerbs(moduleId, lessonId, played)
     setPhase('answering')
   }
 
@@ -348,6 +353,7 @@ export default function Practice({
             key={current.id}
             question={current}
             onAnswer={handleSentenceBuilderAnswer}
+            afterFeedback={current.verb && <LessonVerbChip hit={current.verb} />}
           />
         ) : isAudioChoice ? (
           <AudioChoiceCard key={current.id} question={current} revealed={phase === 'checked'} />
@@ -506,6 +512,9 @@ export default function Practice({
             )}
           </>
         )}
+
+        {/* Verb card entry: only after the answer — the card shows every form of the verb. */}
+        {phase === 'checked' && current.verb && <LessonVerbChip key={current.id} hit={current.verb} />}
       </div>
 
       {/* Action bar — sentence-builder manages its own buttons inline */}

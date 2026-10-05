@@ -415,6 +415,11 @@ export function fetchVerb(id: string) {
   return request<VerbDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}`)
 }
 
+/** Что главная может сказать про глаголы (см. verbs/dashboardLine.ts). */
+export function fetchVerbsSummary() {
+  return request<{ dictionaryVerbs: number }>('/api/miniapp/verbs/summary')
+}
+
 /** Разбор грузинской формы: какому глаголу, времени и лицу она соответствует. */
 export function parseVerbForm(form: string) {
   return request<{ hits: VerbFormHitDto[] }>(`/api/miniapp/verbs/parse?form=${encodeURIComponent(form)}`)
