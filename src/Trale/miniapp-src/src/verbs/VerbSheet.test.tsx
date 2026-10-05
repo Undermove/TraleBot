@@ -14,7 +14,11 @@ const verb: VerbDto = {
   source: 'https://en.wiktionary.org/wiki/x'
 }
 
-vi.mock('../api', () => ({ fetchVerb: vi.fn(() => Promise.resolve(verb)) }))
+vi.mock('../api', () => ({
+  fetchVerb: vi.fn(() => Promise.resolve(verb)),
+  fetchVerbProgress: vi.fn(() => Promise.resolve({ verbId: verb.id, canLearn: true, total: 0, forms: [] })),
+  saveVerbProgress: vi.fn(() => Promise.resolve({ verbId: verb.id, canLearn: true, total: 0, forms: [] }))
+}))
 
 function open(highlight?: { tense: string; person: number }) {
   const onClose = vi.fn()

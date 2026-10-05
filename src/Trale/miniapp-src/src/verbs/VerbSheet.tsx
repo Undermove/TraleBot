@@ -4,6 +4,7 @@ import { fetchVerb } from '../api'
 import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, cyr, type TenseKey, type VerbDto } from './types'
 import { Coach, KindChip, VerbForm } from './parts'
 import VerbGames from './games/VerbGames'
+import LadderEntry from './ladder/LadderEntry'
 
 interface Props {
   verbId: string
@@ -142,6 +143,8 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
               </div>
             </div>
           )}
+
+          <LadderEntry verb={verb} />
 
           {hint && <Coach>Это шесть главных форм. Нажми «ты» или «он» — таблица покажет те же времена для другого лица.</Coach>}
 

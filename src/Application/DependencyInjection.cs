@@ -81,6 +81,7 @@ public static class DependencyInjection
         services.AddScoped<VerbQueries>();
         services.AddScoped<LessonVerbAnnotator>();
         services.AddScoped<DictionaryVerbsQuery>();
+        services.AddScoped<VerbProgressService>();
         services.AddScoped<FeedTreatService>();
 
         // Acquisition attribution (per ARCHITECTURE.md, no MediatR)

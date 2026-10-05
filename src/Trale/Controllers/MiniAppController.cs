@@ -866,6 +866,113 @@ public class MiniAppController : Controller
         return Content(card, "application/json");
     }
 
+    // ── Verb ladder: per-form learning progress ──────────────────────────────
+
+    public class SaveVerbProgressRequest
+    {
+        public List<VerbProgressItem> Forms { get; set; }
+    }
+
+    public class VerbProgressItem
+    {
+        public string Tense { get; set; }
+        public int Person { get; set; }
+        public int Step { get; set; }
+        public int Reviews { get; set; }
+        /// <summary>When the learner answered (client clock) — saves are last-write-wins by it.</summary>
+        public DateTimeOffset At { get; set; }
+    }
+
+    /// <summary>Verbs the user is learning, with counts and how many forms are due for repetition.</summary>
+    [HttpGet("verbs/progress")]
+    public async Task<IActionResult> GetVerbsInProgress([FromServices] VerbProgressService progress, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+
+        var summary = await progress.GetSummaryAsync(user.Id, DateTime.UtcNow, ct);
+        return Ok(new
+        {
+            dueForms = summary.DueForms,
+            verbs = summary.Verbs.Select(v => new
+            {
+                id = v.Lemma,
+                title = v.Title,
+                ru = v.Translation,
+                started = v.Started,
+                mastered = v.Mastered,
+                total = v.Total,
+                due = v.Due,
+                updatedAtUtc = v.UpdatedAtUtc
+            })
+        });
+    }
+
+    [HttpGet("verbs/{id}/progress")]
+    public async Task<IActionResult> GetVerbProgress(string id, [FromServices] VerbProgressService progress, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+
+        var state = await progress.GetAsync(user.Id, id, DateTime.UtcNow, ct);
+        return state == null ? NotFound(new { error = "Unknown verb" }) : Ok(VerbProgressDto(state));
+    }
+
+    /// <summary>Saves answered ladder steps. Idempotent: the mini-app replays a batch until it gets through.</summary>
+    [HttpPost("verbs/{id}/progress")]
+    public async Task<IActionResult> SaveVerbProgress(
+        string id,
+        [FromBody] SaveVerbProgressRequest request,
+        [FromServices] VerbProgressService progress,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+
+        if (request?.Forms == null || request.Forms.Count > VerbProgressService.MaxBatchSize)
+        {
+            return BadRequest(new { error = "invalid_forms" });
+        }
+
+        var steps = request.Forms
+            .Where(f => f != null)
+            .Select(f => new VerbFormStep(f.Tense, f.Person, f.Step, f.Reviews, f.At.UtcDateTime))
+            .ToList();
+        var state = await progress.SaveAsync(user.Id, id, steps, DateTime.UtcNow, ct);
+        return state == null ? NotFound(new { error = "Unknown verb" }) : Ok(VerbProgressDto(state));
+    }
+
+    private static object VerbProgressDto(VerbProgressState s) => new
+    {
+        verbId = s.Lemma,
+        canLearn = s.CanLearn,
+        total = s.Total,
+        forms = s.Forms.Select(f => new
+        {
+            tense = f.Tense,
+            person = f.Person,
+            step = f.Step,
+            bestStep = f.BestStep,
+            reviews = f.Reviews,
+            nextDueAtUtc = f.NextDueAtUtc,
+            due = f.Due
+        })
+    };
+
+    /// <summary>The caller when they may use the verbs section; otherwise the response to return.</summary>
+    private async Task<(User User, IActionResult Denied)> ResolveVerbsUserAsync(CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return (null, Unauthorized(new { error = "not_authenticated" }));
+        }
+
+        return user.HasMiniAppAccess()
+            ? (user, null)
+            : (null, StatusCode(402, new { error = "subscription_required" }));
+    }
+
     private static object VerbHitDto(VerbFormHit h) => new
     {
         form = h.Form,
