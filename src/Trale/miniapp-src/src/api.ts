@@ -419,3 +419,25 @@ export function fetchVerb(id: string) {
 export function parseVerbForm(form: string) {
   return request<{ hits: VerbFormHitDto[] }>(`/api/miniapp/verbs/parse?form=${encodeURIComponent(form)}`)
 }
+
+// ── Глаголы: лесенка ─────────────────────────────────────────────────────────
+import type { VerbProgressDto, VerbProgressStepDto, VerbsInProgressDto } from './verbs/ladder/types'
+
+/** Прогресс человека по формам одного глагола. */
+export function fetchVerbProgress(id: string) {
+  return request<VerbProgressDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/progress`)
+}
+
+/** Сохранить ступени форм после ответов. Повторная отправка той же пачки ничего не ломает. */
+export function saveVerbProgress(id: string, forms: VerbProgressStepDto[]) {
+  return request<VerbProgressDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/progress`, {
+    method: 'POST',
+    body: JSON.stringify({ forms }),
+    keepalive: true
+  })
+}
+
+/** Глаголы, которые человек учит, и сколько форм пора повторить. */
+export function fetchVerbsInProgress() {
+  return request<VerbsInProgressDto>('/api/miniapp/verbs/progress')
+}
