@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { explainTyped, explainWrong, frameImages, gap, sameAsSource, shuffled, usedForms, words } from './logic'
+import { explainTyped, explainWrong, frameImages, gap, shuffled, usedForms, words } from './logic'
+import { wordOrderVerdict } from '../wordOrder'
 import { storyFixture as story } from './fixture'
 import type { VerbFormHitDto } from '../types'
 
@@ -44,9 +45,11 @@ describe('story logic', () => {
     for (let i = 0; i < 50; i++) expect([...shuffled(4)].sort()).toEqual([0, 1, 2, 3])
   })
 
-  it('accepts a built phrase only when it matches the source word for word', () => {
-    expect(sameAsSource(['ის', 'წავიდა', 'სახლში'], home.ka)).toBe(true)
-    expect(sameAsSource(['სახლში', 'ის', 'წავიდა'], home.ka)).toBe(false)
+  it('tells the source order from another order of the same words (shared rule with the ladder)', () => {
+    const source = words(home.ka)
+
+    expect(wordOrderVerdict(source, home.ka)).toBe('exact')
+    expect(wordOrderVerdict([...source].reverse(), home.ka)).toBe('order')
   })
 
   it('lists each form used in the story once', () => {

@@ -22,6 +22,7 @@ import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
 import VerbSheet from './verbs/VerbSheet'
 import { resolveVerbDeepLink } from './verbs/deepLink'
+import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -154,6 +155,9 @@ export default function App() {
     })
   }
 
+  // Карточка глагола, лесенка, игры и комикс открываются слоями поверх экрана: «Назад» сначала закрывает их.
+  const overlayOpen = useHasOverlay()
+
   // Telegram BackButton integration
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
@@ -167,12 +171,14 @@ export default function App() {
       screen.kind !== 'loading' &&
       screen.kind !== 'welcome' &&
       !inPreXpFirstLesson
-    if (canBack) {
+    if (canBack || overlayOpen) {
       tg.BackButton.show()
     } else {
       tg.BackButton.hide()
     }
     const handler = () => {
+      if (closeTopOverlay()) return
+      if (!canBack) return
       if (
         screen.kind === 'module' ||
         screen.kind === 'profile' ||
@@ -203,7 +209,7 @@ export default function App() {
         tg.BackButton.offClick(handler)
       } catch {}
     }
-  }, [screen, progress.xp])
+  }, [screen, progress.xp, overlayOpen])
 
   if (loadError) {
     return (

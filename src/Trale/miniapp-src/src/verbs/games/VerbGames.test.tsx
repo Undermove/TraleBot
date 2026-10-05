@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import VerbGames from './VerbGames'
 import VerbSheet from '../VerbSheet'
-import { verbRu } from './testCatalog'
+import { verbRu } from '../testing/catalog'
 
-vi.mock('../../api', () => ({ fetchVerb: vi.fn() }))
+vi.mock('../../api', async () => (await import('../testing/sheetApi')).sheetApi())
 
 async function mockCard(verb = verbRu('писать')) {
   const { fetchVerb } = await import('../../api')

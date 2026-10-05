@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import Builder from './Builder'
 import { builderCells, schemeOf, type BuilderCell } from './formParts'
-import { moveSeen, rulesSeen, seeded, verbRu } from './testCatalog'
+import { seeded, verbRu } from '../testing/catalog'
+import { moveSeen, rulesSeen } from '../testing/seen'
 import type { TenseKey } from '../types'
 
 const verb = verbRu('писать')

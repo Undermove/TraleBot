@@ -11,7 +11,7 @@ const questions = [
   { id: 'q3', question: 'Сколько падежей в грузинском?', options: ['семь', 'шесть'], answerIndex: 0, explanation: '', verb: null }
 ]
 
-vi.mock('../../api', () => ({
+vi.mock('../../api', async () => (await import('../testing/sheetApi')).sheetApi({
   api: { lessonQuestions: vi.fn(() => Promise.resolve(questions)) },
   fetchVerb: vi.fn(() => Promise.resolve(writeVerb))
 }))

@@ -7,8 +7,10 @@ import { cyr } from '../types'
 import { Coach, GameShell, OptionButton, PULSE, useFirstTime } from '../ui/GameShell'
 import { LockIcon } from '../ui/icons'
 import { bad, good, haptic } from '../ui/juice'
+import { OVERLAY, useOverlay } from '../ui/overlayStack'
+import { orderNote, wordOrderVerdict } from '../wordOrder'
 import FrameImage from './FrameImage'
-import { cellName, explainTyped, explainWrong, frameImages, gap, sameAsSource, shuffled, usedForms, words } from './logic'
+import { cellName, explainTyped, explainWrong, frameImages, gap, shuffled, usedForms, words } from './logic'
 import type { StoryFormDto, VerbStoryDto } from './types'
 import './story.css'
 
@@ -39,7 +41,9 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
   const [keyboard, setKeyboard] = useState(false)
   const [checking, setChecking] = useState(false)
   const [built, setBuilt] = useState<number[]>([])
-  const [buildTries, setBuildTries] = useState(0)
+  // Слова те, порядок другой: засчитано, показываем фразу источника и ждём «Дальше».
+  const [revealed, setRevealed] = useState(false)
+  useOverlay(onExit, OVERLAY.screen)
   // Подсказка и подсветка — на первый ход каждого вида: выбрать, набрать, собрать.
   const firstTime = {
     choose: useFirstTime('story_choose'),
@@ -50,8 +54,6 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
   const frame = at < frames.length ? frames[at] : null
   const chips = useMemo(() => (frame ? words(frame.ka) : []), [frame])
   const order = useMemo(() => shuffled(chips.length), [chips])
-  // Собрали дважды не так, как в источнике: показываем фразу источника и пускаем дальше.
-  const revealed = frame?.mode === 'build' && buildTries >= 2
 
   const scroller = useRef<HTMLDivElement>(null)
   const frameEls = useRef<(HTMLElement | null)[]>([])
@@ -81,7 +83,7 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
       try { localStorage.setItem(storyDoneKey(story.id), '1') } catch {}
     }
     setAt(at + 1)
-    setNote(null); setTried([]); setTyped(''); setKeyboard(false); setBuilt([]); setBuildTries(0)
+    setNote(null); setTried([]); setTyped(''); setKeyboard(false); setBuilt([]); setRevealed(false)
   }
 
   function choose(option: StoryFormDto) {
@@ -111,17 +113,11 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
 
   function sayBuilt() {
     if (!frame) return
-    if (sameAsSource(built.map(i => chips[i]), frame.ka)) return solved()
-    // Порядок слов в грузинском гибкий: другой порядок может быть верным, а проверить его нам нечем.
-    // Поэтому не называем это ошибкой и не подтверждаем — показываем, как фраза звучит в источнике.
-    haptic('tap')
-    setBuildTries(buildTries + 1)
-    setBuilt([])
-    setNote(
-      buildTries === 0
-        ? `Порядок слов в грузинском гибкий — может, так тоже говорят, но ручаться я могу только за фразу из источника. Она начинается со слова ${chips[0]}.`
-        : 'Вот как эта фраза звучит в источнике. Твой порядок я проверить не могу, а этот точно верный — запомни его.'
-    )
+    if (wordOrderVerdict(built.map(i => chips[i]), frame.ka) === 'exact') return solved()
+    // Порядок слов в грузинском гибкий: другой порядок тех же слов не ошибка (см. wordOrder.ts).
+    haptic('good')
+    setRevealed(true)
+    setNote(orderNote(frame.ka))
   }
 
   function restart() {

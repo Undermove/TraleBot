@@ -3,9 +3,11 @@ import Button from '../../components/Button'
 import GeorgianKeyboard from '../../components/GeorgianKeyboard'
 import Mascot from '../../components/Mascot'
 import { cyr, type VerbDto, type VerbSentenceDto } from '../types'
-import { Coach, HelpButton, PULSE, useFirstTime } from '../ui/GameShell'
+import { Coach, HelpButton, PULSE, SAFE_TOP, useFirstTime } from '../ui/GameShell'
 import { CloseIcon } from '../ui/icons'
 import { bad, good } from '../ui/juice'
+import { OVERLAY, useOverlay } from '../ui/overlayStack'
+import { orderNote } from '../wordOrder'
 import {
   STEP, afterTask, buildItems, checkBuild, findForm, introduce, nextTask, remaining, settle, startSession, withGap,
   type LadderItem, type Progress, type Session, type Task
@@ -130,9 +132,9 @@ export default function Ladder({ verb, initial, onExit }: Props) {
     }
     if (verdict.kind === 'order') {
       // Порядок слов в грузинском гибкий: за него ступень не снимаем и «неправильно» не говорим,
-      // но и не утверждаем, что так тоже говорят, — показываем, как в источнике.
+      // но и не утверждаем, что так тоже говорят, — показываем, как в источнике (общее правило с комиксом: wordOrder.ts).
       right(task.item)
-      setNote(<>Форма глагола верная. Порядок слов в грузинском гибкий, но не любой — в источнике фраза такая: <Geo>{task.sentence.ka}</Geo></>)
+      setNote(orderNote(task.sentence.ka))
       setWaitNext(true)
       return
     }
@@ -175,6 +177,7 @@ export default function Ladder({ verb, initial, onExit }: Props) {
   }
 
   const exit = () => onExit(progress)
+  useOverlay(exit, OVERLAY.screen)
   /** Во фразе верный вариант — та запись формы, что стоит в самой фразе. */
   const shown = (o: LadderItem) => (task.type === 'gap' && o.key === task.item.key ? task.sentence.form : o.form)
   const typing = task.type === 'type' && !solved && !waitNext
@@ -182,7 +185,7 @@ export default function Ladder({ verb, initial, onExit }: Props) {
   return (
     <div className="fixed inset-0 z-[60] bg-cream overflow-y-auto" data-testid="verb-ladder">
       <div className="j-root flex flex-col min-h-[100dvh] w-full max-w-[480px] mx-auto">
-        <div className="px-5 pt-4 flex items-center gap-3">
+        <div className="px-5 flex items-center gap-3" style={{ paddingTop: SAFE_TOP }}>
           <button onClick={exit} aria-label="Закрыть" className="w-9 h-9 flex items-center justify-center"><CloseIcon size={20} /></button>
           <div className="flex-1 h-3 rounded-full bg-cream-deep border border-jewelInk/30 overflow-hidden">
             <div
@@ -373,7 +376,7 @@ function Prompt({ eyebrow, review, children }: { eyebrow: string; review: boolea
 function SentenceBox({ sentence }: { sentence: VerbSentenceDto }) {
   return (
     <div className="mt-6 rounded-xl bg-cream-tile border border-jewelInk/30 p-3">
-      <div className="text-[11px] text-jewelInk-hint">живая фраза · Tatoeba</div>
+      <div className="text-[11px] text-jewelInk-hint">пример из живой речи · Tatoeba</div>
       <div className="mt-1 font-geo text-[17px] font-bold">{sentence.ka}</div>
       <div className="text-[13px] text-jewelInk-mid">{sentence.ru}</div>
     </div>

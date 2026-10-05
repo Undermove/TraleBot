@@ -1,4 +1,5 @@
 import { CARD_TENSES, type TenseKey, type VerbDto, type VerbSentenceDto } from '../types'
+import { sentenceWords, wordOrderVerdict } from '../wordOrder'
 
 // «Лесенка»: чистая логика без React и без сети. Каждая форма глагола поднимается по ступеням
 // знакомство → узнать → выбрать → вставить во фразу → собрать фразу → написать самому.
@@ -27,7 +28,7 @@ export interface LadderItem {
   form: string
   /** Все варианты клетки — любой из них верный ответ. */
   variants: string[]
-  /** Живые фразы, где эта форма стоит отдельным словом. */
+  /** Живые фразы, где эта форма стоит отдельным словом и точно в этом значении (см. sentenceIsSafe). */
   sentences: VerbSentenceDto[]
   /** Те из них, что годятся для сборки из слов. */
   buildable: VerbSentenceDto[]
@@ -76,18 +77,51 @@ export type Task =
 
 export type Rng = () => number
 
-/** Слова предложения без знаков препинания по краям. */
-export const tokens = (s: string) =>
-  s.split(/\s+/).map(w => w.replace(/^[^ა-ჰ]+|[^ა-ჰ]+$/g, '')).filter(Boolean)
+/** Слова предложения без знаков препинания по краям (то же правило, что в комиксе). */
+export const tokens = sentenceWords
+
+/**
+ * Времена, в которых форма «ты» / «вы» служит ещё и повелением или запретом («пиши», «не пиши»,
+ * «напиши»). Фраза привязана к форме только по написанию, поэтому у таких клеток живая фраза может
+ * значить не то, что обещает подпись клетки («ты · настоящее» — а фраза «Не пиши…»).
+ */
+const COMMAND_TENSES: TenseKey[] = ['present', 'aorist', 'optative']
+const SECOND_PERSONS = [1, 4]
+
+/**
+ * Можно ли показывать фразу как пример этой клетки. Фразы в каталоге привязаны к форме по написанию,
+ * а не по разбору, поэтому берём только те, где ошибиться клеткой нельзя:
+ * 1) написание встречается в таблице глагола ровно в одной клетке (иначе неизвестно, какая из них во фразе);
+ * 2) это не «ты» / «вы» во времени, которое служит и повелением.
+ * Лучше оставить форму без фразы (задания с фразой тогда просто пропускаются), чем показать перевод,
+ * который учит не тому.
+ */
+function sentenceIsSafe(tense: TenseKey, person: number, cellsBySpelling: Map<string, number>, form: string) {
+  if (SECOND_PERSONS.includes(person) && COMMAND_TENSES.includes(tense)) return false
+  return cellsBySpelling.get(form) === 1
+}
+
+/** Сколько клеток всей таблицы глагола (включая редкие времена) пишутся так же. */
+function countSpellings(verb: VerbDto) {
+  const cells = new Map<string, number>()
+  for (const persons of Object.values(verb.tenses)) {
+    for (const variants of persons ?? []) {
+      for (const form of new Set(variants)) cells.set(form, (cells.get(form) ?? 0) + 1)
+    }
+  }
+  return cells
+}
 
 /** Формы глагола в том порядке, в котором их вводит лесенка: шесть главных времён для «я», потом для остальных лиц. */
 export function buildItems(verb: VerbDto): LadderItem[] {
   const items: LadderItem[] = []
+  const spellings = countSpellings(verb)
   for (const person of PERSON_ORDER) {
     for (const tense of CARD_TENSES) {
       const variants = verb.tenses[tense]?.[person] ?? []
       if (!variants.length) continue
-      const sentences = verb.sentences.filter(s => variants.includes(s.form) && tokens(s.ka).includes(s.form))
+      const sentences = verb.sentences.filter(s =>
+        variants.includes(s.form) && tokens(s.ka).includes(s.form) && sentenceIsSafe(tense, person, spellings, s.form))
       const buildable = sentences.filter(s => {
         const n = tokens(s.ka).length
         return n >= BUILD_WORDS.min && n <= BUILD_WORDS.max
@@ -304,7 +338,7 @@ export type BuildVerdict =
 export function checkBuild(task: Extract<Task, { type: 'build' }>, placed: Chip[]): BuildVerdict {
   const decoy = placed.find(c => c.decoy)
   if (decoy) return { kind: 'decoy', chip: decoy }
-  return placed.every((c, i) => c.text === task.answer[i]) ? { kind: 'exact' } : { kind: 'order' }
+  return { kind: wordOrderVerdict(placed.map(c => c.text), task.sentence.ka) }
 }
 
 /** Какая это форма, если человек выбрал или написал её вместо нужной. */

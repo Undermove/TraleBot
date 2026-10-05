@@ -4,7 +4,7 @@ import { availableGames } from './availability'
 import { COLS, boneCount, boneRows, bonesNear, digOptions, digs, plantBones } from './boneField'
 import { formOf, shuffle, slotsOf, whoWhen, describeSlot, shortGloss } from './common'
 import { assemble, builderCells, makePuzzle, schemeOf, splitForm, stageFor, wrongRows } from './formParts'
-import { CATALOG, seeded, verbRu } from './testCatalog'
+import { CATALOG, seeded, verbByLemma, verbRu } from '../testing/catalog'
 import { STOPS, canPlayTimeMachine, locate, makeTimeRound, personsFor } from './timeRounds'
 
 describe('which games a verb gets', () => {
@@ -46,8 +46,19 @@ describe('which games a verb gets', () => {
     expect(availableGames(verb)).toEqual(['builder'])
   })
 
-  it('gives every verified catalog verb at least one game', () => {
-    for (const verb of CATALOG) expect(availableGames(verb).length, verb.ru).toBeGreaterThan(0)
+  it('gives a game to every catalog verb that has at least three of the six main tenses', () => {
+    for (const verb of CATALOG) {
+      const mainTenses = CARD_TENSES.filter(t => verb.tenses[t]).length
+      if (mainTenses >= 3) expect(availableGames(verb).length, verb.ru).toBeGreaterThan(0)
+    }
+  })
+
+  it('offers no games for a verb with only two tenses — the row is simply absent on its card', () => {
+    // «хотеть»: в источнике только настоящее и имперфект.
+    const want = verbByLemma('უნდა')
+
+    expect(CARD_TENSES.filter(t => want.tenses[t])).toEqual(['present', 'imperfect'])
+    expect(availableGames(want)).toEqual([])
   })
 })
 

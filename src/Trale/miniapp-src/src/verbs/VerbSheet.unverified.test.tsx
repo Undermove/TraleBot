@@ -14,7 +14,7 @@ const base: VerbDto = {
 }
 
 let verb: VerbDto = base
-vi.mock('../api', () => ({ fetchVerb: vi.fn(() => Promise.resolve(verb)) }))
+vi.mock('../api', async () => (await import('./testing/sheetApi')).sheetApi({ fetchVerb: vi.fn(() => Promise.resolve(verb)) }))
 
 describe('VerbSheet: глагол, формы которого составила модель', () => {
   beforeEach(() => localStorage.clear())

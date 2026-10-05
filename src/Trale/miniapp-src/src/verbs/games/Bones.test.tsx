@@ -3,7 +3,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import Bones from './Bones'
 import { COLS, boneRows, plantBones } from './boneField'
 import { formOf } from './common'
-import { moveSeen, rulesSeen, seeded, verbRu } from './testCatalog'
+import { seeded, verbRu } from '../testing/catalog'
+import { moveSeen, rulesSeen } from '../testing/seen'
 
 const verb = verbRu('писать')
 const rows = boneRows(verb)

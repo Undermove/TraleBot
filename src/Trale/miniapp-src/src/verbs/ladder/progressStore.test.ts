@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { STEP, buildItems, type FormState } from './engine'
 import { createSaver, loadProgress } from './progressStore'
-import { catalogVerb } from './testCatalog'
+import { verbByLemma } from '../testing/catalog'
 import type { VerbProgressDto, VerbProgressStepDto } from './types'
 
-const verb = catalogVerb(0)
+const verb = verbByLemma('წერს')
 const items = buildItems(verb)
 const empty: VerbProgressDto = { verbId: verb.id, canLearn: true, total: 36, forms: [] }
 
@@ -116,7 +116,7 @@ describe('сохранение прогресса лесенки', () => {
     api.saveVerbProgress.mockRejectedValue(new Error('offline'))
     createSaver(verb.id, clock()).record(items[0], state(STEP.FORM))
     await settled()
-    const other = catalogVerb(1)
+    const other = verbByLemma('მიდის')
 
     const loaded = await loadProgress(other.id)
 

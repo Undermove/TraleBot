@@ -35,14 +35,18 @@ export default function LadderEntry({ verb }: { verb: VerbDto }) {
   const [failed, setFailed] = useState(false)
   const [open, setOpen] = useState(false)
 
+  // Формы непроверенного глагола составила нейросеть — по ним не учим и прогресс не спрашиваем.
+  const unverified = verb.status === 'generated'
+
   useEffect(() => {
+    if (unverified) return
     let alive = true
     setLoaded(null); setFailed(false)
     loadProgress(verb.id).then(p => { if (alive) setLoaded(p) }).catch(() => { if (alive) setFailed(true) })
     return () => { alive = false }
-  }, [verb.id])
+  }, [verb.id, unverified])
 
-  if (failed || !items.length || (loaded && !loaded.canLearn)) return null
+  if (unverified || failed || !items.length || (loaded && !loaded.canLearn)) return null
   // Пока прогресс грузится, держим место под кнопку, чтобы таблица не прыгала под пальцем.
   if (!loaded) return <div className="h-14" data-testid="ladder-entry-loading" />
 

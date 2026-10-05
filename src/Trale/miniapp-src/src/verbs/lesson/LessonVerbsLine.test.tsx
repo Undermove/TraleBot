@@ -4,7 +4,7 @@ import LessonVerbsLine from './LessonVerbsLine'
 import { rememberLessonVerbs, uniqueVerbs } from './lessonVerbs'
 import { goHit, hit, writeVerb } from './fixtures'
 
-vi.mock('../../api', () => ({ fetchVerb: vi.fn(() => Promise.resolve(writeVerb)) }))
+vi.mock('../../api', async () => (await import('../testing/sheetApi')).sheetApi({ fetchVerb: vi.fn(() => Promise.resolve(writeVerb)) }))
 
 const played = [
   { verb: hit('წერდა', 'imperfect', 2) },

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { fetchVerb } from '../../api'
 import type { VerbDto } from '../types'
 import { BlocksIcon, BoneIcon, ClockIcon } from '../ui/icons'
+import { OVERLAY, useOverlay } from '../ui/overlayStack'
 import { availableGames, type GameId } from './availability'
 import Bones from './Bones'
 import Builder from './Builder'
@@ -38,8 +39,10 @@ export default function VerbGames({ verb }: { verb: VerbDto }) {
     return () => { alive = false }
   }, [open, verb])
 
-  if (!games.length) return null
   const exit = () => setOpen(null)
+  useOverlay(exit, OVERLAY.screen, open !== null)
+
+  if (!games.length) return null
 
   return (
     <div data-testid="verb-games">

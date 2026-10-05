@@ -14,12 +14,7 @@ const verb: VerbDto = {
   source: 'https://en.wiktionary.org/wiki/x'
 }
 
-vi.mock('../api', () => ({
-  fetchVerb: vi.fn(() => Promise.resolve(verb)),
-  fetchVerbProgress: vi.fn(() => Promise.resolve({ verbId: verb.id, canLearn: true, total: 0, forms: [] })),
-  saveVerbProgress: vi.fn(() => Promise.resolve({ verbId: verb.id, canLearn: true, total: 0, forms: [] }))
-}))
-vi.mock('./story/VerbStories', () => ({ default: () => null }))
+vi.mock('../api', async () => (await import('./testing/sheetApi')).sheetApi({ fetchVerb: vi.fn(() => Promise.resolve(verb)) }))
 
 function open(highlight?: { tense: string; person: number }) {
   const onClose = vi.fn()
@@ -58,11 +53,11 @@ describe('VerbSheet', () => {
 
   it('shows the first-time hint only until a person is picked', async () => {
     open()
-    await waitFor(() => screen.getByText(/шесть главных форм/))
+    await waitFor(() => screen.getByText(/Это главные формы/))
 
     fireEvent.click(screen.getByTestId('verb-person-1'))
 
-    expect(screen.queryByText(/шесть главных форм/)).toBeNull()
+    expect(screen.queryByText(/Это главные формы/)).toBeNull()
     expect(localStorage.getItem('verb_card_person_hint_seen')).toBe('1')
   })
 

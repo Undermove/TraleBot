@@ -2,17 +2,21 @@ import React, { useState } from 'react'
 import Mascot from '../../components/Mascot'
 import Button from '../../components/Button'
 import { CloseIcon, PointIcon } from './icons'
+import { OVERLAY, useOverlay } from './overlayStack'
 
 // Общая оболочка игр с глаголами: шапка с крестиком и счётом, правила при первом входе
 // (шторка с Бомборой, потом под кнопкой «?»), подсказка и подсветка первого хода.
 
-const seenKey = (id: string) => `proto_seen_${id}`
+/** Ключ отметки «уже видел» в localStorage. */
+export const seenKey = (id: string) => `verb_game_seen_${id}`
 const wasSeen = (id: string) => { try { return !!localStorage.getItem(seenKey(id)) } catch { return true } }
+// Хранилище может быть недоступно (приватный режим, квота): подсказка тогда просто покажется ещё раз.
+const markSeen = (id: string) => { try { localStorage.setItem(seenKey(id), '1') } catch {} }
 
 /** true, пока игрок не сделал первый удачный ход в этой игре: показываем подсказки и подсветку. */
 export function useFirstTime(id: string): [boolean, () => void] {
   const [first, setFirst] = useState(() => !wasSeen(id + '_move'))
-  return [first, () => { localStorage.setItem(seenKey(id + '_move'), '1'); setFirst(false) }]
+  return [first, () => { markSeen(id + '_move'); setFirst(false) }]
 }
 
 /** Реплика Бомборы с подсказкой, что делать прямо сейчас. */
@@ -31,7 +35,8 @@ export const PULSE = 'ring-4 ring-gold animate-pulse'
 /** Кнопка «?» и шторка с правилами. При первом входе шторка открывается сама. */
 export function HelpButton({ id, help }: { id: string; help: string[] }) {
   const [step, setStep] = useState<number | null>(() => (wasSeen(id) ? null : 0))
-  const close = () => { localStorage.setItem(seenKey(id), '1'); setStep(null) }
+  const close = () => { markSeen(id); setStep(null) }
+  useOverlay(close, OVERLAY.help, step !== null)
   return (
     <>
       <button
@@ -40,7 +45,8 @@ export function HelpButton({ id, help }: { id: string; help: string[] }) {
         className="w-8 h-8 shrink-0 rounded-full border-[1.5px] border-jewelInk bg-cream-tile text-[15px] font-extrabold"
       >?</button>
       {step !== null && (
-        <div className="fixed inset-0 z-50 bg-jewelInk/50 flex items-end justify-center" onClick={close}>
+        // Выше карточки глагола (z-60) и игр на весь экран: правила не должны оказаться под ними.
+        <div className="fixed inset-0 z-[70] bg-jewelInk/50 flex items-end justify-center" onClick={close}>
           <div
             className="w-full max-w-[480px] rounded-t-2xl bg-cream border-t-[1.5px] border-x-[1.5px] border-jewelInk p-5 pb-7"
             onClick={e => e.stopPropagation()}
@@ -65,12 +71,15 @@ export function HelpButton({ id, help }: { id: string; help: string[] }) {
   )
 }
 
+/** Отступ шапки: в полноэкранном мини-аппе сверху лежат кнопки Telegram и вырез экрана. */
+export const SAFE_TOP = 'calc(var(--safe-t, 0px) + 16px)'
+
 export function GameShell({ id, title, onExit, right, help, children }: {
   id: string; title: string; onExit: () => void; right?: React.ReactNode; help: string[]; children: React.ReactNode
 }) {
   return (
     <div className="j-root flex flex-col min-h-[100dvh]">
-      <div className="px-5 pt-4 pb-2 flex items-center gap-3">
+      <div className="px-5 pb-2 flex items-center gap-3" style={{ paddingTop: SAFE_TOP }}>
         <button onClick={onExit} aria-label="Закрыть" className="w-9 h-9 flex items-center justify-center"><CloseIcon size={20} /></button>
         <div className="flex-1 text-[15px] font-extrabold">{title}</div>
         <div className="text-[13px] font-bold text-jewelInk-mid tabular-nums">{right}</div>

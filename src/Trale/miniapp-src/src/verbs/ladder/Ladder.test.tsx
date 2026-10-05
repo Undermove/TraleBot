@@ -4,18 +4,20 @@ import Ladder from './Ladder'
 import LadderEntry, { entryLabel } from './LadderEntry'
 import VerbSheet from '../VerbSheet'
 import { SOLID_STEP, STEP, buildItems, settle, tokens, type FormState, type Progress } from './engine'
-import { catalogVerb } from './testCatalog'
+import { verbByLemma } from '../testing/catalog'
+import { moveSeen, rulesSeen } from '../testing/seen'
+import * as mockedApi from '../../api'
 import { cellLabel } from './types'
 import type { VerbProgressDto, VerbProgressStepDto } from './types'
 
 // Глагол, формы и фразы — из настоящего каталога.
-const verb = catalogVerb(0)
+const verb = verbByLemma('წერს')
 const items = buildItems(verb)
 const [first, second, third] = items
 const noProgress: VerbProgressDto = { verbId: verb.id, canLearn: true, total: items.length, forms: [] }
 
-const api = vi.hoisted(() => ({ fetchVerb: vi.fn(), fetchVerbProgress: vi.fn(), saveVerbProgress: vi.fn() }))
-vi.mock('../../api', () => api)
+vi.mock('../../api', async () => (await import('../testing/sheetApi')).sheetApi())
+const api = vi.mocked(mockedApi)
 
 const state = (step: number, extra: Partial<FormState> = {}): FormState => ({ step, best: step, reviews: 0, due: false, ...extra })
 /** Дожидаемся фоновых сохранений и берём последнее, что ушло на сервер про эту форму. */
@@ -48,8 +50,8 @@ describe('Ladder', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     localStorage.clear()
-    localStorage.setItem('proto_seen_ladder', '1')
-    localStorage.setItem('proto_seen_ladder_move', '1')
+    rulesSeen('ladder')
+    moveSeen('ladder')
     api.saveVerbProgress.mockReset().mockResolvedValue(noProgress)
   })
   afterEach(() => vi.useRealTimers())
@@ -189,8 +191,8 @@ describe('Ladder', () => {
       fireEvent.click(screen.getByText('Проверить'))
 
       const note = screen.getByTestId('ladder-note').textContent!
-      expect(note).toContain('Форма глагола верная')
-      expect(note).toContain('в источнике фраза такая')
+      expect(note).toContain('Засчитано')
+      expect(note).toContain('гибкий, но не любой — в источнике фраза такая')
       expect(note).toContain(sentence.ka)
       expect((await savedStep(first.key))?.step).toBe(STEP.TYPE)
       expect(screen.queryByTestId('ladder-cheer')).toBeNull()
@@ -293,7 +295,7 @@ describe('Ladder', () => {
 describe('вход в лесенку с карточки глагола', () => {
   beforeEach(() => {
     localStorage.clear()
-    localStorage.setItem('proto_seen_ladder', '1')
+    rulesSeen('ladder')
     api.fetchVerb.mockReset().mockResolvedValue(verb)
     api.fetchVerbProgress.mockReset().mockResolvedValue(noProgress)
     api.saveVerbProgress.mockReset().mockResolvedValue(noProgress)

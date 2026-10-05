@@ -6,10 +6,13 @@ import {
   taskStep, tokens, withGap,
   type FormState, type LadderItem, type Progress, type Session, type Task
 } from './engine'
-import { catalogVerb, catalogVerbs, seeded } from './testCatalog'
+import { CATALOG as catalogVerbs, seeded, verbByLemma } from '../testing/catalog'
 
 // Формы и фразы — из настоящего каталога (src/Trale/Verbs/verbs.json).
-const write = buildItems(catalogVerb(0))
+const writeVerb = verbByLemma('წერს')
+const write = buildItems(writeVerb)
+// «хотеть»: у глагола только настоящее и имперфект.
+const want = buildItems(verbByLemma('უნდა'))
 const withoutSentences = catalogVerbs.map(buildItems).find(items => items.every(i => !i.sentences.length))!
 const withTwins = catalogVerbs.map(buildItems).find(items => new Set(items.map(i => i.form)).size < items.length)!
 
@@ -51,6 +54,39 @@ describe('порядок форм', () => {
       expect(buildItems(verb)).toHaveLength(cells.length)
     }
     expect(catalogVerbs.some(v => buildItems(v).length < 36)).toBe(true)
+  })
+
+  it('у неполного глагола в лесенке только те времена, что у него есть, в том же порядке', () => {
+    expect(want).toHaveLength(12)
+    expect(want.slice(0, 4).map(i => i.key)).toEqual(['present:0', 'imperfect:0', 'present:2', 'imperfect:2'])
+  })
+
+  it('фраза с формой «ты» / «вы» во времени, которое служит и повелением, к клетке не привязывается', () => {
+    // В каталоге у «писать» есть фраза с формой «ты · настоящее» — запрет («Не пиши…»):
+    // написание то же, а значит она не то, что обещает подпись клетки.
+    const you = write.find(i => i.key === 'present:1')!
+    expect(writeVerb.sentences.some(s => s.form === you.form)).toBe(true)
+    expect(you.sentences).toEqual([])
+
+    for (const item of catalogVerbs.flatMap(buildItems)) {
+      if ([1, 4].includes(item.person) && ['present', 'aorist', 'optative'].includes(item.tense)) expect(item.sentences).toEqual([])
+    }
+  })
+
+  it('фраза не привязывается к форме, которая пишется так же, как другая клетка этого глагола', () => {
+    for (const verb of catalogVerbs) {
+      const spellings = Object.values(verb.tenses).flatMap(persons => persons!.flatMap(variants => [...new Set(variants)]))
+      for (const item of buildItems(verb)) {
+        for (const s of item.sentences) expect(spellings.filter(f => f === s.form), `${verb.ru}: ${s.form}`).toHaveLength(1)
+      }
+    }
+  })
+
+  it('после отсева у частых глаголов фразы всё ещё есть', () => {
+    const withSentences = (lemma: string) => buildItems(verbByLemma(lemma)).filter(i => i.sentences.length).length
+    expect(withSentences('წერს')).toBeGreaterThanOrEqual(3)
+    expect(withSentences('მიდის')).toBeGreaterThanOrEqual(6)
+    expect(write[0].buildable.length).toBeGreaterThan(0)
   })
 
   it('фраза привязана к форме, только если форма стоит в ней отдельным словом', () => {

@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import TimeMachine from './TimeMachine'
 import { formOf } from './common'
-import { moveSeen, rulesSeen, seeded, verbRu } from './testCatalog'
+import { seeded, verbRu } from '../testing/catalog'
+import { moveSeen, rulesSeen } from '../testing/seen'
 import { STOPS, locate } from './timeRounds'
 
 const verb = verbRu('писать')

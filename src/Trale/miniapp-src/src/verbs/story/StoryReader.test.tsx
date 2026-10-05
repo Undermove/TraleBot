@@ -5,8 +5,10 @@ import VerbStories from './VerbStories'
 import { storyFixture as story } from './fixture'
 import { fetchVerbStories, parseVerbForm } from '../../api'
 import { bad, good } from '../ui/juice'
+import { seenKey } from '../ui/GameShell'
+import { rulesSeen } from '../testing/seen'
 
-vi.mock('../../api', () => ({ fetchVerbStories: vi.fn(), parseVerbForm: vi.fn() }))
+vi.mock('../../api', async () => (await import('../testing/sheetApi')).sheetApi())
 vi.mock('../ui/juice', () => ({ good: vi.fn(), bad: vi.fn(), haptic: vi.fn() }))
 
 const scrolled = vi.fn()
@@ -39,7 +41,7 @@ describe('StoryReader', () => {
   beforeEach(() => {
     localStorage.clear()
     // Правила при первом входе проверяются отдельным тестом.
-    localStorage.setItem('proto_seen_story', '1')
+    rulesSeen('story')
     vi.clearAllMocks()
     scrolled.mockClear()
     Element.prototype.scrollIntoView = function (this: Element, arg?: boolean | ScrollIntoViewOptions) {
@@ -182,7 +184,7 @@ describe('StoryReader', () => {
     expect(onExit).toHaveBeenCalled()
   })
 
-  it('does not call another word order wrong: hints at the source, then shows it and moves on', () => {
+  it('counts another word order as said: shows the source phrase and waits for «Дальше»', () => {
     open()
     reachBuildFrame()
     vi.mocked(bad).mockClear()
@@ -190,15 +192,12 @@ describe('StoryReader', () => {
     for (const word of ['სახლში', 'ის', 'წავიდა']) chip(word)
     say()
 
-    expect(screen.getByTestId('story-note').textContent).toContain('Порядок слов в грузинском гибкий')
-    expect(screen.getByTestId('story-note').textContent).toContain('начинается со слова ის')
-    expect(screen.getByTestId('story-line-2').textContent).toBe('…')
-
-    for (const word of ['წავიდა', 'ის', 'სახლში']) chip(word)
-    say()
-
+    const note = screen.getByTestId('story-note').textContent!
+    expect(note).toContain('Засчитано')
+    expect(note).toContain('Порядок слов в грузинском гибкий, но не любой')
+    expect(note).toContain('ის წავიდა სახლში.')
     expect(screen.getByTestId('story-line-2').textContent).toBe('ის წავიდა სახლში.')
-    expect(screen.getByTestId('story-note').textContent).toContain('звучит в источнике')
+    expect(screen.queryByTestId('story-chips')).toBeNull()
     expect(bad).not.toHaveBeenCalled()
     expect(screen.queryByTestId('story-end')).toBeNull()
 
@@ -231,15 +230,15 @@ describe('StoryReader', () => {
 
     expect(screen.queryByText('Нажми слово, которое стоит на месте пропуска.')).toBeNull()
     expect(screen.getByText(/Нажми на поле, набери пропущенное слово/)).toBeTruthy()
-    expect(localStorage.getItem('proto_seen_story_choose_move')).toBe('1')
-    expect(localStorage.getItem('proto_seen_story_type_move')).toBeNull()
+    expect(localStorage.getItem(seenKey('story_choose_move'))).toBe('1')
+    expect(localStorage.getItem(seenKey('story_type_move'))).toBeNull()
   })
 })
 
 describe('VerbStories', () => {
   beforeEach(() => {
     localStorage.clear()
-    localStorage.setItem('proto_seen_story', '1')
+    rulesSeen('story')
     vi.clearAllMocks()
   })
 

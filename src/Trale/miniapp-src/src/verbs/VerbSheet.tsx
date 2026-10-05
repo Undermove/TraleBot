@@ -3,6 +3,7 @@ import LoaderLetter from '../components/LoaderLetter'
 import { fetchVerb } from '../api'
 import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, cyr, type TenseKey, type VerbDto } from './types'
 import { Coach, KindChip, VerbForm } from './parts'
+import { OVERLAY, useOverlay } from './ui/overlayStack'
 import VerbGames from './games/VerbGames'
 import LadderEntry from './ladder/LadderEntry'
 import VerbStories from './story/VerbStories'
@@ -47,6 +48,8 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
     setTimeout(onClose, 220)
   }
 
+  useOverlay(close, OVERLAY.sheet)
+
   function pickPerson(p: number) {
     setPerson(p)
     if (hint) {
@@ -82,7 +85,10 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
 
   function Body() {
     if (!verb) return null
-    const rareTenses = RARE_TENSES.filter(t => verb.tenses[t])
+    // У неполных глаголов («хотеть», «знать») части времён нет вовсе: такие строки не рисуем прочерками.
+    const has = (t: TenseKey) => !!verb.tenses[t]?.some(variants => variants.length)
+    const mainTenses = CARD_TENSES.filter(has)
+    const rareTenses = RARE_TENSES.filter(has)
 
     const rows = (tenses: TenseKey[]) =>
       tenses.map(t => {
@@ -152,7 +158,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
 
           <LadderEntry verb={verb} />
 
-          {hint && <Coach>Это шесть главных форм. Нажми «ты» или «он» — таблица покажет те же времена для другого лица.</Coach>}
+          {hint && <Coach>Это главные формы. Нажми «ты» или «он» — таблица покажет те же времена для другого лица.</Coach>}
 
           <div
             className="rounded-xl bg-cream-tile border-[1.5px] border-jewelInk overflow-hidden"
@@ -170,7 +176,12 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                 </button>
               ))}
             </div>
-            {rows(CARD_TENSES)}
+            {rows(mainTenses)}
+            {mainTenses.length < CARD_TENSES.length && (
+              <div data-testid="verb-partial" className="px-4 py-2 border-t border-cream-edge text-[11px] text-jewelInk-hint">
+                У этого глагола не все времена: {CARD_TENSES.filter(t => !has(t)).map(t => TENSES[t].name.toLowerCase()).join(', ')} — таких форм в базе нет.
+              </div>
+            )}
             {rareTenses.length > 0 && (
               <button
                 onClick={() => setRare(!rare)}

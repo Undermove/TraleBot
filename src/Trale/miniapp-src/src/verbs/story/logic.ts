@@ -1,12 +1,13 @@
 import { PERSONS, TENSES, type VerbFormHitDto } from '../types'
 import type { StoryFormDto, StoryFrameDto, VerbStoryDto } from './types'
+import { sentenceWords } from '../wordOrder'
 
 // Чистая логика комикса: разбор реплики на слова, пропуск на месте формы, объяснение неверной формы.
 
 const WORD = /[ა-ჰ]+/g
 
-/** Грузинские слова реплики без знаков препинания — из них собирается фраза. */
-export const words = (ka: string) => ka.match(WORD) ?? []
+/** Грузинские слова реплики без знаков препинания — из них собирается фраза (то же правило, что в лесенке). */
+export const words = sentenceWords
 
 /** Реплика, разрезанная вокруг нужной формы (целого слова): на её месте рисуется пропуск. */
 export function gap(ka: string, form: string): { before: string; after: string } {
@@ -50,9 +51,6 @@ export function shuffled(count: number, random: () => number = Math.random): num
   if (count > 1 && order.every((n, i) => n === i)) order.push(order.shift()!)
   return order
 }
-
-/** Собранная фраза совпала с источником слово в слово. */
-export const sameAsSource = (built: string[], ka: string) => built.join(' ') === words(ka).join(' ')
 
 /** Формы, которые прозвучали в истории, без повторов и в порядке появления — для итога. */
 export function usedForms(frames: StoryFrameDto[]): StoryFormDto[] {
