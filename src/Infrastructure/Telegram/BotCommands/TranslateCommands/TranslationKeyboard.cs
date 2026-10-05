@@ -1,3 +1,4 @@
+using Application.Verbs;
 using Domain.Entities;
 using Infrastructure.Telegram.CallbackSerialization;
 using Infrastructure.Telegram.CommonComponents;
@@ -18,7 +19,8 @@ public static class TranslationKeyboard
         string? example,
         CancellationToken token,
         bool isOwner = false,
-        string? miniAppUrl = null)
+        string? miniAppUrl = null,
+        VerbReplyHint? verb = null)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         return SendTranslation(
@@ -31,7 +33,8 @@ public static class TranslationKeyboard
             removeFromVocabularyText,
             token,
             isOwner,
-            miniAppUrl);
+            miniAppUrl,
+            verb);
     }
 
     public static Task UpdateTranslation(this ITelegramBotClient client,
@@ -66,7 +69,8 @@ public static class TranslationKeyboard
         string? example,
         CancellationToken token,
         bool isOwner = false,
-        string? miniAppUrl = null)
+        string? miniAppUrl = null,
+        VerbReplyHint? verb = null)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return SendTranslation(
@@ -79,7 +83,8 @@ public static class TranslationKeyboard
             removeFromVocabularyText,
             token,
             isOwner,
-            miniAppUrl);
+            miniAppUrl,
+            verb);
     }
 
     public static Task UpdateExistedTranslation(this ITelegramBotClient client,
@@ -215,9 +220,16 @@ public static class TranslationKeyboard
         string removeFromVocabularyText,
         CancellationToken token,
         bool isOwner = false,
-        string? miniAppUrl = null)
+        string? miniAppUrl = null,
+        VerbReplyHint? verb = null)
     {
         var replyMarkup = new List<InlineKeyboardButton[]>();
+
+        // The word is a verb we know: the verb card is the most useful next tap, so it goes first.
+        if (verb != null && !string.IsNullOrEmpty(miniAppUrl))
+        {
+            replyMarkup.Add([VerbReplyFormatter.Button(verb, miniAppUrl)]);
+        }
 
         // Owner-priority CTA: a WebApp button as the first row, so the mini-app
         // entry stays one tap away under every translated word. Older users
@@ -258,11 +270,17 @@ public static class TranslationKeyboard
 
         var keyboard = new InlineKeyboardMarkup(replyMarkup.ToArray());
 
+        var text = @$"Определение: {definition}
+Другие значения: {additionalInfo}
+Пример употребления: {example}";
+        if (verb != null)
+        {
+            text += "\n\n" + VerbReplyFormatter.Line(verb);
+        }
+
         await client.SendTextMessageAsync(
             request.UserTelegramId,
-@$"Определение: {definition}
-Другие значения: {additionalInfo}
-Пример употребления: {example}",
+            text,
             replyMarkup: keyboard,
             cancellationToken: token);
     }

@@ -31,7 +31,7 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 |---|---|---|
 | `VocabularyCommand` | `/vocabulary`, 📘 icon | Paginated list of saved words with mastery medals. |
 | `RemoveEntryCommand` | `/removeentry {id}` callback | Delete a vocabulary entry. |
-| `TranslateCommand` | Any free-form text without `/` | Auto-translate in current language and save. |
+| `TranslateCommand` | Any free-form text without `/` | Auto-translate in current language and save. Georgian goes through `GeorgianTranslationPipeline` (verb base → `TranslationCache` → optional agent path on Microsoft Agent Framework, off unless `TranslationAgent:Enabled` → old translator). When the word or its translation is a known verb form, the reply ends with a parse line (form, tense, person, masdar, translation; «Формы не проверены» for a Generated verb) and starts with a «Все формы» WebApp button → `?screen=verb&verb=…&tense=…&person=…`. |
 | `TranslateManuallyCommand` | `{word}-{translation}` | Record a manual pair without calling the translator. |
 | `TranslateAndDeleteVocabularyCommand` | `/tradl` callback | Translate into a new language while dropping the old vocab (free-tier path). |
 | `ChangeTranslationLanguageCommand` | `/changetranslation`, 🌐 icon | Offer to translate the last word into another language. |
@@ -94,8 +94,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `Result.tsx` | `result` | Lesson result summary with kilim strip. If the lesson had catalog verbs: «в этом уроке были глаголы» with up to three verbs, each opening its verb card (`verbs/lesson/LessonVerbsLine`). |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
-| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter; the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet` (six main forms, person switcher, collapsed rare tenses and explanation). Can be opened on the «глаголы» filter (from the dashboard verbs line). Deep link `?screen=verb&verbId=<verb id>&tense=<tense key>&person=<0..5>` (`verbs/deepLink.ts`) opens the dictionary with the verb card on top, highlighted on that form; without trial/Pro it lands on the dashboard paywall instead. |
-| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter; the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet` (six main forms, person switcher, collapsed rare tenses and explanation). On a Verified verb the card has the «Выучить играя» / «Продолжить · N из M» / «Повторить» button that opens the verb ladder full-screen (`verbs/ladder/`: one form at a time through intro → recognise → choose → fill the gap → build the sentence → type; progress and repetition on the server). |
+| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. Words and phrases that contain a known verb form get a «глагол» badge and a «глаголы» filter (can be pre-selected: dashboard line, deep link); the word card and the translation result show the parse (tense, person, verb) with «все формы», which opens the verb card sheet `VerbSheet`: six main forms, person switcher, collapsed rare tenses and explanation, «не проверено» note for model-made verbs, and entries to the verb ladder (`LadderEntry`), verb games (`VerbGames`) and comic stories (`VerbStories`). Deep link `?screen=verb&verbId=<lemma>[&tense=&person=]` opens the dictionary with the verb card on top. |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
 | `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
@@ -204,11 +203,10 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | GET | `/api/miniapp/activity-days` | Daily activity series for streak. |
 | GET | `/api/miniapp/vocabulary` | User's vocabulary entries. |
 | POST | `/api/miniapp/vocabulary/quiz` | Start a vocabulary quiz. |
-| GET | `/api/miniapp/verbs` | (not used by the mini-app UI yet) List of verbs (id, masdar title, translation, kind, 1sg present). 401 without auth, 402 without trial/Pro. |
+| GET | `/api/miniapp/verbs` | (not used by the mini-app UI yet) List of verbs (id, masdar title, translation, kind, 1sg present, `status` verified/generated — consumers that build games or SEO must skip `generated`). 401 without auth, 402 without trial/Pro. |
 | GET | `/api/miniapp/verbs/summary` | What the dashboard may say about verbs: `dictionaryVerbs` — how many of the user's own dictionary entries contain a known verb form. 401 without auth, 402 without trial/Pro. |
 | GET | `/api/miniapp/verbs/parse?form=` | Parse an exact Georgian form into (verb, tense, person) hits; empty list when unknown. |
-| GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source) plus `status` (`verified` / `generated`, taken from the row at serving time). |
-| GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source). |
+| GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source, `status`). Verbs added at runtime by the translation agent are served the same way. |
 | GET | `/api/miniapp/verbs/progress` | Verb ladder: verbs the user is learning (started / mastered / total forms, forms due for repetition, last practised) + total `dueForms`. For a "continue verb X" entry point. |
 | GET | `/api/miniapp/verbs/{id}/progress` | Verb ladder: the user's per-form progress for one verb (step, best step, reviews, next due) and `canLearn` (false for unreviewed Generated verbs). |
 | POST | `/api/miniapp/verbs/{id}/progress` | Verb ladder: save answered steps as a batch `{forms:[{tense,person,step,reviews,at}]}`. Idempotent (last-write-wins by answer time), skips cells the verb does not have, schedules repetition of mastered forms (1–3 days). |
@@ -309,6 +307,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddUserAcquisitionSource` | Adds nullable AcquisitionSource to User — first-touch acquisition tag captured from the /start deep-link payload (e.g. "site") or the mini-app start_param, so registrations can be attributed to landing/channel/post/direct traffic. |
 | `AddVerbCatalog` | Adds `Verbs` (lemma, title, translation, kind, card JSON, status Verified/Generated) and `VerbForms` (form → verb, tense, person index) for the mini-app «Глаголы» section. |
 | `AddVerbFormProgress` | Adds `VerbFormProgresses` — per-user progress of the verb ladder: one row per (user, verb, tense, person) with step, best step, reviews and next-due time; unique per cell, indexed by (user, next due). |
+| `AddTranslationCache` | Adds `TranslationCache` (normalised key + direction unique, definition / additional info / example, source, classified flag, hit count, timestamps): repeated Georgian lookups are answered from the DB instead of the external dictionary sites. |
 
 ---
 

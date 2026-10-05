@@ -12,7 +12,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Verbs;
 
-public record VerbSummary(string Lemma, string Title, string Translation, string Kind, string PresentJson);
+public record VerbSummary(
+    string Lemma, string Title, string Translation, string Kind, string PresentJson, VerbStatus Status = VerbStatus.Verified);
 
 public record VerbFormHit(string Form, string Lemma, string Title, string Translation, string Tense, int Person);
 
@@ -33,7 +34,7 @@ public class VerbQueries(ITraleDbContext dbContext)
             .AsNoTracking()
             .OrderBy(v => v.SortOrder)
             .ThenBy(v => v.Lemma)
-            .Select(v => new VerbSummary(v.Lemma, v.Title, v.Translation, v.Kind, v.PresentJson))
+            .Select(v => new VerbSummary(v.Lemma, v.Title, v.Translation, v.Kind, v.PresentJson, v.Status))
             .ToListAsync(ct);
     }
 

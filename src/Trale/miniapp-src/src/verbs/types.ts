@@ -30,8 +30,9 @@ export interface VerbDto extends VerbSummaryDto {
   tenses: Partial<Record<TenseKey, string[][]>>
   /** Живые предложения (Tatoeba), в которых встречается форма этого глагола. */
   sentences: VerbSentenceDto[]
-  source: string
-  /** verified — формы проверены по источнику; generated — сделаны моделью. Игры строятся только по проверенным. */
+  /** Нет у глагола, формы которого составила модель. */
+  source: string | null
+  /** generated — формы составила модель, в источнике таблицы нет; такой глагол не идёт в игры. Нет поля — verified. */
   status?: 'verified' | 'generated'
 }
 

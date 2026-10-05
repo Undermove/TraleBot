@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistence;
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    partial class TraleDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005165716_AddTranslationCache")]
+    partial class AddTranslationCache
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -714,56 +717,6 @@ namespace Persistence.Migrations
                     b.ToTable("VerbForms");
                 });
 
-            modelBuilder.Entity("Domain.Entities.VerbFormProgress", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("BestStep")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("NextDueAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Person")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Reviews")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Step")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Tense")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("VerbId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VerbId");
-
-                    b.HasIndex("UserId", "NextDueAtUtc");
-
-                    b.HasIndex("UserId", "VerbId", "Tense", "Person")
-                        .IsUnique();
-
-                    b.ToTable("VerbFormProgresses");
-                });
-
             modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -976,25 +929,6 @@ namespace Persistence.Migrations
                         .HasForeignKey("VerbId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Verb");
-                });
-
-            modelBuilder.Entity("Domain.Entities.VerbFormProgress", b =>
-                {
-                    b.HasOne("Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.Verb", "Verb")
-                        .WithMany()
-                        .HasForeignKey("VerbId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
 
                     b.Navigation("Verb");
                 });

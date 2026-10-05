@@ -58,7 +58,8 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
         {
             var entry = entries[i]!.AsObject();
             var lemma = entry["lemma"]!.GetValue<string>();
-            var hash = Hash(entry.ToJsonString(Json));
+            // "#status": bump when the stored card gains a field, so already seeded rows are rewritten once.
+            var hash = Hash(entry.ToJsonString(Json) + "#status");
             inCatalog.Add(lemma);
 
             existing.TryGetValue(lemma, out var verb);
@@ -151,7 +152,8 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             ["tenses"] = tenses.DeepClone(),
             // Real sentences (Tatoeba) that contain a form of this verb — material for exercises.
             ["sentences"] = entry["sentences"]?.DeepClone() ?? new JsonArray(),
-            ["source"] = entry["source"]?.DeepClone()
+            ["source"] = entry["source"]?.DeepClone(),
+            ["status"] = RuntimeVerbStore.StatusName(VerbStatus.Verified)
         };
         verb.CardJson = card.ToJsonString(Json);
     }
@@ -160,7 +162,7 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
     /// Index rows for every form of the main paradigm and of the parallel tables (same verb with
     /// another preverb), so that both წავიდა and მივიდა lead to the verb "to go".
     /// </summary>
-    private static IEnumerable<VerbForm> BuildForms(Guid verbId, JsonObject entry)
+    internal static IEnumerable<VerbForm> BuildForms(Guid verbId, JsonObject entry)
     {
         var tables = new List<JsonObject> { entry["tenses"]!.AsObject() };
         tables.AddRange((entry["alt"]?.AsArray() ?? new JsonArray()).Select(t => t!.AsObject()));

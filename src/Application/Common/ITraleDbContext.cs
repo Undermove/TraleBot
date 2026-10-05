@@ -24,6 +24,7 @@ public interface ITraleDbContext
     DbSet<Verb> Verbs { get; }
     DbSet<VerbForm> VerbForms { get; }
     DbSet<VerbFormProgress> VerbFormProgresses { get; }
+    DbSet<TranslationCacheEntry> TranslationCache { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);

@@ -808,7 +808,8 @@ public class MiniAppController : Controller
                 title = v.Title,
                 ru = v.Translation,
                 kind = v.Kind,
-                present = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.PresentJson)
+                present = System.Text.Json.JsonSerializer.Deserialize<string[]>(v.PresentJson),
+                status = RuntimeVerbStore.StatusName(v.Status)
             })
         });
     }
