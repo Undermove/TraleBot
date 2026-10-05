@@ -168,6 +168,10 @@ const verbs = analysed.map(entry => {
     masdarWithPreverb: v.masdar.perfective.filter(m => m !== titleOf(v)),
     tenses: v.tenses,
     alt: v.alt,
+    // Формы, которые пишутся так же, как самостоятельное слово-неглагол (უნდა — и «хочет», и «надо»).
+    // По ним разбор не строится: встретив такое слово во фразе, нельзя утверждать, что это глагол.
+    // Собственный масдар глагола сюда не входит — это то же слово, подсказка про глагол к месту.
+    notForParse: (v.homographs ?? []).filter(f => f !== titleOf(v) && !v.masdar.perfective.includes(f)),
     sentences: sentencesFor(v),
     source: v.source
   }

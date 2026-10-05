@@ -167,6 +167,12 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
         var tables = new List<JsonObject> { entry["tenses"]!.AsObject() };
         tables.AddRange((entry["alt"]?.AsArray() ?? new JsonArray()).Select(t => t!.AsObject()));
 
+        // Forms spelled like an unrelated non-verb word (the 3sg of "to want" is also "must"): a phrase
+        // with such a word must not be marked as containing this verb, so they stay out of the index.
+        var notForParse = (entry["notForParse"]?.AsArray() ?? new JsonArray())
+            .Select(f => f!.GetValue<string>())
+            .ToHashSet();
+
         var seen = new HashSet<(string Form, string Tense, int Person)>();
         foreach (var table in tables)
         {
@@ -178,7 +184,7 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
                     foreach (var variant in rows[person]!.AsArray())
                     {
                         var form = variant!.GetValue<string>();
-                        if (!seen.Add((form, tense, person)))
+                        if (notForParse.Contains(form) || !seen.Add((form, tense, person)))
                         {
                             continue;
                         }

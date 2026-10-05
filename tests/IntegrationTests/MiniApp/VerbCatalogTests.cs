@@ -305,4 +305,21 @@ public class VerbCatalogTests : TestBase
             new VerbFormHit("მივდივარ", "მიდის", "სვლა", "идти, уходить", "present", 0),
             because: "a phrase is marked by the verb form it contains, with that form's tense and person");
     }
+
+    [Test]
+    public async Task Form_spelled_like_an_unrelated_word_is_not_parsed_as_the_verb()
+    {
+        // The catalog marks such forms per verb; the test takes one from the data rather than naming it.
+        var marked = JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray()
+            .First(v => v!["notForParse"]!.AsArray().Count > 0)!;
+        var form = marked["notForParse"]![0]!.GetValue<string>();
+        var lemma = marked["lemma"]!.GetValue<string>();
+
+        var hits = await InScope(sp => sp.GetRequiredService<VerbQueries>().ParseAsync(form, CancellationToken.None));
+        var inPhrase = await InScope(sp => sp.GetRequiredService<VerbQueries>().FindInTextsAsync(new[] { form }, CancellationToken.None));
+
+        hits.Should().NotContain(h => h.Lemma == lemma,
+            because: "a word that is also a common non-verb must not get a «глагол» badge on the strength of spelling alone");
+        inPhrase.Values.Should().NotContain(h => h.Lemma == lemma);
+    }
 }
