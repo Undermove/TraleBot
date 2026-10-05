@@ -139,6 +139,13 @@ describe('Session', () => {
     await tick(0)
     expect(screen.queryByTestId('session-finish')).toBeNull()
     expect(percent()).toBe(0)
+    // Вторая сессия заканчивается на том же уровне — «Новый уровень!» второй раз не объявляют.
+    while (screen.queryByTestId('quiz-scene')) await answerQuiz()
+    while (screen.queryByTestId('time-ask')) await answerTime()
+    expect(screen.getByTestId('session-finish').textContent).not.toContain('Новый уровень')
+    expect(screen.queryByTestId('session-level-up')).toBeNull()
+    fireEvent.click(screen.getByText('Ещё одну'))
+    await tick(0)
     expect(reports()[reports().length - 1].sessionId).not.toBe(first)
 
     fireEvent.click(screen.getByLabelText('Закрыть'))

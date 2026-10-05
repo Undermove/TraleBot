@@ -46,7 +46,12 @@ builder.Services.AddHostedService<Trale.HostedServices.PendingReferralsWorker>()
 builder.Services.AddHostedService<ReturnPushWorker>();
 builder.Services.AddHostedService<HourlyNotificationWorker>();
 
-builder.WebHost.UseUrls("http://*:1402/");
+// The address is 1402 everywhere (Docker, k8s, the dev bot). A second local instance — the real
+// end-to-end suite, scripts/dev/run-real-e2e.sh — overrides it with configuration key "HostUrls"
+// (env HostUrls=http://localhost:1411). Deliberately not ASPNETCORE_URLS: an image or a shell that
+// happens to set it must not move the production port.
+var hostUrls = builder.Configuration["HostUrls"];
+builder.WebHost.UseUrls(string.IsNullOrWhiteSpace(hostUrls) ? "http://*:1402/" : hostUrls);
 var app = builder.Build();
 
 app.UsePrometheus();

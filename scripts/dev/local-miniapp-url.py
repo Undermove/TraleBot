@@ -7,6 +7,7 @@
 
     python3 scripts/dev/local-miniapp-url.py            # пользователь с доступом
     python3 scripts/dev/local-miniapp-url.py --expired  # пробный период закончился (пейволл)
+    python3 scripts/dev/local-miniapp-url.py --port 1411 --container tralebot-e2e-db   # второй экземпляр
 """
 import hashlib, hmac, json, subprocess, sys, time, urllib.parse, urllib.request
 
@@ -15,8 +16,15 @@ USER, SETTINGS, TG = "11111111-1111-1111-1111-111111111111", "22222222-2222-2222
 registered = "now() - interval '60 days'" if "--expired" in sys.argv else "now()"
 
 
+def option(name, default):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+
+
+PORT, CONTAINER = option("--port", "1402"), option("--container", "tralebot-local-dev")
+
+
 def sql(query):
-    subprocess.run(["docker", "exec", "tralebot-local-dev", "psql", "-U", "dev", "-d", "tralebot", "-qtAc", query], check=True)
+    subprocess.run(["docker", "exec", CONTAINER, "psql", "-U", "dev", "-d", "tralebot", "-qtAc", query], check=True)
 
 
 def init_data():
@@ -36,6 +44,6 @@ insert into "UsersSettings" ("Id","UserId","CurrentLanguage") values ('{SETTINGS
 """)
 data = init_data()
 # Первый вызов /me создаёт строку прогресса; дальше ставим уровень и опыт, чтобы открылась главная.
-urllib.request.urlopen(urllib.request.Request("http://localhost:1402/api/miniapp/me", headers={"X-Telegram-Init-Data": data})).read()
+urllib.request.urlopen(urllib.request.Request(f"http://localhost:{PORT}/api/miniapp/me", headers={"X-Telegram-Init-Data": data})).read()
 sql(f"""update "MiniAppUserProgresses" set "Level"='beginner', "Xp"=greatest("Xp",120) where "UserId"='{USER}';""")
-print("http://localhost:1402/#tgWebAppData=" + urllib.parse.quote(data, safe=""))
+print(f"http://localhost:{PORT}/#tgWebAppData=" + urllib.parse.quote(data, safe=""))

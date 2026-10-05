@@ -60,6 +60,8 @@ export default function Session({ verb, stories, learning: initial, onExit }: Pr
   /** Формы, которые были в игре в этой сессии: верно с первой попытки или нет. */
   const touched = useRef(new Map<string, boolean>())
   const exam = useRef<ExamResult | null>(null)
+  /** Уровень глагола до этой сессии — финиш сравнивает с ним («было — стало»). */
+  const [levelBefore, setLevelBefore] = useState(initial.level)
   const [finish, setFinish] = useState<{ saved: VerbSessionSavedDto | null } | 'saving' | null>(null)
   const [extraPreverbs, setExtraPreverbs] = useState<string[]>([])
 
@@ -133,6 +135,7 @@ export default function Session({ verb, stories, learning: initial, onExit }: Pr
     touched.current = new Map()
     exam.current = null
     peak.current = 0
+    setLevelBefore(state.level)
     const next = startRun(verb, stories, { ...state, session: null }, items, progress.current)
     at.current = { scene: 0, done: 0 }
     setStartAt(0)
@@ -190,7 +193,7 @@ export default function Session({ verb, stories, learning: initial, onExit }: Pr
           {finish && finish !== 'saving' && (
             <Finish
               verb={verb} items={items} touched={touched.current} exam={exam.current}
-              levelBefore={initial.level} saved={finish.saved} progress={progress.current}
+              levelBefore={levelBefore} saved={finish.saved} progress={progress.current}
               onMore={another} onDone={exit}
             />
           )}

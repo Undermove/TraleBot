@@ -5,3 +5,4 @@ dist/
 playwright-report/
 test-results/
 .playwright/
+e2e-real/shots/
