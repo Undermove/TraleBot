@@ -15,6 +15,7 @@ const verb: VerbDto = {
 }
 
 vi.mock('../api', () => ({ fetchVerb: vi.fn(() => Promise.resolve(verb)) }))
+vi.mock('./story/VerbStories', () => ({ default: () => null }))
 
 function open(highlight?: { tense: string; person: number }) {
   const onClose = vi.fn()

@@ -419,3 +419,8 @@ export function fetchVerb(id: string) {
 export function parseVerbForm(form: string) {
   return request<{ hits: VerbFormHitDto[] }>(`/api/miniapp/verbs/parse?form=${encodeURIComponent(form)}`)
 }
+
+/** Комиксы глагола: реплики уже подставлены сервером из каталога. Пустой список, если историй нет. */
+export function fetchVerbStories(id: string) {
+  return request<{ stories: import('./verbs/story/types').VerbStoryDto[] }>(`/api/miniapp/verbs/${encodeURIComponent(id)}/stories`)
+}

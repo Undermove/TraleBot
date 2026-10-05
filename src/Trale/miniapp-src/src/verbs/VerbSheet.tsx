@@ -3,6 +3,7 @@ import LoaderLetter from '../components/LoaderLetter'
 import { fetchVerb } from '../api'
 import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, cyr, type TenseKey, type VerbDto } from './types'
 import { Coach, KindChip, VerbForm } from './parts'
+import VerbStories from './story/VerbStories'
 
 interface Props {
   verbId: string
@@ -175,6 +176,8 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             )}
             {rare && rows(rareTenses)}
           </div>
+
+          <VerbStories verbId={verb.id} />
 
           <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">
             Источник форм: Викисловарь (CC BY-SA)
