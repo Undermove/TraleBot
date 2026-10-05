@@ -3,6 +3,7 @@ import LoaderLetter from '../components/LoaderLetter'
 import { fetchVerb } from '../api'
 import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, cyr, type TenseKey, type VerbDto } from './types'
 import { Coach, KindChip, VerbForm } from './parts'
+import VerbGames from './games/VerbGames'
 
 interface Props {
   verbId: string
@@ -71,7 +72,8 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
         <div className="w-8 h-1 bg-jewelInk/20 rounded-full mx-auto mt-3 mb-3" />
         {failed && <div className="px-6 py-12 text-center text-[14px] text-jewelInk-mid">Не получилось загрузить глагол.</div>}
         {!failed && !verb && <div className="flex items-center justify-center py-16"><LoaderLetter size={96} /></div>}
-        {verb && <Body />}
+        {/* Вызов, а не <Body />: иначе при каждой перерисовке шторки тело монтируется заново и открытая игра сбрасывается. */}
+        {verb && Body()}
       </div>
     </div>
   )
@@ -175,6 +177,8 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             )}
             {rare && rows(rareTenses)}
           </div>
+
+          <VerbGames verb={verb} />
 
           <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">
             Источник форм: Викисловарь (CC BY-SA)

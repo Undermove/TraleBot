@@ -170,6 +170,16 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
 
+### Verb games (`src/verbs/games/`)
+Three quick client-side games built from one verb's paradigm; opened from the "Игры с этим глаголом" row on the verb card (`VerbSheet`), full-screen over it. No dashboard tile, no saved progress. A game is offered only when `availableGames` (`availability.ts`) says the verb's data supports it — always requires `status: verified` and a Russian translation.
+
+| File | Purpose |
+|---|---|
+| `VerbGames.tsx` | The games row on the verb card and the full-screen host; renders nothing when no game fits the verb. |
+| `TimeMachine.tsx` | «Машина времени»: three stops (aorist / present / future); the tapped form sends the mascot to the stop it really belongs to. Starts with «я», adds a person every 4 correct answers. Needs all six persons in the three tenses with no form shared between cells. |
+| `Bones.tsx` | «Косточки»: the conjugation table as a minesweeper-style field; a cell is dug by typing its form on the Georgian keyboard or picking from four options. Needs at least three complete main tenses. |
+| `Builder.tsx` | «Конструктор»: assemble a form from preverb + person marker + root + ending; rows unlock in stages (ending → person marker → preverb). Only for `pattern` verbs whose forms split cleanly (future = preverb + present). |
+
 ---
 
 ## 3 — HTTP API endpoints
@@ -196,7 +206,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | GET | `/api/miniapp/verbs` | (not used by the mini-app UI yet) List of verbs (id, masdar title, translation, kind, 1sg present). 401 without auth, 402 without trial/Pro. |
 | GET | `/api/miniapp/verbs/summary` | What the dashboard may say about verbs: `dictionaryVerbs` — how many of the user's own dictionary entries contain a known verb form. 401 without auth, 402 without trial/Pro. |
 | GET | `/api/miniapp/verbs/parse?form=` | Parse an exact Georgian form into (verb, tense, person) hits; empty list when unknown. |
-| GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source). |
+| GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source) plus `status` (`verified` / `generated`, taken from the row at serving time). |
 | POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. |
 | DELETE | `/api/miniapp/vocabulary/{id}` | Delete a vocabulary entry. |
 | POST | `/api/miniapp/translate` | Translate a word and add to vocabulary. |

@@ -48,6 +48,21 @@ export const FishIcon = ({ size = 18, className }: P) => (
   </svg>
 )
 
+export const ClockIcon = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <circle cx="12" cy="12.500" r="8" fill="#FCD76D" />
+    <path d="M12 8v4.500l3 2M9.500 2.500h5" />
+  </svg>
+)
+
+export const BlocksIcon = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <rect x="3" y="8" width="6" height="8" rx="1.5" fill="#3A7FCC" />
+    <rect x="9" y="8" width="6" height="8" rx="1.5" fill="#FDFAEF" />
+    <rect x="15" y="8" width="6" height="8" rx="1.500" fill="#E01A3C" />
+  </svg>
+)
+
 export const PointIcon = ({ size = 18, className }: P) => (
   <svg {...base(size, className)} strokeWidth={2.4}>
     <path d="M4 12h14M12.500 6.500 18 12l-5.500 5.500" />
