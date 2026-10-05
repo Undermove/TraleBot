@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { publishProgress } from '../../progress'
 import LoaderLetter from '../../components/LoaderLetter'
 import { fetchVerb } from '../../api'
 import type { TenseKey, VerbDto } from '../types'
@@ -124,6 +125,7 @@ export default function Session({ verb, stories, learning: initial, onExit }: Pr
       const tally = exam.current
       void sync.finish(tally ? { asked: tally.asked, correct: tally.correct } : undefined).then(saved => {
         if (saved) setLearning(saved.state)
+        if (saved?.progress) publishProgress(saved.progress)
         setFinish({ saved })
       })
     }

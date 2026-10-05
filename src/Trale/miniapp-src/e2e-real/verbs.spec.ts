@@ -50,6 +50,8 @@ test('словарь → слово-глагол → вид глагола → �
   expect(sql(`select count(*), sum("XpEarned") from "VerbSessions" where "UserId"='${learner.id}' and "FinishedAtUtc" is not null`)).toBe('1|10')
 
   await page.getByRole('button', { name: 'Готово' }).click()
+  // Опыт в шапке приложения вырос сразу, без перезагрузки: человек видит, что игра засчитана.
+  await expect(page.locator('div.sticky.top-0').first()).toContainText(String(before.progress.xp + 10))
   await expect(playButton(page)).toHaveText('Играть дальше')
   await expect(page.getByTestId('session-entry-known')).toContainText('знакомо слов: 3')
 

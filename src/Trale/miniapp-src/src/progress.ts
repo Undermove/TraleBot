@@ -24,3 +24,17 @@ export function progressFromDto(dto: ProgressDto): ProgressState {
     lastTreatIndex: dto.lastTreatIndex ?? null
   }
 }
+
+// Опыт и серию меняют не только уроки: сессия глагола идёт поверх любого экрана и о App не знает.
+// Она публикует прогресс, который вернул сервер, а App подписан и обновляет шапку сразу, без перезагрузки.
+type ProgressListener = (dto: ProgressDto) => void
+const listeners = new Set<ProgressListener>()
+
+export function publishProgress(dto: ProgressDto) {
+  listeners.forEach(listener => listener(dto))
+}
+
+export function onProgressPublished(listener: ProgressListener): () => void {
+  listeners.add(listener)
+  return () => { listeners.delete(listener) }
+}

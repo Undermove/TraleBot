@@ -1,3 +1,4 @@
+import type { ProgressDto } from '../../api'
 import type { TenseKey } from '../types'
 import type { TaskKind } from '../ladder/engine'
 import type { VerbProgressDto } from '../ladder/types'
@@ -78,7 +79,8 @@ export interface VerbLearningDto {
 export interface VerbSessionSavedDto {
   state: VerbLearningDto
   xpEarned: number
-  progress: unknown | null
+  /** Опыт и серия пользователя после начисления — тем же видом, что в /me. */
+  progress: ProgressDto | null
 }
 
 /** Что уходит на сервер после каждого ответа. */

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { CatalogDto, ProgressState, Screen } from './types'
-import { defaultProgress, progressFromDto } from './progress'
+import { defaultProgress, onProgressPublished, progressFromDto } from './progress'
 import { resolveEntryScreen, hasEarnedXp } from './entryFlow'
 import { api } from './api'
 import Dashboard from './screens/Dashboard'
@@ -80,6 +80,8 @@ function parseDeepLink(catalog: CatalogDto): Screen | null {
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
   const [progress, setProgress] = useState<ProgressState>(defaultProgress)
+  // Прогресс, начисленный не уроком (сессия глагола), приходит сюда — шапка обновляется сразу.
+  useEffect(() => onProgressPublished(dto => setProgress(progressFromDto(dto))), [])
   const [catalog, setCatalog] = useState<CatalogDto | null>(null)
   const [authenticated, setAuthenticated] = useState(false)
   const [loadError, setLoadError] = useState(false)
