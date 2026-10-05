@@ -4,6 +4,7 @@ import Button from '../components/Button'
 import StampBadge from '../components/StampBadge'
 import Header from '../components/Header'
 import { CatalogDto, QuizQuestion, Screen } from '../types'
+import LessonVerbsLine from '../verbs/lesson/LessonVerbsLine'
 
 interface Props {
   catalog: CatalogDto
@@ -99,6 +100,8 @@ export default function Result({
           <StatTile label="опыт" value={`+${xpEarned}`} accent="ruby" />
           <StatTile label="точность" value={`${pct}%`} accent="gold" />
         </div>
+
+        <LessonVerbsLine moduleId={moduleId} lessonId={lessonId} />
 
         {/* Comment */}
         <div className="mt-8 text-center max-w-[320px]">

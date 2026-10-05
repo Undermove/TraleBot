@@ -79,6 +79,8 @@ public static class DependencyInjection
         services.AddScoped<GetUserVocabularyQuery>();
         services.AddScoped<VerbCatalogSeeder>();
         services.AddScoped<VerbQueries>();
+        services.AddScoped<LessonVerbAnnotator>();
+        services.AddScoped<DictionaryVerbsQuery>();
         services.AddScoped<FeedTreatService>();
 
         // Acquisition attribution (per ARCHITECTURE.md, no MediatR)

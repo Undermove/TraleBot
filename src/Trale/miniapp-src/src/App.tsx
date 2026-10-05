@@ -20,6 +20,8 @@ import Onboarding, { UserLevel } from './screens/Onboarding'
 import Welcome from './screens/Welcome'
 import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
+import VerbSheet from './verbs/VerbSheet'
+import { resolveVerbDeepLink } from './verbs/deepLink'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -118,10 +120,14 @@ export default function App() {
           setOnboardingHint((meData as any).onboardingHint ?? null)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
-        const deepLink = hasLevel ? parseDeepLink(catalogData) : null
+        // ?screen=verb&verbId=… opens a verb card over the dictionary (see verbs/deepLink.ts).
+        const verbLink = hasLevel
+          ? resolveVerbDeepLink(new URLSearchParams(window.location.search), Boolean(meData?.isPro || (meData as any)?.isTrialActive))
+          : null
+        const deepLink = verbLink?.screen ?? (hasLevel ? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
-          window.history.replaceState({}, '', window.location.pathname)
+          window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
         }
         // A push deep-link wins; otherwise resolveEntryScreen decides — a brand-new
         // user (level but no XP) gets the welcome lesson, and the dashboard hub is
@@ -418,7 +424,18 @@ export default function App() {
     case 'admin-user':
       return <AdminUserScreen telegramId={screen.telegramId} progress={progress} navigate={navigate} />
     case 'vocabulary-list':
-      return <VocabularyList progress={progress} navigate={navigate} />
+      return (
+        <>
+          <VocabularyList progress={progress} navigate={navigate} initialFilter={screen.filter} />
+          {screen.verb && (
+            <VerbSheet
+              verbId={screen.verb.verbId}
+              highlight={screen.verb.highlight}
+              onClose={() => setScreen({ kind: 'vocabulary-list', filter: screen.filter })}
+            />
+          )}
+        </>
+      )
     case 'vocabulary-quiz':
       return (
         <VocabularyPractice
