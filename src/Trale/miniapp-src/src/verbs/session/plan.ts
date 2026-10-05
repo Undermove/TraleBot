@@ -1,5 +1,6 @@
 import type { TenseKey } from '../types'
 import { STEP, SOLID_STEP, introOrder, type LadderItem, type Progress } from '../ladder/engine'
+import { shuffle } from '../games/common'
 import { STOPS } from '../games/timeRounds'
 import type { LearnerDto, PlannedScene, PlannedTask, SceneType, SessionPlan, VerbLevelKey, VerbMemoryDto } from './types'
 
@@ -76,15 +77,6 @@ function seeded(seed: number) {
   }
 }
 
-function shuffled<T>(xs: T[], rng: () => number): T[] {
-  const a = [...xs]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
 export function planSession(ctx: PlanContext): SessionPlan {
   const { items, can, learner, memory, level } = ctx
   const rng = seeded(memory.sessionsPlayed)
@@ -125,7 +117,7 @@ export function planSession(ctx: PlanContext): SessionPlan {
   }
 
   function pick(): PlannedScene | null {
-    const pool = inPlay().length ? weakestFirst(inPlay()) : shuffled(started(), rng)
+    const pool = inPlay().length ? weakestFirst(inPlay()) : shuffle(started(), rng)
     const forms = pool.slice(0, CAPS.pick)
     if (!forms.length) return null
     return quiz('pick', forms.map(f => ({
@@ -140,7 +132,7 @@ export function planSession(ctx: PlanContext): SessionPlan {
     const forms = pool.slice(0, CAPS.time)
     if (forms.length < 2) return null
     // Мало форм — проходим их дважды, но не одну и ту же подряд.
-    const rounds = forms.length >= 4 ? shuffled(forms, rng) : [...forms, ...forms].slice(0, 4)
+    const rounds = forms.length >= 4 ? shuffle(forms, rng) : [...forms, ...forms].slice(0, 4)
     return {
       type: 'time', targets: rounds.map(f => f.key), units: rounds.length, seconds: rounds.length * PACE.time,
       typing: false, reason: `recognise:${new Set(forms.map(f => f.person)).size}-persons`
@@ -201,7 +193,7 @@ export function planSession(ctx: PlanContext): SessionPlan {
   }
 
   function warmup(): PlannedScene {
-    const forms = shuffled(due, rng).slice(0, CAPS.warmup)
+    const forms = shuffle(due, rng).slice(0, CAPS.warmup)
     return quiz('warmup', forms.map(f => ({
       key: f.key,
       kind: learner.canType && (ctx.progress[f.key]?.reviews ?? 0) % 2 === 1 ? 'type' : f.sentences.length ? 'gap' : 'form'

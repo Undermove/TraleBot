@@ -1,6 +1,6 @@
 import type { TenseKey } from '../types'
 
-// «Лесенка»: ответы API с прогрессом.
+// Прогресс форм глагола: ответы API.
 
 export interface VerbFormProgressDto {
   tense: TenseKey
@@ -29,19 +29,4 @@ export interface VerbProgressStepDto {
   reviews: number
   /** Когда ответили: сервер оставляет самое позднее, поэтому повторная отправка безвредна. */
   at: string
-}
-
-/** Глаголы, которые человек учит, — для строки «продолжить» на главном экране. */
-export interface VerbsInProgressDto {
-  dueForms: number
-  verbs: Array<{
-    id: string
-    title: string
-    ru: string
-    started: number
-    mastered: number
-    total: number
-    due: number
-    updatedAtUtc: string
-  }>
 }

@@ -1,20 +1,18 @@
 import { CARD_TENSES, type TenseKey, type VerbDto, type VerbSentenceDto } from '../types'
 import { meaningOf, sameMeaning, type Meaning } from '../meaning'
 import { sentenceWords, wordOrderVerdict } from '../wordOrder'
+import { pick, shuffle, type Rng } from '../games/common'
 
-// «Лесенка»: чистая логика без React и без сети. Каждая форма глагола поднимается по ступеням
+// Ступени формы: чистая логика без React и без сети. Каждая форма глагола поднимается по ступеням
 // знакомство → узнать → выбрать → вставить во фразу → собрать фразу → написать самому.
-// Здесь решается, какое задание показать следующим и как ответ двигает форму по ступеням.
+// Здесь — как собрать задание нужного вида и как ответ двигает форму по ступеням. Какие задания и
+// сцены войдут в сессию, решает постановщик (session/plan.ts); бесконечного режима «лесенка» больше нет.
 
 /** Ступень формы = каким заданием её спросят в следующий раз. */
 export const STEP = { NEW: 0, MEANING: 1, FORM: 2, GAP: 3, BUILD: 4, TYPE: 5, MASTERED: 6 } as const
 
-/** Сколько форм одновременно в работе. */
-export const MAX_IN_PLAY = 3
 /** Форма «окрепла», когда её уже узнали и выбрали сами: только после этого появляется новая. */
 export const SOLID_STEP = STEP.GAP
-/** Сколько новых форм вводим за один заход. */
-export const SESSION_NEW = 4
 /** Порядок лиц: сначала «я», дальше по тому, как часто лицо нужно в разговоре. */
 export const PERSON_ORDER = [0, 2, 1, 3, 5, 4]
 /** Фразу собираем только из коротких предложений: в длинных порядок слов слишком свободный. */
@@ -48,20 +46,6 @@ export interface FormState {
 }
 export type Progress = Record<string, FormState>
 
-export interface Session {
-  /** Сколько новых форм уже введено в этом заходе. */
-  introduced: number
-  newLimit: number
-  /** Форма и время прошлого задания — чтобы не спрашивать одно и то же подряд. */
-  last: string | null
-  lastTense: TenseKey | null
-  lastReview: boolean
-  /** Со второго захода чередуем времена, а не гоняем одно время блоком. */
-  mix: boolean
-  /** Сколько шагов было впереди в начале захода — знаменатель полоски. */
-  planned: number
-}
-
 export interface Chip {
   text: string
   /** Лишняя фишка: другая форма того же глагола. */
@@ -75,10 +59,8 @@ export type Task =
   | { type: 'gap'; item: LadderItem; sentence: VerbSentenceDto; options: LadderItem[]; review: boolean }
   | { type: 'build'; item: LadderItem; sentence: VerbSentenceDto; answer: string[]; chips: Chip[]; review: boolean }
   | { type: 'type'; item: LadderItem; review: boolean }
-  /** session — на этот заход всё, но новые формы ещё есть; all — выучено всё и повторять пока нечего. */
-  | { type: 'done'; reason: 'session' | 'all' }
 
-export type Rng = () => number
+export type { Rng }
 
 /** Слова предложения без знаков препинания по краям (то же правило, что в комиксе). */
 export const tokens = sentenceWords
@@ -185,62 +167,6 @@ export function settle(item: LadderItem, state: FormState | undefined, ok: boole
   return { step, best: Math.max(cur.best, step), reviews: cur.reviews, due: false }
 }
 
-/** Сколько заданий осталось форме до «выучена», начиная со ступени step. */
-function stepsFrom(item: LadderItem, step: number) {
-  let n = 0
-  for (let s = taskStep(item, step); s < STEP.MASTERED; s = stepUp(item, s)) n++
-  return n
-}
-
-/** Сколько шагов осталось до конца захода: формы в работе, повторения и новые формы, которые ещё введём. */
-export function remaining(items: LadderItem[], progress: Progress, session: Pick<Session, 'introduced' | 'newLimit'>) {
-  let n = 0
-  let toIntroduce = session.newLimit - session.introduced
-  for (const item of items) {
-    const state = progress[item.key]
-    const step = state?.step ?? STEP.NEW
-    if (step === STEP.NEW) {
-      if (toIntroduce > 0) { toIntroduce--; n += 1 + stepsFrom(item, STEP.MEANING) }
-    } else if (step < STEP.MASTERED) n += stepsFrom(item, step)
-    else if (state.due) n += 1
-  }
-  return n
-}
-
-export function startSession(items: LadderItem[], progress: Progress, newLimit = SESSION_NEW): Session {
-  const base = { introduced: 0, newLimit }
-  return {
-    ...base,
-    last: null,
-    lastTense: null,
-    lastReview: false,
-    mix: items.some(i => stepOf(progress, i) >= STEP.MASTERED),
-    planned: remaining(items, progress, base)
-  }
-}
-
-/** Запоминаем показанное задание, чтобы следующее от него отличалось. */
-export function afterTask(session: Session, task: Task): Session {
-  if (task.type === 'done') return session
-  return {
-    ...session,
-    introduced: session.introduced + (task.type === 'intro' ? 1 : 0),
-    last: task.item.key,
-    lastTense: task.item.tense,
-    lastReview: task.type !== 'intro' && task.review
-  }
-}
-
-function shuffle<T>(xs: T[], rng: Rng): T[] {
-  const a = [...xs]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-const pick = <T,>(xs: T[], rng: Rng) => xs[Math.floor(rng() * xs.length)]
-
 /**
  * Неверные варианты: другие формы этого же глагола. Сначала те, что человек уже встречал —
  * путать должно с знакомым. Формы, которые пишутся так же, как верная, в варианты не попадают;
@@ -286,51 +212,6 @@ export function makeTask(item: LadderItem, step: number, review: boolean, items:
     default:
       return { type: 'type', item, review }
   }
-}
-
-/** Среди кандидатов предпочитаем форму другого времени, чем в прошлом задании. */
-function preferOtherTense(pool: LadderItem[], session: Session) {
-  if (!session.mix || !session.lastTense) return pool
-  const other = pool.filter(i => i.tense !== session.lastTense)
-  return other.length ? other : pool
-}
-
-/**
- * Следующее задание.
- * 1. Новая форма — только если повторять нечего, в работе меньше трёх форм и все они окрепли.
- * 2. Повторения выученного идут вперемешку с формами в работе и раньше новых форм.
- * 3. Из форм в работе берём самые слабые; только что спрошенную подряд не спрашиваем, если есть другая.
- */
-export function nextTask(items: LadderItem[], progress: Progress, session: Session, rng: Rng = Math.random): Task {
-  const active = items.filter(i => { const s = stepOf(progress, i); return s > STEP.NEW && s < STEP.MASTERED })
-  const due = items.filter(i => stepOf(progress, i) >= STEP.MASTERED && progress[i.key].due)
-  const fresh = items.find(i => stepOf(progress, i) === STEP.NEW)
-  const mayIntroduce = !!fresh && session.introduced < session.newLimit
-
-  const solid = active.every(i => stepOf(progress, i) >= SOLID_STEP)
-  if (fresh && mayIntroduce && !due.length && active.length < MAX_IN_PLAY && solid) {
-    const sentence = [...fresh.sentences].sort((a, b) => tokens(a.ka).length - tokens(b.ka).length)[0]
-    const twin = items.find(i => i.key !== fresh.key && stepOf(progress, i) > STEP.NEW && i.variants.some(v => fresh.variants.includes(v)))
-    return { type: 'intro', item: fresh, sentence, twin }
-  }
-
-  const notLast = active.filter(i => i.key !== session.last)
-  if (due.length && (!notLast.length || !session.lastReview)) {
-    const item = pick(preferOtherTense(due, session), rng)
-    // Повторение — то проще (узнать во фразе или среди вариантов), то труднее (написать самому).
-    const step = progress[item.key].reviews % 2 === 0 ? (item.sentences.length ? STEP.GAP : STEP.FORM) : STEP.TYPE
-    return makeTask(item, step, true, items, progress, rng)
-  }
-
-  if (active.length) {
-    const pool = notLast.length ? notLast : active
-    const lowest = Math.min(...pool.map(i => taskStep(i, stepOf(progress, i))))
-    const weakest = pool.filter(i => taskStep(i, stepOf(progress, i)) <= lowest + 1)
-    const item = pick(preferOtherTense(weakest, session), rng)
-    return makeTask(item, stepOf(progress, item), false, items, progress, rng)
-  }
-
-  return { type: 'done', reason: fresh ? 'session' : 'all' }
 }
 
 export type BuildVerdict =

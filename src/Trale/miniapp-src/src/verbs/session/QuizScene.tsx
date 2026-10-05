@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GeorgianKeyboard from '../../components/GeorgianKeyboard'
 import Mascot from '../../components/Mascot'
-import { cyr, type VerbDto, type VerbSentenceDto } from '../types'
+import { cyr, type VerbDto } from '../types'
 import { Coach, PULSE, SessionHeader, useFirstTime, type SceneHooks } from '../ui/GameShell'
 import { bad, good } from '../ui/juice'
 import { orderNote } from '../wordOrder'
@@ -12,20 +12,12 @@ import {
 } from '../ladder/engine'
 import { MeaningText } from '../parts'
 import { quoted } from '../meaning'
+import { ChipButton, EXAM_HELP, Geo, HELP, Prompt, SentenceBox } from './quizParts'
 import type { PlannedTask } from './types'
 
 // Сцена-квиз: несколько заданий подряд, одно на экране. Что и в каком порядке спросить, решил
 // постановщик сессии (plan.ts); здесь — экран задания и отклик. Названий времён нет: форма
 // объясняется русской фразой («я хочу»). Этой же сценой идут знакомство, разминка, фразы и экзамен.
-
-const HELP = [
-  'Я показываю слово и что оно значит — ты запоминаешь. Потом спрашиваю его.',
-  'Ошибся — не страшно: скажу, что значит выбранное, и можно попробовать ещё раз.'
-]
-const EXAM_HELP = [
-  'Это экзамен: короткий, по главным словам глагола. На каждый вопрос — одна попытка.',
-  'Сдашь — глагол выучен. Не сдашь — ничего страшного: слова, где ошибся, вернутся в игру.'
-]
 
 export interface ExamResult { asked: number; correct: number; missed: LadderItem[] }
 
@@ -77,7 +69,7 @@ export default function QuizScene({ verb, items, tasks, progress, scene, onExam 
   const later = (ms: number) => { timer.current = setTimeout(advance, ms) }
 
   /** Задание пройдено: ответ засчитан (один раз — по первой попытке), полоска сессии растёт. */
-  function finish(item: LadderItem, ok: boolean, kind: Exclude<Task['type'], 'intro' | 'done'>) {
+  function finish(item: LadderItem, ok: boolean, kind: Exclude<Task['type'], 'intro'>) {
     if (!missed) scene.onResult(item, ok, KIND_CEILING[kind])
     if (exam) {
       tally.current.asked++
@@ -87,14 +79,14 @@ export default function QuizScene({ verb, items, tasks, progress, scene, onExam 
     scene.onStep()
   }
 
-  function right(item: LadderItem, kind: Exclude<Task['type'], 'intro' | 'done'>, big = false) {
+  function right(item: LadderItem, kind: Exclude<Task['type'], 'intro'>, big = false) {
     finish(item, true, kind)
     setSolved(true)
     good(null, big ? 'big' : 'small')
   }
 
   /** Первая ошибка в задании: форма отступает на ступень, дальше можно пробовать без последствий. */
-  function miss(item: LadderItem, kind: Exclude<Task['type'], 'intro' | 'done'>) {
+  function miss(item: LadderItem, kind: Exclude<Task['type'], 'intro'>) {
     if (!missed) scene.onResult(item, false, KIND_CEILING[kind])
     setMissed(true)
     bad()
@@ -176,7 +168,6 @@ export default function QuizScene({ verb, items, tasks, progress, scene, onExam 
     setWaitNext(true)
   }
 
-  if (task.type === 'done') return null
   /** Во фразе верный вариант — та запись формы, что стоит в самой фразе. */
   const shown = (o: LadderItem) => (task.type === 'gap' && o.key === task.item.key ? task.sentence.form : o.form)
   const typing = task.type === 'type' && !solved && !waitNext
@@ -307,38 +298,5 @@ export default function QuizScene({ verb, items, tasks, progress, scene, onExam 
       </div>
       {typing && <GeorgianKeyboard value={typed} onChange={setTyped} />}
     </div>
-  )
-}
-
-const Geo = ({ children }: { children: React.ReactNode }) => <span className="font-geo font-bold text-jewelInk">{children}</span>
-
-function Prompt({ eyebrow, children }: { eyebrow: string; children: React.ReactNode }) {
-  return (
-    <div className="text-center">
-      <div className="mn-eyebrow text-navy">{eyebrow}</div>
-      <div className="mt-3">{children}</div>
-    </div>
-  )
-}
-
-function SentenceBox({ sentence }: { sentence: VerbSentenceDto }) {
-  return (
-    <div className="mt-6 rounded-xl bg-cream-tile border border-jewelInk/30 p-3">
-      <div className="text-[11px] text-jewelInk-hint">например</div>
-      <div className="mt-1 font-geo text-[17px] font-bold">{sentence.ka}</div>
-      <div className="text-[13px] text-jewelInk-mid">{sentence.ru}</div>
-    </div>
-  )
-}
-
-function ChipButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-3 py-2 rounded-lg bg-cream-tile border-[1.5px] border-jewelInk font-geo text-[17px] font-bold"
-      style={{ boxShadow: '2px 2px 0 #15100A' }}
-    >
-      {children}
-    </button>
   )
 }

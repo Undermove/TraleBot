@@ -21,7 +21,6 @@ export const newLearning = {
 export function sheetApi(overrides: Record<string, unknown> = {}) {
   return {
     fetchVerb: vi.fn(),
-    fetchVerbProgress: vi.fn(() => Promise.resolve(noProgress)),
     saveVerbProgress: vi.fn(() => Promise.resolve(noProgress)),
     fetchVerbLearning: vi.fn(() => Promise.resolve(newLearning)),
     saveVerbSession: vi.fn(() => Promise.resolve({ state: newLearning, xpEarned: 0, progress: null })),

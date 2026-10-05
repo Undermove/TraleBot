@@ -4,7 +4,7 @@ import type { VerbDto, VerbFormHitDto } from '../types'
 
 export const writeVerb: VerbDto = {
   id: 'წერს', title: 'წერა', ru: 'писать', kind: 'pattern', present: ['ვწერ'],
-  masdarWithPreverb: ['დაწერა'], reason: 'Будущее и аорист = приставка + основа настоящего.',
+  masdarWithPreverb: ['დაწერა'], reason: 'Будущее и прошедшее «сделал» = приставка + основа настоящего.',
   root: 'წერ', oddTenses: [], model: { id: 'აკეთებს', title: 'კეთება', ru: 'делать' },
   tenses: {
     present: [['ვწერ'], ['წერ'], ['წერს'], ['ვწერთ'], ['წერთ'], ['წერენ']],

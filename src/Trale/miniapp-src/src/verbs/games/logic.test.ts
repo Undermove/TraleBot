@@ -1,11 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import { CARD_TENSES } from '../types'
-import { availableGames } from './availability'
+import { capabilities } from '../session/context'
 import { COLS, boneCount, boneRows, bonesNear, digOptions, digs, plantBones } from './boneField'
 import { describeSlot, formOf, shuffle, slotMeaning, slotsOf } from './common'
 import { assemble, builderCells, makePuzzle, schemeOf, splitForm, stageFor, wrongRows } from './formParts'
 import { CATALOG, seeded, verbByLemma, verbRu } from '../testing/catalog'
 import { STOPS, canPlayTimeMachine, locate, makeTimeRound, personsFor } from './timeRounds'
+
+/** Какие игры глагол может дать сессии — как это видит постановщик (session/context.ts). */
+const availableGames = (verb: Parameters<typeof capabilities>[0]) => {
+  const can = capabilities(verb, [])
+  return [can.time && 'time', can.boneRows.length > 0 && 'bones', can.builder && 'builder'].filter(Boolean)
+}
 
 describe('which games a verb gets', () => {
   it('offers all three for a verified pattern verb that takes a preverb', () => {

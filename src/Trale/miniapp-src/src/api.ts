@@ -429,26 +429,19 @@ export function parseVerbForm(form: string) {
   return request<{ hits: VerbFormHitDto[] }>(`/api/miniapp/verbs/parse?form=${encodeURIComponent(form)}`)
 }
 
-// ── Глаголы: лесенка ─────────────────────────────────────────────────────────
-import type { VerbProgressDto, VerbProgressStepDto, VerbsInProgressDto } from './verbs/ladder/types'
+// ── Глаголы: прогресс форм ───────────────────────────────────────────────────
+import type { VerbProgressDto, VerbProgressStepDto } from './verbs/ladder/types'
 
-/** Прогресс человека по формам одного глагола. */
-export function fetchVerbProgress(id: string) {
-  return request<VerbProgressDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/progress`)
-}
-
-/** Сохранить ступени форм после ответов. Повторная отправка той же пачки ничего не ломает. */
+/**
+ * Сохранить ступени форм без сессии — только чтобы дослать ответы, застрявшие на устройстве
+ * (session/sync.ts). В сессии ответы уходят вместе с её отчётом. Повторная отправка ничего не ломает.
+ */
 export function saveVerbProgress(id: string, forms: VerbProgressStepDto[]) {
   return request<VerbProgressDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/progress`, {
     method: 'POST',
     body: JSON.stringify({ forms }),
     keepalive: true
   })
-}
-
-/** Глаголы, которые человек учит, и сколько форм пора повторить. */
-export function fetchVerbsInProgress() {
-  return request<VerbsInProgressDto>('/api/miniapp/verbs/progress')
 }
 
 /** Комиксы глагола: реплики уже подставлены сервером из каталога. Пустой список, если историй нет. */

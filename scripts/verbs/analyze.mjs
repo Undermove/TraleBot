@@ -104,12 +104,12 @@ export function analyze(verb, { partial = false } = {}) {
   if (hasVariants) return { ...base, kind: 'feature', reason: 'У некоторых форм два равноправных варианта.' }
   if (vowelShift) return { ...base, kind: 'feature', reason: 'В части форм внутри корня появляется или выпадает гласная.' }
   if (!scheme) return { ...base, kind: 'feature', reason: 'Будущее и прошедшее строятся не от формы настоящего.' }
-  if (aoristShift) return { ...base, kind: 'feature', reason: 'В аористе меняется основа, а не только окончание.' }
+  if (aoristShift) return { ...base, kind: 'feature', reason: 'В прошедшем «сделал» меняется основа, а не только окончание.' }
   return {
     ...base,
     kind: 'pattern',
-    reason: scheme === 'preverb' ? `Будущее и аорист = приставка ${preverb}- + основа настоящего.`
+    reason: scheme === 'preverb' ? `Будущее и прошедшее «сделал» = приставка ${preverb}- + основа настоящего.`
       : scheme === 'same' ? 'Будущее совпадает с настоящим, приставки нет.'
-      : 'Будущее и аорист получают ი- после показателя лица, приставки нет.'
+      : 'Будущее и прошедшее «сделал» получают ი- в начале (после буквы для «я» и «мы»), приставки нет.'
   }
 }

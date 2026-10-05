@@ -15,6 +15,13 @@ const TERMS = /аорист|имперфект|оптатив|конъюнкти
 const withoutComments = (code: string) => code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
 
 describe('no textbook terms in what the learner reads', () => {
+  it('keeps grammar terms out of the catalog explanation of every verb («что это значит?»)', () => {
+    // Первая фраза свёрнутого пояснения приходит из каталога (scripts/verbs/analyze.mjs, поле reason).
+    const found = CATALOG.filter(v => TERMS.test(v.reason)).map(v => `${v.ru}: ${v.reason}`)
+    expect(found).toEqual([])
+    expect(CATALOG.every(v => v.reason.trim().length > 0)).toBe(true)
+  })
+
   it('keeps grammar terms out of every string of src/verbs', () => {
     const found: string[] = []
     for (const [file, code] of Object.entries(sources)) {

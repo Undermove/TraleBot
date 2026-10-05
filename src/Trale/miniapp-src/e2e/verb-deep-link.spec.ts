@@ -42,7 +42,7 @@ const catalog = {
 const persons = (forms: string[]) => forms.map((f) => [f])
 const verb = {
   id: 'წერს', title: 'წერა', ru: 'писать', kind: 'pattern', present: ['ვწერ'],
-  masdarWithPreverb: ['დაწერა'], reason: 'Будущее и аорист = приставка და- + основа настоящего.',
+  masdarWithPreverb: ['დაწერა'], reason: 'Будущее и прошедшее «сделал» = приставка და- + основа настоящего.',
   root: 'წერ', oddTenses: [], model: null,
   tenses: {
     present: persons(['ვწერ', 'წერ', 'წერს', 'ვწერთ', 'წერთ', 'წერენ']),

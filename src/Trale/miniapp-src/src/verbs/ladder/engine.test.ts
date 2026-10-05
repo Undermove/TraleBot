@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { CARD_TENSES } from '../types'
 import {
-  BUILD_WORDS, MAX_IN_PLAY, PERSON_ORDER, SESSION_NEW, SOLID_STEP, STEP,
-  afterTask, buildItems, checkBuild, distractors, findForm, introduce, nextTask, remaining, settle, startSession,
-  taskStep, tokens, withGap,
-  type FormState, type LadderItem, type Progress, type Session, type Task
+  BUILD_WORDS, KIND_CEILING, PERSON_ORDER, SOLID_STEP, STEP,
+  buildItems, checkBuild, distractors, findForm, introOrder, introduce, settle, settleCapped, taskOfKind, taskStep, tokens, withGap,
+  type FormState, type LadderItem, type Progress, type Task, type TaskKind
 } from './engine'
 import { CATALOG as catalogVerbs, seeded, verbByLemma } from '../testing/catalog'
 
@@ -17,29 +16,6 @@ const withoutSentences = catalogVerbs.map(buildItems).find(items => items.every(
 const withTwins = catalogVerbs.map(buildItems).find(items => new Set(items.map(i => i.form)).size < items.length)!
 
 const state = (step: number, extra: Partial<FormState> = {}): FormState => ({ step, best: step, reviews: 0, due: false, ...extra })
-const active = (items: LadderItem[], p: Progress) => items.filter(i => p[i.key] && p[i.key].step < STEP.MASTERED)
-
-/** Проходит один заход: answer решает, верно ли ответили на задание. Возвращает прогресс и все показанные задания. */
-function playSession(
-  items: LadderItem[], start: Progress, rng: () => number, answer: (task: Task) => boolean = () => true,
-  watch: (task: Task, progress: Progress, session: Session) => void = () => {}
-) {
-  let progress = { ...start }
-  let session = startSession(items, progress)
-  const seen: Task[] = []
-  for (let guard = 0; guard < 5000; guard++) {
-    const task = nextTask(items, progress, session, rng)
-    watch(task, progress, session)
-    seen.push(task)
-    if (task.type === 'done') return { progress, seen, session }
-    progress = {
-      ...progress,
-      [task.item.key]: task.type === 'intro' ? introduce() : settle(task.item, progress[task.item.key], answer(task))
-    }
-    session = afterTask(session, task)
-  }
-  throw new Error('заход не закончился')
-}
 
 describe('порядок форм', () => {
   it('сначала шесть главных времён для «я», потом для остальных лиц', () => {
@@ -143,114 +119,45 @@ describe('ступени', () => {
   })
 })
 
-describe('какое задание следующее', () => {
-  it('новичку сначала показывают первую форму, потом спрашивают её же', () => {
-    const session = startSession(write, {})
-    const intro = nextTask(write, {}, session, seeded(1))
-    expect(intro).toMatchObject({ type: 'intro', item: { key: 'present:0' } })
-
-    const progress = { 'present:0': introduce() }
-    const next = nextTask(write, progress, afterTask(session, intro), seeded(1))
-    expect(next).toMatchObject({ type: 'meaning', item: { key: 'present:0' }, review: false })
-  })
-
-  it('новая форма появляется, только когда формы в работе окрепли, и в работе их не больше трёх', () => {
-    for (const seed of [1, 2, 3]) {
-      const mistakes = seeded(seed * 7)
-      playSession(write, {}, seeded(seed), () => mistakes() > 0.2, (task, progress) => {
-        const inPlay = active(write, progress)
-        expect(inPlay.length).toBeLessThanOrEqual(MAX_IN_PLAY)
-        if (task.type === 'intro') {
-          expect(inPlay.length).toBeLessThan(MAX_IN_PLAY)
-          expect(inPlay.every(i => progress[i.key].step >= SOLID_STEP)).toBe(true)
-        }
-      })
-    }
-  })
-
-  it('формы вводятся в порядке лесенки', () => {
-    const { seen } = playSession(write, {}, seeded(5))
-    const intros = seen.filter(t => t.type === 'intro').map(t => (t as { item: LadderItem }).item.key)
-    expect(intros).toEqual(write.slice(0, SESSION_NEW).map(i => i.key))
-  })
-
-  it('одну и ту же форму не спрашивают два раза подряд, если в работе есть другая', () => {
-    const progress = { [write[0].key]: state(STEP.FORM), [write[1].key]: state(STEP.FORM) }
-    const session = { ...startSession(write, progress), last: write[0].key }
-    for (let seed = 0; seed < 20; seed++) {
-      const task = nextTask(write, progress, session, seeded(seed))
-      expect(task).toMatchObject({ item: { key: write[1].key } })
-    }
-  })
-
-  it('после ошибки форму спрашивают снова не позже чем через одно задание', () => {
-    const progress: Progress = { [write[0].key]: state(STEP.GAP), [write[1].key]: state(STEP.GAP), [write[2].key]: state(STEP.TYPE) }
-    let session: Session = { ...startSession(write, progress), introduced: SESSION_NEW }
-    const failed = nextTask(write, progress, session, seeded(3)) as Extract<Task, { type: 'gap' }>
-    const after = { ...progress, [failed.item.key]: settle(failed.item, progress[failed.item.key], false) }
-    session = afterTask(session, failed)
-
-    const one = nextTask(write, after, session, seeded(3)) as Extract<Task, { type: 'gap' }>
-    const two = nextTask(write, { ...after, [one.item.key]: settle(one.item, after[one.item.key], true) }, afterTask(session, one), seeded(3))
-
-    expect(one.item.key).not.toBe(failed.item.key)
-    expect(two).toMatchObject({ type: 'form', item: { key: failed.item.key } })
-  })
-
-  it('заход заканчивается, когда введённые в нём формы выучены, а новые оставляет на потом', () => {
-    const { progress, seen } = playSession(write, {}, seeded(9))
-    const learned = write.filter(i => progress[i.key]?.step === STEP.MASTERED)
-
-    expect(seen[seen.length - 1]).toEqual({ type: 'done', reason: 'session' })
-    expect(learned.map(i => i.key)).toEqual(write.slice(0, SESSION_NEW).map(i => i.key))
-  })
-
-  it('когда выучено всё и повторять нечего, игра говорит об этом', () => {
-    const progress = Object.fromEntries(write.map(i => [i.key, state(STEP.MASTERED)]))
-
-    expect(nextTask(write, progress, startSession(write, progress))).toEqual({ type: 'done', reason: 'all' })
-  })
-
-  it('за несколько заходов с ошибками выучивается любой глагол каталога', () => {
-    for (const [index, verb] of catalogVerbs.entries()) {
-      const items = buildItems(verb)
-      const mistakes = seeded(index + 100)
-      let progress: Progress = {}
-      let sessions = 0
-      for (; sessions < 30 && !items.every(i => progress[i.key]?.step === STEP.MASTERED); sessions++) {
-        progress = playSession(items, progress, seeded(index), () => mistakes() > 0.25).progress
-      }
-      expect(items.every(i => progress[i.key]?.step === STEP.MASTERED)).toBe(true)
-      expect(sessions).toBe(Math.ceil(items.length / SESSION_NEW))
-    }
-  })
-})
-
 describe('задания собраны корректно', () => {
   it('в каждом задании любого глагола верный ответ один, а варианты не совпадают по написанию', () => {
+    const kinds: TaskKind[] = ['meaning', 'form', 'gap', 'build', 'type']
     for (const [index, verb] of catalogVerbs.entries()) {
       const items = buildItems(verb)
-      const mistakes = seeded(index + 1)
-      let progress: Progress = {}
-      for (let s = 0; s < 3; s++) {
-        progress = playSession(items, progress, seeded(index), () => mistakes() > 0.2, task => {
-          if (task.type === 'meaning' || task.type === 'form' || task.type === 'gap') {
-            const spellings = task.options.flatMap(o => o.variants)
-            expect(task.options.filter(o => o.key === task.item.key)).toHaveLength(1)
-            expect(new Set(spellings).size).toBe(spellings.length)
-            expect(task.options.length).toBe(task.type === 'meaning' ? 3 : 4)
-          }
-          if (task.type === 'gap') expect(tokens(task.sentence.ka)).toContain(task.sentence.form)
-          if (task.type === 'build') {
-            expect(task.answer).toEqual(tokens(task.sentence.ka))
-            expect(task.chips.filter(c => !c.decoy).map(c => c.text).sort()).toEqual([...task.answer].sort())
-            const decoys = task.chips.filter(c => c.decoy)
-            expect(decoys.length).toBeGreaterThan(0)
-            expect(decoys.every(c => !task.answer.includes(c.text))).toBe(true)
-          }
-        }).progress
+      const rng = seeded(index + 1)
+      // Половина форм уже встречалась — как посреди обучения.
+      const progress: Progress = Object.fromEntries(items.filter((_, n) => n % 2 === 0).map(i => [i.key, state(STEP.FORM)]))
+      for (const item of items) for (const kind of kinds) {
+        const task = taskOfKind(kind, item, items, progress, rng)
+        if (task.type === 'intro') throw new Error('знакомство здесь не просили')
+        expect(task.item.key).toBe(item.key)
+        if (task.type === 'meaning' || task.type === 'form' || task.type === 'gap') {
+          const spellings = task.options.flatMap(o => o.variants)
+          expect(task.options.filter(o => o.key === task.item.key)).toHaveLength(1)
+          expect(new Set(spellings).size).toBe(spellings.length)
+          // У совсем короткого глагола вариантов может не хватить — но выбор есть всегда.
+          expect(task.options.length).toBeGreaterThan(1)
+          expect(task.options.length).toBeLessThanOrEqual(task.type === 'meaning' ? 3 : 4)
+        }
+        if (task.type === 'gap') expect(tokens(task.sentence.ka)).toContain(task.sentence.form)
+        if (task.type === 'build') {
+          expect(task.answer).toEqual(tokens(task.sentence.ka))
+          expect(task.chips.filter(c => !c.decoy).map(c => c.text).sort()).toEqual([...task.answer].sort())
+          const decoys = task.chips.filter(c => c.decoy)
+          expect(decoys.length).toBeGreaterThan(0)
+          expect(decoys.every(c => !task.answer.includes(c.text))).toBe(true)
+        }
       }
     }
+  })
+
+  it('задание без материала заменяется ближайшим попроще: собрать → вставить → выбрать', () => {
+    const plain = withoutSentences[0]
+    expect(taskOfKind('build', plain, withoutSentences, {}, seeded(1)).type).toBe('form')
+    expect(taskOfKind('gap', plain, withoutSentences, {}, seeded(1)).type).toBe('form')
+    const gapOnly = write.find(i => i.sentences.length && !i.buildable.length)
+    if (gapOnly) expect(taskOfKind('build', gapOnly, write, {}, seeded(1)).type).toBe('gap')
+    expect(taskOfKind('type', plain, withoutSentences, {}, seeded(1)).type).toBe('type')
   })
 
   it('неверные варианты берутся сначала из уже встреченных форм', () => {
@@ -275,102 +182,16 @@ describe('задания собраны корректно', () => {
     const firstTwin = withTwins.find(i => i.form === second.form)!
     const progress = Object.fromEntries(withTwins.slice(0, withTwins.indexOf(second)).map(i => [i.key, state(STEP.MASTERED)]))
 
-    const task = nextTask(withTwins, progress, startSession(withTwins, progress), seeded(1))
+    const task = taskOfKind('intro', second, withTwins, progress, seeded(1))
 
     expect(task).toMatchObject({ type: 'intro', item: { key: second.key }, twin: { key: firstTwin.key } })
-  })
-})
-
-describe('повторение', () => {
-  const mastered = (n: number, due: boolean) =>
-    Object.fromEntries(write.slice(0, n).map(i => [i.key, state(STEP.MASTERED, { due })])) as Progress
-
-  it('формы, которым пора на повторение, спрашивают раньше новых', () => {
-    const progress = mastered(4, true)
-    const { seen } = playSession(write, progress, seeded(2))
-    const firstIntro = seen.findIndex(t => t.type === 'intro')
-
-    expect(firstIntro).toBe(4)
-    expect(seen.slice(0, 4).every(t => t.type !== 'intro' && t.type !== 'done' && t.review)).toBe(true)
-    expect(new Set(seen.slice(0, 4).map(t => (t as { item: LadderItem }).item.key)).size).toBe(4)
-  })
-
-  it('выученные формы, которым ещё не пора, не спрашивают', () => {
-    const { seen } = playSession(write, mastered(4, false), seeded(2))
-
-    expect(seen[0].type).toBe('intro')
-    expect(seen.some(t => t.type !== 'intro' && t.type !== 'done' && t.review)).toBe(false)
-  })
-
-  it('со второго захода времена чередуются: следующее повторение берётся из другого времени', () => {
-    const progress = mastered(3, true)
-    const session = startSession(write, progress)
-    expect(session.mix).toBe(true)
-    for (let seed = 0; seed < 20; seed++) {
-      const task = nextTask(write, progress, { ...session, lastTense: write[0].tense, lastReview: false }, seeded(seed))
-      expect(task.type).not.toBe('done')
-      expect((task as { item: LadderItem }).item.tense).not.toBe(write[0].tense)
-    }
-  })
-
-  it('в первом заходе чередование не включается', () => {
-    expect(startSession(write, {}).mix).toBe(false)
-    expect(startSession(write, { [write[0].key]: state(STEP.FORM) }).mix).toBe(false)
-  })
-
-  it('проваленное повторение возвращается в том же заходе, вперемешку с остальными', () => {
-    const progress = mastered(3, true)
-    let failedOnce = false
-    const { progress: after, seen } = playSession(write, progress, seeded(4), task => {
-      if (!failedOnce && task.type !== 'intro' && task.type !== 'done' && task.review) { failedOnce = true; return false }
-      return true
-    })
-    const failedKey = (seen[0] as { item: LadderItem }).item.key
-
-    expect(seen[1]).toMatchObject({ review: true })
-    expect((seen[1] as { item: LadderItem }).item.key).not.toBe(failedKey)
-    expect(seen[2]).toMatchObject({ type: 'type', review: false, item: { key: failedKey } })
-    expect(after[failedKey]).toMatchObject({ step: STEP.MASTERED, reviews: 0 })
-  })
-
-  it('повторение то проще, то труднее: сначала узнать, в следующий раз написать', () => {
-    const one = { [write[0].key]: state(STEP.MASTERED, { due: true, reviews: 0 }) }
-    const two = { [write[0].key]: state(STEP.MASTERED, { due: true, reviews: 1 }) }
-    const limit = (p: Progress) => ({ ...startSession(write, p), introduced: SESSION_NEW })
-
-    expect(['gap', 'form']).toContain(nextTask(write, one, limit(one), seeded(1)).type)
-    expect(nextTask(write, two, limit(two), seeded(1)).type).toBe('type')
-  })
-})
-
-describe('полоска захода', () => {
-  it('каждый верный шаг убавляет остаток ровно на один, и к концу захода он равен нулю', () => {
-    let before = remaining(write, {}, { introduced: 0, newLimit: SESSION_NEW })
-    const planned = before
-    const { session } = playSession(write, {}, seeded(11), () => true, (task, progress, s) => {
-      const now = remaining(write, progress, s)
-      expect(s.planned).toBe(planned)
-      if (progress !== undefined && Object.keys(progress).length) expect(before - now).toBe(1)
-      before = now
-    })
-
-    expect(before).toBe(0)
-    expect(session.introduced).toBe(SESSION_NEW)
-  })
-
-  it('ошибка увеличивает остаток — поэтому экран показывает лучший достигнутый результат', () => {
-    const progress = { [write[0].key]: state(STEP.BUILD) }
-    const session = { introduced: SESSION_NEW, newLimit: SESSION_NEW }
-    const after = { [write[0].key]: settle(write[0], progress[write[0].key], false) }
-
-    expect(remaining(write, after, session)).toBe(remaining(write, progress, session) + 1)
   })
 })
 
 describe('сборка фразы', () => {
   const item = write.find(i => i.buildable.length)!
   const progress = { [item.key]: state(STEP.BUILD) }
-  const task = nextTask(write, progress, { ...startSession(write, progress), introduced: SESSION_NEW }, seeded(1)) as Extract<Task, { type: 'build' }>
+  const task = taskOfKind('build', item, write, progress, seeded(1)) as Extract<Task, { type: 'build' }>
   const words = task.answer.map(text => task.chips.find(c => c.text === text && !c.decoy)!)
 
   it('слово в слово как в источнике', () => {
@@ -407,5 +228,56 @@ describe('мелочи', () => {
   it('по написанию находит, какая это форма', () => {
     expect(findForm(write, write[8].form)?.key).toBe(write[8].key)
     expect(findForm(write, 'нет такой')).toBeUndefined()
+  })
+})
+
+describe('ответ в сцене сессии', () => {
+  const item = write[0]
+
+  it('сцена поднимает форму не выше своего потолка', () => {
+    expect(settleCapped(item, state(STEP.FORM), true, SOLID_STEP)!.step).toBe(SOLID_STEP)
+    expect(settleCapped(item, state(SOLID_STEP), true, SOLID_STEP)).toBeNull()
+    expect(settleCapped(item, state(STEP.TYPE), true, SOLID_STEP)).toBeNull()
+    expect(settleCapped(item, state(STEP.TYPE), true, KIND_CEILING.type)!.step).toBe(STEP.MASTERED)
+  })
+
+  it('выученной форму делает только задание «написать самому»', () => {
+    const ceilings = Object.entries(KIND_CEILING).filter(([kind]) => kind !== 'type').map(([, step]) => step)
+    expect(Math.max(...ceilings)).toBeLessThan(STEP.MASTERED)
+    expect(KIND_CEILING.form).toBe(SOLID_STEP)
+  })
+
+  it('незнакомую форму засчитывают только сцены, которые её показывают', () => {
+    expect(settleCapped(item, undefined, true, SOLID_STEP)).toBeNull()
+    expect(settleCapped(item, undefined, false, SOLID_STEP)).toBeNull()
+    expect(settleCapped(item, undefined, true, STEP.MEANING, true)).toEqual(introduce())
+    expect(settleCapped(item, undefined, true, SOLID_STEP, true)!.step).toBe(STEP.FORM)
+    expect(settleCapped(item, undefined, false, SOLID_STEP, true)).toEqual(introduce())
+  })
+
+  it('ошибка опускает на ступень, но не ниже первой; лучший результат остаётся', () => {
+    expect(settleCapped(item, state(SOLID_STEP), false, SOLID_STEP)).toMatchObject({ step: STEP.FORM, best: SOLID_STEP })
+    expect(settleCapped(item, state(STEP.MEANING), false, SOLID_STEP)).toBeNull()
+  })
+
+  it('выученная форма: верный ответ на повторении считается, без повторения ничего не меняет, ошибка возвращает в игру', () => {
+    expect(settleCapped(item, state(STEP.MASTERED, { due: true }), true, SOLID_STEP)).toMatchObject({ step: STEP.MASTERED, reviews: 1, due: false })
+    expect(settleCapped(item, state(STEP.MASTERED), true, KIND_CEILING.type)).toBeNull()
+    expect(settleCapped(item, state(STEP.MASTERED), false, SOLID_STEP)!.step).toBe(taskStep(item, STEP.TYPE))
+  })
+})
+
+describe('порядок знакомства в сессиях', () => {
+  it('сначала «я» — сейчас, сделал, сделаю; потом те же времена для «он» и «ты»; потом остальные времена для «я»', () => {
+    const order = introOrder(write).map(i => i.key)
+    expect(order.slice(0, 3)).toEqual(['present:0', 'aorist:0', 'future:0'])
+    expect(order.slice(3, 9)).toEqual(['present:2', 'aorist:2', 'future:2', 'present:1', 'aorist:1', 'future:1'])
+    expect(order.slice(9, 12).every(k => k.endsWith(':0'))).toBe(true)
+    expect([...order].sort()).toEqual(write.map(i => i.key).sort())
+  })
+
+  it('у неполного глагола — те формы, что есть, без дыр', () => {
+    expect(introOrder(want).map(i => i.key).slice(0, 2)).toEqual(['present:0', 'present:2'])
+    expect(introOrder(want)).toHaveLength(want.length)
   })
 })

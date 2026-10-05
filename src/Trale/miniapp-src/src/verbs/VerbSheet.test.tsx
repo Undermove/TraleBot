@@ -9,7 +9,7 @@ const persons = (stem: string) => ['ვ' + stem, stem, stem + 'ს', 'ვ' + ste
 
 const verb: VerbDto = {
   id: 'წერს', title: 'წერა', ru: 'писать', kind: 'pattern', present: ['ვწერ'],
-  masdarWithPreverb: ['დაწერა'], reason: 'Будущее и аорист = приставка და- + основа настоящего.',
+  masdarWithPreverb: ['დაწერა'], reason: 'Будущее и прошедшее «сделал» = приставка და- + основа настоящего.',
   root: 'წერ', oddTenses: [], model: { id: 'აკეთებს', title: 'კეთება', ru: 'делать' },
   tenses: { present: persons('წერ'), future: persons('დაწერ'), perfect: persons('დაწერია') },
   sentences: [],

@@ -1,11 +1,10 @@
-import { fetchVerbProgress, saveVerbProgress } from '../../api'
-import type { FormState, LadderItem, Progress } from './engine'
+import type { Progress } from './engine'
 import type { VerbFormProgressDto, VerbProgressStepDto } from './types'
 
-// Прогресс лесенки живёт на сервере. Каждый ответ сначала попадает в очередь на устройстве,
-// потом уходит на сервер; из очереди запись убирается только после успешного сохранения.
-// Поэтому пропавшая сеть посреди занятия ничего не теряет: очередь уйдёт со следующим ответом
-// или при следующем открытии глагола.
+// Прогресс форм живёт на сервере. Каждый ответ сначала попадает в очередь на устройстве, потом
+// уходит на сервер вместе с отчётом о сессии (session/sync.ts); из очереди запись убирается только
+// после успешного сохранения. Поэтому пропавшая сеть посреди занятия ничего не теряет: очередь
+// уйдёт со следующим ответом или при следующем открытии глагола. Здесь — сама очередь.
 
 export type Pending = Record<string, VerbProgressStepDto>
 
@@ -58,66 +57,4 @@ export function toProgress(forms: VerbFormProgressDto[], pending: Pending = {}):
     progress[key] = { step: p.step, best: Math.max(progress[key]?.best ?? 0, p.step), reviews: p.reviews, due: false }
   }
   return progress
-}
-
-export interface LoadedProgress {
-  canLearn: boolean
-  progress: Progress
-}
-
-/**
- * Прогресс по глаголу. Если с прошлого раза остались несохранённые ответы, сначала отправляем их:
- * сервер сам решит, что новее, и вернёт итог.
- */
-export async function loadProgress(verbId: string): Promise<LoadedProgress> {
-  const pending = readPending(verbId)
-  if (Object.keys(pending).length) {
-    try {
-      const saved = await saveVerbProgress(verbId, Object.values(pending))
-      dropSent(verbId, pending)
-      return { canLearn: saved.canLearn, progress: toProgress(saved.forms, readPending(verbId)) }
-    } catch {
-      // Не ушло — читаем, что есть на сервере, и накладываем очередь поверх.
-    }
-  }
-  const state = await fetchVerbProgress(verbId)
-  return { canLearn: state.canLearn, progress: toProgress(state.forms, readPending(verbId)) }
-}
-
-export interface ProgressSaver {
-  /** Запомнить новое состояние формы и отправить его в фоне. */
-  record: (item: LadderItem, state: FormState) => void
-  /** Дослать всё, что ещё не сохранено. */
-  flush: () => Promise<void>
-}
-
-export function createSaver(verbId: string, now: () => Date = () => new Date()): ProgressSaver {
-  let inFlight = false
-  let again = false
-
-  async function flush() {
-    if (inFlight) { again = true; return }
-    const pending = readPending(verbId)
-    if (!Object.keys(pending).length) return
-    inFlight = true
-    try {
-      await saveVerbProgress(verbId, Object.values(pending))
-      dropSent(verbId, pending)
-    } catch {
-      // Остаётся в очереди.
-    } finally {
-      inFlight = false
-      if (again) { again = false; void flush() }
-    }
-  }
-
-  return {
-    record(item, state) {
-      const pending = readPending(verbId)
-      pending[item.key] = { tense: item.tense, person: item.person, step: state.step, reviews: state.reviews, at: now().toISOString() }
-      writePending(verbId, pending)
-      void flush()
-    },
-    flush
-  }
 }

@@ -110,7 +110,6 @@ export const KINDS: Record<VerbKind, { label: string; chip: string }> = {
   feature: { label: 'С особенностью', chip: 'bg-gold-wash' },
   special: { label: 'Особый', chip: 'bg-ruby-wash' }
 }
-export const KIND_ORDER: VerbKind[] = ['pattern', 'feature', 'special']
 
 const CYR: Record<string, string> = {
   ა: 'а', ბ: 'б', გ: 'г', დ: 'д', ე: 'э', ვ: 'в', ზ: 'з', თ: 'т', ი: 'и', კ: 'к’', ლ: 'л',
@@ -120,4 +119,3 @@ const CYR: Record<string, string> = {
 /** Кириллическая транскрипция грузинского слова. */
 export const cyr = (s: string) => [...s].map(c => CYR[c] ?? c).join('')
 
-export const isGeorgian = (s: string) => /[ა-ჰ]/.test(s)

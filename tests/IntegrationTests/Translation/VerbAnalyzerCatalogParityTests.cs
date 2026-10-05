@@ -52,10 +52,10 @@ public class VerbAnalyzerCatalogParityTests
         reasons.Should().Contain(r => r.StartsWith("Перевёртыш") && r.EndsWith("окончание."));
         reasons.Should().Contain("В источнике есть только часть времён — учить формы целиком.");
         reasons.Should().Contain("В разных временах разные корни — учить целиком.");
-        reasons.Should().Contain("В аористе меняется основа, а не только окончание.");
+        reasons.Should().Contain("В прошедшем «сделал» меняется основа, а не только окончание.");
         reasons.Should().Contain("Будущее совпадает с настоящим, приставки нет.");
-        reasons.Should().Contain(r => r.StartsWith("Будущее и аорист получают"));
-        reasons.Should().Contain(r => r.StartsWith("Будущее и аорист = приставка"));
+        reasons.Should().Contain(r => r.StartsWith("Будущее и прошедшее «сделал» получают"));
+        reasons.Should().Contain(r => r.StartsWith("Будущее и прошедшее «сделал» = приставка"));
     }
 
     [Test]
