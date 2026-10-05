@@ -1,6 +1,7 @@
-import { PERSONS, TENSES, type TenseKey, type VerbDto } from '../types'
+import { PERSONS, type TenseKey, type VerbDto } from '../types'
+import { meaningOf, quoted, type Meaning } from '../meaning'
 
-// Общее для трёх игр по таблице глагола: случайность, доступ к формам, русская формулировка задания.
+// Общее для трёх игр по таблице глагола: случайность, доступ к формам, что форма значит по-русски.
 // Грузинских форм здесь нет и быть не должно — всё берётся из карточки глагола.
 
 /** Источник случайности; в тестах подменяется на предсказуемый. */
@@ -40,15 +41,11 @@ export function slotsOf(verb: VerbDto, form: string, tenses: readonly TenseKey[]
   return out
 }
 
-/** Короткий образец времени из справочника: «сделаю», «делал». Всё, что после тире, — пояснение. */
-export const shortGloss = (tense: TenseKey): string => TENSES[tense].gloss.split(' — ')[0]
+/** Что значит клетка простыми словами: «я буду писать». */
+export const slotMeaning = (verb: VerbDto, slot: Slot): Meaning => meaningOf(verb, slot.tense, slot.person)
 
-/** «я · Будущее» — кто и когда, без перевода самой формы: его у нас нет, и выдумывать его нельзя. */
-export const whoWhen = (slot: Slot): string => `${PERSONS[slot.person]} · ${TENSES[slot.tense].name}`
-
-/** «это «ты», аорист» — что на самом деле значит выбранная форма. */
-export const describeSlot = (slot: Slot): string =>
-  `«${PERSONS[slot.person]}», ${TENSES[slot.tense].name.toLowerCase()}`
+/** То же одной строкой для подсказки: «ты пишешь» в кавычках, с пометкой, если она нужна. */
+export const describeSlot = (verb: VerbDto, slot: Slot): string => quoted(slotMeaning(verb, slot))
 
 /** Глагол можно объяснить по-русски (есть перевод) и его формы проверены по источнику. */
 export const isPlayable = (verb: VerbDto): boolean => verb.status === 'verified' && verb.ru.trim() !== ''

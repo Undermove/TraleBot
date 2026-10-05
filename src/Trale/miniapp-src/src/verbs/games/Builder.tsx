@@ -1,11 +1,12 @@
 import React, { useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
-import { PERSONS, TENSES, cyr, type TenseKey, type VerbDto } from '../types'
+import { cyr, type TenseKey, type VerbDto } from '../types'
+import { MeaningText } from '../parts'
 import { Coach, GameShell, PULSE, useFirstTime } from '../ui/GameShell'
 import { LockIcon } from '../ui/icons'
 import { bad, good, haptic } from '../ui/juice'
 import { STAGE_STEP, assemble, makePuzzle, schemeOf, wrongRows, type Choice, type Puzzle } from './formParts'
-import { describeSlot, slotsOf, whoWhen, type Rng } from './common'
+import { describeSlot, slotMeaning, slotsOf, type Rng } from './common'
 
 /** Прочерк на плашке: «в этом месте ничего нет». */
 const NONE = '—'
@@ -14,7 +15,7 @@ type Picked = Record<RowKey, string | null>
 
 const ROWS: { key: RowKey; label: string; miss: string }[] = [
   { key: 'preverb', label: 'Приставка', miss: 'приставку' },
-  { key: 'marker', label: 'Кто (показатель лица)', miss: 'показатель лица' },
+  { key: 'marker', label: 'Буква для «я» и «мы»', miss: 'букву для «я» и «мы»' },
   { key: 'ending', label: 'Окончание', miss: 'окончание' }
 ]
 
@@ -69,7 +70,7 @@ export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs
     // Не «неправильно», а что получилось: если это другая форма того же глагола — называем её.
     const other = slotsOf(verb, assembled, Object.keys(verb.tenses) as TenseKey[])[0]
     const miss = wrongRows(puzzle.cell, pick).map(k => ROWS.find(r => r.key === k)!.miss).join(' и ')
-    setResult({ ok: false, text: `${other ? `Это ${describeSlot(other)}. ` : ''}Поменяй ${miss} — и собери ещё раз.` })
+    setResult({ ok: false, text: `${other ? `Это ${describeSlot(verb, other)}. ` : ''}Поменяй ${miss} — и собери ещё раз.` })
   }
 
   function next() {
@@ -90,17 +91,16 @@ export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs
       id="verb_builder" title="Конструктор" onExit={onExit}
       right={<span key={solved} className="inline-block j-bump">собрано {solved}</span>}
       help={[
-        'Сверху задание: кто действует и в каком времени. Нужно собрать эту форму из частей.',
+        'Сверху по-русски написано, что нужно сказать. Собери это слово из частей.',
         'Корень уже стоит в рамке. Сначала выбираешь только окончание — остальное я поставлю сам.',
-        'Через несколько форм добавится показатель лица, потом приставка. Прочерк «—» значит, что в этом месте ничего нет.',
+        'Через несколько слов добавится буква для «я» и «мы», потом приставка. Прочерк «—» значит, что в этом месте ничего нет.',
         'Слово в рамке меняется сразу, как ты нажимаешь. Когда всё выбрано — жми «Собрать».'
       ]}
     >
       <div className="px-5 flex-1 flex flex-col gap-3 justify-center">
         <div className="text-center" data-testid="builder-ask" data-tense={slot.tense} data-person={slot.person}>
           <div className="text-[13px] text-jewelInk-mid"><span className="font-geo font-bold text-jewelInk">{verb.title}</span> · {verb.ru}</div>
-          <div className="mt-1 text-[22px] font-extrabold leading-tight">{whoWhen(slot)}</div>
-          <div className="text-[12px] text-jewelInk-hint">{TENSES[slot.tense].gloss}</div>
+          <div className="mt-1 text-[24px] font-extrabold leading-tight"><MeaningText meaning={slotMeaning(verb, slot)} /></div>
         </div>
 
         <div
@@ -119,7 +119,7 @@ export default function Builder({ verb, onExit, rng = Math.random, extraPreverbs
 
         {!result && (first && nextRow
           ? <Coach>{coach[nextRow]}</Coach>
-          : grew && <Coach>{puzzle.stage === 2 ? 'Теперь показатель лица выбираешь ты.' : 'Теперь и приставку выбираешь ты.'}</Coach>)}
+          : grew && <Coach>{puzzle.stage === 2 ? 'Теперь букву для «я» и «мы» выбираешь ты.' : 'Теперь и приставку выбираешь ты.'}</Coach>)}
 
         {ROWS.map(r => (
           <Row

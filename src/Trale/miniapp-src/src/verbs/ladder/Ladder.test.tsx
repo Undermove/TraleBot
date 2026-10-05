@@ -5,9 +5,9 @@ import LadderEntry, { entryLabel } from './LadderEntry'
 import VerbSheet from '../VerbSheet'
 import { SOLID_STEP, STEP, buildItems, settle, tokens, type FormState, type Progress } from './engine'
 import { verbByLemma } from '../testing/catalog'
+import { quoted } from '../meaning'
 import { moveSeen, rulesSeen } from '../testing/seen'
 import * as mockedApi from '../../api'
-import { cellLabel } from './types'
 import type { VerbProgressDto, VerbProgressStepDto } from './types'
 
 // Глагол, формы и фразы — из настоящего каталога.
@@ -74,13 +74,12 @@ describe('Ladder', () => {
 
     const intro = screen.getByTestId('ladder-intro')
     expect(intro.textContent).toContain(first.form)
-    expect(intro.textContent).toContain(cellLabel(first))
-    expect(intro.textContent).toContain('как «я делаю», только про «писать»')
+    expect(screen.getByTestId('ladder-meaning').textContent).toBe('я пишу')
     expect(intro.textContent).toContain(first.sentences[0].ru)
 
     fireEvent.click(screen.getByText('Понятно'))
 
-    expect(screen.getByText('Что это за форма?')).toBeTruthy()
+    expect(screen.getByText('Что это значит?')).toBeTruthy()
     expect(option(first.key)).toBeTruthy()
     expect((await savedStep(first.key))?.step).toBe(STEP.MEANING)
   })
@@ -105,8 +104,8 @@ describe('Ladder', () => {
 
     const note = screen.getByTestId('ladder-note').textContent!
     expect(note).toContain(wrongItem.form)
-    expect(note).toContain(cellLabel(wrongItem))
-    expect(note).toContain('Попробуй ещё раз')
+    expect(note).toContain(quoted(wrongItem.meaning))
+    expect(note).toContain('Выбери другое')
     expect(wrong).toBeDisabled()
     expect((await savedStep(first.key))?.step).toBe(STEP.MEANING)
     tick()
@@ -117,7 +116,7 @@ describe('Ladder', () => {
     fireEvent.click(option(first.key))
     expect(api.saveVerbProgress.mock.calls.length).toBe(saves)
     tick()
-    expect(screen.getByText('Что это за форма?')).toBeTruthy()
+    expect(screen.getByText('Что это значит?')).toBeTruthy()
   })
 
   it('полоска после ошибки назад не идёт', () => {
@@ -207,8 +206,8 @@ describe('Ladder', () => {
       fireEvent.click(screen.getByText('Проверить'))
 
       const note = screen.getByTestId('ladder-note').textContent!
-      expect(note).toContain(cellLabel(decoyItem))
-      expect(note).toContain('замени')
+      expect(note).toContain(quoted(decoyItem.meaning))
+      expect(note).toContain('Замени это слово')
       expect((await savedStep(first.key))?.step).toBe(STEP.GAP)
       expect(within(screen.getByTestId('ladder-built')).queryByText(decoyItem.form)).toBeNull()
       expect(within(screen.getByTestId('ladder-chips')).getByText(decoyItem.form)).toBeTruthy()
@@ -240,8 +239,8 @@ describe('Ladder', () => {
       fireEvent.click(screen.getByText('Проверить'))
 
       const note = screen.getByTestId('ladder-note').textContent!
-      expect(note).toContain(cellLabel(third))
-      expect(note).toContain(`Правильно так: ${first.form}`)
+      expect(note).toContain(quoted(third.meaning))
+      expect(note).toContain(`Правильно: ${first.form}`)
       expect((await savedStep(first.key))?.step).toBe(settle(first, state(STEP.TYPE), false).step)
       expect(document.querySelector('.geo-keyboard')).toBeNull()
       fireEvent.click(screen.getByText('Дальше'))
@@ -252,7 +251,7 @@ describe('Ladder', () => {
   it('форму, которой пора на повторение, спрашивает первой и помечает как повторение', async () => {
     open({ [first.key]: state(STEP.MASTERED, { due: true }) })
 
-    expect(screen.getByText(/^Повторение · /)).toBeTruthy()
+    expect(screen.queryByText('Новое слово')).toBeNull()
 
     fireEvent.click(option(first.key))
     expect(await savedStep(first.key)).toMatchObject({ step: STEP.MASTERED, reviews: 1 })
@@ -262,7 +261,7 @@ describe('Ladder', () => {
     const all = Object.fromEntries(items.map(i => [i.key, state(STEP.MASTERED)]))
     const onExit = open(all)
 
-    expect(screen.getByTestId('ladder-done').textContent).toContain('Все формы выучены')
+    expect(screen.getByTestId('ladder-done').textContent).toContain('Всё выучено')
     fireEvent.click(screen.getByText('Готово'))
 
     expect(onExit).toHaveBeenCalledWith(all)
@@ -309,9 +308,9 @@ describe('вход в лесенку с карточки глагола', () => 
       .toEqual({ text: `Продолжить · 1 из ${items.length}`, quiet: false })
     expect(entryLabel(items, { [first.key]: state(STEP.TYPE, { best: STEP.MASTERED }) }).text)
       .toBe(`Продолжить · 1 из ${items.length}`)
-    expect(entryLabel(items, all(2)).text).toBe('Повторить · 2 формы')
-    expect(entryLabel(items, all(5)).text).toBe('Повторить · 5 форм')
-    expect(entryLabel(items, all(21)).text).toBe('Повторить · 21 форму')
+    expect(entryLabel(items, all(2)).text).toBe('Повторить · 2 слова')
+    expect(entryLabel(items, all(5)).text).toBe('Повторить · 5 слов')
+    expect(entryLabel(items, all(21)).text).toBe('Повторить · 21 слово')
     expect(entryLabel(items, all(0))).toEqual({ text: `Выучено · ${items.length} из ${items.length}`, quiet: true })
   })
 

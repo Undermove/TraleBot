@@ -1,4 +1,5 @@
 import { CARD_TENSES, type TenseKey, type VerbDto, type VerbSentenceDto } from '../types'
+import { meaningOf, sameMeaning, type Meaning } from '../meaning'
 import { sentenceWords, wordOrderVerdict } from '../wordOrder'
 
 // «Лесенка»: чистая логика без React и без сети. Каждая форма глагола поднимается по ступеням
@@ -28,6 +29,8 @@ export interface LadderItem {
   form: string
   /** Все варианты клетки — любой из них верный ответ. */
   variants: string[]
+  /** Что форма значит простыми словами: «я хочу». Это и есть «вопрос» и «ответ» в заданиях. */
+  meaning: Meaning
   /** Живые фразы, где эта форма стоит отдельным словом и точно в этом значении (см. sentenceIsSafe). */
   sentences: VerbSentenceDto[]
   /** Те из них, что годятся для сборки из слов. */
@@ -126,7 +129,8 @@ export function buildItems(verb: VerbDto): LadderItem[] {
         const n = tokens(s.ka).length
         return n >= BUILD_WORDS.min && n <= BUILD_WORDS.max
       })
-      items.push({ key: `${tense}:${person}`, tense, person, form: variants[0], variants, sentences, buildable })
+      const meaning = meaningOf(verb, tense, person)
+      items.push({ key: `${tense}:${person}`, tense, person, form: variants[0], variants, meaning, sentences, buildable })
     }
   }
   return items
@@ -239,7 +243,9 @@ const pick = <T,>(xs: T[], rng: Rng) => xs[Math.floor(rng() * xs.length)]
 
 /**
  * Неверные варианты: другие формы этого же глагола. Сначала те, что человек уже встречал —
- * путать должно с знакомым. Формы, которые пишутся так же, как верная, в варианты не попадают.
+ * путать должно с знакомым. Формы, которые пишутся так же, как верная, в варианты не попадают;
+ * формы, которые по-русски читаются так же (та же фраза и та же пометка), — тоже: иначе на экране
+ * оказались бы два одинаковых варианта.
  */
 export function distractors(
   item: LadderItem, items: LadderItem[], progress: Progress, n: number, rng: Rng, avoid: string[] = []
@@ -253,6 +259,7 @@ export function distractors(
   for (const candidate of [...met, ...shuffle(unmet.slice(0, 6), rng), ...unmet.slice(6)]) {
     if (result.length === n) break
     if (candidate.variants.some(v => taken.has(v))) continue
+    if ([item, ...result].some(other => sameMeaning(other.meaning, candidate.meaning))) continue
     candidate.variants.forEach(v => taken.add(v))
     result.push(candidate)
   }

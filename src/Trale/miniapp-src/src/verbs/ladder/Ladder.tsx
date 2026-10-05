@@ -13,16 +13,19 @@ import {
   type LadderItem, type Progress, type Session, type Task
 } from './engine'
 import { createSaver } from './progressStore'
-import { cellLabel, cellLike } from './types'
+import { MeaningText } from '../parts'
+import { quoted } from '../meaning'
 
-// Игра «лесенка»: один глагол, по одной форме, одно задание на экране.
+// «Учить по шагам» (лесенка): один глагол, по одному слову, одно задание на экране.
+// На экране два уровня текста: короткий вопрос и то, о чём спрашивают. Названий времён нет —
+// форма объясняется русской фразой («я хочу»).
 // Что спросить следующим, решает engine.ts; здесь только экран и отклик.
 
 const FIRST_SENTENCE_KEY = 'verb_ladder_first_sentence'
 const HELP = [
-  'Учим глагол по одной форме. Сначала я показываю новую форму и что она значит.',
-  'Потом спрашиваю её всё труднее: узнать, выбрать, вставить в живую фразу, собрать фразу, написать самому.',
-  'Ошибся — ничего страшного: форма спустится на ступеньку и я спрошу её ещё раз. Выученные формы вернутся на повторение через день-другой.'
+  'Учим глагол по одному слову. Я показываю слово и что оно значит — ты запоминаешь.',
+  'Потом спрашиваю его всё труднее: сначала выбрать из вариантов, в конце — написать самому.',
+  'Ошибся — не страшно: спрошу это слово ещё раз. Выученное повторим через день-другой.'
 ]
 
 interface Game { progress: Progress; session: Session; task: Task }
@@ -116,8 +119,8 @@ export default function Ladder({ verb, initial, onExit }: Props) {
     miss(task.item)
     setWrong(w => [...w, option.key])
     setNote(task.type === 'meaning'
-      ? <>«{cellLabel(option)}» — это <Geo>{option.form}</Geo>. Попробуй ещё раз.</>
-      : <><Geo>{option.form}</Geo> — это «{cellLabel(option)}», как «{cellLike(option)}». Попробуй ещё раз.</>)
+      ? <>{quoted(option.meaning)} — это <Geo>{option.form}</Geo>. Выбери другое.</>
+      : <><Geo>{option.form}</Geo> — это {quoted(option.meaning)}. Выбери другое.</>)
   }
 
   function checkBuilt() {
@@ -126,7 +129,7 @@ export default function Ladder({ verb, initial, onExit }: Props) {
     if (verdict.kind === 'decoy') {
       const decoy = verdict.chip.decoy!
       miss(task.item)
-      setNote(<><Geo>{decoy.form}</Geo> — это «{cellLabel(decoy)}», как «{cellLike(decoy)}». Здесь нужна другая форма — замени её.</>)
+      setNote(<><Geo>{decoy.form}</Geo> — это {quoted(decoy.meaning)}. Замени это слово.</>)
       setBuilt(built.filter(i => !task.chips[i].decoy))
       return
     }
@@ -161,8 +164,8 @@ export default function Ladder({ verb, initial, onExit }: Props) {
     const other = findForm(items, value)
     setNote(
       <>
-        {other && <><Geo>{value}</Geo> — это «{cellLabel(other)}». </>}
-        Правильно так: <Geo>{task.item.form}</Geo> <span className="text-jewelInk-hint">({cyr(task.item.form)})</span>
+        {other && <><Geo>{value}</Geo> — это {quoted(other.meaning)}. </>}
+        Правильно: <Geo>{task.item.form}</Geo> <span className="text-jewelInk-hint">({cyr(task.item.form)})</span>
       </>
     )
     setWaitNext(true)
@@ -194,7 +197,7 @@ export default function Ladder({ verb, initial, onExit }: Props) {
               style={{ width: `${Math.round(Math.max(peak, fraction) * 100)}%` }}
             />
           </div>
-          <div key={learned} className="text-[12px] font-bold text-jewelInk-mid tabular-nums j-bump" title="Выучено форм">
+          <div key={learned} className="text-[12px] font-bold text-jewelInk-mid tabular-nums j-bump" title="Выучено слов">
             {learned}/{items.length}
           </div>
           <HelpButton id="ladder" help={HELP} />
@@ -211,50 +214,52 @@ export default function Ladder({ verb, initial, onExit }: Props) {
                 <>
                   <div className="text-[20px] font-extrabold">На этот раз хватит</div>
                   <div className="text-[14px] text-jewelInk-mid">
-                    Выучено форм: {learned} из {items.length}. Я верну их на повторение через день-другой, а новые подождут.
+                    Выучено слов: {learned} из {items.length}. Повторим их через день-другой, а новые подождут.
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="text-[20px] font-extrabold">Все формы выучены</div>
+                  <div className="text-[20px] font-extrabold">Всё выучено</div>
                   <div className="text-[14px] text-jewelInk-mid">
-                    Все {items.length} на месте. Заглядывай через день-другой — спрошу их вперемешку.
+                    Все {items.length} слов на месте. Заглядывай через день-другой — спрошу их вперемешку.
                   </div>
                 </>
               )}
             </div>
           )}
 
+          {task.type === 'done' && verb.sentences.length > 0 && (
+            <div className="text-center text-[11px] text-jewelInk-hint">Фразы-примеры — из Tatoeba (CC BY).</div>
+          )}
+
           {task.type === 'intro' && (
             <div key={task.item.key} className="text-center j-rise" data-testid="ladder-intro">
-              <div className="mn-eyebrow text-navy">Новая форма</div>
+              <div className="mn-eyebrow text-navy">Новое слово</div>
               <div className="mt-3 font-geo text-[44px] font-extrabold leading-none">{task.item.form}</div>
               <div className="mt-1 text-[14px] text-jewelInk-hint">{cyr(task.item.form)}</div>
-              <div className="mt-4 text-[22px] font-extrabold text-navy">{cellLabel(task.item)}</div>
-              <div className="mt-1 text-[13px] text-jewelInk-mid">как «{cellLike(task.item)}», только про «{verb.ru}»</div>
+              <div className="mt-4 text-[24px] font-extrabold text-navy" data-testid="ladder-meaning"><MeaningText meaning={task.item.meaning} /></div>
               {task.twin && (
-                <div className="mt-2 text-[12px] text-jewelInk-hint">Пишется так же, как «{cellLabel(task.twin)}».</div>
+                <div className="mt-2 text-[12px] text-jewelInk-hint">Пишется так же, как {quoted(task.twin.meaning)}.</div>
               )}
               {task.sentence && <SentenceBox sentence={task.sentence} />}
             </div>
           )}
 
           {task.type === 'meaning' && (
-            <Prompt eyebrow="Что это за форма?" review={task.review}>
+            <Prompt eyebrow="Что это значит?">
               <div className="font-geo text-[36px] font-extrabold leading-tight">{task.item.form}</div>
               <div className="mt-1 text-[14px] text-jewelInk-hint">{cyr(task.item.form)}</div>
             </Prompt>
           )}
 
           {(task.type === 'form' || task.type === 'type') && (
-            <Prompt eyebrow={task.type === 'form' ? 'Как сказать?' : 'Напиши сам'} review={task.review}>
-              <div className="text-[28px] font-extrabold leading-tight">{cellLabel(task.item)}</div>
-              <div className="mt-1 text-[14px] text-jewelInk-mid">как «{cellLike(task.item)}», только про «{verb.ru}»</div>
+            <Prompt eyebrow={task.type === 'form' ? 'Как сказать?' : 'Напиши сам'}>
+              <div className="text-[30px] font-extrabold leading-tight" data-testid="ladder-meaning"><MeaningText meaning={task.item.meaning} /></div>
             </Prompt>
           )}
 
           {task.type === 'gap' && (
-            <Prompt eyebrow="Вставь слово" review={task.review}>
+            <Prompt eyebrow="Вставь слово">
               <div className="font-geo text-[24px] font-extrabold leading-tight" data-testid="ladder-gap">
                 {withGap(task.sentence.ka, task.sentence.form, solved)}
               </div>
@@ -263,7 +268,7 @@ export default function Ladder({ verb, initial, onExit }: Props) {
           )}
 
           {task.type === 'build' && (
-            <Prompt eyebrow="Собери фразу" review={task.review}>
+            <Prompt eyebrow="Собери фразу">
               <div className="text-[20px] font-extrabold">{task.sentence.ru}</div>
               <div
                 data-testid="ladder-built"
@@ -293,8 +298,7 @@ export default function Ladder({ verb, initial, onExit }: Props) {
                   >
                     {task.type === 'meaning' ? (
                       <>
-                        <span className="block">{cellLabel(o)}</span>
-                        <span className="block text-[12px] font-semibold text-jewelInk-hint">как «{cellLike(o)}»</span>
+                        <span className="block"><MeaningText meaning={o.meaning} /></span>
                       </>
                     ) : (
                       <>
@@ -338,7 +342,7 @@ export default function Ladder({ verb, initial, onExit }: Props) {
             </div>
           )}
           {first && task.type === 'intro' && (
-            <Coach>Посмотри на форму и нажми «Понятно» — дальше я буду её спрашивать.</Coach>
+            <Coach>Запомни слово и нажми «Понятно» — дальше я буду его спрашивать.</Coach>
           )}
         </div>
 
@@ -364,10 +368,10 @@ export default function Ladder({ verb, initial, onExit }: Props) {
 
 const Geo = ({ children }: { children: React.ReactNode }) => <span className="font-geo font-bold text-jewelInk">{children}</span>
 
-function Prompt({ eyebrow, review, children }: { eyebrow: string; review: boolean; children: React.ReactNode }) {
+function Prompt({ eyebrow, children }: { eyebrow: string; children: React.ReactNode }) {
   return (
     <div className="text-center">
-      <div className="mn-eyebrow text-navy">{review ? `Повторение · ${eyebrow.toLowerCase()}` : eyebrow}</div>
+      <div className="mn-eyebrow text-navy">{eyebrow}</div>
       <div className="mt-3">{children}</div>
     </div>
   )
@@ -376,7 +380,7 @@ function Prompt({ eyebrow, review, children }: { eyebrow: string; review: boolea
 function SentenceBox({ sentence }: { sentence: VerbSentenceDto }) {
   return (
     <div className="mt-6 rounded-xl bg-cream-tile border border-jewelInk/30 p-3">
-      <div className="text-[11px] text-jewelInk-hint">пример из живой речи · Tatoeba</div>
+      <div className="text-[11px] text-jewelInk-hint">например</div>
       <div className="mt-1 font-geo text-[17px] font-bold">{sentence.ka}</div>
       <div className="text-[13px] text-jewelInk-mid">{sentence.ru}</div>
     </div>

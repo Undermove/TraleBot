@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { CARD_TENSES } from '../types'
 import { availableGames } from './availability'
 import { COLS, boneCount, boneRows, bonesNear, digOptions, digs, plantBones } from './boneField'
-import { formOf, shuffle, slotsOf, whoWhen, describeSlot, shortGloss } from './common'
+import { describeSlot, formOf, shuffle, slotMeaning, slotsOf } from './common'
 import { assemble, builderCells, makePuzzle, schemeOf, splitForm, stageFor, wrongRows } from './formParts'
 import { CATALOG, seeded, verbByLemma, verbRu } from '../testing/catalog'
 import { STOPS, canPlayTimeMachine, locate, makeTimeRound, personsFor } from './timeRounds'
@@ -63,10 +63,18 @@ describe('which games a verb gets', () => {
 })
 
 describe('Russian prompts', () => {
-  it('are built from the person and the tense reference, not from per-verb text', () => {
-    expect(whoWhen({ tense: 'future', person: 1 })).toBe('ты · Будущее')
-    expect(describeSlot({ tense: 'aorist', person: 5 })).toBe('«они», аорист')
-    expect(shortGloss('aorist')).toBe('сделал')
+  it('say what a cell means with the Russian phrase of this very verb, never with a tense name', () => {
+    const write = verbRu('писать')
+
+    expect(slotMeaning(write, { tense: 'future', person: 1 })).toEqual({ text: 'ты будешь писать', note: null })
+    expect(describeSlot(write, { tense: 'aorist', person: 5 })).toBe('«они писали» (один раз · сделано)')
+    expect(describeSlot(write, { tense: 'imperfect', person: 5 })).toBe('«они писали» (долго или часто)')
+  })
+
+  it('fall back to the person and a plain name of the time for a verb without phrases', () => {
+    const bare = verbRu('писать', { meanings: null, meaningChips: null })
+
+    expect(describeSlot(bare, { tense: 'aorist', person: 5 })).toBe('«они · прошедшее: сделал»')
   })
 })
 

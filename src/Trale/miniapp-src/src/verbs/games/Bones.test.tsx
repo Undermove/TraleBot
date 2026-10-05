@@ -47,8 +47,7 @@ describe('Bones', () => {
     const cell = rows.indexOf('future') * COLS + 1
 
     fireEvent.click(cellEl(cell))
-    expect(screen.getByTestId('bones-dig').textContent).toContain('ты · Будущее')
-    expect(screen.getByTestId('bones-dig').textContent).toContain('«писать»')
+    expect(screen.getByTestId('bones-ask').textContent).toBe('ты будешь писать')
 
     type(formAt(cell))
     expect(screen.getByTestId('bones-typed').textContent).toBe(formAt(cell))
@@ -61,7 +60,7 @@ describe('Bones', () => {
   it('shows the dug form large under the field, and again when an open cell is tapped', () => {
     start()
     digWithOptions(0)
-    expect(screen.getByTestId('bones-peek').textContent).toContain('я · Настоящее')
+    expect(screen.getByTestId('bones-peek').textContent).toContain('я пишу')
     expect(screen.getByTestId('bones-peek').textContent).toContain(formAt(0))
 
     digWithOptions(1)
@@ -93,7 +92,7 @@ describe('Bones', () => {
     type(formAt(0))
     fireEvent.click(screen.getByText('Копать'))
 
-    expect(screen.getByTestId('bones-note').textContent).toContain(`${formAt(0)} — это «я», настоящее`)
+    expect(screen.getByTestId('bones-note').textContent).toContain(`${formAt(0)} — это «я пишу». Нужно другое`)
     expect(cellEl(cell).dataset.state).toBe('closed')
     const dig = within(screen.getByTestId('bones-dig'))
     fireEvent.click(dig.getByRole('button', { name: formAt(cell) }))

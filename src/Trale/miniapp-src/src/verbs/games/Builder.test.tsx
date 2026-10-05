@@ -90,7 +90,7 @@ describe('Builder', () => {
     start()
     for (let i = 0; i < 3; i++) { solve(); next() }
 
-    expect(screen.getByText('Теперь показатель лица выбираешь ты.')).toBeTruthy()
+    expect(screen.getByText('Теперь букву для «я» и «мы» выбираешь ты.')).toBeTruthy()
     expect(unlocked('marker')).toBe(2)
     expect(unlocked('preverb')).toBe(0)
 

@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react'
 import Mascot from '../../components/Mascot'
-import { PERSONS, TENSES, type VerbDto } from '../types'
+import { PERSONS, type VerbDto } from '../types'
+import { MeaningText } from '../parts'
 import { Coach, GameShell, OptionButton, PULSE, useFirstTime } from '../ui/GameShell'
 import { BoneIcon, FlagIcon, iconMarkup } from '../ui/icons'
 import { bad, floater, good } from '../ui/juice'
-import { shortGloss, type Rng } from './common'
+import { describeSlot, slotMeaning, type Rng } from './common'
 import { PERSON_STEP, STOPS, locate, makeTimeRound, personsFor } from './timeRounds'
 import { useLater } from './useLater'
 
@@ -14,7 +15,7 @@ interface Said { form: string; ok: boolean; text: string }
 
 /**
  * «Машина времени»: какую форму нажмёшь — туда Бомбора и поедет.
- * Вчера — аорист, сейчас — настоящее, завтра — будущее. Ошибки нет: он просто окажется не там.
+ * Вчера — «я писал(а)», сейчас — «я пишу», завтра — «я буду писать». Ошибки нет: он просто окажется не там.
  */
 export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb: VerbDto; onExit: () => void; rng?: Rng }) {
   const [correct, setCorrect] = useState(0)
@@ -43,8 +44,7 @@ export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb:
       const stop = STOPS[at.stop]
       setSaid({
         form, ok,
-        text: `${form} — это «${PERSONS[at.person]}», ${stop.label.toLowerCase()} (${TENSES[stop.tense].name.toLowerCase()}).`
-          + (at.stop === round.stop ? ` Остановка та, но едет не «${who}».` : '')
+        text: `${form} — это ${describeSlot(verb, { tense: stop.tense, person: at.person })}.`
       })
       return
     }
@@ -64,20 +64,19 @@ export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb:
   return (
     <GameShell
       id="verb_time" title="Машина времени" onExit={onExit}
-      right={<><span key={correct} className="inline-block j-bump"><BoneIcon /> {correct}</span> · лиц: {persons}</>}
+      right={<><span key={correct} className="inline-block j-bump"><BoneIcon /> {correct}</span> </>}
       help={[
         'На дорожке три остановки: вчера, сейчас и завтра. Флажок показывает, куда мне надо попасть.',
-        'Сверху написано, кто едет и когда. Нажми грузинскую форму, которая это значит.',
-        'Я поеду туда, куда ведёт выбранная форма. Не туда — скажу, что она значила, и можно пробовать ещё.',
-        'Сначала едет только «я». Каждые четыре верных ответа добавляется ещё одно лицо.'
+        'Сверху написано по-русски, что нужно сказать. Нажми грузинское слово, которое это значит.',
+        'Я поеду туда, куда ведёт выбранное слово. Не туда — скажу, что оно значило, и можно пробовать ещё.',
+        'Сначала всё про «я». Каждые четыре верных ответа добавляется ещё кто-то: «ты», «он»…'
       ]}
     >
       <div className="px-5 flex-1 flex flex-col gap-4 justify-center">
         <div className="text-center" data-testid="time-ask" data-stop={round.stop} data-person={round.person}>
-          <div className="mn-eyebrow text-navy">Отправь туда, где флажок</div>
-          <div className="mt-1 text-[26px] font-extrabold leading-tight">{who} · {when}</div>
-          <div className="mt-0.5 text-[13px] text-jewelInk-mid">
-            «{verb.ru}» — {TENSES[target.tense].name.toLowerCase()}, как «{shortGloss(target.tense)}»
+          <div className="mn-eyebrow text-navy">Как сказать?</div>
+          <div className="mt-1 text-[28px] font-extrabold leading-tight">
+            <MeaningText meaning={{ text: slotMeaning(verb, { tense: target.tense, person: round.person }).text, note: null }} />
           </div>
         </div>
 
@@ -108,7 +107,7 @@ export default function TimeMachine({ verb, onExit, rng = Math.random }: { verb:
             : added !== null && <span className="inline-block j-pop text-navy">Теперь ездит ещё и «{PERSONS[added]}».</span>}
         </div>
 
-        {first && !said && <Coach>Едет «{who}», {when}. Для первого раза я подсветил нужную форму — нажми её.</Coach>}
+        {first && !said && <Coach>Флажок стоит на «{when}». Для первого раза я подсветил нужное слово — нажми его.</Coach>}
         <div className="grid grid-cols-2 gap-2">
           {round.options.map(o => (
             <OptionButton

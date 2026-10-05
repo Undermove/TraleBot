@@ -46,7 +46,7 @@ describe('verb chip in lesson practice', () => {
     expect(chip()).toBeNull()
 
     fireEvent.click(screen.getByText('проверить'))
-    expect(chip()!.textContent).toContain('წერა')
+    expect(chip()!.textContent).toContain('ვწერ — я · сейчас')
     expect(chip()!.textContent).toContain('писать')
   })
 

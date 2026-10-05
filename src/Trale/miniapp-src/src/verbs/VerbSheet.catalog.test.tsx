@@ -47,7 +47,7 @@ describe('VerbSheet on catalog verbs', () => {
 
     expect(screen.getByTestId('verb-tense-imperfect')).toBeTruthy()
     for (const missing of ['aorist', 'optative', 'conditional', 'future']) expect(screen.queryByTestId(`verb-tense-${missing}`)).toBeNull()
-    expect(screen.getByTestId('verb-partial').textContent).toContain('аорист, конъюнктив аориста, условное, будущее')
+    expect(screen.getByTestId('verb-partial').textContent).toContain('прошедшее: сделал, надо сделать, сделал бы, будущее')
     expect(await screen.findByText('Выучить играя')).toBeTruthy()
     expect(screen.queryByTestId('verb-games')).toBeNull()
 

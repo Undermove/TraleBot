@@ -1,4 +1,5 @@
-import { PERSONS, TENSES, type VerbFormHitDto } from '../types'
+import type { VerbFormHitDto } from '../types'
+import { meaningOfHit, quoted } from '../meaning'
 import type { StoryFormDto, StoryFrameDto, VerbStoryDto } from './types'
 import { sentenceWords } from '../wordOrder'
 
@@ -17,28 +18,23 @@ export function gap(ka: string, form: string): { before: string; after: string }
   return { before: ka, after: '' }
 }
 
-/** «будущее, „я“» — клетка таблицы словами. */
-export const cellName = (c: { tense: StoryFormDto['tense']; person: number }) =>
-  `${TENSES[c.tense].name.toLowerCase()}, «${PERSONS[c.person]}»`
+/** Что значит форма простыми словами, в кавычках: «я пойду». */
+export const cellName = (c: StoryFormDto) => quoted(meaningOfHit(c))
 
 /**
- * Что сказать, когда выбрана настоящая, но не та форма. Не «ошибка», а что форма значит и чем
- * отличается от нужной. Текст строится из названия времени и лица, поэтому годится для любого глагола.
+ * Что сказать, когда выбрана настоящая, но не та форма. Не «ошибка», а что она значит и что нужно
+ * здесь — обе стороны русской фразой, без названий времён.
  */
 export function explainWrong(chosen: StoryFormDto, need: StoryFormDto): string {
-  const means = `${chosen.form} — это ${TENSES[chosen.tense].name.toLowerCase()} (${TENSES[chosen.tense].gloss}), «${PERSONS[chosen.person]}».`
-  if (chosen.tense === need.tense) return `${means} Время то самое, а лицо здесь — «${PERSONS[need.person]}».`
-  const tense = `${TENSES[need.tense].name.toLowerCase()} (${TENSES[need.tense].gloss})`
-  if (chosen.person === need.person) return `${means} Лицо то самое, а время здесь — ${tense}.`
-  return `${means} А здесь нужно: ${tense}, «${PERSONS[need.person]}».`
+  return `${chosen.form} — это ${cellName(chosen)}. А здесь нужно ${cellName(need)}.`
 }
 
 /** Что сказать про набранное слово: hits — разбор этого слова из базы глаголов. */
 export function explainTyped(typed: string, hits: VerbFormHitDto[], story: VerbStoryDto, need: StoryFormDto): string {
   const own = hits.find(h => h.verbId === story.verbId)
-  if (own) return explainWrong({ form: typed, tense: own.tense, person: own.person }, need)
-  if (hits.length) return `${typed} — это форма другого глагола: ${hits[0].title} (${hits[0].ru}). Здесь нужно: ${cellName(need)}.`
-  return `Слова ${typed} в базе глаголов нет — возможно, опечатка. Здесь нужно: ${cellName(need)}.`
+  if (own) return explainWrong({ ...own, form: typed }, need)
+  if (hits.length) return `${typed} — это слово другого глагола: ${hits[0].title} (${hits[0].ru}). Здесь нужно ${cellName(need)}.`
+  return `Слова ${typed} в базе глаголов нет — возможно, опечатка. Здесь нужно ${cellName(need)}.`
 }
 
 /** Перемешанные номера слов — так, чтобы фраза не лежала уже собранной. */

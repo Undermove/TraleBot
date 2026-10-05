@@ -13,7 +13,9 @@ const toDto = (v: Entry): VerbDto => ({
   present: ((v.tenses as Record<string, string[][]>).present?.[0] ?? []) as string[],
   masdarWithPreverb: v.masdarWithPreverb ?? [], reason: v.reason ?? '', root: v.root ?? '',
   oddTenses: (v.oddTenses ?? []) as VerbDto['oddTenses'], model: v.model ?? null,
-  tenses: v.tenses as VerbDto['tenses'], sentences: v.sentences ?? [], source: v.source ?? null,
+  tenses: v.tenses as VerbDto['tenses'],
+  meanings: v.meanings as VerbDto['meanings'], meaningChips: v.meaningChips as VerbDto['meaningChips'],
+  sentences: v.sentences ?? [], source: v.source ?? null,
   status: 'verified'
 })
 

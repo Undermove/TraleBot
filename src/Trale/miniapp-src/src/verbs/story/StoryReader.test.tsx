@@ -90,7 +90,7 @@ describe('StoryReader', () => {
     fireEvent.click(within(frame(0)).getByText('მივდივარ'))
 
     expect(screen.getByTestId('story-note').textContent)
-      .toBe('მივდივარ — это настоящее (делаю), «я». Время то самое, а лицо здесь — «ты».')
+      .toBe('მივდივარ — это «я иду». А здесь нужно «ты идёшь».')
     expect(bad).toHaveBeenCalledTimes(1)
     expect(frame(0).dataset.state).toBe('current')
     expect(frame(1).dataset.state).toBe('locked')
@@ -133,7 +133,7 @@ describe('StoryReader', () => {
 
   it('explains a typed form through its parse and unlocks on the right one', async () => {
     vi.mocked(parseVerbForm).mockResolvedValue({
-      hits: [{ form: 'წავედი', verbId: 'მიდის', title: 'სვლა', ru: 'идти, уходить', tense: 'aorist', person: 0 }]
+      hits: [{ form: 'წავედი', verbId: 'მიდის', title: 'სვლა', ru: 'идти, уходить', tense: 'aorist', person: 0, meaning: 'я шёл / шла', meaningNote: 'один раз · сделано' }]
     })
     open()
     fireEvent.click(within(frame(0)).getByText('მიდიხარ'))
@@ -143,7 +143,7 @@ describe('StoryReader', () => {
     say()
 
     await waitFor(() => expect(screen.getByTestId('story-note').textContent)
-      .toBe('წავედი — это аорист (сделал — прошедшее с результатом), «я». Лицо то самое, а время здесь — будущее (сделаю).'))
+      .toBe('წავედი — это «я шёл / шла» (один раз · сделано). А здесь нужно «я буду идти».'))
     expect(parseVerbForm).toHaveBeenCalledWith('წავედი')
     expect(frame(1).dataset.state).toBe('current')
 
@@ -164,7 +164,7 @@ describe('StoryReader', () => {
     press('წავა')
     say()
 
-    await waitFor(() => expect(screen.getByTestId('story-note').textContent).toBe('Пока не то. Здесь нужно: будущее, «я».'))
+    await waitFor(() => expect(screen.getByTestId('story-note').textContent).toBe('Пока не то. Здесь нужно «я буду идти».'))
   })
 
   it('finishes when the phrase is built in the source order', () => {
@@ -214,9 +214,9 @@ describe('StoryReader', () => {
 
     const end = screen.getByTestId('story-end').textContent!
     expect(end).toContain('მიდიხარ')
-    expect(end).toContain('настоящее, «ты»')
-    expect(end).toContain('будущее, «я»')
-    expect(end).toContain('аорист, «он»')
+    expect(end).toContain('«ты идёшь»')
+    expect(end).toContain('«я буду идти»')
+    expect(end).toContain('«он шёл» (один раз · сделано)')
     expect(end).toContain('Tatoeba')
     expect(end).toContain('подогнан под сюжет')
   })

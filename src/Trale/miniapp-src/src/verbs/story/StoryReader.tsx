@@ -21,9 +21,9 @@ import './story.css'
 export const storyDoneKey = (id: string) => `verb_story_done_${id}`
 
 const HELP = [
-  'Это комикс. Под каждой картинкой — реплика, в которой не хватает глагола в нужной форме.',
+  'Это комикс. Под каждой картинкой — реплика, в которой не хватает одного слова.',
   'Выбери, набери или собери реплику. Скажешь верно — откроется следующий кадр.',
-  'Ошибиться не страшно: я объясню, что значит твоя форма, и можно пробовать снова.'
+  'Ошибиться не страшно: я объясню, что значит твоё слово, и можно пробовать снова.'
 ]
 
 const COACH = {
@@ -103,7 +103,7 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
     try {
       text = explainTyped(value, (await parseVerbForm(value)).hits, story, frame.target)
     } catch {
-      text = `Пока не то. Здесь нужно: ${cellName(frame.target)}.`
+      text = `Пока не то. Здесь нужно ${cellName(frame.target)}.`
     }
     setChecking(false)
     if (current.current !== at) return
@@ -245,7 +245,7 @@ export default function StoryReader({ story, onExit }: { story: VerbStoryDto; on
               <div ref={ending} data-testid="story-end" className="scroll-mt-2 rounded-xl border-[1.5px] border-jewelInk bg-cream-tile p-4 text-center" style={{ boxShadow: '3px 3px 0 #15100A' }}>
                 <Mascot mood="cheer" size={96} className="mx-auto j-hop" />
                 <div className="mt-1 text-[18px] font-extrabold text-navy j-pop">Конец истории</div>
-                <div className="mt-1 text-[13px] text-jewelInk-mid">В ней прозвучали вот эти формы — теперь они твои:</div>
+                <div className="mt-1 text-[13px] text-jewelInk-mid">В ней прозвучали вот эти слова — теперь они твои:</div>
                 <div className="mt-3 flex flex-col gap-1.5 text-left">
                   {usedForms(frames).map(t => (
                     <div key={t.form} className="flex items-baseline justify-between gap-3 rounded-lg bg-cream px-3 py-1.5 border border-cream-edge">

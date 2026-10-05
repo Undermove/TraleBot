@@ -1,5 +1,6 @@
 import React from 'react'
-import { KINDS, PERSONS, TENSES, cyr, type VerbFormHitDto, type VerbKind } from './types'
+import { KINDS, cyr, type VerbFormHitDto, type VerbKind } from './types'
+import { meaningOfHit, type Meaning } from './meaning'
 
 export { Coach } from './ui/GameShell'
 
@@ -31,6 +32,26 @@ export function VerbForm({ variants, big = false, root }: { variants: string[]; 
   )
 }
 
+/**
+ * Значение формы простыми словами: «я хочу». Пометка рядом — только когда без неё две формы
+ * читались бы одинаково («я писал(а)»: один раз или долго).
+ */
+export function MeaningText({ meaning }: { meaning: Meaning }) {
+  return (
+    <>
+      {meaning.text}
+      {meaning.note && (
+        <span
+          data-testid="meaning-note"
+          className="ml-1.5 inline-block align-middle rounded-full border border-jewelInk/40 bg-gold-wash px-2 py-[1px] text-[11px] font-bold leading-snug text-jewelInk-mid whitespace-nowrap"
+        >
+          {meaning.note}
+        </span>
+      )}
+    </>
+  )
+}
+
 export function KindChip({ kind }: { kind: VerbKind }) {
   return (
     <span className={`inline-block px-2 py-0.5 rounded-md border border-jewelInk/50 text-[10px] font-bold uppercase tracking-wider ${KINDS[kind].chip}`}>
@@ -54,7 +75,7 @@ export function VerbHint({ hit, onOpen }: { hit: VerbFormHitDto; onOpen: () => v
       <span className="flex-1 min-w-0">
         <span className="block mn-eyebrow text-navy">ზმნა · глагол</span>
         <span className="block mt-0.5 text-[14px] font-bold text-jewelInk">
-          <span className="font-geo">{hit.form}</span> — {TENSES[hit.tense].name.toLowerCase()}, «{PERSONS[hit.person]}»
+          <span className="font-geo">{hit.form}</span> — <MeaningText meaning={meaningOfHit(hit)} />
         </span>
         <span className="block text-[12px] text-jewelInk-mid">
           от <span className="font-geo font-bold">{hit.title}</span> — {hit.ru}

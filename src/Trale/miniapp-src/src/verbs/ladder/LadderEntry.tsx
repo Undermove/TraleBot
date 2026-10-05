@@ -6,12 +6,12 @@ import { STEP, buildItems, type LadderItem, type Progress } from './engine'
 import { loadProgress, type LoadedProgress } from './progressStore'
 import Ladder from './Ladder'
 
-// Вход в «лесенку» с карточки глагола: одна главная кнопка, которая помнит, где человек остановился.
+// Вход в «Учить по шагам» (лесенку) с карточки глагола: одна главная кнопка, которая помнит, где человек остановился.
 // Показывается только у проверенных глаголов; игра открывается на весь экран поверх карточки.
 
 const forms = (n: number) => {
   const d = n % 10, h = n % 100
-  return d === 1 && h !== 11 ? 'форму' : d >= 2 && d <= 4 && (h < 12 || h > 14) ? 'формы' : 'форм'
+  return d === 1 && h !== 11 ? 'слово' : d >= 2 && d <= 4 && (h < 12 || h > 14) ? 'слова' : 'слов'
 }
 
 /** Подпись кнопки по прогрессу: начать, продолжить, повторить. */
@@ -48,12 +48,18 @@ export default function LadderEntry({ verb }: { verb: VerbDto }) {
 
   if (unverified || failed || !items.length || (loaded && !loaded.canLearn)) return null
   // Пока прогресс грузится, держим место под кнопку, чтобы таблица не прыгала под пальцем.
-  if (!loaded) return <div className="h-14" data-testid="ladder-entry-loading" />
+  if (!loaded) return <div className="h-[82px]" data-testid="ladder-entry-loading" />
 
   const label = entryLabel(items, loaded.progress)
   return (
     <>
-      <Button variant={label.quiet ? 'ghost' : 'primary'} onClick={() => setOpen(true)}>{label.text}</Button>
+      <div>
+        <Button variant={label.quiet ? 'ghost' : 'primary'} onClick={() => setOpen(true)}>{label.text}</Button>
+        {/* Одной строкой — что будет, если нажать: на карточке есть ещё игры, их легко спутать. */}
+        <div className="mt-1.5 text-center text-[12px] text-jewelInk-mid" data-testid="ladder-entry-about">
+          По одному слову, от простого к сложному
+        </div>
+      </div>
       {open && createPortal(
         <Ladder
           verb={verb}

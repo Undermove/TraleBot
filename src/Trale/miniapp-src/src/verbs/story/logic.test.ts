@@ -16,26 +16,28 @@ describe('story logic', () => {
     expect(gap(bus.ka, 'წავალ')).toEqual({ before: 'არა, მე ავტობუსით ', after: '.' })
   })
 
-  it('explains a wrong form by its tense and person, and names only what differs', () => {
-    const samePerson = explainWrong({ form: 'მივდივარ', tense: 'present', person: 0 }, bus.target)
-    const sameTense = explainWrong({ form: 'მივდივარ', tense: 'present', person: 0 }, asked.target)
-    const bothDiffer = explainWrong({ form: 'მიდის', tense: 'present', person: 2 }, bus.target)
+  it('explains a wrong form with plain Russian phrases — what it means and what is needed — without tense names', () => {
+    const iGo = asked.options[1]
 
-    expect(samePerson).toBe('მივდივარ — это настоящее (делаю), «я». Лицо то самое, а время здесь — будущее (сделаю).')
-    expect(sameTense).toBe('მივდივარ — это настоящее (делаю), «я». Время то самое, а лицо здесь — «ты».')
-    expect(bothDiffer).toBe('მიდის — это настоящее (делаю), «он». А здесь нужно: будущее (сделаю), «я».')
+    expect(explainWrong(iGo, bus.target)).toBe('მივდივარ — это «я иду». А здесь нужно «я буду идти».')
+    expect(explainWrong(iGo, home.target)).toBe('მივდივარ — это «я иду». А здесь нужно «он шёл» (один раз · сделано).')
   })
 
-  it('explains a typed word from its parse: this verb, another verb, or not a known form', () => {
-    const hit = (verbId: string, title: string, ru: string): VerbFormHitDto =>
-      ({ form: 'x', verbId, title, ru, tense: 'aorist', person: 0 })
+  it('explains a typed word from its parse: this verb, another verb, or not a known word', () => {
+    const hit = (verbId: string, title: string, ru: string, meaning?: string): VerbFormHitDto =>
+      ({ form: 'x', verbId, title, ru, tense: 'aorist', person: 0, meaning })
 
-    expect(explainTyped('წავედი', [hit('მიდის', 'სვლა', 'идти, уходить')], story, bus.target))
-      .toBe('წავედი — это аорист (сделал — прошедшее с результатом), «я». Лицо то самое, а время здесь — будущее (сделаю).')
+    expect(explainTyped('წავედი', [hit('მიდის', 'სვლა', 'идти, уходить', 'я шёл / шла')], story, bus.target))
+      .toBe('წავედი — это «я шёл / шла». А здесь нужно «я буду идти».')
     expect(explainTyped('ვწერ', [hit('წერს', 'წერა', 'писать')], story, bus.target))
-      .toBe('ვწერ — это форма другого глагола: წერა (писать). Здесь нужно: будущее, «я».')
+      .toBe('ვწერ — это слово другого глагола: წერა (писать). Здесь нужно «я буду идти».')
     expect(explainTyped('წავა', [], story, bus.target))
-      .toBe('Слова წავა в базе глаголов нет — возможно, опечатка. Здесь нужно: будущее, «я».')
+      .toBe('Слова წავა в базе глаголов нет — возможно, опечатка. Здесь нужно «я буду идти».')
+  })
+
+  it('falls back to the person and a plain name of the time when the base has no phrase', () => {
+    expect(explainWrong({ form: 'მიდის', tense: 'present', person: 2 }, { form: 'წავალ', tense: 'future', person: 0 }))
+      .toBe('მიდის — это «он · сейчас». А здесь нужно «я · будущее».')
   })
 
   it('never hands out the words already in the source order', () => {

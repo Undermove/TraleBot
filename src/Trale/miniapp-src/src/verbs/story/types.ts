@@ -10,6 +10,9 @@ export interface StoryFormDto {
   form: string
   tense: TenseKey
   person: number
+  /** Форма простыми словами: «ты идёшь». */
+  meaning?: string | null
+  meaningNote?: string | null
 }
 
 export interface StoryFrameDto {

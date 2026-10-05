@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GeorgianKeyboard from '../../components/GeorgianKeyboard'
 import { VerbForm } from '../parts'
-import { PERSONS, TENSES, type TenseKey, type VerbDto } from '../types'
+import { PERSONS, type TenseKey, type VerbDto } from '../types'
+import { SHORT_TIME } from '../meaning'
+import { MeaningText } from '../parts'
 import { Coach, GameShell, OptionButton, PULSE, useFirstTime } from '../ui/GameShell'
 import { BoneIcon, iconMarkup } from '../ui/icons'
 import { bad, floater, good, haptic } from '../ui/juice'
 import { COLS, boneCount, boneRows, bonesNear, cellSlot, digOptions, digs, plantBones } from './boneField'
-import { describeSlot, slotsOf, variantsOf, whoWhen, type Rng } from './common'
+import { describeSlot, slotMeaning, slotsOf, variantsOf, type Rng } from './common'
 
 const BONE = iconMarkup(BoneIcon, 24)
 
@@ -69,7 +71,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
     bad()
     // Не наказываем: говорим, что значит набранное, и даём выбрать из четырёх.
     const hit = slotsOf(verb, value.trim(), Object.keys(verb.tenses) as TenseKey[])[0]
-    setNote(hit ? `— это ${describeSlot(hit)}. Клетка другая — выбери из четырёх.` : '— такой формы у этого глагола нет. Выбери из четырёх.')
+    setNote(hit ? `— это ${describeSlot(verb, hit)}. Нужно другое — выбери из четырёх.` : '— такого слова у этого глагола нет. Выбери из четырёх.')
     setTyped(value.trim())
     if (!options) setOptions(digOptions(verb, rows, cell, rng))
   }
@@ -83,10 +85,10 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
       id="verb_bones" title="Косточки" onExit={onExit}
       right={<span key={found} className="inline-block j-bump"><BoneIcon /> {found}/{total}</span>}
       help={[
-        `Я закопал ${total} косточек в таблице глагола «${verb.ru}». Строка — время, столбец — кто действует.`,
-        'Нажми любую клетку. Я скажу, чья она и какого времени. Набери эту форму по-грузински — клетка раскопается.',
+        `Я закопал ${total} косточек в таблице глагола «${verb.ru}». Строка — когда, столбец — кто.`,
+        'Нажми любую клетку. Я скажу по-русски, что в ней. Набери это по-грузински — клетка раскопается.',
         'В пустой клетке появится цифра: столько косточек в соседних клетках. По цифрам ищи, где копать дальше.',
-        'Не помнишь форму — нажми «Не помню — дай варианты» и выбери из четырёх.'
+        'Не помнишь слово — нажми «Не помню — дай варианты» и выбери из четырёх.'
       ]}
     >
       <div className="px-3 flex-1 flex flex-col gap-3 pb-3">
@@ -95,7 +97,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
           {PERSONS.map(p => <div key={p} className="text-center text-[12px] font-bold text-jewelInk-mid">{p}</div>)}
           {rows.map((t, r) => (
             <React.Fragment key={t}>
-              <div className="text-[10px] font-bold leading-[1.1] text-jewelInk-mid flex items-center break-words min-w-0">{TENSES[t].name}</div>
+              <div className="text-[11px] font-bold leading-[1.1] text-jewelInk-mid flex items-center break-words min-w-0">{SHORT_TIME[t]}</div>
               {PERSONS.map((p, c) => {
                 const i = r * COLS + c
                 const isOpen = open.has(i)
@@ -107,7 +109,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
                     data-cell={i}
                     data-testid={`bones-cell-${i}`}
                     data-state={isOpen ? (bone ? 'bone' : 'empty') : 'closed'}
-                    aria-label={`${p}, ${TENSES[t].name}`}
+                    aria-label={`${p}, ${SHORT_TIME[t]}`}
                     onClick={() => select(i)}
                     className={`h-9 rounded-lg border-[1.5px] border-jewelInk flex items-center justify-center
                       ${isOpen ? 'j-flip' : ''}
@@ -133,7 +135,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
           </div>
         ) : cell === null && (
           peek !== null ? peekCard() : first
-            ? <Coach>Нажми любую клетку — например, подсвеченную: «{whoWhen(cellSlot(rows, 0))}».</Coach>
+            ? <Coach>Нажми любую клетку — например, подсвеченную.</Coach>
             : <div className="text-center text-[13px] text-jewelInk-mid py-2">Выбери клетку. Цифра — сколько косточек в соседних клетках.</div>
         )}
       </div>
@@ -142,15 +144,15 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
         <div ref={panel} className="sticky bottom-0 bg-cream border-t-[1.5px] border-jewelInk" data-testid="bones-dig">
           <div className="px-3 pt-2 pb-2 flex flex-col gap-2">
             <div className="text-center">
-              <div className="text-[19px] font-extrabold leading-tight">{whoWhen(slot)}</div>
-              <div className="text-[12px] text-jewelInk-hint">«{verb.ru}» · {TENSES[slot.tense].gloss}</div>
+              <div className="mn-eyebrow text-navy">Как сказать?</div>
+              <div className="text-[20px] font-extrabold leading-tight" data-testid="bones-ask"><MeaningText meaning={slotMeaning(verb, slot)} /></div>
             </div>
             {note && (
               <div key={tries} className="text-center text-[13px] font-bold j-pop" data-testid="bones-note">
                 <span className="font-geo">{typed}</span> {note}
               </div>
             )}
-            {first && !note && !options && <Coach>Набери эту форму по-грузински и нажми «Копать».</Coach>}
+            {first && !note && !options && <Coach>Набери это по-грузински и нажми «Копать».</Coach>}
             {options ? (
               <div className="grid grid-cols-2 gap-2 pb-2">
                 {options.map(o => <OptionButton key={o} onClick={() => { setTyped(o); dig(o) }}>{o}</OptionButton>)}
@@ -186,7 +188,7 @@ export default function Bones({ verb, onExit, rng = Math.random }: { verb: VerbD
         style={{ boxShadow: '3px 3px 0 #15100A' }}
       >
         <span className="min-w-0">
-          <span className="block text-[13px] font-bold text-jewelInk">{whoWhen(at)}</span>
+          <span className="block text-[13px] font-bold text-jewelInk"><MeaningText meaning={slotMeaning(verb, at)} /></span>
           <span className="block text-[11px] text-jewelInk-hint">
             {bones.has(peek) ? 'здесь была косточка' : near ? `косточек в соседних клетках: ${near}` : 'рядом косточек нет'}
           </span>

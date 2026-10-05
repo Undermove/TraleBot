@@ -19,7 +19,7 @@ export interface VerbSummaryDto {
 }
 
 export interface VerbDto extends VerbSummaryDto {
-  /** Масдар с превербом, если он есть (დაწერა при წერა). */
+  /** Название действия с приставкой, если оно есть (დაწერა при წერა). */
   masdarWithPreverb: string[]
   reason: string
   /** Корень для подсветки; пусто у особых глаголов. */
@@ -28,6 +28,10 @@ export interface VerbDto extends VerbSummaryDto {
   model: { id: string; title: string; ru: string } | null
   /** tense → шесть лиц → варианты формы. */
   tenses: Partial<Record<TenseKey, string[][]>>
+  /** Что значит каждая форма простыми словами: время → шесть фраз («я хочу», «ты хочешь», …). Только главные времена. */
+  meanings?: Partial<Record<TenseKey, string[]>> | null
+  /** Пометки для времён, у которых русская фраза совпала с другим временем («один раз · сделано»). */
+  meaningChips?: Partial<Record<TenseKey, string>> | null
   /** Живые предложения (Tatoeba), в которых встречается форма этого глагола. */
   sentences: VerbSentenceDto[]
   /** Нет у глагола, формы которого составила модель. */
@@ -51,21 +55,34 @@ export interface VerbFormHitDto {
   ru: string
   tense: TenseKey
   person: number
+  /** Форма простыми словами: «я хотел(а)». Нет — у редких времён и глаголов, добавленных на лету. */
+  meaning?: string | null
+  /** Пометка, когда у двух времён фраза одна: «один раз · сделано». Обычно нет. */
+  meaningNote?: string | null
 }
 
-export const TENSES: Record<TenseKey, { name: string; gloss: string }> = {
-  present: { name: 'Настоящее', gloss: 'делаю' },
-  aorist: { name: 'Аорист', gloss: 'сделал — прошедшее с результатом' },
-  imperfect: { name: 'Имперфект', gloss: 'делал — прошедшее как процесс' },
-  optative: { name: 'Конъюнктив аориста', gloss: 'после უნდა: должен сделать' },
-  conditional: { name: 'Условное', gloss: 'сделал бы' },
-  future: { name: 'Будущее', gloss: 'сделаю' },
-  presentSubjunctive: { name: 'Конъюнктив настоящего', gloss: 'чтобы делал' },
-  futureSubjunctive: { name: 'Конъюнктив будущего', gloss: 'если бы сделал' },
-  perfect: { name: 'Перфект', gloss: 'оказывается, сделал' },
-  pluperfect: { name: 'Плюсквамперфект', gloss: 'должен был сделать' },
-  perfectSubjunctive: { name: 'Конъюнктив перфекта', gloss: 'пожелания, тосты' }
+/**
+ * Как время называется в интерфейсе — простыми словами, по тому, что оно говорит (name), — и как оно
+ * называется в учебниках (term). Учебный термин показывается только внутри свёрнутого пояснения
+ * карточки («что это значит?»); в заданиях, таблице и подсказках его нет. Примером времени служит
+ * русская фраза самой формы («я писал(а)», см. meaning.ts), поэтому отдельного образца здесь нет.
+ */
+export const TENSES: Record<TenseKey, { name: string; term: string }> = {
+  present: { name: 'Сейчас', term: 'настоящее время' },
+  aorist: { name: 'Прошедшее: сделал', term: 'аорист' },
+  imperfect: { name: 'Прошедшее: делал', term: 'имперфект' },
+  optative: { name: 'Надо сделать', term: 'оптатив, или конъюнктив аориста' },
+  conditional: { name: 'Сделал бы', term: 'условное наклонение' },
+  future: { name: 'Будущее', term: 'будущее время' },
+  presentSubjunctive: { name: 'Чтобы делал', term: 'конъюнктив настоящего' },
+  futureSubjunctive: { name: 'Если бы сделал', term: 'конъюнктив будущего' },
+  perfect: { name: 'Оказывается, сделал', term: 'перфект' },
+  pluperfect: { name: 'Должен был сделать', term: 'плюсквамперфект' },
+  perfectSubjunctive: { name: 'Пожелание, тост', term: 'конъюнктив перфекта' }
 }
+
+/** Как в учебниках называется форма-заголовок карточки (название действия). Тоже только для пояснения. */
+export const TITLE_TERM = 'масдар'
 
 /** Шесть строк карточки — главные формы, в порядке, в котором их удобно учить. */
 export const CARD_TENSES: TenseKey[] = ['present', 'aorist', 'imperfect', 'optative', 'conditional', 'future']

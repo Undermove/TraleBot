@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import LoaderLetter from '../components/LoaderLetter'
 import { fetchVerb } from '../api'
-import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, cyr, type TenseKey, type VerbDto } from './types'
-import { Coach, KindChip, VerbForm } from './parts'
+import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, TITLE_TERM, cyr, type TenseKey, type VerbDto } from './types'
+import { meaningOf } from './meaning'
+import { Coach, KindChip, MeaningText, VerbForm } from './parts'
 import { OVERLAY, useOverlay } from './ui/overlayStack'
 import VerbGames from './games/VerbGames'
 import LadderEntry from './ladder/LadderEntry'
@@ -100,9 +101,16 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             data-testid={`verb-tense-${t}`}
             className={`flex items-center justify-between gap-3 px-4 py-2.5 border-t border-cream-edge ${hit ? 'bg-gold-wash' : odd ? 'bg-ruby-wash/60' : ''}`}
           >
+            {/* Слева — что форма значит по-русски («я пишу»); название времени простыми словами — мелко под ней. */}
             <span className="min-w-0">
-              <span className="block text-[13px] font-bold text-jewelInk">{TENSES[t].name}</span>
-              <span className="block text-[11px] text-jewelInk-hint">{TENSES[t].gloss}</span>
+              {verb.meanings?.[t] ? (
+                <>
+                  <span className="block text-[14px] font-bold text-jewelInk"><MeaningText meaning={{ ...meaningOf(verb, t, person), note: null }} /></span>
+                  <span className="block text-[11px] text-jewelInk-hint">{TENSES[t].name}</span>
+                </>
+              ) : (
+                <span className="block text-[13px] font-bold text-jewelInk">{TENSES[t].name}</span>
+              )}
             </span>
             <VerbForm variants={verb.tenses[t]?.[person] ?? []} big root={verb.root} />
           </div>
@@ -148,10 +156,16 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                 </button>
               )}
               <div className="mt-2 text-[12px] text-jewelInk-mid">
-                <span className="font-geo font-bold">{verb.title}</span> — масдар: имя действия, в грузинском оно вместо инфинитива
+                <span className="font-geo font-bold">{verb.title}</span> — название действия, как «чтение» или «ходьба».
+                В грузинском оно вместо начальной формы глагола
                 {verb.masdarWithPreverb.length > 0 && (
                   <>. С приставкой: <span className="font-geo">{verb.masdarWithPreverb.join(', ')}</span></>
                 )}.
+              </div>
+              {/* Учебные термины — только здесь, в свёрнутом пояснении: в таблице и заданиях их нет. */}
+              <div className="mt-2 text-[11px] text-jewelInk-hint" data-testid="verb-terms">
+                В учебниках это называется так: название действия — {TITLE_TERM};{' '}
+                {mainTenses.map(t => `«${TENSES[t].name}» — ${TENSES[t].term}`).join('; ')}.
               </div>
             </div>
           )}
@@ -189,7 +203,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                 className="w-full flex items-center justify-between px-4 py-2.5 border-t border-cream-edge text-left bg-cream-deep/60"
               >
                 <span>
-                  <span className="block text-[12px] font-bold text-jewelInk-mid">Редкие времена · {rareTenses.length}</span>
+                  <span className="block text-[12px] font-bold text-jewelInk-mid">Редкие формы · {rareTenses.length}</span>
                   {!rare && <span className="block text-[11px] text-jewelInk-hint">понадобятся позже, сейчас можно не открывать</span>}
                 </span>
                 <span className="text-jewelInk-hint text-[18px]">{rare ? '−' : '+'}</span>

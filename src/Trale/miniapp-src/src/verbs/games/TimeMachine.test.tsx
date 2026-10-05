@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import TimeMachine from './TimeMachine'
-import { formOf } from './common'
+import { describeSlot, formOf } from './common'
 import { seeded, verbRu } from '../testing/catalog'
 import { moveSeen, rulesSeen } from '../testing/seen'
 import { STOPS, locate } from './timeRounds'
@@ -31,16 +31,17 @@ describe('TimeMachine', () => {
 
     expect(screen.getByText(/Как играть · 1 из 4/)).toBeTruthy()
     expect(option(answer()).className).toContain('animate-pulse')
-    expect(screen.getByText(/я подсветил нужную форму/)).toBeTruthy()
+    expect(screen.getByText(/я подсветил нужное слово/)).toBeTruthy()
   })
 
-  it('asks in Russian built from the person, the stop and the verb translation', () => {
+  it('asks with a plain Russian phrase conjugated for this verb — one question line and the phrase, no tense names', () => {
     rulesSeen('verb_time')
     render(<TimeMachine verb={verb} onExit={() => {}} rng={seeded(1)} />)
 
     const ask = screen.getByTestId('time-ask').textContent!
-    expect(ask).toContain(`я · ${STOPS[asked().stop].label.toLowerCase()}`)
-    expect(ask).toContain('«писать»')
+    const phrase = verb.meanings![STOPS[asked().stop].tense]![0]
+    expect(['я пишу', 'я писал(а)', 'я буду писать']).toContain(phrase)
+    expect(ask).toBe(`Как сказать?${phrase}`)
   })
 
   it('sends the mascot where the tapped form belongs and says what that form is — then lets try again', () => {
@@ -56,7 +57,7 @@ describe('TimeMachine', () => {
     fireEvent.click(option(wrong))
 
     expect(mascotStop()).toBe(at.stop)
-    expect(screen.getByTestId('time-said').textContent).toContain(`${wrong} — это «я», ${STOPS[at.stop].label.toLowerCase()}`)
+    expect(screen.getByTestId('time-said').textContent).toBe(`${wrong} — это ${describeSlot(verb, { tense: STOPS[at.stop].tense, person: at.person })}.`)
     expect(asked()).toEqual(target)
 
     fireEvent.click(option(answer()))
@@ -65,7 +66,7 @@ describe('TimeMachine', () => {
     expect(screen.getByTestId('time-said').textContent).toBe('Он на месте!')
   })
 
-  it('says when the stop is right but the traveller is not', () => {
+  it('names the other person in plain words when the time is right but the person is not', () => {
     rulesSeen('verb_time'); moveSeen('verb_time')
     render(<TimeMachine verb={verb} onExit={() => {}} rng={seeded(1)} />)
     const target = asked()
@@ -75,13 +76,12 @@ describe('TimeMachine', () => {
     fireEvent.click(option(other))
 
     expect(mascotStop()).toBe(target.stop)
-    expect(screen.getByTestId('time-said').textContent).toContain('Остановка та, но едет не «я»')
+    expect(screen.getByTestId('time-said').textContent).toContain(`— это «${verb.meanings![STOPS[target.stop].tense]![1]}»`)
   })
 
   it('moves on after a right answer and adds a person after four of them', () => {
     rulesSeen('verb_time'); moveSeen('verb_time')
     render(<TimeMachine verb={verb} onExit={() => {}} rng={seeded(1)} />)
-    expect(screen.getByText(/лиц: 1/)).toBeTruthy()
 
     for (let i = 0; i < 3; i++) {
       answerCorrectly()
@@ -89,7 +89,6 @@ describe('TimeMachine', () => {
     }
     answerCorrectly()
 
-    expect(screen.getByText(/лиц: 2/)).toBeTruthy()
     expect(screen.getByTestId('time-said').textContent).toBe('Теперь ездит ещё и «ты».')
   })
 
@@ -99,7 +98,7 @@ describe('TimeMachine', () => {
 
     answerCorrectly()
 
-    expect(screen.queryByText(/я подсветил нужную форму/)).toBeNull()
+    expect(screen.queryByText(/я подсветил нужное слово/)).toBeNull()
     expect(option(answer()).className).not.toContain('animate-pulse')
   })
 })
