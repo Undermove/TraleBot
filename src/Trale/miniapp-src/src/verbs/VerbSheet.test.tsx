@@ -19,6 +19,7 @@ vi.mock('../api', () => ({
   fetchVerbProgress: vi.fn(() => Promise.resolve({ verbId: verb.id, canLearn: true, total: 0, forms: [] })),
   saveVerbProgress: vi.fn(() => Promise.resolve({ verbId: verb.id, canLearn: true, total: 0, forms: [] }))
 }))
+vi.mock('./story/VerbStories', () => ({ default: () => null }))
 
 function open(highlight?: { tense: string; person: number }) {
   const onClose = vi.fn()

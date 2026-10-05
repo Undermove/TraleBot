@@ -446,3 +446,8 @@ export function saveVerbProgress(id: string, forms: VerbProgressStepDto[]) {
 export function fetchVerbsInProgress() {
   return request<VerbsInProgressDto>('/api/miniapp/verbs/progress')
 }
+
+/** Комиксы глагола: реплики уже подставлены сервером из каталога. Пустой список, если историй нет. */
+export function fetchVerbStories(id: string) {
+  return request<{ stories: import('./verbs/story/types').VerbStoryDto[] }>(`/api/miniapp/verbs/${encodeURIComponent(id)}/stories`)
+}

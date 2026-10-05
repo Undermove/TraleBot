@@ -29,7 +29,7 @@
 //    искали в словаре (prod-lookups.json, замер на проде).
 // 4. Берутся первые LIMIT. Если честных меньше — каталог меньше; добивать нельзя.
 // Грубые слова (помета vulgar в Викисловаре) не берутся.
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { analyze } from './analyze.mjs'
@@ -107,9 +107,21 @@ const skip = new Set(read('sentences.skip.json'))
 const MAX_SENTENCES_PER_FORM = 4
 const wordsOf = text => text.match(/[ა-ჰ]+/g) ?? []
 
+// Комиксы (src/Trale/Verbs/stories/*.json) берут реплики по id предложения. Такое предложение попадает
+// в карточку своего глагола всегда, даже сверх лимита на форму: иначе история осталась бы без реплики.
+const storiesDir = resolve(here, '../../src/Trale/Verbs/stories')
+const pinned = new Map()
+for (const file of existsSync(storiesDir) ? readdirSync(storiesDir).filter(f => f.endsWith('.json')) : []) {
+  const story = JSON.parse(readFileSync(resolve(storiesDir, file), 'utf8'))
+  const ids = pinned.get(story.verb) ?? new Set()
+  for (const frame of story.frames ?? []) ids.add(frame.sentence)
+  pinned.set(story.verb, ids)
+}
+
 function sentencesFor(v) {
   const out = []
   const perForm = new Map()
+  const pins = pinned.get(v.lemma) ?? new Set()
   // Форма, совпадающая с самостоятельным не-глаголом, предложение не «притягивает»: неизвестно,
   // глагол в нём или существительное.
   const homographs = new Set(v.homographs)
@@ -117,9 +129,16 @@ function sentencesFor(v) {
   for (const s of sentences) {
     if (skip.has(s.id)) continue
     const form = wordsOf(s.ka).find(w => own.has(w))
-    if (!form || (perForm.get(form) ?? 0) >= MAX_SENTENCES_PER_FORM) continue
-    perForm.set(form, (perForm.get(form) ?? 0) + 1)
+    if (!form) continue
+    const count = perForm.get(form) ?? 0
+    if (count >= MAX_SENTENCES_PER_FORM && !pins.has(s.id)) continue
+    perForm.set(form, count + 1)
     out.push({ id: s.id, ka: s.ka, ru: s.ru, form })
+  }
+  const lost = [...pins].filter(id => !out.some(s => s.id === id))
+  if (lost.length) {
+    fail.push(`комикс про «${v.lemma}» ссылается на предложения, которых нет в выборке для этого глагола ` +
+      `(нет в sentences.raw.json, исключены в sentences.skip.json или в них нет формы глагола): ${lost.join(', ')}`)
   }
   return out
 }
@@ -153,6 +172,9 @@ const verbs = analysed.map(entry => {
     source: v.source
   }
 })
+
+const orphans = [...pinned.keys()].filter(lemma => !verbs.some(v => v.lemma === lemma))
+if (orphans.length) fail.push(`комиксы ссылаются на глаголы, которых нет в каталоге: ${orphans.join(', ')}`)
 
 // ── проверки качества: любая из них останавливает сборку ─────────────────────────────────────
 const GEO = /^[ა-ჰ]+$/

@@ -5,6 +5,7 @@ import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, cyr, type TenseKey, t
 import { Coach, KindChip, VerbForm } from './parts'
 import VerbGames from './games/VerbGames'
 import LadderEntry from './ladder/LadderEntry'
+import VerbStories from './story/VerbStories'
 
 interface Props {
   verbId: string
@@ -182,6 +183,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
           </div>
 
           <VerbGames verb={verb} />
+          <VerbStories verbId={verb.id} />
 
           <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">
             Источник форм: Викисловарь (CC BY-SA)
