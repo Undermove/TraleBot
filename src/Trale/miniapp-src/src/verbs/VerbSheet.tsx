@@ -7,6 +7,7 @@ import { Coach, KindChip, MeaningText, VerbForm } from './parts'
 import { OVERLAY, useOverlay } from './ui/overlayStack'
 import { hintSeen, markHintSeen } from './ui/hints'
 import SessionEntry from './session/SessionEntry'
+import FormsTable from './FormsTable'
 
 interface Props {
   verbId: string
@@ -47,7 +48,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
   const [verb, setVerb] = useState<VerbDto | null>(null)
   const [failed, setFailed] = useState(false)
   const [person, setPerson] = useState(initialHighlight?.person ?? 0)
-  const [rare, setRare] = useState(!!initialHighlight && RARE_TENSES.includes(initialHighlight.tense as TenseKey))
+  const initialRare = !!initialHighlight && RARE_TENSES.includes(initialHighlight.tense as TenseKey)
   const [why, setWhy] = useState(false)
   const [visible, setVisible] = useState(false)
   const [hint, setHint] = useState(() => !hintSeen(PERSON_HINT))
@@ -104,33 +105,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
     // У неполных глаголов («хотеть», «знать») части времён нет вовсе: такие строки не рисуем прочерками.
     const has = (t: TenseKey) => !!verb.tenses[t]?.some(variants => variants.length)
     const mainTenses = CARD_TENSES.filter(has)
-    const rareTenses = RARE_TENSES.filter(has)
 
-    const rows = (tenses: TenseKey[]) =>
-      tenses.map(t => {
-        const odd = verb.oddTenses.includes(t)
-        const hit = highlight?.tense === t && highlight.person === person
-        return (
-          <div
-            key={t}
-            data-testid={`verb-tense-${t}`}
-            className={`flex items-center justify-between gap-3 px-4 py-2.5 border-t border-cream-edge ${hit ? 'bg-gold-wash' : odd ? 'bg-ruby-wash/60' : ''}`}
-          >
-            {/* Слева — что форма значит по-русски («я пишу»); название времени простыми словами — мелко под ней. */}
-            <span className="min-w-0">
-              {verb.meanings?.[t] ? (
-                <>
-                  <span className="block text-[14px] font-bold text-jewelInk"><MeaningText meaning={{ ...meaningOf(verb, t, person), note: null }} /></span>
-                  <span className="block text-[11px] text-jewelInk-hint">{TENSES[t].name}</span>
-                </>
-              ) : (
-                <span className="block text-[13px] font-bold text-jewelInk">{TENSES[t].name}</span>
-              )}
-            </span>
-            <VerbForm variants={verb.tenses[t]?.[person] ?? []} big root={verb.root} />
-          </div>
-        )
-      })
     return (
       <div className="px-5 flex flex-col gap-4" style={{ paddingBottom: 'calc(var(--safe-b) + 20px)' }}>
           <div className="text-center pt-2">
@@ -209,43 +184,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
 
           {hint && <Coach>Это главные формы. Нажми «ты» или «он» — таблица покажет те же времена для другого лица.</Coach>}
 
-          <div
-            className="rounded-xl bg-cream-tile border-[1.5px] border-jewelInk overflow-hidden"
-            style={{ boxShadow: '3px 3px 0 #15100A' }}
-          >
-            <div className="p-1.5 bg-navy flex gap-1">
-              {PERSONS.map((p, i) => (
-                <button
-                  key={p}
-                  data-testid={`verb-person-${i}`}
-                  onClick={() => pickPerson(i)}
-                  className={`flex-1 h-8 rounded-md text-[12px] font-bold ${person === i ? 'bg-cream text-jewelInk' : 'text-cream/80'} ${hint && i === 1 ? 'ring-4 ring-gold animate-pulse' : ''}`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            {rows(mainTenses)}
-            {mainTenses.length < CARD_TENSES.length && (
-              <div data-testid="verb-partial" className="px-4 py-2 border-t border-cream-edge text-[11px] text-jewelInk-hint">
-                У этого глагола не все времена: {CARD_TENSES.filter(t => !has(t)).map(t => TENSES[t].name.toLowerCase()).join(', ')} — таких форм в базе нет.
-              </div>
-            )}
-            {rareTenses.length > 0 && (
-              <button
-                onClick={() => setRare(!rare)}
-                data-testid="verb-rare-toggle"
-                className="w-full flex items-center justify-between px-4 py-2.5 border-t border-cream-edge text-left bg-cream-deep/60"
-              >
-                <span>
-                  <span className="block text-[12px] font-bold text-jewelInk-mid">Редкие формы · {rareTenses.length}</span>
-                  {!rare && <span className="block text-[11px] text-jewelInk-hint">понадобятся позже, сейчас можно не открывать</span>}
-                </span>
-                <span className="text-jewelInk-hint text-[18px]">{rare ? '−' : '+'}</span>
-              </button>
-            )}
-            {rare && rows(rareTenses)}
-          </div>
+          <FormsTable verb={verb} person={person} onPerson={pickPerson} highlight={highlight} initialRare={initialRare} pulsePerson={hint ? 1 : undefined} />
 
           {entry && (
             <div className="flex flex-col items-center gap-1 text-[13px]" data-testid="verb-entry-actions">

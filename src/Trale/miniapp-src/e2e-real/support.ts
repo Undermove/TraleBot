@@ -175,6 +175,8 @@ export interface PlayOptions {
   stopAfter?: number
   /** Снимки экрана: префикс имени файла. */
   shots?: string
+  /** В кадрах комикса с набором сначала подсмотреть слово в таблице. */
+  peek?: boolean
 }
 
 export interface Played { scenes: string[]; tasks: number; bar: number[]; notes: string[] }
@@ -309,7 +311,20 @@ export async function playSession(page: Page, seen: Seen, options: PlayOptions =
         await option(frame.target.form).click()
       } else if (frame.mode === 'type') {
         await page.getByTestId('story-type-field').click()
-        await typeGeorgian(page, frame.target.form)
+        if (options.peek) {
+          // Не помню слово: подсматриваем в таблице и возвращаемся — кадр и набранное должны остаться на месте.
+          const half = [...frame.target.form].slice(0, 2).join('')
+          await typeGeorgian(page, half)
+          await page.getByTestId('table-peek').click()
+          const sheet = page.getByTestId('table-peek-sheet')
+          await expect(sheet.getByText(frame.target.form, { exact: true }).first()).toBeVisible()
+          await page.waitForTimeout(600) // шторка выезжает с анимацией
+          if (options.shots) await shot(page, `${options.shots}-peek`)
+          await sheet.getByRole('button', { name: 'Вернуться к заданию' }).click()
+          await expect(sheet).toHaveCount(0)
+          await expect(page.getByTestId('story-type-field')).toHaveText(half)
+          await typeGeorgian(page, [...frame.target.form].slice(2).join(''))
+        } else await typeGeorgian(page, frame.target.form)
         await page.getByRole('button', { name: 'Сказать' }).click()
       } else {
         for (const word of words(frame.ka)) await page.getByTestId('story-chips').getByRole('button', { name: word, exact: true }).first().click()

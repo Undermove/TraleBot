@@ -14,12 +14,14 @@ import { MeaningText } from '../parts'
 import { quoted } from '../meaning'
 import { ChipButton, EXAM_HELP, Geo, HELP, Prompt, SentenceBox } from './quizParts'
 import type { PlannedTask } from './types'
+import TablePeek from '../TablePeek'
 
 // Сцена-квиз: несколько заданий подряд, одно на экране. Что и в каком порядке спросить, решил
 // постановщик сессии (plan.ts); здесь — экран задания и отклик. Названий времён нет: форма
 // объясняется русской фразой («я хочу»). Этой же сценой идут знакомство, разминка, фразы и экзамен.
 
 export interface ExamResult { asked: number; correct: number; missed: LadderItem[] }
+
 
 interface Props {
   verb: VerbDto
@@ -294,6 +296,8 @@ export default function QuizScene({ verb, items, tasks, progress, scene, onExam 
           <Button disabled={built.length !== task.answer.length} onClick={checkBuilt}>Проверить</Button>
         )}
         {typing && <Button disabled={!typed.trim()} onClick={checkTyped}>Проверить</Button>}
+        {/* На экзамене не подсматривают; в обычной игре — можно: задание под таблицей остаётся как было. */}
+        {typing && !exam && <TablePeek verbId={verb.id} verb={verb} person={task.item.person} />}
         {waitNext && <Button onClick={advance}>Дальше</Button>}
       </div>
       {typing && <GeorgianKeyboard value={typed} onChange={setTyped} />}

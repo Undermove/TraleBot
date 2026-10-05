@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import StoryReader from './StoryReader'
 import { storyFixture as story } from './fixture'
-import { parseVerbForm } from '../../api'
+import { verbByLemma } from '../testing/catalog'
+import { parseVerbForm, fetchVerb } from '../../api'
 import { bad, good } from '../ui/juice'
 import { seenKey } from '../ui/GameShell'
 import { hintSeen, resetSeenHints } from '../ui/hints'
@@ -165,6 +166,29 @@ describe('StoryReader', () => {
     say()
 
     await waitFor(() => expect(screen.getByTestId('story-note').textContent).toBe('Пока не то. Здесь нужно «я буду идти».'))
+  })
+
+  it('lets the learner peek at the table of words and come back to the same frame with nothing lost', async () => {
+    vi.mocked(fetchVerb).mockResolvedValue(verbByLemma('მიდის'))
+    open()
+    fireEvent.click(within(frame(0)).getByText('მიდიხარ'))
+    fireEvent.click(screen.getByTestId('story-type-field'))
+    press('წა')
+
+    fireEvent.click(screen.getByTestId('table-peek'))
+    const sheet = await screen.findByTestId('table-peek-sheet')
+    await waitFor(() => expect(within(sheet).getByTestId('verb-tense-future').textContent).toContain('წავალ'))
+
+    fireEvent.click(within(sheet).getByText('Вернуться к заданию'))
+
+    expect(screen.queryByTestId('table-peek-sheet')).toBeNull()
+    expect(frame(1).dataset.state).toBe('current')
+    expect(screen.getByTestId('story-type-field').textContent).toBe('წა')
+    expect(progress()).toBe('1/3')
+
+    press('ვალ')
+    say()
+    expect(frame(1).dataset.state).toBe('open')
   })
 
   it('finishes when the phrase is built in the source order', () => {

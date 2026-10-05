@@ -189,14 +189,14 @@ test('каждая сцена сыграна по-настоящему: знак
   expect(seen.errors).toEqual([])
 })
 
-test('комикс — первая сессия глагола с историей; дочитан один раз', async ({ page }) => {
+test('комикс — первая сессия глагола с историей; подсмотреть в таблице и вернуться; дочитан один раз', async ({ page }) => {
   const learner = await createLearner()
   const seen = new Seen(page)
   const verb = await verbByRu(learner, 'идти')
   await openVerbFromDictionary(page, learner, verb, 'иду')
   await playButton(page).click()
 
-  const played = await playSession(page, seen, { shots: '09-comic' })
+  const played = await playSession(page, seen, { shots: '09-comic', peek: true })
 
   expect(played.scenes[0]).toBe('story')
   expect(growsEveryTask(played.bar), `полоска: ${played.bar}`).toBe(true)

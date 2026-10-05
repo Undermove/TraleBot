@@ -14,10 +14,12 @@ import FrameImage from './FrameImage'
 import { cellName, explainTyped, explainWrong, frameImages, gap, shuffled, usedForms, words } from './logic'
 import type { StoryFormDto, VerbStoryDto } from './types'
 import './story.css'
+import TablePeek from '../TablePeek'
 
 // Комикс «кадр под замком»: кадры идут лентой сверху вниз, следующий размыт и закрыт,
 // пока не сказана реплика текущего. Неверная форма — не «ошибка»: Бомбора объясняет,
 // что она значит, и можно пробовать снова.
+
 
 
 const HELP = [
@@ -229,6 +231,8 @@ export default function StoryReader({ story, onExit, scene }: {
                                 {typed || <span className="text-[13px] font-sans font-normal text-jewelInk-hint">{keyboard ? 'набери пропущенное слово' : 'нажми, чтобы набрать слово'}</span>}
                               </button>
                               <Button disabled={!typed.trim() || checking} onClick={sayTyped}>Сказать</Button>
+                              {/* Не выходит набрать — можно подсмотреть: кадр под таблицей остаётся как был. С подсказкой слово сказано не самостоятельно. */}
+                              <TablePeek verbId={story.verbId} person={f.target.person} onPeek={() => { missed.current = true }} />
                             </>
                           )}
 
