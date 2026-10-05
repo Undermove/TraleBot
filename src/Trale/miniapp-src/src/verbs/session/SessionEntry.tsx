@@ -60,7 +60,7 @@ export default function SessionEntry({ verb }: { verb: VerbDto }) {
       <div data-testid="session-entry">
         <div className="mb-2 flex items-center justify-center gap-2 text-[12px] text-jewelInk-mid">
           <LevelBadge level={learning.level} />
-          {known > 0 && <span data-testid="session-entry-known">· знакомо слов: {known} из {items.length}</span>}
+          {known > 0 && <span data-testid="session-entry-known">· знакомо слов: {known}</span>}
         </div>
         <Button variant={label.quiet ? 'ghost' : 'primary'} onClick={() => setOpen(true)}>{label.text}</Button>
         <div className="mt-1.5 text-center text-[12px] text-jewelInk-mid" data-testid="session-entry-about">

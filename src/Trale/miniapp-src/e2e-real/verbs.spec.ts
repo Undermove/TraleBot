@@ -51,7 +51,7 @@ test('словарь → слово-глагол → вид глагола → �
 
   await page.getByRole('button', { name: 'Готово' }).click()
   await expect(playButton(page)).toHaveText('Играть дальше')
-  await expect(page.getByTestId('session-entry-known')).toContainText('3 из 36')
+  await expect(page.getByTestId('session-entry-known')).toContainText('знакомо слов: 3')
 
   // Перезагрузка: всё на месте — уровень в строке словаря и в виде глагола.
   await openDictionary(page, learner)
@@ -108,7 +108,7 @@ test('полсессии → перезагрузка → продолжение
   await openDictionary(second, learner)
   await second.getByRole('listitem').filter({ hasText: 'пишу' }).getByRole('button').last().click()
   await expect(playButton(second)).toHaveText('Продолжить игру')
-  await expect(second.getByTestId('session-entry-known')).toContainText('3 из 36')
+  await expect(second.getByTestId('session-entry-known')).toContainText('знакомо слов: 3')
   expect((await api(learner, 'me')).uiHintsSeen).toContain('ui:verb_game_seen_ladder')
   await playButton(second).click()
   await expect(session(second)).toHaveAttribute('data-scene-index', String(stored.scene))

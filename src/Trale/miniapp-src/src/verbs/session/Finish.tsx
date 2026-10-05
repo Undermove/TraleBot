@@ -94,7 +94,7 @@ export default function Finish({ verb, items, touched, exam, levelBefore, saved,
         <div className="text-center text-[13px] text-jewelInk-mid" data-testid="session-comeback">
           {passed
             ? 'Хочешь — сыграй ещё, просто для удовольствия.'
-            : <>Знакомых слов у этого глагола: <b>{known} из {items.length}</b>. Загляни завтра — повторим за минуту.</>}
+            : <>Знакомых слов у этого глагола уже <b>{known}</b>. Загляни завтра — повторим за минуту.</>}
         </div>
         {!saved && (
           <div className="text-center text-[12px] text-jewelInk-hint" data-testid="session-offline">
