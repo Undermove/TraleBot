@@ -30,12 +30,20 @@ public class MafVerbReviewer(
            present) and it is the verb for the Russian gloss — the verb itself, not a near-synonym. For
            a Russian looked-up text, the gloss must contain the asked infinitive.
         2. The evidence. "Wiktionary lexicon" lines are checked facts. If the lexicon translates the asked
-           Russian verb with other lemmas and this lemma is not among them, or its entry for this lemma
-           means something else — reject. "Attested" counts how many of the forms occur in corpora of
-           real texts. Zero attested forms — reject: nobody has ever written this verb. A real verb has
-           most of its common forms attested; the forms listed as not attested are the ones to look at
-           hardest — rare cells (you plural, optative, conditional) may be legitimately absent from the
-           corpora, a present or aorist "he/she" or "I" form of a common verb may not.
+           Russian verb with other verbs and this verb is not among them, or its entry for this lemma
+           means something else — reject. The lexicon may title an entry by the future form with a
+           preverb: a listed lemma that is this same verb with a preverb agrees with the record, whose
+           lemma must be the present form. "Attested" counts how many of the forms occur in corpora of
+           real texts, overall and row by row. Zero attested forms — reject: nobody has ever written
+           this verb. A real verb has most of its common forms attested; the forms listed as not attested
+           are the ones to look at hardest — rare cells (you plural, optative, conditional) may be
+           legitimately absent from the corpora, a present or aorist "he/she" or "I" form of a common
+           verb may not.
+           A row in which not one form is attested is confirmed by nothing — typically a wrong preverb
+           or a wrong spelling of it runs through the whole row. Unless you are certain of every cell of
+           such a row, reject and tell the author to leave that row out (null): a missing row is fine,
+           a guessed one is not. The future, conditional, aorist and optative share the preverb: when
+           the attested forms of one of them contradict the spelling in another, reject.
         3. The paradigm. Every row is the same verb; person and number markers are right in every cell;
            the future, conditional, aorist and optative carry the same preverb; the rows are the tenses
            they are labelled as. An empty cell ("—") is fine. A cell that is wrong is not.
@@ -90,10 +98,24 @@ public class MafVerbReviewer(
                 : $"\nWiktionary lexicon translates «{request.Infinitive}» with: {string.Join("; ", evidence.LexiconForAsked.Select(MafVerbAnalyst.Describe))}");
         }
 
-        text.Append(evidence.CorpusAvailable
-            ? $"\nAttested in corpora of real texts: {evidence.FormsAttested} of {evidence.FormsTotal} forms."
-              + (evidence.Unattested.Count == 0 ? string.Empty : $" Not attested: {string.Join(", ", evidence.Unattested)}.")
-            : "\nCorpus data is not available.");
+        if (evidence.CorpusAvailable)
+        {
+            text.Append($"\nAttested in corpora of real texts: {evidence.FormsAttested} of {evidence.FormsTotal} forms.");
+            if (evidence.Unattested.Count > 0)
+            {
+                text.Append($" Not attested: {string.Join(", ", evidence.Unattested)}.");
+                var byRow = VerbAnalyzer.KnownTenses.Where(request.Tenses.ContainsKey).Select(tense =>
+                {
+                    var forms = request.Tenses[tense].SelectMany(cell => cell).ToList();
+                    return $"{tense} {forms.Count(f => !evidence.Unattested.Contains(f))}/{forms.Count}";
+                });
+                text.Append($"\nAttested by row: {string.Join(", ", byRow)}.");
+            }
+        }
+        else
+        {
+            text.Append("\nCorpus data is not available.");
+        }
         return text.ToString();
     }
 

@@ -37,9 +37,10 @@ namespace Application.Translation.Pipeline;
 /// <para>
 /// The models are for verbs only. For anything else — a noun, an adjective, a phrase, a sentence — the
 /// one thing a model says is "this is not a verb", and the text goes to the translator that was here
-/// before, unchanged. "Not something to translate" is answered only for a text the classifier is sure is
-/// not a word or a phrase at all (or, for a verb-looking one, the strong model is) AND the dictionary site
-/// does not know either; any doubt is translated the old way.
+/// before, unchanged; a text of more than three words is a sentence and reaches no model at all.
+/// "Not something to translate" is answered only for a single token the classifier is sure is not a
+/// word (or, for a verb-looking one, the strong model is) AND the dictionary site does not know either;
+/// a phrase of several words is never refused, and any doubt is translated the old way.
 /// </para>
 /// </summary>
 public class GeorgianTranslationPipeline(
@@ -143,7 +144,13 @@ public class GeorgianTranslationPipeline(
             }
         }
 
-        if (agentOn && !settled && !budget.TrySpend())
+        if (agentOn && !settled && !CanBeVerb(key))
+        {
+            // A sentence, or anything the agents do not read (Latin): the models have nothing to decide
+            // here, so none is asked. The old translator answers, as it always did.
+            settled = true;
+        }
+        else if (agentOn && !settled && !await budget.TrySpendAsync(ModelSpend.Request, ct))
         {
             trace.Steps.Add("over-daily-budget");
         }
@@ -202,7 +209,10 @@ public class GeorgianTranslationPipeline(
             return (null, false);
         }
 
-        if (classification.NotTranslatable)
+        // "Not something to translate" is taken from the classifier only for a single token (random
+        // letters): a phrase of real words is always translated — a small model cannot tell «расскажи
+        // анекдот» said to the bot from «где находится вокзал» said to be translated.
+        if (classification.NotTranslatable && !key.Contains(' '))
         {
             return await ConfirmNotTranslatable(key, direction, cached, trace, ct);
         }
@@ -298,6 +308,13 @@ public class GeorgianTranslationPipeline(
         if (!canGenerate || !options.Value.AllowGeneratedVerbs || !generationSwitch.IsOn)
         {
             return (null, true);
+        }
+
+        if (!await budget.TrySpendAsync(ModelSpend.Generation, ct))
+        {
+            // Not settled: tomorrow, or for another user, the verb may still be written.
+            trace.Steps.Add("over-generation-budget");
+            return (null, false);
         }
 
         try
@@ -450,7 +467,10 @@ public class GeorgianTranslationPipeline(
             .Select(r => r.MeaningNote == null ? r.Form! : $"{r.Form} ({r.MeaningNote})")
             .Distinct()
             .ToList();
+        // «он сказал мне»: the table has the form for «он сказал»; whom it was said to is not in it.
+        var setAside = VerbMeaningPhrases.Parse(key).SetAside;
         var notes = $"«{first.Meaning}»" + (first.MeaningNote == null ? string.Empty : $" ({first.MeaningNote})")
+                    + (setAside == null ? string.Empty : $" — без «{setAside}»")
                     + (others.Count == 0 ? string.Empty : $"; ещё: {string.Join(", ", others)}");
         return new TranslationResult.Success(first.Form!, notes + Transcription(first.Form!), await ExampleFor(first.Lemma, first.Form, ct));
     }
@@ -520,8 +540,15 @@ public class GeorgianTranslationPipeline(
     /// our own (<see cref="TranslationAgentException"/>). A provider's raw message can quote the
     /// request, credentials included, and does not belong in a log.
     /// </summary>
-    private static string Describe(Exception e) =>
-        e is TranslationAgentException ? e.Message : e is OperationCanceledException ? "timeout" : e.GetType().Name;
+    public static string Describe(Exception e) => e switch
+    {
+        TranslationAgentException => e.Message,
+        OperationCanceledException => "timeout",
+        // The framework wraps what went wrong inside; the kinds are safe to name, the messages are not.
+        AggregateException many => string.Join("+", many.Flatten().InnerExceptions.Select(Describe).Distinct()),
+        _ when e.InnerException != null => $"{e.GetType().Name}({Describe(e.InnerException)})",
+        _ => e.GetType().Name
+    };
 
     private static CancellationTokenSource Timeout(int seconds, CancellationToken ct)
     {

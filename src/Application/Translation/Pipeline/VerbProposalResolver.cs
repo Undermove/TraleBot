@@ -126,11 +126,6 @@ public class VerbProposalResolver(
         // The gloss comes from the source when it has one; the model's own is the fallback.
         var fromSource = known is { Russian.Count: > 0 };
         var glosses = Glosses(askedInfinitive, fromSource ? $"{string.Join(", ", known!.Russian)}, {proposal.Russian}" : proposal.Russian);
-        if (glosses == null)
-        {
-            return VerbResolution.Rejected("russian-gloss-not-an-infinitive") with { LemmaHint = lemma };
-        }
-
         // The page is looked at by us even if the analyst never asked for it: a table in the source
         // always beats the model's own forms.
         if (!result.FetchedPages.TryGetValue(lemma!, out var page))
@@ -141,6 +136,19 @@ public class VerbProposalResolver(
         if (page == null)
         {
             return VerbResolution.Rejected("no-table-in-the-source") with { LemmaHint = lemma };
+        }
+
+        if (glosses == null)
+        {
+            // The source has the table; only the analyst's Russian is unusable — it is asked once more.
+            // A verb that has a table is never handed to the generator.
+            return VerbResolution.Rejected(
+                "russian-gloss-not-an-infinitive",
+                $"\"russian\" for {lemma} must be the verb's dictionary infinitive(s) in Russian (like «делать», «быть голодным»), " +
+                $"not a finite form, a noun or a phrase. You wrote: «{proposal.Russian}». Answer again with the same lemma.") with
+            {
+                CanGenerate = false
+            };
         }
 
         // A verb's identity is its present "he/she" form — true of every catalog verb. Wiktionary

@@ -13,6 +13,7 @@ public static class DependencyInjection
             options.UseNpgsql(configuration.GetConnectionString("TraleBotDb")));
 
         services.AddScoped<ITraleDbContext>(provider => provider.GetService<TraleDbContext>() ?? throw new InvalidOperationException());
+        services.AddScoped<Application.Translation.Pipeline.IModelBudgetCounter, ModelBudgetCounter>();
         services.AddHealthChecks().AddDbContextCheck<TraleDbContext>();
     }
 }

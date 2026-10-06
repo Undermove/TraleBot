@@ -29,7 +29,8 @@ public class MafVerbGenerator(
           "Georgian word: W" — a form of a Georgian verb, or its verbal noun. Write the record of that verb.
         It may carry "Suggested lemma:" (a guess of a weaker model — check it, do not trust it) and
         "Wiktionary lexicon:" lines (checked facts from an open dictionary: for a Russian verb choose among
-        the listed lemmas unless none of them is the verb).
+        the listed verbs unless none of them is the verb). The lexicon may title an entry by the future
+        form with a preverb; your lemma is still the present form of that same verb.
 
         First decide "verdict":
           "verb" — you know this verb and can write its record.
@@ -71,8 +72,9 @@ public class MafVerbGenerator(
           or a verbal noun — the verb itself.
 
         The message may end with "Your previous record" and "Problems found" — then write the whole
-        record again with exactly those problems fixed. If a problem says the verb is the wrong one or
-        cannot be confirmed and you cannot fix it with certainty, answer "notAVerb".
+        record again with exactly those problems fixed. When a problem says a row cannot be confirmed,
+        set that row to null rather than guess again. If a problem says the verb itself is the wrong one
+        or cannot be confirmed and you cannot fix it with certainty, answer "notAVerb".
         """;
 
     private sealed record Output(

@@ -79,11 +79,47 @@ public class OrdinaryWordsRegressionTests : TranslationPipelineTestBase
                 inDictionary ? FakeExternalTranslator.Definition : FakeExternalTranslator.GoogleDefinition);
         }
 
-        Log.Paths.Should().OnlyContain(path => path == "not-a-verb>legacy");
-        Models.ClassifierModel.Calls.Should().Be(Ordinary.Length, because: "one cheap call says «not a verb» — the model's only job here");
+        // Up to three words could be a verb with a pronoun: one cheap call says «not a verb» — the model's
+        // only job here. A longer text is a sentence and reaches no model at all.
+        var short_ = Ordinary.Count(o => o.Text.Split(' ').Length <= 3);
+        Log.Paths.Should().OnlyContain(path => path == "not-a-verb>legacy" || path == "legacy");
+        Log.Paths.Count(path => path == "legacy").Should().Be(Ordinary.Length - short_);
+        Models.ClassifierModel.Calls.Should().Be(short_);
         (Models.AnalystModel.Calls, Models.GeneratorModel.Calls, Models.ReviewerModel.Calls).Should().Be((0, 0, 0));
         (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs.CountAsync(v => v.Status == Domain.Entities.VerbStatus.Generated)))
             .Should().Be(0);
+    }
+
+    [TestCase("расскажи анекдот")]
+    [TestCase("как дела")]
+    [TestCase("мне нужна помощь")]
+    public async Task Phrase_is_translated_even_when_the_small_model_takes_it_for_a_message_to_the_bot(string phrase)
+    {
+        await SeedCatalogWithout();
+        External.DictionaryMisses.Add(phrase);
+        Models.ClassifierModel.AnswerWith("""{"notTranslatable":true,"isVerb":false,"russianInfinitive":null}""");
+
+        var result = await Translate(phrase);
+
+        // The dictionary site has no entry for a phrase, so its "no" proves nothing here: Google answers, as before.
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.GoogleDefinition);
+        External.Trail.Should().Equal($"dictionary:{phrase}", $"google:{phrase}");
+        Log.Paths.Should().Equal("not-a-verb>legacy");
+    }
+
+    [Test]
+    public async Task Sentence_reaches_no_model_at_all()
+    {
+        await SeedCatalogWithout();
+
+        // Every model is a throwing fake here.
+        var result = await Translate("где находится ближайший вокзал");
+
+        result.Should().BeOfType<TranslationResult.Success>();
+        Models.ModelCalls.Should().Be(0);
+        Log.Paths.Should().Equal("legacy");
+        (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().TranslationCache.SingleAsync())).Classified.Should().BeTrue(
+            because: "there is nothing left to ask a model about this text");
     }
 
     [TestCase("classifier-error")]

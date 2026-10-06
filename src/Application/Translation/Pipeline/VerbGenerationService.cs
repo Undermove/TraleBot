@@ -13,11 +13,17 @@ namespace Application.Translation.Pipeline;
 /// "stored" | "existing" | "not-a-verb" | "not-a-word" | "rejected" — for the request log; with
 /// <paramref name="Reason"/> a short fixed code, no user text.
 /// </param>
+/// <param name="Draft">The last record that reached the reviewer, with its verdict — for a preview and for reports.</param>
 public record VerbGenerationOutcome(
-    ResolvedVerb? Verb, string Outcome, string? Reason, ModelUsage Generator, ModelUsage Reviewer, int RepairRounds)
+    ResolvedVerb? Verb, string Outcome, string? Reason, ModelUsage Generator, ModelUsage Reviewer, int RepairRounds,
+    VerbGenerationDraft? Draft = null)
 {
     public bool NotAWord => Outcome == "not-a-word";
 }
+
+/// <summary>A record as it was shown to the reviewer, and what the reviewer said.</summary>
+public record VerbGenerationDraft(
+    VerbParadigm Paradigm, string Russian, VerbMeanings Meanings, VerbEvidence Evidence, VerbReview Review);
 
 /// <summary>
 /// The last step of the verb path: a verb that is in neither the base nor a Wiktionary table is written
@@ -54,23 +60,29 @@ public class VerbGenerationService(
     private static readonly Regex GeorgianWords = new("[ა-ჰ]+", RegexOptions.Compiled);
 
     /// <param name="request">What was asked, with the cheap agent's hint and the lexicon's candidates.</param>
-    public async Task<VerbGenerationOutcome> GenerateAsync(VerbGenerationRequest request, CancellationToken ct)
+    /// <param name="preview">
+    /// True: write and review only — nothing is stored and what the base already has is not looked at.
+    /// The outcome is then "approved" instead of "stored". For comparing models and for reports.
+    /// </param>
+    public async Task<VerbGenerationOutcome> GenerateAsync(VerbGenerationRequest request, CancellationToken ct, bool preview = false)
     {
         var generatorUsage = ModelUsage.None;
         var reviewerUsage = ModelUsage.None;
         var askedWords = request.IsRussian ? [] : GeorgianWords.Matches(request.Text).Select(m => m.Value).ToList();
         var askedInfinitive = request.IsRussian ? VerbProposalResolver.NormalizeGloss(request.Infinitive ?? request.Text) : null;
 
+        VerbGenerationDraft? lastDraft = null;
         VerbGenerationOutcome Done(ResolvedVerb? verb, string outcome, string? reason, int rounds) =>
-            new(verb, outcome, reason, generatorUsage, reviewerUsage, rounds);
+            new(verb, outcome, reason, generatorUsage, reviewerUsage, rounds, lastDraft);
 
-        if (askedInfinitive != null)
+        if (askedInfinitive != null && !preview)
         {
             // The lexicon translates the asked word with a verb that is already stored (it got there for
-            // another Russian word): nothing to write, and no model to ask.
+            // another Russian word): nothing to write, and no model to ask — unless the cheap agent named
+            // another of the lexicon's verbs («учить» is both "to teach" and "to learn").
             var sourced = request.Lexicon.Select(v => v.Lemma).ToList();
             var stored = await dbContext.Verbs.Where(v => sourced.Contains(v.Lemma)).ToListAsync(ct);
-            if (stored.Count == 1)
+            if (stored.Count == 1 && (request.LemmaHint == null || request.LemmaHint == stored[0].Lemma))
             {
                 return await ExistingAsync(stored[0], askedInfinitive, askedWords, Done, 0, ct, sourcedByLexicon: true);
             }
@@ -96,7 +108,7 @@ public class VerbGenerationService(
             var draft = lemma == null ? null : Draft(lemma, written, askedWords, problems);
 
             // A verb that is already stored is served as stored — it was checked when it got there.
-            if (lemma != null && VerbParadigm.GeorgianWord.IsMatch(lemma))
+            if (!preview && lemma != null && VerbParadigm.GeorgianWord.IsMatch(lemma))
             {
                 var existing = await dbContext.Verbs.FirstOrDefaultAsync(v => v.Lemma == lemma, ct);
                 if (existing != null)
@@ -131,6 +143,12 @@ public class VerbGenerationService(
                         draft.Tenses, meanings.Meanings, matched?.Form, matched?.Tense, matched?.Person, evidence),
                     timeout.Token);
                 reviewerUsage += review.Usage ?? ModelUsage.None;
+                lastDraft = new VerbGenerationDraft(draft, glosses, meanings, evidence, review);
+                if (review.Approved && preview)
+                {
+                    return Done(null, "approved", null, round);
+                }
+
                 if (review.Approved)
                 {
                     var verb = await store.AddAsync(

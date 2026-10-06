@@ -109,6 +109,10 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     [TestCase("пишу", "present", 0, TestName = "Russian_present_shows_its_person")]
     [TestCase("ты пишешь", "present", 1, TestName = "Russian_present_with_a_pronoun")]
     [TestCase("я буду писать", "future", 0, TestName = "Russian_compound_future")]
+    [TestCase("мне надо писать", "optative", 0, TestName = "Dative_pronoun_before_nado_is_who_acts")]
+    [TestCase("он писал мне", "imperfect", 2, TestName = "Object_pronoun_after_the_verb_is_set_aside")]
+    [TestCase("ему писали", "imperfect", 5, TestName = "Object_pronoun_before_the_verb_is_not_who_acts")]
+    [TestCase("я пишу тебе", "present", 0, TestName = "Object_pronoun_after_a_present_form")]
     public async Task Russian_verb_form_is_answered_from_the_database_with_no_model(string typed, string tense, int person)
     {
         await SeedCatalogWithout();
@@ -132,6 +136,18 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
 
         result.AdditionalInfo.Should().Contain($"«{Meaning(verb, "imperfect", 2)}»");
         result.AdditionalInfo.Should().Contain($"ещё: {Form(verb, "aorist", 2)}");
+    }
+
+    [Test]
+    public async Task Object_pronoun_that_is_not_in_the_form_is_named_in_the_reply()
+    {
+        await SeedCatalogWithout();
+        var verb = CatalogVerb(Write);
+
+        var result = (TranslationResult.Success)await Translate("он писал мне");
+
+        result.Definition.Should().Be(Form(verb, "imperfect", 2));
+        result.AdditionalInfo.Should().Contain("«он писал»").And.Contain("без «мне»");
     }
 
     [Test]
@@ -373,6 +389,33 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         await Translate(Paint);
 
         (await StoredVerb(Paint))!.Translation.Should().Be(stored);
+    }
+
+    [Test]
+    public async Task Unusable_russian_gloss_for_a_verb_that_has_a_table_is_asked_for_once_more_and_never_generated()
+    {
+        await SeedCatalogWithout(Paint);
+        Wiktionary.Pages[Paint] = PaintPage;
+        Models.CanGenerate = true; // the generator is a throwing fake: it must not be reached
+        Models.ClassifierModel.AnswerWith(AVerb);
+        var answers = new Queue<string>([
+            Json(new { outcome = "wiktionary", lemma = Paint, russian = "он рисует" }),
+            Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" })]);
+        Models.AnalystModel.Respond = (_, _) => Task.FromResult(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, answers.Dequeue()));
+
+        await Translate(Paint);
+
+        (await StoredVerb(Paint))!.Translation.Should().Be("рисовать");
+        Log.Paths.Should().Equal("analyst[]>retry(russian-gloss-not-an-infinitive)>analyst[]>verb-wiktionary");
+        Models.AnalystModel.Conversations.Last().Last().Text.Should().Contain("You wrote: «он рисует»");
+
+        // And when the second answer is no better: the old translation, still no generation.
+        await SeedCatalogWithout(Paint);
+        Log.Reset();
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = "он рисует" }));
+        await Translate(Paint);
+        Log.Paths.Single().Should().EndWith("verb-rejected(russian-gloss-not-an-infinitive)>legacy");
+        Models.GeneratorModel.Calls.Should().Be(0);
     }
 
     // ── 5. A verb with no table anywhere: the analyst's own forms are never stored ───────────────
@@ -625,18 +668,6 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         External.Calls.Should().Be(1);
         Models.ModelCalls.Should().Be(0);
         Log.Paths.Should().Equal("legacy", "cache");
-    }
-
-    [Test]
-    public void Daily_budget_lets_through_only_as_many_requests_as_the_cap()
-    {
-        var budget = new ModelBudget(
-            Options.Create(new TranslationAgentOptions { MaxModelRequestsPerDay = 2 }), NullLogger<ModelBudget>.Instance);
-
-        new[] { budget.TrySpend(), budget.TrySpend(), budget.TrySpend(), budget.TrySpend() }
-            .Should().Equal(true, true, false, false);
-        new ModelBudget(Options.Create(new TranslationAgentOptions { MaxModelRequestsPerDay = 0 }), NullLogger<ModelBudget>.Instance)
-            .TrySpend().Should().BeTrue(because: "0 means no cap");
     }
 
     // ── 11. "What a model said once is stored and never asked again" ─────────────────────────────

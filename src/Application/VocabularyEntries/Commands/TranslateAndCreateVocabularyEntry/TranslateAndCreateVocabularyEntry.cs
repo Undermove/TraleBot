@@ -19,7 +19,8 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
     public class Handler(
         ILanguageTranslator languageTranslator,
         ITraleDbContext context,
-        IAchievementsService achievementService)
+        IAchievementsService achievementService,
+        Translation.Pipeline.TranslationRequester requester)
         : IRequestHandler<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>
     {
         public async Task<CreateVocabularyEntryResult> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
@@ -68,6 +69,8 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
                     targetLanguage);
             }
 
+            // The per-user caps on model calls need to know whose request this is.
+            requester.UserId = user.Id;
             var translationResult = await languageTranslator.Translate(request.Word, targetLanguage, ct);
             return translationResult switch
             {

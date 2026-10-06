@@ -24,6 +24,7 @@ public interface ITraleDbContext
     DbSet<Verb> Verbs { get; }
     DbSet<VerbForm> VerbForms { get; }
     DbSet<VerbProvenance> VerbProvenances { get; }
+    DbSet<ModelBudgetDay> ModelBudgetDays { get; }
     DbSet<VerbFormProgress> VerbFormProgresses { get; }
     DbSet<UserVerb> UserVerbs { get; }
     DbSet<VerbSession> VerbSessions { get; }

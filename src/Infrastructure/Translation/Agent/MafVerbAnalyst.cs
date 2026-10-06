@@ -68,7 +68,8 @@ public class MafVerbAnalyst(
 
         "russian" is the dictionary translation of the verb into Russian: one plain infinitive, the way a
         dictionary prints it; up to two more synonyms after commas. Never a descriptive phrase when a
-        single Russian verb exists. For "Russian verb: X" the first gloss is X itself.
+        single Russian verb exists. For "Russian verb: X" the first gloss is X itself. It is always an
+        infinitive («облегчать»), also when W is a finite form («я облегчил» is wrong here).
         """;
 
     // The JSON the model must return. Flat and explicit, so the schema is the same for every provider.

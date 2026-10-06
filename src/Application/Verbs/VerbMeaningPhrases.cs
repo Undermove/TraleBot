@@ -18,10 +18,24 @@ public static class VerbMeaningPhrases
     /// <summary>Pronouns a learner may type that the stored phrases do not have: «она», «оно», «ей».</summary>
     private static readonly Dictionary<string, int> ExtraPronouns = new() { ["она"] = 2, ["оно"] = 2, ["ей"] = 2 };
 
+    /// <summary>
+    /// Whom the action is for or at — «он сказал мне», «ему сказали», «я жду тебя». The stored phrases
+    /// name only who acts, so such a pronoun is set aside and the rest is matched: the answer is the
+    /// verb form for «он сказал», and the reply shows that phrase.
+    /// </summary>
+    private static readonly HashSet<string> ObjectPronouns =
+    [
+        "мне", "тебе", "ему", "ей", "нам", "вам", "им", "меня", "тебя", "его", "ее", "нас", "вас", "их"
+    ];
+
+    /// <summary>The words after which a leading «мне / ему» is who acts («мне надо идти»), not whom it is done to.</summary>
+    private static readonly HashSet<string> DativeSubjectWords = ["надо", "нужно", "было", "будет"];
+
     /// <param name="Rest">The text without its leading pronoun.</param>
     /// <param name="Person">0..5 when the text names who acts, else null.</param>
     /// <param name="Feminine">The text says «она» / «ей»: the stored "he" phrase is masculine.</param>
-    public record Asked(string Full, string Rest, int? Person, bool Feminine);
+    /// <param name="SetAside">The object pronoun that was left out of the match («мне» in «он сказал мне»), if any.</param>
+    public record Asked(string Full, string Rest, int? Person, bool Feminine, string? SetAside = null);
 
     private static string Normalize(string text) => text.ToLowerInvariant().Replace('ё', 'е').Trim();
 
@@ -29,6 +43,23 @@ public static class VerbMeaningPhrases
     public static Asked Parse(string text)
     {
         var full = Normalize(text);
+        var words = full.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        string? setAside = null;
+        if (words.Count > 1 && ObjectPronouns.Contains(words[^1]))
+        {
+            // «он сказал мне» → «он сказал».
+            setAside = words[^1];
+            words.RemoveAt(words.Count - 1);
+        }
+        else if (words.Count > 1 && ObjectPronouns.Contains(words[0]) && !DativeSubjectWords.Contains(words[1])
+                 && !Subjects.Contains(words[0]))
+        {
+            // «ему сказали» → «сказали»: who acts is not named.
+            setAside = words[0];
+            words.RemoveAt(0);
+        }
+
+        full = string.Join(' ', words);
         var space = full.IndexOf(' ');
         if (space > 0)
         {
@@ -40,11 +71,11 @@ public static class VerbMeaningPhrases
                 : (int?)null;
             if (person != null)
             {
-                return new Asked(full, rest, person, ExtraPronouns.ContainsKey(first));
+                return new Asked(full, rest, person, ExtraPronouns.ContainsKey(first), setAside);
             }
         }
 
-        return new Asked(full, full, null, false);
+        return new Asked(full, full, null, false, setAside);
     }
 
     /// <summary>

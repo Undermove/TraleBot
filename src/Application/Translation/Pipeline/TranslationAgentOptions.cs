@@ -48,24 +48,39 @@ public class TranslationAgentOptions
     public bool AllowGeneratedVerbs { get; set; } = true;
 
     /// <summary>
-    /// The bill's ceiling: how many requests a day (UTC) may reach a model at all. Over it, requests take
-    /// the path without models until the next day. 0 = no limit.
+    /// The bill's ceiling: how many requests a day (UTC) may reach a model at all, all users together.
+    /// Over it, requests take the path without models until the next day. 0 = no limit. The counters
+    /// are in the database (<see cref="ModelBudget"/>): a restart does not reset them.
     /// </summary>
     public int MaxModelRequestsPerDay { get; set; } = 2000;
+
+    /// <summary>The same ceiling for one user. 0 = no limit.</summary>
+    public int MaxModelRequestsPerUserPerDay { get; set; } = 100;
+
+    /// <summary>
+    /// How many requests a day may go on to the strong model (a verb being written — the expensive
+    /// part: about $0.06 a verb with the default models, twice that with a repair round). 0 = no limit.
+    /// </summary>
+    public int MaxGenerationsPerDay { get; set; } = 100;
+
+    /// <inheritdoc cref="MaxGenerationsPerDay"/>
+    public int MaxGenerationsPerUserPerDay { get; set; } = 10;
 
     // Timeouts come from scripts/dev/eval-translation.py on the chosen models (06.10.2026): the
     // classifier answered in 1.6 s at the median and 2.8 s at the 95th percentile, a whole analyst
     // request in 5.9 s / 16.6 s. A step that takes about twice its p95 is not coming back.
-    public int ClassifierTimeoutSeconds { get; set; } = 5;
+    // 06.10.2026, later the same day, with the longer instructions: the classifier's p95 was 5.3 s and a
+    // 5-second limit cut off real answers (a made-up verb then went to machine translation) — hence 10.
+    public int ClassifierTimeoutSeconds { get; set; } = 10;
 
     /// <summary>The whole analysis run: every model turn and every tool call of it.</summary>
     public int AnalystTimeoutSeconds { get; set; } = 25;
 
     /// <summary>One call of the generator. A strong model writing forty forms takes its time.</summary>
-    public int GeneratorTimeoutSeconds { get; set; } = 90;
+    public int GeneratorTimeoutSeconds { get; set; } = 60;
 
     /// <summary>One call of the reviewer.</summary>
-    public int ReviewerTimeoutSeconds { get; set; } = 60;
+    public int ReviewerTimeoutSeconds { get; set; } = 30;
 
     /// <summary>One HTTP attempt to Wiktionary.</summary>
     public int WiktionaryTimeoutSeconds { get; set; } = 8;

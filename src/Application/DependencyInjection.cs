@@ -63,7 +63,8 @@ public static class DependencyInjection
         services.AddScoped<Translation.Cache.TranslationCache>();
         services.AddScoped<Translation.Pipeline.VerbProposalResolver>();
         services.AddScoped<Translation.Pipeline.VerbGenerationService>();
-        services.AddSingleton<Translation.Pipeline.ModelBudget>();
+        services.AddScoped<Translation.Pipeline.ModelBudget>();
+        services.AddScoped<Translation.Pipeline.TranslationRequester>();
         services.AddScoped<VerbBaseSearch>();
         services.AddSingleton<IVerbLexicon>(_ => VerbLexicon.Load(Path.Combine(AppContext.BaseDirectory, "Verbs")));
         services.AddScoped<RuntimeVerbStore>();

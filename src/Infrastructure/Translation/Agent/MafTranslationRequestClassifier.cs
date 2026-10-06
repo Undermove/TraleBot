@@ -37,6 +37,9 @@ public class MafTranslationRequestClassifier(
         - russianInfinitive: when the text is a Russian verb form, its dictionary infinitive, keeping the
           aspect and the reflexive ending (for a past form of an imperfective verb — the imperfective
           infinitive; for a form of a perfective verb — the perfective one). Otherwise null.
+          It is the infinitive of the text exactly as typed: never replace the word by a different,
+          similar-looking real verb. If the typed word is not an existing Russian verb, give the
+          infinitive it would have as typed.
         """;
 
     /// <summary>The JSON the model must return.</summary>

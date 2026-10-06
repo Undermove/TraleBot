@@ -132,6 +132,125 @@ public class AdminController : Controller
         return Ok(new { count = verbs.Count, verbs });
     }
 
+    public class GenerateVerbPreviewRequest
+    {
+        /// <summary>The text as a learner would type it: a Russian verb form or a Georgian one.</summary>
+        public string Text { get; set; } = string.Empty;
+
+        /// <summary>For a Russian text — its infinitive (what the classifier would have named).</summary>
+        public string? Infinitive { get; set; }
+
+        public string? LemmaHint { get; set; }
+    }
+
+    /// <summary>
+    /// Runs the generator and the reviewer on one verb and returns what they produced — the record, the
+    /// evidence, the verdict with its reasons and the tokens of each role. Nothing is stored and the base
+    /// is not consulted, so a verb that has a table can be generated "blind" and compared with the table.
+    /// For <c>scripts/dev/eval-translation.py</c> (comparison of generator models).
+    /// </summary>
+    [HttpPost("verbs/generate-preview")]
+    public async Task<IActionResult> GenerateVerbPreview(
+        [FromBody] GenerateVerbPreviewRequest request,
+        [FromServices] Application.Translation.Pipeline.VerbGenerationService generation,
+        [FromServices] Application.Translation.Pipeline.IVerbGenerationSwitch generationSwitch,
+        [FromServices] Application.Verbs.IVerbLexicon lexicon,
+        CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var key = Application.Translation.Cache.TranslationCacheKey.Normalize(request.Text);
+        if (key == null) return BadRequest(new { error = "invalid_text" });
+        if (!generationSwitch.IsOn) return Conflict(new { error = "generation_is_off" });
+
+        var isRussian = !Application.Verbs.VerbParadigm.GeorgianWord.IsMatch(key.Split(' ')[^1]);
+        var infinitive = isRussian ? Application.Translation.Cache.TranslationCacheKey.Normalize(request.Infinitive) ?? key : null;
+        var candidates = isRussian ? lexicon.FindByRussian(infinitive!) : lexicon.Find(key);
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var outcome = await generation.GenerateAsync(
+                new Application.Translation.Pipeline.VerbGenerationRequest(key, isRussian, infinitive, request.LemmaHint, candidates),
+                ct, preview: true);
+            var draft = outcome.Draft;
+            return Ok(new
+            {
+                outcome = outcome.Outcome,
+                reason = outcome.Reason,
+                repairRounds = outcome.RepairRounds,
+                seconds = started.Elapsed.TotalSeconds,
+                generator = new { outcome.Generator.Calls, outcome.Generator.InputTokens, outcome.Generator.OutputTokens },
+                reviewer = new { outcome.Reviewer.Calls, outcome.Reviewer.InputTokens, outcome.Reviewer.OutputTokens },
+                lemma = draft?.Paradigm.Lemma,
+                masdar = draft?.Paradigm.Masdar.FirstOrDefault(),
+                russian = draft?.Russian,
+                tenses = draft?.Paradigm.Tenses,
+                meanings = draft?.Meanings.Meanings,
+                approved = draft?.Review.Approved,
+                reasons = draft?.Review.Reasons,
+                formsTotal = draft?.Evidence.FormsTotal,
+                formsAttested = draft?.Evidence.FormsAttested,
+                unattested = draft?.Evidence.Unattested,
+                lemmaInLexicon = draft?.Evidence.LexiconEntry != null
+            });
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            // The kind of failure only: a provider's message can quote the request and credentials.
+            var error = Application.Translation.Pipeline.GeorgianTranslationPipeline.Describe(e);
+            return Ok(new { outcome = "failed", reason = error, seconds = started.Elapsed.TotalSeconds });
+        }
+    }
+
+    public class WarmUpVerbRequest
+    {
+        /// <summary>A Russian infinitive (or a Georgian form) — as a learner would type it.</summary>
+        public string Text { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Puts one verb through the translation pipeline exactly as a learner's request would — base,
+    /// Wiktionary table, generation with approval — without a learner and without a dictionary entry,
+    /// and tells what the base has for the text afterwards. For <c>scripts/verbs/warm-up.py</c>.
+    /// The overall daily caps apply.
+    /// </summary>
+    [HttpPost("verbs/warm-up")]
+    public async Task<IActionResult> WarmUpVerb(
+        [FromBody] WarmUpVerbRequest request,
+        [FromServices] Application.Translation.ILanguageTranslator translator,
+        [FromServices] Application.Verbs.VerbBaseSearch verbBase,
+        [FromServices] Application.Verbs.ModelMadeVerbsQuery modelMade,
+        CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var key = Application.Translation.Cache.TranslationCacheKey.Normalize(request.Text);
+        if (key == null) return BadRequest(new { error = "invalid_text" });
+
+        object Verb(Application.Verbs.VerbBaseMatch match) => new
+        {
+            lemma = match.Lemma, title = match.Title, translation = match.Translation,
+            status = Application.Verbs.RuntimeVerbStore.StatusName(match.Status)
+        };
+
+        var known = await verbBase.FindExactAsync(key, ct);
+        if (known != null)
+        {
+            return Ok(new { outcome = "already-there", verb = Verb(known) });
+        }
+
+        var result = await translator.Translate(key, Domain.Entities.Language.Georgian, ct);
+        var stored = await verbBase.FindExactAsync(key, ct);
+        var provenance = stored == null
+            ? null
+            : (await modelMade.ExecuteAsync(onlyUnrevised: false, ct)).FirstOrDefault(v => v.Lemma == stored.Lemma);
+        return Ok(new
+        {
+            outcome = stored != null ? "stored" : result is Application.Common.Interfaces.TranslationService.TranslationResult.Success ? "translated-only" : "nothing",
+            definition = (result as Application.Common.Interfaces.TranslationService.TranslationResult.Success)?.Definition,
+            verb = stored == null ? null : Verb(stored),
+            provenance
+        });
+    }
+
     public class GrantProRequest
     {
         public string Plan { get; set; } = string.Empty;

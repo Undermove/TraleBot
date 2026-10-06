@@ -43,6 +43,17 @@ public class VerbFormConfiguration : IEntityTypeConfiguration<VerbForm>
     }
 }
 
+public class ModelBudgetDayConfiguration : IEntityTypeConfiguration<ModelBudgetDay>
+{
+    public void Configure(EntityTypeBuilder<ModelBudgetDay> builder)
+    {
+        builder.HasKey(b => b.Id);
+
+        // One counter row per day and user (Guid.Empty = everyone).
+        builder.HasIndex(b => new { b.Day, b.UserId }).IsUnique();
+    }
+}
+
 public class VerbProvenanceConfiguration : IEntityTypeConfiguration<VerbProvenance>
 {
     public void Configure(EntityTypeBuilder<VerbProvenance> builder)

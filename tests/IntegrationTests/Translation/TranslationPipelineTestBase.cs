@@ -30,6 +30,8 @@ public abstract class TranslationPipelineTestBase
     private PostgreSqlContainer _postgres = null!;
     protected WebApplicationFactory<Program> App = null!;
 
+    protected const string BotToken = "1234567:test-bot-token";
+
     protected FakeTranslationChatClients Models { get; } = new();
     protected FakeExternalTranslator External { get; } = new();
     protected FakeWiktionaryHandler Wiktionary { get; } = new();
@@ -77,6 +79,11 @@ public abstract class TranslationPipelineTestBase
                 });
             }));
 
+        // A bot token, so that a test can sign mini-app initData the way Telegram does (the test host has none).
+        // The property is init-only and TraleTestApplication registers its own instance last, hence reflection.
+        var bot = App.Services.GetRequiredService<Infrastructure.Telegram.BotConfiguration>();
+        typeof(Infrastructure.Telegram.BotConfiguration).GetProperty(nameof(bot.Token))!.SetValue(bot, BotToken);
+
         using var scope = App.Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<TraleDbContext>().Database.MigrateAsync();
     }
@@ -101,7 +108,18 @@ public abstract class TranslationPipelineTestBase
         Wiktionary.Reset();
         Log.Reset();
         Lexicon.Reset();
+
+        // The caps a test may have changed (the options object is the application's own).
+        var defaults = new TranslationAgentOptions();
+        Options.MaxModelRequestsPerDay = defaults.MaxModelRequestsPerDay;
+        Options.MaxModelRequestsPerUserPerDay = defaults.MaxModelRequestsPerUserPerDay;
+        Options.MaxGenerationsPerDay = defaults.MaxGenerationsPerDay;
+        Options.MaxGenerationsPerUserPerDay = defaults.MaxGenerationsPerUserPerDay;
     }
+
+    /// <summary>The application's options — a test may change a cap; <see cref="ResetFakes"/> puts the defaults back.</summary>
+    protected TranslationAgentOptions Options =>
+        App.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<TranslationAgentOptions>>().Value;
 
     // ── The curated catalog: the only place Georgian in these tests comes from ───────────────────
 
@@ -127,6 +145,7 @@ public abstract class TranslationPipelineTestBase
             var db = sp.GetRequiredService<ITraleDbContext>();
             db.Verbs.RemoveRange(await db.Verbs.ToListAsync());
             db.TranslationCache.RemoveRange(await db.TranslationCache.ToListAsync());
+            db.ModelBudgetDays.RemoveRange(await db.ModelBudgetDays.ToListAsync());
             await db.SaveChangesAsync(CancellationToken.None);
             await sp.GetRequiredService<VerbCatalogSeeder>()
                 .SeedAsync(new JsonObject { ["verbs"] = verbs }.ToJsonString(), CancellationToken.None);
@@ -145,6 +164,14 @@ public abstract class TranslationPipelineTestBase
     /// <summary>One translation request, in its own DI scope like a real one.</summary>
     protected Task<TranslationResult> Translate(string text) =>
         InScope(sp => sp.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, CancellationToken.None));
+
+    /// <summary>The same, on behalf of a user — as the bot and the mini-app call it.</summary>
+    protected Task<TranslationResult> TranslateAs(Guid userId, string text) =>
+        InScope(sp =>
+        {
+            sp.GetRequiredService<TranslationRequester>().UserId = userId;
+            return sp.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, CancellationToken.None);
+        });
 
     protected Task<Verb?> StoredVerb(string lemma) =>
         InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs.AsNoTracking().FirstOrDefaultAsync(v => v.Lemma == lemma));
