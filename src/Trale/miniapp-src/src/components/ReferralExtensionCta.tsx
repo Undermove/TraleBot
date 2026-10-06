@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { shareReferral } from '../referralShare'
 
 interface Props {
   /** Visual style — compact button for inline use inside the trial banner,
@@ -8,27 +9,29 @@ interface Props {
 }
 
 /**
- * "Продли бесплатно — пригласи друга" CTA.
+ * "Позови друга — получишь дни бесплатно" CTA.
  *
  * Visible when User.ShouldShowReferralExtensionCta = true (trial about to end
  * or already ended; not Lifetime, not active Pro). Tapping shares the user's
- * referral deep-link via Telegram. The bonus shown (`bonusShortLabel`) comes
- * from /api/miniapp/referral so the banner promise always matches the
- * activator's actual reward — see TryActivateReferralService.Referrer*BonusDays
- * constants for the canonical numbers.
+ * referral deep-link via Telegram. What is promised (`inviteLine`,
+ * `bonusShortLabel`) comes ready from /api/miniapp/referral, which picks it by
+ * the user's state — so the banner never promises anything the activator
+ * (TryActivateReferralService) does not give. No offer from the server
+ * (Lifetime, yearly cap) → nothing is shown.
  */
 export default function ReferralExtensionCta({ variant }: Props) {
-  const [data, setData] = useState<{ link: string; shareText: string; bonusShortLabel: string } | null>(null)
+  const [data, setData] = useState<{ link: string; shareText: string; bonusShortLabel: string; inviteLine: string } | null>(null)
 
   useEffect(() => {
     let cancelled = false
     api.referral()
       .then((r) => {
-        if (!cancelled) {
+        if (!cancelled && r.inviteLine && r.bonusShortLabel && !r.capReached) {
           setData({
             link: r.link,
             shareText: r.shareText,
-            bonusShortLabel: r.bonusShortLabel || '+7 дней триала',
+            bonusShortLabel: r.bonusShortLabel,
+            inviteLine: r.inviteLine,
           })
         }
       })
@@ -39,14 +42,7 @@ export default function ReferralExtensionCta({ variant }: Props) {
   if (!data) return null
 
   function share() {
-    if (!data) return
-    const tg = (window as any).Telegram?.WebApp
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(data.link)}&text=${encodeURIComponent(data.shareText)}`
-    if (tg?.openTelegramLink) {
-      tg.openTelegramLink(shareUrl)
-    } else {
-      window.open(shareUrl, '_blank', 'noopener')
-    }
+    if (data) shareReferral(data.link, data.shareText)
   }
 
   if (variant === 'inline') {
@@ -57,7 +53,7 @@ export default function ReferralExtensionCta({ variant }: Props) {
         className="relative z-[1] shrink-0 px-3 py-1.5 rounded-lg font-sans text-[11px] font-extrabold border-[1.5px] border-jewelInk"
         style={{ background: '#FFF', color: '#15100A' }}
       >
-        {data.bonusShortLabel} бесплатно
+        {data.bonusShortLabel}
       </button>
     )
   }
@@ -67,10 +63,10 @@ export default function ReferralExtensionCta({ variant }: Props) {
       <div className="relative z-[1] text-[22px] leading-none shrink-0">🎁</div>
       <div className="relative z-[1] flex-1 min-w-0">
         <div className="font-sans text-[13px] font-extrabold text-jewelInk leading-tight">
-          Продли бесплатно
+          {data.bonusShortLabel.charAt(0).toUpperCase() + data.bonusShortLabel.slice(1)} — бесплатно
         </div>
         <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
-          Пригласи друга — получишь {data.bonusShortLabel} когда он начнёт учиться (первый урок, 5 слов или подписка).
+          {data.inviteLine}, когда он начнёт заниматься: пройдёт первый урок, добавит 5 слов или купит подписку.
         </div>
       </div>
       <button
@@ -78,7 +74,7 @@ export default function ReferralExtensionCta({ variant }: Props) {
         className="relative z-[1] shrink-0 px-3 py-1.5 rounded-lg font-sans text-[11px] font-extrabold border-[1.5px] border-jewelInk"
         style={{ background: '#F5B820', color: '#15100A' }}
       >
-        пригласить
+        позвать
       </button>
     </div>
   )

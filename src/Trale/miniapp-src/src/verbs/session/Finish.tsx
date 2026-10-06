@@ -6,6 +6,7 @@ import { STEP, type LadderItem, type Progress } from '../ladder/engine'
 import { MeaningText } from '../parts'
 import { SessionHeader } from '../ui/GameShell'
 import { good } from '../ui/juice'
+import InviteFriendLine from './InviteFriendLine'
 import LevelBadge from './LevelBadge'
 import type { ExamResult } from './QuizScene'
 import { LEVEL_NAMES, LEVEL_ORDER, type VerbLevelKey, type VerbSessionSavedDto } from './types'
@@ -106,6 +107,7 @@ export default function Finish({ verb, items, touched, exam, levelBefore, saved,
       <div className="px-5 flex flex-col gap-2" style={{ paddingBottom: 'calc(var(--safe-b, 0px) + 20px)' }}>
         {saved && <Button onClick={onMore}>Ещё одну</Button>}
         <Button variant={saved ? 'ghost' : 'primary'} onClick={onDone}>Готово</Button>
+        {!failed && <InviteFriendLine />}
       </div>
     </div>
   )

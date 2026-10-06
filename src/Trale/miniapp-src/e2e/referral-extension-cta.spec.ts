@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-// Visibility matrix for the "+7 дней бесплатно" referral CTA on Dashboard.
+// Visibility matrix for the "позови друга" referral CTA on Dashboard.
 // Driven entirely by the `shouldShowReferralExtensionCta` flag the backend
 // computes from User.ShouldShowReferralExtensionCta. UI must show the CTA
 // only when that flag is true.
@@ -42,7 +42,10 @@ const referralResponse = {
   shareText: 'TraleBot — учу грузинский 🇬🇪',
   invitedCount: 0,
   activatedCount: 0,
-  rules: ['Друг получит 60 дней триала вместо 30.', 'Ты получишь +7 дней триала.'],
+  rules: ['Другу — 60 дней бесплатно вместо 30.', 'Тебе — неделя доступа за каждого друга, который начал заниматься.'],
+  state: 'accessEnded',
+  bonusShortLabel: 'неделя доступа',
+  inviteLine: 'Позови друга — получишь неделю доступа',
   capReached: false,
 }
 

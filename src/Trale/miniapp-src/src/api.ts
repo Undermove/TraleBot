@@ -239,7 +239,11 @@ export const api = {
       invitedCount: number
       activatedCount: number
       rules: string[]
+      /** Какая награда положена сейчас. */
+      state?: 'trial' | 'accessEnded' | 'pro' | 'lifetime'
       bonusShortLabel: string
+      /** Готовая фраза-приглашение под текущее состояние; пусто — бонус не положен. */
+      inviteLine?: string
       capReached: boolean
     }>('/api/miniapp/referral'),
 
