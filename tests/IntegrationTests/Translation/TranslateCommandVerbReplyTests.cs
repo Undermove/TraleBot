@@ -41,13 +41,13 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
 
         var reply = await Say(910001, form);
 
-        reply.Text.Should().StartWith("Определение: писать");
+        reply.Text.Should().StartWith("Определение: мы писали");
         reply.Text.Should().EndWith($"Разбор: {form} — «мы писали» (один раз · сделано). Глагол {title} — писать.",
             because: "the chat explains a form by what it means in plain Russian, not by the name of its tense");
     }
 
     [Test]
-    public async Task Reply_to_a_russian_verb_names_the_verb_without_a_tense()
+    public async Task Reply_to_a_russian_infinitive_gives_the_dictionary_form_with_its_parse()
     {
         await SeedCatalogWithout();
         var title = CatalogVerb(Write)["title"]!.GetValue<string>();
@@ -55,9 +55,11 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
 
         var reply = await Say(910002, "писать");
 
-        reply.Text.Should().StartWith($"Определение: {title}");
-        reply.Text.Should().EndWith($"Глагол {title} — писать.");
-        reply.Text.Should().NotContain("Разбор:");
+        // Asked by the infinitive, the answer is the dictionary form with the name of the action next
+        // to it, and the parse line that makes the word a verb for the learner.
+        reply.Text.Should().StartWith($"Определение: {Write}");
+        reply.Text.Should().Contain($"название действия: {title}");
+        reply.Text.Should().EndWith($"Разбор: {Write} — «он пишет». Глагол {title} — писать.");
     }
 
     [Test]

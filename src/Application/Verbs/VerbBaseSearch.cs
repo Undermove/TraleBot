@@ -9,7 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Verbs;
 
-/// <param name="Match">"form" | "masdar" | "translation" — exact; "typo" | "similar" — a guess the caller must confirm.</param>
+/// <param name="Match">"form" | "masdar" | "translation" | "meaning" — exact; "typo" | "similar" — a guess the caller must confirm.</param>
+/// <param name="Meaning">What the matched form says in plain Russian («я писал(а)»), when the base has it.</param>
 /// <param name="Form">The verb form that matched, with its tense and person; null when the verb itself matched.</param>
 public record VerbBaseMatch(
     string Lemma,
@@ -19,7 +20,8 @@ public record VerbBaseMatch(
     string Match,
     string? Form = null,
     string? Tense = null,
-    int? Person = null);
+    int? Person = null,
+    string? Meaning = null);
 
 /// <summary>
 /// Looks a word up in the verb base (<c>Verbs</c> / <c>VerbForms</c>). The exact lookup answers a
@@ -82,7 +84,7 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
             .ThenBy(f => f.Verb.Lemma)
             .ThenBy(f => f.Person)
             .Select(f => new VerbBaseMatch(
-                f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, "form", f.Form, f.Tense, f.Person))
+                f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, "form", f.Form, f.Tense, f.Person, f.Meaning))
             .ToListAsync(ct);
         if (byForm.Count > 0)
         {
@@ -110,7 +112,112 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
             .ThenBy(v => v.Lemma)
             .Select(v => new VerbBaseMatch(v.Lemma, v.Title, v.Translation, v.Status, "translation", null, null, null))
             .ToListAsync(ct);
-        return candidates.Where(v => RussianParts(v.Translation).Contains(text)).Take(MaxResults).ToList();
+        var verbs = candidates.Where(v => RussianParts(v.Translation).Contains(text)).Take(MaxResults).ToList();
+        return verbs.Count > 0 ? verbs : await FindRussianFormAsync(text, ct);
+    }
+
+    /// <summary>Which person answers a Russian form said without a pronoun: «ходил» is «он ходил» first.</summary>
+    private static readonly int[] PersonPreference = [2, 5, 0, 1, 3, 4];
+
+    /// <summary>
+    /// The same Russian words stand for two Georgian tenses («я писал(а)» is both the long past and the
+    /// one-off past, told apart only by a note). The phrases are built from the imperfective Russian
+    /// verb, so of the two the long past is the honest match.
+    /// </summary>
+    private static readonly string[] TensePreference = ["present", "imperfect", "aorist", "future", "conditional", "optative"];
+
+    private static readonly HashSet<string> Pronouns =
+        ["я", "ты", "он", "она", "оно", "мы", "вы", "они", "мне", "тебе", "ему", "ей", "нам", "вам", "им"];
+
+    /// <summary>
+    /// A Russian inflected form — «ходил», «я иду», «мне надо писать» — found among the plain-Russian
+    /// phrases the catalog stores for every form (<see cref="VerbForm.Meaning"/>). No model is involved:
+    /// the phrase was built from the verb's translation when the catalog was built.
+    /// With a pronoun the match is exact; without one several persons fit and the most usual is returned.
+    /// </summary>
+    private async Task<IReadOnlyList<VerbBaseMatch>> FindRussianFormAsync(string text, CancellationToken ct)
+    {
+        // The database narrows by the start of the verb word («пис» for «я писала»): the stored phrase
+        // «я писал(а)» does not contain the text itself. The exact comparison is done on the variants here.
+        var lastWord = text[(text.LastIndexOf(' ') + 1)..];
+        var stem = lastWord[..Math.Min(3, lastWord.Length)];
+        var rows = await dbContext.VerbForms
+            .AsNoTracking()
+            .Where(f => f.Meaning != null && f.Meaning.ToLower().Replace("ё", "е").Contains(stem))
+            .OrderBy(f => f.Verb.SortOrder)
+            .ThenBy(f => f.Verb.Lemma)
+            .Select(f => new VerbBaseMatch(
+                f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, "meaning", f.Form, f.Tense, f.Person, f.Meaning))
+            .ToListAsync(ct);
+
+        return rows
+            .Select(m => (Match: m, Fit: FitOf(text, m.Meaning!)))
+            .Where(x => x.Fit > 0)
+            .GroupBy(x => x.Match.Lemma)
+            // Per verb: a phrase that matches with its pronoun beats one that matches without; then the
+            // usual person and the honest tense. Verbs keep the catalog order (GroupBy preserves it).
+            .Select(g => g
+                .OrderByDescending(x => x.Fit)
+                .ThenBy(x => Rank(PersonPreference, x.Match.Person ?? 0))
+                .ThenBy(x => Rank(TensePreference, x.Match.Tense ?? string.Empty))
+                .First().Match)
+            .Take(MaxResults)
+            .ToList();
+    }
+
+    /// <summary>2 — the text is the whole phrase; 1 — the phrase without its pronoun; 0 — not this phrase.</summary>
+    private static int FitOf(string text, string meaning)
+    {
+        var fit = 0;
+        foreach (var variant in MeaningVariants(meaning))
+        {
+            if (variant == text)
+            {
+                return 2;
+            }
+
+            var space = variant.IndexOf(' ');
+            if (space > 0 && Pronouns.Contains(variant[..space]) && variant[(space + 1)..] == text)
+            {
+                fit = 1;
+            }
+        }
+
+        return fit;
+    }
+
+    /// <summary>
+    /// Every way a stored phrase can be said: «я писал(а)» → «я писал», «я писала»;
+    /// «я шёл / шла» → «я шел», «я шла». Lower-cased, «ё» as «е» — the way a looked-up text is normalised.
+    /// </summary>
+    internal static IEnumerable<string> MeaningVariants(string meaning)
+    {
+        var phrase = meaning.Trim().ToLowerInvariant().Replace('ё', 'е');
+        if (phrase.Contains(" / "))
+        {
+            var parts = phrase.Split(" / ");
+            var head = parts[0][..(parts[0].LastIndexOf(' ') + 1)];
+            yield return parts[0];
+            foreach (var other in parts.Skip(1))
+            {
+                yield return head + other;
+            }
+        }
+        else if (phrase.Contains("(а)"))
+        {
+            yield return phrase.Replace("(а)", string.Empty);
+            yield return phrase.Replace("(а)", "а");
+        }
+        else
+        {
+            yield return phrase;
+        }
+    }
+
+    private static int Rank<T>(T[] order, T value)
+    {
+        var at = Array.IndexOf(order, value);
+        return at < 0 ? order.Length : at;
     }
 
     private async Task<IReadOnlyList<VerbBaseMatch>> FindGeorgianTyposAsync(string word, CancellationToken ct)
