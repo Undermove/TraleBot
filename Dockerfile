@@ -8,12 +8,16 @@ RUN npm ci
 COPY src/Trale/miniapp-src/ ./
 RUN npm run build
 
-# Stage 1b: static SEO pages (grammar reference) → same wwwroot, alongside the SPA.
-# Pure HTML generated at build time from site/content; owns sitemap.xml. See site/README.md.
+# Stage 1b: static SEO pages (verbs, phrasebook, words, grammar) → same wwwroot, alongside the SPA.
+# Pure HTML generated at build time from site/content and from the repo data below; owns sitemap.xml.
+# See site/README.md. The data files are read, never executed (paths: DATA_FILES in site/build.mjs).
 WORKDIR /build/site
 COPY site/package.json site/package-lock.json ./
 RUN npm ci
 COPY site/ ./
+COPY src/Trale/Verbs/verbs.json /build/src/Trale/Verbs/verbs.json
+COPY src/Trale/MiniApp/MiniAppContentProvider.cs /build/src/Trale/MiniApp/MiniAppContentProvider.cs
+COPY src/Trale/Lessons/ /build/src/Trale/Lessons/
 RUN npm run build
 
 # Stage 2: build the .NET solution, pulling in the freshly built static assets

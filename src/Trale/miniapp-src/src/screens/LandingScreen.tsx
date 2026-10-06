@@ -472,6 +472,15 @@ export default function LandingScreen({ botUsername }: Props) {
           aria-label="Разделы сайта"
           className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 font-sans text-[13px] font-semibold text-jewelInk-mid"
         >
+          <a href="/verbs/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Грузинские глаголы
+          </a>
+          <a href="/phrases/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Разговорник
+          </a>
+          <a href="/words/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Слова по темам
+          </a>
           <a href="/grammar/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
             Грамматика грузинского
           </a>
