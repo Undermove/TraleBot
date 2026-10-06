@@ -37,5 +37,6 @@
 
   <ItemGroup>
     <None Include="..\Fixtures\verb-level-cases.json" Link="Fixtures\verb-level-cases.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\scripts\sql\*.sql" Link="Sql\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

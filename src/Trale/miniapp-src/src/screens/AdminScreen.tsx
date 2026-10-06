@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
+import CampaignPanel from '../components/admin/CampaignPanel'
 import { ProgressState, Screen } from '../types'
 import { api, AdminStats, AdminRecentUser } from '../api'
 
@@ -275,6 +276,9 @@ export default function AdminScreen({ progress, navigate }: Props) {
 
             {/* Broadcast & Grant — owner only one-off campaign tool */}
             <BroadcastPanel />
+
+            {/* Campaign — a broadcast in parts (test sample, then the rest), recorded per recipient */}
+            <CampaignPanel />
 
             {/* Users with search + sort */}
             <div className="flex items-center justify-between mb-2">

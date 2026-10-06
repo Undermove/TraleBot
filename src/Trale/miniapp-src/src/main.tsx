@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { reportCampaignOpenFromUrl } from './campaignOpen'
 import './index.css'
 
 // Apply Telegram safe-area insets as CSS variables so content doesn't overlap
@@ -61,6 +62,10 @@ if (tg) {
     tg.onEvent?.('fullscreenChanged', applySafeAreaInsets)
   } catch {}
 }
+
+// Opened by the button of an owner broadcast (?c=…) — tell the server once, before routing
+// rewrites the address.
+reportCampaignOpenFromUrl()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

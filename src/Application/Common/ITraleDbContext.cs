@@ -27,6 +27,8 @@ public interface ITraleDbContext
     DbSet<UserVerb> UserVerbs { get; }
     DbSet<VerbSession> VerbSessions { get; }
     DbSet<TranslationCacheEntry> TranslationCache { get; }
+    DbSet<BroadcastCampaign> BroadcastCampaigns { get; }
+    DbSet<BroadcastDelivery> BroadcastDeliveries { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);
@@ -43,4 +45,11 @@ public interface ITraleDbContext
     /// </summary>
     Task<bool> TryClaimNotificationTriggerAsync(
         long userId, string source, string? variant, DateTime now, DateTime cutoff, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomically moves a broadcast delivery from Pending to Sending. Returns <c>true</c> only for
+    /// the one caller that made the move — whoever gets <c>false</c> must not send. This is what
+    /// keeps a double click or two overlapping requests from sending the same message twice.
+    /// </summary>
+    Task<bool> TryClaimBroadcastDeliveryAsync(Guid deliveryId, CancellationToken cancellationToken);
 }

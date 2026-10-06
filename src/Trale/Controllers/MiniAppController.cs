@@ -512,6 +512,29 @@ public class MiniAppController : Controller
         });
     }
 
+    public class CampaignOpenRequest
+    {
+        public string? Key { get; set; }
+    }
+
+    /// <summary>The mini-app was opened by the button of an owner broadcast (<c>?c=key</c> in the
+    /// URL). Recorded once per recipient — this is how a campaign's opens are measured.</summary>
+    [HttpPost("campaign-open")]
+    public async Task<IActionResult> CampaignOpen(
+        [FromBody] CampaignOpenRequest request,
+        [FromServices] Application.Admin.BroadcastCampaignService campaigns,
+        CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        await campaigns.MarkOpenedAsync(user.Id, request?.Key, ct);
+        return Ok(new { ok = true });
+    }
+
     private static IEnumerable<object> MapQuestions(
         IReadOnlyList<QuizQuestionData> questions, IReadOnlyList<VerbFormHit> verbHits)
     {

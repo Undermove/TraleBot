@@ -477,3 +477,57 @@ export function markUiHintSeen(hintKey: string) {
     body: JSON.stringify({ hintKey })
   })
 }
+
+// ── Рассылка-кампания (админка владельца) и отметка «открыл по кнопке из рассылки» ──
+
+export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner'
+
+export interface CampaignStatusDto {
+  key: string
+  audience: CampaignAudience
+  message: string
+  buttonText: string | null
+  buttonQuery: string | null
+  total: number
+  sample: number
+  pending: number
+  sent: number
+  blocked: number
+  rejected: number
+  unknown: number
+  opened: number
+}
+
+export interface CampaignPrepareDto {
+  key: string
+  dryRun: boolean
+  audienceTotal: number
+  alreadyInCampaign: number
+  picked: number
+  leftForLater: number
+}
+
+export const adminCampaigns = {
+  audiences: () => request<Record<CampaignAudience, number>>('/api/admin/campaigns/audiences'),
+  /** Выбрать получателей (или только посчитать, если dryRun). Ничего не отправляет. */
+  prepare: (body: {
+    key: string
+    audience: CampaignAudience
+    message: string
+    buttonText: string | null
+    buttonQuery: string | null
+    sampleSize: number | null
+    dryRun: boolean
+  }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
+  /** Отправить следующую порцию уже выбранных получателей. */
+  send: (key: string, limit: number) =>
+    request<{ sent: number; blocked: number; rejected: number; unknown: number; retryAfterSeconds: number; status: CampaignStatusDto }>(
+      `/api/admin/campaigns/${encodeURIComponent(key)}/send`,
+      { method: 'POST', body: JSON.stringify({ limit }) }
+    ),
+  status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`)
+}
+
+export function reportCampaignOpen(key: string) {
+  return request<{ ok: boolean }>('/api/miniapp/campaign-open', { method: 'POST', body: JSON.stringify({ key }) })
+}
