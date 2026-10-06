@@ -17,7 +17,8 @@ namespace Application.Translation.Pipeline;
 /// Translation of a Georgian / Russian word or phrase. Each request goes down this ladder and stops
 /// at the first step that answers:
 /// <list type="number">
-/// <item>the verb base — an exact form, masdar or translation hit is answered from the database;</item>
+/// <item>the verb base — a Georgian form or masdar, a Russian infinitive or a Russian form («ходил») of a
+///   stored verb is answered from the database;</item>
 /// <item>the translation cache — a text that was looked up before;</item>
 /// <item>the classifier (cheap model): is it a translation request at all, and is it a verb;</item>
 /// <item>for a verb — the analyst (stronger model with tools over the base and Wiktionary), then
@@ -25,8 +26,8 @@ namespace Application.Translation.Pipeline;
 /// <item>everything else — the translator that was here before (<see cref="GeorgianTranslationModule"/>:
 ///   dictionary site, then Google), and its answer goes to the cache.</item>
 /// </list>
-/// Steps 1, 3 and 4 run only when the agent path is on (<see cref="ITranslationAgentSwitch"/>); off, this
-/// is the old translator behind a cache. Any failure of a model or tool step — no key, quota, timeout,
+/// Steps 3 and 4 run only when the agent path is on (<see cref="ITranslationAgentSwitch"/>); step 1 needs
+/// no model and always runs. Any failure of a model or tool step — no key, quota, timeout,
 /// malformed output — falls through to step 5, so the user gets what they would have got before.
 /// </summary>
 public class GeorgianTranslationPipeline(
@@ -76,14 +77,15 @@ public class GeorgianTranslationPipeline(
         // being re-translated into Georgian) and goes the old way.
         var agentOn = agentSwitch.IsOn && !key.Any(char.IsAsciiLetter);
 
-        if (agentOn)
+        // The verb base needs no model and no key, so it answers whether the agent is on or off: a
+        // catalog verb asked by its Georgian form, its Russian infinitive or a Russian form («ходил»)
+        // must not depend on what an external dictionary happens to return.
+        var known = await verbBase.FindExactAsync(key, ct);
+        if (known != null)
         {
-            var known = await verbBase.FindExactAsync(key, ct);
-            if (known != null)
-            {
-                trace.Add("verb-base");
-                return await AnswerFromVerb(key, direction, known.Lemma, known.Title, known.Translation, known.Form, ct);
-            }
+            trace.Add("verb-base");
+            return await AnswerFromVerb(
+                key, direction, known.Lemma, known.Title, known.Translation, known.Form, ct, known.Meaning);
         }
 
         var cached = await cache.FindAsync(key, direction, ct);
@@ -198,12 +200,23 @@ public class GeorgianTranslationPipeline(
         string title,
         string translation,
         string? form,
-        CancellationToken ct)
+        CancellationToken ct,
+        string? meaning = null)
     {
         if (direction == TranslationDirection.RussianToGeorgian)
         {
-            var georgian = form ?? title;
-            return new TranslationResult.Success(georgian, Transcription(georgian), await ExampleFor(lemma, georgian, ct));
+            // Asked by the Russian infinitive, the answer is the dictionary form of the verb (the lemma is
+            // a real form in the index, so the reply gets its parse line and the dictionary entry opens
+            // the verb view); the name of the action is added next to it.
+            var georgian = form ?? lemma;
+            var action = form == null && title != lemma ? $"название действия: {title}" : string.Empty;
+            return new TranslationResult.Success(georgian, action + Transcription(georgian), await ExampleFor(lemma, georgian, ct));
+        }
+
+        // A Georgian form of the base is translated as what it says («я писал(а)»), not as the infinitive.
+        if (form != null && meaning != null && key.Split(' ').Contains(form))
+        {
+            return new TranslationResult.Success(meaning, Transcription(key), await ExampleFor(lemma, form, ct));
         }
 
         // The text is Georgian but not itself a form: the analyst read it as a misspelled one.

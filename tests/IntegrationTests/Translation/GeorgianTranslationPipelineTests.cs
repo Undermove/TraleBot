@@ -46,7 +46,8 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         var result = await Translate(form);
 
         result.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(verb["ru"]!.GetValue<string>());
+            .Which.Definition.Should().Be(verb["meanings"]!["aorist"]![3]!.GetValue<string>(),
+                because: "a form is translated as what it says, not as the infinitive of its verb");
         Models.ModelCalls.Should().Be(0);
         Wiktionary.RequestedPages.Should().BeEmpty();
         External.Calls.Should().Be(0, because: "a verified verb is served from our base, not from an external site");
@@ -54,17 +55,62 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Russian_translation_of_a_verb_in_the_base_is_answered_with_its_masdar_from_the_database()
+    public async Task Russian_infinitive_of_a_verb_in_the_base_is_answered_with_its_dictionary_form_from_the_database()
     {
         await SeedCatalogWithout();
         var verb = CatalogVerb(Write);
 
         var result = await Translate("Писать");
 
-        result.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(verb["title"]!.GetValue<string>());
+        // The lemma is a real form in the index, so the reply gets its parse and the dictionary entry
+        // opens the verb view; the name of the action goes next to it.
+        var answer = result.Should().BeOfType<TranslationResult.Success>().Subject;
+        answer.Definition.Should().Be(Write);
+        answer.AdditionalInfo.Should().Contain(verb["title"]!.GetValue<string>());
         Models.ModelCalls.Should().Be(0);
         External.Calls.Should().Be(0);
+    }
+
+    [Test]
+    public async Task Russian_form_of_a_verb_in_the_base_is_answered_from_the_database_with_no_model_call()
+    {
+        await SeedCatalogWithout();
+        var verb = CatalogVerb(Write);
+
+        var withPronoun = await Translate("Я пишу");
+        var feminine = await Translate("я писала");
+        var bare = await Translate("писал");
+
+        withPronoun.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Form(verb, "present", 0));
+        // «я писал(а)» is two Georgian tenses in the catalog; the phrase is built from the imperfective
+        // Russian verb, so the long past is the honest match.
+        feminine.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Form(verb, "imperfect", 0));
+        // Without a pronoun «писал» fits я / ты / он — «он» is returned.
+        bare.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Form(verb, "imperfect", 2));
+        Models.ModelCalls.Should().Be(0);
+        External.Calls.Should().Be(0);
+        Log.Paths.Should().Equal("verb-base", "verb-base", "verb-base");
+    }
+
+    [Test]
+    public async Task Stale_external_answer_in_the_cache_does_not_hide_a_verb_of_the_base()
+    {
+        await SeedCatalogWithout();
+        var verb = CatalogVerb(Write);
+        // The cache got «писать» from an external site before the verb base answered Russian words.
+        await InScope(async sp =>
+        {
+            await sp.GetRequiredService<TranslationCache>().StoreAsync(
+                "писать", TranslationDirection.RussianToGeorgian,
+                new TranslationResult.Success("что-то из внешнего словаря", string.Empty, string.Empty),
+                TranslationCache.SourceExternal, classified: false, CancellationToken.None);
+            return 0;
+        });
+
+        var result = await Translate("писать");
+
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Write);
+        Log.Paths.Should().Equal("verb-base");
     }
 
     [Test]
@@ -356,10 +402,13 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     public async Task Inflected_russian_word_is_tied_to_a_verb_of_the_base_and_then_served_from_the_cache()
     {
         await SeedCatalogWithout();
+        // «написал» is not among the catalog's Russian phrases (they are built from the imperfective
+        // verb), so the base cannot answer it by itself and the agent ties it to the verb.
         var verb = CatalogVerb(Write);
         var heWrote = Form(verb, "aorist", 2);
         Models.ClassifierModel.AnswerWith(ItIsAVerb.Replace("ka", "ru"));
         Models.AnalystModel.CallToolsThenAnswer(
+            // The model searches by the plain stem, as it would for a perfective form.
             [("search_verb_base", new() { ["query"] = "писал" })],
             results => Json(new
             {
@@ -369,16 +418,16 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
                 form = heWrote
             }));
 
-        var result = await Translate("писал");
+        var result = await Translate("написал");
 
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(heWrote);
         var cached = (await CacheEntries()).Should().ContainSingle().Subject;
-        cached.Key.Should().Be("писал");
+        cached.Key.Should().Be("написал");
         cached.Source.Should().Be(TranslationCache.SourceVerbAgent);
 
         Models.ClassifierModel.Reset();
         Models.AnalystModel.Reset();
-        (await Translate("Писал!")).Should().Be(result);
+        (await Translate("Написал!")).Should().Be(result);
         Log.Paths.Should().Equal("verb-existing", "cache");
         Models.ModelCalls.Should().Be(0);
         External.Calls.Should().Be(0);
@@ -396,10 +445,10 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
             outcome = "existing", lemma = Write, form = Form(CatalogVerb(Dance), "aorist", 2)
         }));
 
-        var result = await Translate("писал");
+        var result = await Translate("написал");
 
         result.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(verb["title"]!.GetValue<string>(), because: "an unconfirmed form is dropped, the verb itself is shown");
+            .Which.Definition.Should().Be(Write, because: "an unconfirmed form is dropped, the verb itself is shown");
     }
 
     [Test]
@@ -421,7 +470,8 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         byTypo.Should().HaveCountLessThanOrEqualTo(5);
         // Several catalog verbs have a gloss that starts like «писала»; the tool promises the closest
         // one first and a handful at most — the agent picks.
-        byRussian.Should().HaveCountLessThanOrEqualTo(5).And.OnlyContain(m => m.Match == "similar");
+        // A Russian form the catalog has a phrase for is an exact hit now, not a guess by a shared stem.
+        byRussian.Should().HaveCountLessThanOrEqualTo(5).And.OnlyContain(m => m.Match == "meaning");
         byRussian[0].Lemma.Should().Be(Write);
         nothing.Should().BeEmpty();
     }
@@ -648,12 +698,12 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     {
         await SeedCatalogWithout();
         Models.Configured = false;
-        var form = Form(CatalogVerb(Write), "present", 0);
+        const string form = "стол";
 
         var first = await Translate(form);
         var second = await Translate(form);
 
-        // Even a verb of the base is translated the old way: with the switch off nothing changes but the cache.
+        // What the verb base does not know goes the old way: with the switch off no model is ever called.
         first.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
         second.Should().Be(first);
         External.Calls.Should().Be(1);
@@ -661,6 +711,24 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         Wiktionary.RequestedPages.Should().BeEmpty();
         Log.Paths.Should().Equal("legacy", "cache");
         (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task With_the_agent_off_a_verb_of_the_base_is_still_answered_from_the_base()
+    {
+        await SeedCatalogWithout();
+        Models.Configured = false;
+        var verb = CatalogVerb(Write);
+
+        var georgian = await Translate(Form(verb, "present", 0));
+        var russian = await Translate("писать");
+
+        georgian.Should().BeOfType<TranslationResult.Success>()
+            .Which.Definition.Should().Be(verb["meanings"]!["present"]![0]!.GetValue<string>());
+        russian.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Write);
+        External.Calls.Should().Be(0, because: "the base needs neither a model nor an external site");
+        Models.ModelCalls.Should().Be(0);
+        Log.Paths.Should().Equal("verb-base", "verb-base");
     }
 
     [Test]
