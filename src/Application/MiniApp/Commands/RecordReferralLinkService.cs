@@ -23,6 +23,11 @@ public class RecordReferralLinkService(ITraleDbContext db, ILoggerFactory logger
 
     public const int RefereeTrialBonusDays = 30;
 
+    /// <summary>The offer is "a friend who registers by the link". Someone who has had an account
+    /// for longer than this is not a new friend: without the check two people whose trial ended
+    /// could open each other's links and hand each other weeks of access.</summary>
+    public static readonly TimeSpan NewUserWindow = TimeSpan.FromHours(24);
+
     public async Task<RecordReferralLinkResult> ExecuteAsync(
         Guid newUserId, long referrerTelegramId, CancellationToken ct)
     {
@@ -38,6 +43,7 @@ public class RecordReferralLinkService(ITraleDbContext db, ILoggerFactory logger
         if (referrer.Id == newUser.Id) return RecordReferralLinkResult.SelfReferral;
 
         var now = DateTime.UtcNow;
+        if (now - newUser.RegisteredAtUtc > NewUserWindow) return RecordReferralLinkResult.NotNewUser;
 
         // Referee bonus: accumulate trial days into TrialBonusDays.
         // TrialEndsAtUtc = RegisteredAtUtc + TrialDays + TrialBonusDays, so the bonus
@@ -69,5 +75,6 @@ public enum RecordReferralLinkResult
     AlreadyReferred,
     NewUserNotFound,
     ReferrerNotFound,
-    SelfReferral
+    SelfReferral,
+    NotNewUser
 }

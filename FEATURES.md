@@ -205,7 +205,7 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | POST | `/api/miniapp/level` | Persist user level after onboarding. |
 | POST | `/api/miniapp/onboarding/hint-seen` | Mark a hint as shown: an onboarding step (starts the ~20h gap to the next one) or a one-time interface hint `ui:<id>` (stored in the same list, `MiniAppUserProgress.OnboardingHintsJson`, without starting the gap). Unknown keys are rejected. |
 | POST | `/api/miniapp/progress/lesson-complete` | Record lesson completion. |
-| GET | `/api/miniapp/referral` | Referral link + share text. |
+| GET | `/api/miniapp/referral` | Referral link, the text sent to a friend, counters, rules. `state` (`trial` / `accessEnded` / `pro` / `lifetime`) says which reward applies now; `bonusShortLabel` and `inviteLine` are the matching ready-made copy (empty for Lifetime). |
 | GET | `/api/miniapp/activity-days` | Daily activity series for streak. |
 | GET | `/api/miniapp/vocabulary` | User's vocabulary entries. An entry that contains a known verb form carries `verb` (the parse) with `single` — the entry IS that one form, not a phrase around it — and the learner's `level` of the verb. `verbs` is "my verbs", one row per verb: verbs whose forms are saved (with the saved forms) ∪ verbs started in play from a lesson or a translation, started ones first. Stored entries are not changed. |
 | POST | `/api/miniapp/vocabulary/quiz` | Start a vocabulary quiz. |
@@ -250,7 +250,7 @@ Location: `src/Trale/HostedServices/`.
 | Class | Trigger | Purpose |
 |---|---|---|
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
-| `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
+| `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold; the referrer gets a bot message about the bonus. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
 | `SeedVerbCatalog` | On startup | Loads the curated verb catalog `src/Trale/Verbs/verbs.json` (built by `scripts/verbs/build-catalog.mjs` from Wiktionary) into `Verbs` / `VerbForms`; idempotent, rewrites only changed verbs. |
 | `LoadVerbStories` | On startup | Reads comic stories `src/Trale/Verbs/stories/*.json` and resolves their lines against `Verbs/verbs.json` into the in-memory `VerbStoryCatalog`; a story that does not resolve is logged and skipped. Authoring: `src/Trale/Verbs/stories/README.md`. |
@@ -307,6 +307,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddLastTreatIndex` | Last-treat index for rotation. |
 | `AddSentenceBuilderProgressJson` | Per-user sentence-builder mastery progress (questionId → correct-count map) for L4/L5 progression gate. |
 | `AddTrialBonusDays` | Cumulative referral trial-bonus days on User; lets bonuses stack and survive trial expiry without rewriting RegisteredAtUtc. |
+| `AddUserBonusAccessUntil` | Nullable `BonusAccessUntilUtc` on User: end of the free access a referrer earns after their registration-anchored trial is already over — counted from the activation, not from registration. |
 | `AddUserNotificationsEnabled` | Per-user notifications opt-out flag on User (default on); toggled from the mini-app Profile, honoured by the D1+ return-push dispatch. |
 | `AddNotificationTriggers` | NotificationTrigger table (per-source last-sent timestamp + variant) backing the 7-day cooldown of the D1+ return-push dispatch. |
 | `MakeNotificationTriggerUnique` | Dedups existing rows and makes the NotificationTrigger (UserId, Source) index unique, so the atomic claim-before-send can't double-fire the return push across overlapping dispatch runs (incident 2026-06-17). |
@@ -403,9 +404,9 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `RefundProStarsService` — refund path within allowed window
 - `ActivatePremiumCommand` — trial & subscription activation
 - `ProcessPaymentCommand` — classic Stripe-style flow
-- `RecordReferralLinkService` — record the referee-referrer link on `/start ref_*`
-- `TryActivateReferralService` — activate once engagement threshold met
-- `ProcessPendingReferralsService` — batch runner for the worker
+- `RecordReferralLinkService` — record the referee-referrer link on `/start ref_*`; the referee gets 60 days instead of 30. Only someone registered within the last 24h counts as a new friend
+- `TryActivateReferralService` — activate once engagement threshold met. Reward: trial still running → +7 days at its end; trial over → 7 days of access from the activation (stacks while running); ever paid → +14 days of subscription (from now if lapsed); Lifetime → nothing
+- `ProcessPendingReferralsService` — batch runner for the worker; after an activation tells the referrer in the bot what they got and until when (a Telegram failure does not undo the bonus)
 - `FeedTreatService` — buy & feed a treat
 - `AchievementsService` / `GetAchievementsQuery` — achievements
 - `DailyReturnNotificationService` — D1+ return push, picks least-progressed module, claim-before-send (#940)

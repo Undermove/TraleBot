@@ -496,16 +496,18 @@ public class MiniAppController : Controller
         }
 
         var link = $"https://t.me/{_botConfig.BotName}?start=ref_{info.ReferrerTelegramId}";
-        var shareText = "Учу грузинский в TraleBot 🇬🇪 — приходи, тебе дадут 60 дней триала вместо 30.";
 
         return Ok(new
         {
             link,
-            shareText,
+            shareText = info.ShareText,
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
             rules = info.Rules,
+            // "trial" | "accessEnded" | "pro" | "lifetime" — which reward applies right now.
+            state = char.ToLowerInvariant(info.State.ToString()[0]) + info.State.ToString()[1..],
             bonusShortLabel = info.BonusShortLabel,
+            inviteLine = info.InviteLine,
             capReached = info.CapReached
         });
     }

@@ -15,10 +15,13 @@ namespace IntegrationTests;
 public class TraleTestApplication : WebApplicationFactory<Program>
 {
 	private readonly string _connectionString;
+	private readonly Action<IServiceCollection>? _configure;
 
-	public TraleTestApplication(string connectionString)
+	/// <param name="configure">Last word on the services — runs after the test defaults below.</param>
+	public TraleTestApplication(string connectionString, Action<IServiceCollection>? configure = null)
 	{
 		_connectionString = connectionString;
+		_configure = configure;
 	}
 
 	protected override IHost CreateHost(IHostBuilder builder)
@@ -50,6 +53,8 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 
 			services.RemoveAll<IPrometheusResolver>();
 			services.AddSingleton<IPrometheusResolver, PrometheusResolverFake>();
+
+			_configure?.Invoke(services);
 		});
 		return base.CreateHost(builder);
 	}

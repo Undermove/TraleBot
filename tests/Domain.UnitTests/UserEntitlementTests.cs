@@ -389,6 +389,99 @@ public class UserEntitlementTests
         user.TrialDaysLeft(Now).ShouldBe(34);
     }
 
+    // ----- GrantFreeAccessDays / BonusAccessUntilUtc -----
+
+    [Test]
+    public void GrantFreeAccessDays_TrialRunning_AddsDaysToItsEnd()
+    {
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-10));
+
+        var until = user.GrantFreeAccessDays(7, Now);
+
+        user.TrialBonusDays.ShouldBe(7);
+        user.BonusAccessUntilUtc.ShouldBeNull();
+        until.ShouldBe(Now.AddDays(27));
+        user.TrialDaysLeft(Now).ShouldBe(27);
+    }
+
+    [Test]
+    public void GrantFreeAccessDays_TrialEndedLongAgo_CountsFromNow()
+    {
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-300));
+
+        var until = user.GrantFreeAccessDays(7, Now);
+
+        until.ShouldBe(Now.AddDays(7));
+        user.TrialBonusDays.ShouldBe(0);
+        user.BonusAccessUntilUtc.ShouldBe(Now.AddDays(7));
+        user.TrialEndsAtUtc.ShouldBe(Now.AddDays(7));
+        user.HasActiveTrial(Now).ShouldBeTrue();
+        user.HasMiniAppAccess(Now).ShouldBeTrue();
+        user.TrialDaysLeft(Now).ShouldBe(7);
+        user.HasMiniAppAccess(Now.AddDays(7).AddSeconds(1)).ShouldBeFalse();
+    }
+
+    [Test]
+    public void GrantFreeAccessDays_DuringBonusWeek_ExtendsIt()
+    {
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-300));
+        user.GrantFreeAccessDays(7, Now);
+
+        var until = user.GrantFreeAccessDays(7, Now.AddDays(3));
+
+        until.ShouldBe(Now.AddDays(14));
+    }
+
+    [Test]
+    public void GrantFreeAccessDays_AfterBonusWeekEnded_StartsANewOneFromNow()
+    {
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-300));
+        user.GrantFreeAccessDays(7, Now);
+
+        var until = user.GrantFreeAccessDays(7, Now.AddDays(40));
+
+        until.ShouldBe(Now.AddDays(47));
+    }
+
+    [Test]
+    public void TrialEndsAtUtc_StaleBonusAccess_DoesNotShortenTheTrial()
+    {
+        // A referee's 60-day trial must not be cut by an older bonus date.
+        var user = NewUser(u =>
+        {
+            u.RegisteredAtUtc = Now.AddDays(-10);
+            u.TrialBonusDays = 30;
+            u.BonusAccessUntilUtc = Now.AddDays(-1);
+        });
+
+        user.TrialEndsAtUtc.ShouldBe(Now.AddDays(50));
+    }
+
+    [Test]
+    public void BonusAccess_ExpiredProUser_StillHasNoTrial()
+    {
+        var user = NewUser(u =>
+        {
+            u.IsPro = true;
+            u.SubscriptionPlan = SubscriptionPlan.Month;
+            u.SubscribedUntil = Now.AddDays(-1);
+            u.BonusAccessUntilUtc = Now.AddDays(5);
+        });
+
+        user.HasActiveTrial(Now).ShouldBeFalse();
+        user.HasMiniAppAccess(Now).ShouldBeFalse();
+    }
+
+    [Test]
+    public void ExtensionCta_HiddenAtStartOfBonusWeek_ShownNearItsEnd()
+    {
+        var user = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-300));
+        user.GrantFreeAccessDays(7, Now);
+
+        user.ShouldShowReferralExtensionCta(Now).ShouldBeFalse();
+        user.ShouldShowReferralExtensionCta(Now.AddDays(5)).ShouldBeTrue();
+    }
+
     // ----- HasMiniAppAccess "renewal pain" scenario -----
 
     // ----- ShouldShowReferralExtensionCta -----

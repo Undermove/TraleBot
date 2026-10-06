@@ -15,7 +15,20 @@ public class User
     /// <summary>Cumulative bonus trial days earned via referrals (own or as a referee).
     /// Added to the base 30-day window so bonuses stack and survive trial expiry.</summary>
     public int TrialBonusDays { get; set; }
-    public DateTime TrialEndsAtUtc => RegisteredAtUtc.AddDays(TrialDays + TrialBonusDays);
+    /// <summary>End of free access earned by inviting a friend AFTER the registration-anchored
+    /// window (<see cref="RegisteredAtUtc"/> + 30 + <see cref="TrialBonusDays"/>) was already over.
+    /// Counted from the moment of the grant, not from registration: adding days to
+    /// <see cref="TrialBonusDays"/> of someone who registered months ago would bring nothing back.
+    /// Null for users who never needed it. Written only by <see cref="GrantFreeAccessDays"/>.</summary>
+    public DateTime? BonusAccessUntilUtc { get; set; }
+    /// <summary>Registration-anchored end of the trial: base 30 days plus accumulated bonus days.</summary>
+    public DateTime RegistrationTrialEndsAtUtc => RegisteredAtUtc.AddDays(TrialDays + TrialBonusDays);
+    /// <summary>When free access ends: the later of the registration-anchored trial and the
+    /// bonus access granted from "now" (<see cref="BonusAccessUntilUtc"/>).</summary>
+    public DateTime TrialEndsAtUtc =>
+        BonusAccessUntilUtc is { } bonusUntil && bonusUntil > RegistrationTrialEndsAtUtc
+            ? bonusUntil
+            : RegistrationTrialEndsAtUtc;
     public Guid UserSettingsId { get; set; }
     public required bool InitialLanguageSet { get; set; }
     public bool IsActive { get; set; }
@@ -75,7 +88,8 @@ public class User
     public bool HasExpiredPro(DateTime now) => IsPro && !HasActivePro(now);
     public bool HasExpiredPro() => HasExpiredPro(DateTime.UtcNow);
 
-    /// <summary>True if user is in their free trial window. False if they ever became Pro
+    /// <summary>True if user is in their free access window (trial, or a bonus period earned by
+    /// inviting a friend after the trial). False if they ever became Pro
     /// (even if that subscription has since expired — once Pro, always counted as having used the trial).</summary>
     public bool HasActiveTrial(DateTime now) => !IsPro && TrialEndsAtUtc > now;
     public bool HasActiveTrial() => HasActiveTrial(DateTime.UtcNow);
@@ -91,6 +105,28 @@ public class User
         return (int)Math.Ceiling((TrialEndsAtUtc - now).TotalDays);
     }
     public int TrialDaysLeft() => TrialDaysLeft(DateTime.UtcNow);
+
+    /// <summary>
+    /// Adds <paramref name="days"/> of free access so that they are always usable:
+    /// while the registration-anchored trial is running they go to its end
+    /// (<see cref="TrialBonusDays"/>); once it is over they count from <paramref name="now"/> —
+    /// or from the end of a bonus period that is still running, so grants stack.
+    /// Returns the new end of free access. Not for Pro users (their reward extends the subscription).
+    /// </summary>
+    public DateTime GrantFreeAccessDays(int days, DateTime now)
+    {
+        var bonusAhead = BonusAccessUntilUtc is { } bonusUntil && bonusUntil > RegistrationTrialEndsAtUtc;
+        if (RegistrationTrialEndsAtUtc > now && !bonusAhead)
+        {
+            TrialBonusDays += days;
+        }
+        else
+        {
+            var startFrom = TrialEndsAtUtc > now ? TrialEndsAtUtc : now;
+            BonusAccessUntilUtc = startFrom.AddDays(days);
+        }
+        return TrialEndsAtUtc;
+    }
 
     /// <summary>How many days before trial end we start surfacing the "extend via referral" CTA.</summary>
     public const int TrialExtensionCtaThresholdDays = 3;

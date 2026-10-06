@@ -33,40 +33,46 @@ public class GetReferralInfoQuery(ITraleDbContext db)
                           && r.ActivatedAtUtc >= yearAgo, ct);
 
         var now = DateTime.UtcNow;
-        var isLifetime = user.IsLifetime;
-        // Pro bonus is earned by anyone who ever bought Pro (excl. Lifetime) — including
-        // expired-Pro users, whose +30d will reactivate their subscription.
-        var earnsProBonus = user.IsPro && !isLifetime;
+        var state = ResolveState(user, now);
         var inviteeTotalTrial = User.TrialDays + RecordReferralLinkService.RefereeTrialBonusDays;
         var dailyCap = TryActivateReferralService.DailyActivationCap;
         var yearlyCap = TryActivateReferralService.YearlyActivationCap;
         var proBonus = TryActivateReferralService.ReferrerProBonusDays;
         var trialBonus = TryActivateReferralService.ReferrerTrialBonusDays;
         // "Cap reached" for hiding the card = non-Lifetime users who hit the yearly limit.
-        var capReached = !isLifetime && yearActivated >= yearlyCap;
+        var capReached = state != ReferralOfferState.Lifetime && yearActivated >= yearlyCap;
 
-        // Short bonus label used by the trial banner / paywall CTA — matches the exact reward
-        // the activator will hand out so banner copy never contradicts the rules section.
-        var bonusShortLabel = isLifetime
-            ? ""
-            : earnsProBonus
-                ? $"+{proBonus} дней Pro"
-                : $"+{trialBonus} дней триала";
+        // What the activator hands out in each state — the copy below must say exactly that,
+        // see TryActivateReferralService. Plain words: «пробный период», never «триал».
+        var (bonusShortLabel, inviteLine, ruleForMe) = state switch
+        {
+            ReferralOfferState.Trial => (
+                $"+{trialBonus} дней к пробному",
+                $"Позови друга — получишь +{trialBonus} дней к пробному периоду",
+                $"Тебе — +{trialBonus} дней к пробному периоду за каждого друга, который начал заниматься."),
+            ReferralOfferState.AccessEnded => (
+                "неделя доступа",
+                "Позови друга — получишь неделю доступа",
+                "Тебе — неделя доступа за каждого друга, который начал заниматься. " +
+                "Неделя идёт с того дня, когда друг начал; позовёшь ещё одного — продлится на столько же."),
+            ReferralOfferState.Pro => (
+                $"+{proBonus} дней подписки",
+                $"Позови друга — получишь +{proBonus} дней подписки",
+                $"Тебе — +{proBonus} дней подписки за каждого друга, который начал заниматься."),
+            _ => ("", "", "У тебя подписка навсегда, так что бонус тебе не нужен — но друг свои дни получит.")
+        };
 
         // Rules rendered as a plain bullet list in the UI. Each entry = one line.
         var rules = new List<string>
         {
-            $"Другу — {inviteeTotalTrial} дней триала вместо {User.TrialDays}."
+            $"Другу — {inviteeTotalTrial} дней бесплатно вместо {User.TrialDays}, если он раньше не пользовался TraleBot.",
+            ruleForMe
         };
-        if (isLifetime)
+        if (state != ReferralOfferState.Lifetime)
         {
-            rules.Add("У тебя Lifetime — бонусы не начисляются, но счётчик приглашённых растёт.");
-        }
-        else
-        {
-            rules.Add($"Тебе — {bonusShortLabel} за каждого активного друга. Бонусы стакаются.");
-            rules.Add("«Активный» — друг прошёл первый урок, добавил 5 слов или оформил подписку.");
-            rules.Add($"Лимиты: до {dailyCap} друзей в день, до {yearlyCap} в год.");
+            rules.Add("«Начал заниматься» — прошёл первый урок, добавил 5 слов или купил подписку. " +
+                      "Бонус приходит не раньше чем через час после того, как друг зашёл.");
+            rules.Add($"Не больше {dailyCap} друзей в день и {yearlyCap} в год.");
         }
 
         return new GetReferralInfoResult
@@ -75,10 +81,31 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             InvitedCount = invited,
             ActivatedCount = activated,
             Rules = rules,
+            State = state,
             BonusShortLabel = bonusShortLabel,
+            InviteLine = inviteLine,
+            ShareText = $"Учу грузинский в TraleBot 🇬🇪 Заходи по моей ссылке — тебе дадут {inviteeTotalTrial} дней бесплатно вместо {User.TrialDays}.",
             CapReached = capReached
         };
     }
+
+    /// <summary>Which reward the activator would give this user right now. Mirrors the branches
+    /// of <see cref="TryActivateReferralService"/>: Lifetime → nothing, ever paid → subscription
+    /// days, trial still running → days at its end, otherwise → a week from the activation.</summary>
+    public static ReferralOfferState ResolveState(User user, DateTime now)
+    {
+        if (user.IsLifetime) return ReferralOfferState.Lifetime;
+        if (user.IsPro) return ReferralOfferState.Pro;
+        return user.HasActiveTrial(now) ? ReferralOfferState.Trial : ReferralOfferState.AccessEnded;
+    }
+}
+
+public enum ReferralOfferState
+{
+    Trial,
+    AccessEnded,
+    Pro,
+    Lifetime
 }
 
 public class GetReferralInfoResult
@@ -87,9 +114,14 @@ public class GetReferralInfoResult
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
     public IReadOnlyList<string> Rules { get; init; } = new List<string>();
-    /// <summary>Short bonus label matching what the activator awards
-    /// ("+{trialBonus} дней триала", "+{proBonus} дней Pro", or empty for Lifetime).
-    /// Used by banner/paywall CTAs to keep the promise consistent with the rules section.</summary>
+    public ReferralOfferState State { get; init; }
+    /// <summary>Short name of the reward the activator gives in the user's current state
+    /// («+7 дней к пробному», «неделя доступа», «+14 дней подписки»; empty for Lifetime).</summary>
     public string BonusShortLabel { get; init; } = "";
+    /// <summary>One ready sentence for an invite entry («Позови друга — получишь неделю доступа»);
+    /// empty for Lifetime. The UI shows it as is, so the grammar never breaks.</summary>
+    public string InviteLine { get; init; } = "";
+    /// <summary>The message a user sends to a friend together with the link.</summary>
+    public string ShareText { get; init; } = "";
     public bool CapReached { get; init; }
 }
