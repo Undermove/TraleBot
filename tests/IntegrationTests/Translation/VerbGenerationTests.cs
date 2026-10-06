@@ -406,6 +406,36 @@ public class VerbGenerationTests : TranslationPipelineTestBase
         Log.Paths.Last().Should().Be("lexicon-no-table>generator>existing");
     }
 
+    [Test]
+    public async Task Verb_the_generator_names_that_has_a_source_table_is_stored_from_the_table_not_from_the_model()
+    {
+        var page = FakeWiktionaryHandler.Fixture("wiktionary-paint.json");
+        var paint = FakeWiktionaryHandler.TitleOf(page);
+        var catalog = CatalogVerb(paint);
+        await SeedCatalogWithout(paint);
+        Wiktionary.Pages[paint] = page;
+        // The lexicon knows the verb has a table, but lists no Russian for it — so the Russian word did
+        // not lead there, and the cheap agent did not find it either.
+        Lexicon.Verbs.Add(new LexiconVerb(paint, null, HasTable: true, ["to paint"], []));
+        Models.ClassifierModel.AnswerWith("""{"notTranslatable":false,"isVerb":true,"russianInfinitive":"рисовать"}""");
+        Models.AnalystModel.AnswerWith("""{"outcome":"none"}""");
+        // The generator's own forms are another verb's — they must not get anywhere.
+        var record = JsonNode.Parse(Record())!;
+        record["lemma"] = paint;
+        record["russian"] = "рисовать";
+        Models.GeneratorModel.AnswerWith(record.ToJsonString());
+
+        var result = await Translate("рисовать");
+
+        Log.Paths.Should().Equal("analyst[]>verb-rejected(analyst-found-no-verb)>generator>has-table>verb-wiktionary");
+        Models.ReviewerModel.Calls.Should().Be(0, because: "there is nothing of the model's to approve");
+        var stored = await StoredVerb(paint);
+        stored!.Status.Should().Be(VerbStatus.Verified);
+        JsonNode.Parse(stored.CardJson)!["tenses"]!.ToJsonString().Should().Be(catalog["tenses"]!.ToJsonString());
+        (await Provenance(paint)).Should().BeNull();
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(paint);
+    }
+
     // ── A full citizen ───────────────────────────────────────────────────────────────────────────
 
     [Test]

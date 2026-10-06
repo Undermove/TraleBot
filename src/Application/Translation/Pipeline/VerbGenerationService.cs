@@ -14,9 +14,13 @@ namespace Application.Translation.Pipeline;
 /// <paramref name="Reason"/> a short fixed code, no user text.
 /// </param>
 /// <param name="Draft">The last record that reached the reviewer, with its verdict — for a preview and for reports.</param>
+/// <param name="SourceTable">
+/// Outcome "has-table": the generator named a verb the source does have a conjugation table for (the
+/// cheap agent had missed it). Its lemma and Russian gloss — the caller stores the verb from the table.
+/// </param>
 public record VerbGenerationOutcome(
     ResolvedVerb? Verb, string Outcome, string? Reason, ModelUsage Generator, ModelUsage Reviewer, int RepairRounds,
-    VerbGenerationDraft? Draft = null)
+    VerbGenerationDraft? Draft = null, VerbProposal? SourceTable = null)
 {
     public bool NotAWord => Outcome == "not-a-word";
 }
@@ -115,6 +119,16 @@ public class VerbGenerationService(
                 {
                     return await ExistingAsync(existing, askedInfinitive, askedWords, Done, round, ct);
                 }
+            }
+
+            // The source's table always beats a model's forms: when the open lexicon says this lemma has
+            // one, nothing the generator wrote is stored — only its choice of the verb and its gloss are used.
+            if (!preview && lemma != null && lexicon.Find(lemma).Any(v => v.Lemma == lemma && v.HasTable))
+            {
+                return Done(null, "has-table", null, round) with
+                {
+                    SourceTable = new VerbProposal(VerbProposalOutcome.Wiktionary, lemma, written.Russian)
+                };
             }
 
             string? glosses = null;

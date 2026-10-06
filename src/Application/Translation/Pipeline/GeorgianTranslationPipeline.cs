@@ -331,6 +331,19 @@ public class GeorgianTranslationPipeline(
                 return (await AnswerAndRemember(outcome.Verb, key, question, direction, cached, ct), true);
             }
 
+            if (outcome.SourceTable != null)
+            {
+                // The strong model named a verb the source has a table for: the table is what gets stored.
+                using var timeout = Timeout(options.Value.AnalystTimeoutSeconds, ct);
+                var fromSource = await resolver.ResolveAsync(
+                    Ask(question, isRussian, []),
+                    new VerbAnalystResult(outcome.SourceTable, new Dictionary<string, WiktionaryVerbPage?>()), timeout.Token, ct);
+                trace.Steps.Add(fromSource.Verb == null ? $"table-rejected({fromSource.Rejection})" : $"verb-{fromSource.Verb.Path}");
+                return fromSource.Verb == null
+                    ? (null, true)
+                    : (await AnswerAndRemember(fromSource.Verb, key, question, direction, cached, ct), true);
+            }
+
             // Two models in a row — the classifier took it for a verb, the strong one says there is no
             // such word — and then the dictionary site: only all three make it "not a word".
             return outcome.NotAWord ? await ConfirmNotTranslatable(key, direction, cached, trace, ct) : (null, true);

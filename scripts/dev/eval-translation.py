@@ -251,7 +251,8 @@ def reset():
             values ('{user}',{telegram},0,now(),'{settings}',true,true,false,0,true) on conflict ("Id") do nothing;
             insert into "UsersSettings" ("Id","UserId","CurrentLanguage") values ('{settings}','{user}',1) on conflict do nothing;""")
     if not args.compare:
-        sql("""delete from "TranslationCache"; delete from "Verbs" where "ContentHash" not like 'cat:%';""")
+        # Счётчики дневных потолков тоже: иначе несколько прогонов за день упираются в потолок на пользователя.
+        sql("""delete from "TranslationCache"; delete from "Verbs" where "ContentHash" not like 'cat:%'; delete from "ModelBudgetDays";""")
 
 
 LINE = re.compile(r"Translation of (.*?): path (.*?), (\w+), (\d+) ms, model calls (\d+) \(classifier (\d+)x(\d+)/(\d+), analyst (\d+)x(\d+)/(\d+)"
