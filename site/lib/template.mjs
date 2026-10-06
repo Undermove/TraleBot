@@ -9,7 +9,7 @@ const KILIM_SVG =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 8' preserveAspectRatio='xMidYMid meet'%3E%3Cg fill='none' stroke='%231B5FB0' stroke-width='1.2'%3E%3Cpath d='M0 4 L4 0 L8 4 L4 8 Z'/%3E%3Cpath d='M8 4 L12 0 L16 4 L12 8 Z' stroke='%23E01A3C'/%3E%3Cpath d='M16 4 L20 0 L24 4 L20 8 Z' stroke='%23F5B820'/%3E%3Cpath d='M24 4 L28 0 L32 4 L28 8 Z'/%3E%3C/g%3E%3C/svg%3E\")"
 
 const CSS = `
-:root{--cream:#FBF6EC;--cream-deep:#F5EFE0;--tile:#FDFAEF;--edge:#E8DEC5;--ink:#15100A;--ink-soft:#3A2B1F;--ink-mid:#5A4735;--ink-hint:#7A6B52;--navy:#1B5FB0;--navy-deep:#0E3F7D;--ruby:#E01A3C;--gold:#F5B820;--gold-wash:#F9EAC1;--maxw:680px}
+:root{--cream:#FBF6EC;--cream-deep:#F5EFE0;--tile:#FDFAEF;--edge:#E8DEC5;--ink:#15100A;--ink-soft:#3A2B1F;--ink-mid:#5A4735;--ink-hint:#7A6B52;--navy:#1B5FB0;--navy-deep:#0E3F7D;--ruby:#E01A3C;--gold:#F5B820;--gold-wash:#F9EAC1;--maxw:720px}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--cream);color:var(--ink);font-family:Manrope,'Noto Sans Georgian',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased;padding-bottom:96px}
@@ -20,7 +20,7 @@ a:hover{color:var(--navy-deep)}
 .wrap{max-width:var(--maxw);margin:0 auto;padding-inline:20px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px}
 .brand{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:18px;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
-.brand .paw{display:inline-grid;place-items:center;width:28px;height:28px;border:1.5px solid var(--ink);border-radius:8px;background:var(--gold);font-size:15px;box-shadow:2px 2px 0 var(--ink)}
+.brand .paw{display:inline-grid;place-items:center;width:28px;height:28px;border:1.5px solid var(--ink);border-radius:8px;background:var(--gold);font-size:15px;font-weight:800;box-shadow:2px 2px 0 var(--ink)}
 .top-nav{display:flex;align-items:center;gap:14px;font-size:14px;font-weight:600}
 .top-nav a{color:var(--ink-mid);text-decoration:none}
 .top-nav a:hover{color:var(--ink)}
@@ -68,8 +68,55 @@ footer.bottom nav{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px}
 footer.bottom a{color:var(--ink-mid);text-decoration:none}
 .sticky-cta{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(251,246,236,.92);backdrop-filter:blur(8px);border-top:1.5px solid var(--edge);display:flex;justify-content:center}
 .sticky-cta .tg-btn{width:100%;max-width:360px}
+.sub{font-size:17px;color:var(--ink-soft);margin:0 0 14px}
+.sub b{font-weight:800;color:var(--ink)}
+.tr{color:var(--ink-mid);font-size:.92em}
+.term{color:var(--ink-hint);font-size:13px;font-weight:500;letter-spacing:0;text-transform:none}
+.chip{display:inline-block;padding:1px 8px;border:1px solid var(--edge);border-radius:999px;background:var(--cream-deep);font-size:12px;font-weight:600;color:var(--ink-mid);vertical-align:middle;white-space:nowrap}
+.jump{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;margin:0 -20px 16px;padding:0 20px 4px;white-space:nowrap;scrollbar-width:none;list-style:none;font-size:13px;font-weight:700}
+.jump a{display:block;padding:5px 10px;border:1.5px solid var(--ink);border-radius:999px;background:var(--tile);color:var(--ink);text-decoration:none}
+.jump a:hover{background:var(--gold-wash)}
+.tenses{display:grid;gap:14px;margin:0 0 8px}
+.tense{border:1.5px solid var(--ink);border-radius:14px;background:var(--tile);box-shadow:3px 3px 0 var(--ink);overflow:hidden}
+.tense h3,.tense h4{margin:0;padding:9px 12px 8px;font-size:15px;line-height:1.25;font-weight:800;background:var(--cream-deep);border-bottom:1px solid var(--edge)}
+.tense h3 .term,.tense h4 .term{display:block;margin-top:1px}
+table.forms{min-width:0;font-size:15px}
+table.forms td{padding:7px 12px;line-height:1.3}
+table.forms td:first-child{color:var(--ink-mid);width:46%}
+table.forms .f,table.ref .f{font-weight:700;font-size:1.1em}
+table.forms .tr,table.ref .tr{display:block}
+table.ref{min-width:0}
+table.ref td:first-child{width:44%}
+table.wide{min-width:0}
+table.wide td,table.wide th{padding:8px 9px}
+table.wide td:first-child{width:auto}
+table.wide .f{font-size:1em}
+table.c4{min-width:500px}
+.say{margin:0 0 8px}
+.say dt{font-weight:700;margin-top:12px}
+.say dd{margin:2px 0 0}
+.inline-cta{margin:18px 0 6px;padding:14px 16px;border:1.5px dashed var(--ink-mid);border-radius:14px;font-size:15px}
+.inline-cta a{font-weight:800}
+details{margin:12px 0;border:1.5px solid var(--edge);border-radius:14px;background:var(--tile)}
+details>summary{cursor:pointer;padding:12px 14px;font-weight:800;font-size:15px}
+details>.in{padding:0 12px 12px}
+details .tenses{margin-top:4px}
+.ex{margin:12px 0;padding:10px 14px;background:var(--tile);border:1.5px solid var(--edge);border-radius:14px}
+.ex p{margin:0}
+.ex .k{font-size:17px;font-weight:700}
+.ex .r{margin-top:4px}
+.ex .src{font-size:12px;color:var(--ink-hint);margin-top:4px}
+.ex .src a{color:var(--ink-hint)}
+.sources{font-size:13px;color:var(--ink-hint);margin-top:28px}
+.sources a{color:var(--ink-mid)}
+.vlist{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:6px 8px}
+.vlist a{display:inline-block;padding:4px 10px;border:1px solid var(--edge);border-radius:10px;background:var(--tile);text-decoration:none;font-size:14px;color:var(--ink)}
+.vlist a:hover{border-color:var(--ink)}
+.az{font-size:15px}
+.az b{display:inline-block;min-width:1.4em}
+@media (min-width:720px){.tenses{grid-template-columns:1fr 1fr}}
 @media (min-width:720px){body{padding-bottom:0}.sticky-cta{display:none}h1{font-size:40px}.cards{grid-template-columns:1fr 1fr}}
-@media (max-width:480px){.top-nav .hide-sm{display:none}}
+@media (max-width:640px){.top-nav .hide-sm{display:none}h1{font-size:26px}.sub,.lead{font-size:16px}}
 `
 
 const TG_ICON =
@@ -88,6 +135,12 @@ function botLink(config, tag) {
   return `https://t.me/${config.botUsername}?start=${safe}`
 }
 
+const DEFAULT_NAV = [{ path: '/grammar/', label: 'Грамматика' }]
+/** Section hubs for the header and the footer: every page links to every hub. */
+function navLinks(config, cls = '') {
+  return (config.nav || DEFAULT_NAV).map((n) => `<a${cls ? ` class="${cls}"` : ''} href="${n.path}">${esc(n.label)}</a>`).join('')
+}
+
 function tgButton(config, tag, label, extraClass = '') {
   return `<a class="tg-btn ${extraClass}" href="${botLink(config, tag)}" target="_blank" rel="noopener">${TG_ICON}<span>${esc(label)}</span></a>`
 }
@@ -101,6 +154,11 @@ export function markGeorgian(html) {
     .split(/(<[^>]+>)/)
     .map((part) => (part.startsWith('<') ? part : part.replace(/[Ⴀ-ჿ][Ⴀ-ჿ\s,.!?;:«»„“…-]*[Ⴀ-ჿ]|[Ⴀ-ჿ]/g, (m) => `<span lang="ka">${m}</span>`)))
     .join('')
+}
+
+/** Georgian text in the Georgian font stack. `cls` marks verb forms (class "f") for the tests. */
+export function ka(text, cls = '') {
+  return `<span lang="ka"${cls ? ` class="${cls}"` : ''}>${esc(text)}</span>`
 }
 
 export function renderLayout({ config, title, description, path, robots, ogType, jsonLd, body, ctaTag, breadcrumbs, updated }) {
@@ -147,9 +205,9 @@ export function renderLayout({ config, title, description, path, robots, ogType,
     <div class="kilim"></div>
     <div class="wrap">
       <header class="top">
-        <a class="brand" href="/"><span class="paw">🐶</span>TraleBot</a>
+        <a class="brand" href="/"><span class="paw" aria-hidden="true">T</span>TraleBot</a>
         <nav class="top-nav" aria-label="Разделы">
-          <a class="hide-sm" href="/grammar/">Грамматика</a>
+          ${navLinks(config, 'hide-sm')}
           ${tgButton(config, ctaTag, 'Открыть в Telegram', 'compact')}
         </nav>
       </header>
@@ -158,7 +216,7 @@ export function renderLayout({ config, title, description, path, robots, ogType,
 ${body}
       </main>
       <footer class="bottom">
-        <nav><a href="/">Главная</a><a href="/grammar/">Грамматика</a><a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a><a href="https://t.me/${config.botUsername}" rel="noopener">@${config.botUsername}</a></nav>
+        <nav><a href="/">Главная</a>${navLinks(config)}<a href="/privacy.html">Конфиденциальность</a><a href="/terms.html">Условия</a><a href="https://t.me/${config.botUsername}" rel="noopener">@${config.botUsername}</a></nav>
         <div>© ${new Date().getUTCFullYear()} TraleBot · бот и мини-апп для изучения грузинского языка${updated ? ` · обновлено ${esc(updated)}` : ''}</div>
       </footer>
     </div>
