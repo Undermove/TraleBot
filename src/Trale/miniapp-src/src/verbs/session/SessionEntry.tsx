@@ -31,24 +31,20 @@ export default function SessionEntry({ verb }: { verb: VerbDto }) {
   const [failed, setFailed] = useState(false)
   const [open, setOpen] = useState(false)
 
-  // Формы непроверенного глагола составила нейросеть — по ним не учим и прогресс не спрашиваем.
-  const unverified = verb.status === 'generated'
-
   function load() {
     return Promise.all([loadLearning(verb.id), fetchVerbStories(verb.id).then(r => r.stories).catch(() => [] as VerbStoryDto[])])
       .then(([learning, stories]) => ({ learning, stories }))
   }
 
   useEffect(() => {
-    if (unverified) return
     let alive = true
     setLoaded(null); setFailed(false)
     load().then(l => { if (alive) setLoaded(l) }).catch(() => { if (alive) setFailed(true) })
     return () => { alive = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verb.id, unverified])
+  }, [verb.id])
 
-  if (unverified || failed || !items.length || (loaded && !loaded.learning.progress.canLearn)) return null
+  if (failed || !items.length || (loaded && !loaded.learning.progress.canLearn)) return null
   // Пока состояние грузится, держим место под кнопку, чтобы таблица не прыгала под пальцем.
   if (!loaded) return <div className="h-[104px]" data-testid="session-entry-loading" />
 

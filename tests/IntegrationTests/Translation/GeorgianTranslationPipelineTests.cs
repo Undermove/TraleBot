@@ -50,19 +50,16 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     private static IEnumerable<string> CardForms(JsonObject verb) =>
         new[] { "present", "future", "aorist" }.SelectMany(t => Enumerable.Range(0, 6).Select(p => Form(verb, t, p)));
 
-    private static object GeneratedFrom(JsonObject verb) => new
+    /// <summary>The analyst names the verb and says the source has no table for it.</summary>
+    private static object NoTableFor(JsonObject verb) => new
     {
-        outcome = "generated",
-        lemma = verb["lemma"]!.GetValue<string>(),
-        russian = verb["ru"]!.GetValue<string>(),
-        masdar = verb["title"]!.GetValue<string>(),
-        generated = new
-        {
-            present = Enumerable.Range(0, 6).Select(p => Form(verb, "present", p)),
-            future = Enumerable.Range(0, 6).Select(p => Form(verb, "future", p)),
-            aorist = Enumerable.Range(0, 6).Select(p => Form(verb, "aorist", p))
-        }
+        outcome = "noTable", lemma = verb["lemma"]!.GetValue<string>(), russian = verb["ru"]!.GetValue<string>()
     };
+
+    // What happens to a verb with no table when the generator and the reviewer are configured is in
+    // VerbGenerationTests; here those two roles are off, so such a verb is just translated.
+    [SetUp]
+    public void NoGeneration() => Models.CanGenerate = false;
 
     private void AnalystFetchesThenAnswers(string page, object answer) =>
         Models.AnalystModel.CallToolsThenAnswer(
@@ -218,17 +215,14 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Forms_the_model_makes_up_are_ignored_when_the_source_has_a_table()
+    public async Task Analyst_that_claims_there_is_no_table_is_overruled_by_the_source()
     {
         await SeedCatalogWithout(Paint);
         var catalog = CatalogVerb(Paint);
         Wiktionary.Pages[Paint] = PaintPage;
         Models.ClassifierModel.AnswerWith(AVerb);
-        var wrong = Enumerable.Range(0, 6).Select(p => p == 2 ? Paint : Form(CatalogVerb(Write), "present", p)).ToArray();
-        Models.AnalystModel.AnswerWith(Json(new
-        {
-            outcome = "generated", lemma = Paint, russian = "рисовать", generated = new { present = wrong }
-        }));
+        // The analyst claims there is no table; the resolver looks at the source itself.
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "noTable", lemma = Paint, russian = "рисовать" }));
 
         await Translate(Form(catalog, "present", 0));
 
@@ -381,81 +375,29 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         (await StoredVerb(Paint))!.Translation.Should().Be(stored);
     }
 
-    // ── 5. A verb with no table anywhere: generated forms, checked against real texts ────────────
+    // ── 5. A verb with no table anywhere: the analyst's own forms are never stored ───────────────
 
     [Test]
-    public async Task Verb_without_a_table_is_stored_generated_with_what_confirmed_it()
+    public async Task Verb_without_a_table_is_not_stored_from_the_analyst_and_is_translated_the_old_way_when_generation_is_off()
     {
         await SeedCatalogWithout(Dance);
         var verb = CatalogVerb(Dance);
-        Lexicon.Verbs.Add(new LexiconVerb(Dance, verb["title"]!.GetValue<string>(), HasTable: false, ["to dance"], []));
-        Lexicon.Attested = CardForms(verb).Take(11).ToHashSet();
         Models.ClassifierModel.AnswerWith(RussianVerb("танцевать"));
-        AnalystFetchesThenAnswers(Dance, GeneratedFrom(verb));
-
-        var result = await Translate("танцевать");
-
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Dance);
-        var stored = await StoredVerb(Dance);
-        stored!.Status.Should().Be(VerbStatus.Generated);
-        var card = JsonNode.Parse(stored.CardJson)!;
-        card["status"]!.GetValue<string>().Should().Be("generated");
-        card["source"].Should().BeNull();
-        card["verification"]!.GetValue<string>().Should().Be(
-            "Глагол есть в Викисловаре, но без таблицы спряжения — формы составила нейросеть. " +
-            $"В настоящих текстах встретились 11 из {CardForms(verb).Distinct().Count()} форм.");
-        Log.Paths.Should().Equal("analyst[fetch_wiktionary_conjugation]>verb-generated");
-
-        var callsSoFar = Models.ModelCalls;
-        await Translate("танцевать");
-        await Translate(Form(verb, "aorist", 4));
-        Models.ModelCalls.Should().Be(callsSoFar, because: "generated once — served from the database afterwards");
-    }
-
-    [Test]
-    public async Task Generated_paradigm_with_no_form_attested_in_real_texts_is_sent_back_once_and_then_not_stored()
-    {
-        await SeedCatalogWithout(Dance);
-        var verb = CatalogVerb(Dance);
-        Lexicon.Verbs.Add(new LexiconVerb(Dance, null, false, ["to dance"], []));
-        Lexicon.Attested = [];
-        Models.ClassifierModel.AnswerWith(RussianVerb("танцевать"));
-        Models.AnalystModel.AnswerWith(Json(GeneratedFrom(verb)));
+        AnalystFetchesThenAnswers(Dance, NoTableFor(verb));
 
         var result = await Translate("танцевать");
 
         (await StoredVerb(Dance)).Should().BeNull();
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
-        Models.AnalystModel.Calls.Should().Be(2);
-        Models.AnalystModel.Conversations.Last().Last().Text.Should().Contain("occurs in the corpora of real Georgian texts");
-        Log.Paths.Single().Should().EndWith("retry(generated-forms-are-not-attested)>analyst[]>verb-rejected(generated-forms-are-not-attested)>legacy");
-    }
-
-    [Test]
-    public async Task Made_up_verb_unknown_to_the_lexicon_and_barely_attested_is_not_stored()
-    {
-        await SeedCatalogWithout(Dance);
-        var verb = CatalogVerb(Dance);
-        Lexicon.Attested = CardForms(verb).Take(2).ToHashSet();
-        Models.ClassifierModel.AnswerWith(RussianVerb("танцевать"));
-        Models.AnalystModel.AnswerWith(Json(GeneratedFrom(verb)));
+        Log.Paths.Should().Equal("analyst[fetch_wiktionary_conjugation]>verb-rejected(no-table-in-the-source)>legacy");
 
         await Translate("танцевать");
-
-        (await StoredVerb(Dance)).Should().BeNull();
-        Log.Paths.Single().Should().Contain("verb-rejected(verb-is-not-in-the-lexicon-and-its-forms-are-not-attested)");
+        Models.ModelCalls.Should().Be(3, because: "one classifier call and the analyst's two turns — and nothing on the second request");
+        Log.Paths.Last().Should().Be("cache");
     }
 
-    [TestCase("""{"outcome":"generated","lemma":"LEMMA","russian":"танцевать","generated":{"present":["LEMMA","LEMMA","LEMMA"]}}""",
-        "generated-tense-is-not-six-persons", TestName = "Generated_paradigm_with_three_persons_is_rejected")]
-    [TestCase("""{"outcome":"generated","lemma":"LEMMA","russian":"танцевать","generated":{"present":["a","b","LEMMA","c","d","e"]}}""",
-        "generated-form-is-not-a-georgian-word", TestName = "Generated_forms_in_latin_are_rejected")]
-    [TestCase("""{"outcome":"generated","lemma":"LEMMA","russian":"to dance","generated":{"present":["LEMMA","LEMMA","LEMMA","LEMMA","LEMMA","LEMMA"]}}""",
-        "russian-gloss-not-an-infinitive", TestName = "Gloss_that_is_not_russian_is_rejected")]
-    [TestCase("""{"outcome":"generated","lemma":"LEMMA","russian":"танцевать","generated":null}""",
-        "generated-forms-have-no-present", TestName = "Generated_outcome_without_forms_is_rejected")]
     [TestCase("""{"outcome":"wiktionary","lemma":"LEMMA","russian":"танцевать"}""",
-        "no-table-on-the-claimed-page", TestName = "Claim_of_a_table_that_does_not_exist_is_rejected")]
+        "no-table-in-the-source", TestName = "Claim_of_a_table_that_does_not_exist_is_rejected")]
     [TestCase("""{"outcome":"existing","lemma":"LEMMA"}""",
         "claimed-verb-not-in-base", TestName = "Claim_that_an_absent_verb_is_in_the_base_is_rejected")]
     public async Task Bad_proposal_is_rejected_with_its_reason_in_the_log(string analystAnswer, string reason)
@@ -534,31 +476,31 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Georgian_word_never_seen_in_real_texts_and_unknown_to_the_dictionary_is_not_machine_translated()
+    public async Task Word_the_classifier_calls_translatable_goes_the_old_way_whatever_the_corpora_say()
     {
         await SeedCatalogWithout();
         Lexicon.Attested = [];
         Models.ClassifierModel.AnswerWith(NotAVerb);
-        External.Fails = true;
-        // Letters of a real word in alphabetical order, twice: Georgian script, not a word.
-        var jumble = string.Concat(Write.OrderBy(c => c)) + string.Concat(Write.OrderBy(c => c));
+        External.DictionaryMisses.Add(Write + Write);
 
-        (await Translate(jumble)).Should().BeOfType<TranslationResult.NotTranslatable>();
+        // A Georgian word the corpora have never seen and the dictionary site does not know: a rare
+        // noun is exactly that. "Not a verb" is all the models say about it — Google answers, as before.
+        var result = await Translate(Write + Write);
 
-        Log.Paths.Should().Equal("not-a-verb>not-translatable");
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.GoogleDefinition);
+        Log.Paths.Should().Equal("not-a-verb>legacy");
     }
 
     [Test]
-    public async Task Verb_the_analyst_does_not_know_and_no_dictionary_has_is_not_machine_translated()
+    public async Task Verb_the_analyst_does_not_know_is_translated_the_old_way_when_generation_is_off()
     {
         await SeedCatalogWithout();
         Models.ClassifierModel.AnswerWith(RussianVerb("глокать"));
         Models.AnalystModel.AnswerWith(Json(new { outcome = "none" }));
-        External.Fails = true;
 
-        (await Translate("глокать")).Should().BeOfType<TranslationResult.NotTranslatable>();
+        (await Translate("глокать")).Should().BeOfType<TranslationResult.Success>();
 
-        Log.Paths.Should().Equal("analyst[]>verb-rejected(analyst-found-no-verb)>not-translatable");
+        Log.Paths.Should().Equal("analyst[]>verb-rejected(analyst-found-no-verb)>legacy");
     }
 
     // ── 8. Plain words: one cheap call, then the cache ───────────────────────────────────────────
@@ -609,7 +551,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         await Translate("стол");
 
         Log.Lines.Should().ContainSingle().Which.Should().MatchRegex(
-            @"^Translation of стол: path not-a-verb>legacy, Success, \d+ ms, model calls 1 \(classifier 1x\d+/\d+, analyst 0x0/0\)$");
+            @"^Translation of стол: path not-a-verb>legacy, Success, \d+ ms, model calls 1 \(classifier 1x\d+/\d+, analyst 0x0/0, generator 0x0/0, reviewer 0x0/0\)$");
     }
 
     // ── 9. Failures degrade to the old translator ────────────────────────────────────────────────
@@ -654,12 +596,12 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Wiktionary_outage_stores_nothing_even_if_the_model_offers_its_own_forms()
+    public async Task Wiktionary_outage_is_not_taken_for_a_verb_without_a_table()
     {
         await SeedCatalogWithout(Dance);
         Wiktionary.ThrottleNext = 100;
         Models.ClassifierModel.AnswerWith(AVerb);
-        Models.AnalystModel.AnswerWith(Json(GeneratedFrom(CatalogVerb(Dance))));
+        Models.AnalystModel.AnswerWith(Json(NoTableFor(CatalogVerb(Dance))));
 
         await Translate(Form(CatalogVerb(Dance), "present", 0));
 
@@ -712,8 +654,8 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         {
             (Form(paint, "aorist", 1), AVerb, Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" }), true),
             ("рисовала", RussianVerb("рисовать"), null, true),
-            ("танцевать", RussianVerb("танцевать"), Json(GeneratedFrom(dance)), true),
-            ("танцевали", RussianVerb("танцевать"), null, true),
+            ("танцевать", RussianVerb("танцевать"), Json(NoTableFor(dance)), true),
+            ("танцевали", RussianVerb("танцевать"), Json(NoTableFor(dance)), true),
             (Doubled(Form(CatalogVerb(Write), "future", 0), 1), AVerb,
                 Json(new { outcome = "existing", lemma = Write, form = Form(CatalogVerb(Write), "future", 0) }), true),
             ("строчить", RussianVerb("строчить"), Json(new { outcome = "existing", lemma = Write }), true),

@@ -94,6 +94,9 @@ public abstract class TranslationPipelineTestBase
         Models.Configured = true;
         Models.ClassifierModel.Reset();
         Models.AnalystModel.Reset();
+        Models.GeneratorModel.Reset();
+        Models.ReviewerModel.Reset();
+        Models.CanGenerate = true;
         External.Reset();
         Wiktionary.Reset();
         Log.Reset();

@@ -27,8 +27,23 @@ public class TranslationAgentOptions
     public string AnalystReasoning { get; set; } = string.Empty;
 
     /// <summary>
-    /// Whether a verb with no conjugation table in the source may be stored with forms produced by the
-    /// model (status Generated, shown as «не проверено»). Off: such a verb is just translated as before.
+    /// The strong model that writes the full record of a verb neither the base nor Wiktionary's tables
+    /// have. Used for nothing else. Which tier is enough is decided by <c>scripts/dev/eval-translation.py</c>.
+    /// </summary>
+    public string GeneratorModel { get; set; } = "gpt-6-astra";
+
+    /// <summary>The model that approves or rejects what the generator wrote. Must differ from <see cref="GeneratorModel"/>.</summary>
+    public string ReviewerModel { get; set; } = "gpt-6-sol";
+
+    /// <inheritdoc cref="ClassifierReasoning"/>
+    public string GeneratorReasoning { get; set; } = string.Empty;
+
+    /// <inheritdoc cref="ClassifierReasoning"/>
+    public string ReviewerReasoning { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether a verb with no conjugation table in the source may be written by the generator and, once
+    /// the reviewer approves it, stored (status Generated). Off: such a verb is just translated as before.
     /// </summary>
     public bool AllowGeneratedVerbs { get; set; } = true;
 
@@ -45,6 +60,12 @@ public class TranslationAgentOptions
 
     /// <summary>The whole analysis run: every model turn and every tool call of it.</summary>
     public int AnalystTimeoutSeconds { get; set; } = 25;
+
+    /// <summary>One call of the generator. A strong model writing forty forms takes its time.</summary>
+    public int GeneratorTimeoutSeconds { get; set; } = 90;
+
+    /// <summary>One call of the reviewer.</summary>
+    public int ReviewerTimeoutSeconds { get; set; } = 60;
 
     /// <summary>One HTTP attempt to Wiktionary.</summary>
     public int WiktionaryTimeoutSeconds { get; set; } = 8;

@@ -139,14 +139,14 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public void Parse_line_says_when_the_forms_are_unverified()
+    public void Parse_line_of_a_model_made_verb_reads_like_any_other()
     {
         var verb = CatalogVerb(Write);
         var hint = new VerbReplyHint(
             Write, verb["title"]!.GetValue<string>(), "писать", VerbStatus.Generated, Form(verb, "present", 0), "present", 0);
 
-        VerbReplyFormatter.Line(hint).Should().EndWith("Формы не проверены.");
-        VerbReplyFormatter.Line(hint with { Status = VerbStatus.Verified }).Should().NotContain("не проверены");
+        // An approved verb is a full citizen: the chat does not warn about it (the verb view says where it came from).
+        VerbReplyFormatter.Line(hint).Should().Be(VerbReplyFormatter.Line(hint with { Status = VerbStatus.Verified }));
     }
 
     [Test]

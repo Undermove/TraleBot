@@ -24,14 +24,23 @@ namespace Application.Translation.Pipeline;
 /// <item>the translation cache — a text that was looked up before, or a remembered verdict about it;</item>
 /// <item>the classifier (cheap model, one call): is the text something to translate at all, is it a
 ///   verb, and for a Russian verb — its infinitive, which is tried against the verb base again;</item>
-/// <item>for a verb that is still unknown — the analyst (stronger model with the Wiktionary tool), then
-///   <see cref="VerbProposalResolver"/> validates and stores the verb, so the next request stops at step 1 or 2;</item>
+/// <item>for a verb that is still unknown — the analyst (the cheap agent with the Wiktionary tool): a
+///   verb the source has a table for is stored from the table by <see cref="VerbProposalResolver"/>;</item>
+/// <item>for a verb with no table anywhere — <see cref="VerbGenerationService"/>: a strong model writes
+///   the record, a second model approves it, it is stored; the next request stops at step 1 or 2;</item>
 /// <item>everything else — the translator that was here before (<see cref="GeorgianTranslationModule"/>:
 ///   dictionary site, then Google), and its answer goes to the cache.</item>
 /// </list>
-/// Steps 3 and 4 run only when the agent path is on (<see cref="ITranslationAgentSwitch"/>). Any failure
-/// of a model or tool step — no key, quota, timeout, malformed output — falls through to step 5, so the
-/// user gets what they would have got without the models.
+/// The model steps run only when the agent path is on (<see cref="ITranslationAgentSwitch"/>). Any failure
+/// of a model or tool step — no key, quota, timeout, malformed output — falls through to the last step,
+/// so the user gets what they would have got without the models.
+/// <para>
+/// The models are for verbs only. For anything else — a noun, an adjective, a phrase, a sentence — the
+/// one thing a model says is "this is not a verb", and the text goes to the translator that was here
+/// before, unchanged. "Not something to translate" is answered only for a text the classifier is sure is
+/// not a word or a phrase at all (or, for a verb-looking one, the strong model is) AND the dictionary site
+/// does not know either; any doubt is translated the old way.
+/// </para>
 /// </summary>
 public class GeorgianTranslationPipeline(
     GeorgianTranslationModule legacy,
@@ -44,6 +53,8 @@ public class GeorgianTranslationPipeline(
     ITranslationRequestClassifier classifier,
     IVerbAnalyst analyst,
     VerbProposalResolver resolver,
+    VerbGenerationService generation,
+    IVerbGenerationSwitch generationSwitch,
     ITraleDbContext dbContext,
     IOptions<TranslationAgentOptions> options,
     ILogger<GeorgianTranslationPipeline> logger) : ITranslationModule
@@ -59,6 +70,8 @@ public class GeorgianTranslationPipeline(
         public List<string> Steps { get; } = [];
         public ModelUsage Classifier { get; set; } = ModelUsage.None;
         public ModelUsage Analyst { get; set; } = ModelUsage.None;
+        public ModelUsage Generator { get; set; } = ModelUsage.None;
+        public ModelUsage Reviewer { get; set; } = ModelUsage.None;
     }
 
     public async Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct)
@@ -70,9 +83,10 @@ public class GeorgianTranslationPipeline(
         // One line per request: which steps ran, what the models cost and how long it all took. The
         // looked-up text is the only user input in it.
         logger.LogInformation(
-            "Translation of {Word}: path {Path}, {Outcome}, {ElapsedMs} ms, model calls {ModelCalls} (classifier {ClassifierUsage}, analyst {AnalystUsage})",
+            "Translation of {Word}: path {Path}, {Outcome}, {ElapsedMs} ms, model calls {ModelCalls} (classifier {ClassifierUsage}, analyst {AnalystUsage}, generator {GeneratorUsage}, reviewer {ReviewerUsage})",
             wordToTranslate, string.Join(">", trace.Steps), result.GetType().Name, stopwatch.ElapsedMilliseconds,
-            trace.Classifier.Calls + trace.Analyst.Calls, Tokens(trace.Classifier), Tokens(trace.Analyst));
+            trace.Classifier.Calls + trace.Analyst.Calls + trace.Generator.Calls + trace.Reviewer.Calls,
+            Tokens(trace.Classifier), Tokens(trace.Analyst), Tokens(trace.Generator), Tokens(trace.Reviewer));
         return result;
     }
 
@@ -195,10 +209,9 @@ public class GeorgianTranslationPipeline(
 
         if (!classification.IsVerb || !CanBeVerb(key))
         {
+            // Not a verb: the models have nothing more to say, the old translator answers as it always did.
             trace.Steps.Add("not-a-verb");
-            return IsUnseenGeorgianWord(key)
-                ? await ConfirmNotTranslatable(key, direction, cached, trace, ct)
-                : (null, true);
+            return (null, true);
         }
 
         var question = key;
@@ -220,11 +233,15 @@ public class GeorgianTranslationPipeline(
             }
         }
 
+        string? lemmaHint = null;
+        var canGenerate = true;
+        IReadOnlyList<LexiconVerb> candidates;
         try
         {
             using var timeout = Timeout(options.Value.AnalystTimeoutSeconds, ct);
             var typos = isRussian ? [] : await verbBase.SearchAsync(key, timeout.Token);
             var asked = Ask(question, isRussian, typos);
+            candidates = asked.Lexicon ?? [];
             if (question != key)
             {
                 // The infinitive is new information: the lexicon may name its verb without the analyst.
@@ -235,33 +252,40 @@ public class GeorgianTranslationPipeline(
                 }
             }
 
-            var analysis = await analyst.AnalyzeAsync(asked, timeout.Token);
-            trace.Analyst += analysis.Usage ?? ModelUsage.None;
-            trace.Steps.Add($"analyst[{string.Join(" ", analysis.ToolCalls ?? [])}]");
-            var resolution = await resolver.ResolveAsync(asked, analysis, timeout.Token, ct);
-            if (resolution is { Verb: null, RetryHint: not null })
+            if (isRussian && candidates.Count > 0 && candidates.All(v => !v.HasTable))
             {
-                // One retry, with the concrete discrepancy the checks found. Never a second one.
-                trace.Steps.Add($"retry({resolution.Rejection})");
-                asked = asked with { Feedback = resolution.RetryHint };
-                analysis = await analyst.AnalyzeAsync(asked, timeout.Token);
+                // The lexicon names the verb(s) for this Russian word and says the source has no table
+                // for any of them: there is nothing for the analyst to look up — straight to the generator.
+                trace.Steps.Add("lexicon-no-table");
+                lemmaHint = candidates.Count == 1 ? candidates[0].Lemma : null;
+            }
+            else
+            {
+                var analysis = await analyst.AnalyzeAsync(asked, timeout.Token);
                 trace.Analyst += analysis.Usage ?? ModelUsage.None;
                 trace.Steps.Add($"analyst[{string.Join(" ", analysis.ToolCalls ?? [])}]");
-                resolution = await resolver.ResolveAsync(asked, analysis, timeout.Token, ct);
-            }
+                var resolution = await resolver.ResolveAsync(asked, analysis, timeout.Token, ct);
+                if (resolution is { Verb: null, RetryHint: not null })
+                {
+                    // One retry, with the concrete discrepancy the checks found. Never a second one.
+                    trace.Steps.Add($"retry({resolution.Rejection})");
+                    asked = asked with { Feedback = resolution.RetryHint };
+                    analysis = await analyst.AnalyzeAsync(asked, timeout.Token);
+                    trace.Analyst += analysis.Usage ?? ModelUsage.None;
+                    trace.Steps.Add($"analyst[{string.Join(" ", analysis.ToolCalls ?? [])}]");
+                    resolution = await resolver.ResolveAsync(asked, analysis, timeout.Token, ct);
+                }
 
-            if (resolution.Verb == null)
-            {
+                if (resolution.Verb != null)
+                {
+                    trace.Steps.Add($"verb-{resolution.Verb.Path}");
+                    return (await AnswerAndRemember(resolution.Verb, key, question, direction, cached, ct), true);
+                }
+
                 trace.Steps.Add($"verb-rejected({resolution.Rejection})");
-                // The analyst knows no such verb. If no dictionary does either, machine translation
-                // would only invent something to save into the user's dictionary.
-                return analysis.Proposal.Outcome == VerbProposalOutcome.None || IsUnseenGeorgianWord(key)
-                    ? await ConfirmNotTranslatable(key, direction, cached, trace, ct)
-                    : (null, true);
+                lemmaHint = resolution.LemmaHint;
+                canGenerate = resolution.CanGenerate;
             }
-
-            trace.Steps.Add($"verb-{resolution.Verb.Path}");
-            return (await AnswerAndRemember(resolution.Verb, key, question, direction, cached, ct), true);
         }
         catch (Exception e) when (!ct.IsCancellationRequested)
         {
@@ -269,20 +293,42 @@ public class GeorgianTranslationPipeline(
             logger.LogWarning("Verb analyst failed: {Error}", Describe(e));
             return (null, false);
         }
+
+        // No table anywhere: the strong model writes the record, the second one approves it.
+        if (!canGenerate || !options.Value.AllowGeneratedVerbs || !generationSwitch.IsOn)
+        {
+            return (null, true);
+        }
+
+        try
+        {
+            var outcome = await generation.GenerateAsync(
+                new VerbGenerationRequest(key, isRussian, isRussian ? question : null, lemmaHint, candidates), ct);
+            trace.Generator += outcome.Generator;
+            trace.Reviewer += outcome.Reviewer;
+            trace.Steps.Add(
+                $"generator>{outcome.Outcome}" + (outcome.Reason == null ? string.Empty : $"({outcome.Reason})")
+                + (outcome.RepairRounds > 0 ? "+repair" : string.Empty));
+            if (outcome.Verb != null)
+            {
+                return (await AnswerAndRemember(outcome.Verb, key, question, direction, cached, ct), true);
+            }
+
+            // Two models in a row — the classifier took it for a verb, the strong one says there is no
+            // such word — and then the dictionary site: only all three make it "not a word".
+            return outcome.NotAWord ? await ConfirmNotTranslatable(key, direction, cached, trace, ct) : (null, true);
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            trace.Steps.Add("generator-failed");
+            logger.LogWarning("Verb generation failed: {Error}", Describe(e));
+            return (null, false);
+        }
     }
 
     /// <summary>The agents know two languages, and a verb is a word or two; a phrase is for the plain translator.</summary>
     private static bool CanBeVerb(string key) =>
         !key.Any(char.IsAsciiLetter) && key.Split(' ').Length <= MaxWordsForVerbAnalysis;
-
-    /// <summary>
-    /// One Georgian word that never occurs in the corpora of real texts: most likely not a word. On its
-    /// own this proves nothing (rare words exist) — it only sends the text to the dictionary-site check
-    /// before machine translation gets it.
-    /// </summary>
-    private bool IsUnseenGeorgianWord(string key) =>
-        lexicon.HasAttestedForms && VerbParadigm.GeorgianWord.IsMatch(key) && !lexicon.IsAttested(key)
-        && lexicon.Find(key).Count == 0;
 
     private VerbQuestion Ask(string text, bool isRussian, IReadOnlyList<VerbBaseMatch> typos) =>
         new(text, isRussian, typos, isRussian ? lexicon.FindByRussian(text) : lexicon.Find(text));
@@ -326,21 +372,25 @@ public class GeorgianTranslationPipeline(
     private async Task<TranslationResult> AnswerAndRemember(
         ResolvedVerb verb, string key, string question, TranslationDirection direction, TranslationCacheEntry? cached, CancellationToken ct)
     {
+        // The verb is in the base now: when the text itself is found there (a form, a gloss, a Russian
+        // form by its phrase), the first answer is the very one every later request will get.
+        var fromBase = await AnswerFromVerbBase(key, direction == TranslationDirection.RussianToGeorgian, ct);
+        if (fromBase != null)
+        {
+            return fromBase;
+        }
+
+        // The text is not something the base finds by itself (a Russian word the phrases do not cover,
+        // a typo): then step 1 will not find it next time — the cache will.
         var match = new VerbBaseMatch(
             verb.Verb.Lemma, verb.Verb.Title, verb.Verb.Translation, verb.Verb.Status, "agent", verb.Form);
         var answer = await AnswerFromVerb(key, direction, match, question == key ? null : question, ct);
-        // The text itself may not be a form of the verb (a Russian inflected word, a typo): then step 1
-        // will not find it next time — the cache will.
-        if (await AnswerFromVerbBase(key, direction == TranslationDirection.RussianToGeorgian, ct) == null)
-        {
-            await cache.StoreAsync(key, direction, answer, TranslationCache.SourceVerbAgent, classified: true, ct, replace: cached);
-        }
-
+        await cache.StoreAsync(key, direction, answer, TranslationCache.SourceVerbAgent, classified: true, ct, replace: cached);
         return answer;
     }
 
     /// <summary>
-    /// A small model alone must not be able to refuse a real word. Its "not something to translate" is
+    /// A model alone must not be able to refuse a real word. Its "not something to translate" is
     /// accepted only when the dictionary site does not know the text either; then nothing is sent to
     /// machine translation (which "translates" any string) and the verdict is remembered.
     /// </summary>

@@ -22,6 +22,13 @@ public static class VerbAnalyzer
     public static readonly IReadOnlyList<string> CardTenses =
         ["present", "aorist", "imperfect", "optative", "conditional", "future"];
 
+    /// <summary>Every tense key a verb table may have: the six of the card, then the rare ones.</summary>
+    public static readonly IReadOnlyList<string> KnownTenses =
+    [
+        "present", "aorist", "imperfect", "optative", "conditional", "future",
+        "presentSubjunctive", "futureSubjunctive", "perfect", "pluperfect", "perfectSubjunctive"
+    ];
+
     // Hand corrections where counting letters does not see the single root. Same list as in the script.
     private static readonly HashSet<string> SameRoot = ["პოულობს", "დებს"];
 

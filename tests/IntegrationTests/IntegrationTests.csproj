@@ -37,5 +37,7 @@
 
   <ItemGroup>
     <None Include="..\Fixtures\verb-level-cases.json" Link="Fixtures\verb-level-cases.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Russian forms the catalog's phrases are built from: VerbMeaningBuilderTests ties the C# builder to the script's output. -->
+    <None Include="..\..\scripts\verbs\ru-forms.json" Link="Verbs\ru-forms.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -49,6 +49,9 @@ public enum VerbStatus
     /// <summary>Every form traced to an open source and reviewed in a PR.</summary>
     Verified = 0,
 
-    /// <summary>Produced by a model at a user's request; not reviewed yet.</summary>
+    /// <summary>
+    /// Written by a model at a user's request and approved by a second model — see
+    /// <see cref="VerbProvenance"/>. Served and learned like a verified verb; a human revision may follow.
+    /// </summary>
     Generated = 1
 }

@@ -36,7 +36,7 @@ export interface VerbDto extends VerbSummaryDto {
   sentences: VerbSentenceDto[]
   /** Нет у глагола, формы которого составила модель. */
   source: string | null
-  /** generated — формы составила модель, в источнике таблицы нет; такой глагол не идёт в игры. Нет поля — verified. */
+  /** generated — таблицы в источнике нет: запись составила одна модель и одобрила вторая; учится и играется как любой глагол. Нет поля — verified. */
   status?: 'verified' | 'generated'
   /** У глагола, добавленного по запросу: на чём держатся формы и перевод (что сверено с источниками). */
   verification?: string | null

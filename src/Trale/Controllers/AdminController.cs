@@ -119,6 +119,19 @@ public class AdminController : Controller
         return Ok(detail);
     }
 
+    /// <summary>
+    /// Verbs a model wrote and a model approved, with what the approval rested on — the list a human
+    /// revision works from. <c>?unrevised=true</c> leaves out the ones already looked over.
+    /// </summary>
+    [HttpGet("verbs/model-made")]
+    public async Task<IActionResult> ModelMadeVerbs(
+        [FromServices] Application.Verbs.ModelMadeVerbsQuery query, [FromQuery] bool unrevised = false, CancellationToken ct = default)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var verbs = await query.ExecuteAsync(unrevised, ct);
+        return Ok(new { count = verbs.Count, verbs });
+    }
+
     public class GrantProRequest
     {
         public string Plan { get; set; } = string.Empty;

@@ -276,3 +276,35 @@ describe('planSession: прогон от нового глагола до экз
     expect(pastSessions({ ...NO_MEMORY, recentScenes: ['meet+time', 'pick', ''] })).toEqual([['meet', 'time'], ['pick']])
   })
 })
+
+// Глагол, который составила модель и одобрила вторая: таблица и русские фразы есть, живых
+// предложений нет, одна клетка пустая («не уверена — оставь пустой»). Формы — каталожного «писать».
+describe('planSession: a model-made verb', () => {
+  const tenses = { ...WRITE.tenses, optative: WRITE.tenses.optative!.map((cell, person) => (person === 4 ? [] : cell)) }
+  const MADE = verbRu('писать', { status: 'generated', source: null, sentences: [], tenses })
+
+  it('is learned like any other: every filled cell is an item with its plain meaning', () => {
+    const items = buildItems(MADE)
+    expect(items).toHaveLength(35)
+    expect(items.some(i => i.key === 'optative:4')).toBe(false)
+    expect(items.every(i => i.meaning.text)).toBe(true)
+  })
+
+  it('gets sessions at every stage, and never a task that needs a real sentence', () => {
+    for (const [n, step] of [[0, STEP.NEW], [6, STEP.MEANING], [18, SOLID_STEP], [35, STEP.MASTERED]] as const) {
+      for (const learner of [BEGINNER, TYPIST]) {
+        const plan = planSession(context(MADE, known(MADE, n, step), { learner }))
+        expect(plan.scenes.length).toBeGreaterThan(0)
+        const kinds = plan.scenes.flatMap(s => s.tasks ?? []).map(t => t.kind)
+        expect(kinds).not.toContain('gap')
+        expect(kinds).not.toContain('build')
+        expect(plan.scenes.map(s => s.type)).not.toContain('story')
+      }
+    }
+  })
+
+  it('skips the bone field row that has an empty cell, as for a partial verb', () => {
+    expect(capabilities(MADE, []).boneRows).not.toContain('optative')
+    expect(capabilities(MADE, []).boneRows.length).toBeGreaterThan(0)
+  })
+})

@@ -42,3 +42,24 @@ public class VerbFormConfiguration : IEntityTypeConfiguration<VerbForm>
         builder.HasIndex(f => f.Form);
     }
 }
+
+public class VerbProvenanceConfiguration : IEntityTypeConfiguration<VerbProvenance>
+{
+    public void Configure(EntityTypeBuilder<VerbProvenance> builder)
+    {
+        builder.HasKey(p => p.Id);
+
+        builder.Property(p => p.AskedText).HasMaxLength(128);
+        builder.Property(p => p.GeneratorModel).HasMaxLength(64);
+        builder.Property(p => p.ReviewerModel).HasMaxLength(64);
+        builder.Property(p => p.UnattestedFormsJson).HasColumnType("text");
+        builder.Property(p => p.ReviewerReasons).HasColumnType("text");
+
+        builder.HasIndex(p => p.VerbId).IsUnique();
+
+        builder.HasOne(p => p.Verb)
+            .WithOne()
+            .HasForeignKey<VerbProvenance>(p => p.VerbId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}

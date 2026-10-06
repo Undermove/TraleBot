@@ -8,7 +8,7 @@ namespace Infrastructure.Translation.Agent;
 public static class TranslationAgentRegistration
 {
     /// <summary>
-    /// The model and tool side of <see cref="GeorgianTranslationPipeline"/>: two agents on Microsoft
+    /// The model and tool side of <see cref="GeorgianTranslationPipeline"/>: the agents on Microsoft
     /// Agent Framework and the Wiktionary client. Nothing here talks to a model unless
     /// <c>TranslationAgent:Enabled</c> is true and a key and model ids are configured.
     /// </summary>
@@ -20,6 +20,9 @@ public static class TranslationAgentRegistration
         services.AddScoped<ITranslationAgentSwitch, TranslationAgentSwitch>();
         services.AddScoped<ITranslationRequestClassifier, MafTranslationRequestClassifier>();
         services.AddScoped<IVerbAnalyst, MafVerbAnalyst>();
+        services.AddScoped<IVerbGenerationSwitch, VerbGenerationSwitch>();
+        services.AddScoped<IVerbGenerator, MafVerbGenerator>();
+        services.AddScoped<IVerbReviewer, MafVerbReviewer>();
 
         services.AddSingleton<WiktionaryRateLimiter>();
         services.AddHttpClient(WiktionaryVerbSource.HttpClientName);

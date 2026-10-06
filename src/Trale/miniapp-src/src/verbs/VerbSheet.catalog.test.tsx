@@ -64,14 +64,12 @@ describe('VerbSheet on catalog verbs', () => {
     expect(screen.queryByTestId('verb-partial')).toBeNull()
   })
 
-  it('offers no play on an unverified verb and does not ask for its progress', async () => {
+  it('offers play on a model-made verb like on any other, with one quiet line about its origin', async () => {
     await open(verbByLemma('წერს', { status: 'generated', source: null }))
-    await act(async () => {})
 
-    expect(screen.getByTestId('verb-unverified')).toBeTruthy()
-    expect(screen.queryByText('Выучить играя')).toBeNull()
-    expect(screen.queryByTestId('verb-games')).toBeNull()
-    expect(api.fetchVerbLearning).not.toHaveBeenCalled()
+    expect(await screen.findByText('Выучить играя')).toBeTruthy()
+    expect(screen.getByTestId('verb-model-made').textContent).toBe('составлено нейросетью')
+    expect(api.fetchVerbLearning).toHaveBeenCalled()
   })
 
   it('Back closes the layers from the top: rules, then the session, then the card', async () => {

@@ -23,6 +23,7 @@ public interface ITraleDbContext
     DbSet<NotificationTrigger> NotificationTriggers { get; }
     DbSet<Verb> Verbs { get; }
     DbSet<VerbForm> VerbForms { get; }
+    DbSet<VerbProvenance> VerbProvenances { get; }
     DbSet<VerbFormProgress> VerbFormProgresses { get; }
     DbSet<UserVerb> UserVerbs { get; }
     DbSet<VerbSession> VerbSessions { get; }

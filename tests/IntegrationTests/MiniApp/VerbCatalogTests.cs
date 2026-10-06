@@ -278,7 +278,7 @@ public class VerbCatalogTests : TestBase
 
         var generated = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("წერს", CancellationToken.None));
         JsonNode.Parse(generated!)!["status"]!.GetValue<string>().Should().Be("generated",
-            because: "games built from the paradigm must not be offered for unreviewed verbs");
+            because: "the verb view says where a model-made verb came from");
     }
 
     [Test]

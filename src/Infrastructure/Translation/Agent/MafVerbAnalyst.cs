@@ -20,6 +20,7 @@ namespace Infrastructure.Translation.Agent;
 /// <item><c>check_attested_forms</c> — which of the given word forms occur in real Georgian texts.</item>
 /// </list>
 /// What the model returns is only a proposal; <see cref="VerbProposalResolver"/> decides what is stored.
+/// It never writes forms: a verb with no table goes on to <see cref="MafVerbGenerator"/>.
 /// What our own base knows about the word is found by the pipeline before this agent is called and is
 /// handed to it with the question — a model call is not spent on searching our database.
 /// </summary>
@@ -61,12 +62,8 @@ public class MafVerbAnalyst(
            asked about: outcome "wiktionary", lemma = that page title.
         4. W is a misspelling of a listed form: outcome "existing", lemma = the listed verb's lemma,
            form = the listed, correctly spelled form.
-        5. No table for this verb: outcome "generated" with lemma, masdar (verbal noun) and "generated" —
-           the conjugation as you know it, six persons per tense in the order I, you (sg), he/she, we,
-           you (pl), they, exactly one word per person, Georgian script only. "present" is required and
-           its third form must be the lemma itself; add "imperfect", "future", "aorist", "optative" and
-           "conditional" when you are sure of them, and leave out a tense you are not sure of.
-           Every form will be checked against corpora of real texts.
+        5. No table for this verb: outcome "noTable" with the lemma and "russian". Do not write its
+           conjugation: a stronger model does that next.
         6. The text is not a verb, or you do not know the verb: outcome "none".
 
         "russian" is the dictionary translation of the verb into Russian: one plain infinitive, the way a
@@ -76,15 +73,10 @@ public class MafVerbAnalyst(
 
     // The JSON the model must return. Flat and explicit, so the schema is the same for every provider.
     private sealed record Output(
-        [property: Description("wiktionary | existing | generated | none")] string? Outcome,
+        [property: Description("wiktionary | existing | noTable | none")] string? Outcome,
         string? Lemma,
         string? Russian,
-        string? Form,
-        string? Masdar,
-        GeneratedTenses? Generated);
-
-    private sealed record GeneratedTenses(
-        string[]? Present, string[]? Imperfect, string[]? Future, string[]? Conditional, string[]? Aorist, string[]? Optative);
+        string? Form);
 
     public async Task<VerbAnalystResult> AnalyzeAsync(VerbQuestion question, CancellationToken ct)
     {
@@ -120,7 +112,7 @@ public class MafVerbAnalyst(
         var outcome = Enum.TryParse<VerbProposalOutcome>(output.Outcome, ignoreCase: true, out var parsed)
             ? parsed
             : VerbProposalOutcome.None;
-        var proposal = new VerbProposal(outcome, output.Lemma, output.Russian, output.Form, output.Masdar, Tenses(output.Generated));
+        var proposal = new VerbProposal(outcome, output.Lemma, output.Russian, output.Form);
         var tools = response.Messages.SelectMany(m => m.Contents).OfType<FunctionCallContent>().Select(c => c.Name).ToList();
         return new VerbAnalystResult(proposal, run.Fetched, ModelCalls.Usage(response), tools);
     }
@@ -158,36 +150,11 @@ public class MafVerbAnalyst(
         return text.ToString();
     }
 
-    private static string Describe(LexiconVerb verb) =>
+    internal static string Describe(LexiconVerb verb) =>
         $"{verb.Lemma} — {string.Join("; ", verb.English)}"
         + (verb.Russian.Count > 0 ? $" (Russian: {string.Join(", ", verb.Russian)})" : string.Empty)
         + (verb.Masdar != null ? $"; verbal noun {verb.Masdar}" : string.Empty)
         + (verb.HasTable ? "; has a conjugation table" : "; no conjugation table in the source");
-
-    private static Dictionary<string, string[]>? Tenses(GeneratedTenses? generated)
-    {
-        if (generated == null)
-        {
-            return null;
-        }
-
-        var tenses = new Dictionary<string, string[]>();
-        void Add(string tense, string[]? persons)
-        {
-            if (persons is { Length: > 0 })
-            {
-                tenses[tense] = persons;
-            }
-        }
-
-        Add("present", generated.Present);
-        Add("imperfect", generated.Imperfect);
-        Add("future", generated.Future);
-        Add("conditional", generated.Conditional);
-        Add("aorist", generated.Aorist);
-        Add("optative", generated.Optative);
-        return tenses;
-    }
 
     /// <summary>The tool of one run and what it saw. Tool calls of a run are sequential (MAF default).</summary>
     private sealed class Run(VerbBaseSearch verbBase, IWiktionaryVerbSource wiktionary, IVerbLexicon lexicon, CancellationToken ct)

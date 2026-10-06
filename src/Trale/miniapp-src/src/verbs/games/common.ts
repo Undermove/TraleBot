@@ -47,5 +47,9 @@ export const slotMeaning = (verb: VerbDto, slot: Slot): Meaning => meaningOf(ver
 /** То же одной строкой для подсказки: «ты пишешь» в кавычках, с пометкой, если она нужна. */
 export const describeSlot = (verb: VerbDto, slot: Slot): string => quoted(slotMeaning(verb, slot))
 
-/** Глагол можно объяснить по-русски (есть перевод) и его формы проверены по источнику. */
-export const isPlayable = (verb: VerbDto): boolean => verb.status === 'verified' && verb.ru.trim() !== ''
+/**
+ * Глагол можно объяснить по-русски (есть перевод) и его формы приняты: взяты из источника (verified)
+ * или составлены одной моделью и одобрены второй (generated). Карточка без статуса в игры не идёт.
+ */
+export const isPlayable = (verb: VerbDto): boolean =>
+  (verb.status === 'verified' || verb.status === 'generated') && verb.ru.trim() !== ''

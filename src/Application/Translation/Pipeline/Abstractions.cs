@@ -43,8 +43,11 @@ public enum VerbProposalOutcome
     /// <summary>The source has a conjugation table for <see cref="VerbProposal.Lemma"/>.</summary>
     Wiktionary,
 
-    /// <summary>No table anywhere; the forms in <see cref="VerbProposal.GeneratedTenses"/> are the model's own.</summary>
-    Generated
+    /// <summary>
+    /// The analyst names the verb but the source has no conjugation table for it: the record is for the
+    /// generator to write (<see cref="VerbGenerationService"/>). The analyst's own forms are never stored.
+    /// </summary>
+    NoTable
 }
 
 /// <summary>
@@ -54,14 +57,11 @@ public enum VerbProposalOutcome
 /// <param name="Lemma">Dictionary form of the verb (3rd person singular present).</param>
 /// <param name="Russian">Russian translation of the verb, dictionary infinitive(s).</param>
 /// <param name="Form">For a misspelled Georgian word — the form it was taken for.</param>
-/// <param name="GeneratedTenses">tense → six persons, one form each. Only for <see cref="VerbProposalOutcome.Generated"/>.</param>
 public record VerbProposal(
     VerbProposalOutcome Outcome,
     string? Lemma = null,
     string? Russian = null,
-    string? Form = null,
-    string? GeneratedMasdar = null,
-    IReadOnlyDictionary<string, string[]>? GeneratedTenses = null);
+    string? Form = null);
 
 /// <param name="FetchedPages">
 /// Every page the analyst asked the source for during the run, by page title; null value = no page or
