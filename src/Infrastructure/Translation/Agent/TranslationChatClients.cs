@@ -39,7 +39,12 @@ public class OpenAiTranslationChatClients : ITranslationChatClients
     {
         return string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(model)
             ? null
-            : new OpenAIClient(apiKey).GetChatClient(model).AsIChatClient();
+            // The Responses API: the current small models accept function tools together with reasoning
+            // only there (Chat Completions answers HTTP 400). The SDK still marks its Responses client
+            // "for evaluation" (OPENAI001) — a version bump of the OpenAI package may need a touch here.
+#pragma warning disable OPENAI001
+            : new OpenAIClient(apiKey).GetResponsesClient().AsIChatClient(model);
+#pragma warning restore OPENAI001
     }
 }
 

@@ -34,6 +34,7 @@ public abstract class TranslationPipelineTestBase
     protected FakeExternalTranslator External { get; } = new();
     protected FakeWiktionaryHandler Wiktionary { get; } = new();
     protected PipelineLog Log { get; } = new();
+    protected FakeLexicon Lexicon { get; } = new();
     protected TelegramClientFake Telegram => (TelegramClientFake)App.Services.GetRequiredService<ITelegramBotClient>();
 
     [OneTimeSetUp]
@@ -46,6 +47,9 @@ public abstract class TranslationPipelineTestBase
             builder.ConfigureTestServices(services =>
             {
                 services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider>(Log);
+
+                services.RemoveAll<IVerbLexicon>();
+                services.AddSingleton<IVerbLexicon>(Lexicon);
 
                 services.RemoveAll<ITranslationChatClients>();
                 services.AddSingleton<ITranslationChatClients>(Models);
@@ -93,6 +97,7 @@ public abstract class TranslationPipelineTestBase
         External.Reset();
         Wiktionary.Reset();
         Log.Reset();
+        Lexicon.Reset();
     }
 
     // ── The curated catalog: the only place Georgian in these tests comes from ───────────────────

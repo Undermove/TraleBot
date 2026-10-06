@@ -207,3 +207,28 @@ public class PipelineLog : Microsoft.Extensions.Logging.ILoggerProvider
         }
     }
 }
+
+/// <summary>The open lexicon and the attested forms, set by each test instead of the shipped data files.</summary>
+public class FakeLexicon : Application.Verbs.IVerbLexicon
+{
+    public List<Application.Verbs.LexiconVerb> Verbs { get; } = new();
+
+    /// <summary>Null = "the corpus data is not loaded": attestation checks are off.</summary>
+    public HashSet<string>? Attested { get; set; }
+
+    public void Reset()
+    {
+        Verbs.Clear();
+        Attested = null;
+    }
+
+    public IReadOnlyList<Application.Verbs.LexiconVerb> Find(string lemmaOrMasdar) =>
+        Verbs.Where(v => v.Lemma == lemmaOrMasdar || v.Masdar == lemmaOrMasdar).ToList();
+
+    public IReadOnlyList<Application.Verbs.LexiconVerb> FindByRussian(string infinitive) =>
+        Verbs.Where(v => v.Russian.Contains(infinitive)).ToList();
+
+    public bool IsAttested(string form) => Attested?.Contains(form) ?? false;
+
+    public bool HasAttestedForms => Attested != null;
+}

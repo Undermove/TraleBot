@@ -132,6 +132,38 @@ public static class TranslationKeyboard
             cancellationToken: token);
     }
     
+    /// <summary>The text is not a word (gibberish, a message to the bot): nothing was translated or saved.</summary>
+    public static async Task HandleNotTranslatable(this ITelegramBotClient client, TelegramRequest request, CancellationToken token)
+    {
+        await client.SendTextMessageAsync(
+            request.UserTelegramId,
+            NotTranslatableText,
+            cancellationToken: token);
+    }
+
+    public const string NotTranslatableText =
+        "Это не похоже на слово для перевода. Напиши слово или короткую фразу — на русском или на грузинском, и я переведу.";
+
+    /// <summary>
+    /// Shows «печатает…» in the chat until cancelled. Telegram keeps the indicator for about five
+    /// seconds, so it is renewed. Best effort: it never fails or delays the reply itself.
+    /// </summary>
+    public static async Task KeepTypingAsync(this ITelegramBotClient client, long chatId, CancellationToken stop)
+    {
+        try
+        {
+            while (!stop.IsCancellationRequested)
+            {
+                await client.SendChatActionAsync(chatId, global::Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: stop);
+                await Task.Delay(TimeSpan.FromSeconds(4), stop);
+            }
+        }
+        catch (Exception)
+        {
+            // Cancelled because the reply is ready, or Telegram refused the indicator — neither matters.
+        }
+    }
+
     public static async Task HandleFailure(this ITelegramBotClient client,TelegramRequest request, CancellationToken token)
     {
         await client.SendTextMessageAsync(

@@ -177,7 +177,7 @@ export const api = {
 
   translateWord: (word: string) =>
     request<{
-      status: 'success' | 'exists' | 'failure'
+      status: 'success' | 'exists' | 'failure' | 'not_a_word'
       word?: string
       definition?: string
       additionalInfo?: string

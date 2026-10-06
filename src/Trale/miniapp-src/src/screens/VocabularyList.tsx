@@ -22,7 +22,7 @@ interface Props {
 }
 
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
-type TranslateState = 'idle' | 'translating' | 'success' | 'error'
+type TranslateState = 'idle' | 'translating' | 'success' | 'error' | 'not-a-word'
 type Filter = 'all' | 'new' | 'weak' | 'mastered' | 'verbs'
 type OnboardingState = 'idle' | 'adding' | 'done' | 'error'
 
@@ -277,6 +277,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
             setIsStarterMode(v.items.length === 0)
           }).catch(() => {})
         }
+      } else if (r.status === 'not_a_word') {
+        setTranslateState('not-a-word')
       } else {
         setTranslateState('error')
       }
@@ -502,6 +504,11 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          {translateState === 'not-a-word' && (
+            <div data-testid="translate-not-a-word" className="mt-2 font-sans text-[12px] text-jewelInk-mid">
+              Это не похоже на слово для перевода. Напиши слово или короткую фразу — на русском или на грузинском.
             </div>
           )}
           {translateState === 'error' && (

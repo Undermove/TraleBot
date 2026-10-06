@@ -805,6 +805,8 @@ public class MiniAppController : Controller
                 verb = await VerbIn(request.Word.Trim().ToLowerInvariant(), e.Definition)
             }),
             CreateVocabularyEntryResult.TranslationFailure => Ok(new { status = "failure" }),
+            // Gibberish or a message to the bot: nothing was translated or saved; the screen says so.
+            CreateVocabularyEntryResult.NotTranslatable => Ok(new { status = "not_a_word" }),
             CreateVocabularyEntryResult.PromptLengthExceeded => BadRequest(new { status = "too_long" }),
             CreateVocabularyEntryResult.EmojiDetected => BadRequest(new { status = "emoji" }),
             _ => Ok(new { status = "failure" })

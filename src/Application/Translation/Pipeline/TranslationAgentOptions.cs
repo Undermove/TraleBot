@@ -18,15 +18,33 @@ public class TranslationAgentOptions
     public string AnalystModel { get; set; } = string.Empty;
 
     /// <summary>
+    /// How much the model "thinks" before answering: none | low | medium | high; empty = the model's
+    /// default. Less is faster and cheaper; what is enough is decided by <c>scripts/dev/eval-translation.py</c>.
+    /// </summary>
+    public string ClassifierReasoning { get; set; } = string.Empty;
+
+    /// <inheritdoc cref="ClassifierReasoning"/>
+    public string AnalystReasoning { get; set; } = string.Empty;
+
+    /// <summary>
     /// Whether a verb with no conjugation table in the source may be stored with forms produced by the
     /// model (status Generated, shown as «не проверено»). Off: such a verb is just translated as before.
     /// </summary>
     public bool AllowGeneratedVerbs { get; set; } = true;
 
-    public int ClassifierTimeoutSeconds { get; set; } = 6;
+    /// <summary>
+    /// The bill's ceiling: how many requests a day (UTC) may reach a model at all. Over it, requests take
+    /// the path without models until the next day. 0 = no limit.
+    /// </summary>
+    public int MaxModelRequestsPerDay { get; set; } = 2000;
+
+    // Timeouts come from scripts/dev/eval-translation.py on the chosen models (06.10.2026): the
+    // classifier answered in 1.6 s at the median and 2.8 s at the 95th percentile, a whole analyst
+    // request in 5.9 s / 16.6 s. A step that takes about twice its p95 is not coming back.
+    public int ClassifierTimeoutSeconds { get; set; } = 5;
 
     /// <summary>The whole analysis run: every model turn and every tool call of it.</summary>
-    public int AnalystTimeoutSeconds { get; set; } = 30;
+    public int AnalystTimeoutSeconds { get; set; } = 25;
 
     /// <summary>One HTTP attempt to Wiktionary.</summary>
     public int WiktionaryTimeoutSeconds { get; set; } = 8;

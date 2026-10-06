@@ -38,6 +38,8 @@ export interface VerbDto extends VerbSummaryDto {
   source: string | null
   /** generated — формы составила модель, в источнике таблицы нет; такой глагол не идёт в игры. Нет поля — verified. */
   status?: 'verified' | 'generated'
+  /** У глагола, добавленного по запросу: на чём держатся формы и перевод (что сверено с источниками). */
+  verification?: string | null
 }
 
 export interface VerbSentenceDto {

@@ -41,9 +41,42 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
 
         var reply = await Say(910001, form);
 
-        reply.Text.Should().StartWith("Определение: мы писали");
+        reply.Text.Should().StartWith("Определение: мы писали\nДругие значения: глагол «писать»");
         reply.Text.Should().EndWith($"Разбор: {form} — «мы писали» (один раз · сделано). Глагол {title} — писать.",
             because: "the chat explains a form by what it means in plain Russian, not by the name of its tense");
+    }
+
+    [Test]
+    public async Task Reply_to_gibberish_is_one_friendly_line_and_nothing_is_saved()
+    {
+        await SeedCatalogWithout();
+        Models.ClassifierModel.AnswerWith("""{"notTranslatable":true,"isVerb":false,"russianInfinitive":null}""");
+        External.Fails = true;
+        await Say(910004, "/start");
+
+        var reply = await Say(910004, "ываыва");
+
+        reply.Text.Should().Be(Infrastructure.Telegram.BotCommands.TranslateCommands.TranslationKeyboard.NotTranslatableText);
+        reply.ReplyMarkup.Should().BeNull();
+        var saved = await InScope(sp => Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(
+            Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+                .GetRequiredService<Application.Common.ITraleDbContext>(sp).VocabularyEntries, e => e.User.TelegramId == 910004));
+        saved.Should().Be(0);
+    }
+
+    [Test]
+    public async Task Reply_to_a_russian_past_form_gives_the_georgian_form_and_says_which_reading_it_is()
+    {
+        await SeedCatalogWithout();
+        Models.Configured = false;
+        var verb = CatalogVerb(Write);
+        var he = Form(verb, "imperfect", 2);
+        await Say(910005, "/start");
+
+        var reply = await Say(910005, "писал");
+
+        reply.Text.Should().StartWith($"Определение: {he}");
+        reply.Text.Should().Contain($"Разбор: {he} — «он писал»");
     }
 
     [Test]

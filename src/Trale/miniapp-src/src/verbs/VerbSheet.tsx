@@ -130,7 +130,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             )}
             {verb.status === 'generated' && (
               <div data-testid="verb-unverified" className="mt-2 mx-auto max-w-[300px] rounded-lg border border-jewelInk/40 bg-gold-wash px-3 py-1.5 text-[12px] text-jewelInk-soft">
-                Не проверено: в Викисловаре таблицы этого глагола нет, формы составила нейросеть. Могут быть ошибки.
+                Не проверено. {verb.verification ?? 'В Викисловаре таблицы этого глагола нет, формы составила нейросеть.'} Могут быть ошибки.
               </div>
             )}
           </div>

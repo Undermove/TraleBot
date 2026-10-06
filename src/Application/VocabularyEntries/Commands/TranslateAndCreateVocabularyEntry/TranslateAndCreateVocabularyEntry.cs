@@ -40,10 +40,15 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
             
             var wordLanguage = request.Word.DetectLanguage();
             
+            // The user's own dictionary comes first: a word they already have is answered from it,
+            // whatever its spelling of case and spaces, without any translator.
+            var typed = request.Word.Trim().ToLowerInvariant();
             var duplicate = await context.VocabularyEntries
-                .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
-                                               && (entry.Language == user.Settings.CurrentLanguage || entry.Language == wordLanguage)
-                                               && entry.Word.Equals(request.Word.ToLowerInvariant()), ct);
+                .Where(entry => entry.UserId == request.UserId
+                                && (entry.Language == user.Settings.CurrentLanguage || entry.Language == wordLanguage)
+                                && entry.Word == typed)
+                .OrderBy(entry => entry.DateAddedUtc)
+                .FirstOrDefaultAsync(ct);
             
             if(duplicate != null)
             {
@@ -76,6 +81,8 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
                         user,
                         targetLanguage),
                 TranslationResult.PromptLengthExceeded => new CreateVocabularyEntryResult.PromptLengthExceeded(),
+                // Nothing is saved: the text is not a word.
+                TranslationResult.NotTranslatable => new CreateVocabularyEntryResult.NotTranslatable(),
                 _ => new CreateVocabularyEntryResult.TranslationFailure()
             };
         }
