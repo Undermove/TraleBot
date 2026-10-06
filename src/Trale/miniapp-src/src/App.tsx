@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { CatalogDto, ProgressState, Screen } from './types'
-import { defaultProgress, progressFromDto } from './progress'
+import { defaultProgress, onProgressPublished, progressFromDto } from './progress'
 import { resolveEntryScreen, hasEarnedXp } from './entryFlow'
 import { api } from './api'
 import Dashboard from './screens/Dashboard'
@@ -20,6 +20,10 @@ import Onboarding, { UserLevel } from './screens/Onboarding'
 import Welcome from './screens/Welcome'
 import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
+import VerbSheet from './verbs/VerbSheet'
+import { resolveVerbDeepLink } from './verbs/deepLink'
+import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
+import { loadSeenHints } from './verbs/ui/hints'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -59,7 +63,6 @@ function parseDeepLink(catalog: CatalogDto): Screen | null {
 
     if (target === 'feed') return { kind: 'dashboard' } // Bombora is fed on the dashboard
     if (target === 'vocabulary') return { kind: 'vocabulary-list' }
-
     if (moduleId) {
       const mod = catalog.modules.find((m) => m.id === moduleId)
       if (!mod) return null
@@ -77,6 +80,8 @@ function parseDeepLink(catalog: CatalogDto): Screen | null {
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
   const [progress, setProgress] = useState<ProgressState>(defaultProgress)
+  // Прогресс, начисленный не уроком (сессия глагола), приходит сюда — шапка обновляется сразу.
+  useEffect(() => onProgressPublished(dto => setProgress(progressFromDto(dto))), [])
   const [catalog, setCatalog] = useState<CatalogDto | null>(null)
   const [authenticated, setAuthenticated] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -116,12 +121,17 @@ export default function App() {
           setTelegramId((meData as any).telegramId ?? null)
           setVocabularyCount((meData as any).vocabularyCount ?? 0)
           setOnboardingHint((meData as any).onboardingHint ?? null)
+          loadSeenHints(meData.uiHintsSeen)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
-        const deepLink = hasLevel ? parseDeepLink(catalogData) : null
+        // ?screen=verb&verbId=… opens a verb card over the dictionary (see verbs/deepLink.ts).
+        const verbLink = hasLevel
+          ? resolveVerbDeepLink(new URLSearchParams(window.location.search), Boolean(meData?.isPro || (meData as any)?.isTrialActive))
+          : null
+        const deepLink = verbLink?.screen ?? (hasLevel ? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
-          window.history.replaceState({}, '', window.location.pathname)
+          window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
         }
         // A push deep-link wins; otherwise resolveEntryScreen decides — a brand-new
         // user (level but no XP) gets the welcome lesson, and the dashboard hub is
@@ -149,6 +159,9 @@ export default function App() {
     })
   }
 
+  // Карточка глагола, лесенка, игры и комикс открываются слоями поверх экрана: «Назад» сначала закрывает их.
+  const overlayOpen = useHasOverlay()
+
   // Telegram BackButton integration
   useEffect(() => {
     const tg = (window as any).Telegram?.WebApp
@@ -162,12 +175,14 @@ export default function App() {
       screen.kind !== 'loading' &&
       screen.kind !== 'welcome' &&
       !inPreXpFirstLesson
-    if (canBack) {
+    if (canBack || overlayOpen) {
       tg.BackButton.show()
     } else {
       tg.BackButton.hide()
     }
     const handler = () => {
+      if (closeTopOverlay()) return
+      if (!canBack) return
       if (
         screen.kind === 'module' ||
         screen.kind === 'profile' ||
@@ -198,7 +213,7 @@ export default function App() {
         tg.BackButton.offClick(handler)
       } catch {}
     }
-  }, [screen, progress.xp])
+  }, [screen, progress.xp, overlayOpen])
 
   if (loadError) {
     return (
@@ -374,6 +389,7 @@ export default function App() {
           total={screen.total}
           xpEarned={screen.xpEarned}
           wrongQuestions={screen.wrongQuestions}
+          verbs={screen.verbs}
           navigate={navigate}
         />
       )
@@ -418,7 +434,18 @@ export default function App() {
     case 'admin-user':
       return <AdminUserScreen telegramId={screen.telegramId} progress={progress} navigate={navigate} />
     case 'vocabulary-list':
-      return <VocabularyList progress={progress} navigate={navigate} />
+      return (
+        <>
+          <VocabularyList progress={progress} navigate={navigate} initialFilter={screen.filter} />
+          {screen.verb && (
+            <VerbSheet
+              verbId={screen.verb.verbId}
+              highlight={screen.verb.highlight}
+              onClose={() => setScreen({ kind: 'vocabulary-list', filter: screen.filter })}
+            />
+          )}
+        </>
+      )
     case 'vocabulary-quiz':
       return (
         <VocabularyPractice

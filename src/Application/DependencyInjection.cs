@@ -12,6 +12,7 @@ using Application.Notifications.Holidays;
 using Application.Quizzes.Services;
 using Application.Translation;
 using Application.Translation.Languages;
+using Application.Verbs;
 using Domain.Quiz;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -55,7 +56,15 @@ public static class DependencyInjection
 
         services.AddTransient<ILanguageTranslator, LanguageTranslator>();
         services.AddScoped<ITranslationModule, EnglishTranslationModule>();
-        services.AddScoped<ITranslationModule, GeorgianTranslationModule>();
+        // Georgian goes through the pipeline (verb base → cache → agents → the old module); the old
+        // module stays registered as itself — it is the pipeline's last step and its fallback.
+        services.AddScoped<GeorgianTranslationModule>();
+        services.AddScoped<ITranslationModule, Translation.Pipeline.GeorgianTranslationPipeline>();
+        services.AddScoped<Translation.Cache.TranslationCache>();
+        services.AddScoped<Translation.Pipeline.VerbProposalResolver>();
+        services.AddScoped<VerbBaseSearch>();
+        services.AddScoped<RuntimeVerbStore>();
+        services.AddScoped<VerbReplyHintQuery>();
         
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();
@@ -76,6 +85,15 @@ public static class DependencyInjection
         // MiniApp services (per ARCHITECTURE.md, no MediatR)
         services.AddScoped<GetActivityDaysQuery>();
         services.AddScoped<GetUserVocabularyQuery>();
+        services.AddScoped<VerbCatalogSeeder>();
+        services.AddScoped<VerbQueries>();
+        services.AddScoped<LessonVerbAnnotator>();
+        services.AddScoped<DictionaryVerbsQuery>();
+        services.AddScoped<VerbProgressService>();
+        services.AddScoped<VerbLearningService>();
+        services.AddScoped<MyVerbsQuery>();
+        services.AddScoped<VerbQuizCreditService>();
+        services.AddSingleton<VerbStoryCatalog>();
         services.AddScoped<FeedTreatService>();
 
         // Acquisition attribution (per ARCHITECTURE.md, no MediatR)

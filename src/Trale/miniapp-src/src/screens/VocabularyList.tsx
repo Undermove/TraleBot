@@ -5,17 +5,25 @@ import LoaderLetter from '../components/LoaderLetter'
 import Mascot from '../components/Mascot'
 import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
 import WordCard from '../components/WordCard'
+import VerbSheet from '../verbs/VerbSheet'
+import MyVerbRows, { matchesVerb } from '../verbs/dictionary/MyVerbRows'
+import LevelBadge from '../verbs/session/LevelBadge'
+import type { MyVerbDto } from '../verbs/types'
+import { VerbHint } from '../verbs/parts'
+import type { VerbFormHitDto } from '../verbs/types'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
 
 interface Props {
   progress: ProgressState
   navigate: (s: Screen) => void
+  /** Фильтр, с которым открыть словарь (с главной — сразу «глаголы»). */
+  initialFilter?: 'verbs'
 }
 
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
 type TranslateState = 'idle' | 'translating' | 'success' | 'error'
-type Filter = 'all' | 'new' | 'weak' | 'mastered'
+type Filter = 'all' | 'new' | 'weak' | 'mastered' | 'verbs'
 type OnboardingState = 'idle' | 'adding' | 'done' | 'error'
 
 interface Toast {
@@ -23,16 +31,20 @@ interface Toast {
   message: string
 }
 
-export default function VocabularyList({ progress, navigate }: Props) {
+export default function VocabularyList({ progress, navigate, initialFilter }: Props) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [items, setItems] = useState<VocabularyItem[]>([])
   const [isStarterMode, setIsStarterMode] = useState(false)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<Filter>(initialFilter ?? 'all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [translateInput, setTranslateInput] = useState('')
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
-  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string } | null>(null)
+  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string; verb?: VerbFormHitDto | null } | null>(null)
+  // Карточка глагола открывается шторкой поверх словаря — из слова, из перевода, из списка.
+  /** Открытый вид глагола; entryId — если пришли с записи словаря, которая сама — форма этого глагола. */
+  const [verbSheet, setVerbSheet] = useState<{ verbId: string; tense?: string; person?: number; entryId?: string } | null>(null)
+  const [myVerbs, setMyVerbs] = useState<MyVerbDto[]>([])
   const [activeLetter, setActiveLetter] = useState<string | null>(null)
   const [cardItem, setCardItem] = useState<VocabularyItem | null>(null)
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set())
@@ -51,6 +63,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
           setIsStarterMode(true)
         } else {
           setItems(r.items)
+          setMyVerbs(r.verbs ?? [])
           setIsStarterMode(false)
         }
         setPhase('ready')
@@ -76,6 +89,14 @@ export default function VocabularyList({ progress, navigate }: Props) {
     )
   }, [items])
 
+  // Фильтр «глаголы» появляется, когда в словаре есть хотя бы одно слово с глаголом.
+  const hasVerbs = myVerbs.length > 0 || items.some((item) => item.verb)
+  const shownVerbs = useMemo(() => myVerbs.filter((v) => matchesVerb(v, search)), [myVerbs, search])
+  // Открыли сразу на «глаголах», а глаголов в словаре нет — показываем все слова, а не пустой список.
+  useEffect(() => {
+    if (phase === 'ready' && filter === 'verbs' && !hasVerbs) setFilter('all')
+  }, [phase, filter, hasVerbs])
+
   const filtered = useMemo(() => {
     const lowered = search.trim().toLowerCase()
     return items.filter((item) => {
@@ -93,6 +114,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
       if (filter === 'mastered') {
         if (item.mastery === 'NotMastered') return false
       }
+      if (filter === 'verbs' && !item.verb) return false
       if (lowered && !(
         item.word.toLowerCase().includes(lowered) ||
         item.definition.toLowerCase().includes(lowered)
@@ -112,7 +134,49 @@ export default function VocabularyList({ progress, navigate }: Props) {
   }
 
   function openCard(item: VocabularyItem) {
+    // Запись — сама форма глагола: сразу вид глагола (слово, уровень, игра), без промежуточной карточки слова.
+    if (item.verb?.single && !isStarterMode) {
+      setVerbSheet({ verbId: item.verb.verbId, tense: item.verb.tense, person: item.verb.person, entryId: item.id })
+      return
+    }
     setCardItem(item)
+  }
+
+  function openVerb(hit: VerbFormHitDto) {
+    setVerbSheet({ verbId: hit.verbId, tense: hit.tense, person: hit.person })
+  }
+
+  /** Строка «моего глагола»: если в словаре есть его слово — открываем с него, иначе просто глагол. */
+  function openMyVerb(verb: MyVerbDto) {
+    const entry = items.find((i) => i.verb?.single && i.verb.verbId === verb.id)
+    const first = verb.saved[0]
+    setVerbSheet({ verbId: verb.id, tense: (entry?.verb ?? first)?.tense, person: (entry?.verb ?? first)?.person, entryId: entry?.id })
+  }
+
+  /** После игры уровень глагола мог вырасти — перечитываем словарь тихо, без экрана загрузки. */
+  function closeVerb() {
+    setVerbSheet(null)
+    api.vocabulary().then((r) => {
+      if (isStarterMode || !r.items.length) return
+      setItems(r.items)
+      setMyVerbs(r.verbs ?? [])
+    }).catch(() => {})
+  }
+
+  /** Сохранённое слово для вида глагола: с ним вид начинается, и из него же — действия со словом. */
+  function verbEntry(entryId?: string) {
+    const item = entryId ? items.find((i) => i.id === entryId) : undefined
+    if (!item?.verb) return undefined
+    return {
+      hit: item.verb,
+      russian: sides(item).russian,
+      selected: selected.has(item.id),
+      onToggleSelect: () => toggle(item.id),
+      onDelete: async () => {
+        await api.deleteVocabularyEntry(item.id)
+        handleDelete(item.id)
+      }
+    }
   }
 
   function closeCard() {
@@ -202,7 +266,8 @@ export default function VocabularyList({ progress, navigate }: Props) {
           word: r.word ?? word,
           definition: r.definition ?? '',
           additionalInfo: r.additionalInfo ?? '',
-          example: r.example ?? ''
+          example: r.example ?? '',
+          verb: r.verb
         })
         setTranslateState('success')
         setTranslateInput('')
@@ -431,6 +496,11 @@ export default function VocabularyList({ progress, navigate }: Props) {
                   <div className="font-sans text-[12px] text-jewelInk-mid mt-1 italic">{translateResult.example}</div>
                 )}
                 <div className="font-sans text-[11px] text-gold-deep font-bold mt-1.5">✓ добавлено в словарь</div>
+                {translateResult.verb && (
+                  <div className="mt-2.5">
+                    <VerbHint hit={translateResult.verb} onOpen={() => openVerb(translateResult.verb!)} />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -468,7 +538,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
             </div>
 
             {/* Filter chips */}
-            <div className="grid grid-cols-4 gap-1.5 mb-3">
+            <div className={`grid ${hasVerbs ? 'grid-cols-5' : 'grid-cols-4'} gap-1.5 mb-3`}>
               <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
                 все
               </FilterChip>
@@ -484,6 +554,11 @@ export default function VocabularyList({ progress, navigate }: Props) {
               >
                 изучено
               </FilterChip>
+              {hasVerbs && (
+                <FilterChip active={filter === 'verbs'} onClick={() => setFilter('verbs')}>
+                  глаголы
+                </FilterChip>
+              )}
             </div>
 
             {/* Alphabet index */}
@@ -508,7 +583,8 @@ export default function VocabularyList({ progress, navigate }: Props) {
 
         {/* Word list */}
         <div className="flex flex-col gap-2">
-          {filtered.map((item, idx) => {
+          {filter === 'verbs' && <MyVerbRows verbs={shownVerbs} onOpen={openMyVerb} />}
+          {filter !== 'verbs' && filtered.map((item, idx) => {
             const isItemSelected = selected.has(item.id)
             const isRemoving = removingIds.has(item.id)
             const { georgian, russian } = sides(item)
@@ -565,7 +641,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
                 {/* Right zone: word content → opens card */}
                 <button
                   onClick={() => openCard(item)}
-                  className="flex-1 flex items-center gap-3 py-3 pr-4 min-h-[56px]"
+                  className="flex-1 min-w-0 flex items-center gap-3 py-3 pr-4 min-h-[56px]"
                   style={isStarterMode ? { paddingLeft: '1rem' } : undefined}
                 >
                   {isStarterMode && (
@@ -583,9 +659,23 @@ export default function VocabularyList({ progress, navigate }: Props) {
                     </div>
                   </div>
 
-                  <div
-                    className={`relative z-[1] w-2.5 h-2.5 rounded-full shrink-0 ${masteryColor} border border-jewelInk/30`}
-                  />
+                  {item.verb?.single && item.verb.level && item.verb.level !== 'new' ? (
+                    // У слова-глагола вместо общей точки «выучено» — уровень знания глагола.
+                    <span className="relative z-[1] shrink-0" data-testid="verb-row-level"><LevelBadge level={item.verb.level} compact /></span>
+                  ) : item.verb && (
+                    <span
+                      data-testid="verb-badge"
+                      className="relative z-[1] shrink-0 px-1.5 py-0.5 rounded-md bg-navy-wash border border-jewelInk/40 font-sans text-[9px] font-bold uppercase tracking-wider text-navy"
+                    >
+                      глагол
+                    </span>
+                  )}
+
+                  {!item.verb?.single && (
+                    <div
+                      className={`relative z-[1] w-2.5 h-2.5 rounded-full shrink-0 ${masteryColor} border border-jewelInk/30`}
+                    />
+                  )}
 
                   {/* Chevron hint */}
                   <svg
@@ -602,7 +692,7 @@ export default function VocabularyList({ progress, navigate }: Props) {
             )
           })}
 
-          {filtered.length === 0 && (
+          {(filter === 'verbs' ? shownVerbs.length === 0 : filtered.length === 0) && (
             <div className="py-10 text-center font-sans text-[14px] text-jewelInk-mid">
               {activeLetter ? 'нет слов по этому фильтру' : 'ничего не нашлось'}
             </div>
@@ -653,6 +743,16 @@ export default function VocabularyList({ progress, navigate }: Props) {
           onClose={closeCard}
           onToggleSelect={toggle}
           onDelete={handleDelete}
+          onOpenVerb={openVerb}
+        />
+      )}
+
+      {verbSheet && (
+        <VerbSheet
+          verbId={verbSheet.verbId}
+          highlight={verbSheet.tense !== undefined && verbSheet.person !== undefined ? { tense: verbSheet.tense, person: verbSheet.person } : undefined}
+          entry={verbEntry(verbSheet.entryId)}
+          onClose={closeVerb}
         />
       )}
     </div>
@@ -696,7 +796,7 @@ function FilterChip({
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg border-[1.5px] px-3 py-2.5 min-h-[44px] flex items-center justify-center text-center font-sans text-[11px] font-bold uppercase tracking-wider transition-all duration-75 ${
+      className={`rounded-lg border-[1.5px] px-1 py-2.5 min-h-[44px] flex items-center justify-center text-center font-sans text-[11px] font-bold uppercase tracking-wider transition-all duration-75 ${
         active
           ? 'bg-navy text-cream border-jewelInk'
           : 'bg-cream-tile text-jewelInk-mid border-jewelInk/25'

@@ -1,3 +1,4 @@
+import type { VerbDto, VerbFormHitDto } from './verbs/types'
 function getInitData(): string {
   const tg = (window as any).Telegram?.WebApp
   return tg?.initData ?? ''
@@ -53,6 +54,8 @@ export interface MeResponse {
   notificationsEnabled?: boolean
   /** Active contextual-onboarding hint key (or null/absent). See OnboardingNudge. */
   onboardingHint?: string | null
+  /** Одноразовые подсказки интерфейса, которые человек уже видел (см. verbs/ui/hints.ts). */
+  uiHintsSeen?: string[]
 }
 
 export interface LessonCompleteResponse {
@@ -73,12 +76,16 @@ export interface VocabularyItem {
   mastery: 'NotMastered' | 'MasteredInForwardDirection' | 'MasteredInBothDirections'
   isStarter: boolean
   audioUrl?: string
+  /** Разбор глагольной формы, если слово или фраза её содержит. */
+  verb?: VerbFormHitDto | null
 }
 
 export interface VocabularyListResponse {
   language: string
   items: VocabularyItem[]
   starterItems: VocabularyItem[]
+  /** «Мои глаголы»: по одному на глагол — из словаря и начатые в игре. */
+  verbs?: import('./verbs/types').MyVerbDto[]
 }
 
 export interface VocabularyQuizQuestion {
@@ -176,6 +183,7 @@ export const api = {
       additionalInfo?: string
       example?: string
       vocabularyEntryId?: string
+      verb?: VerbFormHitDto | null
     }>('/api/miniapp/translate', {
       method: 'POST',
       body: JSON.stringify({ word })
@@ -403,4 +411,65 @@ export interface AdminUserDetail {
     purchasedAtUtc: string
     refundedAtUtc: string | null
   }>
+}
+
+// ── Глаголы ──────────────────────────────────────────────────────────────────
+
+export function fetchVerb(id: string) {
+  return request<VerbDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}`)
+}
+
+/** Что главная может сказать про глаголы (см. verbs/dashboardLine.ts). */
+export function fetchVerbsSummary() {
+  return request<import('./verbs/dashboardLine').VerbsSummaryDto>('/api/miniapp/verbs/summary')
+}
+
+/** Разбор грузинской формы: какому глаголу, времени и лицу она соответствует. */
+export function parseVerbForm(form: string) {
+  return request<{ hits: VerbFormHitDto[] }>(`/api/miniapp/verbs/parse?form=${encodeURIComponent(form)}`)
+}
+
+// ── Глаголы: прогресс форм ───────────────────────────────────────────────────
+import type { VerbProgressDto, VerbProgressStepDto } from './verbs/ladder/types'
+
+/**
+ * Сохранить ступени форм без сессии — только чтобы дослать ответы, застрявшие на устройстве
+ * (session/sync.ts). В сессии ответы уходят вместе с её отчётом. Повторная отправка ничего не ломает.
+ */
+export function saveVerbProgress(id: string, forms: VerbProgressStepDto[]) {
+  return request<VerbProgressDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/progress`, {
+    method: 'POST',
+    body: JSON.stringify({ forms }),
+    keepalive: true
+  })
+}
+
+/** Комиксы глагола: реплики уже подставлены сервером из каталога. Пустой список, если историй нет. */
+export function fetchVerbStories(id: string) {
+  return request<{ stories: import('./verbs/story/types').VerbStoryDto[] }>(`/api/miniapp/verbs/${encodeURIComponent(id)}/stories`)
+}
+
+// ── Сессии по глаголу: уровень, память постановщика, начатая сессия ──
+import type { VerbLearningDto, VerbSessionReportDto, VerbSessionSavedDto } from './verbs/session/types'
+
+/** Всё, что нужно виду глагола и постановщику сессии: прогресс форм, уровень, что уже играли. */
+export function fetchVerbLearning(id: string) {
+  return request<VerbLearningDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/learning`)
+}
+
+/** Где сейчас сессия (после каждого ответа) и — один раз — что она закончена. Повторная отправка безвредна. */
+export function saveVerbSession(id: string, report: VerbSessionReportDto) {
+  return request<VerbSessionSavedDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/session`, {
+    method: 'POST',
+    body: JSON.stringify(report),
+    keepalive: true
+  })
+}
+
+/** Одноразовая подсказка интерфейса показана (ключ `ui:…`) — тем же запросом, что и подсказки онбординга. */
+export function markUiHintSeen(hintKey: string) {
+  return request<{ ok: boolean }>('/api/miniapp/onboarding/hint-seen', {
+    method: 'POST',
+    body: JSON.stringify({ hintKey })
+  })
 }

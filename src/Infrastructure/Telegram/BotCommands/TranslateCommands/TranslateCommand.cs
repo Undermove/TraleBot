@@ -1,3 +1,4 @@
+using Application.Verbs;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Infrastructure.Telegram.Models;
 using MediatR;
@@ -5,7 +6,11 @@ using Telegram.Bot;
 
 namespace Infrastructure.Telegram.BotCommands.TranslateCommands;
 
-public class TranslateCommand(ITelegramBotClient client, IMediator mediator, BotConfiguration botConfig) : IBotCommand
+public class TranslateCommand(
+    ITelegramBotClient client,
+    IMediator mediator,
+    BotConfiguration botConfig,
+    VerbReplyHintQuery verbHints) : IBotCommand
 {
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
     {
@@ -26,10 +31,18 @@ public class TranslateCommand(ITelegramBotClient client, IMediator mediator, Bot
             UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
         }, token);
 
+        // A known verb form in the word or in its translation gets a parse line and a button to the verb card.
+        var verb = result switch
+        {
+            CreateVocabularyEntryResult.TranslationSuccess s => await verbHints.FindAsync([request.Text, s.Definition], token),
+            CreateVocabularyEntryResult.TranslationExists e => await verbHints.FindAsync([request.Text, e.Definition], token),
+            _ => null
+        };
+
         await (result switch
         {
-            CreateVocabularyEntryResult.TranslationSuccess success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token, isOwner, miniAppUrl),
-            CreateVocabularyEntryResult.TranslationExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token, isOwner, miniAppUrl),
+            CreateVocabularyEntryResult.TranslationSuccess success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, token, isOwner, miniAppUrl, verb),
+            CreateVocabularyEntryResult.TranslationExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, token, isOwner, miniAppUrl, verb),
             CreateVocabularyEntryResult.EmojiDetected => client.HandleEmojiDetected(request, token),
             CreateVocabularyEntryResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             CreateVocabularyEntryResult.TranslationFailure => client.HandleFailure(request, token),

@@ -10,7 +10,9 @@ namespace Application.MiniApp.Commands;
 
 /// <summary>
 /// Records that the mini-app surfaced an onboarding hint to the user, so it isn't shown again
-/// and the ~20h gate to the next hint starts. Unknown hint keys are rejected.
+/// and the ~20h gate to the next hint starts. One-time interface hints (<c>ui:…</c>, see
+/// <see cref="OnboardingHints.IsUiHint"/>) are stored in the same list without starting the gate.
+/// Unknown hint keys are rejected.
 /// </summary>
 public class MarkOnboardingHintSeen : IRequest<bool>
 {
@@ -21,14 +23,16 @@ public class MarkOnboardingHintSeen : IRequest<bool>
     {
         public async Task<bool> Handle(MarkOnboardingHintSeen request, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(request.HintKey) || !OnboardingHints.Order.Contains(request.HintKey))
+            var uiHint = OnboardingHints.IsUiHint(request.HintKey);
+            if (string.IsNullOrWhiteSpace(request.HintKey) || (!uiHint && !OnboardingHints.Order.Contains(request.HintKey)))
             {
                 return false;
             }
 
             var progress = await MiniAppHelpers.LoadOrCreateProgressAsync(dbContext, request.UserId, ct);
-            progress.OnboardingHintsJson =
-                OnboardingState.MarkSeen(progress.OnboardingHintsJson, request.HintKey, DateTime.UtcNow);
+            progress.OnboardingHintsJson = uiHint
+                ? OnboardingState.MarkUiHintSeen(progress.OnboardingHintsJson, request.HintKey)
+                : OnboardingState.MarkSeen(progress.OnboardingHintsJson, request.HintKey, DateTime.UtcNow);
             await dbContext.SaveChangesAsync(ct);
             return true;
         }

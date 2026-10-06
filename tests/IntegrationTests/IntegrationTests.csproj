@@ -28,6 +28,14 @@
     <ItemGroup>
       <ProjectReference Include="..\..\src\Trale\Trale.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <!-- Recorded Wiktionary API responses for the translation pipeline tests (no network in tests). -->
+      <None Update="Translation\Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
     
 
+  <ItemGroup>
+    <None Include="..\Fixtures\verb-level-cases.json" Link="Fixtures\verb-level-cases.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

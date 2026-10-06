@@ -39,12 +39,19 @@ builder.Services.AddSingleton<Trale.MiniApp.ITraleMiniAppContentProvider>(sp => 
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IMiniAppContentProvider>(sp => sp.GetRequiredService<Trale.MiniApp.MiniAppContentProvider>());
 builder.Services.AddScoped<Application.Common.Interfaces.MiniApp.IProgressCalculator, Trale.MiniApp.ProgressCalculator>();
 builder.Services.AddHostedService<CreateWebhook>();
+builder.Services.AddHostedService<SeedVerbCatalog>();
+builder.Services.AddHostedService<LoadVerbStories>();
 builder.Services.AddHostedService<IdempotencyCleanupService>();
 builder.Services.AddHostedService<Trale.HostedServices.PendingReferralsWorker>();
 builder.Services.AddHostedService<ReturnPushWorker>();
 builder.Services.AddHostedService<HourlyNotificationWorker>();
 
-builder.WebHost.UseUrls("http://*:1402/");
+// The address is 1402 everywhere (Docker, k8s, the dev bot). A second local instance — the real
+// end-to-end suite, scripts/dev/run-real-e2e.sh — overrides it with configuration key "HostUrls"
+// (env HostUrls=http://localhost:1411). Deliberately not ASPNETCORE_URLS: an image or a shell that
+// happens to set it must not move the production port.
+var hostUrls = builder.Configuration["HostUrls"];
+builder.WebHost.UseUrls(string.IsNullOrWhiteSpace(hostUrls) ? "http://*:1402/" : hostUrls);
 var app = builder.Build();
 
 app.UsePrometheus();
@@ -68,7 +75,18 @@ using (var scope = app.Services.CreateScope())
 app.UseMiddleware<ExceptionsMiddleware>();
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        // Comic frames live under a content hash (/stories/<id>/<hash>/f1-800.webp): the same URL
+        // never serves different bytes, so the browser may keep them for good.
+        if (context.Context.Request.Path.StartsWithSegments("/stories"))
+        {
+            context.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        }
+    }
+});
 
 app.MapControllers();
 await app.RunAsync();

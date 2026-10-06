@@ -3,6 +3,8 @@ import { api, VocabularyItem } from '../api'
 import AudioPlayer from './AudioPlayer'
 import LoaderLetter from './LoaderLetter'
 import MasteryIndicator from './MasteryIndicator'
+import { VerbHint } from '../verbs/parts'
+import type { VerbFormHitDto } from '../verbs/types'
 
 interface Props {
   item: VocabularyItem
@@ -10,6 +12,8 @@ interface Props {
   onClose: () => void
   onToggleSelect: (id: string) => void
   onDelete: (id: string) => void
+  /** Слово оказалось глагольной формой — открыть карточку глагола поверх. */
+  onOpenVerb?: (hit: VerbFormHitDto) => void
 }
 
 type DeleteState = 'default' | 'confirming' | 'loading' | 'error'
@@ -40,7 +44,7 @@ function sides(item: VocabularyItem): { georgian: string; russian: string } {
   return { georgian: item.definition, russian: item.word }
 }
 
-export default function WordCard({ item, isSelected, onClose, onToggleSelect, onDelete }: Props) {
+export default function WordCard({ item, isSelected, onClose, onToggleSelect, onDelete, onOpenVerb }: Props) {
   const [visible, setVisible] = useState(false)
   const [deleteState, setDeleteState] = useState<DeleteState>('default')
   const [errorMsg, setErrorMsg] = useState('')
@@ -120,6 +124,8 @@ export default function WordCard({ item, isSelected, onClose, onToggleSelect, on
               </div>
             )}
           </div>
+
+          {item.verb && onOpenVerb && <VerbHint hit={item.verb} onOpen={() => onOpenVerb(item.verb!)} />}
 
           {/* Mastery block */}
           <MasteryIndicator mastery={item.mastery} />

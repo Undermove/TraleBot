@@ -14,6 +14,8 @@ export type Screen =
       total: number
       xpEarned: number
       wrongQuestions?: QuizQuestion[]
+      /** Глаголы, которые встретились в уроке, — для строки на итоге (verbs/lesson/LessonVerbsLine). */
+      verbs?: import('./verbs/types').VerbFormHitDto[]
     }
   | { kind: 'practice-mistakes'; moduleId: string; lessonId: number; wrongQuestions: QuizQuestion[] }
   | {
@@ -27,7 +29,7 @@ export type Screen =
   | { kind: 'profile' }
   | { kind: 'admin' }
   | { kind: 'admin-user'; telegramId: number }
-  | { kind: 'vocabulary-list' }
+  | { kind: 'vocabulary-list'; filter?: 'verbs'; verb?: import('./verbs/deepLink').VerbLink }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
 
 export interface QuizQuestion {
@@ -47,6 +49,8 @@ export interface QuizQuestion {
   chipPool?: string[]
   presetPositions?: Array<{ position: number; token: string }>
   hints?: Record<string, string>
+  /** Глагол из каталога, о котором вопрос (сервер размечает только при триале/Pro). */
+  verb?: import('./verbs/types').VerbFormHitDto | null
 }
 
 export interface ProgressState {

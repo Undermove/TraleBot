@@ -1,0 +1,17 @@
+{
+  "_comment": "Level of a verb from its form progress. One fixture for both sides: VerbLevelRules (C#, the rule) and the mini-app's session simulation (a test-only copy). cells = main forms of the verb, started = forms with progress, bestStep = their best step.",
+  "cases": [
+    { "cells": 36, "started": 0, "bestStep": 0, "exam": false, "level": "new" },
+    { "cells": 36, "started": 3, "bestStep": 1, "exam": false, "level": "meeting" },
+    { "cells": 36, "started": 1, "bestStep": 3, "exam": false, "level": "meeting" },
+    { "cells": 36, "started": 2, "bestStep": 3, "exam": false, "level": "recognising" },
+    { "cells": 36, "started": 11, "bestStep": 3, "exam": false, "level": "recognising" },
+    { "cells": 36, "started": 12, "bestStep": 3, "exam": false, "level": "phrases" },
+    { "cells": 36, "started": 23, "bestStep": 6, "exam": false, "level": "phrases" },
+    { "cells": 36, "started": 24, "bestStep": 3, "exam": false, "level": "examReady" },
+    { "cells": 36, "started": 36, "bestStep": 6, "exam": false, "level": "examReady" },
+    { "cells": 36, "started": 2, "bestStep": 2, "exam": true, "level": "learned" },
+    { "cells": 6, "started": 4, "bestStep": 3, "exam": false, "level": "examReady" },
+    { "cells": 6, "started": 2, "bestStep": 3, "exam": false, "level": "phrases" }
+  ]
+}

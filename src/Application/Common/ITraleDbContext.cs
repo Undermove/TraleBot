@@ -21,6 +21,12 @@ public interface ITraleDbContext
     DbSet<Payment> Payments { get; }
     DbSet<Referral> Referrals { get; }
     DbSet<NotificationTrigger> NotificationTriggers { get; }
+    DbSet<Verb> Verbs { get; }
+    DbSet<VerbForm> VerbForms { get; }
+    DbSet<VerbFormProgress> VerbFormProgresses { get; }
+    DbSet<UserVerb> UserVerbs { get; }
+    DbSet<VerbSession> VerbSessions { get; }
+    DbSet<TranslationCacheEntry> TranslationCache { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);

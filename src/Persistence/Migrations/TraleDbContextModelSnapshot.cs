@@ -500,6 +500,57 @@ namespace Persistence.Migrations
                     b.ToTable("ShareableQuizzes");
                 });
 
+            modelBuilder.Entity("Domain.Entities.TranslationCacheEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AdditionalInfo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Classified")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Definition")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Direction")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Example")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("HitCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime?>("LastHitAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key", "Direction")
+                        .IsUnique();
+
+                    b.ToTable("TranslationCache", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -571,6 +622,245 @@ namespace Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("UsersSettings");
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserVerb", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ExamPassedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastPlayedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RecentScenesJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SessionsPlayed")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("StoryCompleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VerbId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VerbId");
+
+                    b.HasIndex("UserId", "VerbId")
+                        .IsUnique();
+
+                    b.ToTable("UserVerbs");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Verb", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CardJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Lemma")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("PresentJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Translation")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Lemma")
+                        .IsUnique();
+
+                    b.ToTable("Verbs");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbForm", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Form")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Meaning")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("MeaningNote")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Person")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Tense")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("VerbId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Form");
+
+                    b.HasIndex("VerbId");
+
+                    b.ToTable("VerbForms");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbFormProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BestStep")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("NextDueAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Person")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Reviews")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Step")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Tense")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VerbId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VerbId");
+
+                    b.HasIndex("UserId", "NextDueAtUtc");
+
+                    b.HasIndex("UserId", "VerbId", "Tense", "Person")
+                        .IsUnique();
+
+                    b.ToTable("VerbFormProgresses");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Done")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FinishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PlanJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Scene")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("VerbId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("XpEarned")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VerbId");
+
+                    b.HasIndex("UserId", "FinishedAtUtc");
+
+                    b.HasIndex("UserId", "VerbId", "FinishedAtUtc");
+
+                    b.ToTable("VerbSessions");
                 });
 
             modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>
@@ -778,6 +1068,74 @@ namespace Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Domain.Entities.UserVerb", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Verb", "Verb")
+                        .WithMany()
+                        .HasForeignKey("VerbId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Verb");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbForm", b =>
+                {
+                    b.HasOne("Domain.Entities.Verb", "Verb")
+                        .WithMany("Forms")
+                        .HasForeignKey("VerbId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Verb");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbFormProgress", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Verb", "Verb")
+                        .WithMany()
+                        .HasForeignKey("VerbId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Verb");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbSession", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Verb", "Verb")
+                        .WithMany()
+                        .HasForeignKey("VerbId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+
+                    b.Navigation("Verb");
+                });
+
             modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>
                 {
                     b.HasOne("Domain.Entities.User", "User")
@@ -812,6 +1170,11 @@ namespace Persistence.Migrations
                     b.Navigation("ShareableQuizzes");
 
                     b.Navigation("VocabularyEntries");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Verb", b =>
+                {
+                    b.Navigation("Forms");
                 });
 
             modelBuilder.Entity("Domain.Entities.VocabularyEntry", b =>

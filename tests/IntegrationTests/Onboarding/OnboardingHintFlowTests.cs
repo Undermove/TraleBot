@@ -50,6 +50,50 @@ public class OnboardingHintFlowTests : TestBase
         ok.Should().BeFalse();
     }
 
+    [Test]
+    public async Task Interface_hint_is_remembered_for_every_device_and_does_not_delay_the_onboarding_step()
+    {
+        var userId = await SeedWelcomedUserAsync(880033L);
+
+        // A verb game showed its rules: the mini-app marks the hint through the same endpoint.
+        (await SendAsync(new MarkOnboardingHintSeen { UserId = userId, HintKey = "ui:verb_game_seen_verb_time" })).Should().BeTrue();
+        (await SendAsync(new MarkOnboardingHintSeen { UserId = userId, HintKey = "ui:verb_game_seen_verb_time" })).Should().BeTrue();
+        (await SendAsync(new MarkOnboardingHintSeen { UserId = userId, HintKey = "ui:verb_card_person" })).Should().BeTrue();
+
+        // Any later me() — after a reload, on another device — carries the seen hints…
+        var me = await SendAsync(new GetMiniAppProfile { UserId = userId });
+        me.UiHintsSeen.Should().Equal("ui:verb_card_person", "ui:verb_game_seen_verb_time");
+        // …and the onboarding step is still offered: an interface hint is not a step and starts no gap.
+        me.OnboardingHint.Should().Be(OnboardingHints.FirstLesson);
+
+        // Marking the onboarding step keeps the interface hints.
+        await SendAsync(new MarkOnboardingHintSeen { UserId = userId, HintKey = OnboardingHints.FirstLesson });
+        (await SendAsync(new GetMiniAppProfile { UserId = userId })).UiHintsSeen.Should().HaveCount(2);
+    }
+
+    [TestCase("ui:Has Spaces")]
+    [TestCase("ui:")]
+    [TestCase("ui:<script>")]
+    [TestCase("verb_card_person")]
+    public async Task Malformed_interface_hint_keys_are_rejected(string key)
+    {
+        var userId = await SeedWelcomedUserAsync(Random.Shared.NextInt64(900000, 990000));
+        (await SendAsync(new MarkOnboardingHintSeen { UserId = userId, HintKey = key })).Should().BeFalse();
+        (await SendAsync(new MarkOnboardingHintSeen { UserId = userId, HintKey = "ui:" + new string('a', 80) })).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Interface_hints_list_cannot_grow_without_limit()
+    {
+        var userId = await SeedWelcomedUserAsync(880044L);
+        for (var i = 0; i < OnboardingHints.MaxUiHints + 5; i++)
+        {
+            await SendAsync(new MarkOnboardingHintSeen { UserId = userId, HintKey = $"ui:hint_{i}" });
+        }
+
+        (await SendAsync(new GetMiniAppProfile { UserId = userId })).UiHintsSeen.Should().HaveCount(OnboardingHints.MaxUiHints);
+    }
+
     private async Task<T> SendAsync<T>(IRequest<T> request)
     {
         await using var scope = _testServer.Services.CreateAsyncScope();

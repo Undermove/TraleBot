@@ -30,6 +30,12 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<Payment> Payments { get; set; } = null!;
     public DbSet<Referral> Referrals { get; set; } = null!;
     public DbSet<NotificationTrigger> NotificationTriggers { get; set; } = null!;
+    public DbSet<Verb> Verbs { get; set; } = null!;
+    public DbSet<VerbForm> VerbForms { get; set; } = null!;
+    public DbSet<VerbFormProgress> VerbFormProgresses { get; set; } = null!;
+    public DbSet<UserVerb> UserVerbs { get; set; } = null!;
+    public DbSet<VerbSession> VerbSessions { get; set; } = null!;
+    public DbSet<TranslationCacheEntry> TranslationCache { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -83,6 +89,12 @@ public class TraleDbContext : DbContext, ITraleDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new UserConfiguration());
+        modelBuilder.ApplyConfiguration(new VerbConfiguration());
+        modelBuilder.ApplyConfiguration(new VerbFormConfiguration());
+        modelBuilder.ApplyConfiguration(new VerbFormProgressConfiguration());
+        modelBuilder.ApplyConfiguration(new UserVerbConfiguration());
+        modelBuilder.ApplyConfiguration(new VerbSessionConfiguration());
+        modelBuilder.ApplyConfiguration(new TranslationCacheEntryConfiguration());
         modelBuilder.ApplyConfiguration(new VocabularyEntryConfiguration());
         modelBuilder.ApplyConfiguration(new QuizConfiguration());
         modelBuilder.ApplyConfiguration(new QuizQuestionConfiguration());

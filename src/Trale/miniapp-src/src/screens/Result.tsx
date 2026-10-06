@@ -4,6 +4,8 @@ import Button from '../components/Button'
 import StampBadge from '../components/StampBadge'
 import Header from '../components/Header'
 import { CatalogDto, QuizQuestion, Screen } from '../types'
+import LessonVerbsLine from '../verbs/lesson/LessonVerbsLine'
+import type { VerbFormHitDto } from '../verbs/types'
 
 interface Props {
   catalog: CatalogDto
@@ -13,6 +15,8 @@ interface Props {
   total: number
   xpEarned: number
   wrongQuestions?: QuizQuestion[]
+  /** Глаголы, которые встретились в уроке. */
+  verbs?: VerbFormHitDto[]
   navigate: (s: Screen) => void
 }
 
@@ -24,6 +28,7 @@ export default function Result({
   total,
   xpEarned,
   wrongQuestions,
+  verbs = [],
   navigate
 }: Props) {
   const pct = Math.round((correct / total) * 100)
@@ -99,6 +104,8 @@ export default function Result({
           <StatTile label="опыт" value={`+${xpEarned}`} accent="ruby" />
           <StatTile label="точность" value={`${pct}%`} accent="gold" />
         </div>
+
+        <LessonVerbsLine verbs={verbs} />
 
         {/* Comment */}
         <div className="mt-8 text-center max-w-[320px]">

@@ -31,7 +31,7 @@ Location: `src/Infrastructure/Telegram/BotCommands/**/*.cs`. All names below are
 |---|---|---|
 | `VocabularyCommand` | `/vocabulary`, 📘 icon | Paginated list of saved words with mastery medals. |
 | `RemoveEntryCommand` | `/removeentry {id}` callback | Delete a vocabulary entry. |
-| `TranslateCommand` | Any free-form text without `/` | Auto-translate in current language and save. |
+| `TranslateCommand` | Any free-form text without `/` | Auto-translate in current language and save. Georgian goes through `GeorgianTranslationPipeline` (verb base → `TranslationCache` → optional agent path on Microsoft Agent Framework, off unless `TranslationAgent:Enabled` → old translator). When the word or its translation is a known verb form, the reply ends with a parse line (form, tense, person, masdar, translation; «Формы не проверены» for a Generated verb) and starts with a «Все формы» WebApp button → `?screen=verb&verbId=…&tense=…&person=…`. |
 | `TranslateManuallyCommand` | `{word}-{translation}` | Record a manual pair without calling the translator. |
 | `TranslateAndDeleteVocabularyCommand` | `/tradl` callback | Translate into a new language while dropping the old vocab (free-tier path). |
 | `ChangeTranslationLanguageCommand` | `/changetranslation`, 🌐 icon | Offer to translate the last word into another language. |
@@ -87,14 +87,14 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 ### Top-level screens (`src/screens/`)
 | File | Screen kind | Purpose |
 |---|---|---|
-| `Dashboard.tsx` | `dashboard` | Main hub: launch-path bar, module tiles, streak, XP, mascot. |
+| `Dashboard.tsx` | `dashboard` | Main hub: launch-path bar, module tiles, streak, XP, mascot. Under the "what next" suggestion there is at most one quiet verbs line (`verbs/VerbsDashboardLine`, choice in `verbs/dashboardLine.ts`): «Продолжить глагол «X» · уровень» opens that verb's view (when a verb is being learned), otherwise «В твоём словаре N глаголов — посмотри формы» opens the dictionary on the «глаголы» filter. Hidden for a newcomer, during onboarding hints and without trial/Pro. |
 | `ModuleMap.tsx` | `module` | Lesson list for a module. |
 | `LessonTheory.tsx` | `lesson-theory` | Theory blocks + reveal overlay; launches Practice. |
-| `Practice.tsx` | `practice` | Question-answer loop for a lesson. |
-| `Result.tsx` | `result` | Lesson result summary with kilim strip. |
+| `Practice.tsx` | `practice` | Question-answer loop for a lesson. After an answer is checked, a question about a catalog verb shows a compact «глагол … формы →» line (`verbs/lesson/LessonVerbChip`) that opens the verb card `VerbSheet` over the lesson on the tense and person of the form from the question; never shown before the answer. |
+| `Result.tsx` | `result` | Lesson result summary with kilim strip. If the lesson had catalog verbs: «в этом уроке были глаголы» with up to three verbs, each opening its verb card (`verbs/lesson/LessonVerbsLine`). |
 | `PracticeMistakes.tsx` | `practice-mistakes` | Redo previously-failed questions. |
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
-| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. |
+| `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. A dictionary entry that IS a verb form opens the verb view directly on tap (the saved word and its plain meaning first, then level and the play button, then the forms table; «в квиз» / «удалить» as quiet actions at the bottom) and shows the verb's level instead of the mastery dot. The «глаголы» filter (can be pre-selected: dashboard line, deep link) lists "my verbs", one row per verb with its level and saved forms (`verbs/dictionary/MyVerbRows`), including verbs started from a lesson or a translation. A phrase that merely contains a verb form keeps the «глагол» badge and opens the word card; the word card and the translation result show the parse with «все формы», which opens the verb card sheet `VerbSheet`: six main forms, person switcher, collapsed rare tenses and explanation, «не проверено» note for model-made verbs, the verb level and one play button (`verbs/session/SessionEntry`) that starts a session composed by the app. Deep link `?screen=verb&verbId=<lemma>[&tense=&person=]` opens the dictionary with the verb card on top. |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
 | `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
@@ -170,6 +170,21 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 ### Utilities (`src/utils/`)
 - `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
 
+### Verb sessions (`src/verbs/session/`) and their scenes
+One button on the verb card — «Выучить играя» (label follows the state: «Продолжить игру», «Играть дальше», «Сыграть и сдать экзамен», «Сыграть ещё») — starts a 2–3 minute session of at most three short scenes. The learner never picks a game: `planSession` (`session/plan.ts`, a pure function) composes the session from the verb's level, per-form progress, what the verb supports and what the learner can do (no typing before the alphabet is finished), and remembers past sessions so two days do not start the same way. Every scene reports per-form results into `VerbFormProgress`; the header bar shows only this session and grows after every task. Session position, level and the director's memory live on the server (`UserVerb`, `VerbSession`), so a reload or another device continues from the same place. A finished session earns XP and marks the day active, once.
+
+| File | Purpose |
+|---|---|
+| `session/plan.ts` | The session director: learner situation → up to three scenes with targets, sizes, time estimate and a machine-readable reason. Hard caps: 3 scenes, 3 new forms, 180 s. |
+| `session/Session.tsx` | The session shell: session bar, scene switching, save after every answer (`session/sync.ts`), resume, finish. |
+| `session/QuizScene.tsx` | Quiz scenes from a given task list: meeting new forms («Новое слово»), recognition, real sentences (gap / build), warm-up of due forms, and the exam (one attempt per question; passing it makes the verb «выучен»). |
+| `session/Finish.tsx` | The finish screen: what was in play as plain phrases with their Georgian forms, XP, the verb level (`session/LevelBadge.tsx`), «Ещё одну» / «Готово». |
+| `session/SessionEntry.tsx` | Level and the play button on the verb card. |
+| `games/TimeMachine.tsx` | Scene «Машина времени»: three stops (aorist / present / future); the tapped form sends the mascot to the stop it really belongs to. In a session it asks the cells the director chose. Needs all six persons in the three tenses with no form shared between cells. |
+| `games/Bones.tsx` | Scene «Косточки»: the conjugation table as a minesweeper-style field (3×3 with two bones in a session); a cell is dug by typing its form or — for learners who do not type yet — by picking from four options. |
+| `games/Builder.tsx` | Scene «Конструктор»: assemble a form from preverb + person marker + root + ending; the difficulty stage is set by the director. Only for `pattern` verbs whose forms split cleanly (future = preverb + present). |
+| `story/StoryReader.tsx` | Scene «Комикс»: the natural first session of a verb that has a story; read once (the flag is stored on the server). |
+
 ---
 
 ## 3 — HTTP API endpoints
@@ -181,19 +196,30 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 |---|---|---|
 | GET | `/api/miniapp/ping` | Health check. |
 | GET | `/api/miniapp/content` | Module catalog (filtered by user level). |
-| GET | `/api/miniapp/modules/{moduleId}/lessons/{lessonId}/questions` | Lesson questions. |
-| GET | `/api/miniapp/me` | Authenticated user profile (isPro, trial, subscription). |
+| GET | `/api/miniapp/modules/{moduleId}/lessons/{lessonId}/questions` | Lesson questions. For a caller with trial/Pro each question carries `verb` — the parse (verb, tense, person) of the catalog verb form in its correct answer, else in the built sentence, audio transcript or question text; wrong options are not searched. `null` otherwise and for callers without access. |
+| GET | `/api/miniapp/me` | Authenticated user profile (isPro, trial, subscription). `uiHintsSeen` lists the one-time interface hints (`ui:…`: rules and first-move hints of verb games, the verb card's person hint, the lesson chip hint) the user has already seen, so they do not come back after a reload or on another device. |
 | GET | `/api/miniapp/plans` | Pro plan list with Stars pricing. |
 | POST | `/api/miniapp/refund` | Refund a Stars payment within the allowed window. |
 | POST | `/api/miniapp/purchase` | Create Telegram Stars invoice link. |
 | POST | `/api/miniapp/treat` | Feed mascot (spend XP on a treat). |
 | POST | `/api/miniapp/level` | Persist user level after onboarding. |
+| POST | `/api/miniapp/onboarding/hint-seen` | Mark a hint as shown: an onboarding step (starts the ~20h gap to the next one) or a one-time interface hint `ui:<id>` (stored in the same list, `MiniAppUserProgress.OnboardingHintsJson`, without starting the gap). Unknown keys are rejected. |
 | POST | `/api/miniapp/progress/lesson-complete` | Record lesson completion. |
 | GET | `/api/miniapp/referral` | Referral link + share text. |
 | GET | `/api/miniapp/activity-days` | Daily activity series for streak. |
-| GET | `/api/miniapp/vocabulary` | User's vocabulary entries. |
+| GET | `/api/miniapp/vocabulary` | User's vocabulary entries. An entry that contains a known verb form carries `verb` (the parse) with `single` — the entry IS that one form, not a phrase around it — and the learner's `level` of the verb. `verbs` is "my verbs", one row per verb: verbs whose forms are saved (with the saved forms) ∪ verbs started in play from a lesson or a translation, started ones first. Stored entries are not changed. |
 | POST | `/api/miniapp/vocabulary/quiz` | Start a vocabulary quiz. |
-| POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. |
+| GET | `/api/miniapp/verbs` | (not used by the mini-app UI yet) List of verbs (id, masdar title, translation, kind, 1sg present, `status` verified/generated — consumers that build games or SEO must skip `generated`). 401 without auth, 402 without trial/Pro. |
+| GET | `/api/miniapp/verbs/summary` | What the dashboard may say about verbs: `dictionaryVerbs` — how many of the user's own dictionary entries contain a known verb form; `continueVerb` — the verb the learner played most recently and has not learned yet (id, title, translation, level), or null. 401 without auth, 402 without trial/Pro. |
+| GET | `/api/miniapp/verbs/parse?form=` | Parse an exact Georgian form into (verb, tense, person) hits; empty list when unknown. |
+| GET | `/api/miniapp/verbs/{id}` | Full verb card (paradigm, root, odd tenses, model verb, source, `status`). Verbs added at runtime by the translation agent are served the same way. |
+| GET | `/api/miniapp/verbs/progress` | Verb ladder: verbs the user is learning (started / mastered / total forms, forms due for repetition, last practised) + total `dueForms`. For a "continue verb X" entry point. |
+| GET | `/api/miniapp/verbs/{id}/progress` | Verb ladder: the user's per-form progress for one verb (step, best step, reviews, next due) and `canLearn` (false for unreviewed Generated verbs). |
+| POST | `/api/miniapp/verbs/{id}/progress` | Verb ladder: save answered steps as a batch `{forms:[{tense,person,step,reviews,at}]}`. Idempotent (last-write-wins by answer time), skips cells the verb does not have, schedules repetition of mastered forms (1–3 days). |
+| GET | `/api/miniapp/verbs/{id}/learning` | The verb as the learner's own thing: per-form progress, `level` (new → meeting → recognising → phrases → examReady → learned, derived server-side by `VerbLevelRules`), the director's memory (sessions played, recent scenes, comic read, exam passed), the learner in general (onboarding level, `canType`, dictionary size, verbs in it, verbs learned) and the unfinished `session` (plan, scene, tasks done) to continue. |
+| POST | `/api/miniapp/verbs/{id}/session` | Session report after every answer: `{sessionId, plan, scene, done, forms, finished, scenes, storyCompleted, examAsked, examCorrect}`. Idempotent (session id comes from the mini-app; position only moves forward; form steps are last-write-wins). A finished session is credited once: +10 XP (first 5 sessions of a UTC day), streak and active day like a finished lesson; an exam with at most one mistake sets the verb to «выучен». |
+| GET | `/api/miniapp/verbs/{id}/stories` | Comic stories («кадр под замком») of a verb with lines resolved from the catalog by Tatoeba sentence id; empty list when the verb has none. Played as a scene of a verb session (`verbs/story/StoryReader.tsx`). Same 401/402 gate. |
+| POST | `/api/miniapp/vocabulary/answer` | Grade a vocabulary quiz answer. An entry that is a single verb form stays in the quiz like any word; a correct answer is also credited to the verb (`VerbQuizCreditService`): that form moves one step, recognition only — never above "solid", never down — and the verb becomes one of "my verbs". |
 | DELETE | `/api/miniapp/vocabulary/{id}` | Delete a vocabulary entry. |
 | POST | `/api/miniapp/translate` | Translate a word and add to vocabulary. |
 
@@ -226,6 +252,8 @@ Location: `src/Trale/HostedServices/`.
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
 | `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
+| `SeedVerbCatalog` | On startup | Loads the curated verb catalog `src/Trale/Verbs/verbs.json` (built by `scripts/verbs/build-catalog.mjs` from Wiktionary) into `Verbs` / `VerbForms`; idempotent, rewrites only changed verbs. |
+| `LoadVerbStories` | On startup | Reads comic stories `src/Trale/Verbs/stories/*.json` and resolves their lines against `Verbs/verbs.json` into the in-memory `VerbStoryCatalog`; a story that does not resolve is logged and skipped. Authoring: `src/Trale/Verbs/stories/README.md`. |
 | `ReturnPushWorker` | Daily at 10:00 UTC | Dispatch D1+ return push to users who started a lesson but didn't return (#940). |
 | `HourlyNotificationWorker` | Every top-of-hour UTC | Fan-out tick for contextual pushes — calls `IHolidayNotificationService` / `ICoinsNotificationService` / `IStreakNotificationService` with fault-isolation. Holiday push uses `TbilisiMorningWindow` to fire only at 09:xx Tbilisi (#997, epic #894). |
 
@@ -285,6 +313,11 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddOnboardingHintsJson` | Adds nullable OnboardingHintsJson to MiniAppUserProgress — persisted state (seen hints + lastShownAt) for the contextual, time-spread onboarding nudges. |
 | `AddActivityDaysJson` | Adds nullable ActivityDaysJson to MiniAppUserProgress — per-day mini-app play log (one UTC timestamp per played day) so the profile activity heatmap lights one cell per played day instead of only the single LastPlayedAtUtc point. |
 | `AddUserAcquisitionSource` | Adds nullable AcquisitionSource to User — first-touch acquisition tag captured from the /start deep-link payload (e.g. "site") or the mini-app start_param, so registrations can be attributed to landing/channel/post/direct traffic. |
+| `AddVerbCatalog` | Adds `Verbs` (lemma, title, translation, kind, card JSON, status Verified/Generated) and `VerbForms` (form → verb, tense, person index) for the mini-app «Глаголы» section. |
+| `AddVerbFormProgress` | Adds `VerbFormProgresses` — per-user progress of the verb ladder: one row per (user, verb, tense, person) with step, best step, reviews and next-due time; unique per cell, indexed by (user, next due). |
+| `AddVerbFormMeaning` | Adds nullable `Meaning` and `MeaningNote` to `VerbForms` — what a form means in plain Russian, conjugated for its verb («я хотел(а)»), and the short note that tells apart tenses whose Russian phrase is the same; shown instead of tense names in exercises, hints and the bot's parse line. |
+| `AddUserVerbsAndSessions` | Adds `UserVerbs` — one row per (user, verb): level, started at, sessions played, last played, exam passed at, recent scenes, comic read — and `VerbSessions` — one 2–3 minute play session (client-chosen id, plan JSON, scene, tasks done, finished at, XP earned); a finished session is credited once. |
+| `AddTranslationCache` | Adds `TranslationCache` (normalised key + direction unique, definition / additional info / example, source, classified flag, hit count, timestamps): repeated Georgian lookups are answered from the DB instead of the external dictionary sites. |
 
 ---
 

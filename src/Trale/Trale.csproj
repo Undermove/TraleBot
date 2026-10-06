@@ -28,6 +28,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Content Update="Verbs\verbs.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Update="Verbs\stories\*.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Content Update="appsettings.local.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

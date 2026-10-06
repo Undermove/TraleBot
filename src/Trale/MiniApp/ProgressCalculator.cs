@@ -74,6 +74,16 @@ public class ProgressCalculator : IProgressCalculator
         return new AnswerUpdate(xpEarned);
     }
 
+    public void CreditPractice(MiniAppUserProgress progress, int xp)
+    {
+        progress.Xp += Math.Max(0, xp);
+        RegisterActivity(progress);
+        progress.UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public int CompletedLessons(MiniAppUserProgress progress, string moduleId) =>
+        ParseCompletedLessons(progress.CompletedLessonsJson).TryGetValue(moduleId, out var lessons) ? lessons.Count : 0;
+
     // Marks "the user trained now": streak, LastPlayedAtUtc and the heatmap day.
     private static void RegisterActivity(MiniAppUserProgress progress)
     {
