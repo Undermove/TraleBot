@@ -112,30 +112,22 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             {entry ? (
               // Сначала то, что человек сохранил: слово, что оно значит, от какого оно глагола.
               <div data-testid="verb-entry">
-                <div className="mn-eyebrow text-navy">в твоём словаре · глагол</div>
-                <div className="mt-1 font-geo text-[36px] font-extrabold leading-none">{entry.hit.form}</div>
-                <div className="mt-1 text-[14px] text-jewelInk-hint">{cyr(entry.hit.form)}</div>
+                <div className="font-geo text-[36px] font-extrabold leading-none">{entry.hit.form}</div>
+                <div className="mt-1 text-[13px] text-jewelInk-hint">{cyr(entry.hit.form)}</div>
                 <div className="mt-2 text-[20px] font-extrabold text-navy" data-testid="verb-entry-meaning">
-                  <MeaningText meaning={meaningOfHit(entry.hit)} />
+                  <MeaningText meaning={{ ...meaningOfHit(entry.hit), note: null }} />
                 </div>
-                {entry.russian && entry.russian.trim().toLowerCase() !== meaningOfHit(entry.hit).text.toLowerCase() && (
-                  <div className="text-[12px] text-jewelInk-hint" data-testid="verb-entry-saved">у тебя записано: {entry.russian}</div>
-                )}
                 <div className="mt-1 text-[13px] text-jewelInk-mid">
-                  это слово глагола <span className="font-geo font-bold text-jewelInk">{verb.title}</span> — {verb.ru}
+                  глагол <span className="font-geo font-bold text-jewelInk">{verb.title}</span> — {verb.ru}
                 </div>
               </div>
             ) : (
               <>
-                <div className="mn-eyebrow text-navy">ზმნა · глагол</div>
-                <div className="mt-1 font-geo text-[36px] font-extrabold leading-none">{verb.title}</div>
-                <div className="mt-1 text-[14px] text-jewelInk-hint">{cyr(verb.title)} · {verb.ru}</div>
+                <div className="font-geo text-[36px] font-extrabold leading-none">{verb.title}</div>
+                <div className="mt-1 text-[13px] text-jewelInk-hint">{cyr(verb.title)}</div>
+                <div className="mt-2 text-[20px] font-extrabold text-navy">{verb.ru}</div>
               </>
             )}
-            <button onClick={() => setWhy(!why)} className="mt-2 inline-flex items-center gap-1.5">
-              <KindChip kind={verb.kind} />
-              <span className="text-[12px] text-navy underline">{why ? 'скрыть' : 'что это значит?'}</span>
-            </button>
             {verb.status === 'generated' && (
               <div data-testid="verb-unverified" className="mt-2 mx-auto max-w-[300px] rounded-lg border border-jewelInk/40 bg-gold-wash px-3 py-1.5 text-[12px] text-jewelInk-soft">
                 Не проверено: в Викисловаре таблицы этого глагола нет, формы составила нейросеть. Могут быть ошибки.
@@ -143,6 +135,15 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             )}
           </div>
 
+          <SessionEntry verb={verb} />
+
+          <FormsTable verb={verb} person={person} onPerson={pickPerson} highlight={highlight} initialRare={initialRare} pulsePerson={hint ? 1 : undefined} />
+
+          {/* Как устроен глагол — для любопытных: одной тихой строкой под таблицей, по нажатию. */}
+          <button onClick={() => setWhy(!why)} data-testid="verb-why" className="min-h-[44px] self-center inline-flex items-center gap-1.5">
+            <KindChip kind={verb.kind} />
+            <span className="text-[12px] text-navy underline">{why ? 'скрыть' : 'как устроен этот глагол'}</span>
+          </button>
           {why && (
             <div className={`rounded-xl border border-jewelInk/40 p-3 ${KINDS[verb.kind].chip}`}>
               <div className="text-[13px] text-jewelInk-soft">{verb.reason}</div>
@@ -180,11 +181,6 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             </div>
           )}
 
-          <SessionEntry verb={verb} />
-
-          {hint && <Coach>Это главные формы. Нажми «ты» или «он» — таблица покажет те же времена для другого лица.</Coach>}
-
-          <FormsTable verb={verb} person={person} onPerson={pickPerson} highlight={highlight} initialRare={initialRare} pulsePerson={hint ? 1 : undefined} />
 
           {entry && (
             <div className="flex flex-col items-center gap-1 text-[13px]" data-testid="verb-entry-actions">

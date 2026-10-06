@@ -55,24 +55,26 @@ describe('VerbSheet', () => {
 
   it('shows the first-time hint only until a person is picked', async () => {
     open()
-    await waitFor(() => screen.getByText(/Это главные формы/))
+    // Подсказка первого раза — без текста: мигает вкладка «ты», пока лицо не переключили.
+    await waitFor(() => expect(screen.getByTestId('verb-person-1').className).toContain('animate-pulse'))
 
     fireEvent.click(screen.getByTestId('verb-person-1'))
 
-    expect(screen.queryByText(/Это главные формы/)).toBeNull()
+    expect(screen.getByTestId('verb-person-1').className).not.toContain('animate-pulse')
     // Отметка уходит на сервер и живёт в памяти мини-аппа — на устройстве её нет.
     expect(hintSeen('verb_card_person')).toBe(true)
     expect(markUiHintSeen).toHaveBeenCalledWith('ui:verb_card_person')
     expect(localStorage.length).toBe(0)
   })
 
-  it('hides the explanation behind "что это значит?" and opens the model verb in the same sheet', async () => {
+  it('hides the explanation behind «как устроен этот глагол», below the table, and opens the model verb in the same sheet', async () => {
     const { fetchVerb } = await import('../api')
     open()
-    await waitFor(() => screen.getByText('что это значит?'))
+    await waitFor(() => screen.getByTestId('verb-why'))
+    expect(screen.getByTestId('verb-tense-present').compareDocumentPosition(screen.getByTestId('verb-why')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByText(/Спрягается как/)).toBeNull()
 
-    fireEvent.click(screen.getByText('что это значит?'))
+    fireEvent.click(screen.getByTestId('verb-why'))
     fireEvent.click(screen.getByText(/Спрягается как/))
 
     await waitFor(() => expect(fetchVerb).toHaveBeenLastCalledWith('აკეთებს'))

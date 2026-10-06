@@ -62,7 +62,6 @@ describe('глагол в словаре', () => {
     const entry = await screen.findByTestId('verb-entry')
     expect(entry.textContent).toContain(iWrite.form)
     expect(screen.getByTestId('verb-entry-meaning').textContent).toBe(iWrite.meaning)
-    expect(screen.getByTestId('verb-entry-saved').textContent).toContain('пишу')
     expect(entry.textContent).toContain(WRITE.ru)
     expect(screen.getByTestId('verb-sheet')).toBeTruthy()
     expect(screen.queryByTestId('verb-hint')).toBeNull()
@@ -73,12 +72,14 @@ describe('глагол в словаре', () => {
     expect(mocked.fetchVerb).toHaveBeenCalledWith(WRITE.id)
   })
 
-  it('когда записано то же, что значит форма, перевод не повторяется', async () => {
+  it('в шапке вида глагола только слово, что оно значит и от какого оно глагола — без повторов и пометок', async () => {
     await open()
     fireEvent.click(row(iWrote.meaning!))
 
-    await screen.findByTestId('verb-entry')
-    expect(screen.queryByTestId('verb-entry-saved')).toBeNull()
+    const entry = await screen.findByTestId('verb-entry')
+    expect(entry.children.length).toBe(4)
+    expect(entry.textContent).not.toContain('записано')
+    expect(entry.textContent).not.toContain('словаре')
   })
 
   it('фраза, в которой глагол просто есть, открывает карточку слова с подсказкой', async () => {

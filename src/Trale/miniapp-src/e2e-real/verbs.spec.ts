@@ -17,7 +17,7 @@ test('словарь → слово-глагол → вид глагола → �
   const verb = await verbByRu(learner, 'писать')
   await openVerbFromDictionary(page, learner, verb, 'пишу')
   await expect(playButton(page)).toHaveText('Выучить играя')
-  await expect(page.getByTestId('verb-level')).toHaveAttribute('data-level', 'new')
+  await expect(page.getByTestId('session-entry-about')).toContainText('2–3 минуты')
   await shot(page, '01-verb-view-new')
 
   const before = await api(learner, 'me')
@@ -53,7 +53,7 @@ test('словарь → слово-глагол → вид глагола → �
   // Опыт в шапке приложения вырос сразу, без перезагрузки: человек видит, что игра засчитана.
   await expect(page.locator('div.sticky.top-0').first()).toContainText(String(before.progress.xp + 10))
   await expect(playButton(page)).toHaveText('Играть дальше')
-  await expect(page.getByTestId('session-entry-known')).toContainText('знакомо слов: 3')
+  await expect(page.getByTestId('session-entry').getByTestId('verb-level')).toHaveAttribute('data-level', 'recognising')
 
   // Перезагрузка: всё на месте — уровень в строке словаря и в виде глагола.
   await openDictionary(page, learner)
@@ -110,7 +110,7 @@ test('полсессии → перезагрузка → продолжение
   await openDictionary(second, learner)
   await second.getByRole('listitem').filter({ hasText: 'пишу' }).getByRole('button').last().click()
   await expect(playButton(second)).toHaveText('Продолжить игру')
-  await expect(second.getByTestId('session-entry-known')).toContainText('знакомо слов: 3')
+  await expect(second.getByTestId('session-entry').getByTestId('verb-level')).toHaveAttribute('data-level', 'recognising')
   expect((await api(learner, 'me')).uiHintsSeen).toContain('ui:verb_game_seen_ladder')
   await playButton(second).click()
   await expect(session(second)).toHaveAttribute('data-scene-index', String(stored.scene))

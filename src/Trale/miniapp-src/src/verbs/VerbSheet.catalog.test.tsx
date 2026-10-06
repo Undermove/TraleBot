@@ -31,13 +31,13 @@ describe('VerbSheet on catalog verbs', () => {
     api.fetchVerbStories.mockResolvedValue({ stories: [] })
   })
 
-  it('puts what matters first: level and one play button, then the table; no games row and no comic cover', async () => {
+  it('puts what matters first: one play button with one line under it, then the table; no games row and no comic cover', async () => {
     api.fetchVerbStories.mockResolvedValue({ stories: [storyFixture] })
     await open(verbByLemma('მიდის'))
 
     const learn = await screen.findByText('Выучить играя')
 
-    expect(order(screen.getByTestId('verb-level'), learn, screen.getByTestId('verb-tense-present'), screen.getByText(/Источник форм/))).toBe(true)
+    expect(order(learn, screen.getByTestId('session-entry-about'), screen.getByTestId('verb-tense-present'), screen.getByText(/Источник форм/))).toBe(true)
     expect(screen.getByTestId('session-entry-about').textContent).toContain('2–3 минуты')
     expect(screen.queryByTestId('verb-games')).toBeNull()
     expect(screen.queryByTestId(`verb-story-${storyFixture.id}`)).toBeNull()
