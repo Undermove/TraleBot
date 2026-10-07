@@ -51,6 +51,7 @@ public class GeorgianTranslationPipeline(
     IVerbLexicon lexicon,
     ITranslationAgentSwitch agentSwitch,
     ModelBudget budget,
+    TranslationRequester requester,
     ITranslationRequestClassifier classifier,
     IVerbAnalyst analyst,
     VerbProposalResolver resolver,
@@ -243,6 +244,8 @@ public class GeorgianTranslationPipeline(
             }
         }
 
+        // From here on it is a verb the base does not have: the analyst, then possibly the generator.
+        requester.VerbLookupStarted?.Invoke();
         string? lemmaHint = null;
         var canGenerate = true;
         IReadOnlyList<LexiconVerb> candidates;
@@ -376,6 +379,7 @@ public class GeorgianTranslationPipeline(
             return null;
         }
 
+        requester.VerbLookupStarted?.Invoke();
         try
         {
             using var timeout = Timeout(options.Value.AnalystTimeoutSeconds, ct);

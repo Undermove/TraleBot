@@ -20,7 +20,8 @@ public static class TranslationKeyboard
         CancellationToken token,
         bool isOwner = false,
         string? miniAppUrl = null,
-        VerbReplyHint? verb = null)
+        VerbReplyHint? verb = null,
+        int? replyTo = null)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         return SendTranslation(
@@ -34,7 +35,8 @@ public static class TranslationKeyboard
             token,
             isOwner,
             miniAppUrl,
-            verb);
+            verb,
+            replyTo);
     }
 
     public static Task UpdateTranslation(this ITelegramBotClient client,
@@ -70,7 +72,8 @@ public static class TranslationKeyboard
         CancellationToken token,
         bool isOwner = false,
         string? miniAppUrl = null,
-        VerbReplyHint? verb = null)
+        VerbReplyHint? verb = null,
+        int? replyTo = null)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return SendTranslation(
@@ -84,7 +87,8 @@ public static class TranslationKeyboard
             token,
             isOwner,
             miniAppUrl,
-            verb);
+            verb,
+            replyTo);
     }
 
     public static Task UpdateExistedTranslation(this ITelegramBotClient client,
@@ -253,7 +257,8 @@ public static class TranslationKeyboard
         CancellationToken token,
         bool isOwner = false,
         string? miniAppUrl = null,
-        VerbReplyHint? verb = null)
+        VerbReplyHint? verb = null,
+        int? replyTo = null)
     {
         var replyMarkup = new List<InlineKeyboardButton[]>();
 
@@ -310,9 +315,12 @@ public static class TranslationKeyboard
             text += "\n\n" + VerbReplyFormatter.Line(verb);
         }
 
+        // A late answer (see TranslateCommand) quotes the word it is for: another one may have been answered meanwhile.
         await client.SendTextMessageAsync(
             request.UserTelegramId,
             text,
+            replyToMessageId: replyTo,
+            allowSendingWithoutReply: replyTo == null ? null : true,
             replyMarkup: keyboard,
             cancellationToken: token);
     }

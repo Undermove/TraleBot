@@ -9,6 +9,13 @@ public class TranslationRequester
 {
     /// <summary>Null when the request has no user (a background job): only the overall caps apply.</summary>
     public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// Called (possibly more than once) when the request goes on to the slow part: a verb that is not in
+    /// the base is being looked up in the source or with the models. Set by a caller that wants to tell
+    /// the person so (<see cref="TranslationJobs"/>); nobody listening is the normal case.
+    /// </summary>
+    public Action? VerbLookupStarted { get; set; }
 }
 
 public enum ModelSpend

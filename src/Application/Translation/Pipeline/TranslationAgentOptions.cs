@@ -92,4 +92,17 @@ public class TranslationAgentOptions
     public int WiktionaryRetries { get; set; } = 2;
 
     public int WiktionaryRetryDelayMs { get; set; } = 1500;
+
+    /// <summary>
+    /// The bot: how long after the word was sent the person is told «ищу глагол…» if a verb is still
+    /// being looked up. Answers that arrive sooner look as they always did. The classifier's 1.6 s and
+    /// one Wiktionary page fit in it; an analyst run (5.9 s at the median) does not.
+    /// </summary>
+    public int SlowReplyNoticeMs { get; set; } = 4000;
+
+    /// <summary>
+    /// The mini-app: how long <c>POST /api/miniapp/translate</c> holds the request before answering
+    /// <c>pending</c> (the mini-app then asks <c>translate/status</c>). Far below any proxy timeout.
+    /// </summary>
+    public int MiniAppTranslateWaitMs { get; set; } = 5000;
 }

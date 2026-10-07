@@ -81,12 +81,15 @@ public class TelegramDialogProcessor(
         
         await telegramBotClient.SendTextMessageAsync(
             telegramRequest.UserTelegramId,
-            "Прости, кажется у меня что-то сломалось 😞 Попробуй еще раз через несколько минут." +
-            "\r\nЕсли приложение не заработало, то напиши" +
-            "\r\n🤖Разработчику бота @Undermove1" +
-            "\r\n💬Или в чат поддержки https://t.me/TraleBotSupport", 
+            ErrorText,
             cancellationToken: token);
     }
+
+    public const string ErrorText =
+        "Прости, кажется у меня что-то сломалось 😞 Попробуй еще раз через несколько минут." +
+        "\r\nЕсли приложение не заработало, то напиши" +
+        "\r\n🤖Разработчику бота @Undermove1" +
+        "\r\n💬Или в чат поддержки https://t.me/TraleBotSupport";
 
     private async Task<TelegramRequest> MapToTelegramRequest<T>(T request, CancellationToken ct)
     {
