@@ -325,6 +325,8 @@ public class GeorgianTranslationPipeline(
             trace.Reviewer += outcome.Reviewer;
             trace.Steps.Add(
                 $"generator>{outcome.Outcome}" + (outcome.Reason == null ? string.Empty : $"({outcome.Reason})")
+                + (outcome.CompletionRounds > 0 ? "+completion" : string.Empty)
+                + (outcome.DroppedRows > 0 ? "+rows-left-out" : string.Empty)
                 + (outcome.RepairRounds > 0 ? "+repair" : string.Empty));
             if (outcome.Verb != null)
             {

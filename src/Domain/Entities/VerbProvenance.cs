@@ -37,6 +37,16 @@ public class VerbProvenance
     /// <summary>JSON array of the forms that were not found in the corpora.</summary>
     public required string UnattestedFormsJson { get; set; }
 
+    /// <summary>
+    /// JSON array: the main tenses the record does not have and why — <c>{"tense","why","note","reviewerDisagrees"}</c>,
+    /// where <c>why</c> is "verb-lacks-it" (the generator, asked for the tense specifically, said the verb
+    /// has none; <c>note</c> is its reason) or "not-sure" (it did not give the forms). Empty when all six are there.
+    /// </summary>
+    public string MissingTensesJson { get; set; } = "[]";
+
+    /// <summary>JSON array of the main tenses that were added on the completion round (the second ask).</summary>
+    public string CompletedTensesJson { get; set; } = "[]";
+
     /// <summary>Whether the open lexicon (Wiktionary) has a verb with this lemma.</summary>
     public bool LemmaInLexicon { get; set; }
 

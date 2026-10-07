@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<Translation.Cache.TranslationCache>();
         services.AddScoped<Translation.Pipeline.VerbProposalResolver>();
         services.AddScoped<Translation.Pipeline.VerbGenerationService>();
+        services.AddScoped<Translation.Pipeline.VerbRegenerationService>();
         services.AddScoped<Translation.Pipeline.ModelBudget>();
         services.AddScoped<Translation.Pipeline.TranslationRequester>();
         services.AddSingleton<TranslationJobs>();

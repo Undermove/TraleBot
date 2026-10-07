@@ -133,6 +133,8 @@ public abstract class TranslationPipelineTestBase
         Options.MaxGenerationsPerDay = defaults.MaxGenerationsPerDay;
         Options.MaxGenerationsPerUserPerDay = defaults.MaxGenerationsPerUserPerDay;
         Options.GeneratorTimeoutSeconds = defaults.GeneratorTimeoutSeconds;
+        Options.GenerationTotalSeconds = defaults.GenerationTotalSeconds;
+        Options.CompleteMissingTenses = defaults.CompleteMissingTenses;
         Options.SlowReplyNoticeMs = defaults.SlowReplyNoticeMs;
         Options.MiniAppTranslateWaitMs = defaults.MiniAppTranslateWaitMs;
         Options.JobLeaseMs = defaults.JobLeaseMs;

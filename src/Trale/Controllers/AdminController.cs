@@ -217,6 +217,10 @@ public class AdminController : Controller
                 outcome = outcome.Outcome,
                 reason = outcome.Reason,
                 repairRounds = outcome.RepairRounds,
+                completionRounds = outcome.CompletionRounds,
+                droppedRows = outcome.DroppedRows,
+                completedTenses = draft?.Completed,
+                missingTenses = draft?.Missing,
                 seconds = started.Elapsed.TotalSeconds,
                 generator = new { outcome.Generator.Calls, outcome.Generator.InputTokens, outcome.Generator.OutputTokens },
                 reviewer = new { outcome.Reviewer.Calls, outcome.Reviewer.InputTokens, outcome.Reviewer.OutputTokens },
@@ -239,6 +243,42 @@ public class AdminController : Controller
             var error = Application.Translation.Pipeline.GeorgianTranslationPipeline.Describe(e);
             return Ok(new { outcome = "failed", reason = error, seconds = started.Elapsed.TotalSeconds });
         }
+    }
+
+    public class RegenerateVerbRequest
+    {
+        /// <summary>Lemma of a model-made verb, as <c>verbs/model-made</c> lists it.</summary>
+        public string Lemma { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// «Пересобрать глагол»: writes a model-made verb again with today's generator (completion round
+    /// included) and replaces the stored record only when the new one is approved, is the same verb and
+    /// has at least as many main tenses. Curated verbs and verbs from a source table are refused. The
+    /// verb's row stays, so learners keep their progress. Takes up to a couple of minutes; the work does
+    /// not stop if the caller's connection does — the list shows the result.
+    /// </summary>
+    [HttpPost("verbs/regenerate")]
+    public async Task<IActionResult> RegenerateVerb(
+        [FromBody] RegenerateVerbRequest request,
+        [FromServices] Application.Translation.Pipeline.VerbRegenerationService regeneration,
+        CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var lemma = (request.Lemma ?? string.Empty).Trim();
+        if (!Application.Verbs.VerbParadigm.GeorgianWord.IsMatch(lemma)) return BadRequest(new { error = "invalid_lemma" });
+
+        // Not the request's token: a proxy closes a long request, and a half-done rebuild helps nobody.
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(4));
+        var result = await regeneration.ExecuteAsync(lemma, timeout.Token);
+        return result.Outcome switch
+        {
+            "not-found" => NotFound(new { error = "verb_not_found" }),
+            "not-model-made" => Conflict(new { error = "not_model_made" }),
+            "generation-is-off" => Conflict(new { error = "generation_is_off" }),
+            "over-budget" => StatusCode(429, new { error = "over_generation_budget" }),
+            _ => Ok(result)
+        };
     }
 
     public class WarmUpVerbRequest

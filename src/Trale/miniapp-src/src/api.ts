@@ -38,7 +38,8 @@ export interface TranslateWordResponse {
 }
 
 export const TRANSLATE_POLL_MS = 2000
-// Худший случай по таймаутам моделей — около двух с половиной минут.
+// Худший случай по таймаутам моделей — 175 секунд: классификатор 10, аналитик 25 и не больше 140
+// на составление глагола со всеми кругами (TranslationAgent:GenerationTotalSeconds).
 export const TRANSLATE_POLL_LIMIT_MS = 180_000
 
 export interface ProgressDto {
@@ -551,6 +552,46 @@ export const adminCampaigns = {
       { method: 'POST', body: JSON.stringify({ limit }) }
     ),
   status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`)
+}
+
+/** Основное время, которого нет в таблице глагола от нейросети, и почему. */
+export interface MissingTenseDto {
+  tense: string
+  /** verb-lacks-it — модель сказала, что у глагола такого времени нет; not-sure — модель не дала формы. */
+  why: 'verb-lacks-it' | 'not-sure'
+  note?: string | null
+  /** Проверяющая модель уверена, что время у глагола есть. */
+  reviewerDisagrees: boolean
+}
+
+export interface ModelMadeVerbDto {
+  lemma: string
+  title: string
+  translation: string
+  askedText: string
+  approvedAtUtc: string
+  learners: number
+  /** Сколько из шести основных времён есть в таблице. */
+  mainTenses: number
+  missingTenses: MissingTenseDto[]
+  completedTenses: string[]
+}
+
+export interface RegenerateVerbDto {
+  outcome: 'replaced' | 'kept'
+  reason?: string | null
+  mainTensesBefore: number
+  mainTensesAfter: number
+  missing?: MissingTenseDto[] | null
+  changedForms?: string[] | null
+}
+
+export const adminVerbs = {
+  /** Глаголы, которые составила нейросеть. */
+  modelMade: () => request<{ count: number; verbs: ModelMadeVerbDto[] }>('/api/admin/verbs/model-made'),
+  /** Составить глагол заново; запись заменяется, только если новая одобрена и не беднее прежней. До пары минут. */
+  regenerate: (lemma: string) =>
+    request<RegenerateVerbDto>('/api/admin/verbs/regenerate', { method: 'POST', body: JSON.stringify({ lemma }) })
 }
 
 export function reportCampaignOpen(key: string) {
