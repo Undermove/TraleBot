@@ -28,6 +28,7 @@ public interface ITraleDbContext
     DbSet<VerbFormProgress> VerbFormProgresses { get; }
     DbSet<UserVerb> UserVerbs { get; }
     DbSet<VerbSession> VerbSessions { get; }
+    DbSet<VerbSectionVisit> VerbSectionVisits { get; }
     DbSet<TranslationCacheEntry> TranslationCache { get; }
     DbSet<BroadcastCampaign> BroadcastCampaigns { get; }
     DbSet<BroadcastDelivery> BroadcastDeliveries { get; }
@@ -54,4 +55,12 @@ public interface ITraleDbContext
     /// keeps a double click or two overlapping requests from sending the same message twice.
     /// </summary>
     Task<bool> TryClaimBroadcastDeliveryAsync(Guid deliveryId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomically marks a campaign's gift as given to this recipient. Returns <c>true</c> only for
+    /// the one caller that made the mark — only that caller may change the user's access. This is
+    /// what keeps repeated opens, two replicas or two parallel requests from giving the gift twice.
+    /// </summary>
+    Task<bool> TryClaimCampaignGiftAsync(
+        Guid deliveryId, DateTime grantedAtUtc, DateTime accessUntilUtc, CancellationToken cancellationToken);
 }

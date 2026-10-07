@@ -27,6 +27,24 @@ public class UserVerbConfiguration : IEntityTypeConfiguration<UserVerb>
     }
 }
 
+public class VerbSectionVisitConfiguration : IEntityTypeConfiguration<VerbSectionVisit>
+{
+    public void Configure(EntityTypeBuilder<VerbSectionVisit> builder)
+    {
+        builder.HasKey(v => v.Id);
+        builder.Property(v => v.Source).HasMaxLength(64).IsRequired();
+
+        builder.HasOne(v => v.User)
+            .WithMany()
+            .HasForeignKey(v => v.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // One row per learner and source; "everyone who came by this link" reads by source.
+        builder.HasIndex(v => new { v.UserId, v.Source }).IsUnique();
+        builder.HasIndex(v => v.Source);
+    }
+}
+
 public class VerbSessionConfiguration : IEntityTypeConfiguration<VerbSession>
 {
     public void Configure(EntityTypeBuilder<VerbSession> builder)
