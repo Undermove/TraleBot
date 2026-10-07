@@ -25,6 +25,22 @@ export class ApiError extends Error {
   }
 }
 
+export interface TranslateWordResponse {
+  // pending приходит с сервера, пока перевод не готов; timeout — мини-апп перестал ждать.
+  status: 'success' | 'exists' | 'failure' | 'not_a_word' | 'pending' | 'timeout'
+  verbLookup?: boolean
+  word?: string
+  definition?: string
+  additionalInfo?: string
+  example?: string
+  vocabularyEntryId?: string
+  verb?: VerbFormHitDto | null
+}
+
+export const TRANSLATE_POLL_MS = 2000
+// Худший случай по таймаутам моделей — около двух с половиной минут.
+export const TRANSLATE_POLL_LIMIT_MS = 180_000
+
 export interface ProgressDto {
   xp: number
   streak: number
@@ -175,19 +191,28 @@ export const api = {
       body: JSON.stringify(payload)
     }),
 
-  translateWord: (word: string) =>
-    request<{
-      status: 'success' | 'exists' | 'failure' | 'not_a_word'
-      word?: string
-      definition?: string
-      additionalInfo?: string
-      example?: string
-      vocabularyEntryId?: string
-      verb?: VerbFormHitDto | null
-    }>('/api/miniapp/translate', {
-      method: 'POST',
-      body: JSON.stringify({ word })
-    }),
+  // Глагол, которого нет ни в базе, ни в источнике, модели составляют до минуты. Сервер не держит
+  // запрос (прокси оборвёт его): отвечает pending, и ответ забирается опросом translate/status.
+  // onPending вызывается, пока ответа нет; true — ищется именно глагол.
+  translateWord: async (word: string, onPending?: (verbLookup: boolean) => void): Promise<TranslateWordResponse> => {
+    const init = { method: 'POST', body: JSON.stringify({ word }) }
+    let r = await request<TranslateWordResponse>('/api/miniapp/translate', init)
+    const deadline = Date.now() + TRANSLATE_POLL_LIMIT_MS
+    let verbLookup = false
+    while (r.status === 'pending') {
+      verbLookup = verbLookup || !!r.verbLookup
+      onPending?.(verbLookup)
+      if (Date.now() >= deadline) return { status: 'timeout' }
+      await new Promise((resolve) => setTimeout(resolve, TRANSLATE_POLL_MS))
+      try {
+        r = await request<TranslateWordResponse>('/api/miniapp/translate/status', init)
+      } catch (e) {
+        // Сеть моргнула или сервер перезапускается — спросим ещё раз; отказ (401, 400) ждать незачем.
+        if (e instanceof ApiError && e.status < 500) throw e
+      }
+    }
+    return r
+  },
 
   setLevel: (level: string) =>
     request<{ level: string }>('/api/miniapp/level', {

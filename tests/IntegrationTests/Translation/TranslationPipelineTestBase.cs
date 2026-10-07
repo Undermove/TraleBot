@@ -115,6 +115,9 @@ public abstract class TranslationPipelineTestBase
         Options.MaxModelRequestsPerUserPerDay = defaults.MaxModelRequestsPerUserPerDay;
         Options.MaxGenerationsPerDay = defaults.MaxGenerationsPerDay;
         Options.MaxGenerationsPerUserPerDay = defaults.MaxGenerationsPerUserPerDay;
+        Options.GeneratorTimeoutSeconds = defaults.GeneratorTimeoutSeconds;
+        Options.SlowReplyNoticeMs = defaults.SlowReplyNoticeMs;
+        Options.MiniAppTranslateWaitMs = defaults.MiniAppTranslateWaitMs;
     }
 
     /// <summary>The application's options — a test may change a cap; <see cref="ResetFakes"/> puts the defaults back.</summary>

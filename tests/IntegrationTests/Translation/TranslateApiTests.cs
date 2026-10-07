@@ -152,4 +152,110 @@ public class TranslateApiTests : TranslationPipelineTestBase
         session["xpEarned"]!.GetValue<int>().Should().BeGreaterThan(0);
         Models.ModelCalls.Should().Be(3, because: "one classifier call, one generation, one review — and nothing after");
     }
+
+    // ── A verb the models take long to write: "pending", then the answer by translate/status ─────
+
+    [Test]
+    public async Task Slow_verb_is_pending_at_once_and_its_answer_is_picked_up_by_status()
+    {
+        var dance = Catalog().Select(v => v!.AsObject()).First(v => v["ru"]!.GetValue<string>() == "танцевать");
+        var lemma = dance["lemma"]!.GetValue<string>();
+        await SeedCatalogWithout(lemma);
+        Options.MiniAppTranslateWaitMs = 100;
+        Lexicon.Verbs.Add(new LexiconVerb(lemma, null, HasTable: false, ["to dance"], ["танцевать"]));
+        Models.ClassifierModel.AnswerWith("""{"notTranslatable":false,"isVerb":true,"russianInfinitive":"танцевать"}""");
+        string[] main = ["present", "imperfect", "future", "conditional", "aorist", "optative"];
+        var written = JsonSerializer.Serialize(new
+        {
+            verdict = "verb", lemma, masdar = dance["title"]!.GetValue<string>(), russian = "танцевать",
+            tenses = main.ToDictionary(t => t, t => Enumerable.Range(0, 6).Select(p => Form(dance, t, p)).ToArray()),
+            russianForms = new
+            {
+                inf = "танцевать", present = new[] { "танцую", "танцуешь", "танцует", "танцуем", "танцуете", "танцуют" },
+                past = new { m = "танцевал", f = "танцевала", pl = "танцевали" }
+            },
+            matchedTense = "present", matchedPerson = 0
+        });
+        var modelMayAnswer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Models.GeneratorModel.Respond = async (_, ct) =>
+        {
+            await modelMayAnswer.Task.WaitAsync(ct);
+            return new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, written);
+        };
+        Models.ReviewerModel.AnswerWith("""{"approve":true,"reasons":["ok"]}""");
+
+        // The request does not wait for the model.
+        var first = await Call(HttpMethod.Post, "translate", new { word = "я танцую" });
+        first["status"]!.GetValue<string>().Should().Be("pending");
+
+        // Asking again — the same request repeated, or the status — joins the work, it does not start another.
+        await WaitUntil(() => Models.GeneratorModel.Calls > 0);
+        (await Call(HttpMethod.Post, "translate", new { word = " Я танцую " }))["status"]!.GetValue<string>().Should().Be("pending");
+        var waiting = await Call(HttpMethod.Post, "translate/status", new { word = "я танцую" });
+        waiting["status"]!.GetValue<string>().Should().Be("pending");
+        waiting["verbLookup"]!.GetValue<bool>().Should().BeTrue(because: "the mini-app says «ищу глагол» only for a verb");
+
+        modelMayAnswer.SetResult();
+
+        JsonNode answer = waiting;
+        await WaitUntil(async () => (answer = await Call(HttpMethod.Post, "translate/status", new { word = "я танцую" }))["status"]!.GetValue<string>() != "pending");
+        answer["status"]!.GetValue<string>().Should().Be("success");
+        answer["definition"]!.GetValue<string>().Should().Be(Form(dance, "present", 0));
+        answer["verb"]!["verbId"]!.GetValue<string>().Should().Be(lemma);
+
+        // An instance that never had the job (here: the job is forgotten once answered) finds the saved word.
+        var again = await Call(HttpMethod.Post, "translate/status", new { word = "я танцую" });
+        again["status"]!.GetValue<string>().Should().Be("success");
+        again["vocabularyEntryId"]!.GetValue<string>().Should().Be(answer["vocabularyEntryId"]!.GetValue<string>());
+        (await Call(HttpMethod.Get, "vocabulary"))["items"]!.AsArray().Should().ContainSingle();
+        Models.GeneratorModel.Calls.Should().Be(1);
+    }
+
+    [Test]
+    public async Task Status_of_a_word_nobody_is_translating_is_pending_and_starts_nothing()
+    {
+        await SeedCatalogWithout();
+
+        var answer = await Call(HttpMethod.Post, "translate/status", new { word = "стол" });
+
+        answer["status"]!.GetValue<string>().Should().Be("pending");
+        answer["verbLookup"]!.GetValue<bool>().Should().BeFalse();
+        Models.ModelCalls.Should().Be(0);
+        External.Calls.Should().Be(0);
+        (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VocabularyEntries.CountAsync(e => e.UserId == _userId))).Should().Be(0);
+    }
+
+    [Test]
+    public async Task Slow_translation_that_ends_without_an_answer_is_a_failure_for_status()
+    {
+        await SeedCatalogWithout();
+        Options.MiniAppTranslateWaitMs = 100;
+        Models.Configured = false;
+        External.Fails = true;
+        var siteMayAnswer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        External.Before = () => siteMayAnswer.Task;
+
+        (await Call(HttpMethod.Post, "translate", new { word = "стол" }))["status"]!.GetValue<string>().Should().Be("pending");
+        var waiting = await Call(HttpMethod.Post, "translate/status", new { word = "стол" });
+        waiting["status"]!.GetValue<string>().Should().Be("pending");
+        waiting["verbLookup"]!.GetValue<bool>().Should().BeFalse(because: "a slow dictionary site is not a verb being looked up");
+
+        siteMayAnswer.SetResult();
+
+        JsonNode answer = waiting;
+        await WaitUntil(async () => (answer = await Call(HttpMethod.Post, "translate/status", new { word = "стол" }))["status"]!.GetValue<string>() != "pending");
+        answer["status"]!.GetValue<string>().Should().Be("failure");
+    }
+
+    private static Task WaitUntil(Func<bool> condition) => WaitUntil(() => Task.FromResult(condition()));
+
+    private static async Task WaitUntil(Func<Task<bool>> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (!await condition())
+        {
+            (DateTime.UtcNow < deadline).Should().BeTrue("the condition should hold within 15 seconds");
+            await Task.Delay(20);
+        }
+    }
 }

@@ -115,21 +115,30 @@ public class FakeExternalTranslator : IParsingUniversalTranslator, IGoogleApiTra
     /// <summary>Who was asked about what, in order: "dictionary:стол", "google:стол".</summary>
     public List<string> Trail { get; } = new();
 
+    /// <summary>A slow dictionary site: awaited before it answers.</summary>
+    public Func<Task>? Before { get; set; }
+
     public void Reset()
     {
         Calls = 0;
         Fails = false;
+        Before = null;
         DictionaryMisses.Clear();
         Trail.Clear();
     }
 
-    Task<TranslationResult> IParsingUniversalTranslator.TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
+    async Task<TranslationResult> IParsingUniversalTranslator.TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
     {
         Calls++;
         Trail.Add($"dictionary:{requestWord}");
-        return Task.FromResult<TranslationResult>(Fails || DictionaryMisses.Contains(requestWord)
+        if (Before != null)
+        {
+            await Before().WaitAsync(ct);
+        }
+
+        return Fails || DictionaryMisses.Contains(requestWord)
             ? new TranslationResult.Failure()
-            : new TranslationResult.Success(Definition, "", ""));
+            : new TranslationResult.Success(Definition, "", "");
     }
 
     Task<TranslationResult> IGoogleApiTranslator.TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
