@@ -159,7 +159,9 @@ public class CampaignGiftTests : TestBase
 
         gifts.Count(g => g != null).Should().Be(1);
         var after = await Reload(person);
-        after.BonusAccessUntilUtc.Should().Be(gifts.Single(g => g != null)!.Value.GetProperty("accessUntilUtc").GetDateTime());
+        // Postgres keeps microseconds; the answer carries the .NET value.
+        after.BonusAccessUntilUtc.Should().BeCloseTo(
+            gifts.Single(g => g != null)!.Value.GetProperty("accessUntilUtc").GetDateTime(), TimeSpan.FromMilliseconds(1));
         (await Delivery(person, "gift-race")).GiftAccessUntilUtc.Should().BeCloseTo(after.BonusAccessUntilUtc!.Value, TimeSpan.FromMilliseconds(1));
     }
 
