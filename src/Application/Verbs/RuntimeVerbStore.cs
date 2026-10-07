@@ -29,6 +29,9 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
     /// <summary>How many catalog verbs to look through for a model verb of the same scheme.</summary>
     private const int ModelCandidates = 50;
 
+    /// <summary>Column length of <c>Verb.Translation</c>.</summary>
+    private const int MaxTranslationLength = 256;
+
     private static readonly JsonSerializerOptions Json = new()
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -40,9 +43,19 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
     /// </summary>
     /// <param name="status">
     /// <see cref="VerbStatus.Verified"/> when the forms come from a source table,
-    /// <see cref="VerbStatus.Generated"/> when a model produced them.
+    /// <see cref="VerbStatus.Generated"/> when a model wrote them and a second model approved them.
     /// </param>
-    public async Task<Verb> AddAsync(VerbParadigm paradigm, string translation, VerbStatus status, CancellationToken ct)
+    /// <param name="verification">In plain Russian: what the forms and the translation rest on — shown in the card.</param>
+    /// <param name="meanings">Plain-Russian phrases of the forms, when the record has them — as catalog verbs do.</param>
+    /// <param name="provenance">For a model-made verb: who wrote and who approved it. Saved with the verb, in one transaction.</param>
+    public async Task<Verb> AddAsync(
+        VerbParadigm paradigm,
+        string translation,
+        VerbStatus status,
+        CancellationToken ct,
+        string? verification = null,
+        VerbMeanings? meanings = null,
+        VerbProvenance? provenance = null)
     {
         var existing = await dbContext.Verbs.FirstOrDefaultAsync(v => v.Lemma == paradigm.Lemma, ct);
         if (existing != null)
@@ -75,11 +88,14 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
             ["oddTenses"] = ToJson(analysis.OddTenses),
             ["model"] = model,
             ["tenses"] = tenses.DeepClone(),
+            ["meanings"] = ToJson(meanings?.Meanings ?? new Dictionary<string, string[]>()),
+            ["meaningChips"] = ToJson(meanings?.Chips ?? new Dictionary<string, string>()),
             // Example sentences are picked offline from Tatoeba; a runtime verb has none.
             ["sentences"] = new JsonArray(),
             ["source"] = paradigm.Source,
             ["revid"] = paradigm.Revid,
-            ["status"] = StatusName(status)
+            ["status"] = StatusName(status),
+            ["verification"] = verification
         };
         var cardJson = card.ToJsonString(Json);
 
@@ -99,11 +115,23 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
             UpdatedAtUtc = now
         };
         var forms = VerbCatalogSeeder
-            .BuildForms(verb.Id, new JsonObject { ["tenses"] = tenses, ["alt"] = ToJson(paradigm.Alt) })
+            .BuildForms(verb.Id, new JsonObject
+            {
+                ["tenses"] = tenses,
+                ["alt"] = ToJson(paradigm.Alt),
+                ["meanings"] = card["meanings"]!.DeepClone(),
+                ["meaningChips"] = card["meaningChips"]!.DeepClone()
+            })
             .ToList();
 
         dbContext.Verbs.Add(verb);
         dbContext.VerbForms.AddRange(forms);
+        if (provenance != null)
+        {
+            provenance.VerbId = verb.Id;
+            dbContext.VerbProvenances.Add(provenance);
+        }
+
         try
         {
             await dbContext.SaveChangesAsync(ct);
@@ -118,9 +146,38 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
                 dbContext.Entry(form).State = EntityState.Detached;
             }
 
+            if (provenance != null)
+            {
+                dbContext.Entry(provenance).State = EntityState.Detached;
+            }
+
             dbContext.Entry(verb).State = EntityState.Detached;
             return await dbContext.Verbs.FirstAsync(v => v.Lemma == paradigm.Lemma, ct);
         }
+    }
+
+    /// <summary>Whether the verb came from here and not from the curated catalog (whose glosses are hand-written).</summary>
+    public static bool IsRuntime(Verb verb) =>
+        !verb.ContentHash.StartsWith(VerbCatalogSeeder.CatalogMark, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Adds one more Russian gloss to a runtime verb, so that the next request for that Russian word
+    /// finds the verb in the base. The gloss of such a verb was written by a model in the first place.
+    /// </summary>
+    public async Task AddGlossAsync(Verb verb, string infinitive, CancellationToken ct)
+    {
+        var glosses = $"{verb.Translation}, {infinitive}";
+        if (!IsRuntime(verb) || glosses.Length > MaxTranslationLength)
+        {
+            return;
+        }
+
+        var card = JsonNode.Parse(verb.CardJson)!;
+        card["ru"] = glosses;
+        verb.Translation = glosses;
+        verb.CardJson = card.ToJsonString(Json);
+        verb.UpdatedAtUtc = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(ct);
     }
 
     public static string StatusName(VerbStatus status) => status == VerbStatus.Generated ? "generated" : "verified";

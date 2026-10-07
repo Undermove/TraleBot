@@ -16,26 +16,27 @@ const base: VerbDto = {
 let verb: VerbDto = base
 vi.mock('../api', async () => (await import('./testing/sheetApi')).sheetApi({ fetchVerb: vi.fn(() => Promise.resolve(verb)) }))
 
-describe('VerbSheet: глагол, формы которого составила модель', () => {
+describe('VerbSheet: глагол, который составила модель', () => {
   beforeEach(() => localStorage.clear())
 
-  it('says the forms are unverified and offers no source link', async () => {
+  it('says quietly where the verb came from: one line, no warning block, no source link', async () => {
     verb = { ...base, status: 'generated', source: null }
     render(<VerbSheet verbId="წერს" onClose={vi.fn()} />)
 
-    await waitFor(() => screen.getByTestId('verb-unverified'))
+    await waitFor(() => screen.getByTestId('verb-model-made'))
 
-    expect(screen.getByTestId('verb-unverified').textContent).toContain('Не проверено')
+    expect(screen.getByTestId('verb-model-made').textContent).toBe('составлено нейросетью')
+    expect(screen.queryByText(/Не проверено|Могут быть ошибки/)).toBeNull()
     expect(screen.queryByText(/Источник форм/)).toBeNull()
   })
 
-  it('shows no warning on a verified verb and keeps the source link', async () => {
+  it('shows no such line on a verified verb and keeps the source link', async () => {
     verb = { ...base, status: 'verified' }
     render(<VerbSheet verbId="წერს" onClose={vi.fn()} />)
 
     await waitFor(() => screen.getByText(/Источник форм/))
 
-    expect(screen.queryByTestId('verb-unverified')).toBeNull()
+    expect(screen.queryByTestId('verb-model-made')).toBeNull()
   })
 
   it('treats a card without the status field as verified', async () => {
@@ -44,6 +45,6 @@ describe('VerbSheet: глагол, формы которого составил�
 
     await waitFor(() => screen.getByText(/Источник форм/))
 
-    expect(screen.queryByTestId('verb-unverified')).toBeNull()
+    expect(screen.queryByTestId('verb-model-made')).toBeNull()
   })
 })

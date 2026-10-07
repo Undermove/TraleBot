@@ -25,11 +25,26 @@ public class TranslateCommand(
             ? $"{botConfig.NormalizedHost()}/"
             : null;
 
-        var result = await mediator.Send(new TranslateAndCreateVocabularyEntry
+        // A new verb can take several seconds (a model, Wiktionary). The chat shows «печатает…» from
+        // the first moment until the reply, so a slow step never looks like silence.
+        CreateVocabularyEntryResult result;
+        using (var typing = CancellationTokenSource.CreateLinkedTokenSource(token))
         {
-            Word = request.Text,
-            UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
-        }, token);
+            var indicator = client.KeepTypingAsync(request.UserTelegramId, typing.Token);
+            try
+            {
+                result = await mediator.Send(new TranslateAndCreateVocabularyEntry
+                {
+                    Word = request.Text,
+                    UserId = request.User?.Id ?? throw new ApplicationException("User not registered"),
+                }, token);
+            }
+            finally
+            {
+                typing.Cancel();
+                await indicator;
+            }
+        }
 
         // A known verb form in the word or in its translation gets a parse line and a button to the verb card.
         var verb = result switch
@@ -46,6 +61,7 @@ public class TranslateCommand(
             CreateVocabularyEntryResult.EmojiDetected => client.HandleEmojiDetected(request, token),
             CreateVocabularyEntryResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, token),
             CreateVocabularyEntryResult.TranslationFailure => client.HandleFailure(request, token),
+            CreateVocabularyEntryResult.NotTranslatable => client.HandleNotTranslatable(request, token),
             CreateVocabularyEntryResult.PremiumRequired premiumRequired => client.HandlePremiumRequired(request, request.User.Settings.CurrentLanguage, premiumRequired.TargetLanguage, token),
             CreateVocabularyEntryResult.SubscriptionRequired => client.HandleSubscriptionRequired(request, miniAppUrl, token),
             _ => throw new ArgumentOutOfRangeException(nameof(result))

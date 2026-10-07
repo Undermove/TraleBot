@@ -128,11 +128,6 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                 <div className="mt-2 text-[20px] font-extrabold text-navy">{verb.ru}</div>
               </>
             )}
-            {verb.status === 'generated' && (
-              <div data-testid="verb-unverified" className="mt-2 mx-auto max-w-[300px] rounded-lg border border-jewelInk/40 bg-gold-wash px-3 py-1.5 text-[12px] text-jewelInk-soft">
-                Не проверено: в Викисловаре таблицы этого глагола нет, формы составила нейросеть. Могут быть ошибки.
-              </div>
-            )}
           </div>
 
           <SessionEntry verb={verb} />
@@ -210,6 +205,10 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             <a href={verb.source} target="_blank" rel="noreferrer" className="text-[12px] text-navy underline text-center">
               Источник форм: Викисловарь (CC BY-SA)
             </a>
+          )}
+          {/* Глагол, который составила одна модель и одобрила вторая: одна тихая строка, без предупреждений. */}
+          {verb.status === 'generated' && (
+            <div data-testid="verb-model-made" className="text-[11px] text-jewelInk-hint text-center">составлено нейросетью</div>
           )}
       </div>
     )

@@ -37,11 +37,6 @@ public static class VerbReplyFormatter
     public static string Line(VerbReplyHint hint)
     {
         var verb = $"Глагол {hint.Title} — {hint.Translation}.";
-        if (hint.Status == VerbStatus.Generated)
-        {
-            verb += " Формы не проверены.";
-        }
-
         if (hint.Form == null || hint.Tense == null || hint.Person is not (>= 0 and < 6))
         {
             return verb;

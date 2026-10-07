@@ -71,41 +71,15 @@ public class GeorgianTranslationModule(
 
 public static class GeorgianTranscriptionExtension
 {
+    // Cyrillic, as everywhere a learner sees a transcription — the same table as cyr() in the
+    // mini-app (miniapp-src/src/verbs/types.ts). ’ marks the abrupt (ejective) consonants.
     private static readonly Dictionary<string, string> Transcription = new()
     {
-        { "ა", "a" },
-        { "ბ", "b" },
-        { "გ", "g" },
-        { "დ", "d" },
-        { "ე", "e" },
-        { "ვ", "v" },
-        { "ზ", "z" },
-        { "თ", "t" },
-        { "ი", "i" },
-        { "კ", "k" },
-        { "ლ", "l" },
-        { "მ", "m" },
-        { "ნ", "n" },
-        { "ო", "o" },
-        { "პ", "p" },
-        { "ჟ", "zh" },
-        { "რ", "r" },
-        { "ს", "s" },
-        { "ტ", "t'" },
-        { "უ", "u" },
-        { "ფ", "p'" },
-        { "ქ", "k'" },
-        { "ღ", "gh" },
-        { "ყ", "q'" },
-        { "შ", "sh" },
-        { "ჩ", "ch" },
-        { "ც", "c" },
-        { "ძ", "dz" },
-        { "წ", "ts'" },
-        { "ჭ", "ch'" },
-        { "ხ", "kh" },
-        { "ჯ", "j" },
-        { "ჰ", "h" }
+        { "ა", "а" }, { "ბ", "б" }, { "გ", "г" }, { "დ", "д" }, { "ე", "э" }, { "ვ", "в" }, { "ზ", "з" },
+        { "თ", "т" }, { "ი", "и" }, { "კ", "к’" }, { "ლ", "л" }, { "მ", "м" }, { "ნ", "н" }, { "ო", "о" },
+        { "პ", "п’" }, { "ჟ", "ж" }, { "რ", "р" }, { "ს", "с" }, { "ტ", "т’" }, { "უ", "у" }, { "ფ", "п" },
+        { "ქ", "к" }, { "ღ", "гх" }, { "ყ", "къ" }, { "შ", "ш" }, { "ჩ", "ч" }, { "ც", "ц" }, { "ძ", "дз" },
+        { "წ", "ц’" }, { "ჭ", "ч’" }, { "ხ", "х" }, { "ჯ", "дж" }, { "ჰ", "х" }
     };
 
     public static string GetTranscription(string wordToTranscribe)

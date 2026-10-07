@@ -19,7 +19,8 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
     public class Handler(
         ILanguageTranslator languageTranslator,
         ITraleDbContext context,
-        IAchievementsService achievementService)
+        IAchievementsService achievementService,
+        Translation.Pipeline.TranslationRequester requester)
         : IRequestHandler<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>
     {
         public async Task<CreateVocabularyEntryResult> Handle(TranslateAndCreateVocabularyEntry request, CancellationToken ct)
@@ -40,10 +41,15 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
             
             var wordLanguage = request.Word.DetectLanguage();
             
+            // The user's own dictionary comes first: a word they already have is answered from it,
+            // whatever its spelling of case and spaces, without any translator.
+            var typed = request.Word.Trim().ToLowerInvariant();
             var duplicate = await context.VocabularyEntries
-                .SingleOrDefaultAsync(entry => entry.UserId == request.UserId
-                                               && (entry.Language == user.Settings.CurrentLanguage || entry.Language == wordLanguage)
-                                               && entry.Word.Equals(request.Word.ToLowerInvariant()), ct);
+                .Where(entry => entry.UserId == request.UserId
+                                && (entry.Language == user.Settings.CurrentLanguage || entry.Language == wordLanguage)
+                                && entry.Word == typed)
+                .OrderBy(entry => entry.DateAddedUtc)
+                .FirstOrDefaultAsync(ct);
             
             if(duplicate != null)
             {
@@ -63,6 +69,8 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
                     targetLanguage);
             }
 
+            // The per-user caps on model calls need to know whose request this is.
+            requester.UserId = user.Id;
             var translationResult = await languageTranslator.Translate(request.Word, targetLanguage, ct);
             return translationResult switch
             {
@@ -76,6 +84,8 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
                         user,
                         targetLanguage),
                 TranslationResult.PromptLengthExceeded => new CreateVocabularyEntryResult.PromptLengthExceeded(),
+                // Nothing is saved: the text is not a word.
+                TranslationResult.NotTranslatable => new CreateVocabularyEntryResult.NotTranslatable(),
                 _ => new CreateVocabularyEntryResult.TranslationFailure()
             };
         }

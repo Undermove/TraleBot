@@ -72,7 +72,7 @@ public class MyVerbsQuery(ITraleDbContext dbContext, VerbQueries verbs)
     {
         var verb = await dbContext.UserVerbs
             .AsNoTracking()
-            .Where(v => v.UserId == userId && v.ExamPassedAtUtc == null && v.Verb.Status == VerbStatus.Verified)
+            .Where(v => v.UserId == userId && v.ExamPassedAtUtc == null)
             .OrderByDescending(v => v.LastPlayedAtUtc ?? v.StartedAtUtc)
             .Select(v => new { v.Verb.Lemma, v.Verb.Title, v.Verb.Translation, v.Level })
             .FirstOrDefaultAsync(ct);

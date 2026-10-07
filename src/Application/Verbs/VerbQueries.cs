@@ -56,8 +56,9 @@ public class VerbQueries(ITraleDbContext dbContext)
 
     /// <summary>
     /// Adds <c>status</c> ("verified" / "generated") to the stored card. It is taken from the column at
-    /// serving time, not baked into the stored JSON, so the mini-app can never see a stale value: games
-    /// built from the paradigm are offered only for verified verbs.
+    /// serving time, not baked into the stored JSON, so the mini-app can never see a stale value. A
+    /// generated verb (written by a model, approved by a second one) is shown and learned like any
+    /// other; the card only says quietly where it came from.
     /// </summary>
     private static string WithStatus(string cardJson, VerbStatus status)
     {

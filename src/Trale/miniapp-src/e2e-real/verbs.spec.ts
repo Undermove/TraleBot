@@ -270,3 +270,52 @@ test('«Назад» в Telegram закрывает верхний слой, а 
   // Словарь под шторкой остался на месте.
   await expect(page.getByPlaceholder('поиск по слову')).toBeVisible()
 })
+
+// Глагол, которого нет ни в каталоге, ни в таблицах Викисловаря: запись составила одна модель и одобрила
+// вторая. В этом прогоне моделей нет (сервер без ключа), поэтому глагол положен в базу заготовкой —
+// строка ровно того вида, какой пишет RuntimeVerbStore для одобренной записи: статус Generated, фразы
+// клеток есть, живых предложений и ссылки на источник нет, рядом строка происхождения (VerbProvenances).
+// Формы для заготовки взяты у каталожного глагола — тест не сочиняет грузинских слов.
+test('глагол, составленный моделью: вид глагола с тихой строкой, сессия сыграна, прогресс и опыт сохранены', async ({ page }) => {
+  const learner = await createLearner()
+  const lemma = sql(`select "Lemma" from "Verbs" where "Translation"='танцевать'`)
+  sql(`update "Verbs" set "Status"=1, "ContentHash"='e2e-model-made',
+         "CardJson"=((("CardJson"::jsonb) - 'sentences' - 'source') || '{"sentences":[],"source":null}'::jsonb)::text
+       where "Lemma"='${lemma}';
+       insert into "VerbProvenances" ("Id","VerbId","AskedText","GeneratorModel","ReviewerModel","ApprovedAtUtc","RepairRounds","FormsTotal","FormsAttested","UnattestedFormsJson","LemmaInLexicon","ReviewerReasons")
+       select gen_random_uuid(), "Id", 'танцевать', 'fixture-generator', 'fixture-reviewer', now(), 0, 36, 30, '[]', true, 'fixture'
+       from "Verbs" where "Lemma"='${lemma}' on conflict do nothing;`)
+  const seen = new Seen(page)
+  const verb = await verbByRu(learner, 'танцевать')
+  expect((verb.card as any).status).toBe('generated')
+  expect(verb.card.sentences).toEqual([])
+
+  await openVerbFromDictionary(page, learner, verb, 'танцую')
+  // Одна тихая строка о происхождении, без предупреждений; играть можно как с любым глаголом.
+  await expect(page.getByTestId('verb-model-made')).toHaveText('составлено нейросетью')
+  await expect(page.getByText(/Не проверено|Могут быть ошибки/)).toHaveCount(0)
+  await expect(playButton(page)).toHaveText('Выучить играя')
+  await shot(page, '20-model-made-verb-view')
+
+  const before = await api(learner, 'me')
+  expect((await learning(learner, verb)).progress.canLearn).toBe(true)
+  await playButton(page).click()
+  const played = await playSession(page, seen, { shots: '21-model-made-session' })
+
+  expect(played.scenes.length).toBeGreaterThan(0)
+  expect(growsEveryTask(played.bar), `полоска: ${played.bar}`).toBe(true)
+  // Сцены, которым нужны живые предложения, такому глаголу не ставятся.
+  const kinds = seen.plan!.scenes.flatMap((s: any) => s.tasks ?? []).map((t: any) => t.kind)
+  expect(kinds).not.toContain('gap')
+  expect(kinds).not.toContain('build')
+  await expect(page.getByTestId('session-finish')).toBeVisible()
+  await expect(page.getByTestId('session-xp')).toHaveText('+10 XP')
+  await shot(page, '22-model-made-finish')
+
+  const state = await learning(learner, verb)
+  expect(state.level).not.toBe('new')
+  expect(state.memory.sessionsPlayed).toBe(1)
+  expect(state.progress.forms.length).toBeGreaterThan(0)
+  expect((await api(learner, 'me')).progress.xp).toBe(before.progress.xp + 10)
+  expect(sql(`select count(*) from "VerbSessions" s join "Verbs" v on v."Id"=s."VerbId" where s."UserId"='${learner.id}' and v."Status"=1 and s."FinishedAtUtc" is not null`)).toBe('1')
+})

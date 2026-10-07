@@ -9,7 +9,9 @@ namespace Infrastructure.Translation.OpenAiTranslation;
 
 public class OpenAiAzureTranslationService : IAiTranslationService
 {
-    private readonly ChatClient _chatClient;
+    // Built on first use: resolving the translator constructs every language module, and an empty
+    // OpenAI key must cost only this (English) path, not Georgian translation.
+    private readonly Lazy<ChatClient?> _chatClient;
     // Формируем JSON-схему с требуемыми полями
     private static readonly BinaryData JsonSchema = BinaryData.FromString(
         """
@@ -44,8 +46,9 @@ public class OpenAiAzureTranslationService : IAiTranslationService
     
     public OpenAiAzureTranslationService(IOptions<OpenAiConfig> config)
     {
-        var openAiClient = new OpenAIClient(config.Value.ApiKey);
-        _chatClient = openAiClient.GetChatClient("gpt-4o-mini");
+        _chatClient = new Lazy<ChatClient?>(() => string.IsNullOrWhiteSpace(config.Value?.ApiKey)
+            ? null
+            : new OpenAIClient(config.Value.ApiKey).GetChatClient("gpt-4o-mini"));
     }
     
 
@@ -59,7 +62,13 @@ public class OpenAiAzureTranslationService : IAiTranslationService
         var finalChatMessages = FinalChatMessages(requestWord);
 
 
-        var response = await _chatClient.CompleteChatAsync(
+        var chatClient = _chatClient.Value;
+        if (chatClient == null)
+        {
+            return new TranslationResult.Failure();
+        }
+
+        var response = await chatClient.CompleteChatAsync(
             finalChatMessages,
             new ChatCompletionOptions
             {

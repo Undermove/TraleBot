@@ -32,6 +32,8 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<NotificationTrigger> NotificationTriggers { get; set; } = null!;
     public DbSet<Verb> Verbs { get; set; } = null!;
     public DbSet<VerbForm> VerbForms { get; set; } = null!;
+    public DbSet<VerbProvenance> VerbProvenances { get; set; } = null!;
+    public DbSet<ModelBudgetDay> ModelBudgetDays { get; set; } = null!;
     public DbSet<VerbFormProgress> VerbFormProgresses { get; set; } = null!;
     public DbSet<UserVerb> UserVerbs { get; set; } = null!;
     public DbSet<VerbSession> VerbSessions { get; set; } = null!;
@@ -112,6 +114,8 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new UserConfiguration());
         modelBuilder.ApplyConfiguration(new VerbConfiguration());
         modelBuilder.ApplyConfiguration(new VerbFormConfiguration());
+        modelBuilder.ApplyConfiguration(new VerbProvenanceConfiguration());
+        modelBuilder.ApplyConfiguration(new ModelBudgetDayConfiguration());
         modelBuilder.ApplyConfiguration(new VerbFormProgressConfiguration());
         modelBuilder.ApplyConfiguration(new UserVerbConfiguration());
         modelBuilder.ApplyConfiguration(new VerbSessionConfiguration());

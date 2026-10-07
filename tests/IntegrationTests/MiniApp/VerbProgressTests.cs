@@ -73,7 +73,7 @@ public class VerbProgressTests : TestBase
     }
 
     [Test]
-    public async Task Unreviewed_verb_cannot_be_learned_and_ignores_saves()
+    public async Task Model_made_verb_is_learned_like_any_other()
     {
         await InScope(async sp =>
         {
@@ -86,8 +86,8 @@ public class VerbProgressTests : TestBase
         var state = await Save(Now, new VerbFormStep("present", 0, 2, 0, Now));
         var rows = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbFormProgresses.CountAsync(p => p.UserId == _userId));
 
-        state!.CanLearn.Should().BeFalse();
-        rows.Should().Be(0, because: "forms made by a model are not drilled until someone has reviewed them");
+        state!.CanLearn.Should().BeTrue();
+        rows.Should().Be(1, because: "a verb a model wrote and a second model approved is a full verb");
     }
 
     [Test]

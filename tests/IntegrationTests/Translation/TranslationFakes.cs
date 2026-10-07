@@ -84,33 +84,61 @@ public class FakeTranslationChatClients : ITranslationChatClients
     public bool Configured { get; set; } = true;
     public FakeChatClient ClassifierModel { get; } = new();
     public FakeChatClient AnalystModel { get; } = new();
+    public FakeChatClient GeneratorModel { get; } = new();
+    public FakeChatClient ReviewerModel { get; } = new();
+
+    /// <summary>False = the generator and reviewer roles are not configured: verbs with no table are just translated.</summary>
+    public bool CanGenerate { get; set; } = true;
 
     public IChatClient? Classifier => Configured ? ClassifierModel : null;
     public IChatClient? Analyst => Configured ? AnalystModel : null;
+    public IChatClient? Generator => Configured && CanGenerate ? GeneratorModel : null;
+    public IChatClient? Reviewer => Configured && CanGenerate ? ReviewerModel : null;
 
-    public int ModelCalls => ClassifierModel.Calls + AnalystModel.Calls;
+    public int ModelCalls => ClassifierModel.Calls + AnalystModel.Calls + GeneratorModel.Calls + ReviewerModel.Calls;
 }
 
 /// <summary>Stands in for the dictionary site and Google: the translator that was there before the pipeline.</summary>
 public class FakeExternalTranslator : IParsingUniversalTranslator, IGoogleApiTranslator
 {
     public const string Definition = "перевод с внешнего сайта";
+    public const string GoogleDefinition = "перевод гугла";
 
     public int Calls { get; private set; }
+
+    /// <summary>Neither the dictionary site nor Google has an answer.</summary>
     public bool Fails { get; set; }
+
+    /// <summary>Texts the dictionary site has no entry for — Google is asked next, as in the old translator.</summary>
+    public HashSet<string> DictionaryMisses { get; } = new();
+
+    /// <summary>Who was asked about what, in order: "dictionary:стол", "google:стол".</summary>
+    public List<string> Trail { get; } = new();
 
     public void Reset()
     {
         Calls = 0;
         Fails = false;
+        DictionaryMisses.Clear();
+        Trail.Clear();
     }
 
-    public Task<TranslationResult> TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
+    Task<TranslationResult> IParsingUniversalTranslator.TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
     {
         Calls++;
-        return Task.FromResult<TranslationResult>(Fails
+        Trail.Add($"dictionary:{requestWord}");
+        return Task.FromResult<TranslationResult>(Fails || DictionaryMisses.Contains(requestWord)
             ? new TranslationResult.Failure()
             : new TranslationResult.Success(Definition, "", ""));
+    }
+
+    Task<TranslationResult> IGoogleApiTranslator.TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
+    {
+        Calls++;
+        Trail.Add($"google:{requestWord}");
+        return Task.FromResult<TranslationResult>(Fails
+            ? new TranslationResult.Failure()
+            : new TranslationResult.Success(GoogleDefinition, "", ""));
     }
 }
 
@@ -206,4 +234,29 @@ public class PipelineLog : Microsoft.Extensions.Logging.ILoggerProvider
             lock (owner._lines) owner._lines.Add(formatter(state, exception));
         }
     }
+}
+
+/// <summary>The open lexicon and the attested forms, set by each test instead of the shipped data files.</summary>
+public class FakeLexicon : Application.Verbs.IVerbLexicon
+{
+    public List<Application.Verbs.LexiconVerb> Verbs { get; } = new();
+
+    /// <summary>Null = "the corpus data is not loaded": attestation checks are off.</summary>
+    public HashSet<string>? Attested { get; set; }
+
+    public void Reset()
+    {
+        Verbs.Clear();
+        Attested = null;
+    }
+
+    public IReadOnlyList<Application.Verbs.LexiconVerb> Find(string lemmaOrMasdar) =>
+        Verbs.Where(v => v.Lemma == lemmaOrMasdar || v.Masdar == lemmaOrMasdar).ToList();
+
+    public IReadOnlyList<Application.Verbs.LexiconVerb> FindByRussian(string infinitive) =>
+        Verbs.Where(v => v.Russian.Contains(infinitive)).ToList();
+
+    public bool IsAttested(string form) => Attested?.Contains(form) ?? false;
+
+    public bool HasAttestedForms => Attested != null;
 }

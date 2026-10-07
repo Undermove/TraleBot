@@ -18,8 +18,11 @@ describe('which games a verb gets', () => {
     expect(availableGames(verbRu('писать'))).toEqual(['time', 'bones', 'builder'])
   })
 
-  it('offers nothing for a verb that is not verified', () => {
-    expect(availableGames(verbRu('писать', { status: 'generated' }))).toEqual([])
+  it('offers the same games for a verb a model wrote and a second model approved', () => {
+    expect(availableGames(verbRu('писать', { status: 'generated' }))).toEqual(['time', 'bones', 'builder'])
+  })
+
+  it('offers nothing for a card without a status', () => {
     expect(availableGames(verbRu('писать', { status: undefined }))).toEqual([])
   })
 

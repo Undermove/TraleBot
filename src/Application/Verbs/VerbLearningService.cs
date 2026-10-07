@@ -110,7 +110,7 @@ public class VerbLearningService(
 
     /// <summary>
     /// Applies a session report and returns the verb's state after it. Null when the verb is unknown,
-    /// cannot be learned (unreviewed forms) or the report does not belong to this learner and verb.
+    /// or the report does not belong to this learner and verb.
     /// </summary>
     public async Task<VerbSessionOutcome?> SaveAsync(
         User user, string lemma, VerbSessionReport report, int alphabetLessons, DateTime now, CancellationToken ct)
@@ -118,9 +118,9 @@ public class VerbLearningService(
         var verb = await dbContext.Verbs
             .AsNoTracking()
             .Where(v => v.Lemma == lemma)
-            .Select(v => new { v.Id, v.Status })
+            .Select(v => new { v.Id })
             .FirstOrDefaultAsync(ct);
-        if (verb == null || verb.Status != VerbStatus.Verified)
+        if (verb == null)
         {
             return null;
         }

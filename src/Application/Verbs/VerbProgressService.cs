@@ -13,7 +13,7 @@ namespace Application.Verbs;
 public record VerbFormProgressState(
     string Tense, int Person, int Step, int BestStep, int Reviews, DateTime? NextDueAtUtc, bool Due);
 
-/// <summary>A verb's ladder for one user. <see cref="CanLearn"/> is false for unreviewed (Generated) verbs.</summary>
+/// <summary>A verb's ladder for one user. <see cref="CanLearn"/> is true for every stored verb (it used to exclude model-made ones).</summary>
 public record VerbProgressState(string Lemma, bool CanLearn, int Total, IReadOnlyList<VerbFormProgressState> Forms);
 
 /// <summary>The state of one form after an answer, as the mini-app reports it.</summary>
@@ -28,7 +28,7 @@ public record VerbProgressSummary(IReadOnlyList<VerbInProgress> Verbs, int DueFo
 /// Per-form learning progress for the verb "ladder": load one verb's state, save answered steps,
 /// and tell what is in progress / due for repetition.
 /// The mini-app decides which task comes next; the server stores the outcome, owns the repetition
-/// schedule and refuses anything that is not a real cell of a reviewed verb.
+/// schedule and refuses anything that is not a real cell of the verb.
 /// Service per ARCHITECTURE.md.
 /// </summary>
 public class VerbProgressService(ITraleDbContext dbContext)
@@ -65,12 +65,9 @@ public class VerbProgressService(ITraleDbContext dbContext)
             return null;
         }
 
-        if (verb.Status != VerbStatus.Verified)
-        {
-            return new VerbProgressState(lemma, false, 0, new List<VerbFormProgressState>());
-        }
-
+        // A verb written by a model and approved by a second one is learned like any other.
         var cells = LadderCells(verb.CardJson);
+
         var rows = await dbContext.VerbFormProgresses
             .AsNoTracking()
             .Where(p => p.UserId == userId && p.VerbId == verb.Id)
@@ -105,7 +102,7 @@ public class VerbProgressService(ITraleDbContext dbContext)
             return null;
         }
 
-        if (verb.Status == VerbStatus.Verified && steps.Count > 0)
+        if (steps.Count > 0)
         {
             var cells = LadderCells(verb.CardJson);
             var existing = await dbContext.VerbFormProgresses
@@ -171,7 +168,7 @@ public class VerbProgressService(ITraleDbContext dbContext)
     {
         var rows = await dbContext.VerbFormProgresses
             .AsNoTracking()
-            .Where(p => p.UserId == userId && p.Verb.Status == VerbStatus.Verified)
+            .Where(p => p.UserId == userId)
             .Select(p => new { p.VerbId, p.Tense, p.Person, p.Step, p.NextDueAtUtc, p.UpdatedAtUtc })
             .ToListAsync(ct);
         if (rows.Count == 0)

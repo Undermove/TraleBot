@@ -39,7 +39,8 @@ public class TranslateAndCreateVocabularyEntryCommandTests : CommandTestsBase
         _createVocabularyEntryCommandHandler = new TranslateAndCreateVocabularyEntry.Handler(
             _languageTranslatorMock.Object,
             Context,
-            _achievementsService.Object);
+            _achievementsService.Object,
+            new Application.Translation.Pipeline.TranslationRequester());
     }
     
     [Test]

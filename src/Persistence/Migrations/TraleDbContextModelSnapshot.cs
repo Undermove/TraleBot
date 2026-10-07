@@ -312,6 +312,32 @@ namespace Persistence.Migrations
                     b.ToTable("MiniAppUserProgresses");
                 });
 
+            modelBuilder.Entity("Domain.Entities.ModelBudgetDay", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Generations")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Requests")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Day", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("ModelBudgetDays");
+                });
+
             modelBuilder.Entity("Domain.Entities.NotificationTrigger", b =>
                 {
                     b.Property<Guid>("Id")
@@ -905,6 +931,64 @@ namespace Persistence.Migrations
                     b.ToTable("VerbFormProgresses");
                 });
 
+            modelBuilder.Entity("Domain.Entities.VerbProvenance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AskedText")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("FormsAttested")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FormsTotal")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("GeneratorModel")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<bool>("LemmaInLexicon")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("RepairRounds")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReviewerModel")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ReviewerReasons")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RevisedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UnattestedFormsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("VerbId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VerbId")
+                        .IsUnique();
+
+                    b.ToTable("VerbProvenances");
+                });
+
             modelBuilder.Entity("Domain.Entities.VerbSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1214,6 +1298,17 @@ namespace Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+
+                    b.Navigation("Verb");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbProvenance", b =>
+                {
+                    b.HasOne("Domain.Entities.Verb", "Verb")
+                        .WithOne()
+                        .HasForeignKey("Domain.Entities.VerbProvenance", "VerbId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Verb");
                 });

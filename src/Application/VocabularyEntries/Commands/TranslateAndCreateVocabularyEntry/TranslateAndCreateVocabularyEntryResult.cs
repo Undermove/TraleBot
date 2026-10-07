@@ -22,6 +22,9 @@ public abstract record CreateVocabularyEntryResult
 
     public sealed record EmojiDetected: CreateVocabularyEntryResult;
 
+    /// <summary>The text is not something to translate (gibberish, chat, a command); nothing was saved.</summary>
+    public sealed record NotTranslatable : CreateVocabularyEntryResult;
+
     public sealed record PremiumRequired(Language SourceLanguage, Language TargetLanguage) : CreateVocabularyEntryResult;
 
     /// <summary>User has neither active Pro nor an active trial — translation is gated.

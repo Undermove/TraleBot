@@ -28,6 +28,13 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- Open data the translation agent is checked against (scripts/verbs/build-lexicon.mjs, build-attested.mjs). -->
+      <Content Update="Verbs\lexicon.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <Content Include="Verbs\attested.bloom">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
       <Content Update="Verbs\verbs.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>

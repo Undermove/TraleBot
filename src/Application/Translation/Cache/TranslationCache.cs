@@ -15,6 +15,27 @@ public class TranslationCache(ITraleDbContext dbContext)
     public const string SourceExternal = "external";
     public const string SourceVerbAgent = "verb-agent";
 
+    /// <summary>A verdict without a translation: the classifier is sure the text is not something to translate.</summary>
+    public const string SourceNotTranslatable = "not-translatable";
+
+    /// <summary>
+    /// A verdict without a translation: the models have had their say about the text (not a verb, or the
+    /// verb proposal did not hold) and the plain translator had nothing — next time only the translator is asked.
+    /// </summary>
+    public const string SourceNoTranslation = "no-translation";
+
+    /// <summary>Whether the entry carries a translation to serve, not just a remembered verdict.</summary>
+    public static bool HasTranslation(TranslationCacheEntry entry) =>
+        entry.Source != SourceNotTranslatable && entry.Source != SourceNoTranslation;
+
+    /// <summary>Remembers what the models decided about a text that has no translation to cache.</summary>
+    public Task StoreVerdictAsync(
+        string key, TranslationDirection direction, string source, CancellationToken ct, TranslationCacheEntry? replace = null)
+    {
+        return StoreAsync(
+            key, direction, new TranslationResult.Success(string.Empty, string.Empty, string.Empty), source, classified: true, ct, replace);
+    }
+
     public Task<TranslationCacheEntry?> FindAsync(string key, TranslationDirection direction, CancellationToken ct)
     {
         return dbContext.TranslationCache.FirstOrDefaultAsync(e => e.Key == key && e.Direction == direction, ct);

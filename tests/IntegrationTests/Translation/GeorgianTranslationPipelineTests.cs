@@ -3,62 +3,91 @@ using System.Text.Json.Nodes;
 using Application.Common;
 using Application.Common.Interfaces.TranslationService;
 using Application.Translation.Cache;
+using Application.Translation.Pipeline;
 using Application.Verbs;
 using Domain.Entities;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace IntegrationTests.Translation;
 
 /// <summary>
-/// The translation ladder end to end: verb base → cache → classifier → analyst with tools →
-/// validation and storing → the old translator. Real Postgres, real DI graph, real Microsoft Agent
-/// Framework agents running real tools; only the models, Wiktionary and the external translators are fakes.
+/// The translation ladder end to end: verb base → cache → open lexicon → classifier → analyst with
+/// tools → verification and storing → the old translator. Real Postgres, real DI graph, real Microsoft
+/// Agent Framework agents running real tools; only the models, Wiktionary, the lexicon data and the
+/// external translators are fakes.
 /// </summary>
 public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
 {
-    private const string ItIsAVerb = """{"isTranslationRequest":true,"isVerb":true,"language":"ka"}""";
-    private const string NotAVerb = """{"isTranslationRequest":true,"isVerb":false,"language":"ru"}""";
-    private const string NotATranslation = """{"isTranslationRequest":false,"isVerb":false,"language":"ru"}""";
+    private const string AVerb = """{"notTranslatable":false,"isVerb":true,"russianInfinitive":null}""";
+    private const string NotAVerb = """{"notTranslatable":false,"isVerb":false,"russianInfinitive":null}""";
+    private const string NotTranslatable = """{"notTranslatable":true,"isVerb":false,"russianInfinitive":null}""";
+
+    private static string RussianVerb(string infinitive) =>
+        JsonSerializer.Serialize(new { notTranslatable = false, isVerb = true, russianInfinitive = infinitive });
 
     /// <summary>The verb whose real Wiktionary page is recorded in the fixture.</summary>
     private static readonly string PaintPage = FakeWiktionaryHandler.Fixture("wiktionary-paint.json");
     private static readonly string Paint = FakeWiktionaryHandler.TitleOf(PaintPage);
 
     private static string LemmaOf(string russian) =>
-        Catalog().Select(v => v!.AsObject()).Single(v => v["ru"]!.GetValue<string>() == russian)["lemma"]!.GetValue<string>();
+        Catalog().Select(v => v!.AsObject()).First(v => v["ru"]!.GetValue<string>() == russian)["lemma"]!.GetValue<string>();
 
     private static readonly string Write = LemmaOf("писать");
     private static readonly string Dance = LemmaOf("танцевать");
 
     private static string Json(object value) => JsonSerializer.Serialize(value);
 
-    // ── 1. The verb base answers first ───────────────────────────────────────────────────────────
+    /// <summary>A typo: one letter typed twice. (Dropping a letter can give another real form.)</summary>
+    private static string Doubled(string form, int at) => form.Insert(at, form[at].ToString());
 
-    [Test]
-    public async Task Form_of_a_verb_in_the_base_is_answered_from_the_database_with_no_model_call()
+    private static string Meaning(JsonObject verb, string tense, int person) =>
+        verb["meanings"]![tense]![person]!.GetValue<string>();
+
+    private static IEnumerable<string> CardForms(JsonObject verb) =>
+        new[] { "present", "future", "aorist" }.SelectMany(t => Enumerable.Range(0, 6).Select(p => Form(verb, t, p)));
+
+    /// <summary>The analyst names the verb and says the source has no table for it.</summary>
+    private static object NoTableFor(JsonObject verb) => new
+    {
+        outcome = "noTable", lemma = verb["lemma"]!.GetValue<string>(), russian = verb["ru"]!.GetValue<string>()
+    };
+
+    // What happens to a verb with no table when the generator and the reviewer are configured is in
+    // VerbGenerationTests; here those two roles are off, so such a verb is just translated.
+    [SetUp]
+    public void NoGeneration() => Models.CanGenerate = false;
+
+    private void AnalystFetchesThenAnswers(string page, object answer) =>
+        Models.AnalystModel.CallToolsThenAnswer(
+            [("fetch_wiktionary_conjugation", new() { ["page"] = page })], _ => Json(answer));
+
+    // ── 1. The verb base answers first — no model, no key, no switch ─────────────────────────────
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task Form_of_a_catalog_verb_is_translated_as_that_form_from_the_database(bool agentOn)
     {
         await SeedCatalogWithout();
+        Models.Configured = agentOn;
         var verb = CatalogVerb(Write);
-        var form = Form(verb, "aorist", 3);
 
-        var result = await Translate(form);
+        var result = await Translate(Form(verb, "aorist", 3));
 
-        result.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(verb["meanings"]!["aorist"]![3]!.GetValue<string>(),
-                because: "a form is translated as what it says, not as the infinitive of its verb");
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Meaning(verb, "aorist", 3));
         Models.ModelCalls.Should().Be(0);
-        Wiktionary.RequestedPages.Should().BeEmpty();
-        External.Calls.Should().Be(0, because: "a verified verb is served from our base, not from an external site");
+        External.Calls.Should().Be(0, because: "a catalog verb is served from our base, not from an external site");
         Log.Paths.Should().Equal("verb-base");
     }
 
     [Test]
-    public async Task Russian_infinitive_of_a_verb_in_the_base_is_answered_with_its_dictionary_form_from_the_database()
+    public async Task Russian_infinitive_of_a_catalog_verb_is_answered_with_its_dictionary_form_with_the_agent_off()
     {
         await SeedCatalogWithout();
-        var verb = CatalogVerb(Write);
+        Models.Configured = false;
 
         var result = await Translate("Писать");
 
@@ -66,43 +95,69 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         // opens the verb view; the name of the action goes next to it.
         var answer = result.Should().BeOfType<TranslationResult.Success>().Subject;
         answer.Definition.Should().Be(Write);
-        answer.AdditionalInfo.Should().Contain(verb["title"]!.GetValue<string>());
-        Models.ModelCalls.Should().Be(0);
+        answer.AdditionalInfo.Should().Contain($"название действия: {CatalogVerb(Write)["title"]!.GetValue<string>()}");
         External.Calls.Should().Be(0);
+        Log.Paths.Should().Equal("verb-base");
+    }
+
+    // What the learner typed → the cell of «писать» that answers it. Imperfect before aorist: both say «писал(а)».
+    [TestCase("писал", "imperfect", 2, TestName = "Bare_russian_past_is_answered_with_the_he_form")]
+    [TestCase("писала", "imperfect", 2, TestName = "Feminine_russian_past_is_answered_with_the_he_she_form")]
+    [TestCase("я писал", "imperfect", 0, TestName = "Russian_past_with_a_pronoun_is_exact")]
+    [TestCase("она писала", "imperfect", 2, TestName = "She_wrote_is_the_third_person")]
+    [TestCase("мы писали", "imperfect", 3, TestName = "Plural_with_a_pronoun_is_exact")]
+    [TestCase("пишу", "present", 0, TestName = "Russian_present_shows_its_person")]
+    [TestCase("ты пишешь", "present", 1, TestName = "Russian_present_with_a_pronoun")]
+    [TestCase("я буду писать", "future", 0, TestName = "Russian_compound_future")]
+    [TestCase("мне надо писать", "optative", 0, TestName = "Dative_pronoun_before_nado_is_who_acts")]
+    [TestCase("он писал мне", "imperfect", 2, TestName = "Object_pronoun_after_the_verb_is_set_aside")]
+    [TestCase("ему писали", "imperfect", 5, TestName = "Object_pronoun_before_the_verb_is_not_who_acts")]
+    [TestCase("я пишу тебе", "present", 0, TestName = "Object_pronoun_after_a_present_form")]
+    public async Task Russian_verb_form_is_answered_from_the_database_with_no_model(string typed, string tense, int person)
+    {
+        await SeedCatalogWithout();
+        Models.Configured = false;
+        var verb = CatalogVerb(Write);
+
+        var result = await Translate(typed);
+
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Form(verb, tense, person));
+        External.Calls.Should().Be(0);
+        Log.Paths.Should().Equal("verb-base");
     }
 
     [Test]
-    public async Task Russian_form_of_a_verb_in_the_base_is_answered_from_the_database_with_no_model_call()
+    public async Task Other_reading_of_an_ambiguous_russian_past_is_named_next_to_the_answer()
     {
         await SeedCatalogWithout();
         var verb = CatalogVerb(Write);
 
-        var withPronoun = await Translate("Я пишу");
-        var feminine = await Translate("я писала");
-        var bare = await Translate("писал");
+        var result = (TranslationResult.Success)await Translate("писал");
 
-        withPronoun.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Form(verb, "present", 0));
-        // «я писал(а)» is two Georgian tenses in the catalog; the phrase is built from the imperfective
-        // Russian verb, so the long past is the honest match.
-        feminine.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Form(verb, "imperfect", 0));
-        // Without a pronoun «писал» fits я / ты / он — «он» is returned.
-        bare.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Form(verb, "imperfect", 2));
-        Models.ModelCalls.Should().Be(0);
-        External.Calls.Should().Be(0);
-        Log.Paths.Should().Equal("verb-base", "verb-base", "verb-base");
+        result.AdditionalInfo.Should().Contain($"«{Meaning(verb, "imperfect", 2)}»");
+        result.AdditionalInfo.Should().Contain($"ещё: {Form(verb, "aorist", 2)}");
     }
 
     [Test]
-    public async Task Stale_external_answer_in_the_cache_does_not_hide_a_verb_of_the_base()
+    public async Task Object_pronoun_that_is_not_in_the_form_is_named_in_the_reply()
     {
         await SeedCatalogWithout();
         var verb = CatalogVerb(Write);
-        // The cache got «писать» from an external site before the verb base answered Russian words.
+
+        var result = (TranslationResult.Success)await Translate("он писал мне");
+
+        result.Definition.Should().Be(Form(verb, "imperfect", 2));
+        result.AdditionalInfo.Should().Contain("«он писал»").And.Contain("без «мне»");
+    }
+
+    [Test]
+    public async Task Verb_base_wins_over_a_stale_cached_translation()
+    {
+        await SeedCatalogWithout();
         await InScope(async sp =>
         {
             await sp.GetRequiredService<TranslationCache>().StoreAsync(
-                "писать", TranslationDirection.RussianToGeorgian,
-                new TranslationResult.Success("что-то из внешнего словаря", string.Empty, string.Empty),
+                "писать", TranslationDirection.RussianToGeorgian, new TranslationResult.Success("old external answer", "", ""),
                 TranslationCache.SourceExternal, classified: false, CancellationToken.None);
             return 0;
         });
@@ -111,18 +166,6 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
 
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Write);
         Log.Paths.Should().Equal("verb-base");
-    }
-
-    [Test]
-    public async Task Answer_for_a_form_carries_a_real_sentence_with_that_form_when_the_catalog_has_one()
-    {
-        await SeedCatalogWithout();
-        var sentence = CatalogVerb(Write)["sentences"]![0]!;
-
-        var result = await Translate(sentence["form"]!.GetValue<string>());
-
-        result.Should().BeOfType<TranslationResult.Success>().Which.Example
-            .Should().Be($"{sentence["ka"]} — {sentence["ru"]}");
     }
 
     // ── 2. A new verb that Wiktionary has a table for ────────────────────────────────────────────
@@ -134,110 +177,68 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         var catalog = CatalogVerb(Paint);
         var form = Form(catalog, "aorist", 0);
         Wiktionary.Pages[Paint] = PaintPage;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.CallToolsThenAnswer(
-            [
-                ("search_verb_base", new() { ["query"] = form }),
-                ("fetch_wiktionary_conjugation", new() { ["page"] = Paint })
-            ],
-            _ => Json(new { outcome = "wiktionary", lemma = Paint, russian = "Рисовать" }));
+        Models.ClassifierModel.AnswerWith(AVerb);
+        AnalystFetchesThenAnswers(Paint, new { outcome = "wiktionary", lemma = Paint, russian = "Рисовать" });
 
         var result = await Translate(form);
 
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be("рисовать");
-
         var stored = await StoredVerb(Paint);
-        stored.Should().NotBeNull();
         stored!.Status.Should().Be(VerbStatus.Verified);
         stored.Translation.Should().Be("рисовать");
-        // Classified at runtime exactly as the catalog script classified the same verb offline.
         stored.Kind.Should().Be(catalog["kind"]!.GetValue<string>());
         stored.Title.Should().Be(catalog["title"]!.GetValue<string>());
         var card = JsonNode.Parse(stored.CardJson)!;
         card["tenses"]!.ToJsonString().Should().Be(catalog["tenses"]!.ToJsonString(), because: "the paradigm is the source's table");
-        card["root"]!.GetValue<string>().Should().Be(catalog["root"]!.GetValue<string>());
-        card["reason"]!.GetValue<string>().Should().Be(catalog["reason"]!.GetValue<string>());
-        card["model"]!.ToJsonString().Should().Be(catalog["model"]!.ToJsonString());
         card["source"]!.GetValue<string>().Should().Be(catalog["source"]!.GetValue<string>());
         card["status"]!.GetValue<string>().Should().Be("verified");
-
-        var parse = await InScope(sp => sp.GetRequiredService<VerbQueries>().ParseAsync(form, CancellationToken.None));
-        parse.Should().Contain(h => h.Lemma == Paint && h.Tense == "aorist" && h.Person == 0);
+        card["verification"]!.GetValue<string>().Should().StartWith("Формы — из таблицы спряжения в Викисловаре.")
+            .And.Contain("Перевод подобрала нейросеть");
 
         Models.ClassifierModel.Calls.Should().Be(1);
-        Models.AnalystModel.Calls.Should().Be(3, because: "two tool calls and the final answer");
-        Log.Paths.Should().Equal("verb-wiktionary");
+        Models.AnalystModel.Calls.Should().Be(2, because: "one tool call and the final answer");
         Wiktionary.RequestedPages.Should().Equal(Paint);
         External.Calls.Should().Be(0);
+        Log.Paths.Should().Equal("analyst[fetch_wiktionary_conjugation]>verb-wiktionary");
+
+        // Stored once — served from the database afterwards, any form of it.
+        (await Translate(Form(catalog, "present", 5))).Should().BeOfType<TranslationResult.Success>();
+        Models.ModelCalls.Should().Be(3);
+        Wiktionary.RequestedPages.Should().HaveCount(1);
+        Log.Paths.Last().Should().Be("verb-base");
     }
 
     [Test]
-    public async Task Tools_the_analyst_calls_are_real_functions_over_the_base_and_the_source()
+    public async Task Question_tells_the_analyst_what_our_data_already_says_and_its_tool_is_a_real_function()
     {
         await SeedCatalogWithout(Paint);
         var known = CatalogVerb(Write);
+        var misspelled = Doubled(Form(known, "conditional", 3), 2);
         Wiktionary.Pages[Paint] = PaintPage;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.CallToolsThenAnswer(
-            [
-                ("search_verb_base", new() { ["query"] = Form(known, "present", 0) }),
-                ("fetch_wiktionary_conjugation", new() { ["page"] = Paint })
-            ],
-            _ => Json(new { outcome = "none" }));
+        Models.ClassifierModel.AnswerWith(AVerb);
+        AnalystFetchesThenAnswers(Paint, new { outcome = "none" });
 
-        await Translate(Form(CatalogVerb(Paint), "present", 0));
+        await Translate(misspelled);
 
-        var toolResults = FakeChatClient.ToolResults(Models.AnalystModel.Conversations.Last());
-        toolResults.Should().HaveCount(2);
-        var search = JsonNode.Parse(toolResults[0])!["verbs"]!.AsArray();
-        // The form may belong to more than one catalog verb; the most common one comes first.
-        search.Should().NotBeEmpty();
-        search[0]!["lemma"]!.GetValue<string>().Should().Be(Write);
-        search[0]!["tense"]!.GetValue<string>().Should().Be("present");
-        var fetched = JsonNode.Parse(toolResults[1])!;
+        var conversation = Models.AnalystModel.Conversations.Last();
+        var question = conversation.First(m => m.Role == Microsoft.Extensions.AI.ChatRole.User).Text;
+        question.Should().StartWith($"Georgian word: {misspelled}");
+        question.Should().Contain($"form {Form(known, "conditional", 3)} of the verb {Write}");
+        var fetched = JsonNode.Parse(FakeChatClient.ToolResults(conversation).Single())!;
         fetched["found"]!.GetValue<bool>().Should().BeTrue();
         fetched["present"]!.ToJsonString().Should().Be(
             JsonSerializer.Serialize(Enumerable.Range(0, 6).Select(p => Form(CatalogVerb(Paint), "present", p))));
     }
 
     [Test]
-    public async Task Second_request_for_a_stored_verb_is_served_from_the_database_with_no_model_or_http_call()
-    {
-        await SeedCatalogWithout(Paint);
-        var form = Form(CatalogVerb(Paint), "future", 2);
-        Wiktionary.Pages[Paint] = PaintPage;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.CallToolsThenAnswer(
-            [("fetch_wiktionary_conjugation", new() { ["page"] = Paint })],
-            _ => Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" }));
-        var first = await Translate(form);
-        var callsAfterFirst = Models.ModelCalls;
-        var requestsAfterFirst = Wiktionary.RequestedPages.Count;
-
-        var second = await Translate(form);
-        var otherFormOfTheSameVerb = await Translate(Form(CatalogVerb(Paint), "present", 5));
-
-        second.Should().Be(first);
-        otherFormOfTheSameVerb.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be("рисовать");
-        Models.ModelCalls.Should().Be(callsAfterFirst);
-        Log.Paths.Should().Equal("verb-wiktionary", "verb-base", "verb-base");
-        Wiktionary.RequestedPages.Should().HaveCount(requestsAfterFirst);
-        External.Calls.Should().Be(0);
-    }
-
-    [Test]
-    public async Task Forms_the_model_makes_up_are_ignored_when_the_source_has_a_table()
+    public async Task Analyst_that_claims_there_is_no_table_is_overruled_by_the_source()
     {
         await SeedCatalogWithout(Paint);
         var catalog = CatalogVerb(Paint);
         Wiktionary.Pages[Paint] = PaintPage;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        // The model skips the tool and answers from memory, with a paradigm that is another verb's.
-        var wrong = Enumerable.Range(0, 6).Select(p => p == 2 ? Paint : Form(CatalogVerb(Write), "present", p)).ToArray();
-        Models.AnalystModel.AnswerWith(Json(new
-        {
-            outcome = "generated", lemma = Paint, russian = "рисовать", generated = new { present = wrong }
-        }));
+        Models.ClassifierModel.AnswerWith(AVerb);
+        // The analyst claims there is no table; the resolver looks at the source itself.
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "noTable", lemma = Paint, russian = "рисовать" }));
 
         await Translate(Form(catalog, "present", 0));
 
@@ -248,327 +249,307 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Proposal_for_a_verb_the_looked_up_word_is_not_a_form_of_is_rejected()
-    {
-        await SeedCatalogWithout(Paint, Dance);
-        Wiktionary.Pages[Paint] = PaintPage;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" }));
-
-        // A form of "to dance" is looked up; the model points at the page of "to paint".
-        var result = await Translate(Form(CatalogVerb(Dance), "present", 0));
-
-        (await StoredVerb(Paint)).Should().BeNull();
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
-    }
-
-    // ── 3. A new verb with no table anywhere ─────────────────────────────────────────────────────
-
-    private static object GeneratedFrom(JsonObject verb) => new
-    {
-        outcome = "generated",
-        lemma = verb["lemma"]!.GetValue<string>(),
-        russian = verb["ru"]!.GetValue<string>(),
-        masdar = verb["title"]!.GetValue<string>(),
-        generated = new
-        {
-            present = Enumerable.Range(0, 6).Select(p => Form(verb, "present", p)),
-            future = Enumerable.Range(0, 6).Select(p => Form(verb, "future", p)),
-            aorist = Enumerable.Range(0, 6).Select(p => Form(verb, "aorist", p))
-        }
-    };
-
-    [Test]
-    public async Task New_verb_without_a_table_is_stored_generated_and_marked_unverified()
-    {
-        await SeedCatalogWithout(Dance);
-        var verb = CatalogVerb(Dance);
-        var form = Form(verb, "aorist", 4);
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        // Wiktionary has no such page in this test; the "model's own" forms are the catalog's.
-        Models.AnalystModel.CallToolsThenAnswer(
-            [("fetch_wiktionary_conjugation", new() { ["page"] = Dance })],
-            _ => Json(GeneratedFrom(verb)));
-
-        var result = await Translate(form);
-
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be("танцевать");
-        var stored = await StoredVerb(Dance);
-        stored!.Status.Should().Be(VerbStatus.Generated);
-        var card = JsonNode.Parse(stored.CardJson)!;
-        card["status"]!.GetValue<string>().Should().Be("generated", because: "the card must say «не проверено» and games must skip it");
-        card["source"].Should().BeNull();
-        card["tenses"]!.AsObject().Select(t => t.Key).Should().BeEquivalentTo("present", "future", "aorist");
-        Log.Paths.Should().Equal("verb-generated");
-
-        var hint = await InScope(sp => sp.GetRequiredService<VerbReplyHintQuery>().FindAsync([form], CancellationToken.None));
-        hint!.Status.Should().Be(VerbStatus.Generated);
-        var list = await InScope(sp => sp.GetRequiredService<VerbQueries>().ListAsync(CancellationToken.None));
-        list.Single(v => v.Lemma == Dance).Status.Should().Be(VerbStatus.Generated);
-        list.Where(v => v.Lemma != Dance).Should().OnlyContain(v => v.Status == VerbStatus.Verified);
-
-        Models.AnalystModel.Reset();
-        Models.ClassifierModel.Reset();
-        (await Translate(form)).Should().Be(result, because: "generated once — served from the database afterwards");
-        Models.ModelCalls.Should().Be(0);
-    }
-
-    [Test]
-    public async Task Generated_verb_with_only_some_tenses_is_special_and_does_not_speak_of_a_source()
-    {
-        await SeedCatalogWithout(Dance);
-        var verb = CatalogVerb(Dance);
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.AnswerWith(Json(new
-        {
-            outcome = "generated", lemma = Dance, russian = "танцевать",
-            generated = new { present = Enumerable.Range(0, 6).Select(p => Form(verb, "present", p)) }
-        }));
-
-        await Translate(Form(verb, "present", 0));
-
-        var stored = await StoredVerb(Dance);
-        stored!.Status.Should().Be(VerbStatus.Generated);
-        stored.Kind.Should().Be("special", because: "with a part of the tenses nothing can be said about the scheme — as in the catalog");
-        JsonNode.Parse(stored.CardJson)!["reason"]!.GetValue<string>().Should().Be("Известна только часть времён — учить формы целиком.");
-    }
-
-    [Test]
     public async Task Wiktionary_page_titled_by_a_form_other_than_the_present_is_not_stored_as_a_verb()
     {
         await SeedCatalogWithout(Paint);
         var future = Form(CatalogVerb(Paint), "future", 2);
-        // The real page of the verb, served under the title of its future form.
         Wiktionary.Pages[future] = PaintPage;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
+        Models.ClassifierModel.AnswerWith(AVerb);
         Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = future, russian = "рисовать" }));
 
         await Translate(future);
 
         (await StoredVerb(future)).Should().BeNull();
-        (await StoredVerb(Paint)).Should().BeNull();
-        Log.Paths.Should().Equal("verb-rejected>legacy");
+        Log.Paths.Should().Equal("analyst[]>verb-rejected(page-is-not-the-present-form)>legacy");
+    }
+
+    // ── 3. The open lexicon: a verb found with no model at all ───────────────────────────────────
+
+    [Test]
+    public async Task Russian_verb_the_lexicon_translates_is_stored_from_the_source_with_no_model_call()
+    {
+        await SeedCatalogWithout(Paint);
+        Wiktionary.Pages[Paint] = PaintPage;
+        Lexicon.Verbs.Add(new LexiconVerb(Paint, null, HasTable: true, ["to paint"], ["рисовать", "красить"]));
+
+        var result = await Translate("рисовать");
+
+        result.Should().BeOfType<TranslationResult.Success>()
+            .Which.Definition.Should().Be(Paint);
+        var stored = await StoredVerb(Paint);
+        stored!.Status.Should().Be(VerbStatus.Verified);
+        stored.Translation.Should().Be("рисовать, красить");
+        JsonNode.Parse(stored.CardJson)!["verification"]!.GetValue<string>().Should().Contain("Перевод сверен с русским Викисловарём.");
+        Models.ModelCalls.Should().Be(0);
+        Log.Paths.Should().Equal("lexicon>verb-wiktionary");
+
+        // An inflected form: the cheap model names the infinitive, the base has the verb — no analyst.
+        Models.ClassifierModel.AnswerWith(RussianVerb("рисовать"));
+        var inflected = await Translate("рисовал");
+        inflected.Should().BeOfType<TranslationResult.Success>()
+            .Which.Definition.Should().Be(Paint);
+        Models.AnalystModel.Calls.Should().Be(0);
+        Log.Paths.Last().Should().Be("verb-base-by-infinitive");
+
+        // And the same inflected form again: from the cache.
+        await Translate("Рисовал");
+        Models.ClassifierModel.Calls.Should().Be(1);
+        Log.Paths.Last().Should().Be("cache");
     }
 
     [Test]
-    public async Task Generated_forms_that_are_not_georgian_script_are_rejected_and_nothing_is_stored()
+    public async Task Proposal_outside_the_lexicons_candidates_is_sent_back_once_with_the_discrepancy()
+    {
+        await SeedCatalogWithout(Paint, Dance);
+        Wiktionary.Pages[Paint] = PaintPage;
+        // Two candidates: the lexicon alone cannot choose, the analyst must — among them.
+        Lexicon.Verbs.Add(new LexiconVerb(Paint, null, true, ["to paint"], ["малевать"]));
+        Lexicon.Verbs.Add(new LexiconVerb(Dance, null, false, ["to dance"], ["малевать"]));
+        Models.ClassifierModel.AnswerWith(RussianVerb("малевать"));
+        Models.AnalystModel.Respond = (messages, _) => Task.FromResult(new Microsoft.Extensions.AI.ChatMessage(
+            Microsoft.Extensions.AI.ChatRole.Assistant,
+            messages.Any(m => m.Text.Contains("Check failed:"))
+                ? Json(new { outcome = "wiktionary", lemma = Paint, russian = "малевать" })
+                : Json(new { outcome = "existing", lemma = Write })));
+
+        var result = await Translate("малевать");
+
+        result.Should().BeOfType<TranslationResult.Success>();
+        (await StoredVerb(Paint))!.Translation.Should().Be("малевать");
+        Models.AnalystModel.Calls.Should().Be(2);
+        Models.AnalystModel.Conversations.Last().Last().Text.Should()
+            .Contain($"The Wiktionary lexicon translates «малевать» with: {Paint}, {Dance}. You proposed {Write}.");
+        Log.Paths.Should().Equal(
+            "analyst[]>retry(lexicon-translates-the-word-with-another-verb)>analyst[]>verb-wiktionary");
+    }
+
+    [Test]
+    public async Task Check_that_fails_twice_is_not_retried_again()
+    {
+        await SeedCatalogWithout(Paint, Dance);
+        Lexicon.Verbs.Add(new LexiconVerb(Paint, null, true, ["to paint"], ["малевать"]));
+        Lexicon.Verbs.Add(new LexiconVerb(Dance, null, false, ["to dance"], ["малевать"]));
+        Models.ClassifierModel.AnswerWith(RussianVerb("малевать"));
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "existing", lemma = Write }));
+
+        var result = await Translate("малевать");
+
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
+        Models.AnalystModel.Calls.Should().Be(2, because: "one retry, never a loop");
+        Log.Paths.Single().Should().EndWith("verb-rejected(lexicon-translates-the-word-with-another-verb)>legacy");
+    }
+
+    // ── 4. The same verb, not a similar one ──────────────────────────────────────────────────────
+
+    [Test]
+    public async Task Catalog_verb_with_another_russian_gloss_is_not_the_verb_that_was_asked_for()
+    {
+        await SeedCatalogWithout();
+        Models.ClassifierModel.AnswerWith(RussianVerb("строчить"));
+        // The model settles for a near-synonym that is in the base.
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "existing", lemma = Write }));
+
+        var result = await Translate("строчить");
+
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
+        Log.Paths.Should().Equal("analyst[]>verb-rejected(catalog-verb-has-another-russian-gloss)>legacy");
+        (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Runtime_verb_named_again_for_another_russian_word_gets_that_gloss()
+    {
+        await SeedCatalogWithout(Paint);
+        Wiktionary.Pages[Paint] = PaintPage;
+        Models.ClassifierModel.AnswerWith(AVerb);
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = "изображать" }));
+        await Translate(Paint);
+
+        Models.ClassifierModel.AnswerWith(RussianVerb("рисовать"));
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" }));
+        var result = await Translate("рисовать");
+
+        result.Should().BeOfType<TranslationResult.Success>()
+            .Which.Definition.Should().Be(Paint);
+        (await StoredVerb(Paint))!.Translation.Should().Be("изображать, рисовать");
+        var callsSoFar = Models.ModelCalls;
+        await Translate("рисовать");
+        Models.ModelCalls.Should().Be(callsSoFar, because: "the gloss now finds the verb in the base");
+    }
+
+    [TestCase("делать красивым", "делать красивым", TestName = "Gloss_that_is_an_infinitive_phrase_is_kept")]
+    [TestCase("красота, рисовать", "рисовать", TestName = "Only_infinitives_of_a_gloss_are_kept")]
+    public async Task Russian_gloss_written_by_the_model_must_be_infinitives(string written, string stored)
+    {
+        await SeedCatalogWithout(Paint);
+        Wiktionary.Pages[Paint] = PaintPage;
+        Models.ClassifierModel.AnswerWith(AVerb);
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = written }));
+
+        await Translate(Paint);
+
+        (await StoredVerb(Paint))!.Translation.Should().Be(stored);
+    }
+
+    [Test]
+    public async Task Unusable_russian_gloss_for_a_verb_that_has_a_table_is_asked_for_once_more_and_never_generated()
+    {
+        await SeedCatalogWithout(Paint);
+        Wiktionary.Pages[Paint] = PaintPage;
+        Models.CanGenerate = true; // the generator is a throwing fake: it must not be reached
+        Models.ClassifierModel.AnswerWith(AVerb);
+        var answers = new Queue<string>([
+            Json(new { outcome = "wiktionary", lemma = Paint, russian = "он рисует" }),
+            Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" })]);
+        Models.AnalystModel.Respond = (_, _) => Task.FromResult(new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant, answers.Dequeue()));
+
+        await Translate(Paint);
+
+        (await StoredVerb(Paint))!.Translation.Should().Be("рисовать");
+        Log.Paths.Should().Equal("analyst[]>retry(russian-gloss-not-an-infinitive)>analyst[]>verb-wiktionary");
+        Models.AnalystModel.Conversations.Last().Last().Text.Should().Contain("You wrote: «он рисует»");
+
+        // And when the second answer is no better: the old translation, still no generation.
+        await SeedCatalogWithout(Paint);
+        Log.Reset();
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = "он рисует" }));
+        await Translate(Paint);
+        Log.Paths.Single().Should().EndWith("verb-rejected(russian-gloss-not-an-infinitive)>legacy");
+        Models.GeneratorModel.Calls.Should().Be(0);
+    }
+
+    // ── 5. A verb with no table anywhere: the analyst's own forms are never stored ───────────────
+
+    [Test]
+    public async Task Verb_without_a_table_is_not_stored_from_the_analyst_and_is_translated_the_old_way_when_generation_is_off()
     {
         await SeedCatalogWithout(Dance);
         var verb = CatalogVerb(Dance);
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.AnswerWith(Json(new
-        {
-            outcome = "generated",
-            lemma = Dance,
-            russian = "танцевать",
-            generated = new { present = new[] { "vtsekvav", "tsekvav", Dance, "vtsekvavt", "tsekvavt", "tsekvaven" } }
-        }));
+        Models.ClassifierModel.AnswerWith(RussianVerb("танцевать"));
+        AnalystFetchesThenAnswers(Dance, NoTableFor(verb));
 
-        var result = await Translate(Form(verb, "present", 2));
+        var result = await Translate("танцевать");
 
         (await StoredVerb(Dance)).Should().BeNull();
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
-        External.Calls.Should().Be(1);
-        Log.Paths.Should().Equal("verb-rejected>legacy");
+        Log.Paths.Should().Equal("analyst[fetch_wiktionary_conjugation]>verb-rejected(no-table-in-the-source)>legacy");
+
+        await Translate("танцевать");
+        Models.ModelCalls.Should().Be(3, because: "one classifier call and the analyst's two turns — and nothing on the second request");
+        Log.Paths.Last().Should().Be("cache");
     }
 
-    [TestCase("""{"outcome":"generated","lemma":"LEMMA","russian":"танцевать","generated":{"present":["LEMMA","LEMMA","LEMMA"]}}""",
-        TestName = "Generated_paradigm_with_three_persons_instead_of_six_is_rejected")]
-    [TestCase("""{"outcome":"generated","lemma":"LEMMA","russian":"to dance","generated":{"present":["LEMMA","LEMMA","LEMMA","LEMMA","LEMMA","LEMMA"]}}""",
-        TestName = "Translation_that_is_not_russian_is_rejected")]
-    [TestCase("""{"outcome":"generated","lemma":"LEMMA","russian":"танцевать","generated":null}""",
-        TestName = "Generated_outcome_without_forms_is_rejected")]
     [TestCase("""{"outcome":"wiktionary","lemma":"LEMMA","russian":"танцевать"}""",
-        TestName = "Claim_of_a_wiktionary_table_that_does_not_exist_is_rejected")]
+        "no-table-in-the-source", TestName = "Claim_of_a_table_that_does_not_exist_is_rejected")]
     [TestCase("""{"outcome":"existing","lemma":"LEMMA"}""",
-        TestName = "Claim_that_an_absent_verb_is_in_the_base_is_rejected")]
-    [TestCase("""{"outcome":"none"}""", TestName = "Analyst_that_cannot_identify_the_verb_stores_nothing")]
-    [TestCase("this is not json", TestName = "Analyst_output_that_is_not_json_falls_back")]
-    public async Task Bad_proposal_falls_back_to_the_old_translator(string analystAnswer)
+        "claimed-verb-not-in-base", TestName = "Claim_that_an_absent_verb_is_in_the_base_is_rejected")]
+    public async Task Bad_proposal_is_rejected_with_its_reason_in_the_log(string analystAnswer, string reason)
     {
         await SeedCatalogWithout(Dance);
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
+        Models.ClassifierModel.AnswerWith(AVerb);
         Models.AnalystModel.AnswerWith(analystAnswer.Replace("LEMMA", Dance));
 
-        var result = await Translate(Form(CatalogVerb(Dance), "present", 2));
+        var result = await Translate(Dance);
 
         (await StoredVerb(Dance)).Should().BeNull();
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
+        Log.Paths.Should().Equal($"analyst[]>verb-rejected({reason})>legacy");
     }
 
-    // ── 4. Retrieval through the agent: a Russian form, a typo ───────────────────────────────────
+    // ── 6. A misspelled form ─────────────────────────────────────────────────────────────────────
 
     [Test]
-    public async Task Inflected_russian_word_is_tied_to_a_verb_of_the_base_and_then_served_from_the_cache()
-    {
-        await SeedCatalogWithout();
-        // «написал» is not among the catalog's Russian phrases (they are built from the imperfective
-        // verb), so the base cannot answer it by itself and the agent ties it to the verb.
-        var verb = CatalogVerb(Write);
-        var heWrote = Form(verb, "aorist", 2);
-        Models.ClassifierModel.AnswerWith(ItIsAVerb.Replace("ka", "ru"));
-        Models.AnalystModel.CallToolsThenAnswer(
-            // The model searches by the plain stem, as it would for a perfective form.
-            [("search_verb_base", new() { ["query"] = "писал" })],
-            results => Json(new
-            {
-                // The lemma is taken from what the search tool returned, as a model would.
-                outcome = "existing",
-                lemma = JsonNode.Parse(results[0])!["verbs"]![0]!["lemma"]!.GetValue<string>(),
-                form = heWrote
-            }));
-
-        var result = await Translate("написал");
-
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(heWrote);
-        var cached = (await CacheEntries()).Should().ContainSingle().Subject;
-        cached.Key.Should().Be("написал");
-        cached.Source.Should().Be(TranslationCache.SourceVerbAgent);
-
-        Models.ClassifierModel.Reset();
-        Models.AnalystModel.Reset();
-        (await Translate("Написал!")).Should().Be(result);
-        Log.Paths.Should().Equal("verb-existing", "cache");
-        Models.ModelCalls.Should().Be(0);
-        External.Calls.Should().Be(0);
-    }
-
-    [Test]
-    public async Task Form_the_analyst_names_must_really_be_a_form_of_that_verb()
+    public async Task Misspelled_form_is_tied_to_its_verb_only_through_a_real_form()
     {
         await SeedCatalogWithout();
         var verb = CatalogVerb(Write);
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        // The model ties the Russian word to "to write" but names a form of another verb.
-        Models.AnalystModel.AnswerWith(Json(new
-        {
-            outcome = "existing", lemma = Write, form = Form(CatalogVerb(Dance), "aorist", 2)
-        }));
+        var form = Form(verb, "conditional", 3);
+        var misspelled = Doubled(form, 2);
+        Models.ClassifierModel.AnswerWith(AVerb);
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "existing", lemma = Write, form }));
 
-        var result = await Translate("написал");
+        var result = (TranslationResult.Success)await Translate(misspelled);
 
-        result.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(Write, because: "an unconfirmed form is dropped, the verb itself is shown");
+        result.Definition.Should().Be("писать");
+        result.AdditionalInfo.Should().StartWith($"возможно, это форма {form}");
+
+        // A real form of the verb, but nowhere near what was typed: not a typo of it.
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "existing", lemma = Write, form = Write }));
+        await Translate(Doubled(form, 4));
+        Log.Paths.Last().Should().Be("analyst[]>verb-rejected(word-is-not-a-form-of-the-proposed-verb)>legacy");
+
+        // The same claim with a form of another verb does not hold.
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "existing", lemma = Write, form = Form(CatalogVerb(Dance), "aorist", 2) }));
+        await Translate(Doubled(form, 3));
+        Log.Paths.Last().Should().Be("analyst[]>verb-rejected(word-is-not-a-form-of-the-proposed-verb)>legacy");
     }
 
-    [Test]
-    public async Task Search_tool_finds_a_form_with_a_typo_and_a_russian_word_in_another_form()
-    {
-        await SeedCatalogWithout();
-        var form = Form(CatalogVerb(Write), "conditional", 3);
-        var withTypo = form.Remove(form.Length / 2, 1);
-
-        var (byTypo, byRussian, nothing) = await InScope(async sp =>
-        {
-            var search = sp.GetRequiredService<VerbBaseSearch>();
-            return (await search.SearchAsync(withTypo, CancellationToken.None),
-                await search.SearchAsync("писала", CancellationToken.None),
-                await search.SearchAsync("самолет", CancellationToken.None));
-        });
-
-        byTypo.Should().Contain(m => m.Lemma == Write && m.Match == "typo" && m.Form == form);
-        byTypo.Should().HaveCountLessThanOrEqualTo(5);
-        // Several catalog verbs have a gloss that starts like «писала»; the tool promises the closest
-        // one first and a handful at most — the agent picks.
-        // A Russian form the catalog has a phrase for is an exact hit now, not a guess by a shared stem.
-        byRussian.Should().HaveCountLessThanOrEqualTo(5).And.OnlyContain(m => m.Match == "meaning");
-        byRussian[0].Lemma.Should().Be(Write);
-        nothing.Should().BeEmpty();
-    }
+    // ── 7. Not something to translate ────────────────────────────────────────────────────────────
 
     [Test]
-    public async Task Search_tool_returns_every_verb_an_exact_word_belongs_to_most_common_first()
+    public async Task Gibberish_is_not_sent_to_machine_translation_and_the_verdict_is_remembered()
     {
         await SeedCatalogWithout();
-        var catalog = Catalog().Select(v => v!.AsObject()).ToList();
-        // A form that the catalog lists under more than one verb, found in the catalog itself.
-        var owners = catalog
-            .SelectMany(v => v["tenses"]!.AsObject().SelectMany(t => t.Value!.AsArray())
-                .SelectMany(cell => cell!.AsArray()).Select(f => (Form: f!.GetValue<string>(), Lemma: v["lemma"]!.GetValue<string>())))
-            .Distinct()
-            .GroupBy(x => x.Form)
-            .First(g => g.Count() > 1);
-        var expected = catalog.Select(v => v["lemma"]!.GetValue<string>()).Where(l => owners.Any(o => o.Lemma == l)).ToList();
+        Models.ClassifierModel.AnswerWith(NotTranslatable);
+        External.Fails = true; // the dictionary site does not know the text
 
-        var (matches, first) = await InScope(async sp =>
-        {
-            var search = sp.GetRequiredService<VerbBaseSearch>();
-            return (await search.SearchAsync(owners.Key, CancellationToken.None),
-                await search.FindExactAsync(owners.Key, CancellationToken.None));
-        });
+        var result = await Translate("ываыва");
 
-        matches.Should().OnlyContain(m => m.Match == "form" && m.Form == owners.Key);
-        matches.Select(m => m.Lemma).Should().Equal(expected.Take(5), because: "catalog order is by how common a verb is");
-        first!.Lemma.Should().Be(expected[0]);
-    }
+        result.Should().BeOfType<TranslationResult.NotTranslatable>();
+        Log.Paths.Should().Equal("not-translatable");
+        (await CacheEntries()).Should().ContainSingle().Which.Source.Should().Be(TranslationCache.SourceNotTranslatable);
 
-    [Test]
-    public async Task Gloss_with_a_clarification_does_not_answer_the_plain_word()
-    {
-        await SeedCatalogWithout();
-        var catalog = Catalog().Select(v => v!.AsObject()).ToList();
-        string Lemma(string ru) => catalog.First(v => v["ru"]!.GetValue<string>() == ru)["lemma"]!.GetValue<string>();
-
-        var (plain, inflected) = await InScope(async sp =>
-        {
-            var search = sp.GetRequiredService<VerbBaseSearch>();
-            return (await search.SearchAsync("входить", CancellationToken.None),
-                await search.SearchAsync("входил", CancellationToken.None));
-        });
-
-        plain.Should().ContainSingle().Which.Lemma.Should().Be(Lemma("входить"));
-        // Both «входить» and «входить (сюда)» are offered for the inflected word, the plain gloss first.
-        inflected.Select(m => m.Lemma).Take(2).Should().Equal(Lemma("входить"), Lemma("входить (сюда)"));
-    }
-
-    // ── 5. Not a verb, not a translation request ─────────────────────────────────────────────────
-
-    [Test]
-    public async Task Request_log_line_names_the_path_and_carries_no_text_but_the_looked_up_word()
-    {
-        await SeedCatalogWithout();
-        Models.ClassifierModel.AnswerWith(NotAVerb);
-
-        await Translate("стол");
-
-        Log.Lines.Should().ContainSingle()
-            .Which.Should().MatchRegex(@"^Translation of стол: path not-a-verb>legacy, Success, \d+ ms$");
-    }
-
-    [Test]
-    public async Task Text_that_is_not_a_translation_request_never_reaches_the_analyst()
-    {
-        await SeedCatalogWithout();
-        Models.ClassifierModel.AnswerWith(NotATranslation);
-
-        var result = await Translate("привет, как дела?");
-
-        // Today's behaviour: the old translator decides what the user sees.
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
+        var externalCalls = External.Calls;
+        (await Translate("Ываыва!")).Should().BeOfType<TranslationResult.NotTranslatable>();
         Models.ClassifierModel.Calls.Should().Be(1);
-        Models.AnalystModel.Calls.Should().Be(0);
-
-        await Translate("привет, как дела?");
-        Models.ClassifierModel.Calls.Should().Be(1, because: "the verdict is remembered with the cached translation");
-        Log.Paths.Should().Equal("not-a-translation>legacy", "cache");
-        External.Calls.Should().Be(1);
+        External.Calls.Should().Be(externalCalls);
+        Log.Paths.Last().Should().Be("cache");
     }
 
     [Test]
-    public async Task Text_the_old_translator_cannot_translate_gets_todays_failure()
+    public async Task Small_model_alone_cannot_refuse_a_word_the_dictionary_knows()
     {
         await SeedCatalogWithout();
-        Models.ClassifierModel.AnswerWith(NotATranslation);
-        External.Fails = true;
+        Models.ClassifierModel.AnswerWith(NotTranslatable);
 
-        var result = await Translate("ъъъ");
+        var result = await Translate("привет");
 
-        result.Should().BeOfType<TranslationResult.Failure>();
-        (await CacheEntries()).Should().BeEmpty(because: "a failure is not cached — the site may answer next time");
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
+        Log.Paths.Should().Equal("not-translatable-but-in-dictionary>legacy");
     }
 
     [Test]
-    public async Task Plain_word_is_translated_by_the_old_translator_once_and_then_served_from_the_cache()
+    public async Task Word_the_classifier_calls_translatable_goes_the_old_way_whatever_the_corpora_say()
+    {
+        await SeedCatalogWithout();
+        Lexicon.Attested = [];
+        Models.ClassifierModel.AnswerWith(NotAVerb);
+        External.DictionaryMisses.Add(Write + Write);
+
+        // A Georgian word the corpora have never seen and the dictionary site does not know: a rare
+        // noun is exactly that. "Not a verb" is all the models say about it — Google answers, as before.
+        var result = await Translate(Write + Write);
+
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.GoogleDefinition);
+        Log.Paths.Should().Equal("not-a-verb>legacy");
+    }
+
+    [Test]
+    public async Task Verb_the_analyst_does_not_know_is_translated_the_old_way_when_generation_is_off()
+    {
+        await SeedCatalogWithout();
+        Models.ClassifierModel.AnswerWith(RussianVerb("глокать"));
+        Models.AnalystModel.AnswerWith(Json(new { outcome = "none" }));
+
+        (await Translate("глокать")).Should().BeOfType<TranslationResult.Success>();
+
+        Log.Paths.Should().Equal("analyst[]>verb-rejected(analyst-found-no-verb)>legacy");
+    }
+
+    // ── 8. Plain words: one cheap call, then the cache ───────────────────────────────────────────
+
+    [Test]
+    public async Task Plain_word_costs_one_classifier_call_once_and_is_then_served_from_the_cache()
     {
         await SeedCatalogWithout();
         Models.ClassifierModel.AnswerWith(NotAVerb);
@@ -584,37 +565,39 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         Models.AnalystModel.Calls.Should().Be(0);
         var entry = (await CacheEntries()).Should().ContainSingle().Subject;
         entry.Key.Should().Be("стол");
-        entry.Direction.Should().Be(TranslationDirection.RussianToGeorgian);
-        entry.Source.Should().Be(TranslationCache.SourceExternal);
         entry.HitCount.Should().Be(2);
         entry.Classified.Should().BeTrue();
+        Log.Paths.Should().Equal("not-a-verb>legacy", "cache", "cache");
     }
 
     [Test]
-    public async Task Long_phrase_goes_to_the_old_translator_without_any_model_call()
+    public async Task Text_nobody_could_translate_does_not_cost_a_model_call_twice()
     {
         await SeedCatalogWithout();
+        Models.ClassifierModel.AnswerWith(NotAVerb);
+        External.Fails = true;
 
-        await Translate("я хочу пойти домой");
+        (await Translate("ъъъ")).Should().BeOfType<TranslationResult.Failure>();
+        (await Translate("ъъъ")).Should().BeOfType<TranslationResult.Failure>();
 
-        Models.ModelCalls.Should().Be(0);
-        External.Calls.Should().Be(1);
+        Models.ClassifierModel.Calls.Should().Be(1, because: "the verdict is remembered even without a translation");
+        Log.Paths.Should().Equal("not-a-verb>legacy", "legacy");
+        (await CacheEntries()).Should().ContainSingle().Which.Source.Should().Be(TranslationCache.SourceNoTranslation);
     }
 
     [Test]
-    public async Task Latin_text_goes_to_the_old_translator_without_any_model_call()
+    public async Task Request_log_line_names_the_path_the_model_usage_and_no_text_but_the_looked_up_word()
     {
         await SeedCatalogWithout();
+        Models.ClassifierModel.AnswerWith(NotAVerb);
 
-        await Translate("write");
-        await Translate("Write");
+        await Translate("стол");
 
-        Models.ModelCalls.Should().Be(0);
-        External.Calls.Should().Be(1);
-        Log.Paths.Should().Equal("legacy", "cache");
+        Log.Lines.Should().ContainSingle().Which.Should().MatchRegex(
+            @"^Translation of стол: path not-a-verb>legacy, Success, \d+ ms, model calls 1 \(classifier 1x\d+/\d+, analyst 0x0/0, generator 0x0/0, reviewer 0x0/0\)$");
     }
 
-    // ── 6. Failures degrade to the old translator ────────────────────────────────────────────────
+    // ── 9. Failures degrade to the old translator ────────────────────────────────────────────────
 
     [Test]
     public async Task Classifier_error_falls_back_to_the_old_translator_and_the_text_is_asked_about_again_later()
@@ -629,20 +612,17 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeFalse();
         Log.Paths.Should().Equal("classifier-failed>legacy");
 
-        // The model is back: the cached text gets its analysis after all.
         Wiktionary.Pages[Paint] = PaintPage;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
+        Models.ClassifierModel.AnswerWith(AVerb);
         Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" }));
-
         (await Translate(form)).Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be("рисовать");
-        (await StoredVerb(Paint)).Should().NotBeNull();
     }
 
     [Test]
     public async Task Analyst_that_hangs_is_cut_off_by_the_timeout_and_the_old_translator_answers()
     {
         await SeedCatalogWithout(Paint);
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
+        Models.ClassifierModel.AnswerWith(AVerb);
         Models.AnalystModel.Respond = async (_, ct) =>
         {
             await Task.Delay(Timeout.Infinite, ct);
@@ -655,89 +635,97 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
         (DateTime.UtcNow - started).Should().BeLessThan(TimeSpan.FromSeconds(10), because: "the test timeout is 1 second");
         Log.Paths.Should().Equal("analyst-failed>legacy");
-        (await StoredVerb(Paint)).Should().BeNull();
         (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeFalse();
     }
 
     [Test]
-    public async Task Wiktionary_outage_stores_nothing_even_if_the_model_offers_its_own_forms()
+    public async Task Wiktionary_outage_is_not_taken_for_a_verb_without_a_table()
     {
         await SeedCatalogWithout(Dance);
         Wiktionary.ThrottleNext = 100;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.AnswerWith(Json(GeneratedFrom(CatalogVerb(Dance))));
+        Models.ClassifierModel.AnswerWith(AVerb);
+        Models.AnalystModel.AnswerWith(Json(NoTableFor(CatalogVerb(Dance))));
 
-        var result = await Translate(Form(CatalogVerb(Dance), "present", 0));
+        await Translate(Form(CatalogVerb(Dance), "present", 0));
 
-        // "The source did not answer" is not "the source has no table": generated forms need the latter.
         (await StoredVerb(Dance)).Should().BeNull();
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
         Wiktionary.RequestedPages.Should().HaveCount(3, because: "one attempt and two retries");
-        Log.Paths.Should().Equal("analyst-failed>legacy");
+        Log.Paths.Should().Equal("analyst[]>analyst-failed>legacy");
     }
 
-    [Test]
-    public async Task Throttled_wiktionary_request_is_retried()
-    {
-        await SeedCatalogWithout(Paint);
-        Wiktionary.Pages[Paint] = PaintPage;
-        Wiktionary.ThrottleNext = 1;
-        Models.ClassifierModel.AnswerWith(ItIsAVerb);
-        Models.AnalystModel.AnswerWith(Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" }));
-
-        await Translate(Form(CatalogVerb(Paint), "present", 0));
-
-        (await StoredVerb(Paint)).Should().NotBeNull();
-        Wiktionary.RequestedPages.Should().HaveCount(2);
-    }
-
-    // ── 7. The switch is off (no key configured) ─────────────────────────────────────────────────
+    // ── 10. The switch is off; the budget is spent ───────────────────────────────────────────────
 
     [Test]
-    public async Task With_the_agent_off_translation_is_the_old_translator_behind_the_cache()
+    public async Task With_the_agent_off_a_plain_word_is_the_old_translator_behind_the_cache()
     {
         await SeedCatalogWithout();
         Models.Configured = false;
-        const string form = "стол";
 
-        var first = await Translate(form);
-        var second = await Translate(form);
+        var first = await Translate("стол");
+        var second = await Translate("стол");
 
-        // What the verb base does not know goes the old way: with the switch off no model is ever called.
-        first.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
         second.Should().Be(first);
         External.Calls.Should().Be(1);
         Models.ModelCalls.Should().Be(0);
-        Wiktionary.RequestedPages.Should().BeEmpty();
         Log.Paths.Should().Equal("legacy", "cache");
-        (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeFalse();
     }
 
-    [Test]
-    public async Task With_the_agent_off_a_verb_of_the_base_is_still_answered_from_the_base()
-    {
-        await SeedCatalogWithout();
-        Models.Configured = false;
-        var verb = CatalogVerb(Write);
-
-        var georgian = await Translate(Form(verb, "present", 0));
-        var russian = await Translate("писать");
-
-        georgian.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(verb["meanings"]!["present"]![0]!.GetValue<string>());
-        russian.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Write);
-        External.Calls.Should().Be(0, because: "the base needs neither a model nor an external site");
-        Models.ModelCalls.Should().Be(0);
-        Log.Paths.Should().Equal("verb-base", "verb-base");
-    }
+    // ── 11. "What a model said once is stored and never asked again" ─────────────────────────────
 
     [Test]
-    public async Task With_the_agent_off_a_failure_of_the_old_translator_is_still_a_failure()
+    public async Task Second_pass_over_the_same_requests_makes_no_model_call()
     {
-        await SeedCatalogWithout();
-        Models.Configured = false;
-        External.Fails = true;
+        await SeedCatalogWithout(Paint, Dance);
+        var paint = CatalogVerb(Paint);
+        var dance = CatalogVerb(Dance);
+        Wiktionary.Pages[Paint] = PaintPage;
+        Lexicon.Verbs.Add(new LexiconVerb(Dance, null, false, ["to dance"], []));
+        Lexicon.Attested = CardForms(dance).ToHashSet();
+        var requests = new (string Text, string Classifier, string? Analyst, bool SiteKnows)[]
+        {
+            (Form(paint, "aorist", 1), AVerb, Json(new { outcome = "wiktionary", lemma = Paint, russian = "рисовать" }), true),
+            ("рисовала", RussianVerb("рисовать"), null, true),
+            ("танцевать", RussianVerb("танцевать"), Json(NoTableFor(dance)), true),
+            ("танцевали", RussianVerb("танцевать"), Json(NoTableFor(dance)), true),
+            (Doubled(Form(CatalogVerb(Write), "future", 0), 1), AVerb,
+                Json(new { outcome = "existing", lemma = Write, form = Form(CatalogVerb(Write), "future", 0) }), true),
+            ("строчить", RussianVerb("строчить"), Json(new { outcome = "existing", lemma = Write }), true),
+            ("стол", NotAVerb, null, true),
+            ("доброе утро", NotAVerb, null, true),
+            ("расскажи анекдот", NotTranslatable, null, false),
+            ("ываыва", NotTranslatable, null, false),
+            ("ъъъ", NotAVerb, null, false),
+            ("писал", "unused", null, true),
+        };
 
-        (await Translate("стол")).Should().BeOfType<TranslationResult.Failure>();
+        var first = new List<TranslationResult>();
+        foreach (var (text, classifier, analyst, siteKnows) in requests)
+        {
+            Models.ClassifierModel.AnswerWith(classifier);
+            Models.AnalystModel.Reset();
+            if (analyst != null)
+            {
+                Models.AnalystModel.AnswerWith(analyst);
+            }
+
+            External.Fails = !siteKnows;
+            first.Add(await Translate(text));
+        }
+
+        var callsAfterFirstPass = Models.ClassifierModel.Calls;
+        callsAfterFirstPass.Should().Be(11, because: "every new text but the catalog form went to the classifier once");
+        Models.ClassifierModel.Reset();
+        Models.AnalystModel.Reset();
+        var wiktionaryRequests = Wiktionary.RequestedPages.Count;
+
+        // Any user, any later day: the same texts again.
+        for (var i = 0; i < requests.Length; i++)
+        {
+            External.Fails = !requests[i].SiteKnows;
+            (await Translate(requests[i].Text)).Should().Be(first[i], $"«{requests[i].Text}» is answered the same");
+        }
+
+        Models.ModelCalls.Should().Be(0, because: "a throwing fake would have failed the request otherwise — and none was called");
+        Wiktionary.RequestedPages.Should().HaveCount(wiktionaryRequests);
     }
 }
