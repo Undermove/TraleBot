@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import VocabularyList from './VocabularyList'
-import type { ProgressState } from '../types'
+import VocabularyList from '../VocabularyList'
+import type { ProgressState } from '../../types'
 
 // Перевод из словаря: «это не слово» — одна спокойная строка, а не ошибка и не сохранённая запись.
 
 const translateWord = vi.fn()
 const vocabulary = vi.fn()
 
-vi.mock('../api', async () => {
-  const actual = await vi.importActual<typeof import('../api')>('../api')
+vi.mock('../../api', async () => {
+  const actual = await vi.importActual<typeof import('../../api')>('../../api')
   return { ...actual, api: { ...actual.api, vocabulary: () => vocabulary(), translateWord: (w: string) => translateWord(w) } }
 })
 
