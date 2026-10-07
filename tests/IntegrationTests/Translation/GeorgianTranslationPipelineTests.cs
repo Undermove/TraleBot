@@ -436,7 +436,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
 
         await Translate("танцевать");
         Models.ModelCalls.Should().Be(3, because: "one classifier call and the analyst's two turns — and nothing on the second request");
-        Log.Paths.Last().Should().Be("cache");
+        Log.Paths.Last().Should().Be("legacy");
     }
 
     [TestCase("""{"outcome":"wiktionary","lemma":"LEMMA","russian":"танцевать"}""",
@@ -549,7 +549,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     // ── 8. Plain words: one cheap call, then the cache ───────────────────────────────────────────
 
     [Test]
-    public async Task Plain_word_costs_one_classifier_call_once_and_is_then_served_from_the_cache()
+    public async Task Plain_word_costs_one_classifier_call_once_and_its_translation_is_never_cached()
     {
         await SeedCatalogWithout();
         Models.ClassifierModel.AnswerWith(NotAVerb);
@@ -560,14 +560,15 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
 
         second.Should().Be(first);
         third.Should().Be(first);
-        External.Calls.Should().Be(1);
+        External.Calls.Should().Be(3, because: "an answer nobody has checked is asked for again, not served from the cache");
         Models.ClassifierModel.Calls.Should().Be(1);
         Models.AnalystModel.Calls.Should().Be(0);
         var entry = (await CacheEntries()).Should().ContainSingle().Subject;
         entry.Key.Should().Be("стол");
-        entry.HitCount.Should().Be(2);
+        entry.Source.Should().Be(TranslationCache.SourceNoTranslation, because: "only the verdict is kept");
+        entry.Definition.Should().BeEmpty();
         entry.Classified.Should().BeTrue();
-        Log.Paths.Should().Equal("not-a-verb>legacy", "cache", "cache");
+        Log.Paths.Should().Equal("not-a-verb>legacy", "legacy", "legacy");
     }
 
     [Test]
@@ -609,7 +610,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         var result = await Translate(form);
 
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
-        (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeFalse();
+        (await CacheEntries()).Should().BeEmpty();
         Log.Paths.Should().Equal("classifier-failed>legacy");
 
         Wiktionary.Pages[Paint] = PaintPage;
@@ -635,7 +636,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
         (DateTime.UtcNow - started).Should().BeLessThan(TimeSpan.FromSeconds(10), because: "the test timeout is 1 second");
         Log.Paths.Should().Equal("analyst-failed>legacy");
-        (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeFalse();
+        (await CacheEntries()).Should().BeEmpty();
     }
 
     [Test]
@@ -656,7 +657,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     // ── 10. The switch is off; the budget is spent ───────────────────────────────────────────────
 
     [Test]
-    public async Task With_the_agent_off_a_plain_word_is_the_old_translator_behind_the_cache()
+    public async Task With_the_agent_off_a_plain_word_is_the_old_translator_every_time()
     {
         await SeedCatalogWithout();
         Models.Configured = false;
@@ -665,9 +666,10 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         var second = await Translate("стол");
 
         second.Should().Be(first);
-        External.Calls.Should().Be(1);
+        External.Calls.Should().Be(2);
         Models.ModelCalls.Should().Be(0);
-        Log.Paths.Should().Equal("legacy", "cache");
+        (await CacheEntries()).Should().BeEmpty();
+        Log.Paths.Should().Equal("legacy", "legacy");
     }
 
     // ── 11. "What a model said once is stored and never asked again" ─────────────────────────────

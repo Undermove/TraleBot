@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.Translation.Cache;
 
 /// <summary>
-/// Read/write side of the <c>TranslationCache</c> table. Entries never expire: a dictionary
-/// translation does not go stale, and a wrong one is fixed by deleting the row.
+/// Read/write side of the <c>TranslationCache</c> table: answers built from the verb base and the
+/// models' verdicts about a text. Entries never expire; a wrong one is fixed by deleting the row.
 /// Service per ARCHITECTURE.md.
 /// </summary>
 public class TranslationCache(ITraleDbContext dbContext)
@@ -25,8 +25,12 @@ public class TranslationCache(ITraleDbContext dbContext)
     public const string SourceNoTranslation = "no-translation";
 
     /// <summary>Whether the entry carries a translation to serve, not just a remembered verdict.</summary>
-    public static bool HasTranslation(TranslationCacheEntry entry) =>
-        entry.Source != SourceNotTranslatable && entry.Source != SourceNoTranslation;
+    /// <remarks>
+    /// Only an answer the models stand behind is served from here. What the dictionary site or Google
+    /// said is asked from them again each time: rows with <see cref="SourceExternal"/> are from before
+    /// that rule and count as a verdict only.
+    /// </remarks>
+    public static bool HasTranslation(TranslationCacheEntry entry) => entry.Source == SourceVerbAgent;
 
     /// <summary>Remembers what the models decided about a text that has no translation to cache.</summary>
     public Task StoreVerdictAsync(
