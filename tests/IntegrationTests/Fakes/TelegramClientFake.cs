@@ -13,11 +13,12 @@ public class TelegramClientFake : ITelegramBotClient
 	private readonly List<IRequest> _requests = new();
 
 	/// <summary>Everything the bot sent, oldest first.</summary>
-	public IReadOnlyList<IRequest> Requests => _requests;
+	// Concurrent senders (broadcast batches) record here at once: a bare List loses adds.
+	public IReadOnlyList<IRequest> Requests { get { lock (_requests) return _requests.ToArray(); } }
 
 	public Task<TResponse> MakeRequestAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = new())
 	{
-		_requests.Add(request);
+		lock (_requests) _requests.Add(request);
 		return Task.FromResult(default(TResponse)!);
 	}
 
