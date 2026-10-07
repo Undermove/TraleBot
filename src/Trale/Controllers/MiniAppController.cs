@@ -811,7 +811,7 @@ public class MiniAppController : Controller
         var wait = Task.Delay(Math.Max(0, options.Value.MiniAppTranslateWaitMs), ct);
         if (await Task.WhenAny(job.Translation, wait) != job.Translation)
         {
-            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted });
+            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted, stage = TranslationProgress.Key(job.Stage) });
         }
 
         jobs.Forget(user.Id, word);
@@ -840,7 +840,7 @@ public class MiniAppController : Controller
         var job = jobs.Find(user.Id, word);
         if (job is { Translation.IsCompleted: false })
         {
-            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted });
+            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted, stage = TranslationProgress.Key(job.Stage) });
         }
 
         if (job != null)
@@ -858,7 +858,7 @@ public class MiniAppController : Controller
             .OrderByDescending(e => e.DateAddedUtc)
             .FirstOrDefaultAsync(ct);
         return saved == null
-            ? Ok(new { status = "pending", verbLookup = false })
+            ? Ok(new { status = "pending", verbLookup = false, stage = (string)null })
             : await TranslationAnswer(
                 new CreateVocabularyEntryResult.TranslationSuccess(saved.Definition, saved.AdditionalInfo, saved.Example, saved.Id),
                 word, verbs, ct);

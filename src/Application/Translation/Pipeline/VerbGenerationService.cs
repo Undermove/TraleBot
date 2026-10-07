@@ -68,7 +68,9 @@ public class VerbGenerationService(
     /// True: write and review only — nothing is stored and what the base already has is not looked at.
     /// The outcome is then "approved" instead of "stored". For comparing models and for reports.
     /// </param>
-    public async Task<VerbGenerationOutcome> GenerateAsync(VerbGenerationRequest request, CancellationToken ct, bool preview = false)
+    /// <param name="progress">Told when the generator and the reviewer are asked and when the verb is stored.</param>
+    public async Task<VerbGenerationOutcome> GenerateAsync(
+        VerbGenerationRequest request, CancellationToken ct, bool preview = false, ITranslationProgress? progress = null)
     {
         var generatorUsage = ModelUsage.None;
         var reviewerUsage = ModelUsage.None;
@@ -96,6 +98,7 @@ public class VerbGenerationService(
         for (var round = 0; ; round++)
         {
             GeneratedVerb written;
+            progress?.Report(TranslationStage.VerbForms);
             using (var timeout = Timeout(options.Value.GeneratorTimeoutSeconds, ct))
             {
                 written = await generator.GenerateAsync(ask, timeout.Token);
@@ -150,6 +153,7 @@ public class VerbGenerationService(
                 meanings = VerbMeaningBuilder.Build(written.RussianForms!, draft.Tenses.Keys.ToList());
                 matched = Matched(draft, written, askedWords);
                 evidence = Evidence(draft, askedInfinitive);
+                progress?.Report(TranslationStage.VerbReview);
                 using var timeout = Timeout(options.Value.ReviewerTimeoutSeconds, ct);
                 review = await reviewer.ReviewAsync(
                     new VerbReviewRequest(
@@ -165,6 +169,7 @@ public class VerbGenerationService(
 
                 if (review.Approved)
                 {
+                    progress?.Report(TranslationStage.Saving);
                     var verb = await store.AddAsync(
                         draft, glosses, VerbStatus.Generated, ct, verification: null, meanings,
                         Provenance(request.Text, round, evidence, review));

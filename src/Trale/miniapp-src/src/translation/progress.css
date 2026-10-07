@@ -1,0 +1,28 @@
+/* Блок «перевод идёт»: живой, пока ждём ответ. Высота блока постоянная — текст шага меняется, страница не прыгает. */
+@keyframes tp-in { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
+@keyframes tp-bob { 0%, 100% { transform: translateY(0) rotate(-3deg) } 50% { transform: translateY(-3px) rotate(3deg) } }
+@keyframes tp-dot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.35 } 30% { transform: translateY(-4px); opacity: 1 } }
+@keyframes tp-stripes { from { background-position: 0 0 } to { background-position: 16px 0 } }
+
+.tp-in { animation: tp-in 260ms ease-out both }
+.tp-block { animation: tp-in 220ms ease-out 120ms both }
+.tp-bob { animation: tp-bob 1.6s ease-in-out infinite; transform-origin: 50% 90% }
+
+.tp-dots { display: inline-flex; gap: 3px; margin-left: 4px; vertical-align: baseline }
+.tp-dots i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: tp-dot 1.2s ease-in-out infinite }
+.tp-dots i:nth-child(2) { animation-delay: 0.15s }
+.tp-dots i:nth-child(3) { animation-delay: 0.3s }
+
+.tp-track { display: flex; gap: 4px; height: 12px }
+.tp-seg { flex: 1; border: 1.5px solid #15100A; border-radius: 999px; background: #F5EFE0; transition: background-color 320ms ease-out }
+.tp-seg-done { background: #1B5FB0 }
+.tp-seg-now {
+  background-color: #F5B820;
+  background-image: linear-gradient(-45deg, #FCD76D 25%, transparent 25%, transparent 50%, #FCD76D 50%, #FCD76D 75%, transparent 75%);
+  background-size: 16px 16px;
+  animation: tp-stripes 0.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-in, .tp-block, .tp-bob, .tp-dots i, .tp-seg-now { animation: none }
+}

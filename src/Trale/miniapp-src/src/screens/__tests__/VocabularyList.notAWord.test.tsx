@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import VocabularyList from '../VocabularyList'
 import type { ProgressState } from '../../types'
+import { resetTranslationRun } from '../../translation/translationRun'
 
 // Перевод из словаря: «это не слово» — одна спокойная строка, а не ошибка и не сохранённая запись.
 
@@ -30,6 +31,7 @@ async function translate(input: HTMLInputElement, text: string) {
 
 describe('VocabularyList: text that is not a word', () => {
   beforeEach(() => {
+    resetTranslationRun()
     translateWord.mockReset()
     vocabulary.mockReset()
     vocabulary.mockResolvedValue({ language: 'Georgian', items: [word], verbs: [], starterItems: [] })

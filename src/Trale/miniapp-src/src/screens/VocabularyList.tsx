@@ -13,6 +13,8 @@ import { VerbHint } from '../verbs/parts'
 import type { VerbFormHitDto } from '../verbs/types'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
+import TranslationProgress from '../translation/TranslationProgress'
+import { dismissTranslation, startTranslation, useTranslationRun } from '../translation/translationRun'
 
 interface Props {
   progress: ProgressState
@@ -22,7 +24,6 @@ interface Props {
 }
 
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
-type TranslateState = 'idle' | 'translating' | 'success' | 'error' | 'not-a-word' | 'timeout'
 type Filter = 'all' | 'new' | 'weak' | 'mastered' | 'verbs'
 type OnboardingState = 'idle' | 'adding' | 'done' | 'error'
 
@@ -39,10 +40,10 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   const [filter, setFilter] = useState<Filter>(initialFilter ?? 'all')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [translateInput, setTranslateInput] = useState('')
-  const [translateState, setTranslateState] = useState<TranslateState>('idle')
-  // Перевод не пришёл сразу: null — ещё не ждём, true — ищется глагол (до минуты), false — просто медленно.
-  const [translatePending, setTranslatePending] = useState<boolean | null>(null)
-  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string; verb?: VerbFormHitDto | null } | null>(null)
+  // Перевод живёт вне экрана (translationRun): ушёл и вернулся — ход работы и ответ на месте.
+  const translation = useTranslationRun()
+  const translateState = translation?.state ?? 'idle'
+  const translateResult = translation?.result ?? null
   // Карточка глагола открывается шторкой поверх словаря — из слова, из перевода, из списка.
   /** Открытый вид глагола; entryId — если пришли с записи словаря, которая сама — форма этого глагола. */
   const [verbSheet, setVerbSheet] = useState<{ verbId: string; tense?: string; person?: number; entryId?: string } | null>(null)
@@ -256,41 +257,27 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
     }
   }
 
-  async function translateWord() {
-    const word = translateInput.trim()
-    if (!word) return
-    setTranslateState('translating')
-    setTranslateResult(null)
-    setTranslatePending(null)
-    try {
-      const r = await api.translateWord(word, setTranslatePending)
-      if (r.status === 'success' || r.status === 'exists') {
-        setTranslateResult({
-          word: r.word ?? word,
-          definition: r.definition ?? '',
-          additionalInfo: r.additionalInfo ?? '',
-          example: r.example ?? '',
-          verb: r.verb
-        })
-        setTranslateState('success')
-        setTranslateInput('')
-        if (r.status === 'success') {
-          api.vocabulary().then((v) => {
-            setItems(v.items.length > 0 ? v.items : v.starterItems)
-            setIsStarterMode(v.items.length === 0)
-          }).catch(() => {})
-        }
-      } else if (r.status === 'not_a_word') {
-        setTranslateState('not-a-word')
-      } else if (r.status === 'timeout') {
-        setTranslateState('timeout')
-      } else {
-        setTranslateState('error')
-      }
-    } catch {
-      setTranslateState('error')
-    }
+  function translateWord() {
+    if (translateState === 'translating') return
+    void startTranslation(translateInput)
   }
+
+  // Ответ пришёл, пока экран открыт: поле очищается (если в нём всё ещё это слово), словарь перечитывается.
+  // Ответ, готовый ещё до открытия экрана, уже есть в только что загруженном словаре.
+  const handledTranslation = useRef(translation?.state === 'translating' ? null : translation)
+  const translateInputRef = useRef(translateInput)
+  translateInputRef.current = translateInput
+  useEffect(() => {
+    if (!translation || translation.state !== 'success' || handledTranslation.current?.startedAt === translation.startedAt) return
+    handledTranslation.current = translation
+    if (translateInputRef.current.trim() === translation.word) setTranslateInput('')
+    if (translation.added) {
+      api.vocabulary().then((v) => {
+        setItems(v.items.length > 0 ? v.items : v.starterItems)
+        setIsStarterMode(v.items.length === 0)
+      }).catch(() => {})
+    }
+  }, [translation])
 
   if (phase === 'loading') {
     return (
@@ -476,9 +463,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
               style={{ boxShadow: '2px 2px 0 #15100A' }}
               placeholder="слово на русском или грузинском"
               value={translateInput}
-              onChange={(e) => { setTranslateInput(e.target.value); setTranslateState('idle') }}
+              onChange={(e) => { setTranslateInput(e.target.value); dismissTranslation() }}
               onKeyDown={(e) => { if (e.key === 'Enter') translateWord() }}
-              disabled={translateState === 'translating'}
             />
             <button
               onClick={translateWord}
@@ -486,11 +472,13 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
               className="shrink-0 px-4 py-3 bg-navy border-[1.5px] border-jewelInk rounded-xl font-sans text-[14px] font-bold text-cream disabled:opacity-40 active:translate-x-0.5 active:translate-y-0.5 transition-all"
               style={{ boxShadow: '2px 2px 0 #15100A' }}
             >
-              {translateState === 'translating' ? '...' : '→'}
+              {translateState === 'translating'
+                ? <span className="tp-dots" style={{ marginLeft: 0 }} aria-label="перевожу"><i /><i /><i /></span>
+                : '→'}
             </button>
           </div>
           {translateState === 'success' && translateResult && (
-            <div className="mt-3 jewel-tile px-4 py-3">
+            <div data-testid="translate-result" className="tp-in mt-3 jewel-tile px-4 py-3">
               <div className="relative z-[1]">
                 <div className="flex items-baseline gap-2">
                   <span className="font-sans text-[16px] font-extrabold text-navy">{translateResult.word}</span>
@@ -511,12 +499,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
               </div>
             </div>
           )}
-          {translateState === 'translating' && translatePending !== null && (
-            <div data-testid="translate-pending" role="status" className="mt-2 font-sans text-[12px] text-jewelInk-mid">
-              {translatePending
-                ? 'Ищу этот глагол, это может занять до минуты. Перевод появится здесь и в словаре.'
-                : 'Перевожу, ещё немного…'}
-            </div>
+          {translation && translateState === 'translating' && (
+            <TranslationProgress progress={translation.progress} startedAt={translation.startedAt} />
           )}
           {translateState === 'timeout' && (
             <div data-testid="translate-timeout" className="mt-2 font-sans text-[12px] text-jewelInk-mid">

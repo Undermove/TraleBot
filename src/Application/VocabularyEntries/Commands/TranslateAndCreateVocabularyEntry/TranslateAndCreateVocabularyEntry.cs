@@ -72,6 +72,11 @@ public class TranslateAndCreateVocabularyEntry : IRequest<CreateVocabularyEntryR
             // The per-user caps on model calls need to know whose request this is.
             requester.UserId = user.Id;
             var translationResult = await languageTranslator.Translate(request.Word, targetLanguage, ct);
+            if (translationResult is TranslationResult.Success)
+            {
+                requester.Report(TranslationStage.Saving);
+            }
+
             return translationResult switch
             {
                 TranslationResult.Success s =>

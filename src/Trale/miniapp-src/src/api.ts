@@ -1,4 +1,5 @@
 import type { VerbDto, VerbFormHitDto } from './verbs/types'
+import { furtherStage } from './translation/stages'
 function getInitData(): string {
   const tg = (window as any).Telegram?.WebApp
   return tg?.initData ?? ''
@@ -29,6 +30,8 @@ export interface TranslateWordResponse {
   // pending приходит с сервера, пока перевод не готов; timeout — мини-апп перестал ждать.
   status: 'success' | 'exists' | 'failure' | 'not_a_word' | 'pending' | 'timeout'
   verbLookup?: boolean
+  // Шаг, на котором перевод сейчас; null — этот сервер перевод не ведёт и шага не знает.
+  stage?: TranslateStage | null
   word?: string
   definition?: string
   additionalInfo?: string
@@ -37,7 +40,19 @@ export interface TranslateWordResponse {
   verb?: VerbFormHitDto | null
 }
 
+export type TranslateStage =
+  | 'started' | 'base' | 'recognizing' | 'verb-source' | 'verb-forms' | 'verb-review' | 'dictionaries' | 'saving'
+
+/** Ход перевода, пока ответа нет. slow — сервер уже ответил pending: это надолго. */
+export interface TranslateProgress {
+  stage: TranslateStage | null
+  verbLookup: boolean
+  slow: boolean
+}
+
 export const TRANSLATE_POLL_MS = 2000
+// Первый запрос сервер держит до пяти секунд. Чтобы и в это время знать шаг, через секунду спрашиваем статус.
+export const TRANSLATE_PEEK_MS = 1000
 // Худший случай по таймаутам моделей — около двух с половиной минут.
 export const TRANSLATE_POLL_LIMIT_MS = 180_000
 
@@ -193,17 +208,45 @@ export const api = {
 
   // Глагол, которого нет ни в базе, ни в источнике, модели составляют до минуты. Сервер не держит
   // запрос (прокси оборвёт его): отвечает pending, и ответ забирается опросом translate/status.
-  // onPending вызывается, пока ответа нет; true — ищется именно глагол.
-  translateWord: async (word: string, onPending?: (verbLookup: boolean) => void): Promise<TranslateWordResponse> => {
+  // onProgress вызывается, пока ответа нет: шаг, на котором перевод сейчас, и ищется ли глагол.
+  // Шаг только растёт; ответ сервера без шага (другой экземпляр) оставляет известный.
+  translateWord: async (word: string, onProgress?: (p: TranslateProgress) => void): Promise<TranslateWordResponse> => {
     const init = { method: 'POST', body: JSON.stringify({ word }) }
-    let r = await request<TranslateWordResponse>('/api/miniapp/translate', init)
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+    let seen: TranslateProgress = { stage: null, verbLookup: false, slow: false }
+    const note = (r: TranslateWordResponse, slow: boolean) => {
+      seen = { stage: furtherStage(seen.stage, r.stage), verbLookup: seen.verbLookup || !!r.verbLookup, slow: seen.slow || slow }
+      onProgress?.(seen)
+    }
+
+    // Пока первый запрос в пути, из статуса берём только шаг: ответ придёт самим запросом.
+    let answered = false
+    if (onProgress) {
+      void (async () => {
+        for (let wait = TRANSLATE_PEEK_MS; ; wait = TRANSLATE_POLL_MS) {
+          await sleep(wait)
+          if (answered) return
+          try {
+            const s = await request<TranslateWordResponse>('/api/miniapp/translate/status', init)
+            if (!answered && s.status === 'pending') note(s, false)
+          } catch {
+            // Шаг не узнали — не беда.
+          }
+        }
+      })()
+    }
+
+    let r: TranslateWordResponse
+    try {
+      r = await request<TranslateWordResponse>('/api/miniapp/translate', init)
+    } finally {
+      answered = true
+    }
     const deadline = Date.now() + TRANSLATE_POLL_LIMIT_MS
-    let verbLookup = false
     while (r.status === 'pending') {
-      verbLookup = verbLookup || !!r.verbLookup
-      onPending?.(verbLookup)
+      note(r, true)
       if (Date.now() >= deadline) return { status: 'timeout' }
-      await new Promise((resolve) => setTimeout(resolve, TRANSLATE_POLL_MS))
+      await sleep(TRANSLATE_POLL_MS)
       try {
         r = await request<TranslateWordResponse>('/api/miniapp/translate/status', init)
       } catch (e) {

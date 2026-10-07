@@ -16,6 +16,11 @@ public class TranslationRequester
     /// the person so (<see cref="TranslationJobs"/>); nobody listening is the normal case.
     /// </summary>
     public Action? VerbLookupStarted { get; set; }
+
+    /// <summary>Told which step the request has reached (see <see cref="TranslationStage"/>); null — nobody asks.</summary>
+    public ITranslationProgress? Progress { get; set; }
+
+    public void Report(TranslationStage stage) => Progress?.Report(stage);
 }
 
 public enum ModelSpend

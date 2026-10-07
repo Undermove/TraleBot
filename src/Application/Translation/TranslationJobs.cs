@@ -23,6 +23,11 @@ public sealed class TranslationJob
     /// <summary>Completes when the request went on to look a verb up (the slow part); never for other texts.</summary>
     public Task VerbLookupStarted { get; }
 
+    /// <summary>The furthest step the translation has reported so far.</summary>
+    public TranslationStage Stage => Progress.Stage;
+
+    internal TranslationProgress Progress { get; } = new();
+
     /// <summary>The translation and the reply after it are over, whichever way. Never faults.</summary>
     public Task Completion => _done.Task;
 
@@ -167,6 +172,7 @@ public class TranslationJobs(IServiceScopeFactory scopes, ILogger<TranslationJob
             await using var scope = scopes.CreateAsyncScope();
             var services = scope.ServiceProvider;
             services.GetRequiredService<TranslationRequester>().VerbLookupStarted = () => verbLookup.TrySetResult();
+            services.GetRequiredService<TranslationRequester>().Progress = job.Progress;
 
             var replying = reply?.Invoke(services, job, limit.Token);
             try

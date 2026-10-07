@@ -101,6 +101,7 @@ public class GeorgianTranslationPipeline(
         if (key == null)
         {
             trace.Steps.Add("legacy");
+            requester.Report(TranslationStage.Dictionaries);
             return await legacy.Translate(word, ct);
         }
 
@@ -108,6 +109,7 @@ public class GeorgianTranslationPipeline(
         var direction = isRussian ? TranslationDirection.RussianToGeorgian : TranslationDirection.GeorgianToRussian;
 
         // 1. The verb base.
+        requester.Report(TranslationStage.Base);
         var fromBase = await AnswerFromVerbBase(key, isRussian, ct);
         if (fromBase != null)
         {
@@ -165,6 +167,11 @@ public class GeorgianTranslationPipeline(
             }
         }
 
+        if (translation == null)
+        {
+            requester.Report(TranslationStage.Dictionaries);
+        }
+
         // 5. The translator that was here before.
         if (translation != null)
         {
@@ -197,6 +204,7 @@ public class GeorgianTranslationPipeline(
         string key, bool isRussian, TranslationDirection direction, TranslationCacheEntry? cached, Trace trace, CancellationToken ct)
     {
         TranslationClassification classification;
+        requester.Report(TranslationStage.Recognizing);
         try
         {
             using var timeout = Timeout(options.Value.ClassifierTimeoutSeconds, ct);
@@ -246,6 +254,7 @@ public class GeorgianTranslationPipeline(
 
         // From here on it is a verb the base does not have: the analyst, then possibly the generator.
         requester.VerbLookupStarted?.Invoke();
+        requester.Report(TranslationStage.VerbSource);
         string? lemmaHint = null;
         var canGenerate = true;
         IReadOnlyList<LexiconVerb> candidates;
@@ -323,7 +332,8 @@ public class GeorgianTranslationPipeline(
         try
         {
             var outcome = await generation.GenerateAsync(
-                new VerbGenerationRequest(key, isRussian, isRussian ? question : null, lemmaHint, candidates), ct);
+                new VerbGenerationRequest(key, isRussian, isRussian ? question : null, lemmaHint, candidates), ct,
+                progress: requester.Progress);
             trace.Generator += outcome.Generator;
             trace.Reviewer += outcome.Reviewer;
             trace.Steps.Add(
@@ -380,6 +390,7 @@ public class GeorgianTranslationPipeline(
         }
 
         requester.VerbLookupStarted?.Invoke();
+        requester.Report(TranslationStage.VerbSource);
         try
         {
             using var timeout = Timeout(options.Value.AnalystTimeoutSeconds, ct);
@@ -433,6 +444,7 @@ public class GeorgianTranslationPipeline(
     {
         try
         {
+            requester.Report(TranslationStage.Dictionaries);
             if (await dictionarySite.TranslateAsync(key, Language.Georgian, ct) is TranslationResult.Success)
             {
                 trace.Steps.Add("not-translatable-but-in-dictionary");
