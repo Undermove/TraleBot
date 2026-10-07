@@ -7,10 +7,12 @@ using Microsoft.Extensions.Hosting;
 namespace Trale.HostedServices;
 
 /// <summary>
-/// On shutdown (a rolling deploy) gives the translations that are still running
-/// (<see cref="TranslationJobs"/>) time to finish and answer; what is not done by then is cancelled, and
-/// the bot tells the person to send the word again. Both waits together stay under the host's 30-second
-/// shutdown timeout and Kubernetes' default termination grace period.
+/// On shutdown (a rolling deploy) gives the translations that are still running in this instance
+/// (<see cref="TranslationJobs"/>) time to finish and answer; what is not done by then is stopped here
+/// and left on record for the job queue to do again — on the other instance, or on this one after the
+/// restart. Only a translation too young to be on record tells the person to send the word again. Both
+/// waits together stay under the host's 30-second shutdown timeout and Kubernetes' default termination
+/// grace period.
 /// </summary>
 public class FinishTranslationsOnShutdown(TranslationJobs jobs) : IHostedService
 {

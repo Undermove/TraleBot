@@ -790,7 +790,8 @@ public class MiniAppController : Controller
     /// The translation runs as a job of its own (<see cref="TranslationJobs"/>): a verb the models have to
     /// write takes up to a minute or two, longer than a proxy keeps the request. An answer that is ready
     /// within a few seconds is returned as before; otherwise the status is <c>pending</c> and the
-    /// mini-app asks <c>translate/status</c> until the answer is there.
+    /// mini-app asks <c>translate/status</c> until the answer is there. By then the job is on record in
+    /// the database, so any instance can say what became of it.
     /// </summary>
     [HttpPost("translate")]
     public async Task<IActionResult> TranslateWord(
@@ -812,21 +813,30 @@ public class MiniAppController : Controller
         }
 
         var word = request.Word.Trim();
-        var job = jobs.StartOrJoin(user.Id, word);
-        var wait = Task.Delay(Math.Max(0, options.Value.MiniAppTranslateWaitMs), ct);
-        if (await Task.WhenAny(job.Translation, wait) != job.Translation)
+        var (job, elsewhere) = await jobs.StartOrJoinAsync(user.Id, word, ct);
+        if (job == null)
         {
-            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted });
+            // Another instance is on it.
+            return Ok(new { status = "pending", verbLookup = elsewhere.VerbLookup });
         }
 
-        jobs.Forget(user.Id, word);
-        return await TranslationAnswer(await job.Translation, word, verbs, ct);
+        var wait = Task.Delay(Math.Max(0, options.Value.MiniAppTranslateWaitMs), ct);
+        if (await Task.WhenAny(job.Translation, wait) == job.Translation && job.QueuedId == null)
+        {
+            jobs.Forget(user.Id, word);
+            return await TranslationAnswer(await job.Translation, word, verbs, ct);
+        }
+
+        // Before the mini-app is told to ask again, the job is on record — the question may reach another instance.
+        await Task.WhenAny(job.Completion, job.Queued).WaitAsync(ct);
+        return await TranslationJobStatus(user.Id, word, job, jobs, verbs, ct);
     }
 
     /// <summary>
-    /// What became of a translation that answered <c>pending</c>. Never starts one. The job lives in the
-    /// instance that took the first request; another instance knows only what is in the database — the
-    /// word saved to the dictionary is the answer — and says <c>pending</c> until then.
+    /// What became of a translation that answered <c>pending</c>. Never starts one. The instance that
+    /// runs the job knows it first-hand; any other answers from the job's record in the database
+    /// (<see cref="QueuedTranslation"/>) — pending, the answer, or a failure. With neither, the word
+    /// saved to the dictionary is the answer, and the status is <c>pending</c> until then.
     /// </summary>
     [HttpPost("translate/status")]
     public async Task<IActionResult> TranslateWordStatus(
@@ -843,17 +853,15 @@ public class MiniAppController : Controller
 
         var word = (request.Word ?? string.Empty).Trim();
         var job = jobs.Find(user.Id, word);
-        if (job is { Translation.IsCompleted: false })
-        {
-            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted });
-        }
-
         if (job != null)
         {
-            jobs.Forget(user.Id, word);
-            return job.Translation.IsCompletedSuccessfully
-                ? await TranslationAnswer(job.Translation.Result, word, verbs, ct)
-                : Ok(new { status = "failure" });
+            return await TranslationJobStatus(user.Id, word, job, jobs, verbs, ct);
+        }
+
+        var queued = await jobs.FindQueuedAsync(user.Id, word, ct);
+        if (queued != null)
+        {
+            return await QueuedTranslationStatus(queued, word, verbs, ct);
         }
 
         var typed = word.ToLowerInvariant();
@@ -867,6 +875,52 @@ public class MiniAppController : Controller
             : await TranslationAnswer(
                 new CreateVocabularyEntryResult.TranslationSuccess(saved.Definition, saved.AdditionalInfo, saved.Example, saved.Id),
                 word, verbs, ct);
+    }
+
+    /// <summary>The state of a job this instance started. Once the job is on record, the record decides: a failed run may be followed by another.</summary>
+    private async Task<IActionResult> TranslationJobStatus(
+        Guid userId, string word, TranslationJob job, TranslationJobs jobs, VerbQueries verbs, CancellationToken ct)
+    {
+        var queued = job.QueuedId is { } id ? await jobs.FindQueuedAsync(id, ct) : null;
+        if (queued is { IsFinished: false } || (queued == null && !job.Translation.IsCompleted))
+        {
+            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted || queued?.VerbLookup == true });
+        }
+
+        jobs.Forget(userId, word);
+        if (job.Translation.IsCompletedSuccessfully && queued?.State != QueuedTranslationState.Failed)
+        {
+            return await TranslationAnswer(job.Translation.Result, word, verbs, ct);
+        }
+
+        return queued == null ? Ok(new { status = "failure" }) : await QueuedTranslationStatus(queued, word, verbs, ct);
+    }
+
+    /// <summary>The state of a job as its record in the database tells it — all an instance that does not run the job knows.</summary>
+    private async Task<IActionResult> QueuedTranslationStatus(
+        QueuedTranslation queued, string word, VerbQueries verbs, CancellationToken ct)
+    {
+        if (!queued.IsFinished)
+        {
+            return Ok(new { status = "pending", verbLookup = queued.VerbLookup });
+        }
+
+        var saved = queued.VocabularyEntryId is { } entryId
+            ? await _dbContext.VocabularyEntries.AsNoTracking().FirstOrDefaultAsync(e => e.Id == entryId, ct)
+            : null;
+        CreateVocabularyEntryResult result = queued.Outcome switch
+        {
+            _ when queued.State == QueuedTranslationState.Failed => new CreateVocabularyEntryResult.TranslationFailure(),
+            QueuedTranslationOutcome.Success when saved != null =>
+                new CreateVocabularyEntryResult.TranslationSuccess(saved.Definition, saved.AdditionalInfo, saved.Example, saved.Id),
+            QueuedTranslationOutcome.Exists when saved != null =>
+                new CreateVocabularyEntryResult.TranslationExists(saved.Definition, saved.AdditionalInfo, saved.Example, saved.Id),
+            QueuedTranslationOutcome.NotAWord => new CreateVocabularyEntryResult.NotTranslatable(),
+            QueuedTranslationOutcome.TooLong => new CreateVocabularyEntryResult.PromptLengthExceeded(),
+            QueuedTranslationOutcome.Emoji => new CreateVocabularyEntryResult.EmojiDetected(),
+            _ => new CreateVocabularyEntryResult.TranslationFailure()
+        };
+        return await TranslationAnswer(result, word, verbs, ct);
     }
 
     private async Task<IActionResult> TranslationAnswer(
