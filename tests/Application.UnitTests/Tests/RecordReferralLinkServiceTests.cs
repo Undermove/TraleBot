@@ -102,4 +102,23 @@ public class RecordReferralLinkServiceTests : CommandTestsBase
         result.ShouldBe(RecordReferralLinkResult.ReferrerNotFound);
         Context.Referrals.Count().ShouldBe(0);
     }
+
+    [Test]
+    public async Task ShouldRefuse_WhenTheRefereeIsNotANewUser()
+    {
+        // Two people whose trial is over must not be able to hand each other weeks of access.
+        var referrer = await CreateFreeUser();
+        referrer.TelegramId = 9001;
+        var oldTimer = await CreateFreeUser();
+        oldTimer.TelegramId = 9002;
+        oldTimer.RegisteredAtUtc = DateTime.UtcNow.AddDays(-2);
+        oldTimer.TrialBonusDays = 0;
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.ExecuteAsync(oldTimer.Id, referrer.TelegramId, CancellationToken.None);
+
+        result.ShouldBe(RecordReferralLinkResult.NotNewUser);
+        Context.Referrals.Any(r => r.RefereeUserId == oldTimer.Id).ShouldBeFalse();
+        Context.Users.First(u => u.Id == oldTimer.Id).TrialBonusDays.ShouldBe(0);
+    }
 }

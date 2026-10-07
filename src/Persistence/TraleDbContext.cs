@@ -38,10 +38,31 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<UserVerb> UserVerbs { get; set; } = null!;
     public DbSet<VerbSession> VerbSessions { get; set; } = null!;
     public DbSet<TranslationCacheEntry> TranslationCache { get; set; } = null!;
+    public DbSet<BroadcastCampaign> BroadcastCampaigns { get; set; } = null!;
+    public DbSet<BroadcastDelivery> BroadcastDeliveries { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         return await Database.BeginTransactionAsync(cancellationToken);
+    }
+
+    public async Task<bool> TryClaimBroadcastDeliveryAsync(Guid deliveryId, CancellationToken cancellationToken)
+    {
+        if (Database.IsNpgsql())
+        {
+            var affected = await Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE "BroadcastDeliveries" SET "Status" = {(int)BroadcastDeliveryStatus.Sending}
+                WHERE "Id" = {deliveryId} AND "Status" = {(int)BroadcastDeliveryStatus.Pending}
+                """, cancellationToken);
+            return affected == 1;
+        }
+
+        // Non-relational providers (EF in-memory unit tests): single-threaded, no atomicity needed.
+        var delivery = await BroadcastDeliveries.FirstOrDefaultAsync(d => d.Id == deliveryId, cancellationToken);
+        if (delivery is not { Status: BroadcastDeliveryStatus.Pending }) return false;
+        delivery.Status = BroadcastDeliveryStatus.Sending;
+        await SaveChangesAsync(cancellationToken);
+        return true;
     }
 
     public async Task<bool> TryClaimNotificationTriggerAsync(
@@ -112,6 +133,8 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new PaymentConfiguration());
         modelBuilder.ApplyConfiguration(new ReferralConfiguration());
         modelBuilder.ApplyConfiguration(new NotificationTriggerConfiguration());
+        modelBuilder.ApplyConfiguration(new BroadcastCampaignConfiguration());
+        modelBuilder.ApplyConfiguration(new BroadcastDeliveryConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -96,11 +96,11 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
 | `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. A dictionary entry that IS a verb form opens the verb view directly on tap (the saved word and its plain meaning first, then level and the play button, then the forms table; «в квиз» / «удалить» as quiet actions at the bottom) and shows the verb's level instead of the mastery dot. The «глаголы» filter (can be pre-selected: dashboard line, deep link) lists "my verbs", one row per verb with its level and saved forms (`verbs/dictionary/MyVerbRows`), including verbs started from a lesson or a translation. A phrase that merely contains a verb form keeps the «глагол» badge and opens the word card; the word card and the translation result show the parse with «все формы», which opens the verb card sheet `VerbSheet`: six main forms, person switcher, collapsed rare tenses and explanation, one quiet line «составлено нейросетью» for model-made verbs, the verb level and one play button (`verbs/session/SessionEntry`) that starts a session composed by the app. Deep link `?screen=verb&verbId=<lemma>[&tense=&person=]` opens the dictionary with the verb card on top. |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
-| `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). |
+| `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). «Позови друга» card at the bottom — rules, own link, share / copy, counters — for everyone except those who reached the yearly referral cap; the rules text comes from `/api/miniapp/referral` and matches the user's state. |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
 | `Welcome.tsx` | `welcome` | Soft-onboarding first lesson: meet letter ა (name + sound + audio), a listening task and a name task; awards the first XP before the hub is revealed. |
 | `LandingScreen.tsx` | n/a | Marketing page when Telegram context is missing. |
-| `AdminScreen.tsx` | `admin` (owner only) | Bot stats dashboard. |
+| `AdminScreen.tsx` | `admin` (owner only) | Bot stats dashboard. «Рассылка по частям» (`components/admin/CampaignPanel.tsx`): count an audience, pick a random test group, pick the rest, send in batches of 25 by an explicit button with confirmation, see the status. |
 | `AdminUserScreen.tsx` | `admin-user` (owner only) | Inspect a single user; grant/revoke Pro. |
 
 ### Reusable components (`src/components/`)
@@ -178,7 +178,7 @@ One button on the verb card — «Выучить играя» (label follows the
 | `session/plan.ts` | The session director: learner situation → up to three scenes with targets, sizes, time estimate and a machine-readable reason. Hard caps: 3 scenes, 3 new forms, 180 s. |
 | `session/Session.tsx` | The session shell: session bar, scene switching, save after every answer (`session/sync.ts`), resume, finish. |
 | `session/QuizScene.tsx` | Quiz scenes from a given task list: meeting new forms («Новое слово»), recognition, real sentences (gap / build), warm-up of due forms, and the exam (one attempt per question; passing it makes the verb «выучен»). |
-| `session/Finish.tsx` | The finish screen: what was in play as plain phrases with their Georgian forms, XP, the verb level (`session/LevelBadge.tsx`), «Ещё одну» / «Готово». |
+| `session/Finish.tsx` | The finish screen: what was in play as plain phrases with their Georgian forms, XP, the verb level (`session/LevelBadge.tsx`), «Ещё одну» / «Готово». Under the buttons one quiet line (`session/InviteFriendLine.tsx`) offers to invite a friend, with the reward the server names for the user's state; not on the exam-failed path, not for Lifetime or a reached yearly cap. |
 | `session/SessionEntry.tsx` | Level and the play button on the verb card. |
 | `games/TimeMachine.tsx` | Scene «Машина времени»: three stops (aorist / present / future); the tapped form sends the mascot to the stop it really belongs to. In a session it asks the cells the director chose. Needs all six persons in the three tenses with no form shared between cells. |
 | `games/Bones.tsx` | Scene «Косточки»: the conjugation table as a minesweeper-style field (3×3 with two bones in a session); a cell is dug by typing its form or — for learners who do not type yet — by picking from four options. |
@@ -205,7 +205,8 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | POST | `/api/miniapp/level` | Persist user level after onboarding. |
 | POST | `/api/miniapp/onboarding/hint-seen` | Mark a hint as shown: an onboarding step (starts the ~20h gap to the next one) or a one-time interface hint `ui:<id>` (stored in the same list, `MiniAppUserProgress.OnboardingHintsJson`, without starting the gap). Unknown keys are rejected. |
 | POST | `/api/miniapp/progress/lesson-complete` | Record lesson completion. |
-| GET | `/api/miniapp/referral` | Referral link + share text. |
+| POST | `/api/miniapp/campaign-open` | The mini-app was opened by a campaign's button (`?c=key`); recorded once per recipient. |
+| GET | `/api/miniapp/referral` | Referral link, the text sent to a friend, counters, rules. `state` (`trial` / `accessEnded` / `pro` / `lifetime`) says which reward applies now; `bonusShortLabel` and `inviteLine` are the matching ready-made copy (empty for Lifetime). |
 | GET | `/api/miniapp/activity-days` | Daily activity series for streak. |
 | GET | `/api/miniapp/vocabulary` | User's vocabulary entries. An entry that contains a known verb form carries `verb` (the parse) with `single` — the entry IS that one form, not a phrase around it — and the learner's `level` of the verb. `verbs` is "my verbs", one row per verb: verbs whose forms are saved (with the saved forms) ∪ verbs started in play from a lesson or a translation, started ones first. Stored entries are not changed. |
 | POST | `/api/miniapp/vocabulary/quiz` | Start a vocabulary quiz. |
@@ -236,7 +237,11 @@ Location: `src/Trale/Controllers/`. Routes relative to controller base. Test gre
 | POST | `/api/admin/users/{telegramId}/grant-pro` | Grant Pro manually. |
 | POST | `/api/admin/users/{telegramId}/revoke-pro` | Revoke Pro. |
 | GET | `/api/admin/broadcast/preview` | Preview broadcast target. |
-| POST | `/api/admin/broadcast` | Send broadcast. |
+| POST | `/api/admin/broadcast` | Send broadcast (one shot: the whole segment inside one request, no pauses, no record of who got it — for small segments only). |
+| GET | `/api/admin/campaigns/audiences` | How many reachable people each campaign audience has now: `accessEnded`, `onTrial`, `paying`, `proLapsed`, `owner`. Reachable = has not blocked the bot and has not turned notifications off. |
+| POST | `/api/admin/campaigns/prepare` | Pick recipients of a campaign — a random sample of `sampleSize`, or everyone not picked yet — and record them. Sends nothing. `dryRun` (default true) only counts. Repeating never picks a person twice. |
+| POST | `/api/admin/campaigns/{key}/send` | Send the next batch (≤100) of picked recipients, 10 messages per second; the only thing that makes a campaign message leave. Blocked users are flagged inactive; on Telegram's 429 the batch stops and says how long to wait. |
+| GET | `/api/admin/campaigns/{key}` | Campaign status: picked, waiting, delivered, blocked, rejected, unanswered, opened by the button. |
 
 ### Other controllers
 | Controller | Path | Purpose |
@@ -253,7 +258,7 @@ Location: `src/Trale/HostedServices/`.
 | Class | Trigger | Purpose |
 |---|---|---|
 | `CreateWebhook` | `StartAsync` | Register webhook, set chat menu button to mini-app, publish bot command list. |
-| `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold. |
+| `PendingReferralsWorker` | Every 60s | Activate referrals once the referee crosses the engagement threshold; the referrer gets a bot message about the bonus. |
 | `IdempotencyCleanupService` | Every 6h | Purge expired `ProcessedUpdate` rows. |
 | `SeedVerbCatalog` | On startup | Loads the curated verb catalog `src/Trale/Verbs/verbs.json` (built by `scripts/verbs/build-catalog.mjs` from Wiktionary) into `Verbs` / `VerbForms`; idempotent, rewrites only changed verbs. |
 | `LoadVerbStories` | On startup | Reads comic stories `src/Trale/Verbs/stories/*.json` and resolves their lines against `Verbs/verbs.json` into the in-memory `VerbStoryCatalog`; a story that does not resolve is logged and skipped. Authoring: `src/Trale/Verbs/stories/README.md`. |
@@ -310,6 +315,8 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddLastTreatIndex` | Last-treat index for rotation. |
 | `AddSentenceBuilderProgressJson` | Per-user sentence-builder mastery progress (questionId → correct-count map) for L4/L5 progression gate. |
 | `AddTrialBonusDays` | Cumulative referral trial-bonus days on User; lets bonuses stack and survive trial expiry without rewriting RegisteredAtUtc. |
+| `AddBroadcastCampaigns` | `BroadcastCampaigns` + `BroadcastDeliveries` (unique campaign + user) — recipients and outcomes of campaign broadcasts. |
+| `AddUserBonusAccessUntil` | Nullable `BonusAccessUntilUtc` on User: end of the free access a referrer earns after their registration-anchored trial is already over — counted from the activation, not from registration. |
 | `AddUserNotificationsEnabled` | Per-user notifications opt-out flag on User (default on); toggled from the mini-app Profile, honoured by the D1+ return-push dispatch. |
 | `AddNotificationTriggers` | NotificationTrigger table (per-source last-sent timestamp + variant) backing the 7-day cooldown of the D1+ return-push dispatch. |
 | `MakeNotificationTriggerUnique` | Dedups existing rows and makes the NotificationTrigger (UserId, Source) index unique, so the atomic claim-before-send can't double-fire the return push across overlapping dispatch runs (incident 2026-06-17). |
@@ -382,6 +389,8 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | `Payment` | Telegram Stars (XTR) payment records. |
 | `SubscriptionPlan` | Month / Quarter / HalfYear / Year / Lifetime. |
 | `Referral` | Referrer ↔ referee relationship + activation state. |
+| `BroadcastCampaign` | An owner broadcast sent in parts: key, audience, text, button. |
+| `BroadcastDelivery` | One recipient of a campaign (unique per campaign + user): sample or not, status, sent / opened timestamps. |
 | `Achievement` | Unlock criteria & user progress. |
 | `MiniAppUserProgress` | XP, streak, completed lessons, treats given, last-fed timestamp, last-treat index. |
 | `VocabularyEntry` | Mastery levels (NotMastered / Forward / Both). |
@@ -408,9 +417,10 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - `RefundProStarsService` — refund path within allowed window
 - `ActivatePremiumCommand` — trial & subscription activation
 - `ProcessPaymentCommand` — classic Stripe-style flow
-- `RecordReferralLinkService` — record the referee-referrer link on `/start ref_*`
-- `TryActivateReferralService` — activate once engagement threshold met
-- `ProcessPendingReferralsService` — batch runner for the worker
+- `RecordReferralLinkService` — record the referee-referrer link on `/start ref_*`; the referee gets 60 days instead of 30. Only someone registered within the last 24h counts as a new friend
+- `TryActivateReferralService` — activate once engagement threshold met. Reward: trial still running → +7 days at its end; trial over → 7 days of access from the activation (stacks while running); ever paid → +14 days of subscription (from now if lapsed); Lifetime → nothing
+- `BroadcastCampaignService` — campaign broadcast in parts: audiences, picking a sample / the rest, sending a batch, status, recording an open. Nothing in it runs on a schedule or at startup — only by the owner's request. Report: `scripts/sql/campaign-report.sql`
+- `ProcessPendingReferralsService` — batch runner for the worker; after an activation tells the referrer in the bot what they got and until when (a Telegram failure does not undo the bonus)
 - `FeedTreatService` — buy & feed a treat
 - `AchievementsService` / `GetAchievementsQuery` — achievements
 - `DailyReturnNotificationService` — D1+ return push, picks least-progressed module, claim-before-send (#940)

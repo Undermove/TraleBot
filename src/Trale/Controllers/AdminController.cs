@@ -452,6 +452,90 @@ public class AdminController : Controller
         return Ok(result);
     }
 
+    // ---- Campaigns: a broadcast in parts (test sample → the rest), recorded per recipient. ----
+    // Nothing is sent by picking recipients; sending is the separate, explicit "send" call.
+
+    private long OwnerTelegramId => _botConfig.OwnerTelegramId != 0 ? _botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
+
+    [HttpGet("campaigns/audiences")]
+    public async Task<IActionResult> CampaignAudiences(
+        [FromServices] BroadcastCampaignService campaigns, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var counts = await campaigns.CountAudiencesAsync(OwnerTelegramId, ct);
+        return Ok(counts.ToDictionary(c => AudienceName(c.Key), c => c.Value));
+    }
+
+    public class CampaignPrepareRequest
+    {
+        public string Key { get; set; } = string.Empty;
+        public string Audience { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public string? ButtonText { get; set; }
+        public string? ButtonQuery { get; set; }
+        /// <summary>Random test group of this size; null — everyone in the audience not picked yet.</summary>
+        public int? SampleSize { get; set; }
+        public bool DryRun { get; set; } = true;
+    }
+
+    [HttpPost("campaigns/prepare")]
+    public async Task<IActionResult> CampaignPrepare(
+        [FromBody] CampaignPrepareRequest req, [FromServices] BroadcastCampaignService campaigns, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        if (!TryParseAudience(req.Audience, out var audience))
+            return BadRequest(CampaignPrepareResult.Fail($"Неизвестная аудитория: {req.Audience}"));
+
+        var result = await campaigns.PrepareAsync(
+            new CampaignDraft
+            {
+                Key = req.Key, Audience = audience, Message = req.Message,
+                ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery
+            },
+            req.SampleSize, req.DryRun, OwnerTelegramId, ct);
+        return result.Error != null ? BadRequest(result) : Ok(result);
+    }
+
+    public class CampaignSendRequest
+    {
+        public int Limit { get; set; } = 25;
+    }
+
+    [HttpPost("campaigns/{key}/send")]
+    public async Task<IActionResult> CampaignSend(
+        string key, [FromBody] CampaignSendRequest req, [FromServices] BroadcastCampaignService campaigns, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var result = await campaigns.SendBatchAsync(key, req.Limit, ct);
+        if (result.Error != null) return NotFound(result);
+        return Ok(new
+        {
+            result.Sent, result.Blocked, result.Rejected, result.Unknown, result.RetryAfterSeconds,
+            status = MapCampaignStatus(result.Status)
+        });
+    }
+
+    [HttpGet("campaigns/{key}")]
+    public async Task<IActionResult> CampaignStatus(
+        string key, [FromServices] BroadcastCampaignService campaigns, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var status = await campaigns.GetStatusAsync(key, ct);
+        return status == null ? NotFound(new { error = "no_such_campaign" }) : Ok(MapCampaignStatus(status));
+    }
+
+    private static object? MapCampaignStatus(CampaignStatus? s) => s == null ? null : new
+    {
+        s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc,
+        s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened
+    };
+
+    private static string AudienceName(Domain.Entities.BroadcastAudience a) =>
+        char.ToLowerInvariant(a.ToString()[0]) + a.ToString()[1..];
+
+    private static bool TryParseAudience(string? v, out Domain.Entities.BroadcastAudience audience) =>
+        Enum.TryParse(v, ignoreCase: true, out audience) && Enum.IsDefined(audience) && !int.TryParse(v, out _);
+
     private static BroadcastProFilter ParseProStatus(string? v) => v switch
     {
         "active" => BroadcastProFilter.ActiveProOnly,

@@ -1,3 +1,4 @@
+using Application.MiniApp.Commands;
 using Application.Notifications.Holidays;
 using Domain.Entities;
 
@@ -49,4 +50,14 @@ public interface IUserNotificationService
     /// 429 → single retry after the suggested delay, mirroring <see cref="SendDailyReturnPushAsync"/>.
     /// </summary>
     Task SendHolidayPushAsync(User user, Holiday holiday, CancellationToken ct);
+
+    /// <summary>
+    /// Tells the referrer that an invited friend started learning and what it gave them:
+    /// <paramref name="days"/> of <paramref name="bonus"/>, access now runs until
+    /// <paramref name="accessUntilUtc"/>. A message about the user's own account, so it does not
+    /// depend on the retention-push toggle. 403 → user flagged inactive; 429 → single retry after
+    /// the suggested delay; anything else is thrown — the caller swallows it, the bonus stays.
+    /// </summary>
+    Task SendReferralBonusGrantedAsync(
+        User referrer, ReferralBonusKind bonus, int days, DateTime accessUntilUtc, CancellationToken ct);
 }

@@ -118,6 +118,7 @@ public static class DependencyInjection
         services.AddScoped<GrantProService>();
         services.AddScoped<RevokeProService>();
         services.AddScoped<BroadcastService>();
+        services.AddScoped<BroadcastCampaignService>();
 
         return services;
     }

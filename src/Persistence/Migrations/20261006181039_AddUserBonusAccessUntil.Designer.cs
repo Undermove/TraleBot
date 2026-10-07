@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistence;
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    partial class TraleDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261006181039_AddUserBonusAccessUntil")]
+    partial class AddUserBonusAccessUntil
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -58,89 +61,6 @@ namespace Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Achievements");
-                });
-
-            modelBuilder.Entity("Domain.Entities.BroadcastCampaign", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Audience")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ButtonQuery")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)");
-
-                    b.Property<string>("ButtonText")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasMaxLength(48)
-                        .HasColumnType("character varying(48)");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Key")
-                        .IsUnique();
-
-                    b.ToTable("BroadcastCampaigns");
-                });
-
-            modelBuilder.Entity("Domain.Entities.BroadcastDelivery", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CampaignId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Error")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("IsSample")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("OpenedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("SentAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<long>("TelegramId")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("CampaignId", "Status");
-
-                    b.HasIndex("CampaignId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("BroadcastDeliveries");
                 });
 
             modelBuilder.Entity("Domain.Entities.GeorgianQuizSession", b =>
@@ -310,32 +230,6 @@ namespace Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("MiniAppUserProgresses");
-                });
-
-            modelBuilder.Entity("Domain.Entities.ModelBudgetDay", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateOnly>("Day")
-                        .HasColumnType("date");
-
-                    b.Property<int>("Generations")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Requests")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Day", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("ModelBudgetDays");
                 });
 
             modelBuilder.Entity("Domain.Entities.NotificationTrigger", b =>
@@ -931,64 +825,6 @@ namespace Persistence.Migrations
                     b.ToTable("VerbFormProgresses");
                 });
 
-            modelBuilder.Entity("Domain.Entities.VerbProvenance", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ApprovedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("AskedText")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<int>("FormsAttested")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("FormsTotal")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("GeneratorModel")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<bool>("LemmaInLexicon")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("RepairRounds")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ReviewerModel")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)");
-
-                    b.Property<string>("ReviewerReasons")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("RevisedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UnattestedFormsJson")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("VerbId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VerbId")
-                        .IsUnique();
-
-                    b.ToTable("VerbProvenances");
-                });
-
             modelBuilder.Entity("Domain.Entities.VerbSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1138,21 +974,6 @@ namespace Persistence.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domain.Entities.BroadcastDelivery", b =>
-                {
-                    b.HasOne("Domain.Entities.BroadcastCampaign", null)
-                        .WithMany()
-                        .HasForeignKey("CampaignId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Domain.Entities.GeorgianQuizSession", b =>
                 {
                     b.HasOne("Domain.Entities.User", "User")
@@ -1298,17 +1119,6 @@ namespace Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-
-                    b.Navigation("Verb");
-                });
-
-            modelBuilder.Entity("Domain.Entities.VerbProvenance", b =>
-                {
-                    b.HasOne("Domain.Entities.Verb", "Verb")
-                        .WithOne()
-                        .HasForeignKey("Domain.Entities.VerbProvenance", "VerbId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Verb");
                 });

@@ -491,8 +491,8 @@ function ReferralCard() {
 
   return (
     <div className="mt-6">
-      <div className="mn-eyebrow mb-2">пригласи друга</div>
-      <div className="jewel-tile px-4 py-4">
+      <div className="mn-eyebrow mb-2">позови друга</div>
+      <div className="jewel-tile px-4 py-4" data-testid="referral-card">
         <div className="relative z-[1]">
           <ul className="font-sans text-[13px] text-jewelInk-mid mb-3 leading-snug list-disc pl-5 space-y-1">
             {data.rules.map((line, i) => <li key={i}>{line}</li>)}
@@ -519,7 +519,7 @@ function ReferralCard() {
           </div>
           {data.invitedCount > 0 && (
             <div className="mt-3 font-sans text-[11px] text-jewelInk-mid">
-              Пригласил: {data.invitedCount} · активных: {data.activatedCount}
+              Пришли по твоей ссылке: {data.invitedCount} · начали заниматься: {data.activatedCount}
             </div>
           )}
         </div>

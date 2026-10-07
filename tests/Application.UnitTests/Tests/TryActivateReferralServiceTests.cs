@@ -78,24 +78,42 @@ public class TryActivateReferralServiceTests : CommandTestsBase
     }
 
     [Test]
-    public async Task ShouldGrantBonus_EvenWhenTrialAlreadyExpired()
+    public async Task ShouldGiveAWeekFromNow_WhenTrialEndedLongAgo()
     {
-        // Registered 35 days ago: base trial ended 5 days ago.
+        // Registered 200 days ago: +7 days counted from registration would change nothing.
         var referrer = await CreateFreeUser();
-        referrer.RegisteredAtUtc = DateTime.UtcNow.AddDays(-35);
+        referrer.RegisteredAtUtc = DateTime.UtcNow.AddDays(-200);
         referrer.TrialBonusDays = 0;
         await Context.SaveChangesAsync();
-        referrer.TrialEndsAtUtc.ShouldBeLessThan(DateTime.UtcNow);
+        referrer.HasMiniAppAccess().ShouldBeFalse();
 
         var referral = await AddPendingReferral(referrer.Id);
-        await _sut.ExecuteAsync(referral, "first_lesson", CancellationToken.None);
+        var activation = await _sut.ActivateAsync(referral, "first_lesson", CancellationToken.None);
+
+        activation.Result.ShouldBe(TryActivateReferralResult.Activated);
+        activation.Bonus.ShouldBe(ReferralBonusKind.FreeWeek);
+        var updated = Context.Users.First(u => u.Id == referrer.Id);
+        updated.TrialBonusDays.ShouldBe(0);
+        updated.BonusAccessUntilUtc!.Value.ShouldBe(DateTime.UtcNow.AddDays(7), TimeSpan.FromSeconds(5));
+        activation.AccessUntilUtc.ShouldBe(updated.BonusAccessUntilUtc);
+        updated.HasMiniAppAccess().ShouldBeTrue();
+        updated.TrialDaysLeft().ShouldBe(7);
+    }
+
+    [Test]
+    public async Task ShouldStackWeeks_WhenSecondFriendActivatesDuringTheBonusWeek()
+    {
+        var referrer = await CreateFreeUser();
+        referrer.RegisteredAtUtc = DateTime.UtcNow.AddDays(-200);
+        referrer.TrialBonusDays = 0;
+        await Context.SaveChangesAsync();
+
+        await _sut.ExecuteAsync(await AddPendingReferral(referrer.Id), "first_lesson", CancellationToken.None);
+        await _sut.ExecuteAsync(await AddPendingReferral(referrer.Id), "vocab_5", CancellationToken.None);
 
         var updated = Context.Users.First(u => u.Id == referrer.Id);
-        // The bonus is recorded into TrialBonusDays even though the +7 days isn't
-        // enough to revive an expired trial in this case (35-day-old user, 5 days
-        // overdue, +7 → trial would end 2 days in the future). It DOES revive.
-        updated.TrialBonusDays.ShouldBe(TryActivateReferralService.ReferrerTrialBonusDays);
-        updated.TrialEndsAtUtc.ShouldBeGreaterThan(DateTime.UtcNow);
+        updated.BonusAccessUntilUtc!.Value.ShouldBe(DateTime.UtcNow.AddDays(14), TimeSpan.FromSeconds(5));
+        updated.TrialDaysLeft().ShouldBe(14);
     }
 
     [Test]

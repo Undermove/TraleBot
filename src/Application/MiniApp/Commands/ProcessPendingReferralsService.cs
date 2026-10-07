@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
+using Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -22,6 +23,7 @@ namespace Application.MiniApp.Commands;
 public class ProcessPendingReferralsService(
     ITraleDbContext db,
     TryActivateReferralService activator,
+    IUserNotificationService notifications,
     ILoggerFactory loggerFactory)
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<ProcessPendingReferralsService>();
@@ -43,10 +45,12 @@ public class ProcessPendingReferralsService(
             var trigger = await DetectTriggerAsync(referral.RefereeUserId, ct);
             if (trigger == null) continue;
 
-            var result = await activator.ExecuteAsync(referral, trigger, ct);
+            var activation = await activator.ActivateAsync(referral, trigger, ct);
+            var result = activation.Result;
             if (result == TryActivateReferralResult.Activated)
             {
                 activated++;
+                await NotifyReferrerAsync(activation, ct);
             }
             else if (result != TryActivateReferralResult.TooEarly)
             {
@@ -63,6 +67,34 @@ public class ProcessPendingReferralsService(
         }
 
         return activated;
+    }
+
+    /// <summary>Tells the referrer what they got. The bonus is already saved: a Telegram failure
+    /// (bot blocked, network, rate limit) must not undo it or stop the batch.</summary>
+    private async Task NotifyReferrerAsync(ReferralActivation activation, CancellationToken ct)
+    {
+        if (activation.Referrer == null || activation.Bonus == ReferralBonusKind.None
+            || activation.AccessUntilUtc == null || !activation.Referrer.IsActive)
+        {
+            return;
+        }
+
+        try
+        {
+            await notifications.SendReferralBonusGrantedAsync(
+                activation.Referrer, activation.Bonus, activation.Days, activation.AccessUntilUtc.Value, ct);
+            // A 403 from Telegram flags the referrer inactive — persist that.
+            await db.SaveChangesAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Referral bonus notification failed for referrer {Referrer}",
+                activation.Referrer.Id);
+        }
     }
 
     private async Task<string?> DetectTriggerAsync(Guid refereeUserId, CancellationToken ct)
