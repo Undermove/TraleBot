@@ -24,6 +24,15 @@ public class BroadcastCampaign
     public string? ButtonQuery { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
+
+    /// <summary>Days of full access given to a recipient who opens the campaign's button; 0 — no gift.
+    /// The days count from the open, not from the send, so they do not burn unread.</summary>
+    public int GiftDays { get; set; }
+
+    /// <summary>Until when an open still gives the gift. After it the button opens the mini-app as usual.</summary>
+    public DateTime? GiftOfferEndsAtUtc { get; set; }
+
+    public bool GiftOffered(DateTime now) => GiftDays > 0 && GiftOfferEndsAtUtc is { } ends && now < ends;
 }
 
 /// <summary>Who a campaign is for. Decided by the same entitlement helpers on <see cref="User"/>

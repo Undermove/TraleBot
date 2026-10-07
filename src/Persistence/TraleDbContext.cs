@@ -37,6 +37,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<VerbFormProgress> VerbFormProgresses { get; set; } = null!;
     public DbSet<UserVerb> UserVerbs { get; set; } = null!;
     public DbSet<VerbSession> VerbSessions { get; set; } = null!;
+    public DbSet<VerbSectionVisit> VerbSectionVisits { get; set; } = null!;
     public DbSet<TranslationCacheEntry> TranslationCache { get; set; } = null!;
     public DbSet<BroadcastCampaign> BroadcastCampaigns { get; set; } = null!;
     public DbSet<BroadcastDelivery> BroadcastDeliveries { get; set; } = null!;
@@ -62,6 +63,28 @@ public class TraleDbContext : DbContext, ITraleDbContext
         var delivery = await BroadcastDeliveries.FirstOrDefaultAsync(d => d.Id == deliveryId, cancellationToken);
         if (delivery is not { Status: BroadcastDeliveryStatus.Pending }) return false;
         delivery.Status = BroadcastDeliveryStatus.Sending;
+        await SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> TryClaimCampaignGiftAsync(
+        Guid deliveryId, DateTime grantedAtUtc, DateTime accessUntilUtc, CancellationToken cancellationToken)
+    {
+        if (Database.IsNpgsql())
+        {
+            var affected = await Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE "BroadcastDeliveries"
+                SET "GiftGrantedAtUtc" = {grantedAtUtc}, "GiftAccessUntilUtc" = {accessUntilUtc}
+                WHERE "Id" = {deliveryId} AND "GiftGrantedAtUtc" IS NULL
+                """, cancellationToken);
+            return affected == 1;
+        }
+
+        // Non-relational providers (EF in-memory unit tests): single-threaded, no atomicity needed.
+        var delivery = await BroadcastDeliveries.FirstOrDefaultAsync(d => d.Id == deliveryId, cancellationToken);
+        if (delivery is not { GiftGrantedAtUtc: null }) return false;
+        delivery.GiftGrantedAtUtc = grantedAtUtc;
+        delivery.GiftAccessUntilUtc = accessUntilUtc;
         await SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -120,6 +143,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new VerbFormProgressConfiguration());
         modelBuilder.ApplyConfiguration(new UserVerbConfiguration());
         modelBuilder.ApplyConfiguration(new VerbSessionConfiguration());
+        modelBuilder.ApplyConfiguration(new VerbSectionVisitConfiguration());
         modelBuilder.ApplyConfiguration(new TranslationCacheEntryConfiguration());
         modelBuilder.ApplyConfiguration(new QueuedTranslationConfiguration());
         modelBuilder.ApplyConfiguration(new VocabularyEntryConfiguration());

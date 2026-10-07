@@ -128,6 +128,30 @@ public class User
         return TrialEndsAtUtc;
     }
 
+    /// <summary>
+    /// A gift of access "for <paramref name="days"/> days from now" that never takes anything away:
+    /// nothing changes for someone who already has that much (an active subscription, a trial or a
+    /// bonus that ends later). A lapsed subscriber gets the subscription back for these days — the
+    /// same way a referral reward reaches them — because the free window is closed to anyone who
+    /// has ever paid (<see cref="HasActiveTrial(DateTime)"/>).
+    /// Returns the new end of access, or null when nothing was changed.
+    /// </summary>
+    public DateTime? GiftAccessDays(int days, DateTime now)
+    {
+        var until = now.AddDays(days);
+        if (days <= 0 || IsLifetime) return null;
+        if (IsPro)
+        {
+            if (SubscribedUntil is { } paidUntil && paidUntil >= until) return null;
+            SubscribedUntil = until;
+            return until;
+        }
+
+        if (TrialEndsAtUtc >= until) return null;
+        BonusAccessUntilUtc = until;
+        return until;
+    }
+
     /// <summary>How many days before trial end we start surfacing the "extend via referral" CTA.</summary>
     public const int TrialExtensionCtaThresholdDays = 3;
 

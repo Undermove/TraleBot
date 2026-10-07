@@ -74,7 +74,8 @@ async function setupApi(page: any, card: object, meResponse: object = me) {
         },
       })
     }
-    if (path.endsWith('/verbs/summary')) return route.fulfill({ json: { dictionaryVerbs: 0 } })
+    // The dashboard's «Глаголы» tile asks for the section; it is not a request for a card.
+    if (path.endsWith('/verbs/section')) return route.fulfill({ status: 404, json: {} })
     verbRequests.push(path)
     return route.fulfill({ json: card })
   })
@@ -92,7 +93,7 @@ test('bot link opens the verb card on the parsed form, over the dictionary', asy
   await expect(page.getByTestId('verb-tense-aorist')).toContainText('დავწერეთ')
   await expect(page.getByTestId('verb-tense-present')).toContainText('ვწერთ')
   expect(requests()).toEqual(['/api/miniapp/verbs/წერს'])
-  await expect(page.getByTestId('verb-unverified')).toHaveCount(0)
+  await expect(page.getByTestId('verb-model-made')).toHaveCount(0)
 
   // Closing the card leaves the user in the dictionary, and the link is consumed.
   await page.mouse.click(195, 20)
@@ -106,8 +107,7 @@ test('card of a verb whose forms a model produced says so', async ({ page }) => 
 
   await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('წერს')}`)
 
-  await expect(page.getByTestId('verb-unverified')).toBeVisible()
-  await expect(page.getByTestId('verb-unverified')).toContainText('Не проверено')
+  await expect(page.getByTestId('verb-model-made')).toHaveText('составлено нейросетью')
   // No form in the link: the card opens on «я».
   await expect(page.getByTestId('verb-tense-present')).toContainText('ვწერ')
 })

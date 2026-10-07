@@ -516,6 +516,10 @@ public class AdminController : Controller
         /// <summary>Random test group of this size; null — everyone in the audience not picked yet.</summary>
         public int? SampleSize { get; set; }
         public bool DryRun { get; set; } = true;
+        /// <summary>Days of access given to a recipient who opens the button; 0 — no gift.</summary>
+        public int GiftDays { get; set; }
+        /// <summary>For how many days after the campaign is created the gift can still be taken; null — 14.</summary>
+        public int? GiftOfferDays { get; set; }
     }
 
     [HttpPost("campaigns/prepare")]
@@ -530,7 +534,8 @@ public class AdminController : Controller
             new CampaignDraft
             {
                 Key = req.Key, Audience = audience, Message = req.Message,
-                ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery
+                ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
+                GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays
             },
             req.SampleSize, req.DryRun, OwnerTelegramId, ct);
         return result.Error != null ? BadRequest(result) : Ok(result);
@@ -567,7 +572,8 @@ public class AdminController : Controller
     private static object? MapCampaignStatus(CampaignStatus? s) => s == null ? null : new
     {
         s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc,
-        s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened
+        s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened,
+        s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen
     };
 
     private static string AudienceName(Domain.Entities.BroadcastAudience a) =>

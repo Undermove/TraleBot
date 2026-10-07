@@ -448,12 +448,6 @@ export function fetchVerb(id: string) {
   return request<VerbDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}`)
 }
 
-/** Что главная может сказать про глаголы (см. verbs/dashboardLine.ts). */
-export function fetchVerbsSummary() {
-  return request<import('./verbs/dashboardLine').VerbsSummaryDto>('/api/miniapp/verbs/summary')
-}
-
-/** Разбор грузинской формы: какому глаголу, времени и лицу она соответствует. */
 export function parseVerbForm(form: string) {
   return request<{ hits: VerbFormHitDto[] }>(`/api/miniapp/verbs/parse?form=${encodeURIComponent(form)}`)
 }
@@ -482,6 +476,16 @@ export function fetchVerbStories(id: string) {
 import type { VerbLearningDto, VerbSessionReportDto, VerbSessionSavedDto } from './verbs/session/types'
 
 /** Всё, что нужно виду глагола и постановщику сессии: прогресс форм, уровень, что уже играли. */
+/** Раздел «Глаголы» одним запросом: уровни, наборы, свои глаголы и «что делать сейчас». Доступен и без триала/Pro — как обзор. */
+export function fetchVerbSection() {
+  return request<import('./verbs/section/types').VerbSectionDto>('/api/miniapp/verbs/section')
+}
+
+/** Раздел открыли: плиткой с главной (home), кнопкой рассылки (имя кампании) или по ссылке с меткой. */
+export function reportVerbSectionOpen(source: string) {
+  return request<{ ok: boolean }>('/api/miniapp/verbs/section/open', { method: 'POST', body: JSON.stringify({ source }) })
+}
+
 export function fetchVerbLearning(id: string) {
   return request<VerbLearningDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/learning`)
 }
@@ -521,6 +525,14 @@ export interface CampaignStatusDto {
   rejected: number
   unknown: number
   opened: number
+  /** Подарок кампании: сколько дней доступа получает открывший кнопку; 0 — подарка нет. */
+  giftDays: number
+  /** До какого момента открытие ещё даёт подарок. */
+  giftOfferEndsAtUtc: string | null
+  gifted: number
+  playedVerbSession: number
+  finishedVerbSession: number
+  paidAfterOpen: number
 }
 
 export interface CampaignPrepareDto {
@@ -543,6 +555,8 @@ export const adminCampaigns = {
     buttonQuery: string | null
     sampleSize: number | null
     dryRun: boolean
+    giftDays?: number
+    giftOfferDays?: number | null
   }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
   /** Отправить следующую порцию уже выбранных получателей. */
   send: (key: string, limit: number) =>
@@ -553,6 +567,12 @@ export const adminCampaigns = {
   status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`)
 }
 
+/** Подарок рассылки: дни полного доступа, отсчёт с момента открытия. Приходит один раз — в ответе на то открытие, которое его выдало. */
+export interface CampaignGiftDto {
+  days: number
+  accessUntilUtc: string
+}
+
 export function reportCampaignOpen(key: string) {
-  return request<{ ok: boolean }>('/api/miniapp/campaign-open', { method: 'POST', body: JSON.stringify({ key }) })
+  return request<{ ok: boolean; gift?: CampaignGiftDto | null }>('/api/miniapp/campaign-open', { method: 'POST', body: JSON.stringify({ key }) })
 }
