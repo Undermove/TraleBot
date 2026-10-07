@@ -34,6 +34,12 @@ rules:
     verbs: ["create"]
     resourceNames: ["postgres-0"]
 
+  # Чтение логов подов: разобрать, каким путём пошёл запрос и почему он сорвался.
+  # Только чтение; имена подов приложения меняются при каждой выкатке, поэтому без resourceNames.
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get"]
+
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
