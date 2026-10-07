@@ -12,7 +12,8 @@ const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:1411'
 const DB = process.env.E2E_DB_CONTAINER ?? 'tralebot-e2e-db'
 /** Тот же выдуманный токен, с которым scripts/dev/run-local-backend.sh запускает сервер. */
 const TOKEN = 'local-dev-token'
-const SHOTS = process.env.SHOTS ?? join(__dirname, 'shots')
+// Не __dirname: спеки грузятся как ES-модули, там его нет. Прогон всегда идёт из каталога miniapp-src.
+const SHOTS = process.env.SHOTS ?? join(process.cwd(), 'e2e-real', 'shots')
 
 export function sql(query: string): string {
   return execFileSync('docker', ['exec', DB, 'psql', '-U', 'dev', '-d', 'tralebot', '-qtAc', query], { encoding: 'utf8' }).trim()

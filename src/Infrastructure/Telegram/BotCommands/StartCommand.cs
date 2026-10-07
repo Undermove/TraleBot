@@ -50,16 +50,17 @@ public class StartCommand(
         }
 
         var commandWithArgs = request.Text.Split(' ');
-        var hasReferralArg = false;
+        var referralRecorded = false;
         if (ContainsArguments(commandWithArgs))
         {
             var arg = commandWithArgs[1];
             if (arg.StartsWith(ReferralPrefix, StringComparison.OrdinalIgnoreCase))
             {
-                hasReferralArg = true;
                 if (long.TryParse(arg.AsSpan(ReferralPrefix.Length), out var referrerTelegramId))
                 {
                     var refResult = await referralRecorder.ExecuteAsync(user!.Id, referrerTelegramId, token);
+                    // Promise the 60 days only when they were really given.
+                    referralRecorded = refResult == RecordReferralLinkResult.Recorded;
                     _logger.LogInformation(
                         "Referral attempt from /start: user {User} referrer-tg {Referrer} → {Result}",
                         user.Id, referrerTelegramId, refResult);
@@ -125,7 +126,7 @@ public class StartCommand(
 
         if (isNewUser)
         {
-            var trialLine = hasReferralArg
+            var trialLine = referralRecorded
                 ? "Тебе ещё и бонус: 60 дней бесплатно вместо 30 — за то, что пришёл по приглашению. 🎁"
                 : "Первые 30 дней — всё бесплатно.";
 

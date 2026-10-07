@@ -496,18 +496,43 @@ public class MiniAppController : Controller
         }
 
         var link = $"https://t.me/{_botConfig.BotName}?start=ref_{info.ReferrerTelegramId}";
-        var shareText = "Учу грузинский в TraleBot 🇬🇪 — приходи, тебе дадут 60 дней триала вместо 30.";
 
         return Ok(new
         {
             link,
-            shareText,
+            shareText = info.ShareText,
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
             rules = info.Rules,
+            // "trial" | "accessEnded" | "pro" | "lifetime" — which reward applies right now.
+            state = char.ToLowerInvariant(info.State.ToString()[0]) + info.State.ToString()[1..],
             bonusShortLabel = info.BonusShortLabel,
+            inviteLine = info.InviteLine,
             capReached = info.CapReached
         });
+    }
+
+    public class CampaignOpenRequest
+    {
+        public string? Key { get; set; }
+    }
+
+    /// <summary>The mini-app was opened by the button of an owner broadcast (<c>?c=key</c> in the
+    /// URL). Recorded once per recipient — this is how a campaign's opens are measured.</summary>
+    [HttpPost("campaign-open")]
+    public async Task<IActionResult> CampaignOpen(
+        [FromBody] CampaignOpenRequest request,
+        [FromServices] Application.Admin.BroadcastCampaignService campaigns,
+        CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        await campaigns.MarkOpenedAsync(user.Id, request?.Key, ct);
+        return Ok(new { ok = true });
     }
 
     private static IEnumerable<object> MapQuestions(

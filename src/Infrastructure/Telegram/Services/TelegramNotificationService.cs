@@ -1,4 +1,5 @@
 using Application.Common.Interfaces;
+using Application.MiniApp.Commands;
 using Application.Notifications.Holidays;
 using Domain.Entities;
 using Infrastructure.Telegram.Models;
@@ -316,6 +317,86 @@ public class TelegramNotificationService : IUserNotificationService
 
     private InlineKeyboardMarkup BuildHolidayPushKeyboard()
     {
+        var url = _botConfig.NormalizedHost() + "/";
+        return new InlineKeyboardMarkup(new[]
+        {
+            new[]
+            {
+                InlineKeyboardButton.WithWebApp("Открыть мини-апп", new WebAppInfo { Url = url })
+            }
+        });
+    }
+
+    public async Task SendReferralBonusGrantedAsync(
+        Domain.Entities.User referrer, ReferralBonusKind bonus, int days, DateTime accessUntilUtc, CancellationToken ct)
+    {
+        var text = BuildReferralBonusText(bonus, days, accessUntilUtc);
+        if (text == null) return;
+        var keyboard = BuildReferralBonusKeyboard();
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: referrer.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Referral bonus message for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                referrer.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: referrer.TelegramId,
+                text: text,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "Referral bonus message for {TelegramId} blocked (403); marking user inactive",
+                referrer.TelegramId);
+            referrer.IsActive = false;
+        }
+    }
+
+    private static readonly string[] MonthsGenitive =
+    {
+        "января", "февраля", "марта", "апреля", "мая", "июня",
+        "июля", "августа", "сентября", "октября", "ноября", "декабря"
+    };
+
+    // Learners are mostly in Georgia (UTC+4, no DST) — the other pushes use Tbilisi time too.
+    private static readonly TimeSpan TbilisiOffset = TimeSpan.FromHours(4);
+
+    /// <summary>
+    /// Copy of the "your friend started" message: says exactly what was granted and until when,
+    /// so it never promises more than <see cref="TryActivateReferralService"/> gave. Null when
+    /// there is nothing to announce (Lifetime).
+    /// </summary>
+    internal static string? BuildReferralBonusText(ReferralBonusKind bonus, int days, DateTime accessUntilUtc)
+    {
+        var local = accessUntilUtc + TbilisiOffset;
+        var until = $"{local.Day} {MonthsGenitive[local.Month - 1]}";
+        return bonus switch
+        {
+            ReferralBonusKind.FreeWeek =>
+                $"Твой друг начал заниматься — тебе открыта неделя, до {until}.",
+            ReferralBonusKind.TrialExtended =>
+                $"Твой друг начал заниматься — твой пробный период стал длиннее на {days} дней, до {until}.",
+            ReferralBonusKind.ProExtended =>
+                $"Твой друг начал заниматься — твоя подписка стала длиннее на {days} дней, до {until}.",
+            _ => null,
+        };
+    }
+
+    private InlineKeyboardMarkup? BuildReferralBonusKeyboard()
+    {
+        if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return null;
         var url = _botConfig.NormalizedHost() + "/";
         return new InlineKeyboardMarkup(new[]
         {

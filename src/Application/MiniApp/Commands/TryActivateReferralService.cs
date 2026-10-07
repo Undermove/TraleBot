@@ -26,15 +26,21 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
 
     public async Task<TryActivateReferralResult> ExecuteAsync(
         Referral referral, string trigger, CancellationToken ct)
+        => (await ActivateAsync(referral, trigger, ct)).Result;
+
+    /// <summary>Same as <see cref="ExecuteAsync"/>, but also says what the referrer was given —
+    /// the caller uses it to tell the referrer.</summary>
+    public async Task<ReferralActivation> ActivateAsync(
+        Referral referral, string trigger, CancellationToken ct)
     {
-        if (referral.ActivatedAtUtc != null) return TryActivateReferralResult.AlreadyActivated;
+        if (referral.ActivatedAtUtc != null) return new(TryActivateReferralResult.AlreadyActivated);
 
         var now = DateTime.UtcNow;
 
         // Anti-fraud: require minimum lifetime between registration and activation
         if ((now - referral.CreatedAtUtc).TotalSeconds < MinSecondsBetweenRegistrationAndActivation)
         {
-            return TryActivateReferralResult.TooEarly;
+            return new(TryActivateReferralResult.TooEarly);
         }
 
         // Anti-fraud: per-day and per-year activation caps per referrer.
@@ -45,7 +51,7 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
                           && r.ActivatedAtUtc >= startOfDay, ct);
         if (todayActivations >= DailyActivationCap)
         {
-            return TryActivateReferralResult.DailyCapReached;
+            return new(TryActivateReferralResult.DailyCapReached);
         }
 
         var yearAgo = now.AddDays(-365);
@@ -55,16 +61,19 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
                           && r.ActivatedAtUtc >= yearAgo, ct);
         if (yearActivations >= YearlyActivationCap)
         {
-            return TryActivateReferralResult.YearlyCapReached;
+            return new(TryActivateReferralResult.YearlyCapReached);
         }
 
         var referrer = await db.Users.FirstOrDefaultAsync(u => u.Id == referral.ReferrerUserId, ct);
-        if (referrer == null) return TryActivateReferralResult.ReferrerGone;
+        if (referrer == null) return new(TryActivateReferralResult.ReferrerGone);
 
         // Apply the referrer reward. Anyone who's ever bought Pro (excl. Lifetime)
         // gets ReferrerProBonusDays — extends an active sub or reactivates a lapsed one.
-        // Free/trial users get ReferrerTrialBonusDays added to TrialBonusDays.
+        // Free users get ReferrerTrialBonusDays of free access that is always usable:
+        // at the end of a running trial, or from now when the trial is already over.
         int days;
+        var bonus = ReferralBonusKind.None;
+        DateTime? accessUntil = null;
         if (referrer.IsLifetime)
         {
             days = 0; // Lifetime gets nothing extra — counter only.
@@ -78,13 +87,18 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
                 ? referrer.SubscribedUntil.Value
                 : now;
             referrer.SubscribedUntil = startFrom.AddDays(days);
+            bonus = ReferralBonusKind.ProExtended;
+            accessUntil = referrer.SubscribedUntil;
         }
         else
         {
             days = ReferrerTrialBonusDays;
-            // Accumulate into TrialBonusDays — additive, stacks across activations
-            // and survives trial expiry without rewriting the user's registration date.
-            referrer.TrialBonusDays += days;
+            // A week that changes nothing is a broken promise: for a trial that ended long ago
+            // the days count from now (see User.GrantFreeAccessDays), never from registration.
+            bonus = referrer.RegistrationTrialEndsAtUtc > now
+                ? ReferralBonusKind.TrialExtended
+                : ReferralBonusKind.FreeWeek;
+            accessUntil = referrer.GrantFreeAccessDays(days, now);
         }
 
         referral.ActivatedAtUtc = now;
@@ -95,9 +109,32 @@ public class TryActivateReferralService(ITraleDbContext db, ILoggerFactory logge
 
         _logger.LogInformation("Referral activated: {Referee} → {Referrer} +{Days}d via {Trigger}",
             referral.RefereeUserId, referrer.Id, days, trigger);
-        return TryActivateReferralResult.Activated;
+        return new(TryActivateReferralResult.Activated, referrer, bonus, days, accessUntil);
     }
 }
+
+/// <summary>What the referrer received.</summary>
+public enum ReferralBonusKind
+{
+    /// <summary>Nothing (Lifetime).</summary>
+    None,
+    /// <summary>Days added to the end of a trial that is still running.</summary>
+    TrialExtended,
+    /// <summary>The trial was over: free access counted from the activation
+    /// (or added to a bonus period that is still running).</summary>
+    FreeWeek,
+    /// <summary>Paid subscription extended, or restarted from now if it had lapsed.</summary>
+    ProExtended
+}
+
+/// <summary>Outcome of one activation attempt. <see cref="Referrer"/>, <see cref="Days"/> and
+/// <see cref="AccessUntilUtc"/> are set only when <see cref="Result"/> is Activated.</summary>
+public record ReferralActivation(
+    TryActivateReferralResult Result,
+    User? Referrer = null,
+    ReferralBonusKind Bonus = ReferralBonusKind.None,
+    int Days = 0,
+    DateTime? AccessUntilUtc = null);
 
 public enum TryActivateReferralResult
 {
