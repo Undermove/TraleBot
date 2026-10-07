@@ -118,6 +118,18 @@ spec:
                 secretKeyRef:
                   name: tralebot-secrets
                   key: TRALEBOT_OPENAI_TOKEN
+            # Verb translation by models (section TranslationAgent). Other limits and the
+            # generator/reviewer models keep their defaults from TranslationAgentOptions.
+            - name: TranslationAgent__Enabled
+              value: "true"
+            - name: TranslationAgent__ClassifierModel
+              value: "gpt-6-luna"
+            - name: TranslationAgent__AnalystModel
+              value: "gpt-6-luna"
+            - name: TranslationAgent__ClassifierReasoning
+              value: "none"
+            - name: TranslationAgent__AnalystReasoning
+              value: "low"
             - name: GoogleTranslateApiConfiguration__ApiKeyBase64
               valueFrom:
                secretKeyRef:
