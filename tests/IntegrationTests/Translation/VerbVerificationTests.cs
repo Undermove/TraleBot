@@ -191,6 +191,58 @@ public class VerbVerificationTests : TranslationPipelineTestBase
         examined!.State.Level.Should().Be(VerbLevel.Learned);
     }
 
+    // ── The «Глаголы» section ────────────────────────────────────────────────────────────────────
+
+    private Task<VerbSection> Section(User learner) => InScope(async sp =>
+    {
+        var user = await sp.GetRequiredService<ITraleDbContext>().Users.Include(u => u.Settings).SingleAsync(u => u.Id == learner.Id);
+        return await sp.GetRequiredService<VerbSectionQuery>().GetAsync(user, alphabetLessons: 99, DateTime.UtcNow, CancellationToken.None);
+    });
+
+    [Test]
+    public async Task Section_shows_a_model_made_verb_with_progress_over_verified_tenses_and_never_calls_to_repeat_an_unverified_form()
+    {
+        await StoreVerb();
+        var user = await Learner();
+        var cells = new[] { "present", "imperfect", "future" }.SelectMany(t => Enumerable.Range(0, 6).Select(p => (t, p))).Take(16).ToList();
+        await Play(user, cells);
+
+        // «Мои глаголы»: the verb with its origin mark and the level reached over what is taught (16 of 24, not of 36).
+        var section = await Section(user);
+        var mine = section.MyVerbs.Single(v => v.Lemma == Dance);
+        (mine.Generated, mine.Level).Should().Be((true, VerbLevel.ExamReady));
+        (section.Next!.Kind, section.Next.Lemma, section.Next.Level).Should().Be((VerbSectionQuery.Continue, Dance, VerbLevel.ExamReady));
+
+        // Learned by the exam; a form of the aorist — confirmed by the owner at the time — is due for repetition.
+        await Play(user, [], examAsked: 6, examCorrect: 6);
+        await Admin(HttpMethod.Post, "verbs/tense/confirm", new { lemma = Dance, tense = "aorist" });
+        await Play(user, [("aorist", 0)]);
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            var row = await db.VerbFormProgresses.SingleAsync(p => p.UserId == user.Id && p.Tense == "aorist");
+            (row.Step, row.BestStep, row.NextDueAtUtc) = (VerbFormProgress.MasteredStep, VerbFormProgress.MasteredStep, DateTime.UtcNow.AddDays(-1));
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+        section = await Section(user);
+        (section.Next!.Kind, section.Next.Lemma, section.Next.Due).Should().Be((VerbSectionQuery.Review, Dance, 1));
+
+        // The tense becomes unverified again (as a rebuild can make it): sessions do not ask it, so nothing is "due".
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            var verb = await db.Verbs.SingleAsync(v => v.Lemma == Dance);
+            var tenses = JsonNode.Parse(verb.CardJson)!["tenses"].Deserialize<Dictionary<string, string[][]>>()!;
+            await sp.GetRequiredService<RuntimeVerbStore>().RewriteGeneratedAsync(verb, tenses, ["aorist", "optative"], CancellationToken.None);
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+        section = await Section(user);
+        section.Next!.Lemma.Should().NotBe(Dance, because: "a learned verb with nothing to repeat is not what to do now");
+        section.Next.Kind.Should().Be(VerbSectionQuery.New);
+        section.MyVerbs.Single(v => v.Lemma == Dance).Level.Should().Be(VerbLevel.Learned, because: "a level never goes down");
+        (await State(user))!.Progress.Total.Should().Be(24);
+    }
+
     // ── The owner's review ───────────────────────────────────────────────────────────────────────
 
     private static string InitData(long telegramId)

@@ -44,7 +44,8 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
     /// <summary>The second replica: same database, same fakes, its own memory, workers and Telegram client.</summary>
     private WebApplicationFactory<Program> _other = null!;
 
-    private readonly FailingTranslation _failing = new();
+    private readonly JobStoreWatch _store = new();
+    private readonly FailingTranslation _failing;
     private int _updateId = 9000;
     private long _chat;
     private Guid _userId;
@@ -53,8 +54,18 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
     /// <summary>Opened by a test when "the model" may answer.</summary>
     private TaskCompletionSource _modelMayAnswer = null!;
 
-    protected override void ConfigureServices(IServiceCollection services) =>
+    public DurableTranslationJobTests() => _failing = new FailingTranslation(_store);
+
+    protected override void ConfigureServices(IServiceCollection services)
+    {
         services.AddSingleton<IPipelineBehavior<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>>(_failing);
+
+        // Every replica keeps its own (real) store; the test watches all of them through one object.
+        var store = services.Single(d => d.ServiceType == typeof(ITranslationJobStore));
+        services.Remove(store);
+        services.AddSingleton<ITranslationJobStore>(sp => new WatchedJobStore(
+            (ITranslationJobStore)ActivatorUtilities.CreateInstance(sp, store.ImplementationType!), _store));
+    }
 
     [OneTimeSetUp]
     public void StartOtherReplica() => _other = StartInstance();
@@ -67,6 +78,7 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
     {
         _modelMayAnswer = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _failing.Reset();
+        _store.Reset();
         _chat = Random.Shared.NextInt64(1_000_000, 900_000_000);
         await SeedCatalogWithout(Lemma);
         _startReplies = 0;
@@ -87,6 +99,7 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
     public async Task LetTheModelGo()
     {
         _modelMayAnswer.TrySetResult();
+        _store.Thaw();
         // No test leaves work behind for the next one: every record of this chat's user is brought to its end.
         await Until(async () => !(await Records()).Any(r => !r.IsFinished), "the jobs of the test to finish");
     }
@@ -117,15 +130,33 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
 
     private static Task Until(Func<bool> condition, string what) => Until(() => Task.FromResult(condition()), what);
 
+    /// <summary>
+    /// How long a test waits for something that has to happen. Only a failing test waits this long:
+    /// nothing a test checks depends on it. It is well above the queue's poll interval (15 s) — the
+    /// longest a job can lie in the queue before a worker of some replica notices it.
+    /// </summary>
+    private static readonly TimeSpan Patience = TimeSpan.FromSeconds(60);
+
     private static async Task Until(Func<Task<bool>> condition, string what)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(20);
+        var deadline = DateTime.UtcNow + Patience;
         while (!await condition())
         {
-            (DateTime.UtcNow < deadline).Should().BeTrue($"expected {what} within 20 seconds");
+            (DateTime.UtcNow < deadline).Should().BeTrue($"expected {what} within {Patience.TotalSeconds} seconds");
             await Task.Delay(20);
         }
     }
+
+    private static async Task<T> Within<T>(Task<T> happens, string what)
+    {
+        (await Task.WhenAny(happens, Task.Delay(Patience))).Should().BeSameAs(happens, $"expected {what} within {Patience.TotalSeconds} seconds");
+        return await happens;
+    }
+
+    /// <summary>The holder of the record stopped giving signs of life long enough ago: the record is free to take.</summary>
+    private Task TheLeaseRunsOut() => InScope(sp => sp.GetRequiredService<ITraleDbContext>().QueuedTranslations
+        .Where(q => q.UserId == _userId && q.FinishedAtUtc == null)
+        .ExecuteUpdateAsync(s => s.SetProperty(q => q.LeaseUntilUtc, DateTime.UtcNow.AddSeconds(-1))));
 
     private Task<List<QueuedTranslation>> Records() => InScope(sp =>
         sp.GetRequiredService<ITraleDbContext>().QueuedTranslations.AsNoTracking()
@@ -231,6 +262,8 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         (await Post("я танцую", messageId: 41)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         Replies().Should().ContainSingle().Which.Text.Should().Be(TranslateCommand.LookingUpVerbText);
+        // That a verb is being looked up is noted on the record in passing, not before the notice goes out.
+        await Until(async () => (await Record()).VerbLookup, "the record to say a verb is being looked up");
         var waiting = await Record();
         waiting.State.Should().Be(QueuedTranslationState.Pending);
         waiting.Should().BeEquivalentTo(new
@@ -307,8 +340,7 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         (await Record()).Attempts.Should().Be(1);
 
         // … and now it is gone.
-        await InScope(sp => sp.GetRequiredService<ITraleDbContext>().QueuedTranslations
-            .Where(q => q.UserId == _userId).ExecuteUpdateAsync(s => s.SetProperty(q => q.LeaseUntilUtc, DateTime.UtcNow)));
+        await TheLeaseRunsOut();
 
         (await WaitForReplies(1))[0].Text.Should().StartWith($"Определение: {Form(Dance, "present", 0)}");
     }
@@ -316,15 +348,19 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
     [Test]
     public async Task Instance_that_comes_back_to_life_after_its_work_was_taken_over_does_not_answer_a_second_time()
     {
-        // The first run hangs on the model and its lease runs out (as if the instance froze): the
-        // background job does the work again. Then the first run wakes up.
+        // The instance freezes in the middle of a translation: the model's answer does not reach it and
+        // it gives no sign of life, so its lease runs out and the background job does the work again.
+        // Then the first run wakes up, with the answer in its hands.
         Options.SlowReplyNoticeMs = 100;
+        Options.JobLeaseRenewMs = 50;
         VerbTheModelsHaveToWrite(waitsForTheTest: call => call == 1);
 
         await Post("я танцую", messageId: 51);
         await Until(() => Models.GeneratorModel.Calls == 1, "the first run to be waiting for the model");
-        await InScope(sp => sp.GetRequiredService<ITraleDbContext>().QueuedTranslations
-            .Where(q => q.UserId == _userId).ExecuteUpdateAsync(s => s.SetProperty(q => q.LeaseUntilUtc, DateTime.UtcNow.AddSeconds(-1))));
+        // Frozen for real: a sign of life arriving after the lease ran out would give the record back
+        // to the first run, and nobody would take it over.
+        await Within(_store.FreezeFirstRun(), "the first run to stop giving signs of life");
+        await TheLeaseRunsOut();
 
         var replies = await WaitForReplies(2);
         replies[0].Text.Should().Be(TranslateCommand.LookingUpVerbText);
@@ -334,10 +370,12 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         (await Record()).Attempts.Should().Be(2);
 
         _modelMayAnswer.SetResult();
-        await Until(() => Models.ReviewerModel.Calls >= 2 || Models.GeneratorModel.Calls >= 2, "the first run to go on");
-        await Task.Delay(500);
 
+        (await Within(_store.FirstRunAskedToAnswer, "the first run to come to its answer"))
+            .Should().BeFalse(because: "the record is not its own any more");
+        await Within(_store.FirstRunOver, "the first run to end");
         Replies().Should().HaveCount(2, because: "the run that lost the record may not answer");
+        Models.GeneratorModel.Calls.Should().Be(2);
     }
 
     // ── A job delivered again ────────────────────────────────────────────────────────────────────
@@ -353,6 +391,8 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         await Until(async () => (await Record()).State == QueuedTranslationState.Done, "the record to be finished");
         var id = (await Record()).Id;
         var modelCalls = Models.ModelCalls;
+        // The job that stood guard over the translation has ended too: what ends from here on is the repeats.
+        await Until(() => Queue() is { Enqueued: 0, Processing: 0 }, "the queue to be empty");
         var succeeded = Queue().Succeeded;
 
         // The queue is at-least-once: the same job comes again — to this replica and to the other.
@@ -374,8 +414,8 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         Options.SlowReplyNoticeMs = 100;
         Options.JobMaxAttempts = 3;
         OptionsOf(_other).JobMaxAttempts = 3;
-        // Long enough to be put on record, then it breaks — every time.
-        _failing.After = TimeSpan.FromMilliseconds(400);
+        // It breaks once it is on record — every time.
+        _failing.Breaks = true;
 
         await Post("стол");
 
@@ -394,7 +434,7 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
     public async Task Translation_that_fails_once_is_tried_again_and_answered()
     {
         Options.SlowReplyNoticeMs = 100;
-        _failing.After = TimeSpan.FromMilliseconds(400);
+        _failing.Breaks = true;
         _failing.Times = 1;
         Models.ClassifierModel.AnswerWith("""{"notTranslatable":false,"isVerb":false,"russianInfinitive":null}""");
 
@@ -496,10 +536,11 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         var first = (await Call(App, HttpMethod.Post, "/api/miniapp/translate", new { word = "я танцую" })).Body!;
         first["status"]!.GetValue<string>().Should().Be("pending");
 
-        // The other replica has nothing in memory — it reads the record.
-        var waiting = await Status(_other, " Я танцую ");
+        // The other replica has nothing in memory — it reads the record (that a verb is being looked
+        // up is noted on it in passing).
+        JsonNode waiting = first;
+        await Until(async () => (waiting = await Status(_other, " Я танцую "))["verbLookup"]!.GetValue<bool>(), "the record to say a verb is being looked up");
         waiting["status"]!.GetValue<string>().Should().Be("pending");
-        waiting["verbLookup"]!.GetValue<bool>().Should().BeTrue();
 
         // The same word sent to the other replica joins the work instead of starting it again.
         var joined = (await Call(_other, HttpMethod.Post, "/api/miniapp/translate", new { word = "я танцую" })).Body!;
@@ -575,8 +616,10 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
     {
         Models.ClassifierModel.AnswerWith("""{"notTranslatable":false,"isVerb":false,"russianInfinitive":null}""");
 
-        await LeftByADeadInstance("слива", QueuedTranslationSource.MiniApp);
+        // While its lease lasts the record is all there is to tell; then the lease runs out.
+        await LeftByADeadInstance("слива", QueuedTranslationSource.MiniApp, leaseLeftMs: 60_000);
         (await Status(_other, "слива"))["status"]!.GetValue<string>().Should().Be("pending");
+        await TheLeaseRunsOut();
 
         JsonNode answer = null!;
         await Until(async () => (answer = await Status(_other, "слива"))["status"]!.GetValue<string>() != "pending", "the translation to be done again");
@@ -605,6 +648,8 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         });
         await LeftByADeadInstance("кот", QueuedTranslationSource.MiniApp, attempts: Options.JobMaxAttempts, leaseLeftMs: 0);
         await Until(async () => (await Record()).State == QueuedTranslationState.Failed, "the job to be given up");
+        // The record is closed from inside the background job; the queue counts the job a moment later.
+        await Until(() => Queue().Succeeded > 0, "the background job to end");
 
         using var anonymous = App.CreateClient();
         (await anonymous.GetAsync("/api/admin/jobs")).StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -621,14 +666,16 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
 
     /// <summary>
     /// Makes the translation itself break — something no translator's own fallback catches (in life: the
-    /// database going away in the middle).
+    /// database going away in the middle). A run that started with the request breaks once the job is on
+    /// record, the later ones at once.
     /// </summary>
-    private sealed class FailingTranslation : IPipelineBehavior<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>
+    private sealed class FailingTranslation(JobStoreWatch store)
+        : IPipelineBehavior<TranslateAndCreateVocabularyEntry, CreateVocabularyEntryResult>
     {
         private int _calls;
 
-        /// <summary>Null: translations work.</summary>
-        public TimeSpan? After { get; set; }
+        /// <summary>False: translations work.</summary>
+        public bool Breaks { get; set; }
 
         /// <summary>How many of the next translations break.</summary>
         public int Times { get; set; } = int.MaxValue;
@@ -637,7 +684,7 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
 
         public void Reset()
         {
-            After = null;
+            Breaks = false;
             Times = int.MaxValue;
             _calls = 0;
         }
@@ -645,13 +692,232 @@ public class DurableTranslationJobTests : TranslationPipelineTestBase
         public async Task<CreateVocabularyEntryResult> Handle(
             TranslateAndCreateVocabularyEntry request, RequestHandlerDelegate<CreateVocabularyEntryResult> next, CancellationToken ct)
         {
-            if (After is { } delay && Interlocked.Increment(ref _calls) <= Times)
+            if (Breaks && Interlocked.Increment(ref _calls) <= Times)
             {
-                await Task.Delay(delay, ct);
+                await store.OnRecord.WaitAsync(ct);
                 throw new InvalidOperationException("The translation broke (test)");
             }
 
             return await next();
         }
+    }
+
+    /// <summary>
+    /// What a test sees of the jobs' durable store, and the one thing it holds back there: the signs of
+    /// life of a run that started with a request (start 1) — an instance that froze gives none. One
+    /// for all replicas; a test has one such run at a time.
+    /// </summary>
+    private sealed class JobStoreWatch
+    {
+        private readonly object _sync = new();
+        private bool _frozen;
+        private int _signsOnTheirWay;
+        private TaskCompletionSource _landed = Signal();
+        private TaskCompletionSource _held = Signal();
+        private TaskCompletionSource _thaw = Signal();
+        private TaskCompletionSource _onRecord = Signal();
+        private TaskCompletionSource<bool> _firstRunOver = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private TaskCompletionSource<bool> _firstRunAskedToAnswer = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        private static TaskCompletionSource Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        /// <summary>A job has been put on record.</summary>
+        public Task OnRecord
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _onRecord.Task;
+                }
+            }
+        }
+
+        /// <summary>The first run came to its answer and asked whether it may send it: the store's reply.</summary>
+        public Task<bool> FirstRunAskedToAnswer
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _firstRunAskedToAnswer.Task;
+                }
+            }
+        }
+
+        /// <summary>The frozen first run has ended: whatever it was going to send, it has sent.</summary>
+        public Task<bool> FirstRunOver
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _firstRunOver.Task;
+                }
+            }
+        }
+
+        public void Reset()
+        {
+            lock (_sync)
+            {
+                _thaw.TrySetResult();
+                _frozen = false;
+                _signsOnTheirWay = 0;
+                _landed = Signal();
+                _held = Signal();
+                _thaw = Signal();
+                _onRecord = Signal();
+                _firstRunOver = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _firstRunAskedToAnswer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+        }
+
+        /// <summary>
+        /// From here on the first run gives no sign of life. Completes when the sign that was on its way
+        /// has landed and the next one is being held: nothing renews the lease after this.
+        /// </summary>
+        public async Task<bool> FreezeFirstRun()
+        {
+            Task landed, held;
+            lock (_sync)
+            {
+                _frozen = true;
+                if (_signsOnTheirWay == 0)
+                {
+                    _landed.TrySetResult();
+                }
+
+                landed = _landed.Task;
+                held = _held.Task;
+            }
+
+            await landed;
+            await held;
+            return true;
+        }
+
+        public void Thaw()
+        {
+            lock (_sync)
+            {
+                _frozen = false;
+                _thaw.TrySetResult();
+            }
+        }
+
+        public void PutOnRecord()
+        {
+            lock (_sync)
+            {
+                _onRecord.TrySetResult();
+            }
+        }
+
+        public void AskedToAnswer(TranslationLease lease, bool allowed)
+        {
+            if (lease.Attempt == 1)
+            {
+                lock (_sync)
+                {
+                    _firstRunAskedToAnswer.TrySetResult(allowed);
+                }
+            }
+        }
+
+        public async Task<bool> SignOfLife(TranslationLease lease, Func<Task<bool>> renew, CancellationToken ct)
+        {
+            if (lease.Attempt != 1)
+            {
+                return await renew();
+            }
+
+            Task? thaw = null;
+            TaskCompletionSource landed;
+            TaskCompletionSource<bool> over;
+            lock (_sync)
+            {
+                landed = _landed;
+                over = _firstRunOver;
+                if (_frozen)
+                {
+                    thaw = _thaw.Task;
+                    _held.TrySetResult();
+                }
+                else
+                {
+                    _signsOnTheirWay++;
+                }
+            }
+
+            if (thaw != null)
+            {
+                try
+                {
+                    await thaw.WaitAsync(ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    // A run stops its signs of life when it is over.
+                    over.TrySetResult(true);
+                    throw;
+                }
+
+                return await renew();
+            }
+
+            try
+            {
+                return await renew();
+            }
+            finally
+            {
+                lock (_sync)
+                {
+                    if (landed == _landed && --_signsOnTheirWay == 0 && _frozen)
+                    {
+                        landed.TrySetResult();
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>A replica's own store, reporting to <see cref="JobStoreWatch"/>.</summary>
+    private sealed class WatchedJobStore(ITranslationJobStore inner, JobStoreWatch watch) : ITranslationJobStore
+    {
+        public async Task CreateAsync(QueuedTranslation queued, CancellationToken ct)
+        {
+            await inner.CreateAsync(queued, ct);
+            watch.PutOnRecord();
+        }
+
+        public Task<bool> RenewAsync(TranslationLease lease, TimeSpan duration, CancellationToken ct) =>
+            watch.SignOfLife(lease, () => inner.RenewAsync(lease, duration, ct), ct);
+
+        public async Task<bool> BeginAnswerAsync(TranslationLease lease, TimeSpan duration, CancellationToken ct)
+        {
+            var allowed = await inner.BeginAnswerAsync(lease, duration, ct);
+            watch.AskedToAnswer(lease, allowed);
+            return allowed;
+        }
+
+        public Task<QueuedTranslation?> FindAsync(Guid id, CancellationToken ct) => inner.FindAsync(id, ct);
+
+        public Task<QueuedTranslation?> FindLatestAsync(Guid userId, string wordKey, CancellationToken ct) =>
+            inner.FindLatestAsync(userId, wordKey, ct);
+
+        public Task<TranslationLease?> TryClaimAsync(Guid id, Guid owner, TimeSpan lease, CancellationToken ct) =>
+            inner.TryClaimAsync(id, owner, lease, ct);
+
+        public Task ReleaseAsync(TranslationLease lease, bool uncount, CancellationToken ct) => inner.ReleaseAsync(lease, uncount, ct);
+
+        public Task<bool> FinishAsync(
+            TranslationLease lease, QueuedTranslationState state, string outcome, Guid? vocabularyEntryId, CancellationToken ct) =>
+            inner.FinishAsync(lease, state, outcome, vocabularyEntryId, ct);
+
+        public Task MarkVerbLookupAsync(Guid id, CancellationToken ct) => inner.MarkVerbLookupAsync(id, ct);
+
+        public Task MarkNoticeSentAsync(Guid id, CancellationToken ct) => inner.MarkNoticeSentAsync(id, ct);
     }
 }

@@ -26,6 +26,8 @@ export type Screen =
       total: number
       remainingWrong: QuizQuestion[]
     }
+  /** Раздел «Глаголы». source — метка, с которой пришли (кампания рассылки, ссылка); без неё — плитка на главной. */
+  | { kind: 'verbs'; source?: string }
   | { kind: 'profile' }
   | { kind: 'admin' }
   | { kind: 'admin-user'; telegramId: number }

@@ -10,6 +10,7 @@ import MyVerbRows, { matchesVerb } from '../verbs/dictionary/MyVerbRows'
 import LevelBadge from '../verbs/session/LevelBadge'
 import type { MyVerbDto } from '../verbs/types'
 import { VerbHint } from '../verbs/parts'
+import OwnVerbUnlocked, { ownVerbIsNews } from '../verbs/section/OwnVerbUnlocked'
 import type { VerbFormHitDto } from '../verbs/types'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
@@ -47,6 +48,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   /** Открытый вид глагола; entryId — если пришли с записи словаря, которая сама — форма этого глагола. */
   const [verbSheet, setVerbSheet] = useState<{ verbId: string; tense?: string; person?: number; entryId?: string } | null>(null)
   const [myVerbs, setMyVerbs] = useState<MyVerbDto[]>([])
+  // Первый раз своё слово оказалось глаголом — один раз празднуем и показываем, где он теперь живёт.
+  const [ownVerbNews, setOwnVerbNews] = useState(false)
   const [activeLetter, setActiveLetter] = useState<string | null>(null)
   const [cardItem, setCardItem] = useState<VocabularyItem | null>(null)
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set())
@@ -272,6 +275,7 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
           example: r.example ?? '',
           verb: r.verb
         })
+        setOwnVerbNews(!!r.verb && ownVerbIsNews())
         setTranslateState('success')
         setTranslateInput('')
         if (r.status === 'success') {
@@ -503,6 +507,14 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
                   <div className="font-sans text-[12px] text-jewelInk-mid mt-1 italic">{translateResult.example}</div>
                 )}
                 <div className="font-sans text-[11px] text-gold-deep font-bold mt-1.5">✓ добавлено в словарь</div>
+                {translateResult.verb && ownVerbNews && (
+                  <div className="mt-2.5">
+                    <OwnVerbUnlocked
+                      ru={translateResult.verb.ru} action="Показать, где он"
+                      onAction={() => navigate({ kind: 'verbs' })} onClose={() => setOwnVerbNews(false)}
+                    />
+                  </div>
+                )}
                 {translateResult.verb && (
                   <div className="mt-2.5">
                     <VerbHint hit={translateResult.verb} onOpen={() => openVerb(translateResult.verb!)} />

@@ -34,6 +34,10 @@ public partial class BroadcastCampaignService(
     public const int MaxMessageLength = 4000;
     /// <summary>One request sends at most this many — it has to finish well inside an HTTP timeout.</summary>
     public const int MaxBatchSize = 100;
+    public const int MaxGiftDays = 30;
+    /// <summary>How long after the campaign is created an open still gives the gift, unless said otherwise.</summary>
+    public const int DefaultGiftOfferDays = 14;
+    public const int MaxGiftOfferDays = 90;
     /// <summary>Pause between messages: 10 per second, three times under Telegram's bulk limit (~30/s),
     /// so the bot's own pushes and replies still fit.</summary>
     public static readonly TimeSpan SendDelay = TimeSpan.FromMilliseconds(100);
@@ -78,13 +82,21 @@ public partial class BroadcastCampaignService(
         if (buttonText == null && buttonQuery.Length > 0)
             return CampaignPrepareResult.Fail("Указан адрес для кнопки, но нет её текста.");
         if (sampleSize is <= 0) return CampaignPrepareResult.Fail("Размер пробной группы должен быть больше нуля.");
+        if (draft.GiftDays is < 0 or > MaxGiftDays)
+            return CampaignPrepareResult.Fail($"Подарок — от 0 до {MaxGiftDays} дней доступа.");
+        if (draft.GiftDays > 0 && buttonText == null)
+            return CampaignPrepareResult.Fail("Подарок получают, открыв мини-апп кнопкой из сообщения, — нужна кнопка.");
+        var giftOfferDays = draft.GiftOfferDays ?? DefaultGiftOfferDays;
+        if (giftOfferDays is < 1 or > MaxGiftOfferDays)
+            return CampaignPrepareResult.Fail($"Срок, пока подарок можно получить, — от 1 до {MaxGiftOfferDays} дней.");
 
         var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
         if (campaign != null && campaign.Audience != draft.Audience)
             return CampaignPrepareResult.Fail($"Кампания «{key}» уже заведена для другой аудитории ({campaign.Audience}). Возьми другое имя.");
 
         var contentChanged = campaign != null
-            && (campaign.Message != message || campaign.ButtonText != buttonText || (campaign.ButtonQuery ?? "") != buttonQuery);
+            && (campaign.Message != message || campaign.ButtonText != buttonText || (campaign.ButtonQuery ?? "") != buttonQuery
+                || campaign.GiftDays != draft.GiftDays);
         if (contentChanged)
         {
             // The text may change between parts (after looking at the sample), but never under a
@@ -128,6 +140,9 @@ public partial class BroadcastCampaignService(
         campaign.Message = message;
         campaign.ButtonText = buttonText;
         campaign.ButtonQuery = buttonQuery;
+        campaign.GiftDays = draft.GiftDays;
+        // The offer runs from the day the campaign was created, whichever part a person is in.
+        campaign.GiftOfferEndsAtUtc = draft.GiftDays > 0 ? campaign.CreatedAtUtc.AddDays(giftOfferDays) : null;
 
         foreach (var user in picked)
         {
@@ -242,8 +257,16 @@ public partial class BroadcastCampaignService(
 
         var rows = await db.BroadcastDeliveries.AsNoTracking()
             .Where(d => d.CampaignId == campaign.Id)
-            .Select(d => new { d.Status, d.IsSample, Opened = d.OpenedAtUtc != null })
+            .Select(d => new { d.Status, d.IsSample, Opened = d.OpenedAtUtc != null, Gifted = d.GiftGrantedAtUtc != null })
             .ToListAsync(ct);
+
+        // What the people who opened the button did next: played a verb session, paid.
+        var opened = db.BroadcastDeliveries.AsNoTracking().Where(d => d.CampaignId == campaign.Id && d.OpenedAtUtc != null);
+        var played = await opened.CountAsync(d => db.VerbSessions.Any(s => s.UserId == d.UserId && s.StartedAtUtc >= d.OpenedAtUtc), ct);
+        var finished = await opened.CountAsync(
+            d => db.VerbSessions.Any(s => s.UserId == d.UserId && s.FinishedAtUtc != null && s.StartedAtUtc >= d.OpenedAtUtc), ct);
+        var paid = await opened.CountAsync(
+            d => db.Payments.Any(p => p.UserId == d.UserId && p.PurchasedAtUtc >= d.OpenedAtUtc && p.RefundedAtUtc == null), ct);
 
         return new CampaignStatus
         {
@@ -260,24 +283,79 @@ public partial class BroadcastCampaignService(
             Blocked = rows.Count(r => r.Status == BroadcastDeliveryStatus.Blocked),
             Rejected = rows.Count(r => r.Status == BroadcastDeliveryStatus.Rejected),
             Unknown = rows.Count(r => r.Status == BroadcastDeliveryStatus.Sending),
-            Opened = rows.Count(r => r.Opened)
+            Opened = rows.Count(r => r.Opened),
+            GiftDays = campaign.GiftDays,
+            GiftOfferEndsAtUtc = campaign.GiftOfferEndsAtUtc,
+            Gifted = rows.Count(r => r.Gifted),
+            PlayedVerbSession = played,
+            FinishedVerbSession = finished,
+            PaidAfterOpen = paid
         };
     }
 
-    /// <summary>The user opened the mini-app by the campaign's button. First open only.</summary>
-    public async Task<bool> MarkOpenedAsync(Guid userId, string? key, CancellationToken ct)
+    /// <summary>
+    /// The user opened the mini-app by the campaign's button. The open is recorded once. If the
+    /// campaign carries a gift of access and its offer has not ended, the gift is given here — at
+    /// the open, so the days do not burn in an unread message — and at most once per recipient,
+    /// however many times, from however many devices or replicas the open is reported.
+    /// Only a recipient of the campaign counts: for anyone else (a forwarded link) nothing is
+    /// recorded and nothing is given — the mini-app simply opens as usual.
+    /// </summary>
+    public async Task<CampaignOpenResult> MarkOpenedAsync(Guid userId, string? key, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(key) || !KeyPattern().IsMatch(key)) return false;
+        if (string.IsNullOrWhiteSpace(key) || !KeyPattern().IsMatch(key)) return CampaignOpenResult.Nothing;
 
-        var delivery = await db.BroadcastDeliveries
-            .Where(d => d.UserId == userId && d.OpenedAtUtc == null && d.Status == BroadcastDeliveryStatus.Sent
-                        && db.BroadcastCampaigns.Any(c => c.Id == d.CampaignId && c.Key == key))
-            .FirstOrDefaultAsync(ct);
-        if (delivery == null) return false;
+        var campaign = await db.BroadcastCampaigns.AsNoTracking().FirstOrDefaultAsync(c => c.Key == key, ct);
+        if (campaign == null) return CampaignOpenResult.Nothing;
 
-        delivery.OpenedAtUtc = DateTime.UtcNow;
+        // Sending = the send did not report back; an open by the button proves the message arrived.
+        var delivery = await db.BroadcastDeliveries.FirstOrDefaultAsync(
+            d => d.CampaignId == campaign.Id && d.UserId == userId
+                 && (d.Status == BroadcastDeliveryStatus.Sent || d.Status == BroadcastDeliveryStatus.Sending), ct);
+        if (delivery == null) return CampaignOpenResult.Nothing;
+
+        var now = DateTime.UtcNow;
+        var firstOpen = delivery.OpenedAtUtc == null;
+        if (firstOpen)
+        {
+            delivery.OpenedAtUtc = now;
+            await db.SaveChangesAsync(ct);
+        }
+
+        var gift = delivery.GiftGrantedAtUtc == null && campaign.GiftOffered(now)
+            ? await GiveGiftAsync(delivery.Id, userId, campaign, now, ct)
+            : null;
+        return new CampaignOpenResult(firstOpen, gift);
+    }
+
+    /// <summary>
+    /// Gives the campaign's gift to one recipient. The mark on the delivery row and the change of the
+    /// user's access are one transaction, and the mark is an atomic claim: of several parallel calls
+    /// exactly one changes the user. Nothing is marked when the person already has that much access,
+    /// so the offer stays open for them until its deadline.
+    /// </summary>
+    private async Task<CampaignGift?> GiveGiftAsync(
+        Guid deliveryId, Guid userId, BroadcastCampaign campaign, DateTime now, CancellationToken ct)
+    {
+        await using var transaction = await db.BeginTransactionAsync(ct);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user == null) return null;
+        await db.Entry(user).ReloadAsync(ct);
+
+        var until = user.GiftAccessDays(campaign.GiftDays, now);
+        if (until == null) return null;
+        if (!await db.TryClaimCampaignGiftAsync(deliveryId, now, until.Value, ct))
+        {
+            // A parallel open has given it; forget this copy of the change.
+            await db.Entry(user).ReloadAsync(ct);
+            return null;
+        }
+
         await db.SaveChangesAsync(ct);
-        return true;
+        await transaction.CommitAsync(ct);
+        _logger.LogInformation("Campaign {Key}: gift of {Days} days given to {User}, access until {Until}",
+            campaign.Key, campaign.GiftDays, userId, until);
+        return new CampaignGift(campaign.GiftDays, until.Value);
     }
 
     /// <summary>People a broadcast may reach at all: have not blocked the bot and have not turned
@@ -307,6 +385,21 @@ public class CampaignDraft
     public string? Message { get; init; }
     public string? ButtonText { get; init; }
     public string? ButtonQuery { get; init; }
+    /// <summary>Days of access given to a recipient who opens the button; 0 — no gift.</summary>
+    public int GiftDays { get; init; }
+    /// <summary>For how many days after the campaign is created an open still gives the gift;
+    /// null — <see cref="BroadcastCampaignService.DefaultGiftOfferDays"/>.</summary>
+    public int? GiftOfferDays { get; init; }
+}
+
+/// <summary>A gift of access given by a campaign: how many days and until when the person now has access.</summary>
+public record CampaignGift(int Days, DateTime AccessUntilUtc);
+
+/// <param name="FirstOpen">This call recorded the recipient's first open.</param>
+/// <param name="Gift">The gift given by this very call; null on every later call.</param>
+public record CampaignOpenResult(bool FirstOpen, CampaignGift? Gift)
+{
+    public static readonly CampaignOpenResult Nothing = new(false, null);
 }
 
 public class CampaignPrepareResult
@@ -355,6 +448,16 @@ public class CampaignStatus
     /// <summary>Claimed for sending, no answer recorded — may or may not have been delivered.</summary>
     public int Unknown { get; init; }
     public int Opened { get; init; }
+    public int GiftDays { get; init; }
+    public DateTime? GiftOfferEndsAtUtc { get; init; }
+    /// <summary>Recipients the gift was given to.</summary>
+    public int Gifted { get; init; }
+    /// <summary>Of those who opened: started a verb session after the open.</summary>
+    public int PlayedVerbSession { get; init; }
+    /// <summary>Of those who opened: finished a verb session started after the open.</summary>
+    public int FinishedVerbSession { get; init; }
+    /// <summary>Of those who opened: paid after the open (refunds not counted).</summary>
+    public int PaidAfterOpen { get; init; }
 }
 
 public enum CampaignSendOutcome

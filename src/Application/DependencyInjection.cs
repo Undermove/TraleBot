@@ -103,6 +103,9 @@ public static class DependencyInjection
         services.AddScoped<VerbVerificationBackfill>();
         services.AddScoped<VerbQuizCreditService>();
         services.AddSingleton<VerbStoryCatalog>();
+        services.AddSingleton(_ => VerbLevelCatalog.Load(Path.Combine(AppContext.BaseDirectory, "Verbs", "levels.json")));
+        services.AddScoped<VerbSectionQuery>();
+        services.AddScoped<RecordVerbSectionVisitService>();
         services.AddScoped<FeedTreatService>();
 
         // Acquisition attribution (per ARCHITECTURE.md, no MediatR)

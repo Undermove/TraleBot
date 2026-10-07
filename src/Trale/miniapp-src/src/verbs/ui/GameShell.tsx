@@ -4,6 +4,7 @@ import Button from '../../components/Button'
 import { CloseIcon, PointIcon } from './icons'
 import { OVERLAY, useOverlay } from './overlayStack'
 import { hintSeen, markHintSeen } from './hints'
+import { cyr } from '../types'
 
 // Общая оболочка игр с глаголами: шапка с крестиком и счётом, правила при первом входе
 // (шторка с Бомборой, потом под кнопкой «?»), подсказка и подсветка первого хода.
@@ -144,16 +145,28 @@ export function GameShell({ id, title, onExit, right, help, children }: {
     </div>
   )
 }
+/**
+ * Вариант ответа. Грузинское слово (geo и просто строка) показывается с кириллической транскрипцией
+ * под ним — так же, как в заданиях-квизах: играть можно, ещё не зная букв.
+ */
 export function OptionButton({ children, onClick, tone = '', geo = true }: {
   children: React.ReactNode; onClick: () => void; tone?: string; geo?: boolean
 }) {
+  const word = geo && typeof children === 'string' ? children : null
   return (
     <button
       onClick={onClick}
-      className={`rounded-xl border-[1.5px] border-jewelInk px-4 py-3 text-[17px] font-bold ${geo ? 'font-geo' : ''} ${tone || 'bg-cream-tile'}`}
+      aria-label={word ?? undefined}
+      className={`min-w-0 rounded-xl border-[1.5px] border-jewelInk px-3 py-2.5 text-[17px] font-bold leading-tight ${geo ? 'font-geo' : ''} ${tone || 'bg-cream-tile'}`}
       style={{ boxShadow: '2px 2px 0 #15100A' }}
     >
-      {children}
+      {word ? (
+        <>
+          {/* Длинное слово не переносим посреди слова — уменьшаем, чтобы оно читалось одной строкой. */}
+          <span className={`block break-words ${word.length > 12 ? 'text-[13px]' : word.length > 9 ? 'text-[15px]' : ''}`}>{word}</span>
+          <span className="block font-sans text-[12px] font-semibold text-jewelInk-hint break-words" data-testid="option-cyr">{cyr(word)}</span>
+        </>
+      ) : children}
     </button>
   )
 }

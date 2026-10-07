@@ -21,6 +21,19 @@ public class StartCommand(
     ILoggerFactory loggerFactory) : IBotCommand
 {
     private const string ReferralPrefix = "ref_";
+
+    /// <summary>
+    /// <c>t.me/&lt;bot&gt;?start=verbs</c> or <c>…?start=verbs_&lt;tag&gt;</c>: the button under the answer opens
+    /// the mini-app on the «Глаголы» section, and the tag travels with it (<c>src=…</c>) so the visit is
+    /// recorded for people who already use the app too (see <c>VerbSectionVisit</c>).
+    /// </summary>
+    public const string VerbsSectionPayload = "verbs";
+
+    public static bool IsVerbsSectionPayload(string? payload) =>
+        payload != null
+        && (payload.Equals(VerbsSectionPayload, StringComparison.OrdinalIgnoreCase)
+            || payload.StartsWith(VerbsSectionPayload + "_", StringComparison.OrdinalIgnoreCase))
+        && RecordAcquisitionSourceService.Sanitize(payload) != null;
     private readonly ILogger _logger = loggerFactory.CreateLogger<StartCommand>();
 
     public Task<bool> IsApplicable(TelegramRequest request, CancellationToken ct)
@@ -51,9 +64,15 @@ public class StartCommand(
 
         var commandWithArgs = request.Text.Split(' ');
         var referralRecorded = false;
+        string? verbsSectionTag = null;
         if (ContainsArguments(commandWithArgs))
         {
             var arg = commandWithArgs[1];
+            if (IsVerbsSectionPayload(arg))
+            {
+                verbsSectionTag = RecordAcquisitionSourceService.Sanitize(arg);
+            }
+
             if (arg.StartsWith(ReferralPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 if (long.TryParse(arg.AsSpan(ReferralPrefix.Length), out var referrerTelegramId))
@@ -97,7 +116,7 @@ public class StartCommand(
         }
 
         var miniAppUrl = botConfig.MiniAppEnabled && !string.IsNullOrEmpty(botConfig.HostAddress)
-            ? $"{botConfig.NormalizedHost()}/"
+            ? $"{botConfig.NormalizedHost()}/{(verbsSectionTag == null ? "" : $"?screen=verbs&src={verbsSectionTag}")}"
             : null;
 
         // /app is the focused launchpad: a single WebApp button, no chat-menu

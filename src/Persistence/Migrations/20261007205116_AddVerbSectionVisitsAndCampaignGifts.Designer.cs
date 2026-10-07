@@ -12,8 +12,8 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    [Migration("20261007195851_AddVerbProvenanceMissingTenses")]
-    partial class AddVerbProvenanceMissingTenses
+    [Migration("20261007205116_AddVerbSectionVisitsAndCampaignGifts")]
+    partial class AddVerbSectionVisitsAndCampaignGifts
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -83,6 +83,12 @@ namespace Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("GiftDays")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("GiftOfferEndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Key")
                         .IsRequired()
                         .HasMaxLength(48)
@@ -115,6 +121,12 @@ namespace Persistence.Migrations
                     b.Property<string>("Error")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("GiftAccessUntilUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("GiftGrantedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsSample")
                         .HasColumnType("boolean");
@@ -1018,12 +1030,6 @@ namespace Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
-                    b.Property<string>("CompletedTensesJson")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("[]");
-
                     b.Property<int>("FormsAttested")
                         .HasColumnType("integer");
 
@@ -1037,12 +1043,6 @@ namespace Persistence.Migrations
 
                     b.Property<bool>("LemmaInLexicon")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("MissingTensesJson")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("[]");
 
                     b.Property<int>("RepairRounds")
                         .HasColumnType("integer");
@@ -1072,6 +1072,39 @@ namespace Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("VerbProvenances");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbSectionVisit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("FirstOpenedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LastOpenedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Opens")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Source");
+
+                    b.HasIndex("UserId", "Source")
+                        .IsUnique();
+
+                    b.ToTable("VerbSectionVisits");
                 });
 
             modelBuilder.Entity("Domain.Entities.VerbSession", b =>
@@ -1405,6 +1438,17 @@ namespace Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Verb");
+                });
+
+            modelBuilder.Entity("Domain.Entities.VerbSectionVisit", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.VerbSession", b =>

@@ -24,6 +24,13 @@ public class BroadcastDelivery
     /// <summary>First time the user opened the mini-app by the campaign's button.</summary>
     public DateTime? OpenedAtUtc { get; set; }
 
+    /// <summary>When the campaign's gift of access was given to this recipient — at most once.
+    /// Null: no gift (the campaign has none, the offer ended, or the person already had as much access).</summary>
+    public DateTime? GiftGrantedAtUtc { get; set; }
+
+    /// <summary>Until when the gift gave access.</summary>
+    public DateTime? GiftAccessUntilUtc { get; set; }
+
     /// <summary>Telegram's answer for Blocked / Rejected / Unknown.</summary>
     public string? Error { get; set; }
 }

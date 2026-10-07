@@ -534,8 +534,13 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        await campaigns.MarkOpenedAsync(user.Id, request?.Key, ct);
-        return Ok(new { ok = true });
+        var opened = await campaigns.MarkOpenedAsync(user.Id, request?.Key, ct);
+        // `gift` is there only in the answer to the open that gave it — the mini-app says it once.
+        return Ok(new
+        {
+            ok = true,
+            gift = opened.Gift == null ? null : new { days = opened.Gift.Days, accessUntilUtc = opened.Gift.AccessUntilUtc }
+        });
     }
 
     private static IEnumerable<object> MapQuestions(
@@ -1026,6 +1031,94 @@ public class MiniAppController : Controller
                 ? null
                 : new { id = next.Lemma, title = next.Title, ru = next.Translation, level = VerbLevelRules.Key(next.Level) }
         });
+    }
+
+    public class VerbSectionOpenRequest
+    {
+        public string? Source { get; set; }
+    }
+
+    /// <summary>
+    /// The «Глаголы» section in one call: the ladder (levels → packs → verbs) with the learner's
+    /// level of every verb, their own verbs and what to do now. Open to a caller without trial/Pro
+    /// too — the section must not be a dead end for them — but then it is an overview only: Russian
+    /// names and counts, no Georgian and no verb ids; playing or opening a verb stays behind 402.
+    /// </summary>
+    [HttpGet("verbs/section")]
+    public async Task<IActionResult> GetVerbSection([FromServices] VerbSectionQuery section, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var access = user.HasMiniAppAccess();
+        var s = await section.GetAsync(user, AlphabetLessons, DateTime.UtcNow, ct);
+        return Ok(new
+        {
+            hasAccess = access,
+            total = s.Total,
+            learned = s.Learned,
+            currentLevel = s.CurrentLevelId,
+            alphabetHint = s.AlphabetHint,
+            examples = s.Examples,
+            next = s.Next == null ? null : new
+            {
+                kind = s.Next.Kind,
+                id = access ? s.Next.Lemma : null,
+                title = access ? s.Next.Title : null,
+                ru = s.Next.Translation,
+                level = VerbLevelRules.Key(s.Next.Level),
+                due = s.Next.Due,
+                levelId = s.Next.LevelId,
+                packId = s.Next.PackId,
+                packTitle = s.Next.PackTitle
+            },
+            myVerbs = s.MyVerbs.Select(v => new
+            {
+                id = access ? v.Lemma : null,
+                title = access ? v.Title : null,
+                ru = v.Translation,
+                level = VerbLevelRules.Key(v.Level),
+                generated = v.Generated,
+                levelId = v.LevelId,
+                packId = v.PackId
+            }),
+            levels = s.Levels.Select(l => new
+            {
+                id = l.Id,
+                title = l.Title,
+                packs = l.Packs.Select(p => new
+                {
+                    id = p.Id,
+                    title = p.Title,
+                    verbs = p.Verbs.Select(v => new
+                    {
+                        id = access ? v.Lemma : null,
+                        title = access ? v.Title : null,
+                        ru = v.Translation,
+                        level = VerbLevelRules.Key(v.Level),
+                        due = v.Due
+                    })
+                })
+            })
+        });
+    }
+
+    /// <summary>The section was opened, and by what way (dashboard tile, broadcast button, a tagged link).</summary>
+    [HttpPost("verbs/section/open")]
+    public async Task<IActionResult> VerbSectionOpened(
+        [FromBody] VerbSectionOpenRequest request, [FromServices] RecordVerbSectionVisitService visits, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var source = await visits.ExecuteAsync(user.Id, request?.Source, DateTime.UtcNow, ct);
+        return source == null ? BadRequest(new { error = "invalid_source" }) : Ok(new { ok = true });
     }
 
     [HttpGet("verbs/{id}")]
