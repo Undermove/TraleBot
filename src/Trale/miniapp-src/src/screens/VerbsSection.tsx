@@ -3,7 +3,7 @@ import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
 import ProPaywall from '../components/ProPaywall'
 import { reportVerbSectionOpen } from '../api'
-import { giftUntilText, pluralDays, takeCampaignGift } from '../campaignOpen'
+import { giftUntilText, peekCampaignGift, pluralDays, takeCampaignGift } from '../campaignOpen'
 import type { ProgressState, Screen } from '../types'
 import VerbSheet from '../verbs/VerbSheet'
 import type { VerbFormHitDto } from '../verbs/types'
@@ -46,7 +46,8 @@ export default function VerbsSection({ progress, navigate, source, onPurchaseSuc
   const [paywall, setPaywall] = useState(false)
   const [tour, setTour] = useState<TourStep | null>(null)
   const [unlocked, setUnlocked] = useState<{ id: string; ru: string } | null>(null)
-  const [gift] = useState(takeCampaignGift)
+  // О подарке рассылки говорим один раз: строка живёт, пока открыт этот экран.
+  const [gift] = useState(peekCampaignGift)
   const [alphabetLine, setAlphabetLine] = useState(() => !hintSeen(ALPHABET_LINE_HINT))
 
   const reload = useCallback(() => {
@@ -57,6 +58,7 @@ export default function VerbsSection({ progress, navigate, source, onPurchaseSuc
 
   useEffect(() => {
     void reload()
+    takeCampaignGift()
     markHintSeen(SECTION_OPENED_HINT)
     void reportVerbSectionOpen(source ?? 'home').catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps

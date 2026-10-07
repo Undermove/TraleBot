@@ -31,6 +31,9 @@ export function reportCampaignOpenFromUrl(search: string = window.location.searc
  */
 export const campaignOpenSettled = () => settled
 
+/** Подарок, выданный в этот запуск, — посмотреть, не забирая. */
+export const peekCampaignGift = () => gift
+
 /** Подарок, выданный в этот запуск; отдаётся один раз — раздел показывает о нём одну строку. */
 export function takeCampaignGift(): CampaignGiftDto | null {
   const taken = gift
