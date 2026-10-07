@@ -278,7 +278,8 @@ public class VerbGenerationService(
 
                     var verb = await store.AddAsync(
                         draft, glosses, VerbStatus.Generated, ct, verification: null, shown.Meanings, provenance,
-                        lacksTenses: LacksTensesForGood(draft, lastDraft.Missing));
+                        lacksTenses: LacksTensesForGood(draft, lastDraft.Missing),
+                        unverifiedTenses: VerbVerification.UnverifiedTenses(draft.Tenses, lexicon));
                     return Done(new ResolvedVerb(verb, shown.Matched?.Form, "generated"), "stored", null, round) with { Provenance = provenance };
                 }
 

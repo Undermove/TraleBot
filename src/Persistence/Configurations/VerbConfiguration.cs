@@ -67,6 +67,7 @@ public class VerbProvenanceConfiguration : IEntityTypeConfiguration<VerbProvenan
         builder.Property(p => p.ReviewerReasons).HasColumnType("text");
         builder.Property(p => p.MissingTensesJson).HasColumnType("text").HasDefaultValue("[]");
         builder.Property(p => p.CompletedTensesJson).HasColumnType("text").HasDefaultValue("[]");
+        builder.Property(p => p.TenseReviewsJson).HasColumnType("text").HasDefaultValue("[]");
 
         builder.HasIndex(p => p.VerbId).IsUnique();
 

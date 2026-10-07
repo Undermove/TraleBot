@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import catalog from '../../../Verbs/verbs.json'
 import VerbSheet from './VerbSheet'
 import type { VerbDto } from './types'
 
@@ -46,5 +48,42 @@ describe('VerbSheet: глагол, который составила модел�
     await waitFor(() => screen.getByText(/Источник форм/))
 
     expect(screen.queryByTestId('verb-model-made')).toBeNull()
+  })
+
+  it('shows an unverified tense apart from the others, marked, with one line of explanation', async () => {
+    // Формы — из каталога: прошедшее «сделал» глагола «писать».
+    const write = (catalog as { verbs: { lemma: string; tenses: Record<string, string[][]>; meanings: Record<string, string[]> }[] }).verbs
+      .find(v => v.lemma === 'წერს')!
+    verb = {
+      ...base, status: 'generated', source: null,
+      unverified: { aorist: write.tenses.aorist }, unverifiedMeanings: { aorist: write.meanings.aorist }
+    }
+    render(<VerbSheet verbId="წერს" onClose={vi.fn()} />)
+
+    const row = await waitFor(() => screen.getByTestId('verb-unverified-aorist'))
+
+    expect(row.textContent).toContain(write.tenses.aorist[0][0])
+    expect(row.textContent).toContain(write.meanings.aorist[0])
+    expect(row.textContent).toContain('Прошедшее: сделал · не проверено')
+    expect(screen.getByTestId('verb-unverified-note').textContent)
+      .toBe('Формы с пометкой «не проверено» собраны автоматически и ещё не проверены. В заданиях их нет.')
+    // Проверенные строки — как у всех; непроверенное время не числится ни среди них, ни среди отсутствующих.
+    expect(screen.getByTestId('verb-tense-present')).toBeTruthy()
+    expect(screen.queryByTestId('verb-tense-aorist')).toBeNull()
+    expect(screen.getByTestId('verb-partial').textContent).not.toContain('прошедшее: сделал')
+    expect(screen.getByTestId('verb-partial').textContent).toContain('будущее')
+
+    await userEvent.click(screen.getByTestId('verb-person-5'))
+    expect(screen.getByTestId('verb-unverified-aorist').textContent).toContain(write.tenses.aorist[5][0])
+  })
+
+  it('has no mark and no note when every tense is verified', async () => {
+    verb = { ...base, status: 'generated', source: null, unverified: {}, unverifiedMeanings: {} }
+    render(<VerbSheet verbId="წერს" onClose={vi.fn()} />)
+
+    await waitFor(() => screen.getByTestId('verb-model-made'))
+
+    expect(screen.queryByTestId('verb-unverified-note')).toBeNull()
+    expect(screen.queryByText(/не проверено/)).toBeNull()
   })
 })

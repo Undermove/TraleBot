@@ -75,6 +75,9 @@ public record MissingTense(string Tense, string Why, string? Note = null, bool R
 
     /// <summary>The generator did not give the forms: it was not sure of them, or was not asked again.</summary>
     public const string NotSure = "not-sure";
+
+    /// <summary>The owner took the row out by hand.</summary>
+    public const string RemovedByOwner = "removed-by-owner";
 }
 
 /// <summary>The strong model: writes the full record of a verb the base and the source tables do not have.</summary>

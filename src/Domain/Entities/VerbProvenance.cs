@@ -47,6 +47,14 @@ public class VerbProvenance
     /// <summary>JSON array of the main tenses that were added on the completion round (the second ask).</summary>
     public string CompletedTensesJson { get; set; } = "[]";
 
+    /// <summary>
+    /// JSON array, oldest first: what the owner did to the verb's tenses by hand —
+    /// <c>{"tense","action","by","atUtc","before","after"}</c>, where <c>action</c> is "confirmed",
+    /// "edited" or "removed", <c>by</c> is the owner's Telegram id and <c>before</c> / <c>after</c> are
+    /// the six cells of the row (null when there was / is no row).
+    /// </summary>
+    public string TenseReviewsJson { get; set; } = "[]";
+
     /// <summary>Whether the open lexicon (Wiktionary) has a verb with this lemma.</summary>
     public bool LemmaInLexicon { get; set; }
 

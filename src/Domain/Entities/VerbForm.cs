@@ -33,4 +33,12 @@ public class VerbForm
     /// vs "long or often"). Null when the phrase alone is unambiguous.
     /// </summary>
     public string? MeaningNote { get; set; }
+
+    /// <summary>
+    /// The form belongs to a tense of a model-made verb that nothing but the model vouches for (real
+    /// texts do not have its forms, the owner has not confirmed it). Such a form is shown in the verb's
+    /// card with a mark and is used nowhere else: not in games, not in the parse of a word. Always
+    /// false for curated verbs and verbs taken from a source table.
+    /// </summary>
+    public bool Unverified { get; set; }
 }

@@ -558,7 +558,7 @@ export const adminCampaigns = {
 export interface MissingTenseDto {
   tense: string
   /** verb-lacks-it — модель сказала, что у глагола такого времени нет; not-sure — модель не дала формы. */
-  why: 'verb-lacks-it' | 'not-sure'
+  why: 'verb-lacks-it' | 'not-sure' | 'removed-by-owner'
   note?: string | null
   /** Проверяющая модель уверена, что время у глагола есть. */
   reviewerDisagrees: boolean
@@ -575,6 +575,25 @@ export interface ModelMadeVerbDto {
   mainTenses: number
   missingTenses: MissingTenseDto[]
   completedTenses: string[]
+  /** Сколько основных времён проверено — столько и учат ученики. */
+  verifiedMainTenses: number
+  unverifiedTenses: UnverifiedTenseDto[]
+  /** Доводы проверяющей модели, когда она одобряла запись. */
+  reviewerReasons: string[]
+}
+
+/** Время глагола от нейросети, которое ничем, кроме самой модели, не подтверждено. */
+export interface UnverifiedTenseDto {
+  tense: string
+  /** Шесть клеток: я, ты, он, мы, вы, они; null — клетка пустая. */
+  cells: (string | null)[]
+  /** По клеткам: встречается ли форма в настоящих текстах; null — клетка пустая или данных нет. */
+  inTexts: (boolean | null)[]
+  phrases?: string[] | null
+  /** Время дописано вторым кругом. */
+  completed: boolean
+  /** Владелец уже убирал это время, пересборка вернула его. */
+  removedBefore: boolean
 }
 
 export interface RegenerateVerbDto {
@@ -586,9 +605,17 @@ export interface RegenerateVerbDto {
   changedForms?: string[] | null
 }
 
+const reviewTense = (action: 'confirm' | 'edit' | 'remove', body: object) =>
+  request<{ ok: boolean; progressReset: number }>(`/api/admin/verbs/tense/${action}`, { method: 'POST', body: JSON.stringify(body) })
+
 export const adminVerbs = {
   /** Глаголы, которые составила нейросеть. */
-  modelMade: () => request<{ count: number; verbs: ModelMadeVerbDto[] }>('/api/admin/verbs/model-made'),
+  modelMade: (onlyUnverified = false) =>
+    request<{ count: number; verbs: ModelMadeVerbDto[] }>(`/api/admin/verbs/model-made${onlyUnverified ? '?unverified=true' : ''}`),
+  /** Проверка одного времени владельцем: подтвердить, записать клетки руками или убрать время. */
+  confirmTense: (lemma: string, tense: string) => reviewTense('confirm', { lemma, tense }),
+  editTense: (lemma: string, tense: string, cells: (string | null)[]) => reviewTense('edit', { lemma, tense, cells }),
+  removeTense: (lemma: string, tense: string) => reviewTense('remove', { lemma, tense }),
   /** Составить глагол заново; запись заменяется, только если новая одобрена и не беднее прежней. До пары минут. */
   regenerate: (lemma: string) =>
     request<RegenerateVerbDto>('/api/admin/verbs/regenerate', { method: 'POST', body: JSON.stringify({ lemma }) })

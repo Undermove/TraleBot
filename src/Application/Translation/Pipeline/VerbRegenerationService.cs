@@ -108,7 +108,35 @@ public class VerbRegenerationService(
             return Kept("another-verb");
         }
 
-        var after = VerbCompleteness.Of(draft.Paradigm.Tenses);
+        // What the owner settled by hand outlives a rebuild: a row they confirmed or wrote stays as it is,
+        // and a row they removed comes back only as unverified (VerbVerification).
+        var reviews = VerbVerification.Reviews(await dbContext.VerbProvenances.AsNoTracking()
+            .Where(p => p.VerbId == verb.Id).Select(p => p.TenseReviewsJson).FirstOrDefaultAsync(ct));
+        var kept = reviews.GroupBy(r => r.Tense)
+            .Where(g => g.Last().Action is TenseReview.Confirmed or TenseReview.Edited && oldTenses.ContainsKey(g.Key))
+            .Select(g => g.Key)
+            .ToList();
+        var paradigm = draft.Paradigm;
+        var meanings = draft.Meanings;
+        if (kept.Count > 0)
+        {
+            var oldMeanings = JsonNode.Parse(verb.CardJson)!["meanings"]?.Deserialize<Dictionary<string, string[]>>() ?? [];
+            var tenses = new Dictionary<string, string[][]>(paradigm.Tenses);
+            var phrases = new Dictionary<string, string[]>(meanings.Meanings);
+            foreach (var tense in kept)
+            {
+                tenses[tense] = oldTenses[tense];
+                if (oldMeanings.TryGetValue(tense, out var row))
+                {
+                    phrases[tense] = row;
+                }
+            }
+
+            paradigm = paradigm with { Tenses = tenses };
+            meanings = meanings with { Meanings = phrases };
+        }
+
+        var after = VerbCompleteness.Of(paradigm.Tenses);
         if (after.Tenses < before.Tenses || (after.Tenses == before.Tenses && after.Cells < before.Cells))
         {
             return Kept("fewer-tenses");
@@ -125,12 +153,13 @@ public class VerbRegenerationService(
             }
         }
 
-        var changed = ChangedForms(oldTenses, draft.Paradigm.Tenses);
+        var changed = ChangedForms(oldTenses, paradigm.Tenses);
         outcome.Provenance.AskedText = (await dbContext.VerbProvenances.AsNoTracking()
             .Where(p => p.VerbId == verb.Id).Select(p => p.AskedText).FirstOrDefaultAsync(ct)) ?? outcome.Provenance.AskedText;
         var replaced = await store.ReplaceGeneratedAsync(
-            verb, draft.Paradigm, translation, draft.Meanings, outcome.Provenance,
-            VerbGenerationService.LacksTensesForGood(draft.Paradigm, draft.Missing), ct);
+            verb, paradigm, translation, meanings, outcome.Provenance,
+            VerbGenerationService.LacksTensesForGood(paradigm, draft.Missing.Where(m => !kept.Contains(m.Tense)).ToList()),
+            VerbVerification.UnverifiedTenses(paradigm.Tenses, lexicon, reviews), ct);
         if (!replaced)
         {
             return new VerbRegenerationResult("not-model-made");
