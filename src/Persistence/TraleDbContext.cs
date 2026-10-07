@@ -40,6 +40,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<TranslationCacheEntry> TranslationCache { get; set; } = null!;
     public DbSet<BroadcastCampaign> BroadcastCampaigns { get; set; } = null!;
     public DbSet<BroadcastDelivery> BroadcastDeliveries { get; set; } = null!;
+    public DbSet<QueuedTranslation> QueuedTranslations { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -120,6 +121,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new UserVerbConfiguration());
         modelBuilder.ApplyConfiguration(new VerbSessionConfiguration());
         modelBuilder.ApplyConfiguration(new TranslationCacheEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new QueuedTranslationConfiguration());
         modelBuilder.ApplyConfiguration(new VocabularyEntryConfiguration());
         modelBuilder.ApplyConfiguration(new QuizConfiguration());
         modelBuilder.ApplyConfiguration(new QuizQuestionConfiguration());

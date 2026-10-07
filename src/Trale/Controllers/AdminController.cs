@@ -132,6 +132,46 @@ public class AdminController : Controller
         return Ok(new { count = verbs.Count, verbs });
     }
 
+    /// <summary>
+    /// The durable job queue at a glance: how many background jobs wait, run and have failed, how many
+    /// instances serve the queue, and the translations that outlived their request. Read-only.
+    /// </summary>
+    [HttpGet("jobs")]
+    public async Task<IActionResult> Jobs(
+        [FromServices] Infrastructure.BackgroundJobs.JobQueueMonitor monitor, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+
+        var queue = monitor.Read();
+        var since = DateTime.UtcNow.AddDays(-1);
+        var translations = await _dbContext.QueuedTranslations
+            .Where(q => q.CreatedAtUtc >= since)
+            .GroupBy(q => q.State)
+            .Select(g => new { State = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+        int Count(params Domain.Entities.QueuedTranslationState[] states) =>
+            translations.Where(t => states.Contains(t.State)).Sum(t => t.Count);
+
+        return Ok(new
+        {
+            queue = new
+            {
+                enqueued = queue.Enqueued,
+                scheduled = queue.Scheduled,
+                processing = queue.Processing,
+                succeeded = queue.Succeeded,
+                failed = queue.Failed,
+                servers = queue.Servers
+            },
+            translationsLast24h = new
+            {
+                pending = Count(Domain.Entities.QueuedTranslationState.Pending, Domain.Entities.QueuedTranslationState.Answering),
+                done = Count(Domain.Entities.QueuedTranslationState.Done),
+                failed = Count(Domain.Entities.QueuedTranslationState.Failed)
+            }
+        });
+    }
+
     public class GenerateVerbPreviewRequest
     {
         /// <summary>The text as a learner would type it: a Russian verb form or a Georgian one.</summary>

@@ -105,4 +105,31 @@ public class TranslationAgentOptions
     /// <c>pending</c> (the mini-app then asks <c>translate/status</c>). Far below any proxy timeout.
     /// </summary>
     public int MiniAppTranslateWaitMs { get; set; } = 5000;
+
+    // ── A translation that outlives its request (QueuedTranslation, TranslationJobs) ──────────────
+    // From the moment the request stops waiting (the two delays above) the work is on record in the
+    // database and a background job stands guard over it: if the instance doing it dies, the job
+    // takes it over on any instance.
+
+    /// <summary>
+    /// How long the instance working on a translation is believed alive after its last sign of life.
+    /// When it dies, another instance takes the work over after at most this long.
+    /// </summary>
+    public int JobLeaseMs { get; set; } = 45_000;
+
+    /// <summary>How often the working instance gives that sign of life. Several times within <see cref="JobLeaseMs"/>.</summary>
+    public int JobLeaseRenewMs { get; set; } = 10_000;
+
+    /// <summary>How often the background job looks whether the work is done or has been left.</summary>
+    public int JobPollMs { get; set; } = 2000;
+
+    /// <summary>
+    /// How many times a translation may be started in all. After the last one fails too, the bot says
+    /// «Не успел найти перевод…» and the mini-app gets <c>failure</c> — nothing is tried again.
+    /// A run stopped by a restart of the application does not count.
+    /// </summary>
+    public int JobMaxAttempts { get; set; } = 3;
+
+    /// <summary>The pause before a failed run is tried again; each next one waits one pause longer.</summary>
+    public int JobRetryDelayMs { get; set; } = 3000;
 }

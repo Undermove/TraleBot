@@ -241,19 +241,21 @@ public class SlowTranslationReplyTests : TranslationPipelineTestBase
 }
 
 /// <summary>
-/// The application stops (a rolling deploy) while a verb is being looked up. In a fixture of its own:
-/// stopping the jobs is final for the application instance.
+/// The application stops (a rolling deploy) while a translation is too young to be on record — nobody
+/// else knows of it, so the person is told. (One that is on record is done again after the restart:
+/// <see cref="DurableTranslationJobTests"/>.) In a fixture of its own: stopping the jobs is final for
+/// the application instance.
 /// </summary>
 public class TranslationShutdownTests : TranslationPipelineTestBase
 {
     [Test]
-    public async Task Person_is_told_to_send_the_word_again_when_the_bot_stops_before_the_answer()
+    public async Task Person_is_told_to_send_the_word_again_when_the_bot_stops_before_the_translation_is_on_record()
     {
         const long chat = 770001;
         var dance = Catalog().Select(v => v!.AsObject()).First(v => v["ru"]!.GetValue<string>() == "танцевать");
         var lemma = dance["lemma"]!.GetValue<string>();
         await SeedCatalogWithout(lemma);
-        Options.SlowReplyNoticeMs = 100;
+        Options.SlowReplyNoticeMs = 60_000;
         Lexicon.Verbs.Add(new LexiconVerb(lemma, null, HasTable: false, ["to dance"], ["танцевать"]));
         Models.ClassifierModel.AnswerWith("""{"notTranslatable":false,"isVerb":true,"russianInfinitive":"танцевать"}""");
         Models.GeneratorModel.Respond = async (_, ct) =>
@@ -264,11 +266,18 @@ public class TranslationShutdownTests : TranslationPipelineTestBase
         using var client = App.CreateClient();
         await client.PostAsync("/telegram/test_token", Create.TelegramUpdate(1, chat).ToJsonContent());
         var before = Telegram.Requests.OfType<SendMessageRequest>().Count(r => r.ChatId.Identifier == chat);
-        await client.PostAsync("/telegram/test_token", Create.TelegramUpdate(2, chat, "я танцую").ToJsonContent());
+        var request = client.PostAsync("/telegram/test_token", Create.TelegramUpdate(2, chat, "я танцую").ToJsonContent());
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (Models.GeneratorModel.Calls == 0)
+        {
+            (DateTime.UtcNow < deadline).Should().BeTrue("the strong model should be asked within 15 seconds");
+            await Task.Delay(20);
+        }
 
         await App.Services.GetRequiredService<TranslationJobs>().StopAsync(TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(10));
+        await request;
 
         Telegram.Requests.OfType<SendMessageRequest>().Where(r => r.ChatId.Identifier == chat).Skip(before).Select(r => r.Text)
-            .Should().Equal(TranslateCommand.LookingUpVerbText, TranslateCommand.NotInTimeText);
+            .Should().Equal(TranslateCommand.NotInTimeText);
     }
 }

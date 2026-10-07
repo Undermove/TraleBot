@@ -45,7 +45,19 @@ public abstract class TranslationPipelineTestBase
         _postgres = new PostgreSqlBuilder().WithAutoRemove(true).WithImage("postgres:16.1").Build();
         await _postgres.StartAsync();
 
-        App = new TraleTestApplication(_postgres.GetConnectionString()).WithWebHostBuilder(builder =>
+        App = StartInstance();
+
+        using var scope = App.Services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<TraleDbContext>().Database.MigrateAsync();
+    }
+
+    /// <summary>
+    /// One more instance of the application on the same database, with the same fakes — a second
+    /// replica. <see cref="App"/> is the first one. The caller disposes it.
+    /// </summary>
+    protected WebApplicationFactory<Program> StartInstance()
+    {
+        var app = new TraleTestApplication(_postgres.GetConnectionString()).WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services =>
             {
                 services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider>(Log);
@@ -77,15 +89,20 @@ public abstract class TranslationPipelineTestBase
                     options.WiktionaryMinIntervalMs = 0;
                     options.WiktionaryRetryDelayMs = 0;
                 });
+
+                ConfigureServices(services);
             }));
 
         // A bot token, so that a test can sign mini-app initData the way Telegram does (the test host has none).
         // The property is init-only and TraleTestApplication registers its own instance last, hence reflection.
-        var bot = App.Services.GetRequiredService<Infrastructure.Telegram.BotConfiguration>();
+        var bot = app.Services.GetRequiredService<Infrastructure.Telegram.BotConfiguration>();
         typeof(Infrastructure.Telegram.BotConfiguration).GetProperty(nameof(bot.Token))!.SetValue(bot, BotToken);
+        return app;
+    }
 
-        using var scope = App.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<TraleDbContext>().Database.MigrateAsync();
+    /// <summary>A fixture's own additions to the application's services.</summary>
+    protected virtual void ConfigureServices(IServiceCollection services)
+    {
     }
 
     [OneTimeTearDown]
@@ -118,6 +135,11 @@ public abstract class TranslationPipelineTestBase
         Options.GeneratorTimeoutSeconds = defaults.GeneratorTimeoutSeconds;
         Options.SlowReplyNoticeMs = defaults.SlowReplyNoticeMs;
         Options.MiniAppTranslateWaitMs = defaults.MiniAppTranslateWaitMs;
+        Options.JobLeaseMs = defaults.JobLeaseMs;
+        Options.JobLeaseRenewMs = defaults.JobLeaseRenewMs;
+        Options.JobPollMs = 50;
+        Options.JobRetryDelayMs = 20;
+        Options.JobMaxAttempts = defaults.JobMaxAttempts;
     }
 
     /// <summary>The application's options — a test may change a cap; <see cref="ResetFakes"/> puts the defaults back.</summary>

@@ -31,6 +31,7 @@ public interface ITraleDbContext
     DbSet<TranslationCacheEntry> TranslationCache { get; }
     DbSet<BroadcastCampaign> BroadcastCampaigns { get; }
     DbSet<BroadcastDelivery> BroadcastDeliveries { get; }
+    DbSet<QueuedTranslation> QueuedTranslations { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);

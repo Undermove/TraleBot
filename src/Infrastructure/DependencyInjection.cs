@@ -3,6 +3,7 @@ using Application.Common.Exceptions;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.TranslationService;
 using Application.MiniApp.Commands;
+using Infrastructure.BackgroundJobs;
 using Infrastructure.Telegram.Services;
 using Infrastructure.Monitoring;
 using Infrastructure.Telegram;
@@ -42,6 +43,8 @@ public static class DependencyInjection
         services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiAzureTranslationService>();
         services.AddTranslationAgent(configuration);
+        services.AddJobQueue();
+        services.AddSingleton<Application.Translation.ITranslationReplies, BotTranslationReplies>();
         services.AddHttpClient();
 
         services.AddSingleton<IPrometheusResolver, PrometheusResolver>();
