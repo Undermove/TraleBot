@@ -22,7 +22,7 @@ interface Props {
 }
 
 type Phase = 'loading' | 'auth-required' | 'ready' | 'error'
-type TranslateState = 'idle' | 'translating' | 'success' | 'error' | 'not-a-word'
+type TranslateState = 'idle' | 'translating' | 'success' | 'error' | 'not-a-word' | 'timeout'
 type Filter = 'all' | 'new' | 'weak' | 'mastered' | 'verbs'
 type OnboardingState = 'idle' | 'adding' | 'done' | 'error'
 
@@ -40,6 +40,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [translateInput, setTranslateInput] = useState('')
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
+  // Перевод не пришёл сразу: null — ещё не ждём, true — ищется глагол (до минуты), false — просто медленно.
+  const [translatePending, setTranslatePending] = useState<boolean | null>(null)
   const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string; verb?: VerbFormHitDto | null } | null>(null)
   // Карточка глагола открывается шторкой поверх словаря — из слова, из перевода, из списка.
   /** Открытый вид глагола; entryId — если пришли с записи словаря, которая сама — форма этого глагола. */
@@ -259,8 +261,9 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
     if (!word) return
     setTranslateState('translating')
     setTranslateResult(null)
+    setTranslatePending(null)
     try {
-      const r = await api.translateWord(word)
+      const r = await api.translateWord(word, setTranslatePending)
       if (r.status === 'success' || r.status === 'exists') {
         setTranslateResult({
           word: r.word ?? word,
@@ -279,6 +282,8 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
         }
       } else if (r.status === 'not_a_word') {
         setTranslateState('not-a-word')
+      } else if (r.status === 'timeout') {
+        setTranslateState('timeout')
       } else {
         setTranslateState('error')
       }
@@ -504,6 +509,18 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          {translateState === 'translating' && translatePending !== null && (
+            <div data-testid="translate-pending" role="status" className="mt-2 font-sans text-[12px] text-jewelInk-mid">
+              {translatePending
+                ? 'Ищу этот глагол, это может занять до минуты. Перевод появится здесь и в словаре.'
+                : 'Перевожу, ещё немного…'}
+            </div>
+          )}
+          {translateState === 'timeout' && (
+            <div data-testid="translate-timeout" className="mt-2 font-sans text-[12px] text-jewelInk-mid">
+              Не успел найти перевод. Попробуй ещё раз чуть позже.
             </div>
           )}
           {translateState === 'not-a-word' && (

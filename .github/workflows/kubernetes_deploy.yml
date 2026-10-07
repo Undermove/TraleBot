@@ -59,6 +59,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Kubectl
         uses: azure/setup-kubectl@v3
@@ -83,3 +85,17 @@ jobs:
           TRALEBOT_GOOGLE_TRANSLATE_TOKEN: ${{ secrets.KUBE_TRALEBOT_GOOGLE_TRANSLATE_TOKEN_BASE64 }}
           TRALEBOT_SERVER_HOST: ${{ secrets.KUBE_TRALEBOT_SERVER_HOST_BASE64 }}
           RUN_NUMBER: ${{ github.run_number }}
+
+      # Search engines: Yandex and Bing are told about the pages right after a rollout that changed the
+      # site or the data it is built from. Google reads sitemap.xml (listed in robots.txt) on its own.
+      # Never fails the deploy.
+      - name: Notify search engines (IndexNow)
+        continue-on-error: true
+        run: |
+          before="${{ github.event.before }}"
+          if git cat-file -e "$before^{commit}" 2>/dev/null \
+             && git diff --quiet "$before" "${{ github.sha }}" -- site src/Trale/Verbs src/Trale/Lessons; then
+            echo "site sources unchanged — nothing to submit"; exit 0
+          fi
+          kubectl rollout status deployment/tralebot-deployment -n tralebot-prod --timeout=300s
+          node site/indexnow.mjs

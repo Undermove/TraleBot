@@ -8,6 +8,8 @@ using Application.MiniApp;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
 using Application.MiniApp.Services;
+using Application.Translation;
+using Application.Translation.Pipeline;
 using Application.Verbs;
 using Application.VocabularyEntries.Commands.TranslateAndCreateVocabularyEntry;
 using Domain.Entities;
@@ -19,6 +21,7 @@ using Infrastructure.Telegram.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Telegram.Bot;
 using Telegram.Bot.Types.Payments;
 using Trale.MiniApp;
@@ -778,10 +781,18 @@ public class MiniAppController : Controller
         public string Word { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// The translation runs as a job of its own (<see cref="TranslationJobs"/>): a verb the models have to
+    /// write takes up to a minute or two, longer than a proxy keeps the request. An answer that is ready
+    /// within a few seconds is returned as before; otherwise the status is <c>pending</c> and the
+    /// mini-app asks <c>translate/status</c> until the answer is there.
+    /// </summary>
     [HttpPost("translate")]
     public async Task<IActionResult> TranslateWord(
         [FromBody] TranslateWordRequest request,
         [FromServices] VerbQueries verbs,
+        [FromServices] TranslationJobs jobs,
+        [FromServices] IOptions<TranslationAgentOptions> options,
         CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
@@ -795,13 +806,70 @@ public class MiniAppController : Controller
             return BadRequest(new { error = "invalid_word" });
         }
 
-        var result = await _mediator.Send(new TranslateAndCreateVocabularyEntry
+        var word = request.Word.Trim();
+        var job = jobs.StartOrJoin(user.Id, word);
+        var wait = Task.Delay(Math.Max(0, options.Value.MiniAppTranslateWaitMs), ct);
+        if (await Task.WhenAny(job.Translation, wait) != job.Translation)
         {
-            UserId = user.Id,
-            Word = request.Word.Trim()
-        }, ct);
+            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted });
+        }
 
-        async Task<object> VerbIn(string word, string definition)
+        jobs.Forget(user.Id, word);
+        return await TranslationAnswer(await job.Translation, word, verbs, ct);
+    }
+
+    /// <summary>
+    /// What became of a translation that answered <c>pending</c>. Never starts one. The job lives in the
+    /// instance that took the first request; another instance knows only what is in the database — the
+    /// word saved to the dictionary is the answer — and says <c>pending</c> until then.
+    /// </summary>
+    [HttpPost("translate/status")]
+    public async Task<IActionResult> TranslateWordStatus(
+        [FromBody] TranslateWordRequest request,
+        [FromServices] VerbQueries verbs,
+        [FromServices] TranslationJobs jobs,
+        CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var word = (request.Word ?? string.Empty).Trim();
+        var job = jobs.Find(user.Id, word);
+        if (job is { Translation.IsCompleted: false })
+        {
+            return Ok(new { status = "pending", verbLookup = job.VerbLookupStarted.IsCompleted });
+        }
+
+        if (job != null)
+        {
+            jobs.Forget(user.Id, word);
+            return job.Translation.IsCompletedSuccessfully
+                ? await TranslationAnswer(job.Translation.Result, word, verbs, ct)
+                : Ok(new { status = "failure" });
+        }
+
+        var typed = word.ToLowerInvariant();
+        var saved = await _dbContext.VocabularyEntries
+            .AsNoTracking()
+            .Where(e => e.UserId == user.Id && e.Word == typed)
+            .OrderByDescending(e => e.DateAddedUtc)
+            .FirstOrDefaultAsync(ct);
+        return saved == null
+            ? Ok(new { status = "pending", verbLookup = false })
+            : await TranslationAnswer(
+                new CreateVocabularyEntryResult.TranslationSuccess(saved.Definition, saved.AdditionalInfo, saved.Example, saved.Id),
+                word, verbs, ct);
+    }
+
+    private async Task<IActionResult> TranslationAnswer(
+        CreateVocabularyEntryResult result, string word, VerbQueries verbs, CancellationToken ct)
+    {
+        word = word.ToLowerInvariant();
+
+        async Task<object> VerbIn(string definition)
         {
             var hits = await verbs.FindInTextsAsync(new[] { word, definition }, ct);
             return hits.TryGetValue(word, out var hit) || hits.TryGetValue(definition, out hit) ? VerbHitDto(hit) : null;
@@ -812,22 +880,22 @@ public class MiniAppController : Controller
             CreateVocabularyEntryResult.TranslationSuccess s => Ok(new
             {
                 status = "success",
-                word = request.Word.Trim().ToLowerInvariant(),
+                word,
                 definition = s.Definition,
                 additionalInfo = s.AdditionalInfo,
                 example = s.Example,
                 vocabularyEntryId = s.VocabularyEntryId,
-                verb = await VerbIn(request.Word.Trim().ToLowerInvariant(), s.Definition)
+                verb = await VerbIn(s.Definition)
             }),
             CreateVocabularyEntryResult.TranslationExists e => Ok(new
             {
                 status = "exists",
-                word = request.Word.Trim().ToLowerInvariant(),
+                word,
                 definition = e.Definition,
                 additionalInfo = e.AdditionalInfo,
                 example = e.Example,
                 vocabularyEntryId = e.VocabularyEntryId,
-                verb = await VerbIn(request.Word.Trim().ToLowerInvariant(), e.Definition)
+                verb = await VerbIn(e.Definition)
             }),
             CreateVocabularyEntryResult.TranslationFailure => Ok(new { status = "failure" }),
             // Gibberish or a message to the bot: nothing was translated or saved; the screen says so.
