@@ -120,7 +120,7 @@ describe('VerbsSection: a newcomer', () => {
     await open(section)
 
     expect(section.levels.map(l => screen.getByTestId(`verbs-level-${l.id}`).dataset.open)).toEqual(['true', 'false', 'false', 'false', 'false'])
-    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('0 из 20')
+    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('0 из 21')
     expect(screen.getByTestId(`verbs-pack-${section.levels[0].packs[0].id}`).textContent).toContain('ты здесь')
     expect(screen.queryAllByTestId('verbs-verb-row')).toHaveLength(0)
 
@@ -254,7 +254,7 @@ describe('VerbsSection: in progress', () => {
     expect(screen.getByTestId('verbs-learned').textContent).toBe(`Выучено 1 из ${LADDER.length}`)
     expect(screen.getByTestId('verbs-now').dataset.kind).toBe('continue')
     expect(screen.getByTestId('verbs-now-play').textContent).toBe('Продолжить — 2 минуты')
-    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('1 из 20')
+    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('1 из 21')
     expect(Number(screen.getByTestId('verbs-level-1-bar').dataset.percent)).toBeGreaterThan(5)
     expect(Number(screen.getByTestId('verbs-level-2-bar').dataset.percent)).toBe(0)
   })
