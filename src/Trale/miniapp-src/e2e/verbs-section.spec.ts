@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { FIRST, LADDER, byLemma, ladder, lemmaOf, ru, setup, shot } from './verbs-section.setup'
+import { FIRST, LADDER, byLemma, catalogVerbs, ladder, lemmaOf, ru, setup, shot } from './verbs-section.setup'
 
 test.use({ viewport: { width: 375, height: 812 } })
 
@@ -192,4 +192,63 @@ test('who has not finished the alphabet sees one quiet line', async ({ page }) =
 
   await expect(page.getByTestId('verbs-alphabet-line')).toContainText('Ещё не знаешь буквы? Начни с алфавита — так будет легче.')
   await shot(page, '14-alphabet-line')
+})
+
+// Кто ещё не читает буквы, должен суметь сыграть: под каждым грузинским вариантом ответа — кириллица.
+// Берём глагол каталога с самыми длинными формами: варианты не должны обрезаться на 375 px.
+const full = (v: any) => ['present', 'aorist', 'future'].every(t => v.tenses[t]?.length === 6 && v.tenses[t].every((c: string[]) => c.length > 0))
+const longest = (v: any) => Math.max(...['present', 'aorist', 'future'].flatMap(t => v.tenses[t].map((c: string[]) => c[0].length)))
+const LONG = catalogVerbs.filter(full).sort((a, b) => longest(b) - longest(a))[0]
+
+async function openScene(page: any, scene: object) {
+  const game = ['verb_time', 'verb_bones'].flatMap(id => [`ui:verb_game_seen_${id}`, `ui:verb_game_seen_${id}_move`])
+  await setup(page, {
+    hints: [...TOUR_SEEN, ...game], levels: { [LONG.lemma]: 'recognising' },
+    session: { id: '11111111-1111-4111-8111-111111111111', plan: { v: 1, scenes: [scene] }, scene: 0, done: 0 }
+  })
+  await page.goto('/?playwright=1&screen=verbs')
+  await page.getByTestId('verbs-now-play').click()
+  await expect(page.getByTestId('verb-session')).toBeVisible()
+}
+
+async function expectOptionsReadable(page: any, buttons: any) {
+  await expect(buttons).toHaveCount(4)
+  for (const button of await buttons.all()) {
+    const word = (await button.getAttribute('aria-label'))!
+    await expect(button.getByTestId('option-cyr')).toHaveText(/^[а-яё’' ]+$/i)
+    const box = (await button.boundingBox())!
+    expect(box.height, `«${word}» is comfortable to tap`).toBeGreaterThanOrEqual(44)
+    expect(box.x + box.width, `«${word}» fits the screen`).toBeLessThanOrEqual(375)
+    // Ничего не обрезано: содержимое не шире кнопки.
+    expect(await button.evaluate((el: HTMLElement) => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
+  }
+}
+
+test('«Машина времени»: every answer option has its Cyrillic transcription and fits at 375 px', async ({ page }) => {
+  await openScene(page, { type: 'time', units: 3, seconds: 30, targets: ['present:3', 'aorist:4', 'future:5'], typing: false, reason: 'shot' })
+
+  await expect(page.getByTestId('time-ask')).toBeVisible()
+  await expectOptionsReadable(page, page.locator('.grid.grid-cols-2 > button'))
+  await shot(page, '30-time-machine-options')
+})
+
+test('«Косточки»: every answer option has its Cyrillic transcription and fits at 375 px', async ({ page }) => {
+  await openScene(page, { type: 'bones', units: 2, seconds: 40, tenses: ['present', 'aorist', 'future'], persons: [3, 4, 5], typing: false, reason: 'shot' })
+
+  await page.getByTestId('bones-cell-4').click()
+  await expect(page.getByTestId('bones-ask')).toBeVisible()
+  await expectOptionsReadable(page, page.getByTestId('bones-dig').locator('.grid > button'))
+  await shot(page, '30-bones-options')
+})
+
+test('«Новое слово»: the example sentence comes with its transcription', async ({ page }) => {
+  await setup(page, { hints: [...TOUR_SEEN] })
+  await page.goto('/?playwright=1&screen=verbs')
+  await page.getByTestId('verbs-now-play').click()
+  for (let i = 0; i < 4 && await page.getByRole('button', { name: /^(Дальше|Играть)$/ }).count(); i++) {
+    await page.getByRole('button', { name: /^(Дальше|Играть)$/ }).first().click()
+  }
+
+  await expect(page.getByTestId('sentence-cyr')).toHaveText(/[а-яё]{2,}/i)
+  await shot(page, '30-new-word-example')
 })

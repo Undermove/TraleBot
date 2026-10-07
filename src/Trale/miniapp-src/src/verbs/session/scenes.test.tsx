@@ -46,7 +46,7 @@ describe('сцены сессии', () => {
     expect(screen.getByTestId('session-bar').getAttribute('data-percent')).toBe('50')
     expect(screen.getByTestId('time-ask').textContent).toContain(WRITE.meanings!.future![0])
 
-    const wrong = [...document.querySelectorAll('.grid button')].find(b => b.textContent !== formOf(WRITE, 'future', 0))!
+    const wrong = [...document.querySelectorAll('.grid button')].find(b => b.getAttribute('aria-label') !== formOf(WRITE, 'future', 0))!
     fireEvent.click(wrong); fireEvent.click(wrong)
     expect(scene.onResult).toHaveBeenCalledTimes(1)
     expect(scene.onResult).toHaveBeenLastCalledWith({ tense: 'future', person: 0 }, false, SOLID_STEP)
@@ -85,7 +85,7 @@ describe('сцены сессии', () => {
       fireEvent.click(screen.getByTestId('bones-dig').querySelectorAll('.grid button')[0].parentElement!.querySelector('button:not([disabled])')!)
       if (cells[i].getAttribute('data-state') === 'closed') {
         // Первый вариант оказался не тем — выбираем верный.
-        const right = [...screen.getByTestId('bones-dig').querySelectorAll('.grid button')].find(b => b.textContent === formOf(WRITE, at.tense, at.person))!
+        const right = [...screen.getByTestId('bones-dig').querySelectorAll('.grid button')].find(b => b.getAttribute('aria-label') === formOf(WRITE, at.tense, at.person))!
         fireEvent.click(right)
       }
       expect(cells[i].getAttribute('data-state')).not.toBe('closed')

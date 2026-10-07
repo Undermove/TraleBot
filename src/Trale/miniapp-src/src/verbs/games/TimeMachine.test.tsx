@@ -48,7 +48,7 @@ describe('TimeMachine', () => {
     rulesSeen('verb_time'); moveSeen('verb_time')
     render(<TimeMachine verb={verb} onExit={() => {}} rng={seeded(1)} />)
     const target = asked()
-    const wrong = screen.getAllByRole('button').map(b => b.textContent!).find(f => {
+    const wrong = screen.getAllByRole('button').map(b => b.getAttribute('aria-label') ?? b.textContent!).find(f => {
       const at = locate(verb, f)
       return at && at.stop !== target.stop
     })!

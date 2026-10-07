@@ -57,4 +57,20 @@ describe('campaign open', () => {
   it('counts days in Russian', () => {
     expect([1, 2, 3, 5, 11, 21].map(pluralDays)).toEqual(['день', 'дня', 'дня', 'дней', 'дней', 'день'])
   })
+
+  it('a report that did not get through is tried once more, so the gift is not lost to a blink of the network', async () => {
+    vi.useFakeTimers()
+    try {
+      report.mockRejectedValueOnce(new Error('offline'))
+      report.mockResolvedValueOnce({ ok: true, gift: { days: 3, accessUntilUtc: '2026-10-10T12:00:00Z' } } as never)
+      reportCampaignOpenFromUrl('?screen=verbs&c=verbs-2026-10')
+      await vi.advanceTimersByTimeAsync(1600)
+      await campaignOpenSettled()
+
+      expect(report).toHaveBeenCalledTimes(2)
+      expect(takeCampaignGift()).toEqual({ days: 3, accessUntilUtc: '2026-10-10T12:00:00Z' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

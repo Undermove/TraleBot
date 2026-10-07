@@ -39,6 +39,8 @@ export interface State {
   campaignOpens: string[]
   gift: { days: number; accessUntilUtc: string } | null
   translate: (word: string) => object
+  /** Начатая сессия с готовым планом — чтобы открыть нужную сцену сразу. */
+  session?: object | null
 }
 
 function section(s: State) {
@@ -132,7 +134,7 @@ export async function setup(page: Page, patch: Partial<State> = {}): Promise<Sta
       const [, lemma, tail] = path.split('/')
       if (!state.access) return route.fulfill({ status: 402, json: { error: 'subscription_required' } })
       if (tail === 'stories') return route.fulfill({ json: { stories: [] } })
-      if (tail === 'learning') return route.fulfill({ json: learning(lemma) })
+      if (tail === 'learning') return route.fulfill({ json: { ...learning(lemma), session: state.session ?? null } })
       if (tail === 'session') return route.fulfill({ json: { state: learning(lemma), xpEarned: 10, progress: null } })
       if (tail === 'progress') return route.fulfill({ json: learning(lemma).progress })
       return route.fulfill({ json: card(lemma) })

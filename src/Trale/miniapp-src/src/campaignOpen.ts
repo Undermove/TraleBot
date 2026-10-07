@@ -12,6 +12,8 @@ export function campaignKeyFromUrl(search: string): string | null {
 
 /** Сколько ждём ответа, прежде чем грузить профиль без него: запуск не должен зависеть от этой отметки. */
 const WAIT_MS = 2500
+/** Отметка не дошла (сеть моргнула) — пробуем ещё раз: от неё зависит подарок кампании. */
+const RETRY_MS = 1500
 
 let settled: Promise<void> = Promise.resolve()
 let gift: CampaignGiftDto | null = null
@@ -20,7 +22,10 @@ export function reportCampaignOpenFromUrl(search: string = window.location.searc
   try {
     const key = campaignKeyFromUrl(search)
     if (!key) return
-    const report = reportCampaignOpen(key).then(r => { gift = r.gift ?? null }).catch(() => {})
+    const once = () => reportCampaignOpen(key).then(r => { gift = r.gift ?? null })
+    // Если не дошло и со второго раза — подарок выдаст следующее открытие той же кнопкой: сервер отдаёт его
+    // при первом дошедшем открытии, пока не вышел срок.
+    const report = once().catch(() => new Promise<void>(resolve => setTimeout(resolve, RETRY_MS)).then(once)).catch(() => {})
     settled = Promise.race([report, new Promise<void>(resolve => setTimeout(resolve, WAIT_MS))])
   } catch {}
 }

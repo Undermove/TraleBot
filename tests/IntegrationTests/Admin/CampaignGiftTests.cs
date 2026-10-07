@@ -137,6 +137,28 @@ public class CampaignGiftTests : TestBase
     }
 
     [Test]
+    public async Task An_open_that_was_recorded_without_the_gift_does_not_cost_the_person_the_gift()
+    {
+        // The first press reached the server only halfway (or its report was lost altogether):
+        // the next press of the same button, while the offer runs, still gives the gift.
+        var person = await AccessEnded();
+        await Launch("gift-retry", "accessEnded");
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            (await db.BroadcastDeliveries.SingleAsync(d => d.UserId == person.Id)).OpenedAtUtc = DateTime.UtcNow.AddDays(-2);
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+
+        var gift = await Open(person, "gift-retry");
+
+        gift.Should().NotBeNull();
+        gift!.Value.GetProperty("accessUntilUtc").GetDateTime().Should().BeCloseTo(DateTime.UtcNow.AddDays(GiftDays), Slack, "the days count from the open that gave them");
+        (await Reload(person)).HasMiniAppAccess().Should().BeTrue();
+        (await Delivery(person, "gift-retry")).OpenedAtUtc.Should().BeCloseTo(DateTime.UtcNow.AddDays(-2), Slack, "the first open stays the first");
+    }
+
+    [Test]
     public async Task Access_is_there_during_the_gift_and_gone_after_it()
     {
         var person = await AccessEnded();

@@ -1,5 +1,5 @@
 import React from 'react'
-import type { VerbSentenceDto } from '../types'
+import { cyr, type VerbSentenceDto } from '../types'
 
 // Мелкие части экрана сцены-квиза (QuizScene.tsx): правила и повторяющиеся элементы разметки.
 
@@ -28,6 +28,7 @@ export function SentenceBox({ sentence }: { sentence: VerbSentenceDto }) {
     <div className="mt-6 rounded-xl bg-cream-tile border border-jewelInk/30 p-3">
       <div className="text-[11px] text-jewelInk-hint">например</div>
       <div className="mt-1 font-geo text-[17px] font-bold">{sentence.ka}</div>
+      <div className="text-[12px] text-jewelInk-hint" data-testid="sentence-cyr">{cyr(sentence.ka)}</div>
       <div className="text-[13px] text-jewelInk-mid">{sentence.ru}</div>
     </div>
   )
