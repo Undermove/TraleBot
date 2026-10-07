@@ -33,6 +33,7 @@ export default function CampaignPanel() {
   const [buttonText, setButtonText] = useState('')
   const [buttonQuery, setButtonQuery] = useState('')
   const [sampleSize, setSampleSize] = useState(100)
+  const [giftDays, setGiftDays] = useState(0)
   const [status, setStatus] = useState<CampaignStatusDto | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -46,7 +47,7 @@ export default function CampaignPanel() {
   }
 
   const draft = (size: number | null, dryRun: boolean) => ({
-    key: key.trim(), audience, message, buttonText: buttonText.trim() || null, buttonQuery: buttonQuery.trim() || null, sampleSize: size, dryRun
+    key: key.trim(), audience, message, buttonText: buttonText.trim() || null, buttonQuery: buttonQuery.trim() || null, sampleSize: size, dryRun, giftDays
   })
 
   const describe = (r: CampaignPrepareDto) =>
@@ -113,6 +114,19 @@ export default function CampaignPanel() {
               <input className={input} value={buttonQuery} placeholder="screen=vocabulary" onChange={e => setButtonQuery(e.target.value)} />
             </div>
           </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={label}>подарок: дней полного доступа (0 — без подарка)</span>
+              <input type="number" min={0} max={30} className="w-20 px-2 py-1.5 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] tabular-nums"
+                data-testid="campaign-gift-days" value={giftDays} onChange={e => setGiftDays(Math.min(30, Math.max(0, parseInt(e.target.value) || 0)))} />
+            </div>
+            {giftDays > 0 && (
+              <div className={`${label} mt-1`}>
+                Дни начинаются, когда человек откроет мини-апп кнопкой из сообщения — не раньше. Один раз на человека; получить можно
+                14 дней с создания кампании. У кого доступа и так больше — ничего не меняется.
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className={label}>пробная группа, человек</span>
             <input type="number" min={1} max={1000} className="w-24 px-2 py-1.5 rounded border-[1.5px] border-jewelInk/40 font-sans text-[13px] tabular-nums"
@@ -139,6 +153,13 @@ export default function CampaignPanel() {
             <div className="font-sans text-[12px] text-jewelInk-mid tabular-nums" data-testid="campaign-status">
               «{status.key}»: выбрано {status.total} (пробная группа {status.sample}) · ждут {status.pending} · дошло {status.sent} ·
               заблокировали {status.blocked} · отказ {status.rejected} · без ответа {status.unknown} · открыли по кнопке {status.opened}
+              {status.giftDays > 0 && <> · получили подарок ({status.giftDays} дн.) {status.gifted}</>}
+              {' '}· из открывших: начали игру с глаголом {status.playedVerbSession}, доиграли {status.finishedVerbSession}, оплатили {status.paidAfterOpen}
+              <div className="mt-1 break-all" data-testid="campaign-button-url">
+                {status.buttonText
+                  ? <>кнопка «{status.buttonText}» ведёт на: /?{status.buttonQuery ? `${status.buttonQuery}&` : ''}c={status.key}</>
+                  : 'сообщение без кнопки'}
+              </div>
             </div>
           )}
         </div>

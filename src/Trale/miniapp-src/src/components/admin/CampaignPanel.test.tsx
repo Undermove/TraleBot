@@ -12,7 +12,8 @@ const api = vi.mocked(mocked)
 
 const status = {
   key: 'ref-test', audience: 'accessEnded' as const, message: 'Позови друга', buttonText: null, buttonQuery: null,
-  total: 100, sample: 100, pending: 100, sent: 0, blocked: 0, rejected: 0, unknown: 0, opened: 0
+  total: 100, sample: 100, pending: 100, sent: 0, blocked: 0, rejected: 0, unknown: 0, opened: 0,
+  giftDays: 0, giftOfferEndsAtUtc: null, gifted: 0, playedVerbSession: 0, finishedVerbSession: 0, paidAfterOpen: 0
 }
 const plan = { key: 'ref-test', dryRun: true, audienceTotal: 553, alreadyInCampaign: 0, picked: 100, leftForLater: 453 }
 
@@ -91,5 +92,26 @@ describe('CampaignPanel', () => {
     await userEvent.click(screen.getByTestId('campaign-send'))
     expect((await screen.findByTestId('campaign-note')).textContent).toContain('Отправлять некого')
     expect(api.send).not.toHaveBeenCalled()
+  })
+
+  it('a gift of access days goes with the draft, and the status says who got it and what they did next', async () => {
+    api.prepare.mockResolvedValue(plan)
+    api.status.mockResolvedValue({
+      ...status, buttonText: 'Открыть глаголы', buttonQuery: 'screen=verbs', sent: 100, pending: 0, opened: 40,
+      giftDays: 3, gifted: 31, playedVerbSession: 22, finishedVerbSession: 17, paidAfterOpen: 2
+    })
+    await fill()
+    await userEvent.clear(screen.getByTestId('campaign-gift-days'))
+    await userEvent.type(screen.getByTestId('campaign-gift-days'), '3')
+    expect(screen.getByText(/Дни начинаются, когда человек откроет мини-апп кнопкой/)).toBeTruthy()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Посчитать' }))
+    expect(api.prepare.mock.calls[0][0]).toMatchObject({ giftDays: 3, dryRun: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Статус' }))
+    const line = (await screen.findByTestId('campaign-status')).textContent!
+    expect(line).toContain('получили подарок (3 дн.) 31')
+    expect(line).toContain('начали игру с глаголом 22, доиграли 17, оплатили 2')
+    expect(screen.getByTestId('campaign-button-url').textContent).toContain('/?screen=verbs&c=ref-test')
   })
 })

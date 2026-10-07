@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reportCampaignOpen } from './api'
-import { campaignKeyFromUrl, reportCampaignOpenFromUrl } from './campaignOpen'
+import { campaignKeyFromUrl, campaignOpenSettled, giftUntilText, pluralDays, reportCampaignOpenFromUrl, takeCampaignGift } from './campaignOpen'
 
 vi.mock('./api', () => ({ reportCampaignOpen: vi.fn(() => Promise.resolve({ ok: true })) }))
 const report = vi.mocked(reportCampaignOpen)
@@ -31,5 +31,30 @@ describe('campaign open', () => {
   it('a failed report does not break the launch', () => {
     report.mockRejectedValueOnce(new Error('offline'))
     expect(() => reportCampaignOpenFromUrl('?c=referral-2026-10')).not.toThrow()
+  })
+
+  it('keeps the gift the open brought — to be said once — and lets the profile wait for it', async () => {
+    report.mockResolvedValueOnce({ ok: true, gift: { days: 3, accessUntilUtc: '2026-10-10T12:00:00Z' } } as never)
+    reportCampaignOpenFromUrl('?screen=verbs&c=verbs-2026-10')
+    await campaignOpenSettled()
+
+    const gift = takeCampaignGift()
+    expect(gift).toEqual({ days: 3, accessUntilUtc: '2026-10-10T12:00:00Z' })
+    expect(giftUntilText(gift!)).toMatch(/^10 октября|^11 октября|^9 октября/)
+    expect(takeCampaignGift()).toBeNull()
+  })
+
+  it('an open without a gift leaves nothing to say, and a failed one does not hold the launch', async () => {
+    reportCampaignOpenFromUrl('?c=referral-2026-10')
+    await campaignOpenSettled()
+    expect(takeCampaignGift()).toBeNull()
+
+    report.mockRejectedValueOnce(new Error('offline'))
+    reportCampaignOpenFromUrl('?c=referral-2026-10')
+    await expect(campaignOpenSettled()).resolves.toBeUndefined()
+  })
+
+  it('counts days in Russian', () => {
+    expect([1, 2, 3, 5, 11, 21].map(pluralDays)).toEqual(['день', 'дня', 'дня', 'дней', 'дней', 'день'])
   })
 })

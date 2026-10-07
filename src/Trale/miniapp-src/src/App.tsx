@@ -24,6 +24,9 @@ import VerbSheet from './verbs/VerbSheet'
 import { resolveVerbDeepLink } from './verbs/deepLink'
 import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
 import { loadSeenHints } from './verbs/ui/hints'
+import VerbsSection from './screens/VerbsSection'
+import { parseVerbsSectionLink } from './verbs/section/link'
+import { campaignOpenSettled } from './campaignOpen'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -97,11 +100,14 @@ export default function App() {
   const [showProSuccessToast, setShowProSuccessToast] = useState(false)
   const [vocabularyCount, setVocabularyCount] = useState<number>(0)
   const [onboardingHint, setOnboardingHint] = useState<string | null>(null)
+  // Ссылка вела в раздел «Глаголы», а человек ещё не выбрал уровень: откроем раздел сразу после выбора.
+  const [afterOnboarding, setAfterOnboarding] = useState<Screen | null>(null)
 
   // Load catalog + progress from backend on mount
   useEffect(() => {
     let cancelled = false
-    Promise.all([api.content(), api.me().catch(() => null)])
+    // Профиль — после отметки об открытии по рассылке: подарок кампании открывает доступ, и первый экран должен это знать.
+    Promise.all([api.content(), campaignOpenSettled().then(() => api.me()).catch(() => null)])
       .then(([catalogData, meData]) => {
         if (cancelled) return
         setCatalog(catalogData)
@@ -128,7 +134,11 @@ export default function App() {
         const verbLink = hasLevel
           ? resolveVerbDeepLink(new URLSearchParams(window.location.search), Boolean(meData?.isPro || (meData as any)?.isTrialActive))
           : null
-        const deepLink = verbLink?.screen ?? (hasLevel ? parseDeepLink(catalogData) : null)
+        // ?screen=verbs (кнопка рассылки, ссылка с меткой) или startapp=verbs_… — раздел «Глаголы» (verbs/section/link.ts).
+        const sectionLink = verbLink ? null : parseVerbsSectionLink(
+          new URLSearchParams(window.location.search), (window as any).Telegram?.WebApp?.initDataUnsafe?.start_param)
+        if (sectionLink && !hasLevel) setAfterOnboarding(sectionLink)
+        const deepLink = verbLink?.screen ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
           window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
@@ -186,7 +196,8 @@ export default function App() {
       if (
         screen.kind === 'module' ||
         screen.kind === 'profile' ||
-        screen.kind === 'vocabulary-list'
+        screen.kind === 'vocabulary-list' ||
+        screen.kind === 'verbs'
       ) {
         setScreen({ kind: 'dashboard' })
       } else if (screen.kind === 'lesson-theory') {
@@ -330,7 +341,8 @@ export default function App() {
             }
             // Fresh user → welcome lesson (one-letter quick win); the dashboard hub is
             // revealed only after that first XP is earned.
-            navigate(resolveEntryScreen({ hasLevel: true, progress, catalog }))
+            navigate(afterOnboarding ?? resolveEntryScreen({ hasLevel: true, progress, catalog }))
+            setAfterOnboarding(null)
           }}
         />
       )
@@ -444,6 +456,13 @@ export default function App() {
               onClose={() => setScreen({ kind: 'vocabulary-list', filter: screen.filter })}
             />
           )}
+        </>
+      )
+    case 'verbs':
+      return (
+        <>
+          {proSuccessToast}
+          <VerbsSection progress={progress} navigate={navigate} source={screen.source} onPurchaseSuccess={handleProPurchaseSuccess} />
         </>
       )
     case 'vocabulary-quiz':
