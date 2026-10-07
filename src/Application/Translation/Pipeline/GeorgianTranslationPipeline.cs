@@ -29,7 +29,8 @@ namespace Application.Translation.Pipeline;
 /// <item>for a verb with no table anywhere — <see cref="VerbGenerationService"/>: a strong model writes
 ///   the record, a second model approves it, it is stored; the next request stops at step 1 or 2;</item>
 /// <item>everything else — the translator that was here before (<see cref="GeorgianTranslationModule"/>:
-///   dictionary site, then Google), and its answer goes to the cache.</item>
+///   dictionary site, then Google). Its answer is not cached — nobody has checked it; only the
+///   models' verdict "not a verb" is, so they are not asked about the same text twice.</item>
 /// </list>
 /// The model steps run only when the agent path is on (<see cref="ITranslationAgentSwitch"/>). Any failure
 /// of a model or tool step — no key, quota, timeout, malformed output — falls through to the last step,
@@ -174,15 +175,11 @@ public class GeorgianTranslationPipeline(
 
         trace.Steps.Add("legacy");
         var translated = await legacy.Translate(word, ct);
-        if (translated is TranslationResult.Success success)
+        if (settled && CanBeVerb(key) && cached is not { Source: TranslationCache.SourceNoTranslation })
         {
-            await cache.StoreAsync(key, direction, success, TranslationCache.SourceExternal, settled, ct, replace: cached);
-        }
-        else if (settled && cached == null)
-        {
-            // Nothing to cache, but the models' verdict is worth keeping: the next request for this text
-            // goes straight to the translator.
-            await cache.StoreVerdictAsync(key, direction, TranslationCache.SourceNoTranslation, ct);
+            // The translator's answer is not kept: it has not been checked by anyone. The models' verdict
+            // is — the next request for this text goes straight to the translator.
+            await cache.StoreVerdictAsync(key, direction, TranslationCache.SourceNoTranslation, ct, replace: cached);
         }
 
         return translated;

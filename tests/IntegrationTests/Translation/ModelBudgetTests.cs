@@ -40,7 +40,7 @@ public class ModelBudgetTests : TranslationPipelineTestBase
 
         // The text that went without a model is not written off: it is asked about another day.
         var cached = await CacheEntries();
-        cached.Single(c => c.Key == "окно").Classified.Should().BeFalse();
+        cached.Should().NotContain(c => c.Key == "окно");
 
         var counters = await Counters();
         counters.Single(c => c.UserId == Ann).Requests.Should().Be(2);
@@ -132,7 +132,7 @@ public class ModelBudgetTests : TranslationPipelineTestBase
         Log.Paths.Should().Equal("lexicon-no-table>generator>not-a-verb>legacy", "lexicon-no-table>over-generation-budget>legacy");
         second.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
         Models.GeneratorModel.Calls.Should().Be(1);
-        (await CacheEntries()).Single(c => c.Key == "танцевать").Classified.Should().BeFalse(
+        (await CacheEntries()).Should().NotContain(c => c.Key == "танцевать",
             because: "tomorrow the verb may still be written");
         var counters = await Counters();
         counters.Single(c => c.UserId == Ann).Generations.Should().Be(1);

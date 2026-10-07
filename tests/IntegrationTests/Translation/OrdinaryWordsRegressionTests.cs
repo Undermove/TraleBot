@@ -118,8 +118,8 @@ public class OrdinaryWordsRegressionTests : TranslationPipelineTestBase
         result.Should().BeOfType<TranslationResult.Success>();
         Models.ModelCalls.Should().Be(0);
         Log.Paths.Should().Equal("legacy");
-        (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().TranslationCache.SingleAsync())).Classified.Should().BeTrue(
-            because: "there is nothing left to ask a model about this text");
+        (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().TranslationCache.AnyAsync())).Should().BeFalse(
+            because: "no model looked at the text, so there is nothing to remember");
     }
 
     [TestCase("classifier-error")]

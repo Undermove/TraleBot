@@ -222,11 +222,11 @@ public class VerbGenerationTests : TranslationPipelineTestBase
         (await StoredVerb(Dance)).Should().BeNull();
         (await Provenance(Dance)).Should().BeNull();
 
-        // The verdict is remembered with the plain translation: the same text costs nothing again.
+        // The verdict is remembered (the plain translation is not): the same text costs no model call again.
         var calls = Models.ModelCalls;
         (await Translate("танцевать")).Should().Be(result);
         Models.ModelCalls.Should().Be(calls);
-        Log.Paths.Last().Should().Be("cache");
+        Log.Paths.Last().Should().Be("legacy");
     }
 
     // ── Hard gates in code: not a matter of anyone's opinion ─────────────────────────────────────
@@ -369,7 +369,7 @@ public class VerbGenerationTests : TranslationPipelineTestBase
 
         result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(FakeExternalTranslator.Definition);
         Log.Paths.Should().Equal("lexicon-no-table>generator-failed>legacy");
-        (await CacheEntries()).Should().ContainSingle().Which.Classified.Should().BeFalse();
+        (await CacheEntries()).Should().BeEmpty();
     }
 
     [Test]
