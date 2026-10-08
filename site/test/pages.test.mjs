@@ -3,7 +3,7 @@
 
 import { test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, readdirSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -196,7 +196,8 @@ test('internal links: none is broken; every page is one click from its hub and l
   for (const p of result.pages) {
     const h = html(p.path)
     const links = [...h.matchAll(/href="(\/[^"#]*)"/g)].map((m) => m[1])
-    for (const l of links) assert.ok(paths.has(l) || ['/', '/privacy.html', '/terms.html'].includes(l), `${p.path}: broken link ${l}`)
+    // A link to a static file (the site icon) is fine as long as the file is really in the build.
+    for (const l of links) assert.ok(paths.has(l) || ['/', '/privacy.html', '/terms.html'].includes(l) || existsSync(join(out, l)), `${p.path}: broken link ${l}`)
     for (const hub of hubs) assert.ok(links.includes(hub.path), `${p.path} does not link to ${hub.path}`)
     if (!p.hub) {
       assert.ok(hubLinks.get(p.section).has(p.path), `${p.path} is not linked from its hub`)

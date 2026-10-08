@@ -186,6 +186,10 @@ export function renderLayout({ config, title, description, path, robots, ogType,
     <meta name="description" content="${esc(description)}" />
     <meta name="robots" content="${robots}" />
     <link rel="canonical" href="${url}" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-120.png" type="image/png" sizes="120x120" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     ${verification ? verification + '\n    ' : ''}<meta property="og:type" content="${ogType}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:title" content="${esc(title)}" />
