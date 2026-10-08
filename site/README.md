@@ -5,7 +5,7 @@
 
 | Раздел | Откуда берётся | Страниц |
 |---|---|---|
-| `/verbs/`, `/verbs/<slug>/` | `src/Trale/Verbs/verbs.json` — по странице на глагол + список | 177 + 1 |
+| `/verbs/`, `/verbs/<slug>/` | `src/Trale/Verbs/verbs.json` — по странице на глагол + список | 178 + 1 |
 | `/grammar/` | `content/grammar/*.md` (тексты) + пять таблиц из каталога глаголов (`lib/pages/grammar.mjs`) | 8 + 1 |
 | `/phrases/` | теория уроков (`MiniAppContentProvider.cs`) и словари уроков (`Lessons/**/questions*.json`) | 7 + 1 |
 | `/words/` | то же | 5 + 1 |

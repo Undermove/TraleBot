@@ -51,6 +51,12 @@ const MAIN_TABLE = { 'მიდის': 1 }
 // этом отбрасываются: у სვამს они с превербом შე- и относятся к другому значению («сажать»).
 const SUPPLETIVE = { 'სვამს': 'დალევს' }
 
+// Таблицы-матрицы «кто × кого», из которых берётся строка с объектом 3-го лица (см. tablesOf в
+// kaikki.mjs). Список задан вручную: что таблица именно такая, проверяется глазами по статье.
+//   უყვარს «любить» — сверено с живой страницей (ревизия 93143363 от 30.09.2026): шесть рядов совпали;
+//   аориста в таблице нет, ряд перфекта выгрузка отдаёт без подписи времени — он пропускается.
+const OBJECT_MATRIX = new Set(['უყვარს'])
+
 const sourceUrl = word => `https://en.wiktionary.org/wiki/${encodeURIComponent(word)}#Georgian`
 const serial = tenses => JSON.stringify(TENSES.map(k => tenses[k] ?? null))
 // Слова-переводы из толкований: «to sell; to betray» → sell, betray (без пояснений в скобках).
@@ -92,8 +98,10 @@ const pages = []            // { word, entry, tables }
 let mappingChecked = 0
 const mappingDiffs = []
 for (const entry of entries) {
-  const tables = tablesOf(entry)
+  const objectMatrix = OBJECT_MATRIX.has(entry.word)
+  const tables = tablesOf(entry, { objectMatrix })
   if (!tables.length) { reject(entry.word, 'в статье нет таблицы спряжения'); continue }
+  if (objectMatrix) for (const t of tables) t.objectMatrix = true
   const junk = tables.flatMap(t => t.junk)
   if (tables.some(t => t.matrix)) { reject(entry.word, 'таблица-матрица (лицо субъекта × лицо объекта) — в шесть лиц не укладывается'); continue }
   if (junk.length) { reject(entry.word, `в ячейках не только грузинские формы (${junk.slice(0, 2).join('; ')})`); continue }
@@ -181,6 +189,7 @@ for (const [lemma, members] of groups) {
   if (!own.length) notes.push(`таблицы у статьи нет: формы взяты из таблицы на странице ${main.page.word}`)
   if (!own.length && alt.length) notes.push(`ещё ${alt.length} таблиц(ы) с другими превербами со страниц будущих форм — в alt`)
   if (main.table.extraBlock) notes.push('в таблице есть второй блок (страдательный залог) — не используется')
+  if (main.table.objectMatrix) notes.push('таблица-матрица «кто × кого»: взята строка с объектом 3-го лица, клетки с другим объектом не используются')
   if (main.table.unlabeledRows) notes.push(`в таблице ${main.table.unlabeledRows} ряд(а) без подписи времени — пропущены`)
   const homographs = [...new Set(own.map(m => m.page.entry))]
   for (const e of homographs.slice(1)) if (!merged.some(p => p.entry === e)) merged.push(pages.find(p => p.entry === e))

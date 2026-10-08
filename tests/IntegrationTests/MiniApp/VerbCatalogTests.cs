@@ -159,6 +159,42 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Model_made_verb_whose_lemma_joins_the_catalog_becomes_verified_in_place()
+    {
+        // The state before a release that adds a verb to the catalog: a user had asked for it earlier,
+        // so the row exists as model-made, with its own forms. The lemma is a real catalog one.
+        var entry = JsonNode.Parse(CatalogJson())!["verbs"]![0]!;
+        var lemma = entry["lemma"]!.GetValue<string>();
+        var someForm = entry["tenses"]!["present"]![0]![0]!.GetValue<string>();
+        var id = await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            var verb = await db.Verbs.Include(v => v.Forms).SingleAsync(v => v.Lemma == lemma);
+            db.VerbForms.RemoveRange(verb.Forms);
+            db.VerbForms.Add(new VerbForm { Id = Guid.NewGuid(), VerbId = verb.Id, Form = someForm, Tense = "present", Person = 5 });
+            verb.Status = VerbStatus.Generated;
+            verb.ContentHash = "made-by-a-model";
+            verb.CardJson = "{}";
+            await db.SaveChangesAsync(CancellationToken.None);
+            return verb.Id;
+        });
+
+        var result = await InScope(sp =>
+            sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(CatalogJson(), CancellationToken.None));
+        var after = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs
+            .Include(v => v.Forms).SingleAsync(v => v.Lemma == lemma));
+        var card = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync(lemma, CancellationToken.None));
+
+        result.Written.Should().Be(1);
+        after.Id.Should().Be(id, because: "what learners already have on this verb points at the row and must survive");
+        after.Status.Should().Be(VerbStatus.Verified);
+        after.ContentHash.Should().StartWith(VerbCatalogSeeder.CatalogMark);
+        after.Forms.Should().NotContain(f => f.Person == 5 && f.Form == someForm, because: "the model's forms are replaced by the catalog's");
+        after.Forms.Count.Should().BeGreaterThan(6);
+        JsonNode.Parse(card!)!["status"]!.GetValue<string>().Should().Be("verified");
+    }
+
+    [Test]
     public async Task Empty_catalog_is_rejected_instead_of_wiping_the_verbs()
     {
         var seed = () => InScope(sp =>
