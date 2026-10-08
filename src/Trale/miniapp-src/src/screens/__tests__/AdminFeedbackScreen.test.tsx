@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
+import type { Screen } from '../../types'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ApiError, adminFeedback as mocked, type AdminFeedbackDto } from '../../api'
@@ -21,14 +22,14 @@ const overview: AdminFeedbackDto = {
   messages: 7,
   surveys: [{
     key: 'survey-2026-10-missing', question: 'Чего тебе не хватает в TraleBot?', createdAtUtc: '2026-10-08T10:00:00Z', audience: 'accessEnded',
-    sent: 120, texts: 1, options: [{ option: 'Озвучки слов', count: 30 }, { option: 'Больше уроков', count: 10 }]
+    picked: 120, pending: 0, sent: 120, texts: 1, options: [{ option: 'Озвучки слов', count: 30 }, { option: 'Больше уроков', count: 10 }]
   }]
 }
 const message = { kind: 'message' as const, campaignKey: 'survey-2026-10-missing', option: null, text: 'Хочу слышать, как звучит слово', atUtc: '2026-10-08T11:00:00Z', telegramId: 111 }
 const declined = { kind: 'paywall' as const, campaignKey: null, option: 'expensive', text: 'Год сразу — много', atUtc: '2026-10-07T11:00:00Z', telegramId: 222 }
 
-let navigate: ReturnType<typeof vi.fn>
-beforeEach(() => { api.overview.mockReset(); navigate = vi.fn() })
+let navigate: Mock<(s: Screen) => void>
+beforeEach(() => { api.overview.mockReset(); navigate = vi.fn<(s: Screen) => void>() })
 
 describe('AdminFeedbackScreen', () => {
   it('the list names surveys by their question, with the date, the audience and the counts — never by the key', async () => {
@@ -83,6 +84,29 @@ describe('AdminFeedbackScreen', () => {
     expect(api.overview).toHaveBeenLastCalledWith({ kind: 'message' })
     expect(messages.textContent).toContain('из опроса: Чего тебе не хватает в TraleBot?')
     expect(messages.textContent).toContain('Хочу слышать, как звучит слово')
+  })
+
+  it('a survey left half sent says so in the list and offers to go on with the sending', async () => {
+    const halfSent = { ...overview, surveys: [{ ...overview.surveys[0], picked: 553, pending: 478, sent: 75 }] }
+    api.overview.mockResolvedValue(halfSent)
+    const list = render(<AdminFeedbackScreen progress={defaultProgress} navigate={navigate} />)
+    expect((await screen.findByTestId('feedback-open-survey-survey-2026-10-missing')).textContent).toContain('не дослано: отправлено 75 из 553')
+    list.unmount()
+
+    render(<AdminFeedbackScreen progress={defaultProgress} view={{ survey: 'survey-2026-10-missing' }} navigate={navigate} />)
+    expect((await screen.findByTestId('feedback-survey-unfinished')).textContent).toContain('Не дослано: отправлено 75 из 553')
+    expect(screen.queryByTestId('feedback-survey-more')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Продолжить отправку' }))
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-survey', resume: 'survey-2026-10-missing' })
+  })
+
+  it('a survey sent to everyone picked has no «не дослано», only a quiet way to send it to the rest of the group', async () => {
+    api.overview.mockResolvedValue(overview)
+    render(<AdminFeedbackScreen progress={defaultProgress} view={{ survey: 'survey-2026-10-missing' }} navigate={navigate} />)
+    await screen.findByTestId('feedback-survey')
+    expect(screen.queryByTestId('feedback-survey-unfinished')).toBeNull()
+    await userEvent.click(screen.getByTestId('feedback-survey-more'))
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-survey', resume: 'survey-2026-10-missing' })
   })
 
   it('says so when there are no surveys yet, and shows only «Нет доступа.» to anyone the server refuses', async () => {

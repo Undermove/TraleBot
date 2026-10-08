@@ -198,11 +198,13 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
                 .ToListAsync(ct))
             .Where(c => c.IsSurvey).ToList();
         var campaignIds = campaigns.Select(c => c.Id).ToList();
-        var sent = await db.BroadcastDeliveries.AsNoTracking()
-            .Where(d => campaignIds.Contains(d.CampaignId) && d.Status == BroadcastDeliveryStatus.Sent)
-            .GroupBy(d => d.CampaignId)
-            .Select(g => new { CampaignId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(g => g.CampaignId, g => g.Count, ct);
+        var deliveries = await db.BroadcastDeliveries.AsNoTracking()
+            .Where(d => campaignIds.Contains(d.CampaignId))
+            .GroupBy(d => new { d.CampaignId, d.Status })
+            .Select(g => new { g.Key.CampaignId, g.Key.Status, Count = g.Count() })
+            .ToListAsync(ct);
+        int Deliveries(Guid campaignId, BroadcastDeliveryStatus? status = null) =>
+            deliveries.Where(d => d.CampaignId == campaignId && (status == null || d.Status == status)).Sum(d => d.Count);
 
         return new FeedbackOverview(
             recent.OrderByDescending(r => r.AtUtc).ToList(),
@@ -211,7 +213,8 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
                 .Select(o => new OptionCount(o, paywall.Where(c => c.Option == o).Sum(c => c.Count))).ToList(),
             counts.Where(c => c.Kind == UserFeedbackKind.Message).Sum(c => c.Count),
             campaigns.Select(c => new SurveyCounts(
-                c.Key, c.Message, c.CreatedAtUtc, c.Audience, sent.GetValueOrDefault(c.Id),
+                c.Key, c.Message, c.CreatedAtUtc, c.Audience,
+                Deliveries(c.Id), Deliveries(c.Id, BroadcastDeliveryStatus.Pending), Deliveries(c.Id, BroadcastDeliveryStatus.Sent),
                 counts.Where(x => x.Kind == UserFeedbackKind.Message && x.CampaignKey == c.Key).Sum(x => x.Count),
                 c.SurveyOptions!
                     .Select(o => new OptionCount(o, counts.Where(x => x.Kind == UserFeedbackKind.Survey && x.CampaignKey == c.Key && x.Option == o).Sum(x => x.Count)))
@@ -250,10 +253,12 @@ public record SurveyAnswer(SurveyAnswerOutcome Outcome, string? Option)
 
 public record OptionCount(string Option, int Count);
 
+/// <param name="Picked">People picked as recipients so far.</param>
+/// <param name="Pending">Of them, still waiting to be sent — above zero means the sending was left unfinished.</param>
 /// <param name="Sent">People the survey was delivered to.</param>
 /// <param name="Texts">Messages written by "Написать подробнее" from this survey.</param>
 public record SurveyCounts(
-    string Key, string Question, DateTime CreatedAtUtc, BroadcastAudience Audience, int Sent, int Texts,
+    string Key, string Question, DateTime CreatedAtUtc, BroadcastAudience Audience, int Picked, int Pending, int Sent, int Texts,
     IReadOnlyList<OptionCount> Options);
 
 public record FeedbackItem(UserFeedbackKind Kind, string? CampaignKey, string? Option, string? Text, DateTime AtUtc, long TelegramId);

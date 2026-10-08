@@ -4,8 +4,8 @@ import LoaderLetter from '../components/LoaderLetter'
 import { AUDIENCES } from '../components/admin/CampaignPanel'
 import { CloseIcon } from '../verbs/ui/icons'
 import {
-  adminCampaigns, adminSurveys, ApiError,
-  type CampaignAudience, type CampaignStatusDto, type SurveyPresetDto
+  adminCampaigns, adminFeedback, adminSurveys, ApiError,
+  type AdminSurveyDto, type CampaignAudience, type CampaignStatusDto, type SurveyPresetDto
 } from '../api'
 import type { ProgressState, Screen } from '../types'
 
@@ -13,9 +13,13 @@ import type { ProgressState, Screen } from '../types'
 // проверить, как он выглядит (и поправить, если хочется), выбрать, кому, и отправить — сначала себе,
 // потом людям порциями. Имя кампании владелец не придумывает: его даёт сервер, когда выбраны получатели.
 // С этого момента вопрос и кнопки уже не меняются — они ушли бы разным людям разными.
+// Отправку можно бросить посередине (в группе сотни людей, порция — 25): начатый опрос остаётся на
+// первом шаге в блоке «Не дослано», «Продолжить» возвращает на его отправку с тем, что уже сделано.
 
 interface Props {
   progress: ProgressState
+  /** Имя начатого опроса — открыть сразу его отправку. */
+  resume?: string
   navigate: (s: Screen) => void
 }
 
@@ -57,8 +61,11 @@ function TelegramPreview({ question, options }: { question: string; options: str
   )
 }
 
-export default function SurveyBuilderScreen({ progress, navigate }: Props) {
+export default function SurveyBuilderScreen({ progress, resume, navigate }: Props) {
   const [step, setStep] = useState(1)
+  /** Опросы, которым выбрали получателей, но отправили не всем. */
+  const [unfinished, setUnfinished] = useState<AdminSurveyDto[]>([])
+  const [resuming, setResuming] = useState(Boolean(resume))
   const [presets, setPresets] = useState<SurveyPresetDto[] | null>(null)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [limits, setLimits] = useState({ maxOptions: 4, maxOptionLength: 64 })
@@ -85,7 +92,27 @@ export default function SurveyBuilderScreen({ progress, navigate }: Props) {
       .then(r => { setPresets(r.presets); setSuggestions(r.suggestions); setLimits({ maxOptions: r.maxOptions, maxOptionLength: r.maxOptionLength }) })
       .catch(e => setDenied(e instanceof ApiError && e.status === 404 ? 'Нет доступа.' : 'Не получилось загрузить. Попробуй ещё раз.'))
     adminCampaigns.audiences().then(setCounts).catch(() => {})
+    adminFeedback.overview({ take: 1 }).then(r => setUnfinished(r.surveys.filter(s => s.pending > 0))).catch(() => {})
   }, [])
+
+  // Вернуться к начатому опросу: всё, что нужно, чтобы дослать, сервер помнит сам — вопрос, кнопки, кому, сколько ждут.
+  async function resumeSurvey(surveyKey: string) {
+    setResuming(true)
+    try {
+      const current = await adminCampaigns.status(surveyKey)
+      setKey(current.key)
+      setStatus(current)
+      setQuestion(current.message)
+      setOptions((current.surveyAnswers ?? []).map(a => a.option))
+      setAudience(current.audience)
+      go(4)
+    } catch (e) {
+      setDenied(e instanceof ApiError && e.status === 404 ? 'Такого опроса нет.' : 'Не получилось загрузить. Попробуй ещё раз.')
+    } finally {
+      setResuming(false)
+    }
+  }
+  useEffect(() => { if (resume) void resumeSurvey(resume) }, [resume]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const go = (next: number) => { setStep(next); setNote(null); setEditing(null); window.scrollTo(0, 0) }
 
@@ -165,6 +192,7 @@ export default function SurveyBuilderScreen({ progress, navigate }: Props) {
     return `Отправлено ${r.sent}, заблокировали бота ${r.blocked}, отказ ${r.rejected}, без ответа ${r.unknown}. Осталось ${r.status.pending}.${wait}`
   })
 
+  const ready = presets !== null && !resuming && !denied
   const back = () => (step === 1 || frozen ? navigate({ kind: 'admin' }) : go(step - 1))
   const answers = status?.surveyAnswers?.reduce((sum, a) => sum + a.count, 0) ?? 0
 
@@ -174,14 +202,33 @@ export default function SurveyBuilderScreen({ progress, navigate }: Props) {
 
       <div className="flex-1 px-5 pt-4 flex flex-col gap-3" style={{ paddingBottom: 'calc(var(--safe-b) + 32px)' }}>
         {denied && <div className="font-sans text-[14px] text-jewelInk">{denied}</div>}
-        {!presets && !denied && <div className="flex justify-center py-12"><LoaderLetter /></div>}
+        {(!presets || resuming) && !denied && <div className="flex justify-center py-12"><LoaderLetter /></div>}
 
-        {presets && (
+        {ready && (
           <div className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight" data-testid="survey-step-title">{STEPS[step - 1]}</div>
         )}
 
-        {presets && step === 1 && (
+        {ready && step === 1 && (
           <>
+            {unfinished.length > 0 && (
+              <div data-testid="survey-unfinished">
+                <div className="mn-eyebrow text-ruby mb-2">Не дослано</div>
+                <div className="flex flex-col gap-2">
+                  {unfinished.map(s => (
+                    <div key={s.key} className="jewel-tile px-4 py-3">
+                      <div className="relative z-[1]">
+                        <div className="font-sans text-[15px] font-extrabold text-jewelInk leading-snug line-clamp-2">{s.question}</div>
+                        <div className={`${small} tabular-nums mt-0.5`}>отправлено {s.picked - s.pending} из {s.picked}</div>
+                        <button type="button" className={`${action} mt-2`} style={{ background: '#F5B820' }} onClick={() => resumeSurvey(s.key)} data-testid={`survey-resume-${s.key}`}>
+                          Продолжить
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mn-eyebrow mt-5">Новый опрос</div>
+              </div>
+            )}
             <div className={small}>Вопрос и кнопки уже написаны — на следующем шаге их можно поправить.</div>
             {presets.map(p => (
               <button key={p.id} type="button" onClick={() => choose(p)} data-testid={`survey-preset-${p.id}`} className="jewel-tile jewel-pressable w-full text-left px-4 py-3">
@@ -200,7 +247,7 @@ export default function SurveyBuilderScreen({ progress, navigate }: Props) {
           </>
         )}
 
-        {presets && step === 2 && (
+        {ready && step === 2 && (
           <>
             <TelegramPreview question={text} options={clean} />
 
@@ -257,7 +304,7 @@ export default function SurveyBuilderScreen({ progress, navigate }: Props) {
           </>
         )}
 
-        {presets && step === 3 && (
+        {ready && step === 3 && (
           <>
             <div className={small}>Без тех, кто заблокировал бота или выключил уведомления.</div>
             <div className="flex flex-col gap-2" role="radiogroup" aria-label="Кому отправить">
@@ -307,7 +354,7 @@ export default function SurveyBuilderScreen({ progress, navigate }: Props) {
           </>
         )}
 
-        {presets && step === 4 && (
+        {ready && step === 4 && (
           <>
             <TelegramPreview question={text} options={clean} />
             <div className={small} data-testid="survey-summary">
@@ -350,7 +397,7 @@ export default function SurveyBuilderScreen({ progress, navigate }: Props) {
           </>
         )}
 
-        {presets && step > 1 && (
+        {ready && step > 1 && (
           <div className="flex gap-3 mt-3">
             {!frozen && <button type="button" className={secondary} onClick={() => go(step - 1)} data-testid="survey-back">Назад</button>}
             {step < STEPS.length && (

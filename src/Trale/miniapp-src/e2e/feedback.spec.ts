@@ -82,11 +82,11 @@ const overview = {
   messages: 2,
   surveys: [
     {
-      key: KEY, question: missing.question, createdAtUtc: '2026-10-08T08:00:00Z', audience: 'accessEnded', sent: 100, texts: 1,
+      key: KEY, question: missing.question, createdAtUtc: '2026-10-08T08:00:00Z', audience: 'accessEnded', picked: 100, pending: 0, sent: 100, texts: 1,
       options: missing.options.map((option, i) => ({ option, count: [23, 9, 14, 5][i] })),
     },
     {
-      key: 'survey-2026-09-likes', question: presets.find(p => p.id === 'likes')!.question, createdAtUtc: '2026-09-20T08:00:00Z', audience: 'onTrial', sent: 17, texts: 0,
+      key: 'survey-2026-09-likes', question: presets.find(p => p.id === 'likes')!.question, createdAtUtc: '2026-09-20T08:00:00Z', audience: 'onTrial', picked: 17, pending: 0, sent: 17, texts: 0,
       options: presets.find(p => p.id === 'likes')!.options.map((option, i) => ({ option, count: [4, 6, 1, 2][i] })),
     },
   ],
@@ -143,14 +143,17 @@ async function setup(page: Page, opts: { me?: object; due?: boolean; messageStat
   await page.route('**/api/admin/recent-users*', json({ users: [] }))
   await page.route('**/api/admin/verbs/model-made', json({ verbs: [] }))
   await page.route('**/api/admin/surveys/presets', json({ presets, suggestions, maxOptions: 4, maxOptionLength: 64 }))
-  await page.route('**/api/admin/feedback*', (route) => {
-    const query = new URL(route.request().url()).searchParams
-    const items = recent.filter(r => (!query.get('kind') || r.kind === query.get('kind')) && (!query.get('campaign') || r.campaignKey === query.get('campaign')))
-    return route.fulfill({ json: { ...overview, recent: items } })
-  })
   // Кампании: сервер сам называет новый опрос; выбранные получатели ждут, пока их не отправят.
   const status = { key: KEY, audience: 'accessEnded', message: '', total: 0, sample: 0, pending: 0, sent: 0, blocked: 0, rejected: 0, unknown: 0, opened: 0,
     giftDays: 0, gifted: 0, playedVerbSession: 0, finishedVerbSession: 0, paidAfterOpen: 0, surveyAnswers: [] as object[] }
+  await page.route('**/api/admin/feedback*', (route) => {
+    const query = new URL(route.request().url()).searchParams
+    const items = recent.filter(r => (!query.get('kind') || r.kind === query.get('kind')) && (!query.get('campaign') || r.campaignKey === query.get('campaign')))
+    // Опрос, которому в этом сценарии уже выбрали получателей, сервер отдаёт с тем, сколько ждут.
+    const surveys = overview.surveys.map(s => (s.key === KEY && status.total > 0
+      ? { ...s, picked: status.total, pending: status.pending, sent: status.sent, options: s.options.map(o => ({ ...o, count: 0 })) } : s))
+    return route.fulfill({ json: { ...overview, surveys, recent: items } })
+  })
   await page.route('**/api/admin/campaigns/**', (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/admin/campaigns/', '')
     if (path === 'audiences') return route.fulfill({ json: { accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1 } })
@@ -158,13 +161,21 @@ async function setup(page: Page, opts: { me?: object; due?: boolean; messageStat
       const body = route.request().postDataJSON()
       calls.prepared.push(body)
       const key = body.key || `survey-2026-10-${body.newSurveySlug}`
-      const picked = body.audience === 'owner' ? 1 : body.sampleSize ?? 553
-      if (!body.dryRun && body.audience !== 'owner') Object.assign(status, { message: body.message, total: picked, sample: picked, pending: picked })
+      const picked = body.audience === 'owner' ? 1 : body.sampleSize ?? 553 - status.total
+      if (!body.dryRun && body.audience !== 'owner') {
+        Object.assign(status, {
+          message: body.message, total: status.total + picked, sample: status.sample + (body.sampleSize ?? 0), pending: status.pending + picked,
+          surveyAnswers: body.surveyOptions.map((option: string) => ({ option, count: 0 })),
+        })
+      }
       return route.fulfill({ json: { key, dryRun: body.dryRun, audienceTotal: 553, alreadyInCampaign: 0, picked, leftForLater: 553 - picked } })
     }
     if (path.endsWith('/send')) {
-      calls.sent.push(path.replace('/send', ''))
-      return route.fulfill({ json: { sent: 1, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status } })
+      const key = path.replace('/send', '')
+      calls.sent.push(key)
+      const sent = key === KEY ? Math.min(route.request().postDataJSON().limit, status.pending) : 1
+      if (key === KEY) Object.assign(status, { pending: status.pending - sent, sent: status.sent + sent })
+      return route.fulfill({ json: { sent, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status } })
     }
     return route.fulfill({ json: status })
   })
@@ -366,6 +377,71 @@ test.describe('владелец', () => {
     expect(calls.sent).toHaveLength(1)
     await expect(page.getByTestId('survey-back')).toHaveCount(0)
     await shot(page, 'survey-4-send-picked', true)
+  })
+
+  test('a survey left half sent is found again, finished, and sent to the rest of the group', async ({ page }) => {
+    const calls = await setup(page, { me: owner })
+    page.on('dialog', dialog => dialog.accept())
+    await openAdmin(page)
+    await page.getByTestId('admin-section-survey').click()
+    await expect(page.getByTestId('survey-unfinished')).toHaveCount(0)
+    await page.getByTestId('survey-preset-missing').click()
+    await page.getByTestId('survey-next').click()
+    await page.getByTestId('survey-next').click()
+    await page.getByTestId('survey-pick').click()
+    await expect(page.getByTestId('survey-status')).toContainText('Выбрано 100 · ждут 100')
+    await page.getByTestId('survey-send').click()
+    await expect(page.getByTestId('survey-status')).toContainText('ждут 75 · дошло 25')
+
+    // Владелец закрыл конструктор посередине и вернулся позже.
+    await page.getByRole('button', { name: 'Назад' }).click()
+    await expect(page.getByTestId('admin-sections')).toBeVisible()
+    await page.getByTestId('admin-section-survey').click()
+
+    const left = page.getByTestId('survey-unfinished')
+    await expect(left).toContainText(missing.question)
+    await expect(left).toContainText('отправлено 25 из 100')
+    await expect(left).not.toContainText('survey-2026')
+    await expect(page.getByTestId('survey-preset-missing')).toBeVisible()
+    await fits(page)
+    await shot(page, 'survey-resume-1-unfinished', true)
+    await left.getByRole('button', { name: 'Продолжить' }).click()
+
+    await expect(stepTitle(page)).toHaveText('Отправка')
+    await expect(page.getByTestId('survey-preview')).toContainText(missing.question)
+    for (const option of missing.options) await expect(page.getByTestId('survey-preview')).toContainText(option)
+    await expect(page.getByTestId('survey-status')).toContainText('Выбрано 100 · ждут 75 · дошло 25')
+    await expect(page.getByTestId('survey-send')).toBeEnabled()
+    await expect(page.getByTestId('survey-pick')).toBeDisabled()
+    await fits(page)
+    await shot(page, 'survey-resume-2-sending', true)
+
+    for (const waiting of [50, 25, 0]) {
+      await page.getByTestId('survey-send').click()
+      await expect(page.getByTestId('survey-status')).toContainText(`ждут ${waiting} ·`)
+    }
+    await expect(page.getByTestId('survey-send')).toBeDisabled()
+    await expect(page.getByTestId('survey-send-hint')).toContainText('Можно выбрать остальных')
+    await fits(page)
+    await shot(page, 'survey-resume-3-sample-done', true)
+
+    // Пробная группа получила всё — из того же шага выбираются остальные, под тем же именем.
+    await page.getByRole('button', { name: 'Выбрать всех остальных' }).click()
+    await expect(page.getByTestId('survey-status')).toContainText('Выбрано 553 · ждут 453 · дошло 100')
+    await expect(page.getByTestId('survey-send')).toBeEnabled()
+    const rest = calls.prepared.at(-1)
+    expect([rest.key, rest.audience, rest.sampleSize, rest.dryRun, rest.message, rest.surveyOptions])
+      .toEqual([KEY, 'accessEnded', null, false, missing.question, missing.options])
+    await shot(page, 'survey-resume-4-rest-picked', true)
+
+    // И из «Отзывов» к недосланному опросу тоже есть дорога.
+    await page.getByTestId('survey-open-results').click()
+    await expect(page.getByTestId('feedback-survey-unfinished')).toContainText('Не дослано: отправлено 100 из 553')
+    await fits(page)
+    await shot(page, 'survey-resume-5-results', true)
+    await page.getByTestId('feedback-survey-resume').click()
+    await expect(stepTitle(page)).toHaveText('Отправка')
+    await expect(page.getByTestId('survey-status')).toContainText('Выбрано 553 · ждут 453 · дошло 100')
   })
 
   test('the buttons of a survey are edited by taps', async ({ page }) => {

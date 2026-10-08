@@ -1,18 +1,21 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
+import type { Screen } from '../../types'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { adminCampaigns as mockedCampaigns, adminSurveys as mockedSurveys } from '../../api'
+import { adminCampaigns as mockedCampaigns, adminFeedback as mockedFeedback, adminSurveys as mockedSurveys } from '../../api'
 import { defaultProgress } from '../../progress'
 import SurveyBuilderScreen from '../SurveyBuilderScreen'
 
 vi.mock('../../api', () => ({
   ApiError: class ApiError extends Error { constructor(public status: number, public body: string) { super('api') } },
   adminCampaigns: { audiences: vi.fn(), prepare: vi.fn(), send: vi.fn(), status: vi.fn() },
-  adminSurveys: { presets: vi.fn() }
+  adminSurveys: { presets: vi.fn() },
+  adminFeedback: { overview: vi.fn() }
 }))
 vi.mock('../../components/LoaderLetter', () => ({ default: () => null }))
 const campaigns = vi.mocked(mockedCampaigns)
 const surveys = vi.mocked(mockedSurveys)
+const feedback = vi.mocked(mockedFeedback)
 
 const missing = { id: 'missing', title: 'Чего не хватает', question: 'Чего тебе не хватает в TraleBot?', options: ['Озвучки слов', 'Больше уроков', 'Разговорной практики', 'Другого'] }
 const likes = { id: 'likes', title: 'Что нравится', question: 'Что тебе нравится в TraleBot больше всего?', options: ['Уроки', 'Глаголы'] }
@@ -24,13 +27,20 @@ const status = {
 }
 const picked = (key: string, n: number, dryRun: boolean) => ({ key, dryRun, audienceTotal: 553, alreadyInCampaign: 0, picked: n, leftForLater: 553 - n })
 
-let navigate: ReturnType<typeof vi.fn>
+const survey = (key: string, question: string, picked: number, pending: number) => ({
+  key, question, createdAtUtc: '2026-10-08T10:00:00Z', audience: 'accessEnded' as const, picked, pending, sent: picked - pending, texts: 0, options: []
+})
+const listed = (items: ReturnType<typeof survey>[]) => ({ recent: [], paywall: { shown: 0, options: [] }, messages: 0, surveys: items })
+
+let navigate: Mock<(s: Screen) => void>
 
 beforeEach(() => {
   ;[...Object.values(campaigns), ...Object.values(surveys)].forEach(f => (f as ReturnType<typeof vi.fn>).mockReset())
   surveys.presets.mockResolvedValue({ presets: [missing, likes], suggestions: ['Другое', 'Нет времени', 'Дорого'], maxOptions: 4, maxOptionLength: 64 })
   campaigns.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1 })
-  navigate = vi.fn()
+  navigate = vi.fn<(s: Screen) => void>()
+  feedback.overview.mockReset()
+  feedback.overview.mockResolvedValue(listed([]))
   window.scrollTo = vi.fn() as never
 })
 afterEach(() => vi.unstubAllGlobals())
@@ -185,6 +195,70 @@ describe('SurveyBuilderScreen', () => {
     expect(campaigns.prepare.mock.calls[0][0]).toMatchObject({ dryRun: true })
     expect((screen.getByTestId('survey-send') as HTMLButtonElement).disabled).toBe(true)
     expect(screen.getByTestId('survey-back')).toBeTruthy()
+  })
+
+  it('a survey left half sent waits on the first step; «Продолжить» opens its sending with what is already done', async () => {
+    feedback.overview.mockResolvedValue(listed([
+      survey('survey-2026-10-missing', missing.question, 553, 478),
+      survey('survey-2026-09-likes', likes.question, 17, 0)
+    ]))
+    campaigns.status.mockResolvedValue({ ...status, total: 553, sample: 0, pending: 478, sent: 75 })
+    await open()
+
+    const left = await screen.findByTestId('survey-unfinished')
+    expect(left.textContent).toContain('Не дослано')
+    expect(left.textContent).toContain('Чего тебе не хватает в TraleBot?отправлено 75 из 553')
+    expect(left.textContent).not.toContain(likes.question)
+    expect(left.textContent).not.toContain('survey-2026')
+    expect(screen.getByTestId('survey-preset-missing')).toBeTruthy()
+
+    await userEvent.click(within(left).getByRole('button', { name: 'Продолжить' }))
+
+    await waitFor(() => expect(title()).toBe('Отправка'))
+    expect(campaigns.status).toHaveBeenCalledWith('survey-2026-10-missing')
+    expect(screen.getByTestId('survey-preview').textContent).toBe('Чего тебе не хватает в TraleBot?Озвучки словБольше уроковРазговорной практикиДругого')
+    expect(screen.getByTestId('survey-summary').textContent).toBe('Кому: доступ закончился — 553 чел.')
+    expect(screen.getByTestId('survey-status').textContent).toContain('Выбрано 553 · ждут 478 · дошло 75')
+    expect((screen.getByTestId('survey-send') as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByTestId('survey-pick') as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.queryByTestId('survey-back')).toBeNull()
+    expect(campaigns.prepare).not.toHaveBeenCalled()
+  })
+
+  it('opened for a survey by its name, goes on sending and then picks the rest of the group under the same name', async () => {
+    const confirm = vi.fn((_text: string) => true)
+    vi.stubGlobal('confirm', confirm)
+    const sampleLeft = { ...status, total: 100, sample: 100, pending: 20, sent: 80 }
+    const sampleDone = { ...sampleLeft, pending: 0, sent: 100 }
+    campaigns.status.mockResolvedValueOnce(sampleLeft).mockResolvedValueOnce(sampleLeft).mockResolvedValue({ ...sampleDone, total: 553, pending: 453 })
+    campaigns.send.mockResolvedValue({ sent: 20, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: sampleDone })
+    campaigns.prepare.mockResolvedValueOnce(picked('survey-2026-10-missing', 453, true)).mockResolvedValueOnce(picked('survey-2026-10-missing', 453, false))
+    render(<SurveyBuilderScreen progress={defaultProgress} resume="survey-2026-10-missing" navigate={navigate} />)
+    await waitFor(() => expect(title()).toBe('Отправка'))
+    expect(screen.queryByTestId('survey-preset-missing')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('survey-send'))
+    await waitFor(() => expect(campaigns.send).toHaveBeenCalledWith('survey-2026-10-missing', 25))
+    expect(confirm.mock.calls[0][0]).toContain('ОТПРАВИТЬ опрос 20 людям')
+    await waitFor(() => expect((screen.getByTestId('survey-send') as HTMLButtonElement).disabled).toBe(true))
+    expect(screen.getByTestId('survey-send-hint').textContent).toContain('Можно выбрать остальных')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Выбрать всех остальных' }))
+    await waitFor(() => expect(campaigns.prepare).toHaveBeenCalledTimes(2))
+    expect(confirm.mock.calls[1][0]).toContain('Выбрать всех остальных: 453 чел.')
+    expect(campaigns.prepare.mock.calls[1][0]).toMatchObject({
+      key: 'survey-2026-10-missing', audience: 'accessEnded', message: missing.question, surveyOptions: missing.options, sampleSize: null, dryRun: false
+    })
+    await waitFor(() => expect(screen.getByTestId('survey-status').textContent).toContain('Выбрано 553 · ждут 453'))
+    expect((screen.getByTestId('survey-send') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('a name of no survey shows «Такого опроса нет.» and nothing to send', async () => {
+    const { ApiError } = await import('../../api')
+    campaigns.status.mockRejectedValue(new ApiError(404, ''))
+    render(<SurveyBuilderScreen progress={defaultProgress} resume="survey-2026-10-gone" navigate={navigate} />)
+    expect(await screen.findByText('Такого опроса нет.')).toBeTruthy()
+    expect(screen.queryByTestId('survey-send')).toBeNull()
   })
 
   it('shows nothing but «Нет доступа.» to anyone the server refuses', async () => {

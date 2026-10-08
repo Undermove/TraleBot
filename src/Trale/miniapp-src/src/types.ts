@@ -34,7 +34,8 @@ export type Screen =
   | { kind: 'admin' }
   /** Подразделы админки (только владелец): рассылка, конструктор опроса, отзывы. */
   | { kind: 'admin-broadcast' }
-  | { kind: 'admin-survey' }
+  /** resume — имя начатого опроса: открыть сразу его отправку (шаг 4), чтобы дослать. */
+  | { kind: 'admin-survey'; resume?: string }
   /** view — что открыто: список (по умолчанию), один опрос, ответы с экрана покупки или «написали автору». */
   | { kind: 'admin-feedback'; view?: { survey: string } | 'paywall' | 'messages' }
   | { kind: 'admin-user'; telegramId: number }

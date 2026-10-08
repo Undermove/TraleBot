@@ -793,6 +793,53 @@ public class UserFeedbackTests : TestBase
     }
 
     [Test]
+    public async Task A_survey_left_half_sent_can_be_found_and_finished_and_then_sent_to_the_rest()
+    {
+        var people = new[] { await AccessEnded(), await AccessEnded(), await AccessEnded() };
+        var mark = _telegram.Requests.Count;
+        var key = (await StartSurvey("resume", sampleSize: 2)).Body.GetProperty("key").GetString()!;
+        await Admin(HttpMethod.Post, "campaigns/prepare", new
+        {
+            key = "", newSurveySlug = "resume-test", audience = "owner", message = "Чего тебе не хватает?",
+            sampleSize = (int?)null, dryRun = false, surveyOptions = Options
+        });
+        await Admin(HttpMethod.Post, $"campaigns/{key}/send", new { limit = 1 });
+
+        // The owner closed the mini-app here. What the builder later reads to find the survey and bring it back:
+        async Task<JsonElement> Listed() =>
+            (await Admin(HttpMethod.Get, "feedback?take=1")).Body.GetProperty("surveys").EnumerateArray().Single();
+        var left = await Listed();
+        var status = (await Admin(HttpMethod.Get, $"campaigns/{key}")).Body;
+
+        left.GetProperty("key").GetString().Should().Be(key, "the trial sent to the owner is not a survey to come back to");
+        left.GetProperty("picked").GetInt32().Should().Be(2);
+        left.GetProperty("pending").GetInt32().Should().Be(1);
+        left.GetProperty("sent").GetInt32().Should().Be(1);
+        status.GetProperty("message").GetString().Should().Be("Чего тебе не хватает?");
+        status.GetProperty("audience").GetString().Should().Be("accessEnded");
+        status.GetProperty("surveyAnswers").EnumerateArray().Select(a => a.GetProperty("option").GetString()).Should().Equal(Options);
+
+        // Finishing the sample, then the rest of the audience — by the key alone, with what the status gave back.
+        await Admin(HttpMethod.Post, $"campaigns/{key}/send", new { limit = 25 });
+        (await Listed()).GetProperty("pending").GetInt32().Should().Be(0);
+        var rest = await Admin(HttpMethod.Post, "campaigns/prepare", new
+        {
+            key, audience = status.GetProperty("audience").GetString(), message = status.GetProperty("message").GetString(),
+            sampleSize = (int?)null, dryRun = false, surveyOptions = Options
+        });
+        rest.Code.Should().Be(HttpStatusCode.OK);
+        rest.Body.GetProperty("picked").GetInt32().Should().Be(1);
+        (await Listed()).GetProperty("pending").GetInt32().Should().Be(1);
+        await Admin(HttpMethod.Post, $"campaigns/{key}/send", new { limit = 25 });
+
+        var done = await Listed();
+        done.GetProperty("picked").GetInt32().Should().Be(3);
+        done.GetProperty("pending").GetInt32().Should().Be(0);
+        done.GetProperty("sent").GetInt32().Should().Be(3);
+        people.Should().OnlyContain(p => SentTo(p, mark).Count == 1, "everyone got the survey once");
+    }
+
+    [Test]
     public async Task A_batch_does_not_leave_until_recipients_are_picked()
     {
         var person = await AccessEnded();

@@ -474,7 +474,7 @@ export default function App() {
     case 'admin-broadcast':
       return <AdminBroadcastScreen progress={progress} navigate={navigate} />
     case 'admin-survey':
-      return <SurveyBuilderScreen progress={progress} navigate={navigate} />
+      return <SurveyBuilderScreen progress={progress} resume={screen.resume} navigate={navigate} />
     case 'admin-feedback':
       return <AdminFeedbackScreen progress={progress} view={screen.view} navigate={navigate} />
     case 'verb-review':

@@ -86,6 +86,9 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
                   <div className={`${small} tabular-nums mt-0.5`}>
                     {day(s.createdAtUtc)} · {audienceName(s.audience)} · дошло {s.sent} · ответили {answered(s.options)}
                   </div>
+                  {s.pending > 0 && (
+                    <div className="font-sans text-[12px] font-bold text-ruby tabular-nums">не дослано: отправлено {s.picked - s.pending} из {s.picked}</div>
+                  )}
                 </div>
               </button>
             ))}
@@ -121,6 +124,27 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
             <div className={`${small} tabular-nums mb-3`}>
               {day(survey.createdAtUtc)} · {audienceName(survey.audience)} · дошло {survey.sent} · ответили {answered(survey.options)}
             </div>
+            {survey.pending > 0 ? (
+              <div className="mb-4" data-testid="feedback-survey-unfinished">
+                <div className="font-sans text-[13px] font-bold text-ruby tabular-nums mb-1.5">
+                  Не дослано: отправлено {survey.picked - survey.pending} из {survey.picked}
+                </div>
+                <button
+                  type="button" onClick={() => navigate({ kind: 'admin-survey', resume: survey.key })} data-testid="feedback-survey-resume"
+                  className="w-full min-h-[52px] px-4 rounded-xl border-[1.5px] border-jewelInk font-sans text-[15px] font-extrabold text-jewelInk"
+                  style={{ background: '#F5B820' }}
+                >
+                  Продолжить отправку
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button" onClick={() => navigate({ kind: 'admin-survey', resume: survey.key })} data-testid="feedback-survey-more"
+                className="font-sans text-[13px] font-bold text-navy underline min-h-[44px] mb-2 text-left"
+              >
+                Отправить остальным из этой группы
+              </button>
+            )}
             <Counts options={survey.options} />
             <div className="mn-eyebrow mt-5 mb-1">Написали подробнее</div>
             <Answers items={data.recent} empty="Подробнее пока никто не написал." onOpenUser={openUser} />

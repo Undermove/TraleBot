@@ -723,6 +723,10 @@ export interface AdminSurveyDto {
   question: string
   createdAtUtc: string
   audience: CampaignAudience
+  /** Сколько получателей выбрано на сегодня. */
+  picked: number
+  /** Из них ещё ждут отправки: больше нуля — отправку бросили посередине, к опросу можно вернуться. */
+  pending: number
   /** Скольким людям опрос дошёл. */
   sent: number
   /** Сколько сообщений написали кнопкой «Написать подробнее» из этого опроса. */

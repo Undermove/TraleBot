@@ -726,6 +726,7 @@ public class AdminController : Controller
         s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc,
         s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened,
         s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen,
+        // In the order of the buttons, also before anyone has answered — this is how the survey builder gets a survey back.
         surveyAnswers = s.SurveyAnswers.Select(MapOptionCount)
     };
 
@@ -757,7 +758,7 @@ public class AdminController : Controller
             messages = overview.Messages,
             surveys = overview.Surveys.Select(s => new
             {
-                s.Key, s.Question, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Sent, s.Texts,
+                s.Key, s.Question, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Picked, s.Pending, s.Sent, s.Texts,
                 options = s.Options.Select(MapOptionCount)
             })
         });
