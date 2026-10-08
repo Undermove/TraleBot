@@ -62,9 +62,19 @@ function splitCell(text) {
  * (страдательный), у которого на странице нет ни толкования, ни своей статьи, поэтому он не
  * используется, а факт отмечается в extraBlock.
  *
+ * Матрица «лицо субъекта × лицо объекта» (у უყვარს: кто любит × кого любят) в шесть лиц не
+ * укладывается и по умолчанию только отмечается (matrix). С objectMatrix: true из неё берётся одна
+ * строка — с объектом 3-го лица («он любит это»): в таких таблицах Викисловарь подписывает переводом
+ * каждую клетку с другим объектом («you love me»), а клетки основной строки оставляет без подписи.
+ * Клетки с подписью и пустые клетки пропускаются, остальное разбирается как обычная таблица.
+ *
  * Возвращает [{ masdar: {imperfective, perfective}, tenses, junk, unlabeledRows, extraBlock, matrix }].
  */
-export function tablesOf(entry) {
+// Подпись-перевод клетки Wiktextract отдаёт либо в roman («giq̇varvar, “you love me”»), либо прямо
+// в форме («მიყვარხარ (miq̇varxar, “I love you (sg.)”)»).
+const glossed = f => /[“"(]/.test(f.roman ?? '') || /[“"(]/.test(f.form)
+
+export function tablesOf(entry, { objectMatrix = false } = {}) {
   const tables = []
   let cur = null, seen = null, last = null
   for (const f of entry.forms ?? []) {
@@ -86,6 +96,7 @@ export function tablesOf(entry) {
     const person = personOf(tags)
     // Ряд без подписи времени (в рукописных таблицах так остаётся перфект) не угадываем.
     if (!tense || person === null) { cur.unlabeled++; continue }
+    if (objectMatrix && (glossed(f) || !splitCell(f.form).forms.length)) continue
     const key = `${tense}:${person}`
     if (key !== last && seen.has(key)) cur.extraBlock = true
     // Новая ячейка после начала второго блока — это уже не «две половины», а матрица

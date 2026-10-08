@@ -325,6 +325,8 @@ public class GeorgianTranslationPipeline(
             trace.Reviewer += outcome.Reviewer;
             trace.Steps.Add(
                 $"generator>{outcome.Outcome}" + (outcome.Reason == null ? string.Empty : $"({outcome.Reason})")
+                + (outcome.CompletionRounds > 0 ? "+completion" : string.Empty)
+                + (outcome.DroppedRows > 0 ? "+rows-left-out" : string.Empty)
                 + (outcome.RepairRounds > 0 ? "+repair" : string.Empty));
             if (outcome.Verb != null)
             {
@@ -486,6 +488,7 @@ public class GeorgianTranslationPipeline(
         var notes = $"«{first.Meaning}»" + (first.MeaningNote == null ? string.Empty : $" ({first.MeaningNote})")
                     + (setAside == null ? string.Empty : $" — без «{setAside}»")
                     + (others.Count == 0 ? string.Empty : $"; ещё: {string.Join(", ", others)}");
+        notes += await UnverifiedNote(first.Lemma, first.Form!, "; ", ct);
         return new TranslationResult.Success(first.Form!, notes + Transcription(first.Form!), await ExampleFor(first.Lemma, first.Form, ct));
     }
 
@@ -510,8 +513,9 @@ public class GeorgianTranslationPipeline(
                 infinitive == null ? null : $"это глагол «{infinitive}»",
                 verb.Form == null && verb.Title != verb.Lemma ? $"название действия: {verb.Title}" : null
             ];
-            return new TranslationResult.Success(
-                georgian, string.Join("; ", parts.Where(p => p != null)) + Transcription(georgian), await ExampleFor(verb.Lemma, georgian, ct));
+            var info = string.Join("; ", parts.Where(p => p != null));
+            info += await UnverifiedNote(verb.Lemma, georgian, info.Length == 0 ? string.Empty : "; ", ct);
+            return new TranslationResult.Success(georgian, info + Transcription(georgian), await ExampleFor(verb.Lemma, georgian, ct));
         }
 
         // The text is Georgian but not itself a form: the analyst read it as a misspelled one.
@@ -524,10 +528,24 @@ public class GeorgianTranslationPipeline(
 
         // A form of the base is translated as what it says — «мы писали», not the infinitive.
         var note = verb.MeaningNote == null ? string.Empty : $" ({verb.MeaningNote})";
+        note += verb.Form == null ? string.Empty : await UnverifiedNote(verb.Lemma, verb.Form, "; ", ct);
         return new TranslationResult.Success(
             verb.Meaning,
             $"{typo}глагол «{verb.Translation}»{note}" + Transcription(key),
             await ExampleFor(verb.Lemma, verb.Form, ct));
+    }
+
+    public const string UnverifiedFormNote = "форма собрана автоматически и ещё не проверена";
+
+    /// <summary>
+    /// The answer is still given when the form sits only in unverified tenses of a model-made verb —
+    /// it is the best the base has — but it says so, and such a form gets no parse line.
+    /// </summary>
+    private async Task<string> UnverifiedNote(string lemma, string form, string separator, CancellationToken ct)
+    {
+        var cells = await dbContext.VerbForms.AsNoTracking()
+            .Where(f => f.Verb.Lemma == lemma && f.Form == form).Select(f => f.Unverified).ToListAsync(ct);
+        return cells.Count > 0 && cells.All(unverified => unverified) ? separator + UnverifiedFormNote : string.Empty;
     }
 
     /// <summary>Same line the old translator appends, so the reply looks the same whichever step answered.</summary>

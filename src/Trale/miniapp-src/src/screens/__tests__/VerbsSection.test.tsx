@@ -120,7 +120,7 @@ describe('VerbsSection: a newcomer', () => {
     await open(section)
 
     expect(section.levels.map(l => screen.getByTestId(`verbs-level-${l.id}`).dataset.open)).toEqual(['true', 'false', 'false', 'false', 'false'])
-    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('0 из 20')
+    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('0 из 21')
     expect(screen.getByTestId(`verbs-pack-${section.levels[0].packs[0].id}`).textContent).toContain('ты здесь')
     expect(screen.queryAllByTestId('verbs-verb-row')).toHaveLength(0)
 
@@ -235,7 +235,7 @@ describe('VerbsSection: «Мои глаголы»', () => {
     expect(rows[0].textContent).toContain(ruOf(FIRST))
     expect(rows[0].textContent).toContain('уровень 1')
     expect(rows[0].textContent).toContain('узнаю')
-    expect(rows[1].textContent).toContain('собран автоматически')
+    expect(rows[1].textContent).toContain('составлено нейросетью')
     expect(mine.getAllByTestId('verbs-mine-generated')).toHaveLength(1)
     expect(mine.queryByTestId('verbs-mine-empty')).toBeNull()
 
@@ -254,7 +254,7 @@ describe('VerbsSection: in progress', () => {
     expect(screen.getByTestId('verbs-learned').textContent).toBe(`Выучено 1 из ${LADDER.length}`)
     expect(screen.getByTestId('verbs-now').dataset.kind).toBe('continue')
     expect(screen.getByTestId('verbs-now-play').textContent).toBe('Продолжить — 2 минуты')
-    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('1 из 20')
+    expect(screen.getByTestId('verbs-level-1-count').textContent).toBe('1 из 21')
     expect(Number(screen.getByTestId('verbs-level-1-bar').dataset.percent)).toBeGreaterThan(5)
     expect(Number(screen.getByTestId('verbs-level-2-bar').dataset.percent)).toBe(0)
   })
@@ -282,8 +282,11 @@ describe('VerbsSection: in progress', () => {
     expect(screen.getByTestId(`verbs-pack-${pack.id}`).dataset.done).toBe('false')
   })
 
-  it('after the first finished session leads through the card, the level and «Мои глаголы» — each step once, skippable', async () => {
+  it('after the first finished session leads through the level, the card and «Мои глаголы» — top to bottom, each step once, skippable', async () => {
     loadSeenHints([uiHintKey(TOUR_HINT.now)])
+    // «Мои глаголы» теперь внизу экрана: фонарик сам докручивает до того, что подсвечивает.
+    const scrolled: (string | null)[] = []
+    HTMLElement.prototype.scrollIntoView = function (this: HTMLElement) { scrolled.push(this.getAttribute('data-tour')) }
     await open(sectionFixture())
     fetchVerbSection.mockResolvedValue(sectionFixture({ levels: { [FIRST]: 'meeting' } }))
 
@@ -291,23 +294,38 @@ describe('VerbsSection: in progress', () => {
     expect(screen.queryByTestId('verbs-tour-text')).toBeNull()
     fireEvent.click(screen.getByTestId('play'))
 
-    expect((await screen.findByTestId('verbs-tour-text')).textContent).toBe(TOUR_TEXT.card)
-    expect(screen.getByTestId('verbs-tour-verb-row')).toBeTruthy()
+    expect((await screen.findByTestId('verbs-tour-text')).textContent).toBe(TOUR_TEXT.level)
+    expect(document.querySelector('[data-tour="level"]')).toBeTruthy()
     expect(screen.getByText('1 из 3')).toBeTruthy()
     fireEvent.click(screen.getByTestId('verbs-tour-action'))
 
-    expect(screen.getByTestId('verbs-tour-text').textContent).toBe(TOUR_TEXT.level)
-    expect(document.querySelector('[data-tour="level"]')).toBeTruthy()
+    expect(screen.getByTestId('verbs-tour-text').textContent).toBe(TOUR_TEXT.card)
+    expect(screen.getByTestId('verbs-tour-verb-row')).toBeTruthy()
     fireEvent.click(screen.getByTestId('verbs-tour-action'))
 
     expect(screen.getByTestId('verbs-tour-text').textContent).toBe(TOUR_TEXT.mine)
+    expect(screen.getByTestId('verbs-tour-mine-add')).toBeTruthy()
     expect(screen.getAllByTestId('verbs-example')).toHaveLength(3)
     expect(screen.getByTestId('verbs-tour-action').textContent).toBe('Понятно')
+    expect(scrolled).toEqual(['level', 'verb-row', 'mine-add'])
     fireEvent.click(screen.getByTestId('verbs-tour-action'))
 
     expect(screen.queryByTestId('verbs-tour-text')).toBeNull()
     expect(markUiHintSeen.mock.calls.map(c => c[0])).toEqual(
       expect.arrayContaining([TOUR_HINT.card, TOUR_HINT.level, TOUR_HINT.mine].map(uiHintKey)))
+    delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView
+  })
+
+  it('puts the levels first and the learner’s own verbs after them', async () => {
+    loadSeenHints([TOUR_HINT.now, TOUR_HINT.card, TOUR_HINT.level, TOUR_HINT.mine].map(uiHintKey))
+    await open(sectionFixture({ levels: { [FIRST]: 'meeting' } }))
+    const now = screen.getByTestId('verbs-now-play')
+    const levels = screen.getByTestId('verbs-levels')
+    const mine = screen.getByTestId('verbs-mine')
+    const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING
+    expect(now.compareDocumentPosition(levels) & FOLLOWING).toBeTruthy()
+    expect(levels.compareDocumentPosition(mine) & FOLLOWING).toBeTruthy()
+    expect(levels.contains(mine)).toBe(false)
   })
 
   it('«Пропустить» ends the tour for good', async () => {

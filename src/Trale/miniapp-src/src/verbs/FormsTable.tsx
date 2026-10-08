@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CARD_TENSES, PERSONS, RARE_TENSES, TENSES, type TenseKey, type VerbDto } from './types'
+import { CARD_TENSES, PERSONS, RARE_TENSES, TENSES, cyr, type TenseKey, type VerbDto } from './types'
 import { meaningOf } from './meaning'
 import { MeaningText, VerbForm } from './parts'
 
@@ -25,6 +25,9 @@ export default function FormsTable({ verb, person, onPerson, highlight, initialR
   const has = (t: TenseKey) => !!verb.tenses[t]?.some(variants => variants.length)
   const mainTenses = CARD_TENSES.filter(has)
   const rareTenses = RARE_TENSES.filter(has)
+  // Непроверенные времена глагола от нейросети: сервер держит их отдельно от tenses, в заданиях их нет.
+  const unverified = [...CARD_TENSES, ...RARE_TENSES].filter(t => !!verb.unverified?.[t]?.some(variants => variants.length))
+  const absent = CARD_TENSES.filter(t => !has(t) && !unverified.includes(t))
 
   const rows = (tenses: TenseKey[]) =>
     tenses.map(t => {
@@ -70,9 +73,39 @@ export default function FormsTable({ verb, person, onPerson, highlight, initialR
         ))}
       </div>
       {rows(mainTenses)}
-      {mainTenses.length < CARD_TENSES.length && (
+      {unverified.map(t => (
+        <div
+          key={t}
+          data-testid={`verb-unverified-${t}`}
+          className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-dashed border-jewelInk/25 bg-cream-deep/40"
+        >
+          <span className="min-w-0">
+            {verb.unverifiedMeanings?.[t]?.[person] ? (
+              <>
+                <span className="block text-[14px] font-bold text-jewelInk-mid">{verb.unverifiedMeanings[t]![person]}</span>
+                <span className="block text-[11px] text-jewelInk-hint">{TENSES[t].name} · не проверено</span>
+              </>
+            ) : (
+              <span className="block text-[13px] font-bold text-jewelInk-mid">{TENSES[t].name} <span className="font-normal text-[11px] text-jewelInk-hint">· не проверено</span></span>
+            )}
+          </span>
+          {/* Без подсветки корня и окончаний: о строении этих форм ничего не утверждаем. */}
+          <span className="text-right">
+            <span className="block font-geo text-[17px] font-bold text-jewelInk-mid">{verb.unverified![t]![person]?.join(' / ') || '—'}</span>
+            {verb.unverified![t]![person]?.[0] && (
+              <span className="block text-[11px] text-jewelInk-hint">{cyr(verb.unverified![t]![person][0])}</span>
+            )}
+          </span>
+        </div>
+      ))}
+      {unverified.length > 0 && (
+        <div data-testid="verb-unverified-note" className="px-4 py-2 border-t border-cream-edge text-[11px] text-jewelInk-hint">
+          Формы с пометкой «не проверено» собраны автоматически и ещё не проверены. В заданиях их нет.
+        </div>
+      )}
+      {absent.length > 0 && (
         <div data-testid="verb-partial" className="px-4 py-2 border-t border-cream-edge text-[11px] text-jewelInk-hint">
-          У этого глагола не все времена: {CARD_TENSES.filter(t => !has(t)).map(t => TENSES[t].name.toLowerCase()).join(', ')} — таких форм в базе нет.
+          У этого глагола не все времена: {absent.map(t => TENSES[t].name.toLowerCase()).join(', ')} — таких форм в базе нет.
         </div>
       )}
       {rareTenses.length > 0 && (

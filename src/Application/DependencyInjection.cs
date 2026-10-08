@@ -63,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<Translation.Cache.TranslationCache>();
         services.AddScoped<Translation.Pipeline.VerbProposalResolver>();
         services.AddScoped<Translation.Pipeline.VerbGenerationService>();
+        services.AddScoped<Translation.Pipeline.VerbRegenerationService>();
         services.AddScoped<Translation.Pipeline.ModelBudget>();
         services.AddScoped<Translation.Pipeline.TranslationRequester>();
         services.AddSingleton<TranslationJobs>();
@@ -98,6 +99,8 @@ public static class DependencyInjection
         services.AddScoped<VerbLearningService>();
         services.AddScoped<MyVerbsQuery>();
         services.AddScoped<ModelMadeVerbsQuery>();
+        services.AddScoped<VerbTenseReviewService>();
+        services.AddScoped<VerbVerificationBackfill>();
         services.AddScoped<VerbQuizCreditService>();
         services.AddSingleton<VerbStoryCatalog>();
         services.AddSingleton(_ => VerbLevelCatalog.Load(Path.Combine(AppContext.BaseDirectory, "Verbs", "levels.json")));

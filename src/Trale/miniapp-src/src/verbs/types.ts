@@ -42,6 +42,14 @@ export interface VerbDto extends VerbSummaryDto {
   status?: 'verified' | 'generated'
   /** У глагола, добавленного по запросу: на чём держатся формы и перевод (что сверено с источниками). */
   verification?: string | null
+  /**
+   * Непроверенные времена глагола от нейросети: формы собраны автоматически и ничем не подтверждены.
+   * Сервер вынимает их из tenses, поэтому ни игры, ни сессии, ни экзамен их не видят; показывает их
+   * только таблица карточки, с пометкой.
+   */
+  unverified?: Partial<Record<TenseKey, string[][]>> | null
+  /** Русские фразы непроверенных времён (как meanings). */
+  unverifiedMeanings?: Partial<Record<TenseKey, string[]>> | null
 }
 
 export interface VerbSentenceDto {

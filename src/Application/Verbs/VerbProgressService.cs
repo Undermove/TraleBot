@@ -219,13 +219,17 @@ public class VerbProgressService(ITraleDbContext dbContext)
     private static HashSet<(string Tense, int Person)> LadderCells(string cardJson)
     {
         var cells = new HashSet<(string, int)>();
-        var tenses = JsonNode.Parse(cardJson)?["tenses"]?.AsObject();
+        var card = JsonNode.Parse(cardJson);
+        var tenses = card?["tenses"]?.AsObject();
         if (tenses == null)
         {
             return cells;
         }
 
-        foreach (var tense in LadderTenses)
+        // Unverified tenses of a model-made verb are not taught, so they are not counted either: the
+        // level and the exam are reached over what is taught.
+        var unverified = VerbVerification.Of(card);
+        foreach (var tense in LadderTenses.Where(t => !unverified.Contains(t)))
         {
             if (tenses[tense] is not JsonArray persons)
             {

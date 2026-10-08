@@ -48,7 +48,8 @@ public class VerbReplyHintQuery(ITraleDbContext dbContext)
 
         var forms = await dbContext.VerbForms
             .AsNoTracking()
-            .Where(f => words.Contains(f.Form))
+            // The parse line states what a form is; an unverified form of a model-made verb gets none.
+            .Where(f => words.Contains(f.Form) && !f.Unverified)
             .OrderBy(f => f.Verb.SortOrder)
             .ThenBy(f => f.Person)
             .Select(f => new VerbReplyHint(

@@ -951,6 +951,9 @@ namespace Persistence.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<bool>("Unverified")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("VerbId")
                         .HasColumnType("uuid");
 
@@ -1027,6 +1030,12 @@ namespace Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<string>("CompletedTensesJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("[]");
+
                     b.Property<int>("FormsAttested")
                         .HasColumnType("integer");
 
@@ -1040,6 +1049,18 @@ namespace Persistence.Migrations
 
                     b.Property<bool>("LemmaInLexicon")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("MissingTensesJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("[]");
+
+                    b.Property<DateTime?>("OwnerApprovedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("OwnerApprovedBy")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("RepairRounds")
                         .HasColumnType("integer");
@@ -1055,6 +1076,12 @@ namespace Persistence.Migrations
 
                     b.Property<DateTime?>("RevisedAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TenseReviewsJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("[]");
 
                     b.Property<string>("UnattestedFormsJson")
                         .IsRequired()

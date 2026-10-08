@@ -38,7 +38,8 @@ export interface TranslateWordResponse {
 }
 
 export const TRANSLATE_POLL_MS = 2000
-// Худший случай по таймаутам моделей — около двух с половиной минут.
+// Худший случай по таймаутам моделей — 175 секунд: классификатор 10, аналитик 25 и не больше 140
+// на составление глагола со всеми кругами (TranslationAgent:GenerationTotalSeconds).
 export const TRANSLATE_POLL_LIMIT_MS = 180_000
 
 export interface ProgressDto {
@@ -570,6 +571,95 @@ export const adminCampaigns = {
       { method: 'POST', body: JSON.stringify({ limit }) }
     ),
   status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`)
+}
+
+/** Основное время, которого нет в таблице глагола от нейросети, и почему. */
+export interface MissingTenseDto {
+  tense: string
+  /** verb-lacks-it — модель сказала, что у глагола такого времени нет; not-sure — модель не дала формы. */
+  why: 'verb-lacks-it' | 'not-sure' | 'removed-by-owner'
+  note?: string | null
+  /** Проверяющая модель уверена, что время у глагола есть. */
+  reviewerDisagrees: boolean
+}
+
+export interface ModelMadeVerbDto {
+  lemma: string
+  title: string
+  translation: string
+  askedText: string
+  approvedAtUtc: string
+  learners: number
+  /** Сколько из шести основных времён есть в таблице. */
+  mainTenses: number
+  missingTenses: MissingTenseDto[]
+  completedTenses: string[]
+  /** Сколько основных времён проверено — столько и учат ученики. */
+  verifiedMainTenses: number
+  unverifiedTenses: UnverifiedTenseDto[]
+  /** Доводы проверяющей модели, когда она одобряла запись. */
+  reviewerReasons: string[]
+  generatorModel: string
+  reviewerModel: string
+  /** Все строки таблицы глагола по порядку карточки. */
+  tenses: VerbTenseRowDto[]
+  /** Когда владелец отметил глагол проверенным целиком; null — не отмечен. */
+  ownerApprovedAtUtc?: string | null
+}
+
+/** Строка таблицы глагола от нейросети, как её видит владелец. */
+export interface VerbTenseRowDto {
+  tense: string
+  cells: (string | null)[]
+  inTexts: (boolean | null)[]
+  phrases?: string[] | null
+  unverified: boolean
+  completed: boolean
+}
+
+/** Время глагола от нейросети, которое ничем, кроме самой модели, не подтверждено. */
+export interface UnverifiedTenseDto {
+  tense: string
+  /** Шесть клеток: я, ты, он, мы, вы, они; null — клетка пустая. */
+  cells: (string | null)[]
+  /** По клеткам: встречается ли форма в настоящих текстах; null — клетка пустая или данных нет. */
+  inTexts: (boolean | null)[]
+  phrases?: string[] | null
+  /** Время дописано вторым кругом. */
+  completed: boolean
+  /** Владелец уже убирал это время, пересборка вернула его. */
+  removedBefore: boolean
+}
+
+export interface RegenerateVerbDto {
+  outcome: 'replaced' | 'kept'
+  reason?: string | null
+  mainTensesBefore: number
+  mainTensesAfter: number
+  missing?: MissingTenseDto[] | null
+  changedForms?: string[] | null
+}
+
+const reviewTense = (action: 'confirm' | 'edit' | 'remove', body: object) =>
+  request<{ ok: boolean; progressReset: number }>(`/api/admin/verbs/tense/${action}`, { method: 'POST', body: JSON.stringify(body) })
+
+export const adminVerbs = {
+  /** Глаголы, которые составила нейросеть. */
+  modelMade: (onlyUnverified = false) =>
+    request<{ count: number; verbs: ModelMadeVerbDto[] }>(`/api/admin/verbs/model-made${onlyUnverified ? '?unverified=true' : ''}`),
+  /** Проверка одного времени владельцем: подтвердить, записать клетки руками или убрать время. */
+  confirmTense: (lemma: string, tense: string) => reviewTense('confirm', { lemma, tense }),
+  editTense: (lemma: string, tense: string, cells: (string | null)[]) => reviewTense('edit', { lemma, tense, cells }),
+  removeTense: (lemma: string, tense: string) => reviewTense('remove', { lemma, tense }),
+  /** Составить глагол заново; запись заменяется, только если новая одобрена и не беднее прежней. До пары минут. */
+  /** evenIfApproved — явное слово владельца для глагола, отмеченного проверенным: отметка при замене снимется. */
+  regenerate: (lemma: string, evenIfApproved = false) =>
+    request<RegenerateVerbDto>('/api/admin/verbs/regenerate', { method: 'POST', body: JSON.stringify({ lemma, evenIfApproved }) }),
+  /** «Глагол проверен»: для учеников он становится обычным проверенным глаголом. confirmAll — вместе с непроверенными временами. */
+  approve: (lemma: string, confirmAll = false) =>
+    request<{ ok: boolean; progressReset?: number }>('/api/admin/verbs/approve', { method: 'POST', body: JSON.stringify({ lemma, confirmAll }) }),
+  unapprove: (lemma: string) =>
+    request<{ ok: boolean; progressReset?: number }>('/api/admin/verbs/unapprove', { method: 'POST', body: JSON.stringify({ lemma }) })
 }
 
 /** Подарок рассылки: дни полного доступа, отсчёт с момента открытия. Приходит один раз — в ответе на то открытие, которое его выдало. */

@@ -41,16 +41,38 @@ public class MafVerbReviewer(
            verb may not.
            A row in which not one form is attested is confirmed by nothing — typically a wrong preverb
            or a wrong spelling of it runs through the whole row. Unless you are certain of every cell of
-           such a row, reject and tell the author to leave that row out (null): a missing row is fine,
-           a guessed one is not. The future, conditional, aorist and optative share the preverb: when
-           the attested forms of one of them contradict the spelling in another, reject.
+           such a row, reject, name its tense in "wrongTenses" and tell the author to leave that row out
+           (null): a missing row is fine, a guessed one is not. When the attested forms of one tense contradict the spelling in a
+           tense built on the same stem, reject.
         3. The paradigm. Every row is the same verb; person and number markers are right in every cell;
-           the future, conditional, aorist and optative carry the same preverb; the rows are the tenses
-           they are labelled as. An empty cell ("—") is fine. A cell that is wrong is not.
+           the rows are the tenses they are labelled as. Verbs are not all built one way: most verbs with
+           a direct object take one and the same preverb in the future, conditional, aorist and optative;
+           medial verbs, verbs of position and state, verbs of motion, suppletive verbs and verbs that
+           mark the one who feels build those tenses on another stem, with another root or with no
+           preverb at all. A row is not wrong for being unlike the present, and not right for following
+           the common scheme: judge it by whether these are the forms this verb really has. An empty
+           cell ("—") is fine. A cell that is wrong is not.
+           Rows listed under "Added when asked again" were first left out by the author and written on a
+           second request. They get no benefit of the doubt: check every cell of them, and when you
+           cannot confirm such a row, reject and name its tense in "wrongTenses".
         4. The Russian phrases. Each says what its cell means; the verb in them is the gloss.
         5. The match. "Matched to" names the cell the looked-up text was read as: it must be that cell.
+        6. What is missing. "Missing main tenses" lists the main tenses the record has no row for, with
+           what the author said: that the verb has no such tense, or that it does not know the forms. A
+           missing row is not an error in the record and is not by itself a reason to reject. But when
+           you are certain that the verb does have that tense in the standard language — whatever the
+           author says — name the tense in "missingTenses" (imperfect, future, conditional, aorist,
+           optative), so that the record is marked as incomplete rather than the verb as defective.
 
-        Answer with JSON: "approve" (true or false) and "reasons" — short, concrete sentences in English.
+        Answer with JSON: "approve" (true or false), "reasons" — short, concrete sentences in English —
+        "missingTenses" (see 6; empty when nothing is missing or you are not certain), "wrongTenses" and
+        "restIsRight".
+        "wrongTenses" and "restIsRight" are for a rejection that is about whole rows only. When the verb,
+        its gloss, the present row, the match and all the other rows are right, and what you reject is
+        one or more rows — their forms are wrong, or you cannot confirm them — list the tenses of those
+        rows in "wrongTenses" and set "restIsRight" to true: you are then saying that the record without
+        those rows is one you would sign, and it may be stored without them. Never list "present". If
+        anything else is wrong too, "restIsRight" is false. When you approve, "wrongTenses" is empty.
         When you reject, each reason names exactly what is wrong and what it should be (the tense, the
         person, the wrong form, the right form), so that the author can fix it; say plainly when the verb
         itself is the wrong one. When you approve, one or two reasons saying what convinced you.
@@ -58,7 +80,7 @@ public class MafVerbReviewer(
 
     private static readonly string[] Persons = ["I", "you sg", "he/she", "we", "you pl", "they"];
 
-    private sealed record Output(bool Approve, string[]? Reasons);
+    private sealed record Output(bool Approve, string[]? Reasons, string[]? MissingTenses, string[]? WrongTenses, bool? RestIsRight);
 
     public async Task<VerbReview> ReviewAsync(VerbReviewRequest request, CancellationToken ct)
     {
@@ -69,7 +91,19 @@ public class MafVerbReviewer(
             Ask(request), options: ModelCalls.RunOptions(options.Value.ReviewerReasoning), cancellationToken: ct));
         var output = response.Result ?? throw new TranslationAgentException("reviewer returned no result");
         var reasons = (output.Reasons ?? []).Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r.Trim()).ToList();
-        return new VerbReview(output.Approve, reasons, ModelCalls.Usage(response));
+        var asked = (request.Missing ?? []).Select(m => m.Tense).ToList();
+        var missing = (output.MissingTenses ?? [])
+            .Select(t => asked.FirstOrDefault(a => string.Equals(a, t?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            .OfType<string>()
+            .Distinct()
+            .ToList();
+        var wrong = (output.WrongTenses ?? [])
+            .Select(t => VerbAnalyzer.KnownTenses.FirstOrDefault(k => string.Equals(k, t?.Trim(), StringComparison.OrdinalIgnoreCase)))
+            .OfType<string>()
+            .Distinct()
+            .ToList();
+        return new VerbReview(
+            output.Approve, reasons, ModelCalls.Usage(response), missing, wrong, RestIsRight: !output.Approve && output.RestIsRight == true);
     }
 
     private static string Ask(VerbReviewRequest request)
@@ -85,6 +119,23 @@ public class MafVerbReviewer(
         text.Append(request.MatchedForm == null
             ? "\nMatched to: the verb itself (the text is an infinitive or a verbal noun)."
             : $"\nMatched to: {request.MatchedForm} — {request.MatchedTense}, {Persons[request.MatchedPerson ?? 0]}.");
+
+        if (request.Completed is { Count: > 0 })
+        {
+            text.Append($"\nAdded when asked again: {string.Join(", ", request.Completed)}.");
+        }
+
+        if (request.Missing is { Count: > 0 })
+        {
+            text.Append("\nMissing main tenses:");
+            foreach (var missing in request.Missing)
+            {
+                var said = missing.Why == MissingTense.VerbLacksIt
+                    ? "the author says the verb has no such tense"
+                    : "the author did not give the forms";
+                text.Append($"\n- {missing.Tense}: {said}{(missing.Note == null ? string.Empty : $" — \"{missing.Note}\"")}");
+            }
+        }
 
         var evidence = request.Evidence;
         text.Append("\n\nEvidence:");

@@ -63,8 +63,10 @@ public class VerbQueries(ITraleDbContext dbContext)
     private static string WithStatus(string cardJson, VerbStatus status)
     {
         var card = JsonNode.Parse(cardJson)!.AsObject();
-        card["status"] = status == VerbStatus.Verified ? "verified" : "generated";
-        return card.ToJsonString(CardJsonOptions);
+        card["status"] = RuntimeVerbStore.StatusName(status);
+        // Tenses of a model-made verb that nothing confirms leave "tenses": the card shows them apart,
+        // marked, and nothing that teaches or examines can pick them up.
+        return VerbVerification.ForLearners(card).ToJsonString(CardJsonOptions);
     }
 
     internal static readonly JsonSerializerOptions CardJsonOptions = new()
@@ -75,7 +77,7 @@ public class VerbQueries(ITraleDbContext dbContext)
 
     /// <summary>
     /// For each given text (a vocabulary word or phrase) finds the first Georgian word in it that is
-    /// a known verb form. One query for the whole batch; texts without a verb are absent from the result.
+    /// a known verb form (an unverified form of a model-made verb is not one: nothing is stated about it). One query for the whole batch; texts without a verb are absent from the result.
     /// </summary>
     public async Task<IReadOnlyDictionary<string, VerbFormHit>> FindInTextsAsync(
         IReadOnlyCollection<string> texts, CancellationToken ct)
@@ -91,7 +93,7 @@ public class VerbQueries(ITraleDbContext dbContext)
 
         var hits = await dbContext.VerbForms
             .AsNoTracking()
-            .Where(f => words.Contains(f.Form))
+            .Where(f => words.Contains(f.Form) && !f.Unverified)
             .OrderBy(f => f.Verb.SortOrder)
             .ThenBy(f => f.Person)
             .Select(f => new VerbFormHit(
@@ -127,7 +129,7 @@ public class VerbQueries(ITraleDbContext dbContext)
 
         return await dbContext.VerbForms
             .AsNoTracking()
-            .Where(f => f.Form == normalized)
+            .Where(f => f.Form == normalized && !f.Unverified)
             .OrderBy(f => f.Verb.SortOrder)
             .ThenBy(f => f.Person)
             .Select(f => new VerbFormHit(
