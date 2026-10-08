@@ -12,11 +12,12 @@ namespace Application.Feedback;
 
 /// <summary>
 /// What people tell the owner, in one table: the answer to "Что остановило?" after a paywall closed
-/// without a purchase, the button pressed under a survey broadcast, a free message from the mini-app.
+/// without a purchase, the answers to a survey broadcast (the first question by a button in the bot, the
+/// rest in the mini-app's form), a free message from the mini-app.
 ///
 /// Every write of one person goes under that person's lock (<see cref="ITraleDbContext.LockUserFeedbackAsync"/>),
 /// so the limits here — the question once in <see cref="PaywallQuestionEveryDays"/> days, one survey
-/// answer per campaign, <see cref="MaxMessagesPerDay"/> messages a day — hold for parallel requests
+/// answer per question of a campaign, <see cref="MaxMessagesPerDay"/> messages a day — hold for parallel requests
 /// and for two replicas, not only for a patient single user.
 /// </summary>
 public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactory)
@@ -116,54 +117,145 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
     }
 
     /// <summary>
-    /// A button under a survey broadcast was pressed. Only a recipient of the campaign counts (a
-    /// forwarded message gives nothing). One row per person per campaign: the first press writes
-    /// it, another button changes it.
+    /// A button under a survey broadcast was pressed: an answer to the form's first question.
+    /// <paramref name="buttonIndex"/> counts the question's options, then "Другое".
     /// </summary>
-    public async Task<SurveyAnswer> AnswerSurveyAsync(Guid userId, string? campaignKey, int optionIndex, CancellationToken ct)
+    public async Task<BotSurveyAnswer> AnswerSurveyFromBotAsync(Guid userId, string? campaignKey, int buttonIndex, CancellationToken ct)
     {
-        var campaign = await db.BroadcastCampaigns.AsNoTracking().FirstOrDefaultAsync(c => c.Key == campaignKey, ct);
-        if (campaign?.SurveyOptions == null || optionIndex < 0 || optionIndex >= campaign.SurveyOptions.Length)
-            return SurveyAnswer.Rejected;
+        var survey = await FindSurveyAsync(userId, campaignKey, ct);
+        var buttons = survey?.Form.BotButtons();
+        if (survey == null || buttonIndex < 0 || buttonIndex >= buttons!.Count) return BotSurveyAnswer.Rejected;
 
-        // Sending = the send did not report back; a press on the button proves the message arrived.
-        var isRecipient = await db.BroadcastDeliveries.AnyAsync(
-            d => d.CampaignId == campaign.Id && d.UserId == userId
-                 && (d.Status == BroadcastDeliveryStatus.Sent || d.Status == BroadcastDeliveryStatus.Sending), ct);
-        if (!isRecipient) return SurveyAnswer.Rejected;
+        var first = survey.Form.Questions[0];
+        var other = first.AllowOther && buttonIndex == first.Options.Count;
+        var saved = await SaveSurveyAnswerAsync(
+            userId, campaignKey, first.Id, new SurveyAnswerInput(other ? null : buttons[buttonIndex], other, null), keepOtherText: true, ct);
+        return new BotSurveyAnswer(saved, buttons[buttonIndex], survey.Form.Questions.Count - 1);
+    }
 
-        var option = campaign.SurveyOptions[optionIndex];
+    /// <summary>
+    /// The recipient opened the survey's form in the mini-app: the questions and what they have
+    /// answered so far. The first open is recorded. Null for anyone but a recipient of the campaign.
+    /// </summary>
+    public async Task<SurveyState?> OpenSurveyAsync(Guid userId, string? campaignKey, CancellationToken ct)
+    {
+        var survey = await FindSurveyAsync(userId, campaignKey, ct);
+        if (survey == null) return null;
+
+        await db.MarkSurveyStepAsync(survey.DeliveryId, finished: false, DateTime.UtcNow, ct);
+
+        var answers = await db.UserFeedback.AsNoTracking()
+            .Where(f => f.UserId == userId && f.Kind == UserFeedbackKind.Survey && f.CampaignKey == survey.Key)
+            .ToListAsync(ct);
+        return new SurveyState(survey.Key, survey.Form, survey.Finished,
+            answers.Where(a => a.QuestionId != null).ToDictionary(
+                a => a.QuestionId!, a => new SurveyAnswerInput(a.Option == SurveyForm.OtherLabel ? null : a.Option, a.Option == SurveyForm.OtherLabel, a.Text)));
+    }
+
+    /// <summary>
+    /// An answer to one question of a survey — saved page by page, so a form left halfway still
+    /// gives its answers. Only a recipient of the campaign may answer. One row per person per
+    /// question: answering again changes it. An empty answer is refused, not recorded — skipping a
+    /// question is simply not answering it.
+    /// </summary>
+    public Task<SurveyAnswerOutcome> SaveSurveyAnswerAsync(
+        Guid userId, string? campaignKey, string? questionId, SurveyAnswerInput answer, CancellationToken ct) =>
+        SaveSurveyAnswerAsync(userId, campaignKey, questionId, answer, keepOtherText: false, ct);
+
+    /// <param name="keepOtherText">"Другое" pressed in the bot carries no text: words written earlier stay.</param>
+    private async Task<SurveyAnswerOutcome> SaveSurveyAnswerAsync(
+        Guid userId, string? campaignKey, string? questionId, SurveyAnswerInput answer, bool keepOtherText, CancellationToken ct)
+    {
+        var survey = await FindSurveyAsync(userId, campaignKey, ct);
+        var question = survey?.Form.Question(questionId);
+        if (question == null) return SurveyAnswerOutcome.Rejected;
+
+        var text = Clean(answer.Text);
+        if (text is { Length: > MaxTextLength }) return SurveyAnswerOutcome.TooLong;
+        string? option;
+        if (question.Kind == SurveyQuestionKind.Text)
+        {
+            if (text == null) return SurveyAnswerOutcome.Empty;
+            option = null;
+        }
+        else if (answer.Other)
+        {
+            if (!question.AllowOther) return SurveyAnswerOutcome.UnknownOption;
+            option = SurveyForm.OtherLabel;
+        }
+        else
+        {
+            if (answer.Option == null || !question.Options.Contains(answer.Option)) return SurveyAnswerOutcome.UnknownOption;
+            option = answer.Option;
+            text = null;
+        }
+
         await using var transaction = await db.BeginTransactionAsync(ct);
         await db.LockUserFeedbackAsync(userId, ct);
 
         var now = DateTime.UtcNow;
-        var answer = await db.UserFeedback.FirstOrDefaultAsync(
-            f => f.UserId == userId && f.Kind == UserFeedbackKind.Survey && f.CampaignKey == campaign.Key, ct);
+        var row = await db.UserFeedback.FirstOrDefaultAsync(
+            f => f.UserId == userId && f.Kind == UserFeedbackKind.Survey && f.CampaignKey == survey!.Key && f.QuestionId == question.Id, ct);
         SurveyAnswerOutcome outcome;
-        if (answer == null)
+        if (row == null)
         {
             db.UserFeedback.Add(new UserFeedback
             {
-                Id = Guid.NewGuid(), UserId = userId, Kind = UserFeedbackKind.Survey,
-                CampaignKey = campaign.Key, Option = option, CreatedAtUtc = now
+                Id = Guid.NewGuid(), UserId = userId, Kind = UserFeedbackKind.Survey, CampaignKey = survey!.Key,
+                QuestionId = question.Id, Option = option, Text = text, CreatedAtUtc = now
             });
             outcome = SurveyAnswerOutcome.Recorded;
         }
-        else if (answer.Option == option)
-        {
-            outcome = SurveyAnswerOutcome.Same;
-        }
         else
         {
-            answer.Option = option;
-            answer.UpdatedAtUtc = now;
-            outcome = SurveyAnswerOutcome.Changed;
+            if (keepOtherText && row.Option == option) text = row.Text;
+            if (row.Option == option && row.Text == text)
+            {
+                outcome = SurveyAnswerOutcome.Same;
+            }
+            else
+            {
+                row.Option = option;
+                row.Text = text;
+                row.UpdatedAtUtc = now;
+                outcome = SurveyAnswerOutcome.Changed;
+            }
         }
 
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
-        _logger.LogInformation("Survey {Key}: answer of {User} — {Outcome}", campaign.Key, userId, outcome);
-        return new SurveyAnswer(outcome, option);
+        _logger.LogInformation("Survey {Key}: answer of {User} to {Question} — {Outcome}", survey!.Key, userId, question.Id, outcome);
+        return outcome;
+    }
+
+    /// <summary>The recipient reached the last page of the form. Recorded once; false for anyone but a recipient.</summary>
+    public async Task<bool> FinishSurveyAsync(Guid userId, string? campaignKey, CancellationToken ct)
+    {
+        var survey = await FindSurveyAsync(userId, campaignKey, ct);
+        if (survey == null) return false;
+
+        await db.MarkSurveyStepAsync(survey.DeliveryId, finished: true, DateTime.UtcNow, ct);
+        return true;
+    }
+
+    private record RecipientSurvey(string Key, SurveyForm Form, Guid DeliveryId, bool Finished);
+
+    /// <summary>The survey the person was sent; null when there is no such survey or they are not its
+    /// recipient (a forwarded message or a guessed link gives nothing).</summary>
+    private async Task<RecipientSurvey?> FindSurveyAsync(Guid userId, string? campaignKey, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(campaignKey)) return null;
+        var campaign = await db.BroadcastCampaigns.AsNoTracking().FirstOrDefaultAsync(c => c.Key == campaignKey, ct);
+        var form = campaign?.Survey;
+        if (form == null) return null;
+
+        // Sending = the send did not report back; an answer proves the message arrived.
+        var delivery = await db.BroadcastDeliveries.AsNoTracking()
+            .Where(d => d.CampaignId == campaign!.Id && d.UserId == userId
+                        && (d.Status == BroadcastDeliveryStatus.Sent || d.Status == BroadcastDeliveryStatus.Sending))
+            .Select(d => new { d.Id, Finished = d.SurveyFinishedAtUtc != null })
+            .FirstOrDefaultAsync(ct);
+        return delivery == null ? null : new RecipientSurvey(campaign!.Key, form, delivery.Id, delivery.Finished);
     }
 
     /// <summary>
@@ -183,42 +275,104 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
             .OrderByDescending(f => f.UpdatedAtUtc ?? f.CreatedAtUtc)
             .Take(take)
             .Join(db.Users, f => f.UserId, u => u.Id, (f, u) => new FeedbackItem(
-                f.Kind, f.CampaignKey, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
+                f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
             .ToListAsync(ct);
 
-        var counts = await db.UserFeedback.AsNoTracking()
-            .GroupBy(f => new { f.Kind, f.CampaignKey, f.Option })
-            .Select(g => new { g.Key.Kind, g.Key.CampaignKey, g.Key.Option, Count = g.Count() })
+        var paywall = await db.UserFeedback.AsNoTracking()
+            .Where(f => f.Kind == UserFeedbackKind.PaywallDecline)
+            .GroupBy(f => f.Option)
+            .Select(g => new { Option = g.Key, Count = g.Count() })
             .ToListAsync(ct);
+        var messages = await db.UserFeedback.AsNoTracking().CountAsync(f => f.Kind == UserFeedbackKind.Message, ct);
 
-        var paywall = counts.Where(c => c.Kind == UserFeedbackKind.PaywallDecline).ToList();
-        var campaigns = (await db.BroadcastCampaigns.AsNoTracking()
-                .Where(c => c.SurveyOptions != null && c.Audience != BroadcastAudience.Owner)
-                .OrderByDescending(c => c.CreatedAtUtc)
-                .ToListAsync(ct))
-            .Where(c => c.IsSurvey).ToList();
-        var campaignIds = campaigns.Select(c => c.Id).ToList();
-        var deliveries = await db.BroadcastDeliveries.AsNoTracking()
-            .Where(d => campaignIds.Contains(d.CampaignId))
-            .GroupBy(d => new { d.CampaignId, d.Status })
-            .Select(g => new { g.Key.CampaignId, g.Key.Status, Count = g.Count() })
+        var campaigns = await db.BroadcastCampaigns.AsNoTracking()
+            .Where(c => c.SurveyJson != null && c.Audience != BroadcastAudience.Owner)
+            .OrderByDescending(c => c.CreatedAtUtc)
             .ToListAsync(ct);
-        int Deliveries(Guid campaignId, BroadcastDeliveryStatus? status = null) =>
-            deliveries.Where(d => d.CampaignId == campaignId && (status == null || d.Status == status)).Sum(d => d.Count);
+        var surveys = new List<SurveySummary>();
+        foreach (var campaign in campaigns) surveys.Add(await SummarizeAsync(campaign, ct));
 
         return new FeedbackOverview(
             recent.OrderByDescending(r => r.AtUtc).ToList(),
             paywall.Sum(c => c.Count),
             PaywallDeclineOptions.All
                 .Select(o => new OptionCount(o, paywall.Where(c => c.Option == o).Sum(c => c.Count))).ToList(),
-            counts.Where(c => c.Kind == UserFeedbackKind.Message).Sum(c => c.Count),
-            campaigns.Select(c => new SurveyCounts(
-                c.Key, c.Message, c.CreatedAtUtc, c.Audience,
-                Deliveries(c.Id), Deliveries(c.Id, BroadcastDeliveryStatus.Pending), Deliveries(c.Id, BroadcastDeliveryStatus.Sent),
-                counts.Where(x => x.Kind == UserFeedbackKind.Message && x.CampaignKey == c.Key).Sum(x => x.Count),
-                c.SurveyOptions!
-                    .Select(o => new OptionCount(o, counts.Where(x => x.Kind == UserFeedbackKind.Survey && x.CampaignKey == c.Key && x.Option == o).Sum(x => x.Count)))
-                    .ToList())).ToList());
+            messages,
+            surveys);
+    }
+
+    private async Task<SurveySummary> SummarizeAsync(BroadcastCampaign campaign, CancellationToken ct)
+    {
+        var form = campaign.Survey!;
+        var deliveries = await db.BroadcastDeliveries.AsNoTracking()
+            .Where(d => d.CampaignId == campaign.Id)
+            .GroupBy(d => 1)
+            .Select(g => new
+            {
+                Picked = g.Count(),
+                Pending = g.Count(d => d.Status == BroadcastDeliveryStatus.Pending),
+                Sent = g.Count(d => d.Status == BroadcastDeliveryStatus.Sent),
+                Opened = g.Count(d => d.SurveyOpenedAtUtc != null),
+                Finished = g.Count(d => d.SurveyFinishedAtUtc != null)
+            })
+            .FirstOrDefaultAsync(ct);
+        var firstId = form.Questions[0].Id;
+        var answeredFirst = await db.UserFeedback.AsNoTracking().CountAsync(
+            f => f.Kind == UserFeedbackKind.Survey && f.CampaignKey == campaign.Key && f.QuestionId == firstId, ct);
+        return new SurveySummary(
+            campaign.Key, form.Questions[0].Text, form.Questions.Count, campaign.CreatedAtUtc, campaign.Audience,
+            deliveries?.Picked ?? 0, deliveries?.Pending ?? 0,
+            new SurveyFunnel(deliveries?.Sent ?? 0, answeredFirst, deliveries?.Opened ?? 0, deliveries?.Finished ?? 0));
+    }
+
+    /// <summary>
+    /// One survey for the owner: the funnel, and per question — how many chose each option and what
+    /// was written. With <paramref name="segment"/> the questions count only the people who chose
+    /// that option of the first question ("what do those who would be very disappointed say");
+    /// the funnel stays whole. Null when there is no such survey.
+    /// </summary>
+    public async Task<SurveyResults?> GetSurveyResultsAsync(string key, string? segment, CancellationToken ct)
+    {
+        var campaign = await db.BroadcastCampaigns.AsNoTracking().FirstOrDefaultAsync(c => c.Key == key, ct);
+        var form = campaign?.Survey;
+        if (form == null) return null;
+
+        var first = form.Questions[0];
+        segment = first.Choices().Contains(segment ?? "") ? segment : null;
+        var rows = db.UserFeedback.AsNoTracking().Where(f => f.Kind == UserFeedbackKind.Survey && f.CampaignKey == key);
+        var answers = await (segment == null
+                ? rows
+                : rows.Where(f => rows.Any(a => a.UserId == f.UserId && a.QuestionId == first.Id && a.Option == segment)))
+            .Join(db.Users, f => f.UserId, u => u.Id, (f, u) => new FeedbackItem(
+                f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
+            .ToListAsync(ct);
+        var written = await db.UserFeedback.AsNoTracking()
+            .Where(f => f.Kind == UserFeedbackKind.Message && f.CampaignKey == key)
+            .Join(db.Users, f => f.UserId, u => u.Id, (f, u) => new FeedbackItem(
+                f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
+            .ToListAsync(ct);
+
+        var questions = form.Questions.Select(q =>
+        {
+            var own = answers.Where(a => a.QuestionId == q.Id).ToList();
+            var options = q.Choices().Select(o => new OptionCount(o, own.Count(a => a.Option == o))).ToList();
+            return new SurveyQuestionResults(
+                q.Id, q.Text, q.Kind, own.Count, options, Headline(q, options),
+                own.Where(a => a.Text != null).OrderByDescending(a => a.AtUtc).Take(200).ToList());
+        }).ToList();
+
+        return new SurveyResults(
+            await SummarizeAsync(campaign!, ct), segment, questions, written.OrderByDescending(w => w.AtUtc).Take(200).ToList());
+    }
+
+    /// <summary>The share of the question's headline option among those who answered, without those who
+    /// chose the option it does not count. Null when the question has no such number or nobody is left to count.</summary>
+    private static SurveyHeadline? Headline(SurveyQuestion question, IReadOnlyList<OptionCount> options)
+    {
+        if (question.HeadlineOption == null) return null;
+        var counted = options.Where(o => o.Option != question.HeadlineWithout).Sum(o => o.Count);
+        var chose = options.First(o => o.Option == question.HeadlineOption).Count;
+        return new SurveyHeadline(question.HeadlineOption, question.HeadlineWithout, chose, counted);
     }
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
@@ -237,31 +391,63 @@ public enum FeedbackOutcome
 
 public enum SurveyAnswerOutcome
 {
-    /// <summary>Not a survey, not its recipient, or no such button — nothing is written.</summary>
+    /// <summary>Not a survey, not its recipient, or no such question — nothing is written.</summary>
     Rejected,
-    /// <summary>The person's first answer in this campaign.</summary>
+    /// <summary>The person's first answer to this question.</summary>
     Recorded,
     Changed,
-    /// <summary>The same button again.</summary>
-    Same
+    /// <summary>The same answer again.</summary>
+    Same,
+    /// <summary>No such option in the question — nothing is written.</summary>
+    UnknownOption,
+    TooLong,
+    /// <summary>A free-text question answered with nothing — nothing is written.</summary>
+    Empty
 }
 
-public record SurveyAnswer(SurveyAnswerOutcome Outcome, string? Option)
+/// <summary>An answer to one question. <paramref name="Other"/> — "Другое": the person's own words are in
+/// <paramref name="Text"/> (may be empty yet). For a free-text question only <paramref name="Text"/> matters.</summary>
+public record SurveyAnswerInput(string? Option, bool Other, string? Text);
+
+/// <param name="Button">The caption of the pressed button.</param>
+/// <param name="MoreQuestions">How many questions of the form are left for the mini-app.</param>
+public record BotSurveyAnswer(SurveyAnswerOutcome Outcome, string? Button, int MoreQuestions)
 {
-    public static readonly SurveyAnswer Rejected = new(SurveyAnswerOutcome.Rejected, null);
+    public static readonly BotSurveyAnswer Rejected = new(SurveyAnswerOutcome.Rejected, null, 0);
 }
+
+/// <param name="Finished">The person has already gone through the form to the end.</param>
+public record SurveyState(string Key, SurveyForm Form, bool Finished, IReadOnlyDictionary<string, SurveyAnswerInput> Answers);
 
 public record OptionCount(string Option, int Count);
 
+/// <summary>How far people got: delivered → answered the first question (in the bot or in the form) →
+/// opened the form in the mini-app → reached its last page.</summary>
+public record SurveyFunnel(int Sent, int AnsweredFirst, int OpenedForm, int Finished);
+
+/// <param name="Title">The first question — what the owner knows the survey by.</param>
 /// <param name="Picked">People picked as recipients so far.</param>
 /// <param name="Pending">Of them, still waiting to be sent — above zero means the sending was left unfinished.</param>
-/// <param name="Sent">People the survey was delivered to.</param>
-/// <param name="Texts">Messages written by "Написать подробнее" from this survey.</param>
-public record SurveyCounts(
-    string Key, string Question, DateTime CreatedAtUtc, BroadcastAudience Audience, int Picked, int Pending, int Sent, int Texts,
-    IReadOnlyList<OptionCount> Options);
+public record SurveySummary(
+    string Key, string Title, int Questions, DateTime CreatedAtUtc, BroadcastAudience Audience, int Picked, int Pending, SurveyFunnel Funnel);
 
-public record FeedbackItem(UserFeedbackKind Kind, string? CampaignKey, string? Option, string? Text, DateTime AtUtc, long TelegramId);
+/// <param name="Chose">People who chose <paramref name="Option"/>.</param>
+/// <param name="Of">People who answered the question, without those who chose <paramref name="Without"/>.</param>
+public record SurveyHeadline(string Option, string? Without, int Chose, int Of);
+
+/// <param name="Answered">People who answered the question (within the segment, when one is asked for).</param>
+/// <param name="Texts">What was written: "Другое" with words, answers to a free-text question.</param>
+public record SurveyQuestionResults(
+    string Id, string Text, SurveyQuestionKind Kind, int Answered, IReadOnlyList<OptionCount> Options, SurveyHeadline? Headline,
+    IReadOnlyList<FeedbackItem> Texts);
+
+/// <param name="Segment">The option of the first question the questions are narrowed to; null — everyone.</param>
+/// <param name="Written">Messages written by "Написать подробнее" from this survey.</param>
+public record SurveyResults(
+    SurveySummary Summary, string? Segment, IReadOnlyList<SurveyQuestionResults> Questions, IReadOnlyList<FeedbackItem> Written);
+
+public record FeedbackItem(
+    UserFeedbackKind Kind, string? CampaignKey, string? QuestionId, string? Option, string? Text, DateTime AtUtc, long TelegramId);
 
 /// <param name="PaywallShown">How many times "Что остановило?" was shown, answered or not.</param>
 public record FeedbackOverview(
@@ -269,4 +455,4 @@ public record FeedbackOverview(
     int PaywallShown,
     IReadOnlyList<OptionCount> PaywallOptions,
     int Messages,
-    IReadOnlyList<SurveyCounts> Surveys);
+    IReadOnlyList<SurveySummary> Surveys);

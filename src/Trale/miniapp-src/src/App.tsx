@@ -28,6 +28,7 @@ import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
 import { loadSeenHints } from './verbs/ui/hints'
 import VerbsSection from './screens/VerbsSection'
 import FeedbackScreen from './screens/FeedbackScreen'
+import SurveyScreen from './screens/SurveyScreen'
 import AdminBroadcastScreen from './screens/AdminBroadcastScreen'
 import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
 import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
@@ -156,7 +157,12 @@ export default function App() {
         const feedbackLink: Screen | null = meData?.authenticated && query.get('screen') === 'feedback'
           ? { kind: 'feedback', campaign: campaignKeyFromUrl(`?c=${query.get('fc') ?? ''}`) ?? undefined }
           : null
-        const deepLink = verbLink?.screen ?? reviewLink ?? feedbackLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
+        // ?screen=survey&s=<имя опроса> — форма опроса; так открывает кнопка «Продолжить» под ответом на первый вопрос.
+        const surveyKey = campaignKeyFromUrl(`?c=${query.get('s') ?? ''}`)
+        const surveyLink: Screen | null = meData?.authenticated && query.get('screen') === 'survey' && surveyKey
+          ? { kind: 'survey', key: surveyKey }
+          : null
+        const deepLink = verbLink?.screen ?? reviewLink ?? feedbackLink ?? surveyLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
           window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
@@ -177,9 +183,9 @@ export default function App() {
 
   // С экрана «Написать автору» — туда, откуда пришли: в профиль или (если открыли кнопкой из бота) на обычный вход.
   function afterFeedback(from: Extract<Screen, { kind: 'feedback' }>): Screen {
-    if (from.from === 'profile') return { kind: 'profile' }
-    return resolveEntryScreen({ hasLevel: userLevel !== null, progress, catalog: catalog! })
+    return from.from === 'profile' ? { kind: 'profile' } : entryScreen()
   }
+  const entryScreen = () => resolveEntryScreen({ hasLevel: userLevel !== null, progress, catalog: catalog! })
 
   function handleProPurchaseSuccess() {
     api.me().then((meData) => {
@@ -226,6 +232,8 @@ export default function App() {
         setScreen({ kind: 'dashboard' })
       } else if (screen.kind === 'feedback') {
         setScreen(afterFeedback(screen))
+      } else if (screen.kind === 'survey') {
+        setScreen(entryScreen())
       } else if (screen.kind === 'lesson-theory') {
         setScreen({ kind: 'module', moduleId: screen.moduleId })
       } else if (screen.kind === 'practice') {
@@ -469,6 +477,8 @@ export default function App() {
       )
     case 'feedback':
       return <FeedbackScreen progress={progress} campaign={screen.campaign} onBack={() => navigate(afterFeedback(screen))} />
+    case 'survey':
+      return <SurveyScreen progress={progress} surveyKey={screen.key} onBack={() => navigate(entryScreen())} />
     case 'admin':
       return <AdminScreen progress={progress} navigate={navigate} />
     case 'admin-broadcast':

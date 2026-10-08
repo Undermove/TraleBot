@@ -623,6 +623,83 @@ public class MiniAppController : Controller
         return FeedbackResult(await feedback.LeaveMessageAsync(user.Id, request.Text, request.Campaign, ct));
     }
 
+    // ---- Survey form: the questions of a survey broadcast after the first one, a page each. ----
+
+    /// <summary>The recipient opened the survey's form: its questions and what they have answered so far.
+    /// The first open is recorded. 404 for anyone the survey was not sent to.</summary>
+    [HttpPost("surveys/{key}/open")]
+    public async Task<IActionResult> SurveyOpen(
+        string key, [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var state = await feedback.OpenSurveyAsync(user.Id, key, ct);
+        if (state == null)
+        {
+            return NotFound(new { error = "not_found" });
+        }
+
+        return Ok(new
+        {
+            key = state.Key,
+            survey = AdminController.MapSurvey(state.Form),
+            finished = state.Finished,
+            answers = state.Answers.ToDictionary(a => a.Key, a => new { a.Value.Option, a.Value.Other, a.Value.Text })
+        });
+    }
+
+    public class SurveyAnswerRequest
+    {
+        public string? QuestionId { get; set; }
+        /// <summary>One of the question's options.</summary>
+        public string? Option { get; set; }
+        /// <summary>"Другое" — one's own answer; the words are in <see cref="Text"/>.</summary>
+        public bool Other { get; set; }
+        public string? Text { get; set; }
+    }
+
+    /// <summary>An answer to one question of the form — sent as the person moves to the next page.</summary>
+    [HttpPost("surveys/{key}/answer")]
+    public async Task<IActionResult> SurveyAnswer(
+        string key, [FromBody] SurveyAnswerRequest request,
+        [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var outcome = await feedback.SaveSurveyAnswerAsync(
+            user.Id, key, request.QuestionId, new Application.Feedback.SurveyAnswerInput(request.Option, request.Other, request.Text), ct);
+        return outcome switch
+        {
+            Application.Feedback.SurveyAnswerOutcome.Rejected => NotFound(new { error = "not_found" }),
+            Application.Feedback.SurveyAnswerOutcome.UnknownOption => BadRequest(new { error = "unknown_option" }),
+            Application.Feedback.SurveyAnswerOutcome.TooLong => BadRequest(new { error = "too_long" }),
+            Application.Feedback.SurveyAnswerOutcome.Empty => BadRequest(new { error = "empty" }),
+            _ => Ok(new { ok = true })
+        };
+    }
+
+    /// <summary>The person reached the last page of the form.</summary>
+    [HttpPost("surveys/{key}/finish")]
+    public async Task<IActionResult> SurveyFinish(
+        string key, [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        return await feedback.FinishSurveyAsync(user.Id, key, ct) ? Ok(new { ok = true }) : NotFound(new { error = "not_found" });
+    }
+
     private IActionResult FeedbackResult(Application.Feedback.FeedbackOutcome outcome) => outcome switch
     {
         Application.Feedback.FeedbackOutcome.Saved => Ok(new { ok = true }),

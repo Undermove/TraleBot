@@ -57,6 +57,35 @@ public class TraleDbContext : DbContext, ITraleDbContext
             $"SELECT pg_advisory_xact_lock(hashtextextended({"user-feedback:" + userId}, 0))", cancellationToken);
     }
 
+    public async Task MarkSurveyStepAsync(Guid deliveryId, bool finished, DateTime atUtc, CancellationToken cancellationToken)
+    {
+        if (Database.IsNpgsql())
+        {
+            if (finished)
+            {
+                await Database.ExecuteSqlInterpolatedAsync($"""
+                    UPDATE "BroadcastDeliveries" SET "SurveyFinishedAtUtc" = {atUtc}
+                    WHERE "Id" = {deliveryId} AND "SurveyFinishedAtUtc" IS NULL
+                    """, cancellationToken);
+            }
+            else
+            {
+                await Database.ExecuteSqlInterpolatedAsync($"""
+                    UPDATE "BroadcastDeliveries" SET "SurveyOpenedAtUtc" = {atUtc}
+                    WHERE "Id" = {deliveryId} AND "SurveyOpenedAtUtc" IS NULL
+                    """, cancellationToken);
+            }
+            return;
+        }
+
+        // Non-relational providers (EF in-memory unit tests): single-threaded, no atomicity needed.
+        var delivery = await BroadcastDeliveries.FirstOrDefaultAsync(d => d.Id == deliveryId, cancellationToken);
+        if (delivery == null) return;
+        if (finished) delivery.SurveyFinishedAtUtc ??= atUtc;
+        else delivery.SurveyOpenedAtUtc ??= atUtc;
+        await SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<bool> TryClaimBroadcastDeliveryAsync(Guid deliveryId, CancellationToken cancellationToken)
     {
         if (Database.IsNpgsql())

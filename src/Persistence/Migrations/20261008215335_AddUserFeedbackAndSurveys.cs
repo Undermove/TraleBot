@@ -6,15 +6,27 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddUserFeedbackAndSurveyOptions : Migration
+    public partial class AddUserFeedbackAndSurveys : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string[]>(
-                name: "SurveyOptions",
+            migrationBuilder.AddColumn<DateTime>(
+                name: "SurveyFinishedAtUtc",
+                table: "BroadcastDeliveries",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "SurveyOpenedAtUtc",
+                table: "BroadcastDeliveries",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "SurveyJson",
                 table: "BroadcastCampaigns",
-                type: "text[]",
+                type: "jsonb",
                 nullable: true);
 
             migrationBuilder.CreateTable(
@@ -25,6 +37,7 @@ namespace Persistence.Migrations
                     UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     Kind = table.Column<int>(type: "integer", nullable: false),
                     CampaignKey = table.Column<string>(type: "character varying(48)", maxLength: 48, nullable: true),
+                    QuestionId = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
                     Option = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     Text = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -47,9 +60,9 @@ namespace Persistence.Migrations
                 column: "CreatedAtUtc");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserFeedback_UserId_CampaignKey",
+                name: "IX_UserFeedback_UserId_CampaignKey_QuestionId",
                 table: "UserFeedback",
-                columns: new[] { "UserId", "CampaignKey" },
+                columns: new[] { "UserId", "CampaignKey", "QuestionId" },
                 unique: true,
                 filter: "\"Kind\" = 1");
 
@@ -66,7 +79,15 @@ namespace Persistence.Migrations
                 name: "UserFeedback");
 
             migrationBuilder.DropColumn(
-                name: "SurveyOptions",
+                name: "SurveyFinishedAtUtc",
+                table: "BroadcastDeliveries");
+
+            migrationBuilder.DropColumn(
+                name: "SurveyOpenedAtUtc",
+                table: "BroadcastDeliveries");
+
+            migrationBuilder.DropColumn(
+                name: "SurveyJson",
                 table: "BroadcastCampaigns");
         }
     }

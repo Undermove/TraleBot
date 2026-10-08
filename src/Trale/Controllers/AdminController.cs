@@ -652,8 +652,9 @@ public class AdminController : Controller
         public int GiftDays { get; set; }
         /// <summary>For how many days after the campaign is created the gift can still be taken; null — 14.</summary>
         public int? GiftOfferDays { get; set; }
-        /// <summary>A survey: 2–4 answer options sent as buttons under the message; null or empty — an ordinary campaign.</summary>
-        public List<string>? SurveyOptions { get; set; }
+        /// <summary>A survey: the form of questions (the first goes under the message as buttons, the rest are
+        /// answered in the mini-app); null — an ordinary campaign. The message is made from the form.</summary>
+        public Domain.Entities.SurveyForm? Survey { get; set; }
         /// <summary>The survey builder starting a new survey: with an empty <see cref="Key"/> the server names the
         /// campaign itself — <c>survey-2026-10-&lt;slug&gt;</c>, with a number when taken — and returns the key.</summary>
         public string? NewSurveySlug { get; set; }
@@ -666,10 +667,19 @@ public class AdminController : Controller
         if (!await IsOwnerAsync(ct)) return NotFound();
         return Ok(new
         {
-            presets = Application.Feedback.SurveyPresets.All.Select(p => new { p.Id, p.Title, p.Question, p.Options }),
+            presets = Application.Feedback.SurveyPresets.All.Select(p => new { p.Id, p.Title, p.About, form = MapSurvey(p.Form) }),
+            bank = Application.Feedback.SurveyPresets.Bank.Select(MapSurveyQuestion),
             suggestions = Application.Feedback.SurveyPresets.Suggestions,
-            maxOptions = BroadcastCampaignService.MaxSurveyOptions,
-            maxOptionLength = BroadcastCampaignService.MaxSurveyOptionLength
+            intro = Application.Feedback.SurveyPresets.Intro,
+            otherLabel = Domain.Entities.SurveyForm.OtherLabel,
+            limits = new
+            {
+                questions = Application.Feedback.SurveyFormRules.MaxQuestions,
+                options = Application.Feedback.SurveyFormRules.MaxOptions,
+                botOptions = Application.Feedback.SurveyFormRules.MaxBotOptions,
+                optionLength = Application.Feedback.SurveyFormRules.MaxOptionLength,
+                questionLength = Application.Feedback.SurveyFormRules.MaxQuestionLength
+            }
         });
     }
 
@@ -685,7 +695,7 @@ public class AdminController : Controller
         {
             Key = req.Key, Audience = audience, Message = req.Message,
             ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
-            GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, SurveyOptions = req.SurveyOptions
+            GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, Survey = req.Survey
         };
         var result = string.IsNullOrWhiteSpace(req.Key) && req.NewSurveySlug != null
             ? await campaigns.PrepareNewSurveyAsync(draft, req.NewSurveySlug, req.SampleSize, req.DryRun, OwnerTelegramId, ct)
@@ -727,8 +737,22 @@ public class AdminController : Controller
         s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened,
         s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen,
         // In the order of the buttons, also before anyone has answered — this is how the survey builder gets a survey back.
-        surveyAnswers = s.SurveyAnswers.Select(MapOptionCount)
+        surveyAnswers = s.SurveyAnswers.Select(MapOptionCount),
+        survey = s.Survey == null ? null : MapSurvey(s.Survey)
     };
+
+    internal static object MapSurvey(Domain.Entities.SurveyForm form) => new
+    {
+        form.Intro, questions = form.Questions.Select(MapSurveyQuestion)
+    };
+
+    private static object MapSurveyQuestion(Domain.Entities.SurveyQuestion q) => new
+    {
+        q.Id, q.Text, kind = SurveyKindName(q.Kind), q.Options, q.AllowOther, q.HeadlineOption, q.HeadlineWithout
+    };
+
+    private static string SurveyKindName(Domain.Entities.SurveyQuestionKind kind) =>
+        kind == Domain.Entities.SurveyQuestionKind.Text ? "text" : "choice";
 
     // ---- Feedback: what people answered at the paywall, in surveys and wrote themselves. ----
 
@@ -750,19 +774,46 @@ public class AdminController : Controller
         var overview = await feedback.GetOverviewAsync(take, onlyKind, campaign, ct);
         return Ok(new
         {
-            recent = overview.Recent.Select(r => new
-            {
-                kind = FeedbackKindName(r.Kind), r.CampaignKey, r.Option, r.Text, r.AtUtc, r.TelegramId
-            }),
+            recent = overview.Recent.Select(MapFeedbackItem),
             paywall = new { shown = overview.PaywallShown, options = overview.PaywallOptions.Select(MapOptionCount) },
             messages = overview.Messages,
-            surveys = overview.Surveys.Select(s => new
-            {
-                s.Key, s.Question, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Picked, s.Pending, s.Sent, s.Texts,
-                options = s.Options.Select(MapOptionCount)
-            })
+            surveys = overview.Surveys.Select(MapSurveySummary)
         });
     }
+
+    /// <summary>One survey: the funnel, per question — counts per option and what was written.</summary>
+    /// <param name="segment">An option of the first question: count the other questions only for those who chose it.</param>
+    [HttpGet("feedback/surveys/{key}")]
+    public async Task<IActionResult> SurveyResults(
+        string key, [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct, [FromQuery] string? segment = null)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var results = await feedback.GetSurveyResultsAsync(key, segment, ct);
+        if (results == null) return NotFound(new { error = "no_such_survey" });
+        return Ok(new
+        {
+            summary = MapSurveySummary(results.Summary),
+            results.Segment,
+            questions = results.Questions.Select(q => new
+            {
+                q.Id, q.Text, kind = SurveyKindName(q.Kind), q.Answered, options = q.Options.Select(MapOptionCount),
+                headline = q.Headline == null ? null : new { q.Headline.Option, q.Headline.Without, q.Headline.Chose, q.Headline.Of },
+                texts = q.Texts.Select(MapFeedbackItem)
+            }),
+            written = results.Written.Select(MapFeedbackItem)
+        });
+    }
+
+    private static object MapSurveySummary(Application.Feedback.SurveySummary s) => new
+    {
+        s.Key, s.Title, s.Questions, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Picked, s.Pending,
+        funnel = new { s.Funnel.Sent, s.Funnel.AnsweredFirst, s.Funnel.OpenedForm, s.Funnel.Finished }
+    };
+
+    private static object MapFeedbackItem(Application.Feedback.FeedbackItem r) => new
+    {
+        kind = FeedbackKindName(r.Kind), r.CampaignKey, r.QuestionId, r.Option, r.Text, r.AtUtc, r.TelegramId
+    };
 
     private static object MapOptionCount(Application.Feedback.OptionCount c) => new { c.Option, c.Count };
 

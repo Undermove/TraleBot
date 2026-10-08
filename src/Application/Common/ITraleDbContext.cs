@@ -74,4 +74,11 @@ public interface ITraleDbContext
     /// "not asked yet" or "still under the limit".
     /// </summary>
     Task LockUserFeedbackAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records, once, that a survey's recipient opened its form in the mini-app (or, with
+    /// <paramref name="finished"/>, reached its last page). Later calls change nothing — the first
+    /// time stays, whatever is repeated or raced.
+    /// </summary>
+    Task MarkSurveyStepAsync(Guid deliveryId, bool finished, DateTime atUtc, CancellationToken cancellationToken);
 }

@@ -11,6 +11,8 @@ export const AUDIENCES: { id: CampaignAudience; name: string }[] = [
   { id: 'onTrial', name: 'пробный период идёт' },
   { id: 'paying', name: 'платят' },
   { id: 'proLapsed', name: 'подписка закончилась' },
+  { id: 'activeLately', name: 'занимались за последние 30 дней' },
+  { id: 'inactiveLong', name: 'не занимались больше 30 дней' },
   { id: 'owner', name: 'только я (посмотреть)' }
 ]
 

@@ -29,6 +29,8 @@ export type Screen =
   /** Раздел «Глаголы». source — метка, с которой пришли (кампания рассылки, ссылка); без неё — плитка на главной. */
   | { kind: 'verbs'; source?: string }
   | { kind: 'profile' }
+  /** Форма опроса-рассылки: вопросы по одному на странице. key — имя опроса из ссылки ?screen=survey&s=… */
+  | { kind: 'survey'; key: string }
   /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее»; from — куда вернуться. */
   | { kind: 'feedback'; campaign?: string; from?: 'profile' }
   | { kind: 'admin' }

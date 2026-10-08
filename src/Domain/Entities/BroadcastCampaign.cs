@@ -32,11 +32,14 @@ public class BroadcastCampaign
     /// <summary>Until when an open still gives the gift. After it the button opens the mini-app as usual.</summary>
     public DateTime? GiftOfferEndsAtUtc { get; set; }
 
-    /// <summary>Answer options of a survey campaign: each goes under the message as its own button,
-    /// a press is recorded in <see cref="UserFeedback"/>. Null — an ordinary campaign.</summary>
-    public string[]? SurveyOptions { get; set; }
+    /// <summary>The form of a survey campaign (<see cref="SurveyForm"/> as JSON): its first question goes
+    /// under the message as buttons, the rest are answered in the mini-app; answers are recorded in
+    /// <see cref="UserFeedback"/>. Null — an ordinary campaign.</summary>
+    public string? SurveyJson { get; set; }
 
-    public bool IsSurvey => SurveyOptions is { Length: > 0 };
+    public bool IsSurvey => SurveyJson != null;
+
+    public SurveyForm? Survey => SurveyForm.FromJson(SurveyJson);
 
     public bool GiftOffered(DateTime now) => GiftDays > 0 && GiftOfferEndsAtUtc is { } ends && now < ends;
 }
@@ -54,5 +57,9 @@ public enum BroadcastAudience
     /// <summary>Paid once, the subscription has lapsed.</summary>
     ProLapsed = 3,
     /// <summary>Only the owner — to see the message on one's own phone.</summary>
-    Owner = 4
+    Owner = 4,
+    /// <summary>Studied in the last 30 days (a lesson answer, a word added, a quiz or a verb session), or registered within them.</summary>
+    ActiveLately = 5,
+    /// <summary>No such trace for more than 30 days.</summary>
+    InactiveLong = 6
 }

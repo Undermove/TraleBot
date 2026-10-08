@@ -1,20 +1,13 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mkdirSync, readFileSync } from 'fs'
-import { dirname, resolve } from 'path'
-import { fileURLToPath } from 'url'
+import { mkdirSync } from 'fs'
+import { resolve } from 'path'
 
 // Обратная связь глазами человека: вопрос «Что остановило?» после закрытого экрана покупки, экран
-// «Написать автору» (из профиля и по кнопке «Написать подробнее» из опроса), а у владельца — подразделы
-// админки: конструктор опроса от готовой заготовки до отправки себе и «Отзывы».
-// API подменяется; заготовки опросов берутся из исходника сервера, слово в слово.
+// «Написать автору», форма опроса (по вопросу на странице) — а у владельца подразделы админки:
+// конструктор опроса от готовой формы до отправки себе и «Отзывы» с воронкой и ответами по вопросам.
+// API подменяется. Готовые формы повторяют серверные (Application/Feedback/SurveyPresets.cs); что они
+// проходят серверную проверку, смотрит интеграционный тест.
 // FEEDBACK_SHOTS=<папка> — дополнительно сохранить снимки экранов.
-
-const here = dirname(fileURLToPath(import.meta.url))
-const presetsSource = readFileSync(resolve(here, '../../../Application/Feedback/SurveyPresets.cs'), 'utf8')
-const strings = (text: string) => [...text.matchAll(/"([^"]*)"/g)].map(m => m[1])
-const presets = [...presetsSource.matchAll(/new\("([a-z]+)", "([^"]+)",\s*"([^"]+)",\s*\[([^\]]+)\]\)/g)]
-  .map(m => ({ id: m[1], title: m[2], question: m[3], options: strings(m[4]) }))
-const suggestions = strings(presetsSource.slice(presetsSource.indexOf('Suggestions =')))
 
 const shotsDir = process.env.FEEDBACK_SHOTS
 async function shot(page: Page, name: string, whole = false) {
@@ -66,14 +59,46 @@ const plans = {
   ],
 }
 
-const KEY = 'survey-2026-10-missing'
-const missing = presets.find(p => p.id === 'missing')!
+const choice = (text: string, allowOther: boolean, ...options: string[]) => ({ text, kind: 'choice' as const, options, allowOther })
+const free = (text: string) => ({ text, kind: 'text' as const, options: [] as string[], allowOther: false })
+const ifGone = { ...choice('Что ты почувствуешь, если TraleBot завтра исчезнет?', false, 'Очень расстроюсь', 'Немного расстроюсь', 'Мне всё равно', 'Уже не пользуюсь'), headlineOption: 'Очень расстроюсь', headlineWithout: 'Уже не пользуюсь' }
+const whatElseNow = choice('Чем ещё ты пользуешься для грузинского?', true, 'Репетитор или курсы', 'Другие приложения', 'Учебник или YouTube', 'Только TraleBot')
+const whyGeorgian = choice('Зачем тебе грузинский?', true, 'Живу в Грузии', 'Собираюсь переехать', 'Еду в поездку', 'Семья или близкие', 'Просто интересно')
+const lastHelped = free('Вспомни последний раз, когда TraleBot тебе реально помог. Что это было?')
+const lastAnnoyed = free('А что в последний раз раздражало или мешало?')
+const learningNow = choice('Ты сейчас учишь грузинский?', false, 'Да, другим способом', 'Пауза, вернусь', 'Нет, бросил(а)', 'Он мне больше не нужен')
+const afterWhat = choice('После чего ты перестал(а) открывать TraleBot?', true, 'Не было времени', 'Стало слишком сложно', 'Стало скучно', 'Закончился бесплатный доступ', 'Не помню')
+const whatElseThen = choice('Что ещё, кроме TraleBot, помогало тебе с грузинским?', true, 'Репетитор или курсы', 'Другие приложения', 'Учебник или YouTube', 'Ничего')
+const goal = choice('Чего хотелось добиться в самом начале?', true, 'Читать вывески и меню', 'Объясняться в быту', 'Свободно разговаривать', 'Понять, как устроен язык')
+const disliked = free('Что тебе не понравилось в TraleBot? Пиши как есть.')
+const paywallQuestion = choice('Что остановило от покупки полного доступа?', true, 'Дорого', 'Пока не нужно', 'Не понял, что получу')
+const intro = 'Привет! Это автор TraleBot. Помоги сделать его лучше — ответь на несколько коротких вопросов.'
+const users = [ifGone, whatElseNow, whyGeorgian, lastHelped, lastAnnoyed]
+const kit = {
+  presets: [
+    { id: 'users', title: 'Тем, кто пользуется', about: 'Насколько TraleBot нужен, чем ещё занимаются и что помогает', form: { intro, questions: users } },
+    { id: 'left', title: 'Тем, кто перестал', about: 'Ушли от TraleBot или от языка, после чего и чего хотели', form: { intro, questions: [learningNow, afterWhat, whatElseThen, goal, disliked] } },
+  ],
+  bank: [...users, learningNow, afterWhat, whatElseThen, goal, disliked, paywallQuestion],
+  suggestions: ['Нет времени', 'Дорого', 'Всё устраивает', 'Сложно', 'Скучно', 'Мало практики', 'Не помню', 'Не знаю'],
+  intro,
+  otherLabel: 'Другое',
+  limits: { questions: 6, options: 6, botOptions: 4, optionLength: 64, questionLength: 300 },
+}
+const withIds = (questions: object[]) => questions.map((q, i) => ({ ...q, id: `q${i + 1}` }))
+
+const KEY = 'survey-2026-10-users'
+const at = (day: number, time: string) => `2026-10-0${day}T${time}:00Z`
 const recent = [
-  { kind: 'message', campaignKey: KEY, option: null, text: 'Хочу слышать, как звучит слово, которое я добавил в словарь, а не только читать его.', atUtc: '2026-10-08T10:12:00Z', telegramId: 5000000101 },
-  { kind: 'paywall', campaignKey: null, option: 'expensive', text: 'Месяц ещё ладно, но год сразу — много.', atUtc: '2026-10-08T09:40:00Z', telegramId: 5000000102 },
-  { kind: 'message', campaignKey: null, option: null, text: 'Спасибо за глаголы! Не хватает озвучки в словаре.', atUtc: '2026-10-07T12:30:00Z', telegramId: 5000000104 },
-  { kind: 'paywall', campaignKey: null, option: 'unclear', text: null, atUtc: '2026-10-06T08:15:00Z', telegramId: 5000000105 },
+  { kind: 'message', campaignKey: KEY, option: null, text: 'Хочу слышать, как звучит слово, которое я добавил в словарь, а не только читать его.', atUtc: at(8, '10:12'), telegramId: 5000000101 },
+  { kind: 'paywall', campaignKey: null, option: 'expensive', text: 'Месяц ещё ладно, но год сразу — много.', atUtc: at(8, '09:40'), telegramId: 5000000102 },
+  { kind: 'message', campaignKey: null, option: null, text: 'Спасибо за глаголы! Не хватает озвучки в словаре.', atUtc: at(7, '12:30'), telegramId: 5000000104 },
+  { kind: 'paywall', campaignKey: null, option: 'unclear', text: null, atUtc: at(6, '08:15'), telegramId: 5000000105 },
 ]
+const sentSurvey = {
+  key: KEY, title: ifGone.text, questions: 5, createdAtUtc: at(8, '08:00'), audience: 'activeLately', picked: 61, pending: 0,
+  funnel: { sent: 61, answeredFirst: 34, openedForm: 22, finished: 15 },
+}
 const overview = {
   paywall: {
     shown: 41,
@@ -81,21 +106,40 @@ const overview = {
   },
   messages: 2,
   surveys: [
-    {
-      key: KEY, question: missing.question, createdAtUtc: '2026-10-08T08:00:00Z', audience: 'accessEnded', picked: 100, pending: 0, sent: 100, texts: 1,
-      options: missing.options.map((option, i) => ({ option, count: [23, 9, 14, 5][i] })),
-    },
-    {
-      key: 'survey-2026-09-likes', question: presets.find(p => p.id === 'likes')!.question, createdAtUtc: '2026-09-20T08:00:00Z', audience: 'onTrial', picked: 17, pending: 0, sent: 17, texts: 0,
-      options: presets.find(p => p.id === 'likes')!.options.map((option, i) => ({ option, count: [4, 6, 1, 2][i] })),
-    },
+    sentSurvey,
+    { key: 'survey-2026-09-left', title: learningNow.text, questions: 5, createdAtUtc: '2026-09-20T08:00:00Z', audience: 'inactiveLong', picked: 100, pending: 0, funnel: { sent: 96, answeredFirst: 21, openedForm: 9, finished: 6 } },
   ],
 }
+const wrote = (questionId: string, option: string | null, text: string, id: number) =>
+  ({ kind: 'survey', campaignKey: KEY, questionId, option, text, atUtc: at(8, '11:20'), telegramId: 5000000200 + id })
+/** Ответы по вопросам: у всех и у тех, кто на первый вопрос ответил «Очень расстроюсь». */
+const surveyResults = (segment: string | null) => {
+  const fans = segment === 'Очень расстроюсь'
+  const counts = (q: { options: string[]; allowOther: boolean }, numbers: number[]) =>
+    [...q.options, ...(q.allowOther ? ['Другое'] : [])].map((option, i) => ({ option, count: numbers[i] ?? 0 }))
+  return {
+    summary: sentSurvey,
+    segment: fans ? segment : null,
+    questions: [
+      { id: 'q1', text: ifGone.text, kind: 'choice', answered: fans ? 14 : 34, options: counts(ifGone, fans ? [14, 0, 0, 0] : [14, 11, 5, 4]), headline: { option: 'Очень расстроюсь', without: 'Уже не пользуюсь', chose: 14, of: fans ? 14 : 30 }, texts: [] },
+      { id: 'q2', text: whatElseNow.text, kind: 'choice', answered: fans ? 11 : 21, options: counts(whatElseNow, fans ? [6, 1, 1, 2, 1] : [7, 5, 3, 4, 2]), headline: null,
+        texts: fans ? [wrote('q2', 'Другое', 'Смотрю грузинские сериалы с субтитрами', 1)] : [wrote('q2', 'Другое', 'Смотрю грузинские сериалы с субтитрами', 1), wrote('q2', 'Другое', 'Разговариваю с соседями', 2)] },
+      { id: 'q3', text: whyGeorgian.text, kind: 'choice', answered: fans ? 10 : 19, options: counts(whyGeorgian, fans ? [7, 1, 0, 2, 0, 0] : [9, 3, 2, 3, 2, 0]), headline: null, texts: [] },
+      { id: 'q4', text: lastHelped.text, kind: 'text', answered: fans ? 2 : 3, options: [], headline: null,
+        texts: [wrote('q4', null, 'В аптеке: вспомнил, как сказать «у меня болит голова», и меня поняли с первого раза.', 3), wrote('q4', null, 'Разобрал вывеску на рынке.', 4), ...(fans ? [] : [wrote('q4', null, 'Честно — не помню.', 5)])] },
+      { id: 'q5', text: lastAnnoyed.text, kind: 'text', answered: fans ? 1 : 2, options: [], headline: null,
+        texts: [wrote('q5', null, 'Нет озвучки у слов, которые я сам добавил.', 6), ...(fans ? [] : [wrote('q5', null, 'Уроки по падежам слишком длинные.', 7)])] },
+    ],
+    written: [],
+  }
+}
 
-interface Calls { asked: number; answers: any[]; messages: any[]; prepared: any[]; sent: string[] }
+interface Calls { asked: number; answers: any[]; messages: any[]; prepared: any[]; sent: string[]; formAnswers: any[]; formOpened: number; formFinished: number }
 
-async function setup(page: Page, opts: { me?: object; due?: boolean; messageStatus?: number } = {}): Promise<Calls> {
-  const calls: Calls = { asked: 0, answers: [], messages: [], prepared: [], sent: [] }
+interface FormState { survey: { intro: string | null; questions: object[] }; finished: boolean; answers: Record<string, object> }
+
+async function setup(page: Page, opts: { me?: object; due?: boolean; messageStatus?: number; form?: FormState | null } = {}): Promise<Calls> {
+  const calls: Calls = { asked: 0, answers: [], messages: [], prepared: [], sent: [], formAnswers: [], formOpened: 0, formFinished: 0 }
   await page.addInitScript(() => {
     ;(window as any).Telegram = {
       WebApp: {
@@ -141,31 +185,52 @@ async function setup(page: Page, opts: { me?: object; due?: boolean; messageStat
   }))
   await page.route('**/api/admin/signups*', json({ days: 30, points: [] }))
   await page.route('**/api/admin/recent-users*', json({ users: [] }))
+  // Форма опроса глазами получателя: кому опрос не отправляли, тому сервер отвечает 404.
+  await page.route('**/api/miniapp/surveys/**', (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (!opts.form) return route.fulfill({ status: 404, json: { error: 'not_found' } })
+    if (path.endsWith('/open')) { calls.formOpened += 1; return route.fulfill({ json: { key: KEY, ...opts.form } }) }
+    if (path.endsWith('/answer')) calls.formAnswers.push(route.request().postDataJSON())
+    if (path.endsWith('/finish')) calls.formFinished += 1
+    return route.fulfill({ json: { ok: true } })
+  })
   await page.route('**/api/admin/verbs/model-made', json({ verbs: [] }))
-  await page.route('**/api/admin/surveys/presets', json({ presets, suggestions, maxOptions: 4, maxOptionLength: 64 }))
+  await page.route('**/api/admin/surveys/presets', json(kit))
   // Кампании: сервер сам называет новый опрос; выбранные получатели ждут, пока их не отправят.
-  const status = { key: KEY, audience: 'accessEnded', message: '', total: 0, sample: 0, pending: 0, sent: 0, blocked: 0, rejected: 0, unknown: 0, opened: 0,
-    giftDays: 0, gifted: 0, playedVerbSession: 0, finishedVerbSession: 0, paidAfterOpen: 0, surveyAnswers: [] as object[] }
-  await page.route('**/api/admin/feedback*', (route) => {
+  const NEW = 'survey-2026-10-users-2'
+  const status = { key: NEW, audience: 'accessEnded', message: '', total: 0, sample: 0, pending: 0, sent: 0, blocked: 0, rejected: 0, unknown: 0, opened: 0,
+    giftDays: 0, gifted: 0, playedVerbSession: 0, finishedVerbSession: 0, paidAfterOpen: 0, surveyAnswers: [] as object[], survey: null as object | null }
+  await page.route('**/api/admin/feedback/surveys/**', (route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname.endsWith(`/${NEW}`)) {
+      const started = { key: NEW, title: ifGone.text, questions: 5, createdAtUtc: at(9, '08:00'), audience: 'accessEnded', picked: status.total, pending: status.pending,
+        funnel: { sent: status.sent, answeredFirst: 0, openedForm: 0, finished: 0 } }
+      return route.fulfill({ json: { ...surveyResults(null), summary: started, questions: surveyResults(null).questions.map(q => ({ ...q, answered: 0, texts: [], headline: null, options: q.options.map(o => ({ ...o, count: 0 })) })) } })
+    }
+    return route.fulfill({ json: surveyResults(url.searchParams.get('segment')) })
+  })
+  await page.route('**/api/admin/feedback?*', (route) => {
     const query = new URL(route.request().url()).searchParams
     const items = recent.filter(r => (!query.get('kind') || r.kind === query.get('kind')) && (!query.get('campaign') || r.campaignKey === query.get('campaign')))
     // Опрос, которому в этом сценарии уже выбрали получателей, сервер отдаёт с тем, сколько ждут.
-    const surveys = overview.surveys.map(s => (s.key === KEY && status.total > 0
-      ? { ...s, picked: status.total, pending: status.pending, sent: status.sent, options: s.options.map(o => ({ ...o, count: 0 })) } : s))
-    return route.fulfill({ json: { ...overview, surveys, recent: items } })
+    const started = status.total > 0
+      ? [{ key: NEW, title: ifGone.text, questions: 5, createdAtUtc: at(9, '08:00'), audience: 'accessEnded', picked: status.total, pending: status.pending, funnel: { sent: status.sent, answeredFirst: 0, openedForm: 0, finished: 0 } }]
+      : []
+    return route.fulfill({ json: { ...overview, surveys: [...started, ...overview.surveys], recent: items } })
   })
   await page.route('**/api/admin/campaigns/**', (route) => {
     const path = new URL(route.request().url()).pathname.replace('/api/admin/campaigns/', '')
-    if (path === 'audiences') return route.fulfill({ json: { accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1 } })
+    if (path === 'audiences') return route.fulfill({ json: { accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512 } })
     if (path === 'prepare') {
       const body = route.request().postDataJSON()
       calls.prepared.push(body)
-      const key = body.key || `survey-2026-10-${body.newSurveySlug}`
+      const key = body.key || (body.audience === 'owner' ? `survey-2026-10-${body.newSurveySlug}` : NEW)
       const picked = body.audience === 'owner' ? 1 : body.sampleSize ?? 553 - status.total
       if (!body.dryRun && body.audience !== 'owner') {
         Object.assign(status, {
-          message: body.message, total: status.total + picked, sample: status.sample + (body.sampleSize ?? 0), pending: status.pending + picked,
-          surveyAnswers: body.surveyOptions.map((option: string) => ({ option, count: 0 })),
+          message: `${body.survey.intro}\n\n${body.survey.questions[0].text}`, total: status.total + picked, sample: status.sample + (body.sampleSize ?? 0), pending: status.pending + picked,
+          survey: { intro: body.survey.intro, questions: withIds(body.survey.questions) },
+          surveyAnswers: body.survey.questions[0].options.map((option: string) => ({ option, count: 0 })),
         })
       }
       return route.fulfill({ json: { key, dryRun: body.dryRun, audienceTotal: 553, alreadyInCampaign: 0, picked, leftForLater: 553 - picked } })
@@ -173,8 +238,8 @@ async function setup(page: Page, opts: { me?: object; due?: boolean; messageStat
     if (path.endsWith('/send')) {
       const key = path.replace('/send', '')
       calls.sent.push(key)
-      const sent = key === KEY ? Math.min(route.request().postDataJSON().limit, status.pending) : 1
-      if (key === KEY) Object.assign(status, { pending: status.pending - sent, sent: status.sent + sent })
+      const sent = key === NEW ? Math.min(route.request().postDataJSON().limit, status.pending) : 1
+      if (key === NEW) Object.assign(status, { pending: status.pending - sent, sent: status.sent + sent })
       return route.fulfill({ json: { sent, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status } })
     }
     return route.fulfill({ json: status })
@@ -288,15 +353,125 @@ test('the daily limit is explained and the text stays', async ({ page }) => {
   await expect(page.getByLabel('Твоё сообщение')).toHaveValue('Шестое за день')
 })
 
+// ── Форма опроса: получатель ──
+
+const usersForm = (answers: Record<string, object> = {}, finished = false): FormState =>
+  ({ survey: { intro, questions: withIds(users) }, finished, answers })
+const tappedInBot = { q1: { option: 'Очень расстроюсь', other: false, text: null } }
+
+/** На экране ничего не вылезает за ширину телефона. */
+async function fits(page: Page) {
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
+}
+
+test.describe('форма опроса', () => {
+  test.use({ viewport: { width: 375, height: 812 } })
+  const progress = (page: Page) => page.getByTestId('survey-progress')
+
+  test('«Продолжить» from the bot opens the form after the answered question; «Другое» with words, a skipped question, thanks', async ({ page }) => {
+    const calls = await setup(page, { form: usersForm(tappedInBot) })
+
+    await page.goto(`/?playwright=1&screen=survey&s=${KEY}`)
+
+    await expect(progress(page)).toHaveText('Вопрос 2 из 5')
+    await expect(page.getByTestId('survey-page-question')).toHaveText(whatElseNow.text)
+    await expect(page.getByRole('radio')).toHaveText([...whatElseNow.options, 'Другое'])
+    await expect(page.getByTestId('survey-page-next')).toBeDisabled()
+    for (const control of await page.getByRole('radio').all()) expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    expect(new URL(page.url()).search).toBe('')
+    await page.getByRole('radio', { name: 'Другое' }).click()
+    await page.getByLabel('Свой ответ').fill('Смотрю сериалы с субтитрами')
+    await fits(page)
+    await shot(page, 'form-user-1-other', true)
+    await page.getByTestId('survey-page-next').click()
+
+    await expect(progress(page)).toHaveText('Вопрос 3 из 5')
+    await fits(page)
+    await shot(page, 'form-user-2-choice', true)
+    await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+
+    await expect(progress(page)).toHaveText('Вопрос 4 из 5')
+    await page.getByLabel('Твой ответ').fill('В аптеке вспомнил, как сказать «болит голова».')
+    await fits(page)
+    await shot(page, 'form-user-3-text', true)
+    await page.getByTestId('survey-page-next').click()
+    await expect(progress(page)).toHaveText('Вопрос 5 из 5')
+    await expect(page.getByTestId('survey-page-next')).toHaveText('Готово')
+    await page.getByTestId('survey-page').getByRole('button', { name: 'Назад' }).click()
+    await expect(page.getByLabel('Твой ответ')).toHaveValue('В аптеке вспомнил, как сказать «болит голова».')
+    await page.getByTestId('survey-page-next').click()
+    await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+
+    await expect(page.getByTestId('survey-thanks')).toContainText('Твои ответы у меня')
+    await fits(page)
+    await shot(page, 'form-user-4-thanks')
+    expect(calls.formOpened).toBe(1)
+    expect(calls.formFinished).toBe(1)
+    expect(calls.formAnswers).toEqual([
+      { questionId: 'q2', option: null, other: true, text: 'Смотрю сериалы с субтитрами' },
+      { questionId: 'q4', option: null, other: false, text: 'В аптеке вспомнил, как сказать «болит голова».' },
+      { questionId: 'q4', option: null, other: false, text: 'В аптеке вспомнил, как сказать «болит голова».' },
+    ])
+    await page.getByRole('button', { name: 'Вернуться' }).click()
+    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+  })
+
+  test('someone who did not answer in the bot starts from the first question', async ({ page }) => {
+    const calls = await setup(page, { form: usersForm() })
+    await page.goto(`/?playwright=1&screen=survey&s=${KEY}`)
+
+    await expect(progress(page)).toHaveText('Вопрос 1 из 5')
+    await expect(page.getByRole('radio')).toHaveText(ifGone.options)
+    await page.getByRole('radio', { name: 'Немного расстроюсь' }).click()
+    await page.getByTestId('survey-page-next').click()
+
+    await expect(progress(page)).toHaveText('Вопрос 2 из 5')
+    expect(calls.formAnswers).toEqual([{ questionId: 'q1', option: 'Немного расстроюсь', other: false, text: null }])
+  })
+
+  test('a form already gone through says thanks and lets the answers be corrected', async ({ page }) => {
+    await setup(page, { form: usersForm({ ...tappedInBot, q2: { option: 'Только TraleBot', other: false, text: null } }, true) })
+    await page.goto(`/?playwright=1&screen=survey&s=${KEY}`)
+
+    await expect(page.getByTestId('survey-already')).toContainText('Твои ответы уже у меня')
+    await fits(page)
+    await shot(page, 'form-user-5-already')
+    await page.getByRole('button', { name: 'Поправить ответы' }).click()
+
+    await expect(progress(page)).toHaveText('Вопрос 1 из 5')
+    await expect(page.getByRole('radio', { name: 'Очень расстроюсь' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  test('a long question and long options keep inside the phone screen', async ({ page }) => {
+    const long = choice(
+      'Расскажи, пожалуйста, что именно происходило в тот день, когда ты в последний раз открывал(а) мини-апп, собирался(ась) позаниматься грузинским — и в итоге закрыл(а), так ничего и не сделав?',
+      true, 'Открыл(а) урок, но он оказался слишком длинным для пяти свободных минут', 'Сверхдлинноесловобезпробеловкотороенедолжновылезатьзакрайэкрана', 'Не помню')
+    await setup(page, { form: { survey: { intro: null, questions: withIds([ifGone, long]) }, finished: false, answers: tappedInBot } })
+    await page.goto(`/?playwright=1&screen=survey&s=${KEY}`)
+
+    await expect(progress(page)).toHaveText('Вопрос 2 из 2')
+    await page.getByRole('radio', { name: 'Другое' }).click()
+    await fits(page)
+    await shot(page, 'form-user-6-long-texts', true)
+  })
+
+  test('a survey sent to someone else shows no questions', async ({ page }) => {
+    await setup(page, { form: null })
+    await page.goto(`/?playwright=1&screen=survey&s=${KEY}`)
+
+    await expect(page.getByTestId('survey-problem')).toContainText('Этот опрос уже закрыт или был отправлен не тебе.')
+    await expect(page.getByTestId('survey-page')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Вернуться' }).click()
+    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+  })
+})
+
 test.describe('владелец', () => {
   // Ширина телефона, под которую свёрстан мини-апп.
   test.use({ viewport: { width: 375, height: 812 } })
 
   const owner = { isOwner: true, isPro: true, hasAccess: true }
-  /** На экране ничего не вылезает за ширину телефона. */
-  async function fits(page: Page) {
-    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
-  }
+  const NEW = 'survey-2026-10-users-2'
   async function openAdmin(page: Page) {
     await page.goto('/?playwright=1')
     await page.getByRole('button', { name: 'Профиль' }).first().click()
@@ -304,6 +479,7 @@ test.describe('владелец', () => {
     await expect(page.getByTestId('admin-sections')).toBeVisible()
   }
   const stepTitle = (page: Page) => page.getByTestId('survey-step-title')
+  const card = (page: Page, i: number) => page.getByTestId(`survey-question-${i}`)
 
   test('the admin has its sections on separate screens, and the broadcast form has no survey fields', async ({ page }) => {
     await setup(page, { me: owner })
@@ -324,59 +500,115 @@ test.describe('владелец', () => {
     await expect(page.getByTestId('admin-sections')).toBeVisible()
   })
 
-  test('a survey is built from a ready-made one and sent to oneself without typing anything', async ({ page }) => {
+  test('a form is built from a ready-made one with one question changed, walked through as a user and sent to oneself', async ({ page }) => {
     const calls = await setup(page, { me: owner })
     await openAdmin(page)
     await page.getByTestId('admin-section-survey').click()
 
     await expect(stepTitle(page)).toHaveText('Выбери опрос')
-    await expect(page.locator('[data-testid^="survey-preset-"]')).toHaveCount(presets.length + 1)
+    await expect(page.locator('[data-testid^="survey-preset-"]')).toHaveCount(3)
+    await expect(page.getByTestId('survey-preset-left')).toContainText('После чего ты перестал(а) открывать TraleBot?')
     await fits(page)
-    await shot(page, 'survey-1-choose', true)
-    await page.getByTestId('survey-preset-missing').click()
+    await shot(page, 'form-1-choose', true)
+    await page.getByTestId('survey-preset-users').click()
 
-    await expect(stepTitle(page)).toHaveText('Проверь, как это выглядит')
-    await expect(page.getByTestId('survey-preview')).toContainText(missing.question)
-    for (const option of missing.options) await expect(page.getByTestId('survey-preview')).toContainText(option)
-    for (const control of await page.getByTestId('survey-options').getByRole('button').all()) {
+    await expect(stepTitle(page)).toHaveText('Вопросы')
+    await expect(page.getByTestId('survey-preview')).toContainText(`${intro}\n\n${ifGone.text}`)
+    await expect(page.locator('[data-testid^="survey-question-open-"]')).toHaveCount(5)
+    await expect(card(page, 0)).toContainText('Вопрос 1 · в боте')
+    await expect(card(page, 4)).toContainText('свободный ответ')
+    for (const control of await page.getByTestId('survey-questions').getByRole('button').all()) {
       const box = (await control.boundingBox())!
       expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44)
     }
     await fits(page)
-    await shot(page, 'survey-2-preview', true)
+    await shot(page, 'form-2-questions', true)
+
+    // Один вопрос — на своём экране: убрать вариант, взять готовый, выключить «Другое».
+    await page.getByTestId('survey-question-open-1').click()
+    const editor = page.getByTestId('survey-question-editor')
+    await expect(editor).toContainText('Вопрос 2 из 5')
+    await expect(page.getByTestId('survey-questions')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Убрать вариант Учебник или YouTube' }).click()
+    await fits(page)
+    await shot(page, 'form-3-question', true)
+    await page.getByTestId('survey-option-1').click()
+    await page.getByLabel('Вариант 2').fill('Duolingo и другие приложения')
+    await page.getByLabel('Вариант 2').press('Enter')
+    await page.getByTestId('survey-question-done').click()
+    await expect(card(page, 1)).toContainText('Репетитор или курсы · Duolingo и другие приложения · Только TraleBot · Другое')
+
+    // Добавить вопрос: готовые (те, которых в форме ещё нет) и свои.
+    await page.getByRole('button', { name: 'Убрать вопрос 5' }).click()
+    await page.getByTestId('survey-add-question').click()
+    await expect(page.getByTestId('survey-bank')).toContainText(paywallQuestion.text)
+    await expect(page.getByTestId('survey-bank')).not.toContainText(whyGeorgian.text)
+    await fits(page)
+    await shot(page, 'form-4-add-question', true)
+    await page.getByTestId('survey-bank').getByRole('button', { name: new RegExp(lastAnnoyed.text.slice(0, 20)) }).click()
+    await expect(page.locator('[data-testid^="survey-question-open-"]')).toHaveCount(5)
+
+    // Прогон «как пользователь»: ничего не записывается и никуда не уходит.
+    await page.getByTestId('survey-try').click()
+    await expect(page.getByTestId('survey-try-form')).toContainText('Ответы никуда не записываются')
+    await expect(page.getByTestId('survey-progress')).toHaveText('Вопрос 1 из 5')
+    await page.getByRole('radio', { name: 'Мне всё равно' }).click()
+    await page.getByTestId('survey-page-next').click()
+    await expect(page.getByTestId('survey-progress')).toHaveText('Вопрос 2 из 5')
+    await expect(page.getByRole('radio')).toHaveText(['Репетитор или курсы', 'Duolingo и другие приложения', 'Только TraleBot', 'Другое'])
+    await fits(page)
+    await shot(page, 'form-5-try', true)
+    await page.getByRole('button', { name: 'Назад' }).first().click()
+    await expect(stepTitle(page)).toHaveText('Вопросы')
     await page.getByTestId('survey-next').click()
 
     await expect(stepTitle(page)).toHaveText('Кому отправить')
-    await expect(page.getByTestId('survey-audience-accessEnded')).toContainText('553')
+    await expect(page.getByTestId('survey-audience-activeLately')).toContainText('61')
+    await expect(page.getByTestId('survey-audience-inactiveLong')).toContainText('512')
     await fits(page)
-    await shot(page, 'survey-3-audience', true)
+    await shot(page, 'form-6-audience', true)
+    await page.getByTestId('survey-audience-activeLately').click()
     await page.getByTestId('survey-next').click()
 
     await expect(stepTitle(page)).toHaveText('Отправка')
+    await expect(page.getByTestId('survey-summary')).toContainText('Вопросов: 5 — первый в боте, остальные в мини-аппе. Кому: занимались за последние 30 дней — 61 чел.')
     await expect(page.getByTestId('survey-send')).toBeDisabled()
     await page.getByTestId('survey-send-me').click()
 
-    await expect(page.getByTestId('survey-note')).toContainText('Отправил тебе в чат с ботом')
-    expect(calls.prepared).toEqual([{
-      key: '', newSurveySlug: 'missing-test', audience: 'owner', message: missing.question, buttonText: null, buttonQuery: null,
-      sampleSize: null, dryRun: false, surveyOptions: missing.options,
-    }])
-    expect(calls.sent).toEqual(['survey-2026-10-missing-test'])
+    await expect(page.getByTestId('survey-note')).toContainText('пройди форму до конца')
+    expect(calls.prepared).toHaveLength(1)
+    const sent = calls.prepared[0]
+    expect([sent.key, sent.newSurveySlug, sent.audience, sent.sampleSize, sent.dryRun]).toEqual(['', 'users-test', 'owner', null, false])
+    expect(sent.survey.intro).toBe(intro)
+    expect(sent.survey.questions.map((q: any) => q.text)).toEqual([ifGone.text, whatElseNow.text, whyGeorgian.text, lastHelped.text, lastAnnoyed.text])
+    expect(sent.survey.questions[1]).toMatchObject({ kind: 'choice', options: ['Репетитор или курсы', 'Duolingo и другие приложения', 'Только TraleBot'], allowOther: true })
+    expect(sent.survey.questions[0]).toMatchObject({ headlineOption: 'Очень расстроюсь', headlineWithout: 'Уже не пользуюсь' })
+    expect(calls.sent).toEqual(['survey-2026-10-users-test'])
     await expect(page.getByTestId('survey-send')).toBeDisabled()
     await fits(page)
-    await shot(page, 'survey-4-send', true)
+    await shot(page, 'form-7-send', true)
+    expect(calls.formAnswers).toEqual([])
+  })
 
-    // Получатели выбраны — только теперь открывается отправка порции; имя опросу дал сервер.
-    page.on('dialog', dialog => dialog.accept())
-    await page.getByTestId('survey-pick').click()
-    await expect(page.getByTestId('survey-send')).toBeEnabled()
-    await expect(page.getByTestId('survey-status')).toContainText('Выбрано 100 · ждут 100')
-    expect(calls.prepared.slice(1).map(p => [p.key, p.newSurveySlug, p.audience, p.sampleSize, p.dryRun])).toEqual([
-      ['', 'missing', 'accessEnded', 100, true], ['', 'missing', 'accessEnded', 100, false],
-    ])
-    expect(calls.sent).toHaveLength(1)
-    await expect(page.getByTestId('survey-back')).toHaveCount(0)
-    await shot(page, 'survey-4-send-picked', true)
+  test('the builder explains why a question cannot stand first', async ({ page }) => {
+    await setup(page, { me: owner })
+    await openAdmin(page)
+    await page.getByTestId('admin-section-survey').click()
+    await page.getByTestId('survey-preset-users').click()
+
+    await page.getByRole('button', { name: 'Поднять вопрос 3' }).click()
+    await page.getByRole('button', { name: 'Поднять вопрос 2' }).click()
+
+    await expect(card(page, 0)).toContainText(whyGeorgian.text)
+    await expect(page.getByTestId('survey-question-problem-0')).toHaveText('Первый вопрос приходит в бот кнопками — у него не больше 4 вариантов. Убери лишние или поставь первым другой вопрос.')
+    await expect(page.getByTestId('survey-next')).toBeDisabled()
+    await expect(page.getByTestId('survey-try')).toBeDisabled()
+    await fits(page)
+    await shot(page, 'form-2-questions-problem', true)
+
+    await page.getByRole('button', { name: 'Опустить вопрос 1' }).click()
+    await expect(page.getByTestId('survey-problem')).toHaveCount(0)
+    await expect(page.getByTestId('survey-next')).toBeEnabled()
   })
 
   test('a survey left half sent is found again, finished, and sent to the rest of the group', async ({ page }) => {
@@ -385,11 +617,12 @@ test.describe('владелец', () => {
     await openAdmin(page)
     await page.getByTestId('admin-section-survey').click()
     await expect(page.getByTestId('survey-unfinished')).toHaveCount(0)
-    await page.getByTestId('survey-preset-missing').click()
+    await page.getByTestId('survey-preset-users').click()
     await page.getByTestId('survey-next').click()
     await page.getByTestId('survey-next').click()
     await page.getByTestId('survey-pick').click()
     await expect(page.getByTestId('survey-status')).toContainText('Выбрано 100 · ждут 100')
+    await expect(page.getByTestId('survey-back')).toHaveCount(0)
     await page.getByTestId('survey-send').click()
     await expect(page.getByTestId('survey-status')).toContainText('ждут 75 · дошло 25')
 
@@ -399,17 +632,17 @@ test.describe('владелец', () => {
     await page.getByTestId('admin-section-survey').click()
 
     const left = page.getByTestId('survey-unfinished')
-    await expect(left).toContainText(missing.question)
+    await expect(left).toContainText(ifGone.text)
     await expect(left).toContainText('отправлено 25 из 100')
     await expect(left).not.toContainText('survey-2026')
-    await expect(page.getByTestId('survey-preset-missing')).toBeVisible()
+    await expect(page.getByTestId('survey-preset-users')).toBeVisible()
     await fits(page)
     await shot(page, 'survey-resume-1-unfinished', true)
     await left.getByRole('button', { name: 'Продолжить' }).click()
 
     await expect(stepTitle(page)).toHaveText('Отправка')
-    await expect(page.getByTestId('survey-preview')).toContainText(missing.question)
-    for (const option of missing.options) await expect(page.getByTestId('survey-preview')).toContainText(option)
+    await expect(page.getByTestId('survey-preview')).toContainText(ifGone.text)
+    await expect(page.getByTestId('survey-summary')).toContainText('Вопросов: 5')
     await expect(page.getByTestId('survey-status')).toContainText('Выбрано 100 · ждут 75 · дошло 25')
     await expect(page.getByTestId('survey-send')).toBeEnabled()
     await expect(page.getByTestId('survey-pick')).toBeDisabled()
@@ -425,13 +658,14 @@ test.describe('владелец', () => {
     await fits(page)
     await shot(page, 'survey-resume-3-sample-done', true)
 
-    // Пробная группа получила всё — из того же шага выбираются остальные, под тем же именем.
+    // Пробная группа получила всё — из того же шага выбираются остальные, под тем же именем и с той же формой.
     await page.getByRole('button', { name: 'Выбрать всех остальных' }).click()
     await expect(page.getByTestId('survey-status')).toContainText('Выбрано 553 · ждут 453 · дошло 100')
     await expect(page.getByTestId('survey-send')).toBeEnabled()
     const rest = calls.prepared.at(-1)
-    expect([rest.key, rest.audience, rest.sampleSize, rest.dryRun, rest.message, rest.surveyOptions])
-      .toEqual([KEY, 'accessEnded', null, false, missing.question, missing.options])
+    expect([rest.key, rest.audience, rest.sampleSize, rest.dryRun]).toEqual([NEW, 'accessEnded', null, false])
+    expect(rest.survey.questions.map((q: any) => q.text)).toEqual(users.map(q => q.text))
+    await fits(page)
     await shot(page, 'survey-resume-4-rest-picked', true)
 
     // И из «Отзывов» к недосланному опросу тоже есть дорога.
@@ -444,48 +678,36 @@ test.describe('владелец', () => {
     await expect(page.getByTestId('survey-status')).toContainText('Выбрано 553 · ждут 453 · дошло 100')
   })
 
-  test('the buttons of a survey are edited by taps', async ({ page }) => {
-    await setup(page, { me: owner })
-    await openAdmin(page)
-    await page.getByTestId('admin-section-survey').click()
-    await page.getByTestId('survey-preset-missing').click()
-
-    await page.getByRole('button', { name: 'Убрать вариант Другого' }).click()
-    await expect(page.getByTestId('survey-add-option')).toBeVisible()
-    await fits(page)
-    await shot(page, 'survey-2-preview-editing', true)
-    await page.getByTestId('survey-suggestions').getByRole('button', { name: 'Всё устраивает' }).click()
-    await page.getByTestId('survey-option-0').click()
-    await page.getByLabel('Вариант 1').fill('Озвучки в словаре')
-    await page.getByLabel('Вариант 1').press('Enter')
-
-    await expect(page.getByTestId('survey-preview')).toContainText('Озвучки в словаре')
-    await expect(page.getByTestId('survey-preview')).toContainText('Всё устраивает')
-    await expect(page.getByTestId('survey-preview')).not.toContainText('Другого')
-    await expect(page.getByTestId('survey-add-option')).toHaveCount(0)
-    await fits(page)
-  })
-
-  test('«Отзывы»: surveys by their questions, and each kind of answers on its own screen', async ({ page }) => {
+  test('«Отзывы»: a survey shows how far people got and every question; answers narrow to one option of the first question', async ({ page }) => {
     await setup(page, { me: owner })
     await openAdmin(page)
     await page.getByTestId('admin-section-feedback').click()
 
     const list = page.getByTestId('feedback-list')
-    await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText(missing.question)
-    await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText('8 октября · доступ закончился · дошло 100 · ответили 51')
+    await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText(ifGone.text)
+    await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText('8 октября · занимались за последние 30 дней · вопросов: 5')
+    await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText('получили 61 · ответили 34 · дошли до конца 15')
     await expect(list).not.toContainText('survey-2026')
     await fits(page)
-    await shot(page, 'survey-5-feedback-list', true)
+    await shot(page, 'form-8-feedback-list', true)
 
     await list.getByTestId(`feedback-open-survey-${KEY}`).click()
-    const survey = page.getByTestId('feedback-survey')
-    await expect(survey).toContainText('Озвучки слов')
-    await expect(survey).toContainText('23 · 45%')
-    await expect(survey).toContainText('Хочу слышать, как звучит слово')
-    await expect(survey).not.toContainText('Спасибо за глаголы')
+    await expect(page.getByTestId('feedback-funnel')).toHaveText('получили61ответили на первый вопрос34 · 56%открыли форму в мини-аппе22 · 36%дошли до конца15 · 25%')
+    await expect(page.getByTestId('feedback-headline')).toHaveText('47%«Очень расстроюсь» — 14 из 30 (без тех, кто ответил «Уже не пользуюсь»)')
+    await expect(page.getByTestId('feedback-question-q2')).toContainText('Репетитор или курсы7 · 33%')
+    await expect(page.getByTestId('feedback-question-q2')).toContainText('Разговариваю с соседями')
+    await expect(page.getByTestId('feedback-question-q4')).toContainText('В аптеке: вспомнил')
+    await expect(page.getByTestId('feedback-question-q4')).toContainText('Честно — не помню.')
     await fits(page)
-    await shot(page, 'survey-6-survey-results', true)
+    await shot(page, 'form-9-results', true)
+
+    await page.getByTestId('feedback-segments').getByRole('button', { name: 'Очень расстроюсь' }).click()
+    await expect(page.getByTestId('feedback-question-q2')).toContainText('Репетитор или курсы6 · 55%')
+    await expect(page.getByTestId('feedback-question-q2')).not.toContainText('Разговариваю с соседями')
+    await expect(page.getByTestId('feedback-question-q4')).not.toContainText('Честно — не помню.')
+    await expect(page.getByTestId('feedback-funnel')).toContainText('получили61')
+    await fits(page)
+    await shot(page, 'form-9-results-segment', true)
 
     await page.getByRole('button', { name: 'Назад' }).click()
     await page.getByTestId('feedback-open-paywall').click()
@@ -497,7 +719,7 @@ test.describe('владелец', () => {
 
     await page.getByRole('button', { name: 'Назад' }).click()
     await page.getByTestId('feedback-open-messages').click()
-    await expect(page.getByTestId('feedback-messages')).toContainText(`из опроса: ${missing.question}`)
+    await expect(page.getByTestId('feedback-messages')).toContainText(`из опроса: ${ifGone.text}`)
     await expect(page.getByTestId('feedback-messages')).toContainText('Спасибо за глаголы')
     await fits(page)
     await shot(page, 'survey-8-messages', true)

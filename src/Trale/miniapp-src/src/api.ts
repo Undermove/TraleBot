@@ -520,7 +520,7 @@ export interface FeedbackOptionCount {
   count: number
 }
 
-export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner'
+export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner' | 'activeLately' | 'inactiveLong'
 
 export interface CampaignStatusDto {
   key: string
@@ -536,8 +536,10 @@ export interface CampaignStatusDto {
   rejected: number
   unknown: number
   opened: number
-  /** Опрос: варианты ответа в порядке кнопок и сколько человек выбрали каждый. У обычной кампании пусто. */
+  /** Опрос: кнопки первого вопроса (он приходит в бот) и сколько человек выбрали каждую. У обычной кампании пусто. */
   surveyAnswers?: FeedbackOptionCount[]
+  /** Опрос: его форма целиком — по ней конструктор возвращается к начатому опросу. */
+  survey?: SurveyFormDto | null
   /** Подарок кампании: сколько дней доступа получает открывший кнопку; 0 — подарка нет. */
   giftDays: number
   /** До какого момента открытие ещё даёт подарок. */
@@ -563,15 +565,15 @@ export const adminCampaigns = {
   prepare: (body: {
     key: string
     audience: CampaignAudience
-    message: string
+    message?: string
     buttonText: string | null
     buttonQuery: string | null
     sampleSize: number | null
     dryRun: boolean
     giftDays?: number
     giftOfferDays?: number | null
-    /** Опрос: 2–4 варианта ответа, уходят кнопками под сообщением. Пусто — обычная кампания. */
-    surveyOptions?: string[] | null
+    /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания. */
+    survey?: SurveyFormDto | null
     /** Конструктор начинает новый опрос: при пустом key сервер сам называет кампанию и возвращает имя в ответе. */
     newSurveySlug?: string | null
   }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
@@ -712,26 +714,92 @@ export const feedback = {
 export interface AdminFeedbackItem {
   kind: 'paywall' | 'survey' | 'message'
   campaignKey: string | null
+  questionId?: string | null
   option: string | null
   text: string | null
   atUtc: string
   telegramId: number
 }
 
+/** Вопрос опроса. id даёт сервер («q1», «q2»… по порядку), когда опрос заведён. */
+export interface SurveyQuestionDto {
+  id?: string
+  text: string
+  /** choice — выбор одного варианта, text — свободный ответ. */
+  kind: 'choice' | 'text'
+  options: string[]
+  /** У вопроса с вариантами есть ещё «Другое» с полем для своего ответа. */
+  allowOther: boolean
+  /** Главная цифра вопроса: доля этого варианта среди ответивших, не считая выбравших headlineWithout. */
+  headlineOption?: string | null
+  headlineWithout?: string | null
+}
+
+export interface SurveyFormDto {
+  /** Короткая строка перед первым вопросом в сообщении бота. */
+  intro: string | null
+  questions: SurveyQuestionDto[]
+}
+
+/** Ответ на один вопрос: вариант, либо «Другое» со своими словами, либо просто текст. */
+export interface SurveyAnswerDto {
+  option: string | null
+  other: boolean
+  text: string | null
+}
+
+/** Форма опроса глазами получателя (мини-апп): вопросы и то, что человек уже ответил. */
+export const surveyApi = {
+  open: (key: string) =>
+    request<{ key: string; survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto> }>(
+      `/api/miniapp/surveys/${encodeURIComponent(key)}/open`, { method: 'POST' }),
+  answer: (key: string, questionId: string, answer: SurveyAnswerDto) =>
+    request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/answer`, { method: 'POST', body: JSON.stringify({ questionId, ...answer }) }),
+  finish: (key: string) => request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/finish`, { method: 'POST' })
+}
+
+/** Воронка опроса: получили → ответили на первый вопрос → открыли форму в мини-аппе → дошли до конца. */
+export interface SurveyFunnelDto {
+  sent: number
+  answeredFirst: number
+  openedForm: number
+  finished: number
+}
+
 export interface AdminSurveyDto {
   key: string
-  question: string
+  /** Первый вопрос — по нему владелец узнаёт опрос. */
+  title: string
+  /** Сколько в опросе вопросов. */
+  questions: number
   createdAtUtc: string
   audience: CampaignAudience
   /** Сколько получателей выбрано на сегодня. */
   picked: number
   /** Из них ещё ждут отправки: больше нуля — отправку бросили посередине, к опросу можно вернуться. */
   pending: number
-  /** Скольким людям опрос дошёл. */
-  sent: number
-  /** Сколько сообщений написали кнопкой «Написать подробнее» из этого опроса. */
-  texts: number
+  funnel: SurveyFunnelDto
+}
+
+export interface AdminSurveyQuestionDto {
+  id: string
+  text: string
+  kind: 'choice' | 'text'
+  /** Сколько человек ответили на вопрос (в выбранном разрезе). */
+  answered: number
   options: FeedbackOptionCount[]
+  headline: { option: string; without: string | null; chose: number; of: number } | null
+  /** Что написали: «Другое» со словами и ответы на вопрос без вариантов. */
+  texts: AdminFeedbackItem[]
+}
+
+export interface AdminSurveyResultsDto {
+  summary: AdminSurveyDto
+  /** Вариант первого вопроса, по которому сужены вопросы; null — все. */
+  segment: string | null
+  questions: AdminSurveyQuestionDto[]
+  /** Сообщения по кнопке «Написать подробнее» из этого опроса. */
+  written: AdminFeedbackItem[]
 }
 
 export interface AdminFeedbackDto {
@@ -744,17 +812,35 @@ export interface AdminFeedbackDto {
   surveys: AdminSurveyDto[]
 }
 
-/** Готовый опрос для конструктора: вопрос и кнопки уже написаны. */
+/** Готовая форма для конструктора: вопросы и варианты уже написаны. */
 export interface SurveyPresetDto {
   id: string
   title: string
-  question: string
-  options: string[]
+  about: string
+  form: SurveyFormDto
+}
+
+export interface SurveyLimitsDto {
+  questions: number
+  options: number
+  /** Первый вопрос приходит в бот кнопками — вариантов у него меньше. */
+  botOptions: number
+  optionLength: number
+  questionLength: number
+}
+
+export interface SurveyBuilderKitDto {
+  presets: SurveyPresetDto[]
+  /** Готовые вопросы, которые можно добавить в свою форму. */
+  bank: SurveyQuestionDto[]
+  suggestions: string[]
+  intro: string
+  otherLabel: string
+  limits: SurveyLimitsDto
 }
 
 export const adminSurveys = {
-  presets: () => request<{ presets: SurveyPresetDto[]; suggestions: string[]; maxOptions: number; maxOptionLength: number }>(
-    '/api/admin/surveys/presets')
+  presets: () => request<SurveyBuilderKitDto>('/api/admin/surveys/presets')
 }
 
 export const adminFeedback = {
@@ -764,5 +850,8 @@ export const adminFeedback = {
     if (only.kind) params.set('kind', only.kind)
     if (only.campaign) params.set('campaign', only.campaign)
     return request<AdminFeedbackDto>(`/api/admin/feedback?${params}`)
-  }
+  },
+  /** Один опрос: воронка и ответы по вопросам. segment — вариант первого вопроса: остальные вопросы считаются только у выбравших его. */
+  survey: (key: string, segment?: string | null) =>
+    request<AdminSurveyResultsDto>(`/api/admin/feedback/surveys/${encodeURIComponent(key)}${segment ? `?segment=${encodeURIComponent(segment)}` : ''}`)
 }

@@ -12,8 +12,8 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    [Migration("20261008193442_AddUserFeedbackAndSurveyOptions")]
-    partial class AddUserFeedbackAndSurveyOptions
+    [Migration("20261008215335_AddUserFeedbackAndSurveys")]
+    partial class AddUserFeedbackAndSurveys
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -98,8 +98,8 @@ namespace Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string[]>("SurveyOptions")
-                        .HasColumnType("text[]");
+                    b.Property<string>("SurveyJson")
+                        .HasColumnType("jsonb");
 
                     b.HasKey("Id");
 
@@ -142,6 +142,12 @@ namespace Persistence.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SurveyFinishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("SurveyOpenedAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("TelegramId")
                         .HasColumnType("bigint");
@@ -824,6 +830,10 @@ namespace Persistence.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
 
+                    b.Property<string>("QuestionId")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<string>("Text")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
@@ -838,7 +848,7 @@ namespace Persistence.Migrations
 
                     b.HasIndex("CreatedAtUtc");
 
-                    b.HasIndex("UserId", "CampaignKey")
+                    b.HasIndex("UserId", "CampaignKey", "QuestionId")
                         .IsUnique()
                         .HasFilter("\"Kind\" = 1");
 

@@ -9,13 +9,13 @@ using Telegram.Bot.Types.ReplyMarkups;
 namespace Infrastructure.Telegram.BotCommands;
 
 /// <summary>
-/// A press on an answer button under a survey broadcast. The answer is recorded (one per person per
-/// campaign, another button changes it), the press is answered with a short note, and after the
-/// first answer the bot says thanks with a button that opens the "Написать автору" screen of the
-/// mini-app tied to this survey.
+/// A press on an answer button under a survey broadcast — an answer to the survey's first question.
+/// It is recorded (one per person, another button changes it), the press is answered with a short
+/// note, and after the first answer the bot says thanks with a button into the mini-app: to the rest
+/// of the form when the survey has more questions, to "Написать автору" tied to the survey when it has one.
 ///
 /// The bot never waits for a text here: whatever a person types in the chat next is a word to
-/// translate, as always. Words of their own are collected only by that mini-app screen.
+/// translate, as always. Words of their own are collected only in the mini-app.
 /// </summary>
 public class SurveyAnswerCommand(
     ITelegramBotClient client,
@@ -29,6 +29,14 @@ public class SurveyAnswerCommand(
     public const string ThanksText = "Спасибо, записал! Хочешь рассказать подробнее — нажми кнопку ниже.";
     public const string ThanksTextWithoutButton = "Спасибо, записал!";
     public const string TellMoreButton = "Написать подробнее";
+    public const string ContinueButton = "Продолжить";
+
+    /// <summary>"Спасибо! Ещё 3 коротких вопроса — это минута."</summary>
+    public static string MoreQuestionsText(int left) =>
+        $"Спасибо! Ещё {left} {Plural(left, "короткий вопрос", "коротких вопроса", "коротких вопросов")} — это минута.";
+
+    private static string Plural(int n, string one, string few, string many) =>
+        n % 100 is >= 11 and <= 14 ? many : (n % 10) switch { 1 => one, >= 2 and <= 4 => few, _ => many };
 
     /// <summary>Fits Telegram's 64 bytes: the prefix, a key of at most 48 Latin characters, one digit.</summary>
     public static string CallbackData(string campaignKey, int optionIndex) => $"{Prefix}{campaignKey}|{optionIndex}";
@@ -41,13 +49,13 @@ public class SurveyAnswerCommand(
     {
         var parts = request.Text[Prefix.Length..].Split('|');
         var answer = request.User != null && parts.Length == 2 && int.TryParse(parts[1], out var index)
-            ? await feedback.AnswerSurveyAsync(request.User.Id, parts[0], index, token)
-            : SurveyAnswer.Rejected;
+            ? await feedback.AnswerSurveyFromBotAsync(request.User.Id, parts[0], index, token)
+            : BotSurveyAnswer.Rejected;
 
         await AnswerPress(request, answer.Outcome switch
         {
             SurveyAnswerOutcome.Recorded => "Спасибо, записал!",
-            SurveyAnswerOutcome.Changed => $"Поменял ответ: «{answer.Option}»",
+            SurveyAnswerOutcome.Changed => $"Поменял ответ: «{answer.Button}»",
             SurveyAnswerOutcome.Same => "Этот ответ уже записан",
             _ => "Этот опрос уже закрыт"
         }, token);
@@ -56,15 +64,21 @@ public class SurveyAnswerCommand(
         if (answer.Outcome != SurveyAnswerOutcome.Recorded) return;
 
         var canOpenMiniApp = config.MiniAppEnabled && !string.IsNullOrEmpty(config.HostAddress);
+        var hasMore = answer.MoreQuestions > 0;
         await client.SendTextMessageAsync(
             request.UserTelegramId,
-            canOpenMiniApp ? ThanksText : ThanksTextWithoutButton,
+            !canOpenMiniApp ? ThanksTextWithoutButton : hasMore ? MoreQuestionsText(answer.MoreQuestions) : ThanksText,
             replyMarkup: canOpenMiniApp
                 ? new InlineKeyboardMarkup(InlineKeyboardButton.WithWebApp(
-                    TellMoreButton, new WebAppInfo { Url = TellMoreUrl(parts[0]) }))
+                    hasMore ? ContinueButton : TellMoreButton,
+                    new WebAppInfo { Url = hasMore ? FormUrl(parts[0]) : TellMoreUrl(parts[0]) }))
                 : null,
             cancellationToken: token);
     }
+
+    /// <summary>The survey's form in the mini-app — it opens on the first question not answered yet.</summary>
+    private string FormUrl(string campaignKey) =>
+        $"{config.NormalizedHost()}/?screen=survey&s={Uri.EscapeDataString(campaignKey)}";
 
     /// <summary>The mini-app's "Написать автору" screen; <c>fc</c> ties the message to the survey.</summary>
     private string TellMoreUrl(string campaignKey) =>

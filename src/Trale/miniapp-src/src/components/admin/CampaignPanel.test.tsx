@@ -19,7 +19,7 @@ const plan = { key: 'ref-test', dryRun: true, audienceTotal: 553, alreadyInCampa
 
 beforeEach(() => {
   Object.values(api).forEach(f => f.mockReset())
-  api.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1 })
+  api.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512 })
 })
 afterEach(() => vi.unstubAllGlobals())
 

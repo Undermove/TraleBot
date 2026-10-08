@@ -311,13 +311,34 @@ public class UserFeedbackTests : TestBase
 
     // ── Опрос-рассылка ───────────────────────────────────────────────────────
 
-    private Task<(HttpStatusCode Code, JsonElement Body)> Prepare(string key, object? surveyOptions, string audience = "accessEnded",
+    private static object Choice(string text, string[] options, bool allowOther = false) =>
+        new { text, kind = "choice", options, allowOther };
+
+    private static object Free(string text) => new { text, kind = "text" };
+
+    private static object Form(params object[] questions) => new { intro = (string?)null, questions };
+
+    /// <summary>A survey of one question with these options — what a survey was before it became a form;
+    /// null or no options — an ordinary campaign.</summary>
+    private Task<(HttpStatusCode Code, JsonElement Body)> Prepare(string key, string[]? surveyOptions, string audience = "accessEnded",
         string? buttonText = null, int giftDays = 0, string message = "Что мешает заниматься?") =>
+        PrepareForm(key, surveyOptions is { Length: > 0 } ? Form(Choice(message, surveyOptions)) : null, audience, buttonText, giftDays, message);
+
+    private Task<(HttpStatusCode Code, JsonElement Body)> PrepareForm(string key, object? survey, string audience = "accessEnded",
+        string? buttonText = null, int giftDays = 0, string message = "Подарок") =>
         Admin(HttpMethod.Post, "campaigns/prepare", new
         {
             key, audience, message, buttonText, buttonQuery = (string?)null,
-            sampleSize = (int?)null, dryRun = false, giftDays, surveyOptions
+            sampleSize = (int?)null, dryRun = false, giftDays, survey
         });
+
+    /// <summary>Picks everyone in the audience and sends a form — the people now hold its first question.</summary>
+    private async Task LaunchForm(string key, object survey)
+    {
+        var (code, body) = await PrepareForm(key, survey);
+        code.Should().Be(HttpStatusCode.OK, body.ValueKind == JsonValueKind.Undefined ? "" : body.GetRawText());
+        (await Admin(HttpMethod.Post, $"campaigns/{key}/send", new { limit = 100 })).Code.Should().Be(HttpStatusCode.OK);
+    }
 
     /// <summary>Picks everyone in the audience and sends — the people now hold the survey with its buttons.</summary>
     private async Task Launch(string key, string[]? surveyOptions = null)
@@ -587,6 +608,387 @@ public class UserFeedbackTests : TestBase
         (await Rows(person)).Should().BeEmpty("opening an ordinary campaign's button is not feedback");
     }
 
+    // ── Опрос-форма: первый вопрос в боте, остальные — по странице в мини-аппе ──
+
+    private static readonly string[] IfGone = ["Очень расстроюсь", "Немного расстроюсь", "Мне всё равно", "Уже не пользуюсь"];
+    private static readonly string[] WhatElse = ["Репетитор или курсы", "Другие приложения", "Только TraleBot"];
+
+    /// <summary>q1 — in the bot, with a headline number; q2 — options and "Другое"; q3 — free text.</summary>
+    private static object ThreeQuestions(string? intro = "Привет! Пара вопросов.") => new
+    {
+        intro,
+        questions = new object[]
+        {
+            new { text = "Что ты почувствуешь, если TraleBot завтра исчезнет?", kind = "choice", options = IfGone, allowOther = false, headlineOption = IfGone[0], headlineWithout = IfGone[3] },
+            Choice("Чем ещё ты пользуешься для грузинского?", WhatElse, allowOther: true),
+            Free("А что в последний раз раздражало или мешало?")
+        }
+    };
+
+    private Task<(HttpStatusCode Code, JsonElement Body)> OpenForm(User user, string key) =>
+        Call(user.TelegramId, HttpMethod.Post, $"/api/miniapp/surveys/{key}/open");
+
+    private async Task<HttpStatusCode> AnswerInForm(User user, string key, string questionId, string? option = null, bool other = false, string? text = null) =>
+        (await Call(user.TelegramId, HttpMethod.Post, $"/api/miniapp/surveys/{key}/answer", new { questionId, option, other, text })).Code;
+
+    private async Task<HttpStatusCode> FinishForm(User user, string key) =>
+        (await Call(user.TelegramId, HttpMethod.Post, $"/api/miniapp/surveys/{key}/finish")).Code;
+
+    private async Task<JsonElement> Results(string key, string? segment = null) =>
+        (await Admin(HttpMethod.Get, $"feedback/surveys/{key}" + (segment == null ? "" : $"?segment={Uri.EscapeDataString(segment)}"))).Body;
+
+    private static (int Sent, int AnsweredFirst, int OpenedForm, int Finished) Funnel(JsonElement results)
+    {
+        var f = results.GetProperty("summary").GetProperty("funnel");
+        return (f.GetProperty("sent").GetInt32(), f.GetProperty("answeredFirst").GetInt32(), f.GetProperty("openedForm").GetInt32(), f.GetProperty("finished").GetInt32());
+    }
+
+    [Test]
+    public async Task A_form_goes_out_as_its_intro_and_first_question_and_one_tap_invites_to_the_rest()
+    {
+        var person = await AccessEnded();
+        var mark = _telegram.Requests.Count;
+        await LaunchForm("form-out", ThreeQuestions());
+
+        var message = SentTo(person, mark).Single();
+        message.Text.Should().Be("Привет! Пара вопросов.\n\nЧто ты почувствуешь, если TraleBot завтра исчезнет?");
+        ((InlineKeyboardMarkup)message.ReplyMarkup!).InlineKeyboard.Select(r => r.Single().Text).Should().Equal(IfGone);
+        mark = _telegram.Requests.Count;
+
+        await Press(person, "form-out", 0);
+        await Press(person, "form-out", 1);
+
+        var invite = SentTo(person, mark).Single();
+        invite.Text.Should().Be("Спасибо! Ещё 2 коротких вопроса — это минута.");
+        var button = ((InlineKeyboardMarkup)invite.ReplyMarkup!).InlineKeyboard.Single().Single();
+        button.Text.Should().Be("Продолжить");
+        button.WebApp!.Url.Should().Be($"{SignedMiniApp.Host}/?screen=survey&s=form-out");
+        var row = (await Rows(person)).Single();
+        (row.QuestionId, row.Option).Should().Be(("q1", "Немного расстроюсь"));
+    }
+
+    [TestCase(1, "Спасибо! Ещё 1 короткий вопрос — это минута.")]
+    [TestCase(3, "Спасибо! Ещё 3 коротких вопроса — это минута.")]
+    [TestCase(5, "Спасибо! Ещё 5 коротких вопросов — это минута.")]
+    public void The_invitation_counts_the_questions_left_in_proper_russian(int left, string text) =>
+        SurveyAnswerCommand.MoreQuestionsText(left).Should().Be(text);
+
+    [Test]
+    public async Task The_other_button_of_the_first_question_is_just_a_button_and_the_words_come_in_the_form()
+    {
+        var person = await AccessEnded();
+        var mark = _telegram.Requests.Count;
+        await LaunchForm("form-other", Form(Choice("Чем ещё ты пользуешься?", ["Курсы", "Приложения"], allowOther: true), Free("Что мешало?")));
+        ((InlineKeyboardMarkup)SentTo(person, mark).Single().ReplyMarkup!).InlineKeyboard.Select(r => (r.Single().Text, r.Single().CallbackData))
+            .Should().Equal(("Курсы", "/survey|form-other|0"), ("Приложения", "/survey|form-other|1"), ("Другое", "/survey|form-other|2"));
+
+        await Press(person, "form-other", 2);
+        var afterPress = (await Rows(person)).Single();
+        var opened = (await OpenForm(person, "form-other")).Body;
+        (await AnswerInForm(person, "form-other", "q1", other: true, text: "Подкасты")).Should().Be(HttpStatusCode.OK);
+        await Press(person, "form-other", 2); // the same button again must not wipe the words
+
+        (afterPress.Option, afterPress.Text).Should().Be(("Другое", null));
+        var answer = opened.GetProperty("answers").GetProperty("q1");
+        answer.GetProperty("other").GetBoolean().Should().BeTrue();
+        answer.GetProperty("text").ValueKind.Should().Be(JsonValueKind.Null, "the form starts by asking for the words");
+        var row = (await Rows(person)).Single();
+        (row.Id, row.Option, row.Text).Should().Be((afterPress.Id, "Другое", "Подкасты"));
+    }
+
+    [Test]
+    public async Task Answers_are_saved_page_by_page_and_a_form_left_halfway_keeps_them()
+    {
+        var person = await AccessEnded();
+        await LaunchForm("form-pages", ThreeQuestions());
+        await Press(person, "form-pages", 0);
+
+        var (code, opened) = await OpenForm(person, "form-pages");
+        (await AnswerInForm(person, "form-pages", "q2", other: true, text: "  Подкасты и сериалы  ")).Should().Be(HttpStatusCode.OK);
+        var halfway = Funnel(await Results("form-pages"));
+        var rowsHalfway = await Rows(person);
+
+        code.Should().Be(HttpStatusCode.OK);
+        opened.GetProperty("finished").GetBoolean().Should().BeFalse();
+        opened.GetProperty("survey").GetProperty("questions").EnumerateArray().Select(q => (q.GetProperty("id").GetString(), q.GetProperty("kind").GetString()))
+            .Should().Equal(("q1", "choice"), ("q2", "choice"), ("q3", "text"));
+        opened.GetProperty("answers").GetProperty("q1").GetProperty("option").GetString().Should().Be("Очень расстроюсь", "the tap in the bot is already an answer");
+        opened.GetProperty("answers").EnumerateObject().Should().ContainSingle();
+        rowsHalfway.Select(r => (r.QuestionId, r.Option, r.Text)).Should().BeEquivalentTo(new[]
+        {
+            ("q1", "Очень расстроюсь", (string?)null), ("q2", "Другое", "Подкасты и сериалы")
+        });
+        halfway.Should().Be((1, 1, 1, 0));
+
+        (await AnswerInForm(person, "form-pages", "q3", text: "Не хватает озвучки")).Should().Be(HttpStatusCode.OK);
+        (await FinishForm(person, "form-pages")).Should().Be(HttpStatusCode.OK);
+        (await FinishForm(person, "form-pages")).Should().Be(HttpStatusCode.OK);
+
+        Funnel(await Results("form-pages")).Should().Be((1, 1, 1, 1));
+        var again = (await OpenForm(person, "form-pages")).Body;
+        again.GetProperty("finished").GetBoolean().Should().BeTrue();
+        again.GetProperty("answers").GetProperty("q2").GetProperty("text").GetString().Should().Be("Подкасты и сериалы");
+        again.GetProperty("answers").GetProperty("q3").GetProperty("text").GetString().Should().Be("Не хватает озвучки");
+        (await Rows(person)).Should().HaveCount(3);
+    }
+
+    [Test]
+    public async Task Someone_who_came_to_the_form_without_tapping_in_the_bot_starts_from_the_first_question_and_may_skip()
+    {
+        var person = await AccessEnded();
+        await LaunchForm("form-fresh", ThreeQuestions());
+
+        var opened = (await OpenForm(person, "form-fresh")).Body;
+        var afterOpen = Funnel(await Results("form-fresh"));
+        (await AnswerInForm(person, "form-fresh", "q1", option: "Мне всё равно")).Should().Be(HttpStatusCode.OK);
+        (await AnswerInForm(person, "form-fresh", "q3", text: "Всё ок")).Should().Be(HttpStatusCode.OK); // q2 skipped
+        (await FinishForm(person, "form-fresh")).Should().Be(HttpStatusCode.OK);
+
+        opened.GetProperty("answers").EnumerateObject().Should().BeEmpty();
+        afterOpen.Should().Be((1, 0, 1, 0));
+        Funnel(await Results("form-fresh")).Should().Be((1, 1, 1, 1));
+        (await Rows(person)).Select(r => r.QuestionId).Should().BeEquivalentTo(new[] { "q1", "q3" }, "a skipped question leaves no row");
+    }
+
+    [Test]
+    public async Task One_answer_per_person_per_question_and_answering_again_changes_it()
+    {
+        var person = await AccessEnded();
+        await LaunchForm("form-edit", ThreeQuestions());
+        await AnswerInForm(person, "form-edit", "q2", other: true, text: "Подкасты");
+        var first = (await Rows(person)).Single();
+
+        (await AnswerInForm(person, "form-edit", "q2", option: "Другие приложения", text: "этот текст к варианту не относится")).Should().Be(HttpStatusCode.OK);
+        var changed = (await Rows(person)).Single();
+        await Task.WhenAll(Enumerable.Range(0, 12).Select(i => AnswerInForm(person, "form-edit", "q2", option: WhatElse[i % 3])));
+        await Task.WhenAll(Enumerable.Range(0, 12).Select(i => AnswerInForm(person, "form-edit", "q3", text: $"Ответ {i}")));
+
+        (changed.Id, changed.Option, changed.Text).Should().Be((first.Id, "Другие приложения", null));
+        changed.UpdatedAtUtc.Should().NotBeNull();
+        var rows = await Rows(person);
+        rows.Select(r => r.QuestionId).Should().BeEquivalentTo(new[] { "q2", "q3" }, "parallel answers leave one row per question");
+        WhatElse.Should().Contain(rows.Single(r => r.QuestionId == "q2").Option);
+    }
+
+    [Test]
+    public async Task Only_a_recipient_answers_and_only_what_the_question_allows()
+    {
+        var recipient = await AccessEnded();
+        await LaunchForm("form-closed", ThreeQuestions());
+        var cameLater = await AccessEnded(); // has the link, was not sent the survey
+        await Launch("plain-survey");
+
+        (await OpenForm(cameLater, "form-closed")).Code.Should().Be(HttpStatusCode.NotFound);
+        (await AnswerInForm(cameLater, "form-closed", "q1", option: IfGone[0])).Should().Be(HttpStatusCode.NotFound);
+        (await FinishForm(cameLater, "form-closed")).Should().Be(HttpStatusCode.NotFound);
+        (await OpenForm(recipient, "no-such-survey")).Code.Should().Be(HttpStatusCode.NotFound);
+        (await AnswerInForm(recipient, "form-closed", "q9", option: IfGone[0])).Should().Be(HttpStatusCode.NotFound);
+        (await AnswerInForm(recipient, "form-closed", "q1", option: "Такого варианта нет")).Should().Be(HttpStatusCode.BadRequest);
+        (await AnswerInForm(recipient, "form-closed", "q1")).Should().Be(HttpStatusCode.BadRequest);
+        (await AnswerInForm(recipient, "form-closed", "q1", other: true, text: "у первого вопроса нет «Другое»")).Should().Be(HttpStatusCode.BadRequest);
+        (await AnswerInForm(recipient, "form-closed", "q2", other: true, text: new string('я', UserFeedbackService.MaxTextLength + 1))).Should().Be(HttpStatusCode.BadRequest);
+        (await AnswerInForm(recipient, "form-closed", "q3", text: "   ")).Should().Be(HttpStatusCode.BadRequest);
+        using var anonymous = _app.CreateClient();
+        (await anonymous.PostAsync("/api/miniapp/surveys/form-closed/open", null)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await anonymous.PostAsJsonAsync("/api/miniapp/surveys/form-closed/answer", new { questionId = "q1", option = IfGone[0] })).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        (await Rows(cameLater)).Should().BeEmpty();
+        (await Rows(recipient)).Should().BeEmpty();
+        Funnel(await Results("form-closed")).Should().Be((1, 0, 0, 0));
+        (await AnswerInForm(recipient, "form-closed", "q2", other: true, text: new string('я', UserFeedbackService.MaxTextLength))).Should().Be(HttpStatusCode.OK);
+        (await AnswerInForm(recipient, "form-closed", "q2", other: true)).Should().Be(HttpStatusCode.OK, "«Другое» without words is still an answer");
+    }
+
+    [Test]
+    public async Task A_form_is_checked_before_anyone_is_picked()
+    {
+        await AccessEnded();
+        string[] Many(int n) => Enumerable.Range(1, n).Select(i => $"Вариант {i}").ToArray();
+        async Task<(HttpStatusCode Code, string? Error)> Try(string key, object form)
+        {
+            var (code, body) = await PrepareForm(key, form);
+            return (code, code == HttpStatusCode.OK ? null : body.GetProperty("error").GetString());
+        }
+
+        var freeFirst = await Try("bad-1", Form(Free("Что мешало?"), Choice("А это?", Options)));
+        var fiveInBot = await Try("bad-2", Form(Choice("Первый", Many(5)), Free("Что мешало?")));
+        var sevenLater = await Try("bad-3", Form(Choice("Первый", Options), Choice("Второй", Many(7))));
+        var sevenQuestions = await Try("bad-4", Form(Enumerable.Range(1, 7).Select(i => Choice($"Вопрос {i}", Options)).ToArray()));
+        var otherTwice = await Try("bad-5", Form(Choice("Первый", ["Да", "Другое"], allowOther: true)));
+        var noText = await Try("bad-6", Form(Choice("Первый", Options), Free("  ")));
+        var empty = await Try("bad-7", new { questions = Array.Empty<object>() });
+        var withButton = await PrepareForm("bad-8", ThreeQuestions(), buttonText: "Открыть");
+        var good = await Try("good", Form(Choice("Первый", Many(4), allowOther: true), Choice("Второй", Many(6), allowOther: true), Free("Третий")));
+
+        freeFirst.Should().Be((HttpStatusCode.BadRequest, "Первый вопрос приходит в бот кнопками, поэтому он должен быть с вариантами ответа. Поставь свободный вопрос вторым или дальше."));
+        fiveInBot.Should().Be((HttpStatusCode.BadRequest, "Первый вопрос приходит в бот кнопками — у него не больше 4 вариантов. Убери лишние или поставь первым другой вопрос."));
+        sevenLater.Code.Should().Be(HttpStatusCode.BadRequest);
+        sevenLater.Error.Should().StartWith("Вопрос 2:");
+        sevenQuestions.Should().Be((HttpStatusCode.BadRequest, "В опросе не больше 6 вопросов."));
+        otherTwice.Code.Should().Be(HttpStatusCode.BadRequest);
+        noText.Should().Be((HttpStatusCode.BadRequest, "Вопрос 2: нет текста."));
+        empty.Code.Should().Be(HttpStatusCode.BadRequest);
+        withButton.Code.Should().Be(HttpStatusCode.BadRequest);
+        good.Code.Should().Be(HttpStatusCode.OK);
+        (await CampaignKeys()).Should().Equal("good");
+
+        (await PrepareForm("good", Form(Choice("Первый", Many(4), allowOther: true), Choice("Второй", Many(6), allowOther: true), Free("Третий, но другой")))).Code
+            .Should().Be(HttpStatusCode.BadRequest, "a form does not change once the campaign exists");
+        (await PrepareForm("good", Form(Choice("Первый", Many(4), allowOther: true), Choice("Второй", Many(6), allowOther: true), Free("Третий")))).Code
+            .Should().Be(HttpStatusCode.OK, "the same form — the next part of the same survey");
+    }
+
+    private async Task<(User Fan, User Fan2, User Lukewarm, User Gone)> SeedFormAnswers(string key)
+    {
+        var fan = await AccessEnded();
+        var fan2 = await AccessEnded();
+        var lukewarm = await AccessEnded();
+        var gone = await AccessEnded();
+        await AccessEnded(); // got the survey, said nothing
+        await LaunchForm(key, ThreeQuestions());
+        await Press(fan, key, 0);
+        await Press(fan2, key, 0);
+        await Press(lukewarm, key, 1);
+        await Press(gone, key, 3);
+        await OpenForm(fan, key);
+        await AnswerInForm(fan, key, "q2", option: "Только TraleBot");
+        await AnswerInForm(fan, key, "q3", text: "Мало озвучки");
+        await FinishForm(fan, key);
+        await OpenForm(fan2, key);
+        await AnswerInForm(fan2, key, "q2", other: true, text: "Сериалы");
+        await OpenForm(lukewarm, key);
+        await AnswerInForm(lukewarm, key, "q2", option: "Репетитор или курсы");
+        await AnswerInForm(lukewarm, key, "q3", text: "Скучные уроки");
+        await FinishForm(lukewarm, key);
+        return (fan, fan2, lukewarm, gone);
+    }
+
+    [Test]
+    public async Task Results_show_the_funnel_each_question_and_the_share_of_the_very_disappointed_among_those_who_still_use_it()
+    {
+        var people = await SeedFormAnswers("form-results");
+
+        var results = await Results("form-results");
+
+        Funnel(results).Should().Be((5, 4, 3, 2));
+        results.GetProperty("summary").GetProperty("title").GetString().Should().Be("Что ты почувствуешь, если TraleBot завтра исчезнет?");
+        results.GetProperty("summary").GetProperty("questions").GetInt32().Should().Be(3);
+        results.GetProperty("segment").ValueKind.Should().Be(JsonValueKind.Null);
+        var questions = results.GetProperty("questions").EnumerateArray().ToList();
+        static List<(string?, int)> Counts(JsonElement q) => q.GetProperty("options").EnumerateArray()
+            .Select(o => (o.GetProperty("option").GetString(), o.GetProperty("count").GetInt32())).ToList();
+        Counts(questions[0]).Should().Equal(("Очень расстроюсь", 2), ("Немного расстроюсь", 1), ("Мне всё равно", 0), ("Уже не пользуюсь", 1));
+        var headline = questions[0].GetProperty("headline");
+        (headline.GetProperty("option").GetString(), headline.GetProperty("without").GetString(), headline.GetProperty("chose").GetInt32(), headline.GetProperty("of").GetInt32())
+            .Should().Be(("Очень расстроюсь", "Уже не пользуюсь", 2, 3), "two of the three who still use it");
+        Counts(questions[1]).Should().Equal(("Репетитор или курсы", 1), ("Другие приложения", 0), ("Только TraleBot", 1), ("Другое", 1));
+        questions[1].GetProperty("answered").GetInt32().Should().Be(3);
+        questions[1].GetProperty("headline").ValueKind.Should().Be(JsonValueKind.Null);
+        questions[1].GetProperty("texts").EnumerateArray().Single().GetProperty("text").GetString().Should().Be("Сериалы");
+        questions[1].GetProperty("texts")[0].GetProperty("telegramId").GetInt64().Should().Be(people.Fan2.TelegramId);
+        questions[2].GetProperty("kind").GetString().Should().Be("text");
+        questions[2].GetProperty("options").GetArrayLength().Should().Be(0);
+        questions[2].GetProperty("texts").EnumerateArray().Select(t => t.GetProperty("text").GetString()).Should().BeEquivalentTo("Мало озвучки", "Скучные уроки");
+
+        (await Admin(HttpMethod.Get, "feedback/surveys/no-such")).Code.Should().Be(HttpStatusCode.NotFound);
+        (await Call(people.Fan.TelegramId, HttpMethod.Get, "/api/admin/feedback/surveys/form-results")).Code.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task Results_can_be_narrowed_to_those_who_chose_one_option_of_the_first_question()
+    {
+        await SeedFormAnswers("form-segment");
+
+        var fans = await Results("form-segment", "Очень расстроюсь");
+        var unknown = await Results("form-segment", "Такого варианта нет");
+
+        fans.GetProperty("segment").GetString().Should().Be("Очень расстроюсь");
+        Funnel(fans).Should().Be((5, 4, 3, 2), "the funnel is of the whole survey");
+        var questions = fans.GetProperty("questions").EnumerateArray().ToList();
+        questions[0].GetProperty("answered").GetInt32().Should().Be(2);
+        questions[1].GetProperty("options").EnumerateArray().Select(o => (o.GetProperty("option").GetString(), o.GetProperty("count").GetInt32()))
+            .Should().Equal(("Репетитор или курсы", 0), ("Другие приложения", 0), ("Только TraleBot", 1), ("Другое", 1));
+        questions[2].GetProperty("texts").EnumerateArray().Select(t => t.GetProperty("text").GetString()).Should().Equal("Мало озвучки");
+        unknown.GetProperty("segment").ValueKind.Should().Be(JsonValueKind.Null);
+        unknown.GetProperty("questions")[1].GetProperty("answered").GetInt32().Should().Be(3);
+    }
+
+    [Test]
+    public async Task The_report_query_names_the_questions_and_cuts_the_answers_by_the_first_one()
+    {
+        await SeedFormAnswers("form-report");
+        var queries = ReportQueries();
+
+        var summary = (await Query(queries[0])).Where(r => (string)r["campaign"]! == "form-report")
+            .ToDictionary(r => (Convert.ToInt32(r["question_no"]), (string)r["answer"]!));
+        var texts = (await Query(queries[1])).Select(t => ((string)t["question"]!, (string)t["answer"]!, (string)t["text"]!)).ToList();
+        var cut = (await Query(queries[2])).Select(r => ((string)r["first_answer"]!, Convert.ToInt32(r["people"]), Convert.ToInt32(r["question_no"]), (string)r["answer"]!, Convert.ToInt32(r["answers"]))).ToList();
+
+        summary.Keys.Should().BeEquivalentTo(new[]
+        {
+            (1, "Очень расстроюсь"), (1, "Немного расстроюсь"), (1, "Уже не пользуюсь"),
+            (2, "Только TraleBot"), (2, "Другое"), (2, "Репетитор или курсы"), (3, "(text)")
+        });
+        summary[(1, "Очень расстроюсь")]["question"].Should().Be("Что ты почувствуешь, если TraleBot завтра исчезнет?");
+        Convert.ToDecimal(summary[(1, "Очень расстроюсь")]["share_pct"]).Should().Be(50.0m);
+        Convert.ToInt32(summary[(2, "Другое")]["with_text"]).Should().Be(1);
+        Convert.ToInt32(summary[(3, "(text)")]["answers"]).Should().Be(2);
+        Convert.ToDecimal(summary[(3, "(text)")]["share_pct"]).Should().Be(100.0m);
+        texts.Should().BeEquivalentTo(new[]
+        {
+            ("Чем ещё ты пользуешься для грузинского?", "Другое", "Сериалы"),
+            ("А что в последний раз раздражало или мешало?", "", "Мало озвучки"),
+            ("А что в последний раз раздражало или мешало?", "", "Скучные уроки")
+        });
+        cut.Should().BeEquivalentTo(new[]
+        {
+            ("Очень расстроюсь", 2, 2, "Только TraleBot", 1), ("Очень расстроюсь", 2, 2, "Другое", 1), ("Очень расстроюсь", 2, 3, "(text)", 1),
+            ("Немного расстроюсь", 1, 2, "Репетитор или курсы", 1), ("Немного расстроюсь", 1, 3, "(text)", 1)
+        });
+    }
+
+    // ── Аудитории по активности ──────────────────────────────────────────────
+
+    [Test]
+    public async Task People_can_be_picked_by_whether_they_studied_in_the_last_thirty_days()
+    {
+        var lessonLately = await AccessEnded();
+        var wordLately = await AccessEnded();
+        var quizLately = await AccessEnded();
+        var quizLongAgo = await AccessEnded();
+        var nothingEver = await AccessEnded();           // registered 200 days ago, no trace since
+        var justRegistered = await AddUser(3);           // no trace yet, but came within the window
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            db.MiniAppUserProgresses.Add(new MiniAppUserProgress { Id = Guid.NewGuid(), UserId = lessonLately.Id, LastPlayedAtUtc = DateTime.UtcNow.AddDays(-29) });
+            db.MiniAppUserProgresses.Add(new MiniAppUserProgress { Id = Guid.NewGuid(), UserId = quizLongAgo.Id, LastPlayedAtUtc = DateTime.UtcNow.AddDays(-90) });
+            db.Quizzes.Add(new UserQuiz { Id = Guid.NewGuid(), UserId = quizLongAgo.Id, DateStarted = DateTime.UtcNow.AddDays(-31) });
+            db.Quizzes.Add(new UserQuiz { Id = Guid.NewGuid(), UserId = quizLately.Id, DateStarted = DateTime.UtcNow.AddDays(-10) });
+            db.VocabularyEntries.Add(new VocabularyEntry
+            {
+                Id = Guid.NewGuid(), UserId = wordLately.Id, Word = "ძაღლი", Definition = "собака", AdditionalInfo = "", Example = "",
+                DateAddedUtc = DateTime.UtcNow.AddDays(-2), UpdatedAtUtc = DateTime.UtcNow.AddDays(-2), Language = Language.Georgian
+            });
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+        var counts = (await Admin(HttpMethod.Get, "campaigns/audiences")).Body;
+        await PrepareForm("to-active", ThreeQuestions(), audience: "activeLately");
+        await PrepareForm("to-inactive", ThreeQuestions(), audience: "inactiveLong");
+
+        async Task<List<Guid>> Picked(string key) => await InScope(sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            return db.BroadcastDeliveries.AsNoTracking()
+                .Where(d => db.BroadcastCampaigns.Any(c => c.Id == d.CampaignId && c.Key == key)).Select(d => d.UserId).ToListAsync();
+        });
+        var owner = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Users.AsNoTracking().SingleAsync(u => u.TelegramId == Owner));
+        (await Picked("to-active")).Should().BeEquivalentTo(new[] { lessonLately.Id, wordLately.Id, quizLately.Id, justRegistered.Id, owner.Id });
+        (await Picked("to-inactive")).Should().BeEquivalentTo(new[] { quizLongAgo.Id, nothingEver.Id });
+        counts.GetProperty("activeLately").GetInt32().Should().Be(5);
+        counts.GetProperty("inactiveLong").GetInt32().Should().Be(2);
+    }
+
     // ── Что видит владелец ───────────────────────────────────────────────────
 
     private async Task<(User Expensive, User Unclear, User Silent, User Writer)> SeedAnswers()
@@ -622,15 +1024,18 @@ public class UserFeedbackTests : TestBase
             .Should().Equal(("expensive", 1), ("not_now", 0), ("unclear", 1), ("other", 0));
         var survey = body.GetProperty("surveys").EnumerateArray().Single();
         survey.GetProperty("key").GetString().Should().Be("seen");
-        survey.GetProperty("question").GetString().Should().Be("Что мешает заниматься?");
+        survey.GetProperty("title").GetString().Should().Be("Что мешает заниматься?");
+        survey.GetProperty("questions").GetInt32().Should().Be(1);
         survey.GetProperty("audience").GetString().Should().Be("accessEnded");
         survey.GetProperty("createdAtUtc").GetDateTime().Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(2));
-        survey.GetProperty("sent").GetInt32().Should().Be(3, "the three whose access ended; the one on trial is another audience");
-        survey.GetProperty("texts").GetInt32().Should().Be(1);
+        survey.GetProperty("funnel").GetProperty("sent").GetInt32().Should().Be(3, "the three whose access ended; the one on trial is another audience");
+        survey.GetProperty("funnel").GetProperty("answeredFirst").GetInt32().Should().Be(3);
         body.GetProperty("messages").GetInt32().Should().Be(2);
-        survey.GetProperty("options").EnumerateArray()
+        var results = (await Admin(HttpMethod.Get, "feedback/surveys/seen")).Body;
+        results.GetProperty("questions").EnumerateArray().Single().GetProperty("options").EnumerateArray()
             .Select(o => (o.GetProperty("option").GetString(), o.GetProperty("count").GetInt32()))
             .Should().Equal(("Дорого", 2), ("Пока не нужно", 0), ("Не понял, что получу", 1));
+        results.GetProperty("written").EnumerateArray().Single().GetProperty("text").GetString().Should().Be("Подробнее про цену");
         var recent = body.GetProperty("recent").EnumerateArray().ToList();
         recent.Should().HaveCount(7, "a question closed without an answer says nothing and is not listed");
         recent.Select(r => r.GetProperty("atUtc").GetDateTime()).Should().BeInDescendingOrder();
@@ -675,8 +1080,8 @@ public class UserFeedbackTests : TestBase
 
         var silent = surveys.Single();
         silent.GetProperty("key").GetString().Should().Be("silent");
-        silent.GetProperty("sent").GetInt32().Should().Be(1);
-        silent.GetProperty("options").EnumerateArray().Should().OnlyContain(o => o.GetProperty("count").GetInt32() == 0);
+        silent.GetProperty("funnel").GetProperty("sent").GetInt32().Should().Be(1);
+        silent.GetProperty("funnel").GetProperty("answeredFirst").GetInt32().Should().Be(0);
     }
 
     // ── Конструктор опроса ───────────────────────────────────────────────────
@@ -685,7 +1090,8 @@ public class UserFeedbackTests : TestBase
         string[]? options = null, int? sampleSize = null) =>
         Admin(HttpMethod.Post, "campaigns/prepare", new
         {
-            key = "", newSurveySlug = slug, audience, message = "Чего тебе не хватает?", sampleSize, dryRun, surveyOptions = options ?? Options
+            key = "", newSurveySlug = slug, audience, sampleSize, dryRun,
+            survey = options is { Length: 0 } ? null : Form(Choice("Чего тебе не хватает?", options ?? Options))
         });
 
     private Task<List<string>> CampaignKeys() => InScope(sp =>
@@ -694,33 +1100,48 @@ public class UserFeedbackTests : TestBase
     private static string Stem(string slug) => $"survey-{DateTime.UtcNow:yyyy-MM}-{slug}";
 
     [Test]
-    public async Task Every_ready_made_survey_passes_the_same_checks_as_a_typed_one_and_fits_a_phone_button()
+    public async Task Every_ready_made_form_passes_the_same_checks_as_a_built_one_and_its_first_question_fits_phone_buttons()
     {
         await AccessEnded();
         var (code, body) = await Admin(HttpMethod.Get, "surveys/presets");
         code.Should().Be(HttpStatusCode.OK);
         var presets = body.GetProperty("presets").EnumerateArray().ToList();
-        presets.Should().HaveCountGreaterThanOrEqualTo(4);
-        presets.Select(p => p.GetProperty("id").GetString()).Should().OnlyHaveUniqueItems().And.NotContain(SurveyPresets.Custom);
+        presets.Select(p => p.GetProperty("id").GetString()).Should().Equal("users", "left");
 
         foreach (var preset in presets)
         {
             var id = preset.GetProperty("id").GetString()!;
-            var options = preset.GetProperty("options").EnumerateArray().Select(o => o.GetString()!).ToArray();
-            options.Should().OnlyContain(o => o.Length <= SurveyPresets.MaxButtonLength, id);
-            preset.GetProperty("title").GetString().Should().NotBeNullOrWhiteSpace();
+            var form = preset.GetProperty("form");
+            var questions = form.GetProperty("questions").EnumerateArray().ToList();
+            questions.Should().HaveCountLessThanOrEqualTo(5, id);
+            var first = questions[0].GetProperty("options").EnumerateArray().Select(o => o.GetString()!).ToArray();
+            first.Should().HaveCountLessThanOrEqualTo(SurveyFormRules.MaxBotOptions, id);
+            first.Should().OnlyContain(o => o.Length <= SurveyPresets.MaxButtonLength, id);
 
             var (prepared, answer) = await Admin(HttpMethod.Post, "campaigns/prepare", new
             {
-                key = "", newSurveySlug = id, audience = "accessEnded", message = preset.GetProperty("question").GetString(),
-                sampleSize = (int?)null, dryRun = true, surveyOptions = options
+                key = "", newSurveySlug = id, audience = "accessEnded", sampleSize = (int?)null, dryRun = true,
+                survey = JsonSerializer.Deserialize<object>(form.GetRawText())
             });
 
             prepared.Should().Be(HttpStatusCode.OK, $"{id}: {(answer.ValueKind == JsonValueKind.Undefined ? "" : answer.GetRawText())}");
             var key = answer.GetProperty("key").GetString()!;
             key.Should().Be(Stem(id));
-            System.Text.Encoding.UTF8.GetByteCount(SurveyAnswerCommand.CallbackData(key + "-99", options.Length - 1))
+            System.Text.Encoding.UTF8.GetByteCount(SurveyAnswerCommand.CallbackData(key + "-99", first.Length))
                 .Should().BeLessThanOrEqualTo(64, "Telegram's limit for the data a button carries");
+        }
+
+        // Every ready question can stand first or later in a built form — except that a free one cannot be first.
+        var bank = body.GetProperty("bank").EnumerateArray().ToList();
+        bank.Select(q => q.GetProperty("text").GetString()).Should().OnlyHaveUniqueItems().And.HaveCountGreaterThanOrEqualTo(10);
+        foreach (var question in bank)
+        {
+            var (prepared, answer) = await Admin(HttpMethod.Post, "campaigns/prepare", new
+            {
+                key = "", newSurveySlug = "custom", audience = "accessEnded", sampleSize = (int?)null, dryRun = true,
+                survey = new { questions = new[] { JsonSerializer.Deserialize<object>(bank[0].GetRawText()), JsonSerializer.Deserialize<object>(question.GetRawText()) } }
+            });
+            prepared.Should().Be(HttpStatusCode.OK, $"{question.GetProperty("text").GetString()}: {(answer.ValueKind == JsonValueKind.Undefined ? "" : answer.GetRawText())}");
         }
 
         body.GetProperty("suggestions").EnumerateArray().Select(o => o.GetString()!)
@@ -777,8 +1198,8 @@ public class UserFeedbackTests : TestBase
 
         var rest = await Admin(HttpMethod.Post, "campaigns/prepare", new
         {
-            key, newSurveySlug = "parts", audience = "accessEnded", message = "Чего тебе не хватает?",
-            sampleSize = (int?)null, dryRun = false, surveyOptions = Options
+            key, newSurveySlug = "parts", audience = "accessEnded",
+            sampleSize = (int?)null, dryRun = false, survey = Form(Choice("Чего тебе не хватает?", Options))
         });
 
         rest.Code.Should().Be(HttpStatusCode.OK);
@@ -800,8 +1221,8 @@ public class UserFeedbackTests : TestBase
         var key = (await StartSurvey("resume", sampleSize: 2)).Body.GetProperty("key").GetString()!;
         await Admin(HttpMethod.Post, "campaigns/prepare", new
         {
-            key = "", newSurveySlug = "resume-test", audience = "owner", message = "Чего тебе не хватает?",
-            sampleSize = (int?)null, dryRun = false, surveyOptions = Options
+            key = "", newSurveySlug = "resume-test", audience = "owner",
+            sampleSize = (int?)null, dryRun = false, survey = Form(Choice("Чего тебе не хватает?", Options))
         });
         await Admin(HttpMethod.Post, $"campaigns/{key}/send", new { limit = 1 });
 
@@ -814,18 +1235,19 @@ public class UserFeedbackTests : TestBase
         left.GetProperty("key").GetString().Should().Be(key, "the trial sent to the owner is not a survey to come back to");
         left.GetProperty("picked").GetInt32().Should().Be(2);
         left.GetProperty("pending").GetInt32().Should().Be(1);
-        left.GetProperty("sent").GetInt32().Should().Be(1);
-        status.GetProperty("message").GetString().Should().Be("Чего тебе не хватает?");
+        left.GetProperty("funnel").GetProperty("sent").GetInt32().Should().Be(1);
         status.GetProperty("audience").GetString().Should().Be("accessEnded");
-        status.GetProperty("surveyAnswers").EnumerateArray().Select(a => a.GetProperty("option").GetString()).Should().Equal(Options);
+        var form = status.GetProperty("survey");
+        form.GetProperty("questions").EnumerateArray().Single().GetProperty("text").GetString().Should().Be("Чего тебе не хватает?");
+        form.GetProperty("questions")[0].GetProperty("options").EnumerateArray().Select(o => o.GetString()).Should().Equal(Options);
 
         // Finishing the sample, then the rest of the audience — by the key alone, with what the status gave back.
         await Admin(HttpMethod.Post, $"campaigns/{key}/send", new { limit = 25 });
         (await Listed()).GetProperty("pending").GetInt32().Should().Be(0);
         var rest = await Admin(HttpMethod.Post, "campaigns/prepare", new
         {
-            key, audience = status.GetProperty("audience").GetString(), message = status.GetProperty("message").GetString(),
-            sampleSize = (int?)null, dryRun = false, surveyOptions = Options
+            key, audience = status.GetProperty("audience").GetString(),
+            sampleSize = (int?)null, dryRun = false, survey = JsonSerializer.Deserialize<object>(form.GetRawText())
         });
         rest.Code.Should().Be(HttpStatusCode.OK);
         rest.Body.GetProperty("picked").GetInt32().Should().Be(1);
@@ -835,7 +1257,7 @@ public class UserFeedbackTests : TestBase
         var done = await Listed();
         done.GetProperty("picked").GetInt32().Should().Be(3);
         done.GetProperty("pending").GetInt32().Should().Be(0);
-        done.GetProperty("sent").GetInt32().Should().Be(3);
+        done.GetProperty("funnel").GetProperty("sent").GetInt32().Should().Be(3);
         people.Should().OnlyContain(p => SentTo(p, mark).Count == 1, "everyone got the survey once");
     }
 
@@ -914,7 +1336,7 @@ public class UserFeedbackTests : TestBase
         await InScope(sp => sp.GetRequiredService<TraleDbContext>().Database.ExecuteSqlInterpolatedAsync(
             $"""UPDATE "UserFeedback" SET "UpdatedAtUtc" = "CreatedAtUtc" WHERE "UserId" = {longAgo.Id}"""));
         var queries = ReportQueries();
-        queries.Should().HaveCount(2);
+        queries.Should().HaveCount(3);
 
         var summary = (await Query(queries[0]))
             .ToDictionary(r => ((string)r["kind"]!, (string)r["campaign"]!, (string)r["answer"]!));

@@ -16,9 +16,15 @@ public class UserFeedback
     /// person came by "Написать подробнее" under a survey.</summary>
     public string? CampaignKey { get; set; }
 
+    /// <summary>For <see cref="UserFeedbackKind.Survey"/>: which question of the campaign's form the row answers
+    /// (<see cref="SurveyQuestion.Id"/>).</summary>
+    public string? QuestionId { get; set; }
+
     /// <summary>The chosen option: a code from <see cref="PaywallDeclineOptions"/> for the paywall
-    /// question, the text of the pressed button for a survey. Null for a paywall question that was
-    /// shown and closed without an answer, and for a free message.</summary>
+    /// question; for a survey — the text of the chosen option, or <see cref="SurveyForm.OtherLabel"/>
+    /// when the person answered in their own words (then <see cref="Text"/> holds them). Null for a
+    /// paywall question that was shown and closed without an answer, for an answer to a free-text
+    /// question and for a free message.</summary>
     public string? Option { get; set; }
 
     /// <summary>What the person wrote in their own words.</summary>
@@ -36,7 +42,7 @@ public enum UserFeedbackKind
     /// <summary>"Что остановило?" after the paywall was closed without a purchase. The row appears
     /// when the question is shown — this is what limits it to once in 30 days.</summary>
     PaywallDecline = 0,
-    /// <summary>A button of a survey broadcast. One row per person per campaign.</summary>
+    /// <summary>An answer to one question of a survey broadcast. One row per person per question.</summary>
     Survey = 1,
     /// <summary>Free text from the "Написать автору" screen of the mini-app.</summary>
     Message = 2
