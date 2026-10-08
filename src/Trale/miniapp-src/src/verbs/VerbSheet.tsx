@@ -8,6 +8,7 @@ import { OVERLAY, useOverlay } from './ui/overlayStack'
 import { hintSeen, markHintSeen } from './ui/hints'
 import SessionEntry from './session/SessionEntry'
 import FormsTable from './FormsTable'
+import FamilyNote from './family/FamilyNote'
 
 interface Props {
   verbId: string
@@ -130,7 +131,13 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             )}
           </div>
 
-          <SessionEntry verb={verb} />
+          {/* Глагол из семьи: что он такое в ней — до кнопки игры, чтобы было понятно, почему игра короткая. */}
+          <FamilyNote verb={verb} onOpenVerb={setVerbId} show="member" />
+
+          <SessionEntry verb={verb} onOpenVerb={setVerbId} />
+
+          {/* У основного глагола семья — одной прокручиваемой строкой под кнопкой: игра остаётся на виду. */}
+          <FamilyNote verb={verb} onOpenVerb={setVerbId} show="base" />
 
           <FormsTable verb={verb} person={person} onPerson={pickPerson} highlight={highlight} initialRare={initialRare} pulsePerson={hint ? 1 : undefined} />
 

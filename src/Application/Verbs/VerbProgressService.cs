@@ -14,7 +14,8 @@ public record VerbFormProgressState(
     string Tense, int Person, int Step, int BestStep, int Reviews, DateTime? NextDueAtUtc, bool Due);
 
 /// <summary>A verb's ladder for one user. <see cref="CanLearn"/> is true for every stored verb (it used to exclude model-made ones).</summary>
-public record VerbProgressState(string Lemma, bool CanLearn, int Total, IReadOnlyList<VerbFormProgressState> Forms);
+/// <param name="Curated">The verb comes from the curated catalog (not written by a model).</param>
+public record VerbProgressState(string Lemma, bool CanLearn, int Total, IReadOnlyList<VerbFormProgressState> Forms, bool Curated = true);
 
 /// <summary>The state of one form after an answer, as the mini-app reports it.</summary>
 public record VerbFormStep(string Tense, int Person, int Step, int Reviews, DateTime AtUtc);
@@ -80,7 +81,7 @@ public class VerbProgressService(ITraleDbContext dbContext)
             .Select(p => new VerbFormProgressState(
                 p.Tense, p.Person, p.Step, p.BestStep, p.Reviews, p.NextDueAtUtc, IsDue(p.Step, p.NextDueAtUtc, now)))
             .ToList();
-        return new VerbProgressState(lemma, true, cells.Count, forms);
+        return new VerbProgressState(lemma, true, cells.Count, forms, verb.Status == VerbStatus.Verified);
     }
 
     /// <summary>

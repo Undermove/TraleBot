@@ -101,6 +101,8 @@ public static class DependencyInjection
         services.AddScoped<VerbQuizCreditService>();
         services.AddSingleton<VerbStoryCatalog>();
         services.AddSingleton(_ => VerbLevelCatalog.Load(Path.Combine(AppContext.BaseDirectory, "Verbs", "levels.json")));
+        services.AddSingleton(_ => VerbFamilyCatalog.Load(Path.Combine(AppContext.BaseDirectory, "Verbs", "families.json")));
+        services.AddScoped<VerbFamilyQuery>();
         services.AddScoped<VerbSectionQuery>();
         services.AddScoped<RecordVerbSectionVisitService>();
         services.AddScoped<FeedTreatService>();

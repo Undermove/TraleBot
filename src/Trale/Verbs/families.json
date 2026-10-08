@@ -1,0 +1,159 @@
+{
+ "comment": "Собрано scripts/verbs/build-families.mjs; руками не правится. Таблицы сверки — scripts/verbs/FAMILIES.md.",
+ "here": "მო",
+ "there": "მი",
+ "families": [
+  {
+   "id": "go",
+   "title": "Идти: куда?",
+   "baseName": "идти",
+   "enabled": true,
+   "base": "მიდის",
+   "lessonModule": "preverbs",
+   "introLessons": [1,2,3],
+   "members": [
+    {
+     "lemma": "მიდის",
+     "role": "base",
+     "prefixes": ["მი","წა"],
+     "direction": "none",
+     "toward": "there",
+     "directionRu": null,
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "მოდის",
+     "role": "member",
+     "prefixes": ["მო"],
+     "direction": "none",
+     "toward": "here",
+     "directionRu": null,
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "გადის",
+     "role": "member",
+     "prefixes": ["გა"],
+     "direction": "out",
+     "toward": "there",
+     "directionRu": "наружу",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "შედის",
+     "role": "member",
+     "prefixes": ["შე"],
+     "direction": "in",
+     "toward": "there",
+     "directionRu": "внутрь",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "გამოდის",
+     "role": "member",
+     "prefixes": ["გამო"],
+     "direction": "out",
+     "toward": "here",
+     "directionRu": "наружу",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "გადადის",
+     "role": "member",
+     "prefixes": ["გადა"],
+     "direction": "across",
+     "toward": "there",
+     "directionRu": "через",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "ჩადის",
+     "role": "member",
+     "prefixes": ["ჩა"],
+     "direction": "down",
+     "toward": "there",
+     "directionRu": "вниз",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "ადის",
+     "role": "member",
+     "prefixes": ["ა"],
+     "direction": "up",
+     "toward": "there",
+     "directionRu": "вверх",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "ჩამოდის",
+     "role": "member",
+     "prefixes": ["ჩამო"],
+     "direction": "down",
+     "toward": "here",
+     "directionRu": "вниз",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "შემოდის",
+     "role": "member",
+     "prefixes": ["შემო"],
+     "direction": "in",
+     "toward": "here",
+     "directionRu": "внутрь",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "ამოდის",
+     "role": "member",
+     "prefixes": ["ამო"],
+     "direction": "up",
+     "toward": "here",
+     "directionRu": "вверх",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    },
+    {
+     "lemma": "გადმოდის",
+     "role": "member",
+     "prefixes": ["გადმო"],
+     "direction": "across",
+     "toward": "here",
+     "directionRu": "через",
+     "cells": 66,
+     "regular": 66,
+     "deviations": []
+    }
+   ],
+   "related": [
+    {
+     "lemma": "დადის",
+     "prefix": "და",
+     "cells": 18,
+     "regular": 18,
+     "reasons": ["в каталоге нет времён: будущее, «сделал бы», «если бы сделал», прошедшее «сделал», «надо сделать», «оказывается, сделал», «должен был сделать», пожелание (есть 3 из 11)","значение приставки в уроке («завершённость») — не направление"]
+    }
+   ]
+  }
+ ]
+}

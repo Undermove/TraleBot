@@ -47,7 +47,7 @@ export default function FormsTable({ verb, person, onPerson, highlight, initialR
               <span className="block text-[13px] font-bold text-jewelInk">{TENSES[t].name}</span>
             )}
           </span>
-          <VerbForm variants={verb.tenses[t]?.[person] ?? []} big root={verb.root} />
+          <VerbForm variants={verb.tenses[t]?.[person] ?? []} big root={verb.root} prefixes={verb.family?.prefixes} />
         </div>
       )
     })

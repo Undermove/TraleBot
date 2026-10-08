@@ -58,6 +58,22 @@ public static class VerbLevelRules
     public static bool ExamPassed(int cells, int asked, int correct) =>
         asked >= Math.Min(ExamMinQuestions, cells) && asked > 0 && correct <= asked && correct >= asked - ExamMistakesAllowed;
 
+    /// <summary>Questions in the prefix check of a family member (the last scene of its prefix session).</summary>
+    public const int PrefixCheckQuestions = 6;
+
+    /// <summary>
+    /// A family member — the family's base verb with a direction prefix — becomes "learned" without
+    /// an exam of its own: its endings are the base verb's, already examined. It takes both
+    /// (1) the base verb is learned and (2) the member's prefix check is passed:
+    /// <see cref="PrefixCheckQuestions"/> one-attempt questions that tell this prefix from the
+    /// family's other ones, with at most <see cref="ExamMistakesAllowed"/> mistake. A check played
+    /// while the base is not learned does not count. The old way stays open: a member's own exam
+    /// (<see cref="ExamPassed"/>) makes it learned whatever the base is, and a member learned
+    /// before families existed stays learned — the exam mark is never taken back.
+    /// </summary>
+    public static bool PrefixCheckPassed(bool baseLearned, int asked, int correct) =>
+        baseLearned && asked >= PrefixCheckQuestions && correct <= asked && correct >= asked - ExamMistakesAllowed;
+
     /// <summary>The name the mini-app and its API use for a level.</summary>
     public static string Key(VerbLevel level) => level switch
     {

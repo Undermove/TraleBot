@@ -18,11 +18,12 @@ public class VerbLevelsDataTests
         JsonNode.Parse(Read("verbs.json"))!["verbs"]!.AsArray().Select(v => v!["lemma"]!.GetValue<string>()).ToList();
 
     [Test]
-    public void Every_curated_verb_is_in_exactly_one_pack()
+    public void Every_curated_verb_is_in_exactly_one_pack_or_family_card()
     {
-        var placed = Ladder.Levels.SelectMany(l => l.Packs).SelectMany(p => p.Verbs).ToList();
+        var placed = Ladder.Levels.SelectMany(l => l.Units).SelectMany(p => p.Verbs).ToList();
 
-        placed.Should().OnlyHaveUniqueItems("a verb must not sit in two packs");
+        placed.Should().OnlyHaveUniqueItems("a verb must not sit in two packs, or in a pack and on a family card");
+        Ladder.Lemmas.Should().BeEquivalentTo(placed);
         placed.Should().BeEquivalentTo(CatalogLemmas(), "every catalog verb is led to, and nothing outside the catalog is");
     }
 
@@ -41,7 +42,7 @@ public class VerbLevelsDataTests
     {
         Ladder.Levels.Select(l => l.Id).Should().Equal(1, 2, 3, 4, 5);
         Ladder.Levels.Should().OnlyContain(l => l.Title.Length > 0);
-        Ladder.Levels[0].Packs.Sum(p => p.Verbs.Count).Should().BeLessThan(Ladder.Levels[1].Packs.Sum(p => p.Verbs.Count));
+        Ladder.Levels[0].Units.Sum(p => p.Verbs.Count).Should().BeLessThan(Ladder.Levels[1].Units.Sum(p => p.Verbs.Count));
     }
 
     [Test]

@@ -23,8 +23,10 @@ public record VerbMemory(int SessionsPlayed, IReadOnlyList<string> RecentScenes,
 /// <summary>A session that was started and not finished — the mini-app continues it.</summary>
 public record ActiveVerbSession(Guid Id, string PlanJson, int Scene, int Done);
 
+/// <param name="Family">The verb's family, if it has one: decides whether its session is the short prefix session.</param>
 public record VerbLearningState(
-    VerbProgressState Progress, VerbLevel Level, VerbMemory Memory, VerbLearnerProfile Learner, ActiveVerbSession? Session);
+    VerbProgressState Progress, VerbLevel Level, VerbMemory Memory, VerbLearnerProfile Learner, ActiveVerbSession? Session,
+    VerbFamilyState? Family = null);
 
 /// <summary>
 /// Where a session is after an answer, as the mini-app reports it. The same report is sent again
@@ -59,7 +61,8 @@ public class VerbLearningService(
     ITraleDbContext dbContext,
     VerbProgressService formProgress,
     DictionaryVerbsQuery dictionaryVerbs,
-    IProgressCalculator progressCalculator)
+    IProgressCalculator progressCalculator,
+    VerbFamilyQuery families)
 {
     public const int MaxPlanLength = 16_000;
 
@@ -69,8 +72,16 @@ public class VerbLearningService(
     /// <summary>Scene types a session may consist of — the same names the mini-app's director uses.</summary>
     public static readonly IReadOnlySet<string> SceneTypes = new HashSet<string>
     {
-        "story", "meet", "pick", "time", "bones", "builder", "phrases", "warmup", "exam"
+        "story", "meet", "pick", "time", "bones", "builder", "phrases", "warmup", "exam",
+        PrefixIntroScene, PrefixScene, PrefixCheckScene
     };
+
+    /// <summary>Scenes of a family member's prefix session: the introduction, the play and the check.</summary>
+    public const string PrefixIntroScene = "prefixintro";
+    public const string PrefixScene = "prefix";
+
+    /// <summary>The scene whose tally is judged by <see cref="VerbLevelRules.PrefixCheckPassed"/> instead of the exam rule.</summary>
+    public const string PrefixCheckScene = "prefixcheck";
 
     /// <summary>One remembered session is its scene types joined by this: "meet+time+phrases".</summary>
     public const char SceneSeparator = '+';
@@ -105,7 +116,9 @@ public class VerbLearningService(
                 row?.StoryCompleted ?? false,
                 row?.ExamPassedAtUtc != null),
             await LearnerAsync(user, alphabetLessons, ct),
-            session);
+            session,
+            // A model-made record never joins a family, even under a family verb's lemma.
+            progress.Curated ? await families.StateAsync(user.Id, lemma, ct) : null);
     }
 
     /// <summary>
@@ -188,7 +201,14 @@ public class VerbLearningService(
                     ParseScenes(row.RecentScenesJson)
                         .Append(string.Join(SceneSeparator, report.Scenes.Where(SceneTypes.Contains)))
                         .TakeLast(UserVerb.RecentSessionsKept));
-                if (VerbLevelRules.ExamPassed(progress.Total, report.ExamAsked, report.ExamCorrect))
+                // A prefix session ends with the prefix check, not with the exam: its tally counts only
+                // for a family member whose base verb is learned.
+                var passed = report.Scenes.Contains(PrefixCheckScene)
+                    ? progress.Curated
+                      && await families.StateAsync(user.Id, lemma, ct) is { Member.Role: VerbFamilyCatalog.Member } family
+                      && VerbLevelRules.PrefixCheckPassed(family.BaseLearned, report.ExamAsked, report.ExamCorrect)
+                    : VerbLevelRules.ExamPassed(progress.Total, report.ExamAsked, report.ExamCorrect);
+                if (passed)
                 {
                     row.ExamPassedAtUtc ??= now;
                 }

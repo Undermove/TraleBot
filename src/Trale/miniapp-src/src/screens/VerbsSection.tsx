@@ -183,6 +183,7 @@ export default function VerbsSection({ progress, navigate, source, onPurchaseSuc
               onToggle={() => { setLevelTouched(true); setOpenLevel(openLevel === level.id ? null : level.id) }}
               openPack={openPack} onTogglePack={id => setOpenPack(openPack === id ? null : id)}
               onVerb={verb => openVerb(verb.id)} currentPack={section.next?.packId}
+              hasAccess={hasAccess} onPlay={verb => playVerb(verb?.id ?? null)}
             />
           ))}
         </section>

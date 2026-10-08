@@ -9,6 +9,7 @@ import LevelBadge from './LevelBadge'
 import Session from './Session'
 import { loadLearning } from './sync'
 import type { VerbLearningDto } from './types'
+import { isPrefixSession } from '../family/prefixPlan'
 
 // Вход в игру с вида глагола: уровень и одна кнопка. Что именно будет в сессии, человек не выбирает —
 // её собирает постановщик (plan.ts). Показывается только у проверенных глаголов.
@@ -16,6 +17,8 @@ import type { VerbLearningDto } from './types'
 /** Подпись кнопки по состоянию: начать, продолжить начатую сессию, повторить, сдать экзамен. */
 export function entryLabel(learning: VerbLearningDto): { text: string; quiet: boolean } {
   if (learning.session) return { text: 'Продолжить игру', quiet: false }
+  // Глагол из семьи при выученном основном: осталась только приставка.
+  if (isPrefixSession(learning) && learning.level !== 'learned') return { text: 'Выучить приставку — 2 минуты', quiet: false }
   if (learning.level === 'new') return { text: 'Выучить играя', quiet: false }
   const due = learning.progress.forms.filter(f => f.due).length
   if (learning.level === 'learned') return due ? { text: 'Повторить играя', quiet: false } : { text: 'Сыграть ещё', quiet: true }
@@ -25,7 +28,13 @@ export function entryLabel(learning: VerbLearningDto): { text: string; quiet: bo
 
 interface Loaded { learning: VerbLearningDto; stories: VerbStoryDto[] }
 
-export default function SessionEntry({ verb }: { verb: VerbDto }) {
+interface Props {
+  verb: VerbDto
+  /** Открыть другой глагол в этой же карточке — основной глагол семьи. */
+  onOpenVerb?: (verbId: string) => void
+}
+
+export default function SessionEntry({ verb, onOpenVerb }: Props) {
   const items = useMemo(() => buildItems(verb), [verb])
   const [loaded, setLoaded] = useState<Loaded | null>(null)
   const [failed, setFailed] = useState(false)
@@ -51,16 +60,38 @@ export default function SessionEntry({ verb }: { verb: VerbDto }) {
   const { learning } = loaded
   const label = entryLabel(learning)
   const known = learning.progress.forms.filter(f => f.step > STEP.NEW).length
+  const family = learning.family
+  const prefix = isPrefixSession(learning)
+  // Тот же глагол, что основной, только с приставкой, а основной ещё не выучен: сначала — он.
+  const baseFirst = !!family && family.role === 'member' && !family.baseLearned && learning.level !== 'learned' && !learning.session && !!onOpenVerb
   return (
     <>
-      <div data-testid="session-entry">
-        <Button variant={label.quiet ? 'ghost' : 'primary'} onClick={() => setOpen(true)}>{label.text}</Button>
-        {/* Под кнопкой одна строка: у нового глагола — что будет, дальше — уровень. */}
-        <div className="mt-2 flex items-center justify-center text-[12px] text-jewelInk-mid">
-          {known > 0
-            ? <LevelBadge level={learning.level} />
-            : <span data-testid="session-entry-about">2–3 минуты · игру подберу сам</span>}
-        </div>
+      <div data-testid="session-entry" data-mode={baseFirst ? 'base-first' : prefix ? 'prefix' : 'full'}>
+        {baseFirst ? (
+          <>
+            <Button onClick={() => onOpenVerb!(family!.baseId)}>
+              <span data-testid="session-entry-base">Сначала «{family!.baseName}»</span>
+            </Button>
+            <div className="mt-2 text-center text-[12px] text-jewelInk-mid" data-testid="session-entry-about">
+              Окончания здесь те же, что у «{family!.baseName}». Выучишь его — тут останется только приставка, на две минуты.
+            </div>
+            <button className="mt-1 w-full min-h-[44px] text-[12px] text-navy underline" data-testid="session-entry-alone" onClick={() => setOpen(true)}>
+              {known > 0 ? 'Продолжить этот глагол отдельно' : 'Учить этот глагол отдельно'}
+            </button>
+          </>
+        ) : (
+          <>
+            <Button variant={label.quiet ? 'ghost' : 'primary'} onClick={() => setOpen(true)}>{label.text}</Button>
+            {/* Под кнопкой одна строка: у нового глагола — что будет, дальше — уровень. */}
+            <div className="mt-2 flex items-center justify-center text-[12px] text-jewelInk-mid">
+              {known > 0
+                ? <LevelBadge level={learning.level} />
+                : prefix
+                  ? <span data-testid="session-entry-about">окончания ты уже знаешь по «{family!.baseName}» — спрошу только направление</span>
+                  : <span data-testid="session-entry-about">2–3 минуты · игру подберу сам</span>}
+            </div>
+          </>
+        )}
       </div>
       {open && createPortal(
         <Session

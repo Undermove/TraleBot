@@ -486,6 +486,11 @@ export function reportVerbSectionOpen(source: string) {
   return request<{ ok: boolean }>('/api/miniapp/verbs/section/open', { method: 'POST', body: JSON.stringify({ source }) })
 }
 
+/** Семья глаголов с формами всех её членов и вступлением из урока о приставках. */
+export function fetchVerbFamily(id: string) {
+  return request<import('./verbs/family/types').FamilyDto>(`/api/miniapp/verbs/families/${encodeURIComponent(id)}`)
+}
+
 export function fetchVerbLearning(id: string) {
   return request<VerbLearningDto>(`/api/miniapp/verbs/${encodeURIComponent(id)}/learning`)
 }
