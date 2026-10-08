@@ -26,6 +26,8 @@ export interface VerbDto extends VerbSummaryDto {
   root: string
   oddTenses: TenseKey[]
   model: { id: string; title: string; ru: string } | null
+  /** Глагол из семьи (один глагол с разными приставками направления): кто он в ней. Нет поля — обычный глагол. */
+  family?: import('./family/types').VerbFamilyInfo | null
   /** tense → шесть лиц → варианты формы. */
   tenses: Partial<Record<TenseKey, string[][]>>
   /** Что значит каждая форма простыми словами: время → шесть фраз («я хочу», «ты хочешь», …). Только главные времена. */

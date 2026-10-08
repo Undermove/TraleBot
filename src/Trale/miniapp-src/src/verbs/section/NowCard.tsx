@@ -16,6 +16,8 @@ const EYEBROW: Record<SectionNextDto['kind'], string> = {
 
 export function nowButtonLabel(next: SectionNextDto): string {
   if (next.kind === 'review') return 'Повторить за минуту'
+  // Глагол из семьи при выученном основном: учить осталось только приставку.
+  if (next.familyBase) return next.kind === 'continue' ? 'Продолжить — 2 минуты' : 'Выучить направление — 2 минуты'
   return next.kind === 'continue' ? 'Продолжить — 2 минуты' : 'Играть 2 минуты'
 }
 
@@ -62,7 +64,9 @@ export default function NowCard({ next, hasAccess, onPlay }: Props) {
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-jewelInk-mid">
             {next.kind === 'review' && next.due > 0
               ? <span data-testid="verbs-now-due">{next.due} {pluralForms(next.due)} повторения</span>
-              : next.packTitle && <span>набор «{next.packTitle}»</span>}
+              : next.familyBase
+                ? <span data-testid="verbs-now-family">это «{next.familyBase}» с приставкой — окончания ты уже знаешь</span>
+                : next.packTitle && <span>набор «{next.packTitle}»</span>}
             {next.level !== 'new' && <LevelBadge level={next.level} compact />}
           </div>
         </div>

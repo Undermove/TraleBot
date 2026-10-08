@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { CatalogDto, ProgressState, Screen } from './types'
 import { defaultProgress, onProgressPublished, progressFromDto } from './progress'
+import { onOpenLessonModule } from './verbs/family/nav'
 import { resolveEntryScreen, hasEarnedXp } from './entryFlow'
 import { api } from './api'
 import Dashboard from './screens/Dashboard'
@@ -86,6 +87,8 @@ export default function App() {
   const [progress, setProgress] = useState<ProgressState>(defaultProgress)
   // Прогресс, начисленный не уроком (сессия глагола), приходит сюда — шапка обновляется сразу.
   useEffect(() => onProgressPublished(dto => setProgress(progressFromDto(dto))), [])
+  // Ссылка «урок о приставках» из карточки глагола и из сессии — они открыты поверх экрана и навигации не знают.
+  useEffect(() => onOpenLessonModule(moduleId => { setScreen({ kind: 'module', moduleId }); window.scrollTo(0, 0) }), [])
   const [catalog, setCatalog] = useState<CatalogDto | null>(null)
   const [authenticated, setAuthenticated] = useState(false)
   const [loadError, setLoadError] = useState(false)

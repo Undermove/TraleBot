@@ -7,6 +7,8 @@ import type { VerbProgressDto } from '../ladder/types'
 
 /** Виды сцен. Те же имена знает сервер (VerbLearningService.SceneTypes). */
 export type SceneType = 'story' | 'meet' | 'pick' | 'time' | 'bones' | 'builder' | 'phrases' | 'warmup' | 'exam'
+  // Сессия про приставку у глагола из семьи (family/prefixPlan.ts): вступление, игра, проверка.
+  | 'prefixintro' | 'prefix' | 'prefixcheck'
 export const QUIZ_SCENES: SceneType[] = ['meet', 'pick', 'phrases', 'warmup', 'exam']
 
 /** Уровень знания глагола. Считает сервер (VerbLevelRules), здесь — только названия. */
@@ -41,6 +43,9 @@ export interface PlannedScene {
   solvedBefore?: number
   /** Комикс. */
   storyId?: string
+  /** Сцены про приставку: семья и раунды (кого спросить, в какой клетке, из кого выбирать). */
+  familyId?: string
+  prefixRounds?: import('../family/prefixPlan').PrefixRound[]
   /** Можно ли в сцене просить печатать по-грузински. */
   typing: boolean
   /** Почему сцена попала в сессию — для тестов и отладки, человеку не показывается. */
@@ -73,6 +78,8 @@ export interface VerbLearningDto {
   learner: LearnerDto
   /** Начатая и не доигранная сессия. */
   session: { id: string; plan: SessionPlan; scene: number; done: number } | null
+  /** Глагол из семьи: кто он в ней и выучен ли основной. Нет — обычный глагол. */
+  family?: import('../family/types').FamilyLearningDto | null
 }
 
 /** Ответ POST /api/miniapp/verbs/{id}/session */

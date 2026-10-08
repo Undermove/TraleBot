@@ -7,7 +7,7 @@ import Bones from '../games/Bones'
 import Builder from '../games/Builder'
 import { schemeOf } from '../games/formParts'
 import TimeMachine from '../games/TimeMachine'
-import { buildItems, settleCapped, type LadderItem, type Progress } from '../ladder/engine'
+import { STEP, buildItems, settleCapped, type LadderItem, type Progress } from '../ladder/engine'
 import { readPending, toProgress } from '../ladder/progressStore'
 import StoryReader from '../story/StoryReader'
 import type { VerbStoryDto } from '../story/types'
@@ -16,6 +16,10 @@ import { OVERLAY, useOverlay } from '../ui/overlayStack'
 import { planContext } from './context'
 import Finish from './Finish'
 import { planSession, totalUnits } from './plan'
+import PrefixIntro from '../family/PrefixIntro'
+import PrefixScene, { type PrefixCheckResult } from '../family/PrefixScene'
+import { PREFIX_INTRO_HINT, isPrefixSession, planPrefixSession } from '../family/prefixPlan'
+import { hintSeen } from '../ui/hints'
 import QuizScene, { type ExamResult } from './QuizScene'
 import { createSessionSync } from './sync'
 import { QUIZ_SCENES, type SessionPlan, type VerbLearningDto, type VerbSessionSavedDto } from './types'
@@ -43,7 +47,11 @@ function startRun(verb: VerbDto, stories: VerbStoryDto[], learning: VerbLearning
   if (s && s.plan?.v === 1 && s.plan.scenes?.length && s.scene < s.plan.scenes.length) {
     return { id: s.id, plan: s.plan, scene: s.scene, done: s.done, resumed: true }
   }
-  return { id: newId(), plan: planSession(planContext(verb, learning, stories, items, progress)), scene: 0, done: 0, resumed: false }
+  // Глагол из семьи при выученном основном: учить осталось приставку, а не окончания.
+  const plan = verb.family && isPrefixSession(learning)
+    ? planPrefixSession({ verb, learning, items, progress, introSeen: hintSeen(PREFIX_INTRO_HINT) })
+    : null
+  return { id: newId(), plan: plan?.scenes.length ? plan : planSession(planContext(verb, learning, stories, items, progress)), scene: 0, done: 0, resumed: false }
 }
 
 export default function Session({ verb, stories, learning: initial, onExit }: Props) {
@@ -179,7 +187,36 @@ export default function Session({ verb, stories, learning: initial, onExit }: Pr
         />
       )
     }
+    if (current.type === 'prefixintro' && current.familyId) return <PrefixIntro key={key} familyId={current.familyId} scene={hooks} onExit={exit} />
+    if ((current.type === 'prefix' || current.type === 'prefixcheck') && current.familyId) {
+      return (
+        <PrefixScene
+          key={key} verbId={verb.id} familyId={current.familyId} rounds={current.prefixRounds ?? []} onExit={exit}
+          scene={{ ...hooks, onKnown: markKnown }}
+          onCheck={current.type === 'prefixcheck' ? result => { exam.current = prefixExam(result) } : undefined}
+        />
+      )
+    }
     return story ? <StoryReader key={key} story={story} onExit={exit} scene={hooks} /> : null
+  }
+
+  /** Слово верно выбрано в проверке приставки: окончания сданы с основным глаголом — оно уходит на повторение. */
+  function markKnown(cell: { tense: string; person: number }) {
+    const key = `${cell.tense}:${cell.person}`
+    const item = byKey.get(key)
+    const state = progress.current[key]
+    if (!item || (state && state.step >= STEP.MASTERED)) return
+    const next = { step: STEP.MASTERED, best: STEP.MASTERED, reviews: state?.reviews ?? 0, due: false }
+    progress.current = { ...progress.current, [key]: next }
+    sync.record(item, next)
+  }
+
+  /** Итог проверки приставки тем же видом, что итог экзамена: его ждут отчёт и финиш. */
+  function prefixExam(result: PrefixCheckResult): ExamResult {
+    return {
+      asked: result.asked, correct: result.correct,
+      missed: result.missed.map(c => byKey.get(`${c.tense}:${c.person}`)).filter((i): i is LadderItem => !!i)
+    }
   }
 
   return (
@@ -196,6 +233,7 @@ export default function Session({ verb, stories, learning: initial, onExit }: Pr
             <Finish
               verb={verb} items={items} touched={touched.current} exam={exam.current}
               levelBefore={levelBefore} saved={finish.saved} progress={progress.current}
+              prefix={run.plan.scenes.some(s => s.type === 'prefixcheck')}
               onMore={another} onDone={exit}
             />
           )}

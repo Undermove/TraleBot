@@ -1,5 +1,6 @@
 import React from 'react'
 import LevelBadge from '../session/LevelBadge'
+import FamilyCard from '../family/FamilyCard'
 import { cyr } from '../types'
 import { levelVerbs, packDone, progressOf, type SectionLevelDto, type SectionPackDto, type SectionVerbDto } from './types'
 
@@ -51,9 +52,12 @@ interface Props {
   currentPack?: string | null
   /** Полоску этого уровня подсвечивает знакомство с разделом. */
   tour?: boolean
+  /** Нужны карточке семьи: у неё своя кнопка «играть». */
+  hasAccess?: boolean
+  onPlay?: (verb: SectionVerbDto | null) => void
 }
 
-export default function LevelGroup({ level, open, onToggle, openPack, onTogglePack, onVerb, currentPack, tour }: Props) {
+export default function LevelGroup({ level, open, onToggle, openPack, onTogglePack, onVerb, currentPack, tour, hasAccess = true, onPlay }: Props) {
   const all = levelVerbs(level)
   const progress = progressOf(all)
   return (
@@ -74,6 +78,12 @@ export default function LevelGroup({ level, open, onToggle, openPack, onTogglePa
 
       {open && (
         <div className="relative z-[1] px-3 pb-3 flex flex-col gap-2">
+          {(level.families ?? []).map(family => (
+            <FamilyCard
+              key={family.id} family={family} hasAccess={hasAccess} current={currentPack === family.id}
+              onVerb={onVerb} onPlay={member => onPlay?.(member)}
+            />
+          ))}
           {level.packs.map(pack => (
             <Pack
               key={pack.id} pack={pack} open={openPack === pack.id} current={currentPack === pack.id}

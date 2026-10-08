@@ -9,9 +9,15 @@ namespace Application.Verbs;
 /// <summary>Five verbs (4–6) with a common theme — the unit the section leads a learner through.</summary>
 public record VerbPack(string Id, string Title, IReadOnlyList<string> Verbs);
 
-public record VerbLevelGroup(int Id, string Title, IReadOnlyList<VerbPack> Packs);
+/// <param name="Families">Family cards of the level: verbs of a family that stand in no pack. They come first in the level.</param>
+public record VerbLevelGroup(int Id, string Title, IReadOnlyList<VerbPack> Packs, IReadOnlyList<VerbPack>? Families = null)
+{
+    /// <summary>Family cards (their id carries <see cref="VerbFamilyCatalog.CardPrefix"/>) and packs, in the order the level leads through them.</summary>
+    public IEnumerable<VerbPack> Units =>
+        (Families ?? Array.Empty<VerbPack>()).Select(f => f with { Id = VerbFamilyCatalog.CardPrefix + f.Id }).Concat(Packs);
+}
 
-/// <summary>Where a verb stands in the ladder.</summary>
+/// <summary>Where a verb stands in the ladder. <paramref name="PackId"/> is a pack id or a family card id.</summary>
 public record VerbPlace(int LevelId, string PackId, int Order);
 
 /// <summary>
@@ -38,7 +44,7 @@ public class VerbLevelCatalog
         var order = 0;
         foreach (var level in levels)
         {
-            foreach (var pack in level.Packs)
+            foreach (var pack in level.Units)
             {
                 foreach (var lemma in pack.Verbs)
                 {

@@ -16,7 +16,13 @@ export interface SectionVerbDto {
 
 export interface SectionPackDto { id: string; title: string; verbs: SectionVerbDto[] }
 
-export interface SectionLevelDto { id: number; title: string; packs: SectionPackDto[] }
+export interface SectionLevelDto {
+  id: number
+  title: string
+  packs: SectionPackDto[]
+  /** Карточки семей: один глагол с приставками направления вместо наборов. Стоят в уровне первыми. */
+  families?: import('../family/types').SectionFamilyDto[]
+}
 
 export interface SectionNextDto {
   /** continue — глагол в работе, review — пора повторить, new — следующий по порядку. */
@@ -29,6 +35,8 @@ export interface SectionNextDto {
   levelId: number | null
   packId: string | null
   packTitle: string | null
+  /** Сессия будет короткой, про приставку: это названный глагол («идти») с приставкой, и он уже выучен. */
+  familyBase?: string | null
 }
 
 export interface SectionMyVerbDto {
@@ -72,7 +80,11 @@ export function progressOf(verbs: SectionVerbDto[]) {
   return { learned, total: verbs.length, fraction: verbs.length ? steps / (verbs.length * TOP) : 0 }
 }
 
-export const levelVerbs = (level: SectionLevelDto) => level.packs.flatMap(p => p.verbs)
+/** Глаголы уровня: члены семей, которые стоят в карточке семьи, и глаголы наборов. */
+export const levelVerbs = (level: SectionLevelDto): SectionVerbDto[] => [
+  ...(level.families ?? []).flatMap(f => f.members.filter(m => m.inCard)),
+  ...level.packs.flatMap(p => p.verbs)
+]
 
 /** Набор пройден, когда выучены все его глаголы. */
 export const packDone = (pack: SectionPackDto) => pack.verbs.length > 0 && pack.verbs.every(v => v.level === 'learned')

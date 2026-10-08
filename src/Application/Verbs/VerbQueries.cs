@@ -69,7 +69,7 @@ public class VerbQueries(ITraleDbContext dbContext)
         return VerbVerification.ForLearners(card).ToJsonString(CardJsonOptions);
     }
 
-    private static readonly JsonSerializerOptions CardJsonOptions = new()
+    internal static readonly JsonSerializerOptions CardJsonOptions = new()
     {
         // Same as the seeder: Georgian and Russian stay readable instead of \uXXXX escapes.
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping

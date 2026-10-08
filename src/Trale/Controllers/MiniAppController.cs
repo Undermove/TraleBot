@@ -1073,7 +1073,8 @@ public class MiniAppController : Controller
                 due = s.Next.Due,
                 levelId = s.Next.LevelId,
                 packId = s.Next.PackId,
-                packTitle = s.Next.PackTitle
+                packTitle = s.Next.PackTitle,
+                familyBase = s.Next.FamilyBaseName
             },
             myVerbs = s.MyVerbs.Select(v => new
             {
@@ -1089,6 +1090,27 @@ public class MiniAppController : Controller
             {
                 id = l.Id,
                 title = l.Title,
+                // A family card: one verb with its direction prefixes instead of packs.
+                families = l.Families.Select(f => new
+                {
+                    id = f.Id,
+                    title = f.Title,
+                    baseName = f.BaseName,
+                    baseLearned = f.BaseLearned,
+                    members = f.Members.Select(m => new
+                    {
+                        id = access ? m.Verb.Lemma : null,
+                        title = access ? m.Verb.Title : null,
+                        ru = m.Verb.Translation,
+                        level = VerbLevelRules.Key(m.Verb.Level),
+                        due = m.Verb.Due,
+                        role = m.Role,
+                        direction = m.Direction,
+                        toward = m.Toward,
+                        directionRu = m.DirectionRu,
+                        inCard = m.InCard
+                    })
+                }),
                 packs = l.Packs.Select(p => new
                 {
                     id = p.Id,
@@ -1121,8 +1143,30 @@ public class MiniAppController : Controller
         return source == null ? BadRequest(new { error = "invalid_source" }) : Ok(new { ok = true });
     }
 
+    /// <summary>
+    /// A verb family for the prefix session: every member with its main forms and their plain
+    /// meanings, the learner's level of each, and the introduction — the theory of the lessons
+    /// about direction prefixes, as those lessons have it.
+    /// </summary>
+    [HttpGet("verbs/families/{id}")]
+    public async Task<IActionResult> GetVerbFamily(string id, [FromServices] VerbFamilyQuery families, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+
+        var view = await families.GetAsync(user, id, ct);
+        if (view == null)
+        {
+            return NotFound(new { error = "Unknown family" });
+        }
+
+        var module = _content.GetCatalog().Modules.FirstOrDefault(m => m.Id == view.Family.LessonModule);
+        return Content(VerbFamilyDto.Build(view, module).ToJsonString(VerbFamilyDto.JsonOptions), "application/json");
+    }
+
     [HttpGet("verbs/{id}")]
-    public async Task<IActionResult> GetVerb(string id, [FromServices] VerbQueries verbs, CancellationToken ct)
+    public async Task<IActionResult> GetVerb(
+        string id, [FromServices] VerbQueries verbs, [FromServices] VerbFamilyQuery families, CancellationToken ct)
     {
         var denied = await DenyVerbsAccessAsync(ct);
         if (denied != null) return denied;
@@ -1133,8 +1177,8 @@ public class MiniAppController : Controller
             return NotFound(new { error = "Unknown verb" });
         }
 
-        // Stored exactly as the mini-app expects it — served as is.
-        return Content(card, "application/json");
+        // Stored exactly as the mini-app expects it — served as is; a verb of a family also says what it is in the family.
+        return Content(await families.DecorateCardAsync(card, id, ct), "application/json");
     }
 
     // ── Verb ladder: per-form learning progress ──────────────────────────────
@@ -1309,6 +1353,15 @@ public class MiniAppController : Controller
             plan = Newtonsoft.Json.Linq.JToken.Parse(s.Session.PlanJson),
             scene = s.Session.Scene,
             done = s.Session.Done
+        },
+        family = s.Family == null ? null : new
+        {
+            id = s.Family.Family.Id,
+            role = s.Family.Member.Role,
+            baseId = s.Family.Family.Base,
+            baseName = s.Family.Family.BaseName,
+            baseLearned = s.Family.BaseLearned,
+            lessonDone = s.Family.LessonDone
         }
     };
 

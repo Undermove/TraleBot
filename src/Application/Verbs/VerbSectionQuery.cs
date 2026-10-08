@@ -15,7 +15,25 @@ public record SectionVerb(string Lemma, string Title, string Translation, VerbLe
 
 public record SectionPack(string Id, string Title, IReadOnlyList<SectionVerb> Verbs);
 
-public record SectionLevel(int Id, string Title, IReadOnlyList<SectionPack> Packs);
+/// <summary>A verb on a family card: its state and where it sits on the scheme of directions.</summary>
+/// <param name="InCard">False for a member that stands in a pack of its own (the base pair): the card shows it, the pack counts it.</param>
+public record SectionFamilyVerb(SectionVerb Verb, string Role, string Direction, string Toward, string? DirectionRu, bool InCard);
+
+/// <summary>
+/// One card instead of packs: a verb with its direction prefixes. Only the members with
+/// <see cref="SectionFamilyVerb.InCard"/> belong to the level the card stands in.
+/// </summary>
+/// <param name="BaseLearned">The base verb is learned — its members need only the short prefix session.</param>
+public record SectionFamily(string Id, string Title, string BaseName, bool BaseLearned, IReadOnlyList<SectionFamilyVerb> Members)
+{
+    public IEnumerable<SectionVerb> OwnVerbs => Members.Where(m => m.InCard).Select(m => m.Verb);
+}
+
+public record SectionLevel(int Id, string Title, IReadOnlyList<SectionPack> Packs, IReadOnlyList<SectionFamily> Families)
+{
+    /// <summary>Every verb counted in this level: family cards first, then packs.</summary>
+    public IEnumerable<SectionVerb> Verbs => Families.SelectMany(f => f.OwnVerbs).Concat(Packs.SelectMany(p => p.Verbs));
+}
 
 /// <summary>One of the learner's own verbs: saved in the dictionary (from the bot or the mini-app), started in play, or both.</summary>
 /// <param name="Generated">
@@ -27,8 +45,11 @@ public record SectionMyVerb(string Lemma, string Title, string Translation, Verb
 
 /// <summary>What the section offers to do now — the one big card.</summary>
 /// <param name="Kind"><see cref="VerbSectionQuery.Continue"/>, <see cref="VerbSectionQuery.Review"/> or <see cref="VerbSectionQuery.New"/>.</param>
+/// <param name="PackId">The pack or the family card the verb stands in.</param>
+/// <param name="FamilyBaseName">Set when the session will be the short prefix session: the verb is the named base verb with a prefix, and the base is learned.</param>
 public record SectionNext(
-    string Kind, string Lemma, string Title, string Translation, VerbLevel Level, int Due, int? LevelId, string? PackId, string? PackTitle);
+    string Kind, string Lemma, string Title, string Translation, VerbLevel Level, int Due, int? LevelId, string? PackId, string? PackTitle,
+    string? FamilyBaseName = null);
 
 /// <param name="Total">Verbs in the ladder.</param>
 /// <param name="CurrentLevelId">The level to show expanded: where the "what now" verb is, else the first unfinished one.</param>
@@ -53,6 +74,7 @@ public record VerbSection(
 public class VerbSectionQuery(
     ITraleDbContext dbContext,
     VerbLevelCatalog catalog,
+    VerbFamilyCatalog families,
     VerbQueries verbs,
     IProgressCalculator progressCalculator)
 {
@@ -99,17 +121,43 @@ public class VerbSectionQuery(
             levelOf.GetValueOrDefault(lemma, VerbLevel.New), due.GetValueOrDefault(lemma));
 
         // A verb of the plan that is not in the base (the catalog was not seeded) is simply not shown.
+        // A family card lists every member of the family; those of them that stand in a pack are only shown on it.
+        SectionFamily? Card(VerbPack card)
+        {
+            var family = families.Find(card.Id);
+            if (family == null)
+            {
+                return null;
+            }
+
+            var own = card.Verbs.ToHashSet();
+            var members = family.Members
+                .Where(m => curated.ContainsKey(m.Lemma))
+                .Select(m => new SectionFamilyVerb(Row(m.Lemma), m.Role, m.Direction, m.Toward, m.DirectionRu, own.Contains(m.Lemma)))
+                .ToList();
+            return new SectionFamily(
+                family.CardId, family.Title, family.BaseName, levelOf.GetValueOrDefault(family.Base) == VerbLevel.Learned, members);
+        }
+
         var levels = catalog.Levels
-            .Select(level => new SectionLevel(level.Id, level.Title, level.Packs
-                .Select(pack => new SectionPack(pack.Id, pack.Title, pack.Verbs.Where(curated.ContainsKey).Select(Row).ToList()))
-                .Where(pack => pack.Verbs.Count > 0)
-                .ToList()))
-            .Where(level => level.Packs.Count > 0)
+            .Select(level => new SectionLevel(
+                level.Id,
+                level.Title,
+                level.Packs
+                    .Select(pack => new SectionPack(pack.Id, pack.Title, pack.Verbs.Where(curated.ContainsKey).Select(Row).ToList()))
+                    .Where(pack => pack.Verbs.Count > 0)
+                    .ToList(),
+                (level.Families ?? Array.Empty<VerbPack>())
+                    .Select(Card)
+                    .Where(card => card != null && card.OwnVerbs.Any())
+                    .Select(card => card!)
+                    .ToList()))
+            .Where(level => level.Verbs.Any())
             .ToList();
 
         var myVerbs = await MyVerbsAsync(user, started, ct);
-        var next = PickNext(levels, started.Select(v => (v.Lemma, v.Title, v.Translation, v.Level)).ToList(), due, catalog);
-        var ladder = levels.SelectMany(l => l.Packs).SelectMany(p => p.Verbs).ToList();
+        var next = PickNext(levels, started.Select(v => (v.Lemma, v.Title, v.Translation, v.Level)).ToList(), due, catalog, families);
+        var ladder = levels.SelectMany(l => l.Verbs).ToList();
 
         return new VerbSection(
             ladder.Count,
@@ -117,7 +165,7 @@ public class VerbSectionQuery(
             levels,
             next,
             next?.LevelId
-                ?? levels.FirstOrDefault(l => l.Packs.Any(p => p.Verbs.Any(v => v.Level != VerbLevel.Learned)))?.Id
+                ?? levels.FirstOrDefault(l => l.Verbs.Any(v => v.Level != VerbLevel.Learned))?.Id
                 ?? levels.LastOrDefault()?.Id
                 ?? 0,
             myVerbs,
@@ -129,20 +177,46 @@ public class VerbSectionQuery(
     /// What to do now. The verb in progress comes first (the most recently played one that is not
     /// learned yet), then a verb with forms due for repetition, then the next untouched verb of the
     /// ladder. Null when every verb is learned and nothing is due.
+    /// A verb that is a family's base verb with a prefix is never offered as a ladder of its own:
+    /// while the base is not learned the card offers the base (same endings, learned once), and
+    /// after that the member's session is the short prefix session (<see cref="SectionNext.FamilyBaseName"/>).
     /// </summary>
     public static SectionNext? PickNext(
         IReadOnlyList<SectionLevel> levels,
         IReadOnlyList<(string Lemma, string Title, string Translation, VerbLevel Level)> startedRecentFirst,
         IReadOnlyDictionary<string, int> due,
-        VerbLevelCatalog catalog)
+        VerbLevelCatalog catalog,
+        VerbFamilyCatalog? families = null)
     {
-        var packs = levels.SelectMany(l => l.Packs).ToDictionary(p => p.Id);
+        var titles = levels.SelectMany(l => l.Packs).ToDictionary(p => p.Id, p => p.Title);
+        foreach (var card in levels.SelectMany(l => l.Families))
+        {
+            titles[card.Id] = card.Title;
+        }
+
+        var shown = levels.SelectMany(l => l.Verbs.Concat(l.Families.SelectMany(f => f.Members).Select(m => m.Verb)))
+            .GroupBy(v => v.Lemma)
+            .ToDictionary(g => g.Key, g => g.First());
+        var levelOf = startedRecentFirst.ToDictionary(v => v.Lemma, v => v.Level);
+
         SectionNext Make(string kind, string lemma, string title, string translation, VerbLevel level)
         {
+            // The same verb with a prefix: the base comes first, and once it is learned only the prefix is left to learn.
+            var baseLemma = families?.BaseOf(lemma);
+            var baseLearned = baseLemma != null && levelOf.GetValueOrDefault(baseLemma) == VerbLevel.Learned;
+            if (baseLemma != null && !baseLearned && level != VerbLevel.Learned && shown.TryGetValue(baseLemma, out var head))
+            {
+                (kind, lemma, title, translation, level) =
+                    (head.Level == VerbLevel.New ? New : Continue, head.Lemma, head.Title, head.Translation, head.Level);
+                baseLemma = null;
+            }
+
             var place = catalog.PlaceOf(lemma);
-            var pack = place != null && packs.TryGetValue(place.PackId, out var found) ? found : null;
+            var packTitle = place != null && titles.TryGetValue(place.PackId, out var found) ? found : null;
             return new SectionNext(
-                kind, lemma, title, translation, level, due.GetValueOrDefault(lemma), pack == null ? null : place!.LevelId, pack?.Id, pack?.Title);
+                kind, lemma, title, translation, level, due.GetValueOrDefault(lemma),
+                packTitle == null ? null : place!.LevelId, packTitle == null ? null : place!.PackId, packTitle,
+                baseLemma != null && baseLearned && level != VerbLevel.Learned ? families!.Of(lemma)!.Value.Family.BaseName : null);
         }
 
         var inProgress = startedRecentFirst.Where(v => v.Level != VerbLevel.Learned).Select(v => (v.Lemma, v.Title, v.Translation, v.Level)).FirstOrDefault();
@@ -162,7 +236,7 @@ public class VerbSectionQuery(
         }
 
         var startedLemmas = startedRecentFirst.Select(v => v.Lemma).ToHashSet();
-        var fresh = levels.SelectMany(l => l.Packs).SelectMany(p => p.Verbs).FirstOrDefault(v => !startedLemmas.Contains(v.Lemma));
+        var fresh = levels.SelectMany(l => l.Verbs).FirstOrDefault(v => !startedLemmas.Contains(v.Lemma));
         return fresh == null ? null : Make(New, fresh.Lemma, fresh.Title, fresh.Translation, VerbLevel.New);
     }
 

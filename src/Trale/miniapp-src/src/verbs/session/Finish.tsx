@@ -27,11 +27,13 @@ interface Props {
   /** Ответ сервера; null — отчёт ещё не доехал (нет сети), он уйдёт позже. */
   saved: VerbSessionSavedDto | null
   progress: Progress
+  /** Сессия про приставку: в конце была не экзамен, а проверка приставки. */
+  prefix?: boolean
   onMore: () => void
   onDone: () => void
 }
 
-export default function Finish({ verb, items, touched, exam, levelBefore, saved, progress, onMore, onDone }: Props) {
+export default function Finish({ verb, items, touched, exam, levelBefore, saved, progress, prefix = false, onMore, onDone }: Props) {
   useEffect(() => { good(null, 'big') }, [])
 
   const level = saved?.state.level ?? levelBefore
@@ -44,11 +46,13 @@ export default function Finish({ verb, items, touched, exam, levelBefore, saved,
   const words = (failed ? exam!.missed : [...played.filter(i => touched.get(i.key)), ...played.filter(i => !touched.get(i.key))]).slice(0, SHOWN)
   const known = items.filter(i => (progress[i.key]?.step ?? STEP.NEW) > STEP.NEW).length
 
-  const title = passed ? 'Экзамен сдан!' : failed ? 'Почти получилось' : levelUp ? 'Новый уровень!' : 'Отлично сыграно!'
+  const title = passed ? (prefix ? 'Проверка пройдена!' : 'Экзамен сдан!') : failed ? 'Почти получилось' : levelUp ? 'Новый уровень!' : 'Отлично сыграно!'
   const line = passed
     ? `Глагол «${verb.ru}» выучен. Буду иногда напоминать его — на минуту, не больше.`
     : failed
-      ? 'Экзамен пока не сдан — это не страшно. Эти слова вернулись в игру, сыграем с ними ещё:'
+      ? prefix
+        ? 'Проверка пока не пройдена — это не страшно. Сыграем ещё раз, и приставка запомнится.'
+        : 'Экзамен пока не сдан — это не страшно. Эти слова вернулись в игру, сыграем с ними ещё:'
       : 'Вот что сегодня было в игре:'
 
   return (

@@ -1,13 +1,20 @@
 import React from 'react'
 import { KINDS, cyr, type VerbFormHitDto, type VerbKind } from './types'
 import { meaningOfHit, type Meaning } from './meaning'
+import { prefixOf } from './family/types'
 
 export { Coach } from './ui/GameShell'
 
-/** Форма, разрезанная по корню: приставки синим, корень чёрным, окончание красным. */
-function Parts({ form, root }: { form: string; root?: string }) {
+/**
+ * Форма, разрезанная по корню: приставки синим, корень чёрным, окончание красным.
+ * У глагола из семьи (prefixes) корня для подсветки нет — синим выделяется приставка направления.
+ */
+function Parts({ form, root, prefixes }: { form: string; root?: string; prefixes?: readonly string[] }) {
   const at = root ? form.indexOf(root) : -1
-  if (at < 0) return <>{form}</>
+  if (at < 0) {
+    const prefix = prefixes?.length ? prefixOf(form, prefixes) : ''
+    return prefix ? <><span className="text-navy" data-testid="form-prefix">{prefix}</span>{form.slice(prefix.length)}</> : <>{form}</>
+  }
   return (
     <>
       <span className="text-navy">{form.slice(0, at)}</span>
@@ -18,13 +25,13 @@ function Parts({ form, root }: { form: string; root?: string }) {
 }
 
 /** Грузинская форма и кириллическая транскрипция под ней. */
-export function VerbForm({ variants, big = false, root }: { variants: string[]; big?: boolean; root?: string }) {
+export function VerbForm({ variants, big = false, root, prefixes }: { variants: string[]; big?: boolean; root?: string; prefixes?: readonly string[] }) {
   if (!variants.length) return <span className="text-jewelInk-faint">—</span>
   return (
     <span className="inline-flex flex-col items-end">
       <span className={`font-geo ${big ? 'text-[20px]' : 'text-[16px]'} font-bold text-jewelInk leading-tight`}>
         {variants.map((f, i) => (
-          <React.Fragment key={f}>{i > 0 && ', '}<Parts form={f} root={root} /></React.Fragment>
+          <React.Fragment key={f}>{i > 0 && ', '}<Parts form={f} root={root} prefixes={prefixes} /></React.Fragment>
         ))}
       </span>
       <span className="text-[11px] text-jewelInk-hint leading-tight">{variants.map(cyr).join(', ')}</span>
