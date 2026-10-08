@@ -107,6 +107,10 @@ dotnet ef migrations add <DescriptiveName> \
 - `src/Trale/appsettings.local.json` — локальные оверрайды (создаётся из example, не коммитится)
 - `src/Trale/appsettings.example.json` — шаблон
 
+### Секреты и логи
+
+Ни один секрет из конфигурации не должен попадать в логи. Все записи проходят через `RedactingLoggerFactory` (`src/Infrastructure/Logging/`), который заменяет значения секретов на `[redacted:имя]`. Новый секрет в конфигурации — добавь его в `LogSecrets.Collect`. HTTP-клиент, у которого ключ в URL, не должен пользоваться стандартными логгерами HttpClient (см. `TelegramHttpLogger`). Гейт — `NoSecretsInLogsTests`.
+
 ## Mini-App (Бомбора)
 
 Frontend в `src/Trale/miniapp-src/` (React 18 + Vite + TypeScript + Tailwind). Билд в `src/Trale/wwwroot/`.

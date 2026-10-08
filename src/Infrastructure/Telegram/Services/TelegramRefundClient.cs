@@ -18,7 +18,8 @@ public class TelegramRefundClient(
 
     public async Task<bool> RefundStarPaymentAsync(long userId, string chargeId, CancellationToken ct)
     {
-        var http = httpClientFactory.CreateClient();
+        // The named Telegram client: its logger does not print the URL (the URL carries the bot token).
+        var http = httpClientFactory.CreateClient(TelegramHttpLogger.HttpClientName);
         var url = $"https://api.telegram.org/bot{config.Token}/refundStarPayment";
         try
         {
