@@ -543,6 +543,96 @@ public class MiniAppController : Controller
         });
     }
 
+    // ---- Feedback: "Что остановило?" at the paywall and "Написать автору". ----
+
+    /// <summary>The paywall opened: is there a question to ask if it is closed without a purchase?
+    /// Changes nothing.</summary>
+    [HttpGet("feedback/paywall-question")]
+    public async Task<IActionResult> PaywallQuestionDue(
+        [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        return Ok(new { due = await feedback.IsPaywallQuestionDueAsync(user.Id, ct) });
+    }
+
+    /// <summary>The paywall was closed without a purchase. The server decides whether to ask
+    /// "Что остановило?" now: not for someone with paid access and not more often than once in
+    /// 30 days — counted here, so another phone or a cleared browser does not ask again.</summary>
+    [HttpPost("feedback/paywall-question")]
+    public async Task<IActionResult> PaywallQuestion(
+        [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var questionId = await feedback.OfferPaywallQuestionAsync(user.Id, ct);
+        return Ok(new { show = questionId != null, id = questionId });
+    }
+
+    public class PaywallAnswerRequest
+    {
+        public Guid Id { get; set; }
+        /// <summary>expensive | not_now | unclear | other</summary>
+        public string? Option { get; set; }
+        public string? Text { get; set; }
+    }
+
+    [HttpPost("feedback/paywall-answer")]
+    public async Task<IActionResult> PaywallAnswer(
+        [FromBody] PaywallAnswerRequest request,
+        [FromServices] Application.Feedback.UserFeedbackService feedback,
+        CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        return FeedbackResult(await feedback.AnswerPaywallQuestionAsync(user.Id, request.Id, request.Option, request.Text, ct));
+    }
+
+    public class FeedbackMessageRequest
+    {
+        public string? Text { get; set; }
+        /// <summary>Key of the survey the person came from by "Написать подробнее".</summary>
+        public string? Campaign { get; set; }
+    }
+
+    /// <summary>"Написать автору": a free message, at most 2000 characters and 5 a day.</summary>
+    [HttpPost("feedback")]
+    public async Task<IActionResult> LeaveFeedback(
+        [FromBody] FeedbackMessageRequest request,
+        [FromServices] Application.Feedback.UserFeedbackService feedback,
+        CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        return FeedbackResult(await feedback.LeaveMessageAsync(user.Id, request.Text, request.Campaign, ct));
+    }
+
+    private IActionResult FeedbackResult(Application.Feedback.FeedbackOutcome outcome) => outcome switch
+    {
+        Application.Feedback.FeedbackOutcome.Saved => Ok(new { ok = true }),
+        Application.Feedback.FeedbackOutcome.TooOften => StatusCode(429, new { error = "too_often" }),
+        Application.Feedback.FeedbackOutcome.NotFound => NotFound(new { error = "not_found" }),
+        Application.Feedback.FeedbackOutcome.TooLong => BadRequest(new { error = "too_long" }),
+        Application.Feedback.FeedbackOutcome.Empty => BadRequest(new { error = "empty" }),
+        _ => BadRequest(new { error = "unknown_option" })
+    };
+
     private static IEnumerable<object> MapQuestions(
         IReadOnlyList<QuizQuestionData> questions, IReadOnlyList<VerbFormHit> verbHits)
     {

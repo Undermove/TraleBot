@@ -115,3 +115,29 @@ describe('CampaignPanel', () => {
     expect(screen.getByTestId('campaign-button-url').textContent).toContain('/?screen=verbs&c=ref-test')
   })
 })
+
+describe('CampaignPanel — опрос', () => {
+  it('an ordinary campaign goes without survey options', async () => {
+    api.prepare.mockResolvedValue(plan)
+    await fill()
+    await userEvent.click(screen.getByRole('button', { name: 'Посчитать' }))
+    expect(api.prepare.mock.calls[0][0]).toMatchObject({ surveyOptions: null })
+  })
+
+  it('each non-empty line is an answer option of the draft, and the status counts the answers', async () => {
+    api.prepare.mockResolvedValue(plan)
+    api.status.mockResolvedValue({
+      ...status, sent: 100, pending: 0,
+      surveyAnswers: [{ option: 'Дорого', count: 12 }, { option: 'Пока не нужно', count: 5 }]
+    })
+    await fill()
+    await userEvent.type(screen.getByTestId('campaign-survey-options'), 'Дорого\n\n  Пока не нужно  \n')
+    expect(screen.getByText(/Варианты уйдут кнопками под сообщением/)).toBeTruthy()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Посчитать' }))
+    expect(api.prepare.mock.calls[0][0]).toMatchObject({ surveyOptions: ['Дорого', 'Пока не нужно'], dryRun: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Статус' }))
+    expect((await screen.findByTestId('campaign-button-url')).textContent).toBe('опрос: Дорого — 12 · Пока не нужно — 5')
+  })
+})

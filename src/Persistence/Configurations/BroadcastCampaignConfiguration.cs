@@ -14,6 +14,7 @@ public class BroadcastCampaignConfiguration : IEntityTypeConfiguration<Broadcast
         builder.Property(c => c.Message).IsRequired();
         builder.Property(c => c.ButtonText).HasMaxLength(64);
         builder.Property(c => c.ButtonQuery).HasMaxLength(256);
+        builder.Ignore(c => c.IsSurvey);
     }
 }
 
@@ -28,5 +29,22 @@ public class BroadcastDeliveryConfiguration : IEntityTypeConfiguration<Broadcast
         builder.HasIndex(d => new { d.CampaignId, d.Status });
         builder.HasOne<BroadcastCampaign>().WithMany().HasForeignKey(d => d.CampaignId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<User>().WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class UserFeedbackConfiguration : IEntityTypeConfiguration<UserFeedback>
+{
+    public void Configure(EntityTypeBuilder<UserFeedback> builder)
+    {
+        builder.ToTable("UserFeedback");
+        builder.HasKey(f => f.Id);
+        builder.Property(f => f.CampaignKey).HasMaxLength(48);
+        builder.Property(f => f.Option).HasMaxLength(64);
+        builder.Property(f => f.Text).HasMaxLength(2000);
+        builder.HasIndex(f => new { f.UserId, f.Kind, f.CreatedAtUtc });
+        builder.HasIndex(f => f.CreatedAtUtc);
+        // One survey answer per person per campaign — pressing another button changes it.
+        builder.HasIndex(f => new { f.UserId, f.CampaignKey }).IsUnique().HasFilter("\"Kind\" = 1");
+        builder.HasOne<User>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
     }
 }

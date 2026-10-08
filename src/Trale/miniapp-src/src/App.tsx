@@ -27,8 +27,9 @@ import { resolveVerbDeepLink } from './verbs/deepLink'
 import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
 import { loadSeenHints } from './verbs/ui/hints'
 import VerbsSection from './screens/VerbsSection'
+import FeedbackScreen from './screens/FeedbackScreen'
 import { parseVerbsSectionLink } from './verbs/section/link'
-import { campaignOpenSettled } from './campaignOpen'
+import { campaignKeyFromUrl, campaignOpenSettled } from './campaignOpen'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -147,7 +148,12 @@ export default function App() {
         const reviewLink: Screen | null = hasLevel && query.get('screen') === 'verb-review'
           ? { kind: 'verb-review', lemma: query.get('verb') ?? undefined }
           : null
-        const deepLink = verbLink?.screen ?? reviewLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
+        // ?screen=feedback[&fc=<имя опроса>] — «Написать автору»; так открывает кнопка «Написать подробнее» под
+        // ответом на опрос. Уровень для этого не нужен: опрос приходит и тем, кто его ещё не выбирал.
+        const feedbackLink: Screen | null = meData?.authenticated && query.get('screen') === 'feedback'
+          ? { kind: 'feedback', campaign: campaignKeyFromUrl(`?c=${query.get('fc') ?? ''}`) ?? undefined }
+          : null
+        const deepLink = verbLink?.screen ?? reviewLink ?? feedbackLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
           window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
@@ -165,6 +171,12 @@ export default function App() {
       cancelled = true
     }
   }, [])
+
+  // С экрана «Написать автору» — туда, откуда пришли: в профиль или (если открыли кнопкой из бота) на обычный вход.
+  function afterFeedback(from: Extract<Screen, { kind: 'feedback' }>): Screen {
+    if (from.from === 'profile') return { kind: 'profile' }
+    return resolveEntryScreen({ hasLevel: userLevel !== null, progress, catalog: catalog! })
+  }
 
   function handleProPurchaseSuccess() {
     api.me().then((meData) => {
@@ -209,6 +221,8 @@ export default function App() {
         screen.kind === 'verbs'
       ) {
         setScreen({ kind: 'dashboard' })
+      } else if (screen.kind === 'feedback') {
+        setScreen(afterFeedback(screen))
       } else if (screen.kind === 'lesson-theory') {
         setScreen({ kind: 'module', moduleId: screen.moduleId })
       } else if (screen.kind === 'practice') {
@@ -450,6 +464,8 @@ export default function App() {
           />
         </>
       )
+    case 'feedback':
+      return <FeedbackScreen progress={progress} campaign={screen.campaign} onBack={() => navigate(afterFeedback(screen))} />
     case 'admin':
       return <AdminScreen progress={progress} navigate={navigate} />
     case 'verb-review':

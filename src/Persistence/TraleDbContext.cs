@@ -42,10 +42,19 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<BroadcastCampaign> BroadcastCampaigns { get; set; } = null!;
     public DbSet<BroadcastDelivery> BroadcastDeliveries { get; set; } = null!;
     public DbSet<QueuedTranslation> QueuedTranslations { get; set; } = null!;
+    public DbSet<UserFeedback> UserFeedback { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         return await Database.BeginTransactionAsync(cancellationToken);
+    }
+
+    public async Task LockUserFeedbackAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        // Non-relational providers (EF in-memory unit tests): single-threaded, nothing to hold.
+        if (!Database.IsNpgsql()) return;
+        await Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({"user-feedback:" + userId}, 0))", cancellationToken);
     }
 
     public async Task<bool> TryClaimBroadcastDeliveryAsync(Guid deliveryId, CancellationToken cancellationToken)
@@ -161,6 +170,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new NotificationTriggerConfiguration());
         modelBuilder.ApplyConfiguration(new BroadcastCampaignConfiguration());
         modelBuilder.ApplyConfiguration(new BroadcastDeliveryConfiguration());
+        modelBuilder.ApplyConfiguration(new UserFeedbackConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

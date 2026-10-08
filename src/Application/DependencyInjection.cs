@@ -128,6 +128,7 @@ public static class DependencyInjection
         services.AddScoped<RevokeProService>();
         services.AddScoped<BroadcastService>();
         services.AddScoped<BroadcastCampaignService>();
+        services.AddScoped<Application.Feedback.UserFeedbackService>();
 
         return services;
     }

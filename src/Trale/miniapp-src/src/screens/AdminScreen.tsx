@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
 import CampaignPanel from '../components/admin/CampaignPanel'
+import FeedbackPanel from '../components/admin/FeedbackPanel'
 import VerbReviewEntry from '../components/admin/VerbReviewEntry'
 import { ProgressState, Screen } from '../types'
 import { api, AdminStats, AdminRecentUser } from '../api'
@@ -280,6 +281,9 @@ export default function AdminScreen({ progress, navigate }: Props) {
 
             {/* Campaign — a broadcast in parts (test sample, then the rest), recorded per recipient */}
             <CampaignPanel />
+
+            {/* What people answered at the paywall, in surveys and wrote to the author */}
+            <FeedbackPanel onOpenUser={(telegramId) => navigate({ kind: 'admin-user', telegramId })} />
 
             {/* Verbs written by the model are reviewed on their own screen; here — the way in, with how many wait */}
             <VerbReviewEntry onOpen={() => navigate({ kind: 'verb-review' })} />

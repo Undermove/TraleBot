@@ -652,6 +652,8 @@ public class AdminController : Controller
         public int GiftDays { get; set; }
         /// <summary>For how many days after the campaign is created the gift can still be taken; null — 14.</summary>
         public int? GiftOfferDays { get; set; }
+        /// <summary>A survey: 2–4 answer options sent as buttons under the message; null or empty — an ordinary campaign.</summary>
+        public List<string>? SurveyOptions { get; set; }
     }
 
     [HttpPost("campaigns/prepare")]
@@ -667,7 +669,7 @@ public class AdminController : Controller
             {
                 Key = req.Key, Audience = audience, Message = req.Message,
                 ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
-                GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays
+                GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, SurveyOptions = req.SurveyOptions
             },
             req.SampleSize, req.DryRun, OwnerTelegramId, ct);
         return result.Error != null ? BadRequest(result) : Ok(result);
@@ -705,7 +707,36 @@ public class AdminController : Controller
     {
         s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc,
         s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened,
-        s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen
+        s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen,
+        surveyAnswers = s.SurveyAnswers.Select(MapOptionCount)
+    };
+
+    // ---- Feedback: what people answered at the paywall, in surveys and wrote themselves. ----
+
+    [HttpGet("feedback")]
+    public async Task<IActionResult> Feedback(
+        [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct, [FromQuery] int take = 50)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var overview = await feedback.GetOverviewAsync(take, ct);
+        return Ok(new
+        {
+            recent = overview.Recent.Select(r => new
+            {
+                kind = FeedbackKindName(r.Kind), r.CampaignKey, r.Option, r.Text, r.AtUtc, r.TelegramId
+            }),
+            paywall = new { shown = overview.PaywallShown, options = overview.PaywallOptions.Select(MapOptionCount) },
+            surveys = overview.Surveys.Select(s => new { s.Key, s.Question, options = s.Options.Select(MapOptionCount) })
+        });
+    }
+
+    private static object MapOptionCount(Application.Feedback.OptionCount c) => new { c.Option, c.Count };
+
+    private static string FeedbackKindName(Domain.Entities.UserFeedbackKind kind) => kind switch
+    {
+        Domain.Entities.UserFeedbackKind.PaywallDecline => "paywall",
+        Domain.Entities.UserFeedbackKind.Survey => "survey",
+        _ => "message"
     };
 
     private static string AudienceName(Domain.Entities.BroadcastAudience a) =>

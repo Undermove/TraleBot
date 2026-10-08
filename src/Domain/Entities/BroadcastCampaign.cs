@@ -32,6 +32,12 @@ public class BroadcastCampaign
     /// <summary>Until when an open still gives the gift. After it the button opens the mini-app as usual.</summary>
     public DateTime? GiftOfferEndsAtUtc { get; set; }
 
+    /// <summary>Answer options of a survey campaign: each goes under the message as its own button,
+    /// a press is recorded in <see cref="UserFeedback"/>. Null — an ordinary campaign.</summary>
+    public string[]? SurveyOptions { get; set; }
+
+    public bool IsSurvey => SurveyOptions is { Length: > 0 };
+
     public bool GiftOffered(DateTime now) => GiftDays > 0 && GiftOfferEndsAtUtc is { } ends && now < ends;
 }
 

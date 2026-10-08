@@ -1,5 +1,6 @@
 using Application.Admin;
 using Infrastructure.Telegram;
+using Infrastructure.Telegram.BotCommands;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -44,10 +45,19 @@ public class TelegramMessageSender(
     }
 
     public async Task<CampaignSendAttempt> SendAsync(
-        long telegramId, string text, string? buttonText, string? buttonQuery, string campaignKey, CancellationToken ct)
+        long telegramId, string text, string? buttonText, string? buttonQuery, string campaignKey,
+        IReadOnlyList<string>? surveyOptions, CancellationToken ct)
     {
         InlineKeyboardMarkup? keyboard = null;
-        if (buttonText != null)
+        if (surveyOptions is { Count: > 0 })
+        {
+            // A survey: each option on its own row, so long captions are not cut on a phone.
+            keyboard = new InlineKeyboardMarkup(surveyOptions.Select((option, index) => new[]
+            {
+                InlineKeyboardButton.WithCallbackData(option, SurveyAnswerCommand.CallbackData(campaignKey, index))
+            }));
+        }
+        else if (buttonText != null)
         {
             if (!config.MiniAppEnabled || string.IsNullOrEmpty(config.HostAddress))
             {

@@ -34,6 +34,7 @@ export default function CampaignPanel() {
   const [buttonQuery, setButtonQuery] = useState('')
   const [sampleSize, setSampleSize] = useState(100)
   const [giftDays, setGiftDays] = useState(0)
+  const [surveyText, setSurveyText] = useState('')
   const [status, setStatus] = useState<CampaignStatusDto | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -46,8 +47,13 @@ export default function CampaignPanel() {
     try { setNote(await action()) } catch (e) { setNote(errorText(e)) } finally { setBusy(false) }
   }
 
+  // Опрос: каждая непустая строка — вариант ответа, уходит кнопкой под сообщением.
+  const surveyOptions = surveyText.split('\n').map(o => o.trim()).filter(Boolean)
+  const isSurvey = surveyOptions.length > 0
+
   const draft = (size: number | null, dryRun: boolean) => ({
-    key: key.trim(), audience, message, buttonText: buttonText.trim() || null, buttonQuery: buttonQuery.trim() || null, sampleSize: size, dryRun, giftDays
+    key: key.trim(), audience, message, buttonText: buttonText.trim() || null, buttonQuery: buttonQuery.trim() || null, sampleSize: size, dryRun, giftDays,
+    surveyOptions: isSurvey ? surveyOptions : null
   })
 
   const describe = (r: CampaignPrepareDto) =>
@@ -104,6 +110,18 @@ export default function CampaignPanel() {
             <div className={label}>текст сообщения</div>
             <textarea className={input} rows={5} value={message} onChange={e => setMessage(e.target.value)} />
           </div>
+          <div>
+            <div className={label}>опрос: варианты ответа, по одному в строке (2–4; пусто — обычная рассылка)</div>
+            <textarea className={input} rows={4} value={surveyText} data-testid="campaign-survey-options"
+              placeholder={'Дорого\nПока не нужно\nНе понял, что получу'} onChange={e => setSurveyText(e.target.value)} />
+            {isSurvey && (
+              <div className={`${label} mt-1`}>
+                Варианты уйдут кнопками под сообщением. Нажатие записывает ответ (один на человека, можно поменять), бот говорит
+                спасибо и даёт кнопку «Написать подробнее». Кнопку мини-аппа и подарок к опросу не добавить; после выбора
+                получателей варианты не меняются.
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <div className="flex-1">
               <div className={label}>текст кнопки (пусто — без кнопки)</div>
@@ -156,9 +174,11 @@ export default function CampaignPanel() {
               {status.giftDays > 0 && <> · получили подарок ({status.giftDays} дн.) {status.gifted}</>}
               {' '}· из открывших: начали игру с глаголом {status.playedVerbSession}, доиграли {status.finishedVerbSession}, оплатили {status.paidAfterOpen}
               <div className="mt-1 break-all" data-testid="campaign-button-url">
-                {status.buttonText
-                  ? <>кнопка «{status.buttonText}» ведёт на: /?{status.buttonQuery ? `${status.buttonQuery}&` : ''}c={status.key}</>
-                  : 'сообщение без кнопки'}
+                {status.surveyAnswers?.length
+                  ? <>опрос: {status.surveyAnswers.map(a => `${a.option} — ${a.count}`).join(' · ')}</>
+                  : status.buttonText
+                    ? <>кнопка «{status.buttonText}» ведёт на: /?{status.buttonQuery ? `${status.buttonQuery}&` : ''}c={status.key}</>
+                    : 'сообщение без кнопки'}
               </div>
             </div>
           )}

@@ -515,6 +515,11 @@ export function markUiHintSeen(hintKey: string) {
 
 // ── Рассылка-кампания (админка владельца) и отметка «открыл по кнопке из рассылки» ──
 
+export interface FeedbackOptionCount {
+  option: string
+  count: number
+}
+
 export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner'
 
 export interface CampaignStatusDto {
@@ -531,6 +536,8 @@ export interface CampaignStatusDto {
   rejected: number
   unknown: number
   opened: number
+  /** Опрос: варианты ответа в порядке кнопок и сколько человек выбрали каждый. У обычной кампании пусто. */
+  surveyAnswers?: FeedbackOptionCount[]
   /** Подарок кампании: сколько дней доступа получает открывший кнопку; 0 — подарка нет. */
   giftDays: number
   /** До какого момента открытие ещё даёт подарок. */
@@ -563,6 +570,8 @@ export const adminCampaigns = {
     dryRun: boolean
     giftDays?: number
     giftOfferDays?: number | null
+    /** Опрос: 2–4 варианта ответа, уходят кнопками под сообщением. Пусто — обычная кампания. */
+    surveyOptions?: string[] | null
   }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
   /** Отправить следующую порцию уже выбранных получателей. */
   send: (key: string, limit: number) =>
@@ -670,4 +679,50 @@ export interface CampaignGiftDto {
 
 export function reportCampaignOpen(key: string) {
   return request<{ ok: boolean; gift?: CampaignGiftDto | null }>('/api/miniapp/campaign-open', { method: 'POST', body: JSON.stringify({ key }) })
+}
+
+// ── Обратная связь: «Что остановило?» на экране покупки, «Написать автору», ответы для владельца ──
+
+export const FEEDBACK_MAX_LENGTH = 2000
+
+/** Варианты ответа на «Что остановило?» — на сервер уходит код, человеку показываем подпись. */
+export const PAYWALL_DECLINE_OPTIONS = [
+  { id: 'expensive', label: 'Дорого' },
+  { id: 'not_now', label: 'Пока не нужно' },
+  { id: 'unclear', label: 'Не понял, что получу' },
+  { id: 'other', label: 'Другое' }
+] as const
+
+export type PaywallDeclineOption = (typeof PAYWALL_DECLINE_OPTIONS)[number]['id']
+
+export const feedback = {
+  /** Экран покупки открылся: есть ли вопрос, который стоит задать, если его закроют не купив. Ничего не записывает. */
+  paywallQuestionDue: () => request<{ due: boolean }>('/api/miniapp/feedback/paywall-question'),
+  /** Экран покупки закрыли не купив. Сервер решает, показывать ли вопрос (раз в 30 дней), и запоминает показ. */
+  paywallQuestion: () => request<{ show: boolean; id: string | null }>('/api/miniapp/feedback/paywall-question', { method: 'POST' }),
+  paywallAnswer: (id: string, option: PaywallDeclineOption, text: string) =>
+    request<{ ok: boolean }>('/api/miniapp/feedback/paywall-answer', { method: 'POST', body: JSON.stringify({ id, option, text }) }),
+  /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее». */
+  send: (text: string, campaign?: string | null) =>
+    request<{ ok: boolean }>('/api/miniapp/feedback', { method: 'POST', body: JSON.stringify({ text, campaign: campaign ?? null }) })
+}
+
+export interface AdminFeedbackItem {
+  kind: 'paywall' | 'survey' | 'message'
+  campaignKey: string | null
+  option: string | null
+  text: string | null
+  atUtc: string
+  telegramId: number
+}
+
+export interface AdminFeedbackDto {
+  recent: AdminFeedbackItem[]
+  /** shown — сколько раз вопрос показали, с ответом или без. */
+  paywall: { shown: number; options: FeedbackOptionCount[] }
+  surveys: { key: string; question: string; options: FeedbackOptionCount[] }[]
+}
+
+export const adminFeedback = {
+  overview: (take = 50) => request<AdminFeedbackDto>(`/api/admin/feedback?take=${take}`)
 }

@@ -95,6 +95,8 @@ public static class DependencyInjection
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, StopCommand>();
+        // Before everything that reads the text as a word or a quiz answer: a button press is never one.
+        services.AddScoped<IBotCommand, SurveyAnswerCommand>();
         services.AddScoped<IBotCommand, HelpCommand>();
         services.AddScoped<IBotCommand, HowToCommand>();
         services.AddScoped<IBotCommand, MenuCommand>();
