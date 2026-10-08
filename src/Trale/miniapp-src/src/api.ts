@@ -594,6 +594,22 @@ export interface ModelMadeVerbDto {
   unverifiedTenses: UnverifiedTenseDto[]
   /** Доводы проверяющей модели, когда она одобряла запись. */
   reviewerReasons: string[]
+  generatorModel: string
+  reviewerModel: string
+  /** Все строки таблицы глагола по порядку карточки. */
+  tenses: VerbTenseRowDto[]
+  /** Когда владелец отметил глагол проверенным целиком; null — не отмечен. */
+  ownerApprovedAtUtc?: string | null
+}
+
+/** Строка таблицы глагола от нейросети, как её видит владелец. */
+export interface VerbTenseRowDto {
+  tense: string
+  cells: (string | null)[]
+  inTexts: (boolean | null)[]
+  phrases?: string[] | null
+  unverified: boolean
+  completed: boolean
 }
 
 /** Время глагола от нейросети, которое ничем, кроме самой модели, не подтверждено. */
@@ -631,8 +647,14 @@ export const adminVerbs = {
   editTense: (lemma: string, tense: string, cells: (string | null)[]) => reviewTense('edit', { lemma, tense, cells }),
   removeTense: (lemma: string, tense: string) => reviewTense('remove', { lemma, tense }),
   /** Составить глагол заново; запись заменяется, только если новая одобрена и не беднее прежней. До пары минут. */
-  regenerate: (lemma: string) =>
-    request<RegenerateVerbDto>('/api/admin/verbs/regenerate', { method: 'POST', body: JSON.stringify({ lemma }) })
+  /** evenIfApproved — явное слово владельца для глагола, отмеченного проверенным: отметка при замене снимется. */
+  regenerate: (lemma: string, evenIfApproved = false) =>
+    request<RegenerateVerbDto>('/api/admin/verbs/regenerate', { method: 'POST', body: JSON.stringify({ lemma, evenIfApproved }) }),
+  /** «Глагол проверен»: для учеников он становится обычным проверенным глаголом. confirmAll — вместе с непроверенными временами. */
+  approve: (lemma: string, confirmAll = false) =>
+    request<{ ok: boolean; progressReset?: number }>('/api/admin/verbs/approve', { method: 'POST', body: JSON.stringify({ lemma, confirmAll }) }),
+  unapprove: (lemma: string) =>
+    request<{ ok: boolean; progressReset?: number }>('/api/admin/verbs/unapprove', { method: 'POST', body: JSON.stringify({ lemma }) })
 }
 
 /** Подарок рассылки: дни полного доступа, отсчёт с момента открытия. Приходит один раз — в ответе на то открытие, которое его выдало. */

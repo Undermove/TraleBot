@@ -55,6 +55,12 @@ public class VerbProvenance
     /// </summary>
     public string TenseReviewsJson { get; set; } = "[]";
 
+    /// <summary>When the owner approved the verb as a whole («Глагол проверен»); null — not approved, or the mark was taken off.</summary>
+    public DateTime? OwnerApprovedAtUtc { get; set; }
+
+    /// <summary>Telegram id of the owner who approved it.</summary>
+    public long? OwnerApprovedBy { get; set; }
+
     /// <summary>Whether the open lexicon (Wiktionary) has a verb with this lemma.</summary>
     public bool LemmaInLexicon { get; set; }
 

@@ -18,7 +18,10 @@ public record SectionPack(string Id, string Title, IReadOnlyList<SectionVerb> Ve
 public record SectionLevel(int Id, string Title, IReadOnlyList<SectionPack> Packs);
 
 /// <summary>One of the learner's own verbs: saved in the dictionary (from the bot or the mini-app), started in play, or both.</summary>
-/// <param name="Generated">The record was written by a model (<see cref="VerbStatus.Generated"/>), not taken from the curated catalog.</param>
+/// <param name="Generated">
+/// The record was written by a model (<see cref="VerbStatus.Generated"/>) and the owner has not approved
+/// it yet; a verb the owner approved (<see cref="VerbStatus.OwnerApproved"/>) carries no such mark.
+/// </param>
 /// <param name="LevelId">The ladder level the verb also sits in; null for a verb outside the ladder.</param>
 public record SectionMyVerb(string Lemma, string Title, string Translation, VerbLevel Level, bool Generated, int? LevelId, string? PackId);
 

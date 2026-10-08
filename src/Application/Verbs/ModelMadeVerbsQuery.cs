@@ -18,6 +18,8 @@ namespace Application.Verbs;
 /// <param name="CompletedTenses">Main tenses the generator gave only when asked for them a second time.</param>
 /// <param name="VerifiedMainTenses">How many of the main tenses are verified — the ones learners are taught.</param>
 /// <param name="TenseReviews">What the owner did to the tenses by hand, oldest first.</param>
+/// <param name="Tenses">Every row of the table, in the card's order — for the owner's view of the whole verb.</param>
+/// <param name="OwnerApprovedAtUtc">When the owner approved the verb as a whole; null — not approved.</param>
 public record ModelMadeVerb(
     string Lemma,
     string Title,
@@ -39,7 +41,13 @@ public record ModelMadeVerb(
     IReadOnlyList<string> CompletedTenses,
     int VerifiedMainTenses,
     IReadOnlyList<UnverifiedTense> UnverifiedTenses,
-    IReadOnlyList<TenseReview> TenseReviews);
+    IReadOnlyList<TenseReview> TenseReviews,
+    IReadOnlyList<VerbTenseRow> Tenses,
+    DateTime? OwnerApprovedAtUtc);
+
+/// <summary>One row of a model-made verb's table as the owner reviews it; the shape of <see cref="UnverifiedTense"/> plus its state.</summary>
+public record VerbTenseRow(
+    string Tense, IReadOnlyList<string?> Cells, IReadOnlyList<bool?> InTexts, IReadOnlyList<string>? Phrases, bool Unverified, bool Completed);
 
 /// <summary>A tense of a model-made verb that nothing but the model vouches for — what the owner goes through.</summary>
 /// <param name="Cells">Six cells in person order; null — the cell is empty.</param>
@@ -64,7 +72,8 @@ public class ModelMadeVerbsQuery(ITraleDbContext dbContext, IVerbLexicon lexicon
     {
         var rows = await dbContext.VerbProvenances
             .AsNoTracking()
-            .Where(p => p.Verb.Status == VerbStatus.Generated && (!onlyUnrevised || p.RevisedAtUtc == null))
+            .Where(p => (p.Verb.Status == VerbStatus.Generated || p.Verb.Status == VerbStatus.OwnerApproved)
+                        && (!onlyUnrevised || p.RevisedAtUtc == null))
             .OrderBy(p => p.RevisedAtUtc != null)
             .ThenByDescending(p => p.ApprovedAtUtc)
             .Take(MaxRows)
@@ -93,15 +102,18 @@ public class ModelMadeVerbsQuery(ITraleDbContext dbContext, IVerbLexicon lexicon
         var completeness = VerbCompleteness.Of(tenses);
         var completed = JsonSerializer.Deserialize<List<string>>(provenance.CompletedTensesJson) ?? [];
         var reviews = VerbVerification.Reviews(provenance.TenseReviewsJson);
-        var unverified = VerbVerification.Of(card)
-            .Where(tenses.ContainsKey)
+        List<string?> Cells(string t) => tenses[t].Select(cell => cell.Length == 0 ? null : cell[0]).ToList();
+        List<bool?> InTexts(string t) =>
+            tenses[t].Select(cell => cell.Length == 0 || !lexicon.HasAttestedForms ? (bool?)null : lexicon.IsAttested(cell[0])).ToList();
+        var unverifiedNames = VerbVerification.Of(card).Where(tenses.ContainsKey).ToList();
+        var unverified = unverifiedNames
             .Select(t => new UnverifiedTense(
-                t,
-                tenses[t].Select(cell => cell.Length == 0 ? null : cell[0]).ToList(),
-                tenses[t].Select(cell => cell.Length == 0 || !lexicon.HasAttestedForms ? (bool?)null : lexicon.IsAttested(cell[0])).ToList(),
-                phrases.GetValueOrDefault(t),
-                completed.Contains(t),
+                t, Cells(t), InTexts(t), phrases.GetValueOrDefault(t), completed.Contains(t),
                 reviews.LastOrDefault(r => r.Tense == t)?.Action == TenseReview.Removed))
+            .ToList();
+        var all = VerbAnalyzer.KnownTenses
+            .Where(t => tenses.TryGetValue(t, out var row) && row.Any(cell => cell.Length > 0))
+            .Select(t => new VerbTenseRow(t, Cells(t), InTexts(t), phrases.GetValueOrDefault(t), unverifiedNames.Contains(t), completed.Contains(t)))
             .ToList();
         return new(
             lemma, title, translation, provenance.AskedText, provenance.GeneratorModel, provenance.ReviewerModel,
@@ -119,6 +131,8 @@ public class ModelMadeVerbsQuery(ITraleDbContext dbContext, IVerbLexicon lexicon
             completed,
             completeness.Tenses - unverified.Count(u => VerbAnalyzer.CardTenses.Contains(u.Tense)),
             unverified,
-            reviews);
+            reviews,
+            all,
+            provenance.OwnerApprovedAtUtc);
     }
 }

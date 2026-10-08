@@ -17,6 +17,11 @@ public record TenseReview(string Tense, string Action, long By, DateTime AtUtc, 
     public const string Confirmed = "confirmed";
     public const string Edited = "edited";
     public const string Removed = "removed";
+
+    /// <summary>Not about one tense: the owner approved the whole verb / took that mark off. <see cref="Tense"/> is <see cref="WholeVerb"/>.</summary>
+    public const string VerbApproved = "verb-approved";
+    public const string VerbUnapproved = "verb-unapproved";
+    public const string WholeVerb = "*";
 }
 
 /// <summary>

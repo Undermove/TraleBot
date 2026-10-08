@@ -31,6 +31,8 @@ export type Screen =
   | { kind: 'profile' }
   | { kind: 'admin' }
   | { kind: 'admin-user'; telegramId: number }
+  /** Проверка глаголов от нейросети (только владелец). lemma — сразу открыть этот глагол. */
+  | { kind: 'verb-review'; lemma?: string }
   | { kind: 'vocabulary-list'; filter?: 'verbs'; verb?: import('./verbs/deepLink').VerbLink }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
 

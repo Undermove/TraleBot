@@ -57,8 +57,9 @@ describe('verbs section tour', () => {
 
   it('after the first game the steps go one by one and each only once', () => {
     const played = sectionFixture({ levels: { [FIRST]: 'meeting' } })
-    expect(nextTourStep(played, seenNone)).toBe('card')
-    expect(nextTourStep(played, seen(TOUR_HINT.card))).toBe('level')
+    // Как на экране сверху вниз: уровни, потом «Мои глаголы».
+    expect(nextTourStep(played, seenNone)).toBe('level')
+    expect(nextTourStep(played, seen(TOUR_HINT.level))).toBe('card')
     expect(nextTourStep(played, seen(TOUR_HINT.card, TOUR_HINT.level))).toBe('mine')
     expect(nextTourStep(played, seen(TOUR_HINT.card, TOUR_HINT.level, TOUR_HINT.mine))).toBeNull()
   })

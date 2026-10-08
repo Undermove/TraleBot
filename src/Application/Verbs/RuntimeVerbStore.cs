@@ -130,7 +130,7 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
         Verb verb, VerbParadigm paradigm, string translation, VerbMeanings meanings, VerbProvenance provenance, bool lacksTenses,
         IReadOnlyList<string> unverifiedTenses, CancellationToken ct)
     {
-        if (verb.Status != VerbStatus.Generated || !IsRuntime(verb) || verb.Lemma != paradigm.Lemma)
+        if (!IsModelMade(verb) || verb.Lemma != paradigm.Lemma)
         {
             return false;
         }
@@ -162,6 +162,9 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
             current.LemmaInLexicon = provenance.LemmaInLexicon;
             current.ReviewerReasons = provenance.ReviewerReasons;
             current.RevisedAtUtc = null;
+            // A rebuilt verb is to be looked over again: the owner's approval was of the record before.
+            current.OwnerApprovedAtUtc = null;
+            current.OwnerApprovedBy = null;
         }
 
         await dbContext.SaveChangesAsync(ct);
@@ -189,7 +192,7 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
         var stale = await dbContext.VerbForms.Where(f => f.VerbId == verb.Id).ToListAsync(ct);
         dbContext.VerbForms.RemoveRange(stale);
         dbContext.VerbForms.AddRange(await ApplyAsync(
-            verb, paradigm, verb.Translation, VerbStatus.Generated, null, meanings, lacksTenses, unverifiedTenses, DateTime.UtcNow, ct));
+            verb, paradigm, verb.Translation, verb.Status, null, meanings, lacksTenses, unverifiedTenses, DateTime.UtcNow, ct));
     }
 
     private const string LacksTensesWording = "У этого глагола есть не все времена";
@@ -208,7 +211,8 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
         CancellationToken ct)
     {
         var analysis = VerbAnalyzer.Analyze(paradigm.Lemma, paradigm.Tenses);
-        if (status == VerbStatus.Generated && VerbAnalyzer.IsPartial(paradigm.Tenses))
+        var modelMade = status is VerbStatus.Generated or VerbStatus.OwnerApproved;
+        if (modelMade && VerbAnalyzer.IsPartial(paradigm.Tenses))
         {
             // The analyzer's wording speaks of "the source"; a generated verb has none. And when the
             // generator stated that the verb itself has no such tenses, the card says that.
@@ -247,10 +251,10 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
             ["status"] = StatusName(status),
             ["verification"] = verification
         };
-        var unverified = status == VerbStatus.Generated
+        var unverified = modelMade
             ? VerbAnalyzer.KnownTenses.Where(t => (unverifiedTenses ?? []).Contains(t) && paradigm.Tenses.ContainsKey(t)).ToList()
             : [];
-        if (status == VerbStatus.Generated)
+        if (modelMade)
         {
             card[VerbVerification.CardProperty] = ToJson(unverified);
         }
@@ -282,6 +286,10 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
 
         return forms;
     }
+
+    /// <summary>A verb a model wrote — approved by the owner since or not. Not a curated one, not one from a source table.</summary>
+    public static bool IsModelMade(Verb verb) =>
+        verb.Status is VerbStatus.Generated or VerbStatus.OwnerApproved && IsRuntime(verb);
 
     /// <summary>Whether the verb came from here and not from the curated catalog (whose glosses are hand-written).</summary>
     public static bool IsRuntime(Verb verb) =>

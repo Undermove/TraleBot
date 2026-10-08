@@ -12,7 +12,7 @@ namespace Application.Translation.Pipeline;
 /// "replaced" — the new record is stored; "kept" — the old one stays, <paramref name="Reason"/> says why
 /// ("not-approved", "fewer-tenses", "another-verb", "not-a-verb", "failed"); "not-found";
 /// "not-model-made" — a curated verb or one taken from a source table: never touched;
-/// "generation-is-off"; "over-budget".
+/// "generation-is-off"; "over-budget"; "approved-by-owner" — the owner approved the verb and did not ask for this explicitly.
 /// </param>
 /// <param name="MainTensesBefore">How many of the six main tenses the stored record had.</param>
 /// <param name="MainTensesAfter">How many the newly written one has (also when it was not stored).</param>
@@ -47,7 +47,12 @@ public class VerbRegenerationService(
     ModelBudget budget,
     ILogger<VerbRegenerationService> logger)
 {
-    public async Task<VerbRegenerationResult> ExecuteAsync(string lemma, CancellationToken ct)
+    /// <param name="evenIfApproved">
+    /// A verb the owner approved as a whole is rebuilt only on their explicit word; without it the outcome
+    /// is "approved-by-owner" and nothing is asked. When such a verb is replaced it is a model-made verb
+    /// to be looked over again (the approval goes); when the old record is kept, so is the approval.
+    /// </param>
+    public async Task<VerbRegenerationResult> ExecuteAsync(string lemma, CancellationToken ct, bool evenIfApproved = false)
     {
         var verb = await dbContext.Verbs.FirstOrDefaultAsync(v => v.Lemma == lemma, ct);
         if (verb == null)
@@ -55,9 +60,14 @@ public class VerbRegenerationService(
             return new VerbRegenerationResult("not-found");
         }
 
-        if (verb.Status != VerbStatus.Generated || !RuntimeVerbStore.IsRuntime(verb))
+        if (!RuntimeVerbStore.IsModelMade(verb))
         {
             return new VerbRegenerationResult("not-model-made");
+        }
+
+        if (verb.Status == VerbStatus.OwnerApproved && !evenIfApproved)
+        {
+            return new VerbRegenerationResult("approved-by-owner");
         }
 
         if (!generationSwitch.IsOn)

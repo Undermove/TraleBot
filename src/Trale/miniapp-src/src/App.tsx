@@ -12,6 +12,7 @@ import Result from './screens/Result'
 import MistakesResult from './screens/MistakesResult'
 import Profile from './screens/Profile'
 import AdminScreen from './screens/AdminScreen'
+import VerbReviewScreen from './screens/VerbReviewScreen'
 import AdminUserScreen from './screens/AdminUserScreen'
 import VocabularyList from './screens/VocabularyList'
 import VocabularyPractice from './screens/VocabularyPractice'
@@ -138,7 +139,12 @@ export default function App() {
         const sectionLink = verbLink ? null : parseVerbsSectionLink(
           new URLSearchParams(window.location.search), (window as any).Telegram?.WebApp?.initDataUnsafe?.start_param)
         if (sectionLink && !hasLevel) setAfterOnboarding(sectionLink)
-        const deepLink = verbLink?.screen ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
+        // ?screen=verb-review[&verb=<лемма>] — проверка глаголов от нейросети; экран сам ничего не покажет не владельцу.
+        const query = new URLSearchParams(window.location.search)
+        const reviewLink: Screen | null = hasLevel && query.get('screen') === 'verb-review'
+          ? { kind: 'verb-review', lemma: query.get('verb') ?? undefined }
+          : null
+        const deepLink = verbLink?.screen ?? reviewLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
           window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
@@ -443,6 +449,8 @@ export default function App() {
       )
     case 'admin':
       return <AdminScreen progress={progress} navigate={navigate} />
+    case 'verb-review':
+      return <VerbReviewScreen lemma={screen.lemma} navigate={navigate} />
     case 'admin-user':
       return <AdminUserScreen telegramId={screen.telegramId} progress={progress} navigate={navigate} />
     case 'vocabulary-list':

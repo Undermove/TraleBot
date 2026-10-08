@@ -32,7 +32,7 @@ const ALPHABET_MODULE = 'alphabet-progressive'
 
 /**
  * Раздел «Глаголы». Сверху вниз: сколько выучено; одна большая карточка «что делать сейчас»
- * (глагол и сессию выбирает приложение); «Мои глаголы»; пять уровней, раскрыт текущий.
+ * (глагол и сессию выбирает приложение); пять уровней, раскрыт текущий; внизу — «Мои глаголы».
  * Ничего не заперто. Без триала/Pro раздел — обзор: играть и открыть глагол ведут к оплате.
  */
 export default function VerbsSection({ progress, navigate, source, onPurchaseSuccess }: Props) {
@@ -165,12 +165,6 @@ export default function VerbsSection({ progress, navigate, source, onPurchaseSuc
           />
         )}
 
-        <MyVerbs
-          verbs={section.myVerbs} examples={section.examples} hasAccess={hasAccess}
-          tourRow={tour === 'card'} tourAdd={tour === 'mine'}
-          onOpen={verb => openVerb(verb.id)} onNeedAccess={needAccess} onAdded={onAdded}
-        />
-
         <section className="flex flex-col gap-3" data-testid="verbs-levels">
           <div className="flex items-center gap-3 px-1">
             <div className="mn-eyebrow">по порядку</div>
@@ -186,6 +180,13 @@ export default function VerbsSection({ progress, navigate, source, onPurchaseSuc
             />
           ))}
         </section>
+
+        {/* Свои глаголы — после уровней: сначала путь по порядку, потом то, что человек добавил сам. */}
+        <MyVerbs
+          verbs={section.myVerbs} examples={section.examples} hasAccess={hasAccess}
+          tourRow={tour === 'card'} tourAdd={tour === 'mine'}
+          onOpen={verb => openVerb(verb.id)} onNeedAccess={needAccess} onAdded={onAdded}
+        />
       </div>
 
       {tour && (

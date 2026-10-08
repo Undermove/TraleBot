@@ -63,7 +63,7 @@ public class VerbQueries(ITraleDbContext dbContext)
     private static string WithStatus(string cardJson, VerbStatus status)
     {
         var card = JsonNode.Parse(cardJson)!.AsObject();
-        card["status"] = status == VerbStatus.Verified ? "verified" : "generated";
+        card["status"] = RuntimeVerbStore.StatusName(status);
         // Tenses of a model-made verb that nothing confirms leave "tenses": the card shows them apart,
         // marked, and nothing that teaches or examines can pick them up.
         return VerbVerification.ForLearners(card).ToJsonString(CardJsonOptions);

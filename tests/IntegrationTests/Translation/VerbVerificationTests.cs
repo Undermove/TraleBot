@@ -448,6 +448,115 @@ public class VerbVerificationTests : TranslationPipelineTestBase
         (await Provenance()).TenseReviewsJson.Should().Be("[]");
     }
 
+    // ── «Глагол проверен» ────────────────────────────────────────────────────────────────────────
+
+    private Task<string> ListedStatus() => InScope(async sp =>
+        RuntimeVerbStore.StatusName((await sp.GetRequiredService<VerbQueries>().ListAsync(CancellationToken.None)).Single(v => v.Lemma == Dance).Status));
+
+    [Test]
+    public async Task Verb_approved_by_the_owner_is_a_verified_verb_for_learners_and_the_mark_can_be_taken_off()
+    {
+        await StoreVerb();
+        var user = await Learner();
+        await Play(user, [("present", 0)]);
+        (await ServedCard())["status"]!.GetValue<string>().Should().Be("generated");
+
+        // With unverified tenses left the owner has to say "all of it" explicitly.
+        var refused = await Admin(HttpMethod.Post, "verbs/approve", new { lemma = Dance });
+        (refused.Status, refused.Body!["error"]!.GetValue<string>()).Should().Be((HttpStatusCode.Conflict, "has_unverified_tenses"));
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.Generated);
+
+        var approved = await Admin(HttpMethod.Post, "verbs/approve", new { lemma = Dance, confirmAll = true });
+
+        approved.Status.Should().Be(HttpStatusCode.OK);
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.OwnerApproved);
+        var served = await ServedCard();
+        served["status"]!.GetValue<string>().Should().Be("verified", because: "that is what takes the «составлено нейросетью» line off the card");
+        Keys(served["tenses"]).Should().BeEquivalentTo(MainTenses, because: "every tense is verified and in games");
+        served["unverified"].Should().BeNull();
+        (await ListedStatus()).Should().Be("verified");
+        (await State(user))!.Progress.Total.Should().Be(36);
+        (await Forms()).Should().NotContain(f => f.Unverified);
+        (await InScope(sp => sp.GetRequiredService<VerbQueries>().ParseAsync(Form(DanceVerb, "optative", 0), CancellationToken.None))).Should().ContainSingle();
+        (await Section(user)).MyVerbs.Single(v => v.Lemma == Dance).Generated.Should().BeFalse(because: "the section's mark goes too");
+
+        var provenance = await Provenance();
+        provenance.OwnerApprovedBy.Should().Be(OwnerTelegramId);
+        provenance.OwnerApprovedAtUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        JsonNode.Parse(provenance.TenseReviewsJson)!.AsArray().Select(r => (r!["tense"]!.GetValue<string>(), r["action"]!.GetValue<string>()))
+            .Should().Equal(("aorist", "confirmed"), ("optative", "confirmed"), ("*", "verb-approved"));
+
+        // The owner still sees it in the list — as approved — and can still correct a tense.
+        var row = (await Admin(HttpMethod.Get, "verbs/model-made")).Body!["verbs"]!.AsArray().Single()!;
+        row["ownerApprovedAtUtc"].Should().NotBeNull();
+        row["tenses"]!.AsArray().Should().HaveCount(6).And.OnlyContain(t => !t!["unverified"]!.GetValue<bool>());
+        (await Admin(HttpMethod.Post, "verbs/tense/confirm", new { lemma = Dance, tense = "aorist" })).Status.Should().Be(HttpStatusCode.OK);
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.OwnerApproved);
+
+        // «Снять отметку».
+        (await Admin(HttpMethod.Post, "verbs/unapprove", new { lemma = Dance })).Status.Should().Be(HttpStatusCode.OK);
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.Generated);
+        (await ServedCard())["status"]!.GetValue<string>().Should().Be("generated");
+        Keys((await ServedCard())["tenses"]).Should().BeEquivalentTo(MainTenses, because: "the tenses the owner confirmed stay confirmed");
+        (await Provenance()).OwnerApprovedAtUtc.Should().BeNull();
+        (await Section(user)).MyVerbs.Single(v => v.Lemma == Dance).Generated.Should().BeTrue();
+
+        // Without unverified tenses the plain action is enough; nobody but the owner, and no curated verb.
+        (await Admin(HttpMethod.Post, "verbs/approve", new { lemma = Dance })).Status.Should().Be(HttpStatusCode.OK);
+        (await Admin(HttpMethod.Post, "verbs/approve", new { lemma = Write, confirmAll = true })).Status.Should().Be(HttpStatusCode.Conflict);
+        (await Admin(HttpMethod.Post, "verbs/unapprove", new { lemma = Write })).Status.Should().Be(HttpStatusCode.Conflict);
+        (await Admin(HttpMethod.Post, "verbs/approve", new { lemma = Dance }, telegramId: 777003)).Status.Should().Be(HttpStatusCode.NotFound);
+        (await Admin(HttpMethod.Post, "verbs/unapprove", new { lemma = Dance }, telegramId: 777003)).Status.Should().Be(HttpStatusCode.NotFound);
+        (await StoredVerb(Write))!.Status.Should().Be(VerbStatus.Verified);
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.OwnerApproved);
+    }
+
+    [Test]
+    public async Task Approved_verb_is_rebuilt_only_on_the_owners_explicit_word_and_then_needs_review_again()
+    {
+        await StoreVerb();
+        await Admin(HttpMethod.Post, "verbs/approve", new { lemma = Dance, confirmAll = true });
+        var before = (await StoredVerb(Dance))!.CardJson;
+        var calls = Models.ModelCalls;
+
+        var refused = await Admin(HttpMethod.Post, "verbs/regenerate", new { lemma = Dance });
+
+        (refused.Status, refused.Body!["error"]!.GetValue<string>()).Should().Be((HttpStatusCode.Conflict, "approved_by_owner"));
+        Models.ModelCalls.Should().Be(calls, because: "nothing is asked of the models without the owner's word");
+        (await StoredVerb(Dance))!.CardJson.Should().Be(before);
+
+        // A rebuild that is not accepted leaves the verb approved.
+        Models.ReviewerModel.AnswerWith("""{"approve":false,"reasons":["no"]}""");
+        var kept = await Admin(HttpMethod.Post, "verbs/regenerate", new { lemma = Dance, evenIfApproved = true });
+        kept.Body!["outcome"]!.GetValue<string>().Should().Be("kept");
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.OwnerApproved);
+
+        // An accepted one brings it back to "to be looked over": the mark returns, the approval goes.
+        Models.ReviewerModel.AnswerWith(Approve);
+        var rebuilt = await Admin(HttpMethod.Post, "verbs/regenerate", new { lemma = Dance, evenIfApproved = true });
+        rebuilt.Body!["outcome"]!.GetValue<string>().Should().Be("replaced");
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.Generated);
+        (await ServedCard())["status"]!.GetValue<string>().Should().Be("generated");
+        (await Provenance()).OwnerApprovedAtUtc.Should().BeNull();
+        Keys((await ServedCard())["tenses"]).Should().BeEquivalentTo(MainTenses, because: "rows the owner confirmed outlive a rebuild");
+    }
+
+    [Test]
+    public async Task Curated_verb_with_the_same_lemma_still_replaces_an_approved_model_made_one()
+    {
+        await StoreVerb();
+        await Admin(HttpMethod.Post, "verbs/approve", new { lemma = Dance, confirmAll = true });
+
+        await InScope(sp => sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(
+            new JsonObject { ["verbs"] = Catalog().DeepClone() }.ToJsonString(), CancellationToken.None));
+
+        var verb = await StoredVerb(Dance);
+        verb!.Status.Should().Be(VerbStatus.Verified);
+        RuntimeVerbStore.IsRuntime(verb).Should().BeFalse();
+        JsonNode.Parse(verb.CardJson)!["tenses"]!.ToJsonString().Should().Be(DanceVerb["tenses"]!.ToJsonString());
+        (await Admin(HttpMethod.Get, "verbs/model-made")).Body!["count"]!.GetValue<int>().Should().Be(0);
+    }
+
     // ── A record stored before all this ──────────────────────────────────────────────────────────
 
     [Test]

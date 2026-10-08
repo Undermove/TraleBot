@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
 import CampaignPanel from '../components/admin/CampaignPanel'
-import ModelVerbsPanel from '../components/admin/ModelVerbsPanel'
+import VerbReviewEntry from '../components/admin/VerbReviewEntry'
 import { ProgressState, Screen } from '../types'
 import { api, AdminStats, AdminRecentUser } from '../api'
 
@@ -281,8 +281,8 @@ export default function AdminScreen({ progress, navigate }: Props) {
             {/* Campaign — a broadcast in parts (test sample, then the rest), recorded per recipient */}
             <CampaignPanel />
 
-            {/* Verbs written by the model: how complete each is, and «пересобрать» for a poor one */}
-            <ModelVerbsPanel />
+            {/* Verbs written by the model are reviewed on their own screen; here — the way in, with how many wait */}
+            <VerbReviewEntry onOpen={() => navigate({ kind: 'verb-review' })} />
 
             {/* Users with search + sort */}
             <div className="flex items-center justify-between mb-2">

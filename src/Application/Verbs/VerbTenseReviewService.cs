@@ -66,6 +66,81 @@ public class VerbTenseReviewService(ITraleDbContext dbContext, RuntimeVerbStore 
     public Task<TenseReviewResult> RemoveAsync(string lemma, string tense, long by, CancellationToken ct) =>
         ApplyAsync(lemma, tense, by, TenseReview.Removed, _ => (null, null), ct);
 
+    /// <summary>
+    /// «Глагол проверен»: the owner approves the verb as a whole. Every tense that was still unverified
+    /// is confirmed (each recorded as such), the verb becomes <see cref="VerbStatus.OwnerApproved"/> —
+    /// for learners a verified verb: no "made by a model" mark, every tense in games — and who and when
+    /// goes to the provenance.
+    /// </summary>
+    /// <param name="confirmAll">False: refuse while unverified tenses remain ("has-unverified-tenses").</param>
+    public async Task<TenseReviewResult> ApproveVerbAsync(string lemma, bool confirmAll, long by, CancellationToken ct)
+    {
+        var verb = await dbContext.Verbs.FirstOrDefaultAsync(v => v.Lemma == lemma, ct);
+        var provenance = verb == null ? null : await dbContext.VerbProvenances.FirstOrDefaultAsync(p => p.VerbId == verb.Id, ct);
+        if (verb == null)
+        {
+            return new TenseReviewResult("not-found");
+        }
+
+        if (!RuntimeVerbStore.IsModelMade(verb) || provenance == null)
+        {
+            return new TenseReviewResult("not-model-made");
+        }
+
+        var card = JsonNode.Parse(verb.CardJson)!;
+        var tenses = card["tenses"].Deserialize<Dictionary<string, string[][]>>() ?? [];
+        var unverified = VerbVerification.Of(card).Where(tenses.ContainsKey).ToList();
+        if (unverified.Count > 0 && !confirmAll)
+        {
+            return new TenseReviewResult("has-unverified-tenses");
+        }
+
+        var now = DateTime.UtcNow;
+        var reviews = VerbVerification.Reviews(provenance.TenseReviewsJson).ToList();
+        reviews.AddRange(unverified.Select(t => new TenseReview(t, TenseReview.Confirmed, by, now, Cells(tenses[t]), Cells(tenses[t]))));
+        reviews.Add(new TenseReview(TenseReview.WholeVerb, TenseReview.VerbApproved, by, now, null, null));
+        provenance.TenseReviewsJson = VerbVerification.Serialize(reviews);
+        provenance.OwnerApprovedAtUtc = now;
+        provenance.OwnerApprovedBy = by;
+        verb.Status = VerbStatus.OwnerApproved;
+        await store.RewriteGeneratedAsync(verb, tenses, [], ct);
+        await dbContext.SaveChangesAsync(ct);
+        logger.LogInformation("Verb {Lemma} approved as a whole by the owner; tenses confirmed with it: {Count}", lemma, unverified.Count);
+        return new TenseReviewResult("done");
+    }
+
+    /// <summary>«Снять отметку»: the verb is a model-made one to be looked over again. Its tenses stay as they are.</summary>
+    public async Task<TenseReviewResult> UnapproveVerbAsync(string lemma, long by, CancellationToken ct)
+    {
+        var verb = await dbContext.Verbs.FirstOrDefaultAsync(v => v.Lemma == lemma, ct);
+        var provenance = verb == null ? null : await dbContext.VerbProvenances.FirstOrDefaultAsync(p => p.VerbId == verb.Id, ct);
+        if (verb == null)
+        {
+            return new TenseReviewResult("not-found");
+        }
+
+        if (!RuntimeVerbStore.IsModelMade(verb) || provenance == null)
+        {
+            return new TenseReviewResult("not-model-made");
+        }
+
+        if (verb.Status != VerbStatus.OwnerApproved)
+        {
+            return new TenseReviewResult("done");
+        }
+
+        var reviews = VerbVerification.Reviews(provenance.TenseReviewsJson).ToList();
+        reviews.Add(new TenseReview(TenseReview.WholeVerb, TenseReview.VerbUnapproved, by, DateTime.UtcNow, null, null));
+        provenance.TenseReviewsJson = VerbVerification.Serialize(reviews);
+        provenance.OwnerApprovedAtUtc = null;
+        provenance.OwnerApprovedBy = null;
+        verb.Status = VerbStatus.Generated;
+        var tenses = JsonNode.Parse(verb.CardJson)!["tenses"].Deserialize<Dictionary<string, string[][]>>() ?? [];
+        await store.RewriteGeneratedAsync(verb, tenses, VerbVerification.Of(verb.CardJson), ct);
+        await dbContext.SaveChangesAsync(ct);
+        return new TenseReviewResult("done");
+    }
+
     private async Task<TenseReviewResult> ApplyAsync(
         string lemma, string tense, long by, string action, Func<string[][], (string[][]? Row, string? Problem)> change, CancellationToken ct)
     {
@@ -75,7 +150,7 @@ public class VerbTenseReviewService(ITraleDbContext dbContext, RuntimeVerbStore 
             return new TenseReviewResult("not-found");
         }
 
-        if (verb.Status != VerbStatus.Generated || !RuntimeVerbStore.IsRuntime(verb))
+        if (!RuntimeVerbStore.IsModelMade(verb))
         {
             return new TenseReviewResult("not-model-made");
         }

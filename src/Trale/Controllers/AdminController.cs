@@ -250,6 +250,9 @@ public class AdminController : Controller
     {
         /// <summary>Lemma of a model-made verb, as <c>verbs/model-made</c> lists it.</summary>
         public string Lemma { get; set; } = string.Empty;
+
+        /// <summary>The owner's explicit word for a verb they approved as a whole: rebuild it anyway.</summary>
+        public bool EvenIfApproved { get; set; }
     }
 
     /// <summary>
@@ -271,12 +274,13 @@ public class AdminController : Controller
 
         // Not the request's token: a proxy closes a long request, and a half-done rebuild helps nobody.
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(4));
-        var result = await regeneration.ExecuteAsync(lemma, timeout.Token);
+        var result = await regeneration.ExecuteAsync(lemma, timeout.Token, request.EvenIfApproved);
         return result.Outcome switch
         {
             "not-found" => NotFound(new { error = "verb_not_found" }),
             "not-model-made" => Conflict(new { error = "not_model_made" }),
             "generation-is-off" => Conflict(new { error = "generation_is_off" }),
+            "approved-by-owner" => Conflict(new { error = "approved_by_owner" }),
             "over-budget" => StatusCode(429, new { error = "over_generation_budget" }),
             _ => Ok(result)
         };
@@ -323,6 +327,38 @@ public class AdminController : Controller
     {
         if (!await IsOwnerAsync(ct)) return NotFound();
         return TenseReviewed(await review.RemoveAsync(Trimmed(request.Lemma), Trimmed(request.Tense), OwnerTelegramId, ct));
+    }
+
+    public class ApproveVerbRequest
+    {
+        public string Lemma { get; set; } = string.Empty;
+
+        /// <summary>Confirm the tenses that are still unverified along with the verb.</summary>
+        public bool ConfirmAll { get; set; }
+    }
+
+    /// <summary>
+    /// «Глагол проверен»: the owner approves a model-made verb as a whole. For learners it becomes a
+    /// verified verb — the "made by a model" marks go, every tense is in games; who and when is kept in
+    /// the provenance. With unverified tenses left it is refused (409 <c>has_unverified_tenses</c>) unless
+    /// <c>confirmAll</c> is set. A rebuild of such a verb needs <c>evenIfApproved</c>.
+    /// </summary>
+    [HttpPost("verbs/approve")]
+    public async Task<IActionResult> ApproveVerb(
+        [FromBody] ApproveVerbRequest request, [FromServices] Application.Verbs.VerbTenseReviewService review, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var result = await review.ApproveVerbAsync(Trimmed(request.Lemma), request.ConfirmAll, OwnerTelegramId, ct);
+        return result.Outcome == "has-unverified-tenses" ? Conflict(new { error = "has_unverified_tenses" }) : TenseReviewed(result);
+    }
+
+    /// <summary>«Снять отметку»: the verb is a model-made one to be looked over again; its tenses stay as they are.</summary>
+    [HttpPost("verbs/unapprove")]
+    public async Task<IActionResult> UnapproveVerb(
+        [FromBody] ApproveVerbRequest request, [FromServices] Application.Verbs.VerbTenseReviewService review, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return TenseReviewed(await review.UnapproveVerbAsync(Trimmed(request.Lemma), OwnerTelegramId, ct));
     }
 
     private static string Trimmed(string? value) => (value ?? string.Empty).Trim();

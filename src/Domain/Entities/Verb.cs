@@ -53,5 +53,13 @@ public enum VerbStatus
     /// Written by a model at a user's request and approved by a second model — see
     /// <see cref="VerbProvenance"/>. Served and learned like a verified verb; a human revision may follow.
     /// </summary>
-    Generated = 1
+    Generated = 1,
+
+    /// <summary>
+    /// Written by a model and then approved as a whole by the owner (who and when —
+    /// <see cref="VerbProvenance.OwnerApprovedAtUtc"/>). For learners it is a verified verb: no "made
+    /// by a model" mark, every tense in games. It still has its provenance, and a rebuild by the models
+    /// needs the owner's explicit word.
+    /// </summary>
+    OwnerApproved = 2
 }
