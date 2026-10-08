@@ -18,7 +18,10 @@ public record SectionPack(string Id, string Title, IReadOnlyList<SectionVerb> Ve
 public record SectionLevel(int Id, string Title, IReadOnlyList<SectionPack> Packs);
 
 /// <summary>One of the learner's own verbs: saved in the dictionary (from the bot or the mini-app), started in play, or both.</summary>
-/// <param name="Generated">The record was written by a model (<see cref="VerbStatus.Generated"/>), not taken from the curated catalog.</param>
+/// <param name="Generated">
+/// The record was written by a model (<see cref="VerbStatus.Generated"/>) and the owner has not approved
+/// it yet; a verb the owner approved (<see cref="VerbStatus.OwnerApproved"/>) carries no such mark.
+/// </param>
 /// <param name="LevelId">The ladder level the verb also sits in; null for a verb outside the ladder.</param>
 public record SectionMyVerb(string Lemma, string Title, string Translation, VerbLevel Level, bool Generated, int? LevelId, string? PackId);
 
@@ -83,6 +86,9 @@ public class VerbSectionQuery(
         var due = (await dbContext.VerbFormProgresses
                 .AsNoTracking()
                 .Where(p => p.UserId == user.Id && p.NextDueAtUtc != null && p.NextDueAtUtc <= now)
+                // A form of a tense that has become unverified (a model-made verb) is not asked in
+                // sessions, so it is not "due" either: the section must not call to a repetition that will not come.
+                .Where(p => !dbContext.VerbForms.Any(f => f.VerbId == p.VerbId && f.Tense == p.Tense && f.Person == p.Person && f.Unverified))
                 .GroupBy(p => p.Verb.Lemma)
                 .Select(g => new { Lemma = g.Key, Count = g.Count() })
                 .ToListAsync(ct))

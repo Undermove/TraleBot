@@ -4,6 +4,7 @@ using Application.Common.Interfaces;
 using Application.Common.Interfaces.TranslationService;
 using Application.MiniApp.Commands;
 using Infrastructure.BackgroundJobs;
+using Infrastructure.Logging;
 using Infrastructure.Telegram.Services;
 using Infrastructure.Monitoring;
 using Infrastructure.Telegram;
@@ -67,7 +68,14 @@ public static class DependencyInjection
             throw new ConfigurationException(nameof(BotConfiguration));
         }
         services.AddSingleton(botConfig);
-        services.AddHttpClient("telegram_bot_client")
+        // After the secrets above are registered: every log record is masked before it reaches a provider.
+        services.AddLogSecretRedaction();
+        // The Bot API URL carries the bot token, so this client must not use the default HttpClient
+        // loggers (they print the URL): TelegramHttpLogger writes method, status and duration instead.
+        services.AddSingleton<TelegramHttpLogger>();
+        services.AddHttpClient(TelegramHttpLogger.HttpClientName)
+            .RemoveAllLoggers()
+            .AddLogger<TelegramHttpLogger>()
             .AddTypedClient<ITelegramBotClient>((httpClient, _) =>
             {
                 TelegramBotClientOptions options = new(botConfig.Token.Trim());

@@ -140,26 +140,28 @@ test('«Мои глаголы» filled: started, saved and a model-made verb wit
 
   const mine = page.getByTestId('verbs-mine')
   await expect(mine.getByTestId('verbs-verb-row')).toHaveCount(3)
-  await expect(mine.getByTestId('verbs-mine-generated')).toHaveText('собран автоматически')
+  await expect(mine.getByTestId('verbs-mine-generated')).toHaveText('составлено нейросетью')
   await mine.scrollIntoViewIfNeeded()
   await shot(page, '08-mine-filled')
   await mine.getByTestId('verbs-mine-all').click()
   await expect(mine.getByTestId('verbs-verb-row')).toHaveCount(5)
 })
 
-test('after the first game the section leads through the card, the level and «Мои глаголы» — once', async ({ page }) => {
+test('after the first game the section leads through the level, the card and «Мои глаголы» — once', async ({ page }) => {
   const state = await setup(page, { hints: ['ui:verbs_tour_now'], levels: { [FIRST]: 'meeting' } })
   await page.goto('/?playwright=1&screen=verbs')
 
   const text = page.getByTestId('verbs-tour-text')
-  await expect(text).toHaveText('Здесь все формы этого глагола. Нажми — откроется его карточка.')
-  await shot(page, '09-tour-b1-verb-card')
+  await expect(text).toHaveText('Это твой путь по уровню. Ничего не заперто: открывай любой набор.')
+  await shot(page, '09-tour-b1-level')
   await page.getByTestId('verbs-tour-action').click()
-  await expect(text).toHaveText('А это твой путь по уровню. Ничего не заперто: открывай любой набор.')
-  await shot(page, '09-tour-b2-level')
+  await expect(text).toHaveText('А здесь все формы этого глагола. Нажми — откроется его карточка.')
+  await shot(page, '09-tour-b2-verb-card')
   await page.getByTestId('verbs-tour-action').click()
   await expect(text).toHaveText('Любой глагол, который ты переведёшь в боте или в словаре, появится здесь. Попробуй — нажми на пример.')
   await expect(page.getByTestId('verbs-example')).toHaveCount(3)
+  // «Мои глаголы» внизу экрана: фонарик докручивает до поля с примерами.
+  await expect(page.getByTestId('verbs-mine-add')).toBeInViewport()
   await shot(page, '09-tour-c-my-verbs')
   await page.getByTestId('verbs-tour-action').click()
   await expect(text).toHaveCount(0)

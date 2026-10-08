@@ -30,7 +30,7 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
     private const int ModelCandidates = 50;
 
     /// <summary>Column length of <c>Verb.Translation</c>.</summary>
-    private const int MaxTranslationLength = 256;
+    public const int MaxTranslationLength = 256;
 
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -48,6 +48,11 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
     /// <param name="verification">In plain Russian: what the forms and the translation rest on — shown in the card.</param>
     /// <param name="meanings">Plain-Russian phrases of the forms, when the record has them — as catalog verbs do.</param>
     /// <param name="provenance">For a model-made verb: who wrote and who approved it. Saved with the verb, in one transaction.</param>
+    /// <param name="lacksTenses">
+    /// For a model-made verb short of tenses: true when the verb itself has no such tenses (the card says
+    /// so), false when they are just not known.
+    /// </param>
+    /// <param name="unverifiedTenses">For a model-made verb: its tenses nothing but the model vouches for (<see cref="VerbVerification"/>).</param>
     public async Task<Verb> AddAsync(
         VerbParadigm paradigm,
         string translation,
@@ -55,7 +60,9 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
         CancellationToken ct,
         string? verification = null,
         VerbMeanings? meanings = null,
-        VerbProvenance? provenance = null)
+        VerbProvenance? provenance = null,
+        bool lacksTenses = false,
+        IReadOnlyList<string>? unverifiedTenses = null)
     {
         var existing = await dbContext.Verbs.FirstOrDefaultAsync(v => v.Lemma == paradigm.Lemma, ct);
         if (existing != null)
@@ -63,66 +70,21 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
             return existing;
         }
 
-        var analysis = VerbAnalyzer.Analyze(paradigm.Lemma, paradigm.Tenses);
-        if (status == VerbStatus.Generated && VerbAnalyzer.IsPartial(paradigm.Tenses))
-        {
-            // The analyzer's wording speaks of "the source"; a generated verb has none.
-            analysis = analysis with { Reason = analysis.Reason.Replace("В источнике есть", "Известна") };
-        }
-        var model = await FindModelAsync(analysis, ct);
         var now = DateTime.UtcNow;
-        var title = paradigm.Title;
-        var present = ToJson(paradigm.Tenses.TryGetValue("present", out var persons) && persons.Length > 0 ? persons[0] : []);
-        var tenses = ToJson(paradigm.Tenses);
-
-        var card = new JsonObject
-        {
-            ["id"] = paradigm.Lemma,
-            ["title"] = title,
-            ["ru"] = translation,
-            ["kind"] = analysis.Kind,
-            ["present"] = present.DeepClone(),
-            ["masdarWithPreverb"] = ToJson(paradigm.Masdar.Where(m => m != title)),
-            ["reason"] = analysis.Reason,
-            ["root"] = analysis.Root,
-            ["oddTenses"] = ToJson(analysis.OddTenses),
-            ["model"] = model,
-            ["tenses"] = tenses.DeepClone(),
-            ["meanings"] = ToJson(meanings?.Meanings ?? new Dictionary<string, string[]>()),
-            ["meaningChips"] = ToJson(meanings?.Chips ?? new Dictionary<string, string>()),
-            // Example sentences are picked offline from Tatoeba; a runtime verb has none.
-            ["sentences"] = new JsonArray(),
-            ["source"] = paradigm.Source,
-            ["revid"] = paradigm.Revid,
-            ["status"] = StatusName(status),
-            ["verification"] = verification
-        };
-        var cardJson = card.ToJsonString(Json);
-
         var verb = new Verb
         {
             Id = Guid.NewGuid(),
             Lemma = paradigm.Lemma,
-            Title = title,
-            Translation = translation,
-            Kind = analysis.Kind,
-            PresentJson = present.ToJsonString(Json),
-            CardJson = cardJson,
-            Status = status,
+            Title = string.Empty,
+            Translation = string.Empty,
+            Kind = string.Empty,
+            PresentJson = "[]",
+            CardJson = "{}",
+            ContentHash = string.Empty,
             SortOrder = SortOrderAfterCatalog,
-            ContentHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(cardJson))).ToLowerInvariant(),
-            CreatedAtUtc = now,
-            UpdatedAtUtc = now
+            CreatedAtUtc = now
         };
-        var forms = VerbCatalogSeeder
-            .BuildForms(verb.Id, new JsonObject
-            {
-                ["tenses"] = tenses,
-                ["alt"] = ToJson(paradigm.Alt),
-                ["meanings"] = card["meanings"]!.DeepClone(),
-                ["meaningChips"] = card["meaningChips"]!.DeepClone()
-            })
-            .ToList();
+        var forms = await ApplyAsync(verb, paradigm, translation, status, verification, meanings, lacksTenses, unverifiedTenses, now, ct);
 
         dbContext.Verbs.Add(verb);
         dbContext.VerbForms.AddRange(forms);
@@ -155,6 +117,179 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
             return await dbContext.Verbs.FirstAsync(v => v.Lemma == paradigm.Lemma, ct);
         }
     }
+
+    /// <summary>
+    /// Rewrites a model-made verb with a new approved record: the row itself stays (its id is what the
+    /// learners' progress and "my verbs" point to — they are keyed by verb, tense and person, so what was
+    /// learned stays learned), the card, the summary columns and the form index are rebuilt, and the
+    /// provenance row is brought up to date. Dictionary entries find their verb by the form's spelling,
+    /// so an entry keeps its verb as long as its form is still in the table.
+    /// </summary>
+    /// <returns>False when the verb is not a model-made one — nothing is touched then.</returns>
+    public async Task<bool> ReplaceGeneratedAsync(
+        Verb verb, VerbParadigm paradigm, string translation, VerbMeanings meanings, VerbProvenance provenance, bool lacksTenses,
+        IReadOnlyList<string> unverifiedTenses, CancellationToken ct)
+    {
+        if (!IsModelMade(verb) || verb.Lemma != paradigm.Lemma)
+        {
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+        var stale = await dbContext.VerbForms.Where(f => f.VerbId == verb.Id).ToListAsync(ct);
+        dbContext.VerbForms.RemoveRange(stale);
+        dbContext.VerbForms.AddRange(
+            await ApplyAsync(verb, paradigm, translation, VerbStatus.Generated, null, meanings, lacksTenses, unverifiedTenses, now, ct));
+
+        var current = await dbContext.VerbProvenances.FirstOrDefaultAsync(p => p.VerbId == verb.Id, ct);
+        if (current == null)
+        {
+            provenance.VerbId = verb.Id;
+            dbContext.VerbProvenances.Add(provenance);
+        }
+        else
+        {
+            // The first request that led to the verb stays on record; a rebuilt record has not been revised.
+            current.GeneratorModel = provenance.GeneratorModel;
+            current.ReviewerModel = provenance.ReviewerModel;
+            current.ApprovedAtUtc = provenance.ApprovedAtUtc;
+            current.RepairRounds = provenance.RepairRounds;
+            current.FormsTotal = provenance.FormsTotal;
+            current.FormsAttested = provenance.FormsAttested;
+            current.UnattestedFormsJson = provenance.UnattestedFormsJson;
+            current.MissingTensesJson = provenance.MissingTensesJson;
+            current.CompletedTensesJson = provenance.CompletedTensesJson;
+            current.LemmaInLexicon = provenance.LemmaInLexicon;
+            current.ReviewerReasons = provenance.ReviewerReasons;
+            current.RevisedAtUtc = null;
+            // A rebuilt verb is to be looked over again: the owner's approval was of the record before.
+            current.OwnerApprovedAtUtc = null;
+            current.OwnerApprovedBy = null;
+        }
+
+        await dbContext.SaveChangesAsync(ct);
+        return true;
+    }
+
+    /// <summary>
+    /// Writes a model-made verb's table anew from tenses changed by hand or re-judged (the owner's review,
+    /// the backfill of an old record): the row and its id stay, the card's classification and the form
+    /// index are rebuilt, phrases of tenses that are gone are dropped. Nothing is saved here — the caller
+    /// saves, together with whatever else it changed.
+    /// </summary>
+    public async Task RewriteGeneratedAsync(
+        Verb verb, IReadOnlyDictionary<string, string[][]> tenses, IReadOnlyList<string> unverifiedTenses, CancellationToken ct)
+    {
+        var card = JsonNode.Parse(verb.CardJson)!;
+        var masdar = (card["masdarWithPreverb"]?.Deserialize<List<string>>() ?? []).Prepend(verb.Title).Distinct().ToList();
+        var paradigm = new VerbParadigm(verb.Lemma, masdar, tenses, [], Source: null, Revid: null, HeadMasdar: verb.Title);
+        var meanings = new VerbMeanings(
+            (card["meanings"]?.Deserialize<Dictionary<string, string[]>>() ?? []).Where(m => tenses.ContainsKey(m.Key)).ToDictionary(m => m.Key, m => m.Value),
+            (card["meaningChips"]?.Deserialize<Dictionary<string, string>>() ?? []).Where(m => tenses.ContainsKey(m.Key)).ToDictionary(m => m.Key, m => m.Value),
+            []);
+        var lacksTenses = card["reason"]?.GetValue<string>().Contains(LacksTensesWording, StringComparison.Ordinal) ?? false;
+
+        var stale = await dbContext.VerbForms.Where(f => f.VerbId == verb.Id).ToListAsync(ct);
+        dbContext.VerbForms.RemoveRange(stale);
+        dbContext.VerbForms.AddRange(await ApplyAsync(
+            verb, paradigm, verb.Translation, verb.Status, null, meanings, lacksTenses, unverifiedTenses, DateTime.UtcNow, ct));
+    }
+
+    private const string LacksTensesWording = "У этого глагола есть не все времена";
+
+    /// <summary>Fills the verb's columns and card from the paradigm and returns its form index rows (not yet added).</summary>
+    private async Task<List<VerbForm>> ApplyAsync(
+        Verb verb,
+        VerbParadigm paradigm,
+        string translation,
+        VerbStatus status,
+        string? verification,
+        VerbMeanings? meanings,
+        bool lacksTenses,
+        IReadOnlyList<string>? unverifiedTenses,
+        DateTime now,
+        CancellationToken ct)
+    {
+        var analysis = VerbAnalyzer.Analyze(paradigm.Lemma, paradigm.Tenses);
+        var modelMade = status is VerbStatus.Generated or VerbStatus.OwnerApproved;
+        if (modelMade && VerbAnalyzer.IsPartial(paradigm.Tenses))
+        {
+            // The analyzer's wording speaks of "the source"; a generated verb has none. And when the
+            // generator stated that the verb itself has no such tenses, the card says that.
+            analysis = analysis with
+            {
+                Reason = lacksTenses
+                    ? analysis.Reason.Replace("В источнике есть только часть времён", LacksTensesWording)
+                    : analysis.Reason.Replace("В источнике есть", "Известна")
+            };
+        }
+
+        var model = await FindModelAsync(analysis, ct);
+        var title = paradigm.Title;
+        var present = ToJson(paradigm.Tenses.TryGetValue("present", out var persons) && persons.Length > 0 ? persons[0] : []);
+        var tenses = ToJson(paradigm.Tenses);
+
+        var card = new JsonObject
+        {
+            ["id"] = paradigm.Lemma,
+            ["title"] = title,
+            ["ru"] = translation,
+            ["kind"] = analysis.Kind,
+            ["present"] = present.DeepClone(),
+            ["masdarWithPreverb"] = ToJson(paradigm.Masdar.Where(m => m != title)),
+            ["reason"] = analysis.Reason,
+            ["root"] = analysis.Root,
+            ["oddTenses"] = ToJson(analysis.OddTenses),
+            ["model"] = model,
+            ["tenses"] = tenses.DeepClone(),
+            ["meanings"] = ToJson(meanings?.Meanings ?? new Dictionary<string, string[]>()),
+            ["meaningChips"] = ToJson(meanings?.Chips ?? new Dictionary<string, string>()),
+            // Example sentences are picked offline from Tatoeba; a runtime verb has none.
+            ["sentences"] = new JsonArray(),
+            ["source"] = paradigm.Source,
+            ["revid"] = paradigm.Revid,
+            ["status"] = StatusName(status),
+            ["verification"] = verification
+        };
+        var unverified = modelMade
+            ? VerbAnalyzer.KnownTenses.Where(t => (unverifiedTenses ?? []).Contains(t) && paradigm.Tenses.ContainsKey(t)).ToList()
+            : [];
+        if (modelMade)
+        {
+            card[VerbVerification.CardProperty] = ToJson(unverified);
+        }
+
+        var cardJson = card.ToJsonString(Json);
+
+        verb.Title = title;
+        verb.Translation = translation;
+        verb.Kind = analysis.Kind;
+        verb.PresentJson = present.ToJsonString(Json);
+        verb.CardJson = cardJson;
+        verb.Status = status;
+        verb.ContentHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(cardJson))).ToLowerInvariant();
+        verb.UpdatedAtUtc = now;
+
+        var forms = VerbCatalogSeeder
+            .BuildForms(verb.Id, new JsonObject
+            {
+                ["tenses"] = tenses,
+                ["alt"] = ToJson(paradigm.Alt),
+                ["meanings"] = card["meanings"]!.DeepClone(),
+                ["meaningChips"] = card["meaningChips"]!.DeepClone()
+            })
+            .ToList();
+        foreach (var form in forms)
+        {
+            form.Unverified = unverified.Contains(form.Tense);
+        }
+
+        return forms;
+    }
+
+    /// <summary>A verb a model wrote — approved by the owner since or not. Not a curated one, not one from a source table.</summary>
+    public static bool IsModelMade(Verb verb) =>
+        verb.Status is VerbStatus.Generated or VerbStatus.OwnerApproved && IsRuntime(verb);
 
     /// <summary>Whether the verb came from here and not from the curated catalog (whose glosses are hand-written).</summary>
     public static bool IsRuntime(Verb verb) =>

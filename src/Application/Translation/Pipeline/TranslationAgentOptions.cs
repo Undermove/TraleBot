@@ -42,6 +42,21 @@ public class TranslationAgentOptions
     public string ReviewerReasoning { get; set; } = string.Empty;
 
     /// <summary>
+    /// Reasoning effort of the generator on the completion round — when a record came without some of
+    /// the six main tenses and the generator is asked for exactly those. That is the hard case (a verb
+    /// that does not follow the usual scheme), so it is set explicitly rather than left to the model's
+    /// default. "high" did not fit: on 07.10.2026 three calls of five ran past 60 seconds; "medium"
+    /// answered in 25–35.
+    /// </summary>
+    public string CompletionReasoning { get; set; } = "medium";
+
+    /// <summary>
+    /// Whether a record with a main tense missing is sent back to the generator once for those tenses
+    /// before the reviewer sees it. Off: such a record is reviewed and stored as written.
+    /// </summary>
+    public bool CompleteMissingTenses { get; set; } = true;
+
+    /// <summary>
     /// Whether a verb with no conjugation table in the source may be written by the generator and, once
     /// the reviewer approves it, stored (status Generated). Off: such a verb is just translated as before.
     /// </summary>
@@ -59,7 +74,11 @@ public class TranslationAgentOptions
 
     /// <summary>
     /// How many requests a day may go on to the strong model (a verb being written — the expensive
-    /// part: about $0.06 a verb with the default models, twice that with a repair round). 0 = no limit.
+    /// part). 0 = no limit. One place in this budget covers everything one verb takes: the first record,
+    /// the completion round and the repair round — at most three calls of the generator and two of the
+    /// reviewer. Measured with the default models on 07.10.2026: about $0.06–0.07 a verb written in one
+    /// pass, about $0.13 with a completion round or with a repair round, so the day's worst bill is
+    /// about the cap times $0.20.
     /// </summary>
     public int MaxGenerationsPerDay { get; set; } = 100;
 
@@ -81,6 +100,17 @@ public class TranslationAgentOptions
 
     /// <summary>One call of the reviewer.</summary>
     public int ReviewerTimeoutSeconds { get; set; } = 30;
+
+    /// <summary>The completion round: one call of the generator, for the missing tenses only, with more reasoning.</summary>
+    public int CompletionTimeoutSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Everything <see cref="VerbGenerationService"/> does for one verb — the record, the completion
+    /// round, the reviewer, the repair round and the second review — must fit in this; a step gets what
+    /// is left of it. With the classifier and the analyst before it (10 s + 25 s) the whole request then
+    /// stays under the three minutes the mini-app waits for an answer and far under the job's five.
+    /// </summary>
+    public int GenerationTotalSeconds { get; set; } = 140;
 
     /// <summary>One HTTP attempt to Wiktionary.</summary>
     public int WiktionaryTimeoutSeconds { get; set; } = 8;
