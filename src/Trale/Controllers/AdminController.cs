@@ -125,10 +125,11 @@ public class AdminController : Controller
     /// </summary>
     [HttpGet("verbs/model-made")]
     public async Task<IActionResult> ModelMadeVerbs(
-        [FromServices] Application.Verbs.ModelMadeVerbsQuery query, [FromQuery] bool unrevised = false, CancellationToken ct = default)
+        [FromServices] Application.Verbs.ModelMadeVerbsQuery query, [FromQuery] bool unrevised = false,
+        [FromQuery] bool unverified = false, CancellationToken ct = default)
     {
         if (!await IsOwnerAsync(ct)) return NotFound();
-        var verbs = await query.ExecuteAsync(unrevised, ct);
+        var verbs = await query.ExecuteAsync(unrevised, ct, onlyUnverified: unverified);
         return Ok(new { count = verbs.Count, verbs });
     }
 
@@ -217,6 +218,10 @@ public class AdminController : Controller
                 outcome = outcome.Outcome,
                 reason = outcome.Reason,
                 repairRounds = outcome.RepairRounds,
+                completionRounds = outcome.CompletionRounds,
+                droppedRows = outcome.DroppedRows,
+                completedTenses = draft?.Completed,
+                missingTenses = draft?.Missing,
                 seconds = started.Elapsed.TotalSeconds,
                 generator = new { outcome.Generator.Calls, outcome.Generator.InputTokens, outcome.Generator.OutputTokens },
                 reviewer = new { outcome.Reviewer.Calls, outcome.Reviewer.InputTokens, outcome.Reviewer.OutputTokens },
@@ -240,6 +245,133 @@ public class AdminController : Controller
             return Ok(new { outcome = "failed", reason = error, seconds = started.Elapsed.TotalSeconds });
         }
     }
+
+    public class RegenerateVerbRequest
+    {
+        /// <summary>Lemma of a model-made verb, as <c>verbs/model-made</c> lists it.</summary>
+        public string Lemma { get; set; } = string.Empty;
+
+        /// <summary>The owner's explicit word for a verb they approved as a whole: rebuild it anyway.</summary>
+        public bool EvenIfApproved { get; set; }
+    }
+
+    /// <summary>
+    /// «Пересобрать глагол»: writes a model-made verb again with today's generator (completion round
+    /// included) and replaces the stored record only when the new one is approved, is the same verb and
+    /// has at least as many main tenses. Curated verbs and verbs from a source table are refused. The
+    /// verb's row stays, so learners keep their progress. Takes up to a couple of minutes; the work does
+    /// not stop if the caller's connection does — the list shows the result.
+    /// </summary>
+    [HttpPost("verbs/regenerate")]
+    public async Task<IActionResult> RegenerateVerb(
+        [FromBody] RegenerateVerbRequest request,
+        [FromServices] Application.Translation.Pipeline.VerbRegenerationService regeneration,
+        CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var lemma = (request.Lemma ?? string.Empty).Trim();
+        if (!Application.Verbs.VerbParadigm.GeorgianWord.IsMatch(lemma)) return BadRequest(new { error = "invalid_lemma" });
+
+        // Not the request's token: a proxy closes a long request, and a half-done rebuild helps nobody.
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(4));
+        var result = await regeneration.ExecuteAsync(lemma, timeout.Token, request.EvenIfApproved);
+        return result.Outcome switch
+        {
+            "not-found" => NotFound(new { error = "verb_not_found" }),
+            "not-model-made" => Conflict(new { error = "not_model_made" }),
+            "generation-is-off" => Conflict(new { error = "generation_is_off" }),
+            "approved-by-owner" => Conflict(new { error = "approved_by_owner" }),
+            "over-budget" => StatusCode(429, new { error = "over_generation_budget" }),
+            _ => Ok(result)
+        };
+    }
+
+    public class ReviewVerbTenseRequest
+    {
+        public string Lemma { get; set; } = string.Empty;
+
+        /// <summary>Tense key as in the verb card: future, aorist, …</summary>
+        public string Tense { get; set; } = string.Empty;
+
+        /// <summary>For <c>edit</c>: six cells in person order; null or empty — the cell stays empty.</summary>
+        public List<string?>? Cells { get; set; }
+    }
+
+    /// <summary>
+    /// The owner's review of one tense of a model-made verb: <c>confirm</c> (the row becomes verified and
+    /// enters games), <c>edit</c> (the cells are written by hand — verified too) or <c>remove</c> (the row
+    /// is deleted; a later rebuild can bring it back only as unverified). Recorded in the verb's
+    /// provenance with who, when and the row before and after. Curated verbs are refused.
+    /// </summary>
+    [HttpPost("verbs/tense/confirm")]
+    public async Task<IActionResult> ConfirmVerbTense(
+        [FromBody] ReviewVerbTenseRequest request, [FromServices] Application.Verbs.VerbTenseReviewService review, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return TenseReviewed(await review.ConfirmAsync(Trimmed(request.Lemma), Trimmed(request.Tense), OwnerTelegramId, ct));
+    }
+
+    /// <inheritdoc cref="ConfirmVerbTense"/>
+    [HttpPost("verbs/tense/edit")]
+    public async Task<IActionResult> EditVerbTense(
+        [FromBody] ReviewVerbTenseRequest request, [FromServices] Application.Verbs.VerbTenseReviewService review, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return TenseReviewed(await review.EditAsync(Trimmed(request.Lemma), Trimmed(request.Tense), request.Cells, OwnerTelegramId, ct));
+    }
+
+    /// <inheritdoc cref="ConfirmVerbTense"/>
+    [HttpPost("verbs/tense/remove")]
+    public async Task<IActionResult> RemoveVerbTense(
+        [FromBody] ReviewVerbTenseRequest request, [FromServices] Application.Verbs.VerbTenseReviewService review, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return TenseReviewed(await review.RemoveAsync(Trimmed(request.Lemma), Trimmed(request.Tense), OwnerTelegramId, ct));
+    }
+
+    public class ApproveVerbRequest
+    {
+        public string Lemma { get; set; } = string.Empty;
+
+        /// <summary>Confirm the tenses that are still unverified along with the verb.</summary>
+        public bool ConfirmAll { get; set; }
+    }
+
+    /// <summary>
+    /// «Глагол проверен»: the owner approves a model-made verb as a whole. For learners it becomes a
+    /// verified verb — the "made by a model" marks go, every tense is in games; who and when is kept in
+    /// the provenance. With unverified tenses left it is refused (409 <c>has_unverified_tenses</c>) unless
+    /// <c>confirmAll</c> is set. A rebuild of such a verb needs <c>evenIfApproved</c>.
+    /// </summary>
+    [HttpPost("verbs/approve")]
+    public async Task<IActionResult> ApproveVerb(
+        [FromBody] ApproveVerbRequest request, [FromServices] Application.Verbs.VerbTenseReviewService review, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var result = await review.ApproveVerbAsync(Trimmed(request.Lemma), request.ConfirmAll, OwnerTelegramId, ct);
+        return result.Outcome == "has-unverified-tenses" ? Conflict(new { error = "has_unverified_tenses" }) : TenseReviewed(result);
+    }
+
+    /// <summary>«Снять отметку»: the verb is a model-made one to be looked over again; its tenses stay as they are.</summary>
+    [HttpPost("verbs/unapprove")]
+    public async Task<IActionResult> UnapproveVerb(
+        [FromBody] ApproveVerbRequest request, [FromServices] Application.Verbs.VerbTenseReviewService review, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return TenseReviewed(await review.UnapproveVerbAsync(Trimmed(request.Lemma), OwnerTelegramId, ct));
+    }
+
+    private static string Trimmed(string? value) => (value ?? string.Empty).Trim();
+
+    private IActionResult TenseReviewed(Application.Verbs.TenseReviewResult result) => result.Outcome switch
+    {
+        "done" => Ok(new { ok = true, progressReset = result.ProgressReset }),
+        "not-found" => NotFound(new { error = "verb_not_found" }),
+        "not-model-made" => Conflict(new { error = "not_model_made" }),
+        "no-such-tense" => NotFound(new { error = "no_such_tense" }),
+        "present-stays" => BadRequest(new { error = "present_stays", problem = "the present cannot be removed and its he/she cell is the lemma" }),
+        _ => BadRequest(new { error = "invalid_cells", problem = result.Problem })
+    };
 
     public class WarmUpVerbRequest
     {

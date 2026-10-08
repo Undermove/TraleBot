@@ -32,6 +32,13 @@ public class SeedVerbCatalog(IServiceScopeFactory scopeFactory, ILogger<SeedVerb
             var result = await seeder.SeedAsync(await File.ReadAllTextAsync(path, cancellationToken), cancellationToken);
             logger.LogInformation("Verb catalog: {Total} verbs, {Written} written, {Removed} removed",
                 result.Total, result.Written, result.Removed);
+
+            // Model-made verbs stored before tenses had a verification state get one, once.
+            var marked = await scope.ServiceProvider.GetRequiredService<VerbVerificationBackfill>().RunAsync(cancellationToken);
+            if (marked > 0)
+            {
+                logger.LogInformation("Model-made verbs brought up to date with a verification state: {Count}", marked);
+            }
         }
         catch (Exception ex)
         {

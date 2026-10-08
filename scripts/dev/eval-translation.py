@@ -11,6 +11,7 @@
         [--save-ordinary файл.json]   # сервер с выключенным агентом: записать ответы старого пути на обычные слова
         [--baseline файл.json]        # сравнить ответы на обычные слова с записанными
         [--compare файл.json]         # вместо набора: сравнение модели-составителя (см. ниже)
+        [--tenses файл.json]          # вместо набора: сколько времён составитель заполняет (см. ниже)
 
 Названия моделей нужны только для подсчёта цены — сами модели задаются при запуске сервера.
 
@@ -30,6 +31,12 @@
 /api/admin/verbs/generate-preview (ничего не сохраняет). Для глаголов без таблицы — вердикт второй
 модели и доля форм, встретившихся в текстах; для глаголов с таблицей в Викисловаре (каталог) — «вслепую»:
 составить без таблицы и сравнить с таблицей клетка за клеткой.
+
+Режим --tenses: тот же /generate-preview на глаголах, у которых времена строятся не по схеме
+«настоящее + приставка» (движение, разные корни, без приставки, «лежать / сидеть / стоять»), и на паре
+обычных. По каждому: сколько из шести основных времён заполнено; для глаголов с таблицей — сколько
+заполненных клеток совпало с таблицей, для глаголов без таблицы — сколько встретилось в настоящих
+текстах. Отдельно — клетки, которые дописал круг «допиши недостающие времена».
 
 Грузинские слова в наборе не набраны руками: они берутся из каталога (src/Trale/Verbs/verbs.json),
 лексикона (lexicon.json), выгрузки парадигм (scripts/verbs/verbs.raw.json), предложений Tatoeba
@@ -58,6 +65,7 @@ ap.add_argument("--reviewer", default="gpt-6-sol")
 ap.add_argument("--save-ordinary", default="")
 ap.add_argument("--baseline", default="")
 ap.add_argument("--compare", default="")
+ap.add_argument("--tenses", default="")
 ap.add_argument("--only", default="")
 ap.add_argument("--json", default="")
 args = ap.parse_args()
@@ -250,7 +258,7 @@ def reset():
     sql(f"""insert into "Users" ("Id","TelegramId","AccountType","RegisteredAtUtc","UserSettingsId","InitialLanguageSet","IsActive","IsPro","TrialBonusDays","NotificationsEnabled")
             values ('{user}',{telegram},0,now(),'{settings}',true,true,false,0,true) on conflict ("Id") do nothing;
             insert into "UsersSettings" ("Id","UserId","CurrentLanguage") values ('{settings}','{user}',1) on conflict do nothing;""")
-    if not args.compare:
+    if not args.compare and not args.tenses:
         # Счётчики дневных потолков тоже: иначе несколько прогонов за день упираются в потолок на пользователя.
         sql("""delete from "TranslationCache"; delete from "Verbs" where "ContentHash" not like 'cat:%'; delete from "ModelBudgetDays";""")
 
@@ -468,6 +476,102 @@ def compare_generators():
     json.dump(dict(generator=args.generator, reviewer=args.reviewer, rows=rows), open(args.compare, "w"), ensure_ascii=False, indent=1)
 
 
+# Глаголы для режима --tenses, по русскому переводу. С таблицей (каталог): движение и разные корни,
+# будущее без приставки, обычный — для сравнения. Без таблицы нигде: положение в пространстве и движение.
+TENSES_BLIND = ["идти, уходить", "приходить", "видеть", "пить", "быть", "жить", "смеяться", "писать"]
+TENSES_NO_TABLE = ["лежать", "стоять", "сидеть", "спать", "летать", "плавать", "бежать"]
+
+
+def compare_tenses():
+    """Сколько основных времён заполняет составитель и насколько заполненное верно."""
+    plan = [("blind", ru.split(",")[0].strip(), cat(ru)) for ru in TENSES_BLIND] + [("no-table", ru, None) for ru in TENSES_NO_TABLE]
+    if args.only:
+        wanted = args.only.split(",")
+        plan = [p for p in plan if p[0] in wanted or p[1] in wanted]
+    rows = []
+    print(f"\n== времена: составитель {args.generator}, проверяющий {args.reviewer} ==")
+    for kind, ru, table in plan:
+        for attempt in range(5):
+            answer = call("POST", "/api/admin/verbs/generate-preview", OWNER_AUTH, dict(text=ru, infinitive=ru))
+            if answer.get("outcome") != "failed" or answer.get("seconds", 0) > 5:
+                break
+            time.sleep(3)  # соединение с провайдером оборвалось до ответа модели — не результат, спрашиваем снова
+        g, r = answer.get("generator") or {}, answer.get("reviewer") or {}
+        tenses = answer.get("tenses") or {}
+        unattested = set(answer.get("unattested") or [])
+        completed = set(answer.get("completedTenses") or [])  # времена, дописанные вторым кругом
+        row = dict(kind=kind, ru=ru, outcome=answer.get("outcome"), reason=answer.get("reason"), lemma=answer.get("lemma"),
+                   lemma_ok=None if table is None else answer.get("lemma") == table["lemma"],
+                   repair=answer.get("repairRounds", 0), completion=answer.get("completionRounds", 0), dropped=answer.get("droppedRows", 0),
+                   missing=answer.get("missingTenses") or [], reasons=answer.get("reasons") or [],
+                   seconds=answer.get("seconds", 0), tenses=tenses, per_tense={},
+                   generator=(g.get("calls", 0), g.get("inputTokens", 0), g.get("outputTokens", 0)),
+                   reviewer=(r.get("calls", 0), r.get("inputTokens", 0), r.get("outputTokens", 0)))
+        row["cost"] = role_cost("generator", *row["generator"][1:]) + role_cost("reviewer", *row["reviewer"][1:])
+        wrong = []
+        for tense in MAIN:
+            cells = [c[0] for c in (tenses.get(tense) or []) if c]
+            if not cells:
+                continue
+            entry = dict(cells=len(cells), completed=tense in completed, attested=sum(c not in unattested for c in cells))
+            if table is not None and table["tenses"].get(tense):
+                same = 0
+                for person, cell in enumerate(tenses[tense]):
+                    if not cell:
+                        continue
+                    allowed = set(table["tenses"][tense][person])
+                    for alt in table.get("alt") or []:
+                        allowed |= set((alt.get(tense) or [[]] * 6)[person])
+                    same += cell[0] in allowed
+                    if cell[0] not in allowed:
+                        wrong.append(f"{tense}/{person}: {cell[0]} ≠ {' / '.join(sorted(allowed)) or '—'}")
+                entry["same"] = same
+            row["per_tense"][tense] = entry
+        row["wrong"] = wrong
+        row["filled"] = len(row["per_tense"])
+        rows.append(row)
+        per = row["per_tense"].values()
+        cells = sum(e["cells"] for e in per)
+        quality = (f"с таблицей совпало {sum(e.get('same', 0) for e in per)}/{sum(e['cells'] for e in per if 'same' in e)}"
+                   if table is not None else f"в текстах {sum(e['attested'] for e in per)}/{cells}")
+        added = [t for t, e in row["per_tense"].items() if e["completed"]]
+        print(f"[{kind}] «{ru}» → {row['outcome']}{'+repair' if row['repair'] else ''}{'+completion' if row['completion'] else ''}{'+rows-left-out' if row['dropped'] else ''} "
+              f"{row['lemma'] or ''}{'' if row['lemma_ok'] is not False else ' (ЛЕММА НЕ ТА)'} | времён {row['filled']}/6, клеток {cells} | {quality} | "
+              f"${row['cost']:.4f} | {row['seconds']:.0f} c")
+        if added:
+            print(f"      дописано вторым кругом: {', '.join(added)}")
+        for m in row["missing"]:
+            print(f"      нет времени: {m}")
+        for reason in row["reasons"] if row["outcome"] != "approved" else []:
+            print(f"      довод: {reason}")
+        for w in wrong[:8]:
+            print(f"      не как в таблице: {w}")
+
+    def total(kind, key, only_completed=False):
+        return sum(e.get(key, 0) for r in rows if r["kind"] == kind for e in r["per_tense"].values()
+                   if (e["completed"] or not only_completed) and (key != "cells" or True))
+
+    print("\n== итог по временам ==")
+    for kind, name in (("blind", "с таблицей (вслепую)"), ("no-table", "без таблицы")):
+        group = [r for r in rows if r["kind"] == kind]
+        if not group:
+            continue
+        compared = sum(e["cells"] for r in group for e in r["per_tense"].values() if "same" in e)
+        print(f"{name}: глаголов {len(group)}, одобрено {sum(r['outcome'] == 'approved' for r in group)}, "
+              f"времён заполнено {sum(r['filled'] for r in group)} из {6 * len(group)}, клеток {total(kind, 'cells')}; "
+              + (f"совпало с таблицей {total(kind, 'same')} из {compared}" if kind == "blind"
+                 else f"встретилось в текстах {total(kind, 'attested')} из {total(kind, 'cells')}"))
+        done = [e for r in group for e in r["per_tense"].values() if e["completed"]]
+        if done:
+            print(f"   дописано вторым кругом: времён {len(done)}, клеток {sum(e['cells'] for e in done)}, "
+                  + (f"совпало с таблицей {sum(e.get('same', 0) for e in done)} из {sum(e['cells'] for e in done if 'same' in e)}, " if kind == "blind" else "")
+                  + f"в текстах {sum(e['attested'] for e in done)}")
+    print(f"цена: всего ${sum(r['cost'] for r in rows):.4f}, в среднем ${statistics.mean(r['cost'] for r in rows):.4f} за глагол; "
+          f"время p50 {percentile([r['seconds'] for r in rows], .5):.0f} c, макс. {max(r['seconds'] for r in rows):.0f} c; "
+          f"кругов исправления {sum(r['repair'] for r in rows)}, кругов дописывания {sum(r['completion'] for r in rows)}")
+    json.dump(dict(generator=args.generator, reviewer=args.reviewer, rows=rows), open(args.tenses, "w"), ensure_ascii=False, indent=1)
+
+
 def made_verbs_report(auth, user_id):
     """Каждый глагол, составленный моделью: на чём держится одобрение и стал ли он полноценным глаголом."""
     made = call("GET", "/api/admin/verbs/model-made", OWNER_AUTH).get("verbs") or []
@@ -509,6 +613,9 @@ def made_verbs_report(auth, user_id):
 reset()
 if args.compare:
     compare_generators()
+    sys.exit(0)
+if args.tenses:
+    compare_tenses()
     sys.exit(0)
 if args.save_ordinary:
     # Сервер запущен без агента: ответы старого пути на обычные слова — образец для сравнения.

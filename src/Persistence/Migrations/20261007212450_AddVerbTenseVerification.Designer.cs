@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Persistence;
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    partial class TraleDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261007212450_AddVerbTenseVerification")]
+    partial class AddVerbTenseVerification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1055,12 +1058,6 @@ namespace Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text")
                         .HasDefaultValue("[]");
-
-                    b.Property<DateTime?>("OwnerApprovedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long?>("OwnerApprovedBy")
-                        .HasColumnType("bigint");
 
                     b.Property<int>("RepairRounds")
                         .HasColumnType("integer");

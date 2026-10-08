@@ -87,7 +87,7 @@ export default function MyVerbs({ verbs, examples, hasAccess, tourRow, tourAdd, 
               note={(verb.generated || verb.levelId) && (
                 <span className="block mt-0.5 text-[10px] text-jewelInk-hint leading-tight">
                   {verb.levelId ? `уровень ${verb.levelId}` : null}
-                  {verb.generated && <span data-testid="verbs-mine-generated">собран автоматически</span>}
+                  {verb.generated && <span data-testid="verbs-mine-generated">составлено нейросетью</span>}
                 </span>
               )}
             />
