@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
-import CampaignPanel from '../components/admin/CampaignPanel'
-import FeedbackPanel from '../components/admin/FeedbackPanel'
+import AdminSections from '../components/admin/AdminSections'
 import VerbReviewEntry from '../components/admin/VerbReviewEntry'
 import { ProgressState, Screen } from '../types'
 import { api, AdminStats, AdminRecentUser } from '../api'
@@ -149,6 +148,9 @@ export default function AdminScreen({ progress, navigate }: Props) {
 
         {phase === 'ready' && stats && (
           <>
+            {/* Broadcasts, the survey builder and what people answered live on their own screens */}
+            <AdminSections navigate={navigate} />
+
             {/* KPIs row 1: users */}
             <div className="mn-eyebrow mb-2">Пользователи</div>
             <div className="grid grid-cols-2 gap-2 mb-5">
@@ -276,15 +278,6 @@ export default function AdminScreen({ progress, navigate }: Props) {
               </div>
             </div>
 
-            {/* Broadcast & Grant — owner only one-off campaign tool */}
-            <BroadcastPanel />
-
-            {/* Campaign — a broadcast in parts (test sample, then the rest), recorded per recipient */}
-            <CampaignPanel />
-
-            {/* What people answered at the paywall, in surveys and wrote to the author */}
-            <FeedbackPanel onOpenUser={(telegramId) => navigate({ kind: 'admin-user', telegramId })} />
-
             {/* Verbs written by the model are reviewed on their own screen; here — the way in, with how many wait */}
             <VerbReviewEntry onOpen={() => navigate({ kind: 'verb-review' })} />
 
@@ -362,7 +355,7 @@ function fmt(n: number): string {
   return n.toLocaleString('ru-RU')
 }
 
-function BroadcastPanel() {
+export function BroadcastPanel() {
   const [minVocab, setMinVocab] = useState(10)
   const [useActivity, setUseActivity] = useState(false)
   const [days, setDays] = useState(365)

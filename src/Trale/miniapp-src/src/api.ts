@@ -572,6 +572,8 @@ export const adminCampaigns = {
     giftOfferDays?: number | null
     /** Опрос: 2–4 варианта ответа, уходят кнопками под сообщением. Пусто — обычная кампания. */
     surveyOptions?: string[] | null
+    /** Конструктор начинает новый опрос: при пустом key сервер сам называет кампанию и возвращает имя в ответе. */
+    newSurveySlug?: string | null
   }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
   /** Отправить следующую порцию уже выбранных получателей. */
   send: (key: string, limit: number) =>
@@ -716,13 +718,47 @@ export interface AdminFeedbackItem {
   telegramId: number
 }
 
+export interface AdminSurveyDto {
+  key: string
+  question: string
+  createdAtUtc: string
+  audience: CampaignAudience
+  /** Скольким людям опрос дошёл. */
+  sent: number
+  /** Сколько сообщений написали кнопкой «Написать подробнее» из этого опроса. */
+  texts: number
+  options: FeedbackOptionCount[]
+}
+
 export interface AdminFeedbackDto {
   recent: AdminFeedbackItem[]
   /** shown — сколько раз вопрос показали, с ответом или без. */
   paywall: { shown: number; options: FeedbackOptionCount[] }
-  surveys: { key: string; question: string; options: FeedbackOptionCount[] }[]
+  /** Сколько всего сообщений написали автору. */
+  messages: number
+  /** Опросы, отправленные людям, новые сверху (пробные «только себе» сюда не попадают). */
+  surveys: AdminSurveyDto[]
+}
+
+/** Готовый опрос для конструктора: вопрос и кнопки уже написаны. */
+export interface SurveyPresetDto {
+  id: string
+  title: string
+  question: string
+  options: string[]
+}
+
+export const adminSurveys = {
+  presets: () => request<{ presets: SurveyPresetDto[]; suggestions: string[]; maxOptions: number; maxOptionLength: number }>(
+    '/api/admin/surveys/presets')
 }
 
 export const adminFeedback = {
-  overview: (take = 50) => request<AdminFeedbackDto>(`/api/admin/feedback?take=${take}`)
+  /** recent можно сузить до одного вида ответов и/или одного опроса; счётчики всегда целиком. */
+  overview: (only: { kind?: AdminFeedbackItem['kind']; campaign?: string; take?: number } = {}) => {
+    const params = new URLSearchParams({ take: String(only.take ?? 100) })
+    if (only.kind) params.set('kind', only.kind)
+    if (only.campaign) params.set('campaign', only.campaign)
+    return request<AdminFeedbackDto>(`/api/admin/feedback?${params}`)
+  }
 }

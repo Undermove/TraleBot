@@ -623,6 +623,11 @@ public class UserFeedbackTests : TestBase
         var survey = body.GetProperty("surveys").EnumerateArray().Single();
         survey.GetProperty("key").GetString().Should().Be("seen");
         survey.GetProperty("question").GetString().Should().Be("Что мешает заниматься?");
+        survey.GetProperty("audience").GetString().Should().Be("accessEnded");
+        survey.GetProperty("createdAtUtc").GetDateTime().Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(2));
+        survey.GetProperty("sent").GetInt32().Should().Be(3, "the three whose access ended; the one on trial is another audience");
+        survey.GetProperty("texts").GetInt32().Should().Be(1);
+        body.GetProperty("messages").GetInt32().Should().Be(2);
         survey.GetProperty("options").EnumerateArray()
             .Select(o => (o.GetProperty("option").GetString(), o.GetProperty("count").GetInt32()))
             .Should().Equal(("Дорого", 2), ("Пока не нужно", 0), ("Не понял, что получу", 1));
@@ -637,6 +642,177 @@ public class UserFeedbackTests : TestBase
         recent.Count(r => r.GetProperty("kind").GetString() == "survey").Should().Be(3);
 
         (await Admin(HttpMethod.Get, "feedback?take=2")).Body.GetProperty("recent").GetArrayLength().Should().Be(2);
+    }
+
+    [Test]
+    public async Task The_owner_can_look_at_one_kind_or_one_survey_while_the_counts_stay_whole()
+    {
+        await SeedAnswers();
+
+        async Task<List<(string? Kind, string? Text)>> Recent(string query) =>
+            (await Admin(HttpMethod.Get, $"feedback?{query}")).Body.GetProperty("recent").EnumerateArray()
+                .Select(r => (r.GetProperty("kind").GetString(), r.GetProperty("text").GetString())).ToList();
+
+        (await Recent("kind=paywall")).Should().HaveCount(2).And.OnlyContain(r => r.Kind == "paywall");
+        (await Recent("kind=message")).Select(r => r.Text).Should().Equal("Спасибо за глаголы!", "Подробнее про цену");
+        (await Recent("kind=message&campaign=seen")).Select(r => r.Text).Should().Equal("Подробнее про цену");
+        (await Recent("kind=survey&campaign=seen")).Should().HaveCount(3);
+        (await Recent("campaign=no-such")).Should().BeEmpty();
+        var narrowed = (await Admin(HttpMethod.Get, "feedback?kind=message&campaign=seen")).Body;
+        narrowed.GetProperty("paywall").GetProperty("shown").GetInt32().Should().Be(3);
+        narrowed.GetProperty("surveys").GetArrayLength().Should().Be(1);
+    }
+
+    [Test]
+    public async Task A_survey_nobody_answered_is_listed_and_a_trial_sent_only_to_the_owner_is_not()
+    {
+        await AccessEnded();
+        await Launch("silent");
+        (await Prepare("only-me", Options, audience: "owner")).Code.Should().Be(HttpStatusCode.OK);
+        await Admin(HttpMethod.Post, "campaigns/only-me/send", new { limit = 100 });
+
+        var surveys = (await Admin(HttpMethod.Get, "feedback")).Body.GetProperty("surveys").EnumerateArray().ToList();
+
+        var silent = surveys.Single();
+        silent.GetProperty("key").GetString().Should().Be("silent");
+        silent.GetProperty("sent").GetInt32().Should().Be(1);
+        silent.GetProperty("options").EnumerateArray().Should().OnlyContain(o => o.GetProperty("count").GetInt32() == 0);
+    }
+
+    // ── Конструктор опроса ───────────────────────────────────────────────────
+
+    private Task<(HttpStatusCode Code, JsonElement Body)> StartSurvey(string slug, bool dryRun = false, string audience = "accessEnded",
+        string[]? options = null, int? sampleSize = null) =>
+        Admin(HttpMethod.Post, "campaigns/prepare", new
+        {
+            key = "", newSurveySlug = slug, audience, message = "Чего тебе не хватает?", sampleSize, dryRun, surveyOptions = options ?? Options
+        });
+
+    private Task<List<string>> CampaignKeys() => InScope(sp =>
+        sp.GetRequiredService<ITraleDbContext>().BroadcastCampaigns.AsNoTracking().Select(c => c.Key).OrderBy(k => k).ToListAsync());
+
+    private static string Stem(string slug) => $"survey-{DateTime.UtcNow:yyyy-MM}-{slug}";
+
+    [Test]
+    public async Task Every_ready_made_survey_passes_the_same_checks_as_a_typed_one_and_fits_a_phone_button()
+    {
+        await AccessEnded();
+        var (code, body) = await Admin(HttpMethod.Get, "surveys/presets");
+        code.Should().Be(HttpStatusCode.OK);
+        var presets = body.GetProperty("presets").EnumerateArray().ToList();
+        presets.Should().HaveCountGreaterThanOrEqualTo(4);
+        presets.Select(p => p.GetProperty("id").GetString()).Should().OnlyHaveUniqueItems().And.NotContain(SurveyPresets.Custom);
+
+        foreach (var preset in presets)
+        {
+            var id = preset.GetProperty("id").GetString()!;
+            var options = preset.GetProperty("options").EnumerateArray().Select(o => o.GetString()!).ToArray();
+            options.Should().OnlyContain(o => o.Length <= SurveyPresets.MaxButtonLength, id);
+            preset.GetProperty("title").GetString().Should().NotBeNullOrWhiteSpace();
+
+            var (prepared, answer) = await Admin(HttpMethod.Post, "campaigns/prepare", new
+            {
+                key = "", newSurveySlug = id, audience = "accessEnded", message = preset.GetProperty("question").GetString(),
+                sampleSize = (int?)null, dryRun = true, surveyOptions = options
+            });
+
+            prepared.Should().Be(HttpStatusCode.OK, $"{id}: {(answer.ValueKind == JsonValueKind.Undefined ? "" : answer.GetRawText())}");
+            var key = answer.GetProperty("key").GetString()!;
+            key.Should().Be(Stem(id));
+            System.Text.Encoding.UTF8.GetByteCount(SurveyAnswerCommand.CallbackData(key + "-99", options.Length - 1))
+                .Should().BeLessThanOrEqualTo(64, "Telegram's limit for the data a button carries");
+        }
+
+        body.GetProperty("suggestions").EnumerateArray().Select(o => o.GetString()!)
+            .Should().OnlyHaveUniqueItems().And.OnlyContain(o => o.Length <= SurveyPresets.MaxButtonLength);
+        (await CampaignKeys()).Should().BeEmpty("counting creates nothing");
+        (await Call((await AccessEnded()).TelegramId, HttpMethod.Get, "/api/admin/surveys/presets")).Code.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task A_new_survey_names_itself_and_never_takes_a_name_in_use()
+    {
+        await AccessEnded();
+
+        var counted = await StartSurvey("missing", dryRun: true);
+        var first = await StartSurvey("missing");
+        var second = await StartSurvey("missing");
+        var third = await StartSurvey("missing");
+        var another = await StartSurvey("likes");
+
+        counted.Body.GetProperty("key").GetString().Should().Be(Stem("missing"));
+        first.Body.GetProperty("key").GetString().Should().Be(Stem("missing"), "counting did not take the name");
+        second.Body.GetProperty("key").GetString().Should().Be(Stem("missing") + "-2");
+        third.Body.GetProperty("key").GetString().Should().Be(Stem("missing") + "-3");
+        another.Body.GetProperty("key").GetString().Should().Be(Stem("likes"));
+        (await CampaignKeys()).Should().HaveCount(4);
+        first.Body.GetProperty("picked").GetInt32().Should().Be(1);
+        second.Body.GetProperty("picked").GetInt32().Should().Be(1, "a new survey is a new campaign: the same people may get it");
+    }
+
+    [Test]
+    public async Task Surveys_started_at_once_never_share_a_campaign()
+    {
+        await AccessEnded();
+        await AccessEnded();
+
+        var started = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => StartSurvey("race")));
+
+        var created = started.Where(s => s.Code == HttpStatusCode.OK).Select(s => s.Body.GetProperty("key").GetString()!).ToList();
+        created.Should().NotBeEmpty().And.OnlyHaveUniqueItems();
+        (await CampaignKeys()).Should().BeEquivalentTo(created);
+        started.Where(s => s.Code != HttpStatusCode.OK).Should().OnlyContain(s => s.Code == HttpStatusCode.BadRequest);
+        var perCampaign = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().BroadcastDeliveries.AsNoTracking()
+            .GroupBy(d => d.CampaignId).Select(g => g.Count()).ToListAsync());
+        perCampaign.Should().HaveCount(created.Count).And.OnlyContain(count => count == 2, "nobody's recipients were added to another survey");
+    }
+
+    [Test]
+    public async Task The_next_part_of_a_survey_goes_by_its_key_and_a_bad_start_is_refused()
+    {
+        await AccessEnded();
+        await AccessEnded();
+        var started = await StartSurvey("parts", sampleSize: 1);
+        var key = started.Body.GetProperty("key").GetString()!;
+
+        var rest = await Admin(HttpMethod.Post, "campaigns/prepare", new
+        {
+            key, newSurveySlug = "parts", audience = "accessEnded", message = "Чего тебе не хватает?",
+            sampleSize = (int?)null, dryRun = false, surveyOptions = Options
+        });
+
+        rest.Code.Should().Be(HttpStatusCode.OK);
+        rest.Body.GetProperty("key").GetString().Should().Be(key);
+        rest.Body.GetProperty("alreadyInCampaign").GetInt32().Should().Be(1);
+        rest.Body.GetProperty("picked").GetInt32().Should().Be(1);
+        (await CampaignKeys()).Should().Equal(key);
+        (await StartSurvey("Bad Slug!")).Code.Should().Be(HttpStatusCode.BadRequest);
+        (await StartSurvey("empty", options: [])).Code.Should().Be(HttpStatusCode.BadRequest, "the builder starts surveys, not ordinary broadcasts");
+        (await StartSurvey("one", options: ["Да"])).Code.Should().Be(HttpStatusCode.BadRequest);
+        (await CampaignKeys()).Should().Equal(key);
+    }
+
+    [Test]
+    public async Task A_batch_does_not_leave_until_recipients_are_picked()
+    {
+        var person = await AccessEnded();
+        var mark = _telegram.Requests.Count;
+
+        var unknown = await Admin(HttpMethod.Post, $"campaigns/{Stem("unpicked")}/send", new { limit = 25 });
+        await StartSurvey("unpicked", dryRun: true);
+        var onlyCounted = await Admin(HttpMethod.Post, $"campaigns/{Stem("unpicked")}/send", new { limit = 25 });
+
+        unknown.Code.Should().Be(HttpStatusCode.NotFound);
+        onlyCounted.Code.Should().Be(HttpStatusCode.NotFound, "counting an audience picks nobody");
+        _telegram.Requests.Skip(mark).Should().BeEmpty();
+
+        await StartSurvey("unpicked");
+        var sent = await Admin(HttpMethod.Post, $"campaigns/{Stem("unpicked")}/send", new { limit = 25 });
+        var again = await Admin(HttpMethod.Post, $"campaigns/{Stem("unpicked")}/send", new { limit = 25 });
+
+        sent.Body.GetProperty("sent").GetInt32().Should().Be(1);
+        again.Body.GetProperty("sent").GetInt32().Should().Be(0, "everyone picked has got it");
+        SentTo(person, mark).Should().ContainSingle();
     }
 
     [Test]

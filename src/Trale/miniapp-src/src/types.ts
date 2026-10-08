@@ -32,6 +32,11 @@ export type Screen =
   /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее»; from — куда вернуться. */
   | { kind: 'feedback'; campaign?: string; from?: 'profile' }
   | { kind: 'admin' }
+  /** Подразделы админки (только владелец): рассылка, конструктор опроса, отзывы. */
+  | { kind: 'admin-broadcast' }
+  | { kind: 'admin-survey' }
+  /** view — что открыто: список (по умолчанию), один опрос, ответы с экрана покупки или «написали автору». */
+  | { kind: 'admin-feedback'; view?: { survey: string } | 'paywall' | 'messages' }
   | { kind: 'admin-user'; telegramId: number }
   /** Проверка глаголов от нейросети (только владелец). lemma — сразу открыть этот глагол. */
   | { kind: 'verb-review'; lemma?: string }

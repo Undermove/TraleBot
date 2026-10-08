@@ -166,12 +166,20 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
         return new SurveyAnswer(outcome, option);
     }
 
-    /// <summary>Owner's view: the latest answers that say something, and the counts per option.</summary>
-    public async Task<FeedbackOverview> GetOverviewAsync(int take, CancellationToken ct)
+    /// <summary>
+    /// Owner's view. <c>Recent</c> — the latest answers that say something (an option or a text),
+    /// narrowed to one kind and / or one survey campaign when asked. The counts are always whole:
+    /// the paywall question per option, how many free messages there are, and every survey sent to
+    /// people (a survey the owner sent only to themselves as a trial is not listed), newest first.
+    /// </summary>
+    public async Task<FeedbackOverview> GetOverviewAsync(
+        int take, UserFeedbackKind? kind, string? campaignKey, CancellationToken ct)
     {
         take = Math.Clamp(take, 1, 200);
-        var recent = await db.UserFeedback.AsNoTracking()
-            .Where(f => f.Option != null || f.Text != null)
+        var said = db.UserFeedback.AsNoTracking().Where(f => f.Option != null || f.Text != null);
+        if (kind != null) said = said.Where(f => f.Kind == kind);
+        if (!string.IsNullOrWhiteSpace(campaignKey)) said = said.Where(f => f.CampaignKey == campaignKey);
+        var recent = await said
             .OrderByDescending(f => f.UpdatedAtUtc ?? f.CreatedAtUtc)
             .Take(take)
             .Join(db.Users, f => f.UserId, u => u.Id, (f, u) => new FeedbackItem(
@@ -179,26 +187,35 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
             .ToListAsync(ct);
 
         var counts = await db.UserFeedback.AsNoTracking()
-            .Where(f => f.Kind != UserFeedbackKind.Message)
             .GroupBy(f => new { f.Kind, f.CampaignKey, f.Option })
             .Select(g => new { g.Key.Kind, g.Key.CampaignKey, g.Key.Option, Count = g.Count() })
             .ToListAsync(ct);
 
         var paywall = counts.Where(c => c.Kind == UserFeedbackKind.PaywallDecline).ToList();
-        var surveyKeys = counts.Where(c => c.Kind == UserFeedbackKind.Survey).Select(c => c.CampaignKey!).Distinct().ToList();
-        var campaigns = await db.BroadcastCampaigns.AsNoTracking()
-            .Where(c => surveyKeys.Contains(c.Key))
-            .OrderByDescending(c => c.CreatedAtUtc)
-            .ToListAsync(ct);
+        var campaigns = (await db.BroadcastCampaigns.AsNoTracking()
+                .Where(c => c.SurveyOptions != null && c.Audience != BroadcastAudience.Owner)
+                .OrderByDescending(c => c.CreatedAtUtc)
+                .ToListAsync(ct))
+            .Where(c => c.IsSurvey).ToList();
+        var campaignIds = campaigns.Select(c => c.Id).ToList();
+        var sent = await db.BroadcastDeliveries.AsNoTracking()
+            .Where(d => campaignIds.Contains(d.CampaignId) && d.Status == BroadcastDeliveryStatus.Sent)
+            .GroupBy(d => d.CampaignId)
+            .Select(g => new { CampaignId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.CampaignId, g => g.Count, ct);
 
         return new FeedbackOverview(
             recent.OrderByDescending(r => r.AtUtc).ToList(),
             paywall.Sum(c => c.Count),
             PaywallDeclineOptions.All
                 .Select(o => new OptionCount(o, paywall.Where(c => c.Option == o).Sum(c => c.Count))).ToList(),
-            campaigns.Select(c => new SurveyCounts(c.Key, c.Message, (c.SurveyOptions ?? [])
-                .Select(o => new OptionCount(o, counts.Where(x => x.Kind == UserFeedbackKind.Survey && x.CampaignKey == c.Key && x.Option == o).Sum(x => x.Count)))
-                .ToList())).ToList());
+            counts.Where(c => c.Kind == UserFeedbackKind.Message).Sum(c => c.Count),
+            campaigns.Select(c => new SurveyCounts(
+                c.Key, c.Message, c.CreatedAtUtc, c.Audience, sent.GetValueOrDefault(c.Id),
+                counts.Where(x => x.Kind == UserFeedbackKind.Message && x.CampaignKey == c.Key).Sum(x => x.Count),
+                c.SurveyOptions!
+                    .Select(o => new OptionCount(o, counts.Where(x => x.Kind == UserFeedbackKind.Survey && x.CampaignKey == c.Key && x.Option == o).Sum(x => x.Count)))
+                    .ToList())).ToList());
     }
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
@@ -233,7 +250,11 @@ public record SurveyAnswer(SurveyAnswerOutcome Outcome, string? Option)
 
 public record OptionCount(string Option, int Count);
 
-public record SurveyCounts(string Key, string Question, IReadOnlyList<OptionCount> Options);
+/// <param name="Sent">People the survey was delivered to.</param>
+/// <param name="Texts">Messages written by "Написать подробнее" from this survey.</param>
+public record SurveyCounts(
+    string Key, string Question, DateTime CreatedAtUtc, BroadcastAudience Audience, int Sent, int Texts,
+    IReadOnlyList<OptionCount> Options);
 
 public record FeedbackItem(UserFeedbackKind Kind, string? CampaignKey, string? Option, string? Text, DateTime AtUtc, long TelegramId);
 
@@ -242,4 +263,5 @@ public record FeedbackOverview(
     IReadOnlyList<FeedbackItem> Recent,
     int PaywallShown,
     IReadOnlyList<OptionCount> PaywallOptions,
+    int Messages,
     IReadOnlyList<SurveyCounts> Surveys);

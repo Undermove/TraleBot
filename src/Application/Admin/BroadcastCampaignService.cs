@@ -49,6 +49,9 @@ public partial class BroadcastCampaignService(
     [GeneratedRegex("^[a-z0-9][a-z0-9_-]{2,47}$")]
     private static partial Regex KeyPattern();
 
+    [GeneratedRegex("^[a-z0-9][a-z0-9-]{1,23}$")]
+    private static partial Regex SurveySlugPattern();
+
     [GeneratedRegex("^[A-Za-z0-9_.~%=&-]{0,256}$")]
     private static partial Regex ButtonQueryPattern();
 
@@ -60,6 +63,34 @@ public partial class BroadcastCampaignService(
         var now = DateTime.UtcNow;
         return Enum.GetValues<BroadcastAudience>()
             .ToDictionary(a => a, a => users.Count(u => IsIn(u, a, now, ownerTelegramId)));
+    }
+
+    /// <summary>
+    /// Starts a new survey under a name the owner does not have to invent:
+    /// <c>survey-2026-10-&lt;slug&gt;</c>, then <c>…-2</c>, <c>…-3</c> while the name is taken. The
+    /// campaign is always a new one — recipients are never added to somebody else's survey; if a
+    /// parallel request takes the name in between, this one fails and changes nothing.
+    /// The later parts of the same survey go through <see cref="PrepareAsync"/> with the key from the answer.
+    /// </summary>
+    public async Task<CampaignPrepareResult> PrepareNewSurveyAsync(
+        CampaignDraft draft, string? slug, int? sampleSize, bool dryRun, long ownerTelegramId, CancellationToken ct)
+    {
+        slug = (slug ?? "").Trim();
+        if (!SurveySlugPattern().IsMatch(slug)) return CampaignPrepareResult.Fail("Неизвестная заготовка опроса.");
+        if (draft.SurveyOptions is not { Count: > 0 }) return CampaignPrepareResult.Fail($"В опросе от 2 до {MaxSurveyOptions} вариантов ответа.");
+
+        var stem = $"survey-{DateTime.UtcNow:yyyy-MM}-{slug}";
+        var taken = (await db.BroadcastCampaigns.AsNoTracking()
+            .Where(c => c.Key.StartsWith(stem)).Select(c => c.Key).ToListAsync(ct)).ToHashSet();
+        var key = stem;
+        for (var n = 2; taken.Contains(key); n++) key = $"{stem}-{n}";
+
+        return await PrepareAsync(
+            new CampaignDraft
+            {
+                Key = key, MustBeNew = true, Audience = draft.Audience, Message = draft.Message, SurveyOptions = draft.SurveyOptions
+            },
+            sampleSize, dryRun, ownerTelegramId, ct);
     }
 
     /// <summary>
@@ -108,6 +139,8 @@ public partial class BroadcastCampaignService(
         }
 
         var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
+        if (campaign != null && draft.MustBeNew)
+            return CampaignPrepareResult.Fail("Опрос с таким именем только что завёл параллельный запрос. Попробуй ещё раз.");
         if (campaign != null && campaign.Audience != draft.Audience)
             return CampaignPrepareResult.Fail($"Кампания «{key}» уже заведена для другой аудитории ({campaign.Audience}). Возьми другое имя.");
         // A button carries the number of its option, and answers are counted by the option's text:
@@ -425,6 +458,8 @@ public class CampaignDraft
     /// <summary>Answer options of a survey, 2 to <see cref="BroadcastCampaignService.MaxSurveyOptions"/>;
     /// null or empty — an ordinary campaign.</summary>
     public IReadOnlyList<string>? SurveyOptions { get; init; }
+    /// <summary>Refuse when a campaign with this key already exists (see <see cref="BroadcastCampaignService.PrepareNewSurveyAsync"/>).</summary>
+    public bool MustBeNew { get; init; }
 }
 
 /// <summary>A gift of access given by a campaign: how many days and until when the person now has access.</summary>

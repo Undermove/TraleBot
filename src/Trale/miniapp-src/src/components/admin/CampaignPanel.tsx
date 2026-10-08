@@ -4,8 +4,9 @@ import { adminCampaigns, ApiError, type CampaignAudience, type CampaignPrepareDt
 // Рассылка по частям: сначала выбрать получателей (пробную группу или всех остальных) — это
 // ничего не отправляет; потом отправлять порциями. Каждый шаг — отдельная кнопка, сам сервер
 // ничего не запускает. Один человек получает сообщение кампании не больше одного раза.
+// Опрос (сообщение с вариантами ответа на кнопках) собирается не здесь, а в конструкторе — SurveyBuilderScreen.
 
-const AUDIENCES: { id: CampaignAudience; name: string }[] = [
+export const AUDIENCES: { id: CampaignAudience; name: string }[] = [
   { id: 'accessEnded', name: 'доступ закончился' },
   { id: 'onTrial', name: 'пробный период идёт' },
   { id: 'paying', name: 'платят' },
@@ -34,7 +35,6 @@ export default function CampaignPanel() {
   const [buttonQuery, setButtonQuery] = useState('')
   const [sampleSize, setSampleSize] = useState(100)
   const [giftDays, setGiftDays] = useState(0)
-  const [surveyText, setSurveyText] = useState('')
   const [status, setStatus] = useState<CampaignStatusDto | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -47,13 +47,8 @@ export default function CampaignPanel() {
     try { setNote(await action()) } catch (e) { setNote(errorText(e)) } finally { setBusy(false) }
   }
 
-  // Опрос: каждая непустая строка — вариант ответа, уходит кнопкой под сообщением.
-  const surveyOptions = surveyText.split('\n').map(o => o.trim()).filter(Boolean)
-  const isSurvey = surveyOptions.length > 0
-
   const draft = (size: number | null, dryRun: boolean) => ({
-    key: key.trim(), audience, message, buttonText: buttonText.trim() || null, buttonQuery: buttonQuery.trim() || null, sampleSize: size, dryRun, giftDays,
-    surveyOptions: isSurvey ? surveyOptions : null
+    key: key.trim(), audience, message, buttonText: buttonText.trim() || null, buttonQuery: buttonQuery.trim() || null, sampleSize: size, dryRun, giftDays
   })
 
   const describe = (r: CampaignPrepareDto) =>
@@ -64,6 +59,9 @@ export default function CampaignPanel() {
     setStatus(s)
     return s
   }
+
+  // Отправлять можно только тем, кто уже выбран и ждёт: без этого кнопка отправки закрыта.
+  const waiting = (status?.pending ?? 0) > 0
 
   const count = (size: number | null) => run(async () => `Подсчёт (ничего не изменено): ${describe(await adminCampaigns.prepare(draft(size, true)))}`)
 
@@ -110,18 +108,6 @@ export default function CampaignPanel() {
             <div className={label}>текст сообщения</div>
             <textarea className={input} rows={5} value={message} onChange={e => setMessage(e.target.value)} />
           </div>
-          <div>
-            <div className={label}>опрос: варианты ответа, по одному в строке (2–4; пусто — обычная рассылка)</div>
-            <textarea className={input} rows={4} value={surveyText} data-testid="campaign-survey-options"
-              placeholder={'Дорого\nПока не нужно\nНе понял, что получу'} onChange={e => setSurveyText(e.target.value)} />
-            {isSurvey && (
-              <div className={`${label} mt-1`}>
-                Варианты уйдут кнопками под сообщением. Нажатие записывает ответ (один на человека, можно поменять), бот говорит
-                спасибо и даёт кнопку «Написать подробнее». Кнопку мини-аппа и подарок к опросу не добавить; после выбора
-                получателей варианты не меняются.
-              </div>
-            )}
-          </div>
           <div className="flex gap-2">
             <div className="flex-1">
               <div className={label}>текст кнопки (пусто — без кнопки)</div>
@@ -160,11 +146,19 @@ export default function CampaignPanel() {
 
           <div className={label}>2. Отправить выбранным — по {BATCH} за нажатие</div>
           <div className="flex flex-wrap gap-2">
-            <button className={button} style={{ background: '#F5B820' }} disabled={busy} onClick={send} data-testid="campaign-send">
+            <button className={button} style={{ background: '#F5B820' }} disabled={busy || !waiting} onClick={send} data-testid="campaign-send">
               Отправить следующие {BATCH}
             </button>
             <button className={button} disabled={busy} onClick={() => run(async () => ((await refresh()) ? null : 'Такой кампании нет.'))}>Статус</button>
           </div>
+
+          {!waiting && (
+            <div className={label} data-testid="campaign-send-hint">
+              {status
+                ? 'Отправлять некого: все выбранные уже обработаны. Выбери следующую группу.'
+                : 'Отправка откроется, когда выберешь получателей. Кампания уже заведена? Нажми «Статус».'}
+            </div>
+          )}
 
           {note && <div className="font-sans text-[13px] text-jewelInk" data-testid="campaign-note">{note}</div>}
           {status && (

@@ -28,6 +28,9 @@ import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
 import { loadSeenHints } from './verbs/ui/hints'
 import VerbsSection from './screens/VerbsSection'
 import FeedbackScreen from './screens/FeedbackScreen'
+import AdminBroadcastScreen from './screens/AdminBroadcastScreen'
+import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
+import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
 import { parseVerbsSectionLink } from './verbs/section/link'
 import { campaignKeyFromUrl, campaignOpenSettled } from './campaignOpen'
 
@@ -468,6 +471,12 @@ export default function App() {
       return <FeedbackScreen progress={progress} campaign={screen.campaign} onBack={() => navigate(afterFeedback(screen))} />
     case 'admin':
       return <AdminScreen progress={progress} navigate={navigate} />
+    case 'admin-broadcast':
+      return <AdminBroadcastScreen progress={progress} navigate={navigate} />
+    case 'admin-survey':
+      return <SurveyBuilderScreen progress={progress} navigate={navigate} />
+    case 'admin-feedback':
+      return <AdminFeedbackScreen progress={progress} view={screen.view} navigate={navigate} />
     case 'verb-review':
       return <VerbReviewScreen lemma={screen.lemma} navigate={navigate} />
     case 'admin-user':

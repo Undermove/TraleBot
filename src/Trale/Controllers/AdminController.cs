@@ -654,6 +654,23 @@ public class AdminController : Controller
         public int? GiftOfferDays { get; set; }
         /// <summary>A survey: 2–4 answer options sent as buttons under the message; null or empty — an ordinary campaign.</summary>
         public List<string>? SurveyOptions { get; set; }
+        /// <summary>The survey builder starting a new survey: with an empty <see cref="Key"/> the server names the
+        /// campaign itself — <c>survey-2026-10-&lt;slug&gt;</c>, with a number when taken — and returns the key.</summary>
+        public string? NewSurveySlug { get; set; }
+    }
+
+    /// <summary>Ready-made surveys for the survey builder and the answer buttons it offers by one tap.</summary>
+    [HttpGet("surveys/presets")]
+    public async Task<IActionResult> SurveyPresetList(CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return Ok(new
+        {
+            presets = Application.Feedback.SurveyPresets.All.Select(p => new { p.Id, p.Title, p.Question, p.Options }),
+            suggestions = Application.Feedback.SurveyPresets.Suggestions,
+            maxOptions = BroadcastCampaignService.MaxSurveyOptions,
+            maxOptionLength = BroadcastCampaignService.MaxSurveyOptionLength
+        });
     }
 
     [HttpPost("campaigns/prepare")]
@@ -664,14 +681,15 @@ public class AdminController : Controller
         if (!TryParseAudience(req.Audience, out var audience))
             return BadRequest(CampaignPrepareResult.Fail($"Неизвестная аудитория: {req.Audience}"));
 
-        var result = await campaigns.PrepareAsync(
-            new CampaignDraft
-            {
-                Key = req.Key, Audience = audience, Message = req.Message,
-                ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
-                GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, SurveyOptions = req.SurveyOptions
-            },
-            req.SampleSize, req.DryRun, OwnerTelegramId, ct);
+        var draft = new CampaignDraft
+        {
+            Key = req.Key, Audience = audience, Message = req.Message,
+            ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
+            GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, SurveyOptions = req.SurveyOptions
+        };
+        var result = string.IsNullOrWhiteSpace(req.Key) && req.NewSurveySlug != null
+            ? await campaigns.PrepareNewSurveyAsync(draft, req.NewSurveySlug, req.SampleSize, req.DryRun, OwnerTelegramId, ct)
+            : await campaigns.PrepareAsync(draft, req.SampleSize, req.DryRun, OwnerTelegramId, ct);
         return result.Error != null ? BadRequest(result) : Ok(result);
     }
 
@@ -713,12 +731,22 @@ public class AdminController : Controller
 
     // ---- Feedback: what people answered at the paywall, in surveys and wrote themselves. ----
 
+    /// <param name="kind">paywall | survey | message — only such answers in <c>recent</c>.</param>
+    /// <param name="campaign">Only what belongs to this survey campaign in <c>recent</c>.</param>
     [HttpGet("feedback")]
     public async Task<IActionResult> Feedback(
-        [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct, [FromQuery] int take = 50)
+        [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct,
+        [FromQuery] int take = 50, [FromQuery] string? kind = null, [FromQuery] string? campaign = null)
     {
         if (!await IsOwnerAsync(ct)) return NotFound();
-        var overview = await feedback.GetOverviewAsync(take, ct);
+        Domain.Entities.UserFeedbackKind? onlyKind = kind switch
+        {
+            "paywall" => Domain.Entities.UserFeedbackKind.PaywallDecline,
+            "survey" => Domain.Entities.UserFeedbackKind.Survey,
+            "message" => Domain.Entities.UserFeedbackKind.Message,
+            _ => null
+        };
+        var overview = await feedback.GetOverviewAsync(take, onlyKind, campaign, ct);
         return Ok(new
         {
             recent = overview.Recent.Select(r => new
@@ -726,7 +754,12 @@ public class AdminController : Controller
                 kind = FeedbackKindName(r.Kind), r.CampaignKey, r.Option, r.Text, r.AtUtc, r.TelegramId
             }),
             paywall = new { shown = overview.PaywallShown, options = overview.PaywallOptions.Select(MapOptionCount) },
-            surveys = overview.Surveys.Select(s => new { s.Key, s.Question, options = s.Options.Select(MapOptionCount) })
+            messages = overview.Messages,
+            surveys = overview.Surveys.Select(s => new
+            {
+                s.Key, s.Question, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Sent, s.Texts,
+                options = s.Options.Select(MapOptionCount)
+            })
         });
     }
 

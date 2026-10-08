@@ -74,6 +74,8 @@ describe('CampaignPanel', () => {
     api.status.mockResolvedValue(status)
     api.send.mockResolvedValue({ sent: 25, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: { ...status, pending: 75, sent: 25 } })
     await fill()
+    await userEvent.click(screen.getByRole('button', { name: 'Статус' }))
+    await screen.findByTestId('campaign-status')
     await userEvent.click(screen.getByTestId('campaign-send'))
     await waitFor(() => expect(api.send).toHaveBeenCalledTimes(1))
     expect(confirm.mock.calls[0][0]).toContain('ОТПРАВИТЬ 25')
@@ -85,10 +87,13 @@ describe('CampaignPanel', () => {
 
   it('does not send when the confirmation is declined or nobody is waiting', async () => {
     vi.stubGlobal('confirm', vi.fn(() => false))
-    api.status.mockResolvedValueOnce(status).mockResolvedValueOnce({ ...status, pending: 0, sent: 100 })
+    api.status.mockResolvedValueOnce(status).mockResolvedValueOnce(status).mockResolvedValueOnce({ ...status, pending: 0, sent: 100 })
     await fill()
+    await userEvent.click(screen.getByRole('button', { name: 'Статус' }))
+    await screen.findByTestId('campaign-status')
     await userEvent.click(screen.getByTestId('campaign-send'))
-    await waitFor(() => expect(api.status).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(api.status).toHaveBeenCalledTimes(2))
+    // Пока владелец думал, порцию отправила другая вкладка.
     await userEvent.click(screen.getByTestId('campaign-send'))
     expect((await screen.findByTestId('campaign-note')).textContent).toContain('Отправлять некого')
     expect(api.send).not.toHaveBeenCalled()
@@ -114,30 +119,31 @@ describe('CampaignPanel', () => {
     expect(line).toContain('начали игру с глаголом 22, доиграли 17, оплатили 2')
     expect(screen.getByTestId('campaign-button-url').textContent).toContain('/?screen=verbs&c=ref-test')
   })
-})
 
-describe('CampaignPanel — опрос', () => {
-  it('an ordinary campaign goes without survey options', async () => {
-    api.prepare.mockResolvedValue(plan)
+  it('the send button is closed until recipients are picked, and says why', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    api.prepare.mockResolvedValueOnce(plan).mockResolvedValueOnce({ ...plan, dryRun: false })
+    api.status.mockResolvedValue(status)
     await fill()
+    const send = screen.getByTestId('campaign-send') as HTMLButtonElement
+    expect(send.disabled).toBe(true)
+    expect(screen.getByTestId('campaign-send-hint').textContent).toContain('Отправка откроется, когда выберешь получателей')
+
     await userEvent.click(screen.getByRole('button', { name: 'Посчитать' }))
-    expect(api.prepare.mock.calls[0][0]).toMatchObject({ surveyOptions: null })
+    await screen.findByTestId('campaign-note')
+    expect(send.disabled).toBe(true)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Выбрать пробную группу' }))
+    await waitFor(() => expect(send.disabled).toBe(false))
+    expect(screen.queryByTestId('campaign-send-hint')).toBeNull()
+    expect(api.send).not.toHaveBeenCalled()
   })
 
-  it('each non-empty line is an answer option of the draft, and the status counts the answers', async () => {
+  it('has no survey fields: a survey is built in its own section', async () => {
     api.prepare.mockResolvedValue(plan)
-    api.status.mockResolvedValue({
-      ...status, sent: 100, pending: 0,
-      surveyAnswers: [{ option: 'Дорого', count: 12 }, { option: 'Пока не нужно', count: 5 }]
-    })
     await fill()
-    await userEvent.type(screen.getByTestId('campaign-survey-options'), 'Дорого\n\n  Пока не нужно  \n')
-    expect(screen.getByText(/Варианты уйдут кнопками под сообщением/)).toBeTruthy()
-
+    expect(screen.queryByText(/вариант/i)).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Посчитать' }))
-    expect(api.prepare.mock.calls[0][0]).toMatchObject({ surveyOptions: ['Дорого', 'Пока не нужно'], dryRun: true })
-
-    await userEvent.click(screen.getByRole('button', { name: 'Статус' }))
-    expect((await screen.findByTestId('campaign-button-url')).textContent).toBe('опрос: Дорого — 12 · Пока не нужно — 5')
+    expect(api.prepare.mock.calls[0][0]).not.toHaveProperty('surveyOptions')
   })
 })
