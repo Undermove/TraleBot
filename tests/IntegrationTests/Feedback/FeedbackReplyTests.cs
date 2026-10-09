@@ -381,13 +381,32 @@ public class FeedbackReplyTests : TestBase
         (await Reply(person, null)).Code.Should().Be(HttpStatusCode.BadRequest);
         (await Reply(person, new string('я', FeedbackReplyService.MaxReplyLength + 1))).Code.Should().Be(HttpStatusCode.BadRequest);
         (await Call(Owner, HttpMethod.Post, $"/api/admin/feedback/threads/{person.TelegramId}/reply", new { text = "Без токена" })).Code.Should().Be(HttpStatusCode.BadRequest);
-        (await Reply(silent, "Тебе никто не писал")).Code.Should().Be(HttpStatusCode.BadRequest);
         (await Reply(person, "На чужой текст", quoteId: Guid.NewGuid())).Code.Should().Be(HttpStatusCode.BadRequest);
         (await Call(Owner, HttpMethod.Post, "/api/admin/feedback/threads/1/reply", new { text = "Никому", token = "x" })).Code.Should().Be(HttpStatusCode.NotFound);
         _telegram.Requests.Skip(mark).Should().BeEmpty();
 
         (await Reply(person, new string('я', FeedbackReplyService.MaxReplyLength))).Code.Should().Be(HttpStatusCode.OK);
         SentTo(person, mark).Single().Text!.Length.Should().BeLessThan(4096, "Telegram's limit for one message");
+    }
+
+    [Test]
+    public async Task The_owner_can_write_first_to_someone_who_has_written_nothing()
+    {
+        var silent = await AddUser();
+        var mark = _telegram.Requests.Count;
+
+        var (code, body) = await Reply(silent, "Привет! Как тебе новые уроки?");
+
+        code.Should().Be(HttpStatusCode.OK);
+        body.GetProperty("delivery").GetString().Should().Be("sent");
+        var message = SentTo(silent, mark).Single();
+        message.Text.Should().Be("Дима, автор TraleBot: Привет! Как тебе новые уроки?", "there is nothing to quote");
+        ((InlineKeyboardMarkup)message.ReplyMarkup!).InlineKeyboard.Single().Single().Text.Should().Be("Ответить");
+        Items(await Thread(silent)).Should().Equal((true, "Привет! Как тебе новые уроки?", "sent"));
+        (await Threads()).Should().BeEmpty("the list is of people who wrote; the conversation shows up there once they reply");
+        await Age(silent, 5);
+        await Write(silent, "Нравятся!");
+        (await Threads()).Single().Should().Be((silent.TelegramId, "repliedBack", "Нравятся!"));
     }
 
     [Test]

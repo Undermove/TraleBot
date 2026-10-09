@@ -3,7 +3,7 @@ import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
 import SurveyFormPages from '../components/SurveyFormPages'
 import SurveyQuestionEditor from '../components/admin/SurveyQuestionEditor'
-import { AUDIENCES } from '../components/admin/CampaignPanel'
+import { AUDIENCES } from '../admin/words'
 import { headlineOf, keysOf } from '../components/admin/surveyHeadline'
 import { CloseIcon } from '../verbs/ui/icons'
 import {
@@ -11,7 +11,8 @@ import {
   type AdminSurveyDto, type CampaignAudience, type CampaignStatusDto, type SurveyBuilderKitDto, type SurveyFormDto,
   type SurveyPresetDto, type SurveyQuestionDto
 } from '../api'
-import type { ProgressState, Screen } from '../types'
+import { setInnerBack } from '../admin/adminNav'
+import type { Screen } from '../types'
 
 // Конструктор опроса — подраздел админки. Опрос — форма из нескольких вопросов: первый приходит человеку
 // в бот кнопками (один тап — уже ответ), остальные он проходит в мини-аппе, по вопросу на странице.
@@ -23,7 +24,6 @@ import type { ProgressState, Screen } from '../types'
 // первом шаге в блоке «Не дослано», «Продолжить» возвращает на его отправку с тем, что уже сделано.
 
 interface Props {
-  progress: ProgressState
   /** Имя начатого опроса — открыть сразу его отправку. */
   resume?: string
   navigate: (s: Screen) => void
@@ -104,7 +104,7 @@ function TelegramPreview({ intro, first, otherLabel }: { intro: string; first?: 
 const summary = (q: SurveyQuestionDto, otherLabel: string) =>
   q.kind === 'text' ? 'свободный ответ' : [...q.options.filter(o => o.trim()), ...(q.allowOther ? [otherLabel] : [])].join(' · ')
 
-export default function SurveyBuilderScreen({ progress, resume, navigate }: Props) {
+export default function SurveyBuilderScreen({ resume, navigate }: Props) {
   const [step, setStep] = useState(1)
   const [kit, setKit] = useState<SurveyBuilderKitDto | null>(null)
   /** Опросы, которым выбрали получателей, но отправили не всем. */
@@ -242,15 +242,20 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
 
   const back = () => {
     if (view) return show(null)
-    return step === 1 || frozen ? navigate({ kind: 'admin' }) : go(step - 1)
+    return step === 1 || frozen ? navigate({ kind: 'admin-feedback', view: 'surveys' }) : go(step - 1)
   }
+  // Системное «Назад» Telegram делает то же, что кнопка в шапке: шаг назад внутри конструктора, пока есть куда.
+  useEffect(() => {
+    setInnerBack(view || (step > 1 && !frozen) ? () => { back(); return true } : null)
+    return () => setInnerBack(null)
+  })
   const answers = status?.surveyAnswers?.reduce((sum, a) => sum + a.count, 0) ?? 0
   const editing = typeof view === 'object' && view ? view.edit : null
   const offered = kit?.bank.filter(b => !questions.some(q => q.text.trim() === b.text)) ?? []
 
   return (
     <div className="flex flex-col min-h-full bg-cream" data-testid="survey-builder">
-      <Header progress={progress} onBack={back} eyebrow={`шаг ${step} из ${STEPS.length}`} title="Опрос" />
+      <Header onBack={back} eyebrow={`админка · опросы · шаг ${step} из ${STEPS.length}`} title="Опрос" />
 
       <div className="flex-1 px-5 pt-4 flex flex-col gap-3" style={{ paddingBottom: 'calc(var(--safe-b) + 32px)' }}>
         {denied && <div className="font-sans text-[14px] text-jewelInk">{denied}</div>}

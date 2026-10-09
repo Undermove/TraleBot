@@ -30,6 +30,11 @@ import VerbsSection from './screens/VerbsSection'
 import FeedbackScreen from './screens/FeedbackScreen'
 import SurveyScreen from './screens/SurveyScreen'
 import AdminBroadcastScreen from './screens/AdminBroadcastScreen'
+import AdminBroadcastsScreen from './screens/AdminBroadcastsScreen'
+import AdminUsersScreen from './screens/AdminUsersScreen'
+import AdminPaymentsScreen from './screens/AdminPaymentsScreen'
+import AdminSystemScreen from './screens/AdminSystemScreen'
+import { adminLink, adminParent, goInnerBack, isAdminScreen, parseAdminLink } from './admin/adminNav'
 import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
 import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
 import { parseVerbsSectionLink } from './verbs/section/link'
@@ -162,10 +167,13 @@ export default function App() {
         const surveyLink: Screen | null = meData?.authenticated && query.get('screen') === 'survey' && surveyKey
           ? { kind: 'survey', key: surveyKey }
           : null
-        const deepLink = verbLink?.screen ?? reviewLink ?? feedbackLink ?? surveyLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
+        // ?screen=admin-… — экран админки; кто не владелец, тому сервер ничего не отдаст, и экран скажет «Нет доступа».
+        const adminScreen = meData?.authenticated ? parseAdminLink(query) : null
+        const deepLink = verbLink?.screen ?? reviewLink ?? adminScreen ?? feedbackLink ?? surveyLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
-          window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
+          // Адрес экрана админки остаётся в строке — его можно скопировать и открыть снова.
+          window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? (adminScreen ? window.location.search : '')))
         }
         // A push deep-link wins; otherwise resolveEntryScreen decides — a brand-new
         // user (level but no XP) gets the welcome lesson, and the dashboard hub is
@@ -223,6 +231,11 @@ export default function App() {
     const handler = () => {
       if (closeTopOverlay()) return
       if (!canBack) return
+      // Админка: сначала шаг назад внутри экрана (конструктор, один глагол), потом — на уровень выше.
+      if (isAdminScreen(screen)) {
+        if (!goInnerBack()) navigate(adminParent(screen))
+        return
+      }
       if (
         screen.kind === 'module' ||
         screen.kind === 'profile' ||
@@ -308,6 +321,9 @@ export default function App() {
     if (s.kind === 'result') {
       setTodayLessons(incrementTodayLessons())
     }
+    // У каждого экрана админки свой адрес; на остальных экранах он из строки убирается.
+    if (isAdminScreen(s)) window.history.replaceState({}, '', window.location.pathname + adminLink(s))
+    else if (isAdminScreen(screen)) window.history.replaceState({}, '', window.location.pathname)
     setScreen(s)
     // Telegram WebView may scroll a container other than window
     window.scrollTo(0, 0)
@@ -480,17 +496,25 @@ export default function App() {
     case 'survey':
       return <SurveyScreen progress={progress} surveyKey={screen.key} onBack={() => navigate(entryScreen())} />
     case 'admin':
-      return <AdminScreen progress={progress} navigate={navigate} />
-    case 'admin-broadcast':
-      return <AdminBroadcastScreen progress={progress} navigate={navigate} />
-    case 'admin-survey':
-      return <SurveyBuilderScreen progress={progress} resume={screen.resume} navigate={navigate} />
+      return <AdminScreen navigate={navigate} />
+    case 'admin-users':
+      return <AdminUsersScreen filter={screen.filter} navigate={navigate} />
+    case 'admin-user':
+      return <AdminUserScreen telegramId={screen.telegramId} navigate={navigate} />
     case 'admin-feedback':
-      return <AdminFeedbackScreen progress={progress} view={screen.view} navigate={navigate} />
+      return <AdminFeedbackScreen view={screen.view} navigate={navigate} />
+    case 'admin-survey':
+      return <SurveyBuilderScreen resume={screen.resume} navigate={navigate} />
+    case 'admin-broadcasts':
+      return <AdminBroadcastsScreen navigate={navigate} />
+    case 'admin-broadcast':
+      return <AdminBroadcastScreen key={screen.key ?? 'new'} campaignKey={screen.key} navigate={navigate} />
+    case 'admin-payments':
+      return <AdminPaymentsScreen navigate={navigate} />
+    case 'admin-system':
+      return <AdminSystemScreen navigate={navigate} />
     case 'verb-review':
       return <VerbReviewScreen lemma={screen.lemma} navigate={navigate} />
-    case 'admin-user':
-      return <AdminUserScreen telegramId={screen.telegramId} progress={progress} navigate={navigate} />
     case 'vocabulary-list':
       return (
         <>

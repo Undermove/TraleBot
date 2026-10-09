@@ -33,20 +33,27 @@ export type Screen =
   | { kind: 'survey'; key: string }
   /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее»; from — куда вернуться. */
   | { kind: 'feedback'; campaign?: string; from?: 'profile' }
+  // Админка (только владелец). У каждого экрана свой адрес ?screen=admin-… — см. admin/adminNav.ts.
+  /** Обзор: главные цифры и разделы со счётчиками того, что ждёт владельца. */
   | { kind: 'admin' }
-  /** Подразделы админки (только владелец): рассылка, конструктор опроса, отзывы. */
-  | { kind: 'admin-broadcast' }
-  /** resume — имя начатого опроса: открыть сразу его отправку (шаг 4), чтобы дослать. */
-  | { kind: 'admin-survey'; resume?: string }
-  /** view — что открыто: список (по умолчанию), один опрос, ответы с экрана покупки, все, кто что-то написал, или переписка с одним человеком. */
-  | { kind: 'admin-feedback'; view?: FeedbackView | FeedbackThreadView }
+  | { kind: 'admin-users'; filter?: import('./api').AdminUserFilter }
   | { kind: 'admin-user'; telegramId: number }
+  /** Обратная связь. view — что открыто: разделы (по умолчанию), сообщения, опросы, один опрос, экран покупки или переписка с одним человеком. */
+  | { kind: 'admin-feedback'; view?: FeedbackView | FeedbackThreadView }
+  /** Конструктор опроса. resume — имя начатого опроса: открыть сразу его отправку, чтобы дослать. */
+  | { kind: 'admin-survey'; resume?: string }
+  /** Рассылки: список кампаний. */
+  | { kind: 'admin-broadcasts' }
+  /** Одна рассылка: без key — новая, по шагам; с key — её отправка и досылка. */
+  | { kind: 'admin-broadcast'; key?: string }
+  | { kind: 'admin-payments' }
+  | { kind: 'admin-system' }
   /** Проверка глаголов от нейросети (только владелец). lemma — сразу открыть этот глагол. */
   | { kind: 'verb-review'; lemma?: string }
   | { kind: 'vocabulary-list'; filter?: 'verbs'; verb?: import('./verbs/deepLink').VerbLink }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
 
-export type FeedbackView = { survey: string } | 'paywall' | 'threads'
+export type FeedbackView = { survey: string } | 'paywall' | 'threads' | 'surveys'
 /** Переписка с человеком. quote — текст, на который отвечают; back — откуда пришли, туда и «Назад». */
 export interface FeedbackThreadView { thread: number; quote?: string; back?: FeedbackView }
 

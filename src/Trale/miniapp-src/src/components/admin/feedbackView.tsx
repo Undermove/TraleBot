@@ -1,23 +1,15 @@
-import { PAYWALL_DECLINE_OPTIONS, type AdminFeedbackItem, type CampaignAudience, type FeedbackOptionCount, type FeedbackThreadStatus } from '../../api'
-import { AUDIENCES } from './CampaignPanel'
+import { PAYWALL_DECLINE_OPTIONS, type AdminFeedbackItem, type FeedbackOptionCount, type FeedbackThreadStatus } from '../../api'
+import { when } from '../../admin/words'
+
+export { audienceName, day, when } from '../../admin/words'
 
 // Общие куски экранов «Опрос» и «Отзывы»: полоски-счётчики, список ответов, подписи.
 
 export const paywallLabel = (code: string) => PAYWALL_DECLINE_OPTIONS.find(o => o.id === code)?.label ?? code
 
-export const audienceName = (id: CampaignAudience) => AUDIENCES.find(a => a.id === id)?.name ?? id
-
-export function day(iso: string): string {
-  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-}
-
 /** Состояние переписки словами. */
 export const STATUS: Record<FeedbackThreadStatus, string> = {
   new: 'новое', repliedBack: 'человек ответил', answered: 'отвечено', closed: 'не требует ответа'
-}
-
-export function when(iso: string): string {
-  return new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 export const answered = (options: FeedbackOptionCount[]) => options.reduce((sum, o) => sum + o.count, 0)

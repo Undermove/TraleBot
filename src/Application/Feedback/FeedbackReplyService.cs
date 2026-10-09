@@ -139,11 +139,12 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
         var quoted = quoteId == null
             ? await written.OrderByDescending(f => f.UpdatedAtUtc ?? f.CreatedAtUtc).FirstOrDefaultAsync(ct)
             : await written.FirstOrDefaultAsync(f => f.Id == quoteId, ct);
-        if (quoted == null) return FeedbackReplyResult.Refused(FeedbackReplyOutcome.NothingToAnswer);
+        // A text was named and it is not this person's — refuse; no text at all — the owner writes first, without a quote.
+        if (quoted == null && quoteId != null) return FeedbackReplyResult.Refused(FeedbackReplyOutcome.NothingToAnswer);
 
         var reply = new FeedbackReply
         {
-            Id = Guid.NewGuid(), UserId = user.Id, Kind = FeedbackReplyKind.Reply, Text = text, Quote = Shorten(quoted.Text!),
+            Id = Guid.NewGuid(), UserId = user.Id, Kind = FeedbackReplyKind.Reply, Text = text, Quote = quoted == null ? null : Shorten(quoted.Text!),
             Status = FeedbackReplyStatus.Sending, ClientToken = clientToken, CreatedAtUtc = DateTime.UtcNow
         };
         db.FeedbackReplies.Add(reply);
@@ -161,7 +162,7 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
         }
 
         // The answer is recorded — from here the request being dropped must not lose what Telegram says.
-        var attempt = await sender.SendAsync(user.TelegramId, MessageText(reply.Quote!, text), CancellationToken.None);
+        var attempt = await sender.SendAsync(user.TelegramId, MessageText(reply.Quote, text), CancellationToken.None);
         reply.Status = attempt.Outcome switch
         {
             CampaignSendOutcome.Sent => FeedbackReplyStatus.Sent,
@@ -193,7 +194,8 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
     }
 
     /// <summary>What the person receives: their own words, shortened, then the answer signed by the author.</summary>
-    public static string MessageText(string quote, string text) => $"Твоё сообщение: «{quote}»\n\n{Signature}: {text}";
+    public static string MessageText(string? quote, string text) =>
+        quote == null ? $"{Signature}: {text}" : $"Твоё сообщение: «{quote}»\n\n{Signature}: {text}";
 
     private static string Shorten(string text)
     {
@@ -244,7 +246,7 @@ public enum FeedbackReplyOutcome
     TooLong,
     NoToken,
     NoSuchPerson,
-    /// <summary>The person has written nothing — there is nothing to answer.</summary>
+    /// <summary>The text to answer was named, and it is not this person's.</summary>
     NothingToAnswer
 }
 
