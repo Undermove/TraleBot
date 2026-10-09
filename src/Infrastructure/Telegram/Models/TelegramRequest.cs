@@ -17,6 +17,8 @@ public class TelegramRequest
     public string? SuccessfulPaymentChargeId { get; }
     public string? SuccessfulPaymentPayload { get; }
     public int? SuccessfulPaymentAmount { get; }
+    /// <summary>Id of the pressed inline button's query — to answer it; null for anything but a button press.</summary>
+    public string? CallbackQueryId { get; }
 
     public TelegramRequest(Update request, User? user)
     {
@@ -34,6 +36,7 @@ public class TelegramRequest
                    ?? throw new ArgumentException("User Name not found");
         User = user;
         RequestType = request.Type;
+        CallbackQueryId = request.CallbackQuery?.Id;
         InvoicePayload = request.PreCheckoutQuery?.InvoicePayload ?? "";
         SuccessfulPaymentCurrency = request.Message?.SuccessfulPayment?.Currency;
         SuccessfulPaymentChargeId = request.Message?.SuccessfulPayment?.TelegramPaymentChargeId;

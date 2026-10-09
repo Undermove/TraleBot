@@ -19,7 +19,7 @@ const plan = { key: 'ref-test', dryRun: true, audienceTotal: 553, alreadyInCampa
 
 beforeEach(() => {
   Object.values(api).forEach(f => f.mockReset())
-  api.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1 })
+  api.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512 })
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -74,6 +74,8 @@ describe('CampaignPanel', () => {
     api.status.mockResolvedValue(status)
     api.send.mockResolvedValue({ sent: 25, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: { ...status, pending: 75, sent: 25 } })
     await fill()
+    await userEvent.click(screen.getByRole('button', { name: 'Статус' }))
+    await screen.findByTestId('campaign-status')
     await userEvent.click(screen.getByTestId('campaign-send'))
     await waitFor(() => expect(api.send).toHaveBeenCalledTimes(1))
     expect(confirm.mock.calls[0][0]).toContain('ОТПРАВИТЬ 25')
@@ -85,10 +87,13 @@ describe('CampaignPanel', () => {
 
   it('does not send when the confirmation is declined or nobody is waiting', async () => {
     vi.stubGlobal('confirm', vi.fn(() => false))
-    api.status.mockResolvedValueOnce(status).mockResolvedValueOnce({ ...status, pending: 0, sent: 100 })
+    api.status.mockResolvedValueOnce(status).mockResolvedValueOnce(status).mockResolvedValueOnce({ ...status, pending: 0, sent: 100 })
     await fill()
+    await userEvent.click(screen.getByRole('button', { name: 'Статус' }))
+    await screen.findByTestId('campaign-status')
     await userEvent.click(screen.getByTestId('campaign-send'))
-    await waitFor(() => expect(api.status).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(api.status).toHaveBeenCalledTimes(2))
+    // Пока владелец думал, порцию отправила другая вкладка.
     await userEvent.click(screen.getByTestId('campaign-send'))
     expect((await screen.findByTestId('campaign-note')).textContent).toContain('Отправлять некого')
     expect(api.send).not.toHaveBeenCalled()
@@ -113,5 +118,32 @@ describe('CampaignPanel', () => {
     expect(line).toContain('получили подарок (3 дн.) 31')
     expect(line).toContain('начали игру с глаголом 22, доиграли 17, оплатили 2')
     expect(screen.getByTestId('campaign-button-url').textContent).toContain('/?screen=verbs&c=ref-test')
+  })
+
+  it('the send button is closed until recipients are picked, and says why', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    api.prepare.mockResolvedValueOnce(plan).mockResolvedValueOnce({ ...plan, dryRun: false })
+    api.status.mockResolvedValue(status)
+    await fill()
+    const send = screen.getByTestId('campaign-send') as HTMLButtonElement
+    expect(send.disabled).toBe(true)
+    expect(screen.getByTestId('campaign-send-hint').textContent).toContain('Отправка откроется, когда выберешь получателей')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Посчитать' }))
+    await screen.findByTestId('campaign-note')
+    expect(send.disabled).toBe(true)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Выбрать пробную группу' }))
+    await waitFor(() => expect(send.disabled).toBe(false))
+    expect(screen.queryByTestId('campaign-send-hint')).toBeNull()
+    expect(api.send).not.toHaveBeenCalled()
+  })
+
+  it('has no survey fields: a survey is built in its own section', async () => {
+    api.prepare.mockResolvedValue(plan)
+    await fill()
+    expect(screen.queryByText(/вариант/i)).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Посчитать' }))
+    expect(api.prepare.mock.calls[0][0]).not.toHaveProperty('surveyOptions')
   })
 })

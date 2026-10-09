@@ -4,12 +4,15 @@ import { adminCampaigns, ApiError, type CampaignAudience, type CampaignPrepareDt
 // Рассылка по частям: сначала выбрать получателей (пробную группу или всех остальных) — это
 // ничего не отправляет; потом отправлять порциями. Каждый шаг — отдельная кнопка, сам сервер
 // ничего не запускает. Один человек получает сообщение кампании не больше одного раза.
+// Опрос (сообщение с вариантами ответа на кнопках) собирается не здесь, а в конструкторе — SurveyBuilderScreen.
 
-const AUDIENCES: { id: CampaignAudience; name: string }[] = [
+export const AUDIENCES: { id: CampaignAudience; name: string }[] = [
   { id: 'accessEnded', name: 'доступ закончился' },
   { id: 'onTrial', name: 'пробный период идёт' },
   { id: 'paying', name: 'платят' },
   { id: 'proLapsed', name: 'подписка закончилась' },
+  { id: 'activeLately', name: 'занимались за последние 30 дней' },
+  { id: 'inactiveLong', name: 'не занимались больше 30 дней' },
   { id: 'owner', name: 'только я (посмотреть)' }
 ]
 
@@ -58,6 +61,9 @@ export default function CampaignPanel() {
     setStatus(s)
     return s
   }
+
+  // Отправлять можно только тем, кто уже выбран и ждёт: без этого кнопка отправки закрыта.
+  const waiting = (status?.pending ?? 0) > 0
 
   const count = (size: number | null) => run(async () => `Подсчёт (ничего не изменено): ${describe(await adminCampaigns.prepare(draft(size, true)))}`)
 
@@ -142,11 +148,19 @@ export default function CampaignPanel() {
 
           <div className={label}>2. Отправить выбранным — по {BATCH} за нажатие</div>
           <div className="flex flex-wrap gap-2">
-            <button className={button} style={{ background: '#F5B820' }} disabled={busy} onClick={send} data-testid="campaign-send">
+            <button className={button} style={{ background: '#F5B820' }} disabled={busy || !waiting} onClick={send} data-testid="campaign-send">
               Отправить следующие {BATCH}
             </button>
             <button className={button} disabled={busy} onClick={() => run(async () => ((await refresh()) ? null : 'Такой кампании нет.'))}>Статус</button>
           </div>
+
+          {!waiting && (
+            <div className={label} data-testid="campaign-send-hint">
+              {status
+                ? 'Отправлять некого: все выбранные уже обработаны. Выбери следующую группу.'
+                : 'Отправка откроется, когда выберешь получателей. Кампания уже заведена? Нажми «Статус».'}
+            </div>
+          )}
 
           {note && <div className="font-sans text-[13px] text-jewelInk" data-testid="campaign-note">{note}</div>}
           {status && (
@@ -156,9 +170,11 @@ export default function CampaignPanel() {
               {status.giftDays > 0 && <> · получили подарок ({status.giftDays} дн.) {status.gifted}</>}
               {' '}· из открывших: начали игру с глаголом {status.playedVerbSession}, доиграли {status.finishedVerbSession}, оплатили {status.paidAfterOpen}
               <div className="mt-1 break-all" data-testid="campaign-button-url">
-                {status.buttonText
-                  ? <>кнопка «{status.buttonText}» ведёт на: /?{status.buttonQuery ? `${status.buttonQuery}&` : ''}c={status.key}</>
-                  : 'сообщение без кнопки'}
+                {status.surveyAnswers?.length
+                  ? <>опрос: {status.surveyAnswers.map(a => `${a.option} — ${a.count}`).join(' · ')}</>
+                  : status.buttonText
+                    ? <>кнопка «{status.buttonText}» ведёт на: /?{status.buttonQuery ? `${status.buttonQuery}&` : ''}c={status.key}</>
+                    : 'сообщение без кнопки'}
               </div>
             </div>
           )}

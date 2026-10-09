@@ -428,7 +428,7 @@ public class BroadcastCampaignTests : TestBase
         public ConcurrentDictionary<long, Queue<CampaignSendAttempt>> Script { get; } = new();
         public ConcurrentQueue<long> Attempts { get; } = new();
 
-        public Task<CampaignSendAttempt> SendAsync(long telegramId, string text, string? buttonText, string? buttonQuery, string campaignKey, CancellationToken ct)
+        public Task<CampaignSendAttempt> SendAsync(long telegramId, string text, string? buttonText, string? buttonQuery, string campaignKey, IReadOnlyList<string>? surveyOptions, CancellationToken ct)
         {
             Attempts.Enqueue(telegramId);
             return Task.FromResult(Script.TryGetValue(telegramId, out var answers) && answers.Count > 0

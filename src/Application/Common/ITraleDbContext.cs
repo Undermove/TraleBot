@@ -33,6 +33,8 @@ public interface ITraleDbContext
     DbSet<BroadcastCampaign> BroadcastCampaigns { get; }
     DbSet<BroadcastDelivery> BroadcastDeliveries { get; }
     DbSet<QueuedTranslation> QueuedTranslations { get; }
+    DbSet<UserFeedback> UserFeedback { get; }
+    DbSet<FeedbackReply> FeedbackReplies { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);
@@ -64,4 +66,20 @@ public interface ITraleDbContext
     /// </summary>
     Task<bool> TryClaimCampaignGiftAsync(
         Guid deliveryId, DateTime grantedAtUtc, DateTime accessUntilUtc, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Makes writes of one person's feedback go one at a time: the call waits until every other
+    /// transaction holding the same person's lock has ended, and holds it until the current
+    /// transaction ends. Must be called inside a transaction, before reading the rows the decision
+    /// rests on — this is what keeps two replicas or two parallel requests from both deciding
+    /// "not asked yet" or "still under the limit".
+    /// </summary>
+    Task LockUserFeedbackAsync(Guid userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Records, once, that a survey's recipient opened its form in the mini-app (or, with
+    /// <paramref name="finished"/>, reached its last page). Later calls change nothing — the first
+    /// time stays, whatever is repeated or raced.
+    /// </summary>
+    Task MarkSurveyStepAsync(Guid deliveryId, bool finished, DateTime atUtc, CancellationToken cancellationToken);
 }

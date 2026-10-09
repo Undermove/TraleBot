@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
+using Application.Feedback;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -38,12 +39,17 @@ public partial class BroadcastCampaignService(
     /// <summary>How long after the campaign is created an open still gives the gift, unless said otherwise.</summary>
     public const int DefaultGiftOfferDays = 14;
     public const int MaxGiftOfferDays = 90;
+    /// <summary>"Active" and "inactive" audiences: whether the person did anything in this many days.</summary>
+    public const int ActivityWindowDays = 30;
     /// <summary>Pause between messages: 10 per second, three times under Telegram's bulk limit (~30/s),
     /// so the bot's own pushes and replies still fit.</summary>
     public static readonly TimeSpan SendDelay = TimeSpan.FromMilliseconds(100);
 
     [GeneratedRegex("^[a-z0-9][a-z0-9_-]{2,47}$")]
     private static partial Regex KeyPattern();
+
+    [GeneratedRegex("^[a-z0-9][a-z0-9-]{1,23}$")]
+    private static partial Regex SurveySlugPattern();
 
     [GeneratedRegex("^[A-Za-z0-9_.~%=&-]{0,256}$")]
     private static partial Regex ButtonQueryPattern();
@@ -54,8 +60,37 @@ public partial class BroadcastCampaignService(
     {
         var users = await LoadReachableUsersAsync(ct);
         var now = DateTime.UtcNow;
+        var lastActive = await LoadLastActivityAsync(ct);
         return Enum.GetValues<BroadcastAudience>()
-            .ToDictionary(a => a, a => users.Count(u => IsIn(u, a, now, ownerTelegramId)));
+            .ToDictionary(a => a, a => users.Count(u => IsIn(u, a, now, ownerTelegramId, lastActive)));
+    }
+
+    /// <summary>
+    /// Starts a new survey under a name the owner does not have to invent:
+    /// <c>survey-2026-10-&lt;slug&gt;</c>, then <c>…-2</c>, <c>…-3</c> while the name is taken. The
+    /// campaign is always a new one — recipients are never added to somebody else's survey; if a
+    /// parallel request takes the name in between, this one fails and changes nothing.
+    /// The later parts of the same survey go through <see cref="PrepareAsync"/> with the key from the answer.
+    /// </summary>
+    public async Task<CampaignPrepareResult> PrepareNewSurveyAsync(
+        CampaignDraft draft, string? slug, int? sampleSize, bool dryRun, long ownerTelegramId, CancellationToken ct)
+    {
+        slug = (slug ?? "").Trim();
+        if (!SurveySlugPattern().IsMatch(slug)) return CampaignPrepareResult.Fail("Неизвестная заготовка опроса.");
+        if (draft.Survey == null) return CampaignPrepareResult.Fail("В опросе нет ни одного вопроса.");
+
+        var stem = $"survey-{DateTime.UtcNow:yyyy-MM}-{slug}";
+        var taken = (await db.BroadcastCampaigns.AsNoTracking()
+            .Where(c => c.Key.StartsWith(stem)).Select(c => c.Key).ToListAsync(ct)).ToHashSet();
+        var key = stem;
+        for (var n = 2; taken.Contains(key); n++) key = $"{stem}-{n}";
+
+        return await PrepareAsync(
+            new CampaignDraft
+            {
+                Key = key, MustBeNew = true, Audience = draft.Audience, Survey = draft.Survey
+            },
+            sampleSize, dryRun, ownerTelegramId, ct);
     }
 
     /// <summary>
@@ -74,7 +109,7 @@ public partial class BroadcastCampaignService(
 
         if (!KeyPattern().IsMatch(key))
             return CampaignPrepareResult.Fail("Имя кампании: 3–48 символов, латиница в нижнем регистре, цифры, «-» и «_».");
-        if (message.Length == 0) return CampaignPrepareResult.Fail("Пустое сообщение.");
+        if (message.Length == 0 && draft.Survey == null) return CampaignPrepareResult.Fail("Пустое сообщение.");
         if (message.Length > MaxMessageLength) return CampaignPrepareResult.Fail($"Сообщение длиннее {MaxMessageLength} символов.");
         if (buttonText is { Length: > 64 }) return CampaignPrepareResult.Fail("Текст кнопки длиннее 64 символов.");
         if (!ButtonQueryPattern().IsMatch(buttonQuery))
@@ -90,9 +125,27 @@ public partial class BroadcastCampaignService(
         if (giftOfferDays is < 1 or > MaxGiftOfferDays)
             return CampaignPrepareResult.Fail($"Срок, пока подарок можно получить, — от 1 до {MaxGiftOfferDays} дней.");
 
+        string? surveyJson = null;
+        if (draft.Survey != null)
+        {
+            var survey = SurveyFormRules.Normalize(draft.Survey, out var surveyError);
+            if (survey == null) return CampaignPrepareResult.Fail(surveyError!);
+            if (buttonText != null || draft.GiftDays > 0)
+                return CampaignPrepareResult.Fail("У опроса кнопки — это варианты ответа: кнопку мини-аппа и подарок к нему не добавить.");
+            surveyJson = survey.ToJson();
+            // What leaves is the intro and the first question; the rest is answered in the mini-app.
+            message = survey.BotMessage();
+        }
+
         var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
+        if (campaign != null && draft.MustBeNew)
+            return CampaignPrepareResult.Fail("Опрос с таким именем только что завёл параллельный запрос. Попробуй ещё раз.");
         if (campaign != null && campaign.Audience != draft.Audience)
             return CampaignPrepareResult.Fail($"Кампания «{key}» уже заведена для другой аудитории ({campaign.Audience}). Возьми другое имя.");
+        // A button carries the number of its option, and answers are counted by the question's id and the
+        // option's text: all would point at something else if the form changed under messages already picked.
+        if (campaign != null && campaign.Survey?.ToJson() != surveyJson)
+            return CampaignPrepareResult.Fail($"Вопросы и варианты кампании «{key}» менять нельзя — получатели уже выбраны. Заведи кампанию с другим именем.");
 
         var contentChanged = campaign != null
             && (campaign.Message != message || campaign.ButtonText != buttonText || (campaign.ButtonQuery ?? "") != buttonQuery
@@ -109,7 +162,8 @@ public partial class BroadcastCampaignService(
 
         var now = DateTime.UtcNow;
         var users = await LoadReachableUsersAsync(ct);
-        var audience = users.Where(u => IsIn(u, draft.Audience, now, ownerTelegramId)).ToList();
+        var lastActive = await LoadLastActivityAsync(ct);
+        var audience = users.Where(u => IsIn(u, draft.Audience, now, ownerTelegramId, lastActive)).ToList();
 
         var alreadyPicked = campaign == null
             ? new HashSet<Guid>()
@@ -141,6 +195,7 @@ public partial class BroadcastCampaignService(
         campaign.ButtonText = buttonText;
         campaign.ButtonQuery = buttonQuery;
         campaign.GiftDays = draft.GiftDays;
+        campaign.SurveyJson = surveyJson;
         // The offer runs from the day the campaign was created, whichever part a person is in.
         campaign.GiftOfferEndsAtUtc = draft.GiftDays > 0 ? campaign.CreatedAtUtc.AddDays(giftOfferDays) : null;
 
@@ -202,7 +257,8 @@ public partial class BroadcastCampaignService(
             await db.Entry(delivery).ReloadAsync(CancellationToken.None);
 
             var outcome = await sender.SendAsync(
-                delivery.TelegramId, campaign.Message, campaign.ButtonText, campaign.ButtonQuery, campaign.Key, CancellationToken.None);
+                delivery.TelegramId, campaign.Message, campaign.ButtonText, campaign.ButtonQuery, campaign.Key,
+                campaign.Survey?.BotButtons(), CancellationToken.None);
 
             switch (outcome.Outcome)
             {
@@ -268,6 +324,15 @@ public partial class BroadcastCampaignService(
         var paid = await opened.CountAsync(
             d => db.Payments.Any(p => p.UserId == d.UserId && p.PurchasedAtUtc >= d.OpenedAtUtc && p.RefundedAtUtc == null), ct);
 
+        // A survey: how many people chose each option of its first question — the one answered in the bot.
+        var survey = campaign.Survey;
+        var firstQuestion = survey?.Questions[0].Id;
+        var answers = await db.UserFeedback.AsNoTracking()
+            .Where(f => f.Kind == UserFeedbackKind.Survey && f.CampaignKey == campaign.Key && f.QuestionId == firstQuestion)
+            .GroupBy(f => f.Option)
+            .Select(g => new { Option = g.Key, Count = g.Count() })
+            .ToListAsync(ct);
+
         return new CampaignStatus
         {
             Key = campaign.Key,
@@ -287,6 +352,9 @@ public partial class BroadcastCampaignService(
             GiftDays = campaign.GiftDays,
             GiftOfferEndsAtUtc = campaign.GiftOfferEndsAtUtc,
             Gifted = rows.Count(r => r.Gifted),
+            Survey = survey,
+            SurveyAnswers = (survey?.BotButtons() ?? [])
+                .Select(o => new OptionCount(o, answers.FirstOrDefault(a => a.Option == o)?.Count ?? 0)).ToList(),
             PlayedVerbSession = played,
             FinishedVerbSession = finished,
             PaidAfterOpen = paid
@@ -365,8 +433,14 @@ public partial class BroadcastCampaignService(
 
     /// <summary>Audience membership through the entitlement helpers on <see cref="User"/> — the
     /// same ones the mini-app's paywall uses, so "access ended" here is exactly "sees the paywall".</summary>
-    public static bool IsIn(User user, BroadcastAudience audience, DateTime now, long ownerTelegramId) => audience switch
+    /// <param name="lastActive">When each person last did something (<see cref="LoadLastActivityAsync"/>);
+    /// needed only for the audiences by activity.</param>
+    public static bool IsIn(
+        User user, BroadcastAudience audience, DateTime now, long ownerTelegramId,
+        IReadOnlyDictionary<Guid, DateTime>? lastActive = null) => audience switch
     {
+        BroadcastAudience.ActiveLately => LastActive(user, lastActive) > now.AddDays(-ActivityWindowDays),
+        BroadcastAudience.InactiveLong => LastActive(user, lastActive) <= now.AddDays(-ActivityWindowDays),
         BroadcastAudience.AccessEnded => !user.IsPro && !user.HasActiveTrial(now),
         BroadcastAudience.OnTrial => user.HasActiveTrial(now),
         BroadcastAudience.Paying => user.HasActivePro(now),
@@ -374,6 +448,31 @@ public partial class BroadcastCampaignService(
         BroadcastAudience.Owner => user.TelegramId == ownerTelegramId,
         _ => false
     };
+
+    private static DateTime LastActive(User user, IReadOnlyDictionary<Guid, DateTime>? lastActive) =>
+        lastActive != null && lastActive.TryGetValue(user.Id, out var at) && at > user.RegisteredAtUtc ? at : user.RegisteredAtUtc;
+
+    /// <summary>
+    /// When each person last did something that leaves a dated trace: answered in a lesson of the
+    /// mini-app, added a word (bot or mini-app), started a quiz or a verb session. There is no
+    /// record of merely opening the mini-app or the chat, so "active" means "studied", and someone
+    /// with no trace at all counts from the day they registered.
+    /// </summary>
+    private async Task<Dictionary<Guid, DateTime>> LoadLastActivityAsync(CancellationToken ct)
+    {
+        var traces = new[]
+        {
+            await db.MiniAppUserProgresses.AsNoTracking().Where(p => p.LastPlayedAtUtc != null)
+                .GroupBy(p => p.UserId).Select(g => new { UserId = g.Key, At = g.Max(p => p.LastPlayedAtUtc)!.Value }).ToListAsync(ct),
+            await db.VocabularyEntries.AsNoTracking()
+                .GroupBy(v => v.UserId).Select(g => new { UserId = g.Key, At = g.Max(v => v.DateAddedUtc) }).ToListAsync(ct),
+            await db.Quizzes.AsNoTracking()
+                .GroupBy(q => q.UserId).Select(g => new { UserId = g.Key, At = g.Max(q => q.DateStarted) }).ToListAsync(ct),
+            await db.VerbSessions.AsNoTracking()
+                .GroupBy(s => s.UserId).Select(g => new { UserId = g.Key, At = g.Max(s => s.StartedAtUtc) }).ToListAsync(ct)
+        };
+        return traces.SelectMany(t => t).GroupBy(t => t.UserId).ToDictionary(g => g.Key, g => g.Max(t => t.At));
+    }
 
     private static string? Trim(string? error) => error is { Length: > 500 } ? error[..500] : error;
 }
@@ -390,6 +489,11 @@ public class CampaignDraft
     /// <summary>For how many days after the campaign is created an open still gives the gift;
     /// null — <see cref="BroadcastCampaignService.DefaultGiftOfferDays"/>.</summary>
     public int? GiftOfferDays { get; init; }
+    /// <summary>The form of a survey (checked by <see cref="SurveyFormRules"/>); null — an ordinary campaign.
+    /// A survey's message is made from the form — <see cref="Message"/> is not used.</summary>
+    public SurveyForm? Survey { get; init; }
+    /// <summary>Refuse when a campaign with this key already exists (see <see cref="BroadcastCampaignService.PrepareNewSurveyAsync"/>).</summary>
+    public bool MustBeNew { get; init; }
 }
 
 /// <summary>A gift of access given by a campaign: how many days and until when the person now has access.</summary>
@@ -452,6 +556,11 @@ public class CampaignStatus
     public DateTime? GiftOfferEndsAtUtc { get; init; }
     /// <summary>Recipients the gift was given to.</summary>
     public int Gifted { get; init; }
+    /// <summary>For a survey: its options in the order of the buttons, with how many people chose each.
+    /// Empty for an ordinary campaign.</summary>
+    public IReadOnlyList<OptionCount> SurveyAnswers { get; init; } = [];
+    /// <summary>The survey's form; null for an ordinary campaign.</summary>
+    public SurveyForm? Survey { get; init; }
     /// <summary>Of those who opened: started a verb session after the open.</summary>
     public int PlayedVerbSession { get; init; }
     /// <summary>Of those who opened: finished a verb session started after the open.</summary>
@@ -477,6 +586,8 @@ public interface ICampaignMessageSender
     /// <param name="buttonText">Null — no button.</param>
     /// <param name="buttonQuery">Query string for the mini-app URL the button opens; the campaign
     /// key is appended as <c>c=…</c> so an open can be attributed.</param>
+    /// <param name="surveyOptions">Not null — a survey: the choices of its first question, each goes as its own answer button.</param>
     Task<CampaignSendAttempt> SendAsync(
-        long telegramId, string text, string? buttonText, string? buttonQuery, string campaignKey, CancellationToken ct);
+        long telegramId, string text, string? buttonText, string? buttonQuery, string campaignKey,
+        IReadOnlyList<string>? surveyOptions, CancellationToken ct);
 }

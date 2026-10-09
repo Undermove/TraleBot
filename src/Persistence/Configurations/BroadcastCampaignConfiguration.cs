@@ -14,6 +14,9 @@ public class BroadcastCampaignConfiguration : IEntityTypeConfiguration<Broadcast
         builder.Property(c => c.Message).IsRequired();
         builder.Property(c => c.ButtonText).HasMaxLength(64);
         builder.Property(c => c.ButtonQuery).HasMaxLength(256);
+        builder.Property(c => c.SurveyJson).HasColumnType("jsonb");
+        builder.Ignore(c => c.IsSurvey);
+        builder.Ignore(c => c.Survey);
     }
 }
 
@@ -28,5 +31,39 @@ public class BroadcastDeliveryConfiguration : IEntityTypeConfiguration<Broadcast
         builder.HasIndex(d => new { d.CampaignId, d.Status });
         builder.HasOne<BroadcastCampaign>().WithMany().HasForeignKey(d => d.CampaignId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<User>().WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class FeedbackReplyConfiguration : IEntityTypeConfiguration<FeedbackReply>
+{
+    public void Configure(EntityTypeBuilder<FeedbackReply> builder)
+    {
+        builder.HasKey(r => r.Id);
+        builder.Property(r => r.Text).HasMaxLength(3500);
+        builder.Property(r => r.Quote).HasMaxLength(200);
+        builder.Property(r => r.Error).HasMaxLength(500);
+        builder.Property(r => r.ClientToken).HasMaxLength(64);
+        // One answer per token — a double tap or a retried request sends nothing the second time.
+        builder.HasIndex(r => r.ClientToken).IsUnique();
+        builder.HasIndex(r => new { r.UserId, r.CreatedAtUtc });
+        builder.HasOne<User>().WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class UserFeedbackConfiguration : IEntityTypeConfiguration<UserFeedback>
+{
+    public void Configure(EntityTypeBuilder<UserFeedback> builder)
+    {
+        builder.ToTable("UserFeedback");
+        builder.HasKey(f => f.Id);
+        builder.Property(f => f.CampaignKey).HasMaxLength(48);
+        builder.Property(f => f.QuestionId).HasMaxLength(16);
+        builder.Property(f => f.Option).HasMaxLength(64);
+        builder.Property(f => f.Text).HasMaxLength(2000);
+        builder.HasIndex(f => new { f.UserId, f.Kind, f.CreatedAtUtc });
+        builder.HasIndex(f => f.CreatedAtUtc);
+        // One answer per person per question of a survey — answering again changes it.
+        builder.HasIndex(f => new { f.UserId, f.CampaignKey, f.QuestionId }).IsUnique().HasFilter("\"Kind\" = 1");
+        builder.HasOne<User>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
     }
 }

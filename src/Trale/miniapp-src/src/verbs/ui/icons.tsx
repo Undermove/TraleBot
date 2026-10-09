@@ -20,6 +20,13 @@ export const BoneIcon = ({ size = 18, className }: P) => (
   </svg>
 )
 
+export const LetterIcon = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <rect x="3" y="5.5" width="18" height="13" rx="2.5" fill="#FDFAEF" />
+    <path d="M3.800 7.500l8.200 6 8.200-6" />
+  </svg>
+)
+
 export const LockIcon = ({ size = 18, className }: P) => (
   <svg {...base(size, className)}>
     <path d="M7.5 10.5V8a4.5 4.5 0 0 1 9 0v2.500" />

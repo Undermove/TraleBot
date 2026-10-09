@@ -29,12 +29,26 @@ export type Screen =
   /** Раздел «Глаголы». source — метка, с которой пришли (кампания рассылки, ссылка); без неё — плитка на главной. */
   | { kind: 'verbs'; source?: string }
   | { kind: 'profile' }
+  /** Форма опроса-рассылки: вопросы по одному на странице. key — имя опроса из ссылки ?screen=survey&s=… */
+  | { kind: 'survey'; key: string }
+  /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее»; from — куда вернуться. */
+  | { kind: 'feedback'; campaign?: string; from?: 'profile' }
   | { kind: 'admin' }
+  /** Подразделы админки (только владелец): рассылка, конструктор опроса, отзывы. */
+  | { kind: 'admin-broadcast' }
+  /** resume — имя начатого опроса: открыть сразу его отправку (шаг 4), чтобы дослать. */
+  | { kind: 'admin-survey'; resume?: string }
+  /** view — что открыто: список (по умолчанию), один опрос, ответы с экрана покупки, все, кто что-то написал, или переписка с одним человеком. */
+  | { kind: 'admin-feedback'; view?: FeedbackView | FeedbackThreadView }
   | { kind: 'admin-user'; telegramId: number }
   /** Проверка глаголов от нейросети (только владелец). lemma — сразу открыть этот глагол. */
   | { kind: 'verb-review'; lemma?: string }
   | { kind: 'vocabulary-list'; filter?: 'verbs'; verb?: import('./verbs/deepLink').VerbLink }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
+
+export type FeedbackView = { survey: string } | 'paywall' | 'threads'
+/** Переписка с человеком. quote — текст, на который отвечают; back — откуда пришли, туда и «Назад». */
+export interface FeedbackThreadView { thread: number; quote?: string; back?: FeedbackView }
 
 export interface QuizQuestion {
   id: string

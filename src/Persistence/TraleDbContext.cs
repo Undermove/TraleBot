@@ -42,10 +42,49 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<BroadcastCampaign> BroadcastCampaigns { get; set; } = null!;
     public DbSet<BroadcastDelivery> BroadcastDeliveries { get; set; } = null!;
     public DbSet<QueuedTranslation> QueuedTranslations { get; set; } = null!;
+    public DbSet<UserFeedback> UserFeedback { get; set; } = null!;
+    public DbSet<FeedbackReply> FeedbackReplies { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
         return await Database.BeginTransactionAsync(cancellationToken);
+    }
+
+    public async Task LockUserFeedbackAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        // Non-relational providers (EF in-memory unit tests): single-threaded, nothing to hold.
+        if (!Database.IsNpgsql()) return;
+        await Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtextextended({"user-feedback:" + userId}, 0))", cancellationToken);
+    }
+
+    public async Task MarkSurveyStepAsync(Guid deliveryId, bool finished, DateTime atUtc, CancellationToken cancellationToken)
+    {
+        if (Database.IsNpgsql())
+        {
+            if (finished)
+            {
+                await Database.ExecuteSqlInterpolatedAsync($"""
+                    UPDATE "BroadcastDeliveries" SET "SurveyFinishedAtUtc" = {atUtc}
+                    WHERE "Id" = {deliveryId} AND "SurveyFinishedAtUtc" IS NULL
+                    """, cancellationToken);
+            }
+            else
+            {
+                await Database.ExecuteSqlInterpolatedAsync($"""
+                    UPDATE "BroadcastDeliveries" SET "SurveyOpenedAtUtc" = {atUtc}
+                    WHERE "Id" = {deliveryId} AND "SurveyOpenedAtUtc" IS NULL
+                    """, cancellationToken);
+            }
+            return;
+        }
+
+        // Non-relational providers (EF in-memory unit tests): single-threaded, no atomicity needed.
+        var delivery = await BroadcastDeliveries.FirstOrDefaultAsync(d => d.Id == deliveryId, cancellationToken);
+        if (delivery == null) return;
+        if (finished) delivery.SurveyFinishedAtUtc ??= atUtc;
+        else delivery.SurveyOpenedAtUtc ??= atUtc;
+        await SaveChangesAsync(cancellationToken);
     }
 
     public async Task<bool> TryClaimBroadcastDeliveryAsync(Guid deliveryId, CancellationToken cancellationToken)
@@ -161,6 +200,8 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new NotificationTriggerConfiguration());
         modelBuilder.ApplyConfiguration(new BroadcastCampaignConfiguration());
         modelBuilder.ApplyConfiguration(new BroadcastDeliveryConfiguration());
+        modelBuilder.ApplyConfiguration(new UserFeedbackConfiguration());
+        modelBuilder.ApplyConfiguration(new FeedbackReplyConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
