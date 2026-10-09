@@ -94,6 +94,68 @@ public partial class BroadcastCampaignService(
     }
 
     /// <summary>
+    /// Starts a new ordinary campaign under a name the owner does not have to invent:
+    /// <c>broadcast-2026-10</c>, then <c>…-2</c>, <c>…-3</c> while the name is taken (with
+    /// <paramref name="suffix"/> — <c>broadcast-2026-10-test</c> for a trial sent to oneself).
+    /// Always a new campaign; later parts go through <see cref="PrepareAsync"/> with the key from the answer.
+    /// </summary>
+    public async Task<CampaignPrepareResult> PrepareNewBroadcastAsync(
+        CampaignDraft draft, string? suffix, int? sampleSize, bool dryRun, long ownerTelegramId, CancellationToken ct)
+    {
+        suffix = (suffix ?? "").Trim();
+        if (suffix.Length > 0 && !SurveySlugPattern().IsMatch(suffix)) return CampaignPrepareResult.Fail("Неизвестная метка кампании.");
+        if (draft.Survey != null) return CampaignPrepareResult.Fail("Опрос собирается в конструкторе опросов.");
+
+        var stem = $"broadcast-{DateTime.UtcNow:yyyy-MM}" + (suffix.Length > 0 ? $"-{suffix}" : "");
+        var taken = (await db.BroadcastCampaigns.AsNoTracking()
+            .Where(c => c.Key.StartsWith(stem)).Select(c => c.Key).ToListAsync(ct)).ToHashSet();
+        var key = stem;
+        for (var n = 2; taken.Contains(key); n++) key = $"{stem}-{n}";
+
+        return await PrepareAsync(
+            new CampaignDraft
+            {
+                Key = key, MustBeNew = true, Audience = draft.Audience, Message = draft.Message, ButtonText = draft.ButtonText,
+                ButtonQuery = draft.ButtonQuery, GiftDays = draft.GiftDays, GiftOfferDays = draft.GiftOfferDays
+            },
+            sampleSize, dryRun, ownerTelegramId, ct);
+    }
+
+    /// <summary>
+    /// Every campaign, newest first, with how far it got — for the owner's lists. Trials the owner
+    /// sent only to themselves are left out.
+    /// </summary>
+    public async Task<IReadOnlyList<CampaignListItem>> ListAsync(CancellationToken ct)
+    {
+        var campaigns = await db.BroadcastCampaigns.AsNoTracking()
+            .Where(c => c.Audience != BroadcastAudience.Owner)
+            .OrderByDescending(c => c.CreatedAtUtc)
+            .ToListAsync(ct);
+        var ids = campaigns.Select(c => c.Id).ToList();
+        var deliveries = await db.BroadcastDeliveries.AsNoTracking()
+            .Where(d => ids.Contains(d.CampaignId))
+            .GroupBy(d => d.CampaignId)
+            .Select(g => new
+            {
+                CampaignId = g.Key,
+                Picked = g.Count(),
+                Pending = g.Count(d => d.Status == BroadcastDeliveryStatus.Pending),
+                Sent = g.Count(d => d.Status == BroadcastDeliveryStatus.Sent),
+                Opened = g.Count(d => d.OpenedAtUtc != null),
+                Gifted = g.Count(d => d.GiftGrantedAtUtc != null)
+            })
+            .ToDictionaryAsync(g => g.CampaignId, ct);
+
+        return campaigns.Select(c =>
+        {
+            deliveries.TryGetValue(c.Id, out var d);
+            return new CampaignListItem(
+                c.Key, c.IsSurvey, c.Message, c.Audience, c.CreatedAtUtc, c.ButtonText, c.GiftDays,
+                d?.Picked ?? 0, d?.Pending ?? 0, d?.Sent ?? 0, d?.Opened ?? 0, d?.Gifted ?? 0);
+        }).ToList();
+    }
+
+    /// <summary>
     /// Picks recipients for the campaign and records them as Pending. Sends nothing.
     /// <paramref name="sampleSize"/> — take that many at random from those not picked yet;
     /// null — take everyone not picked yet (the "rest"). With <paramref name="dryRun"/> only counts.
@@ -140,7 +202,9 @@ public partial class BroadcastCampaignService(
         var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
         if (campaign != null && draft.MustBeNew)
             return CampaignPrepareResult.Fail("Опрос с таким именем только что завёл параллельный запрос. Попробуй ещё раз.");
-        if (campaign != null && campaign.Audience != draft.Audience)
+        // Another audience may be added to a campaign only when asked for in so many words: it is the same
+        // campaign, so nobody gets the message or the gift twice — which is the reason to add, not to start anew.
+        if (campaign != null && campaign.Audience != draft.Audience && !draft.AnotherAudience)
             return CampaignPrepareResult.Fail($"Кампания «{key}» уже заведена для другой аудитории ({campaign.Audience}). Возьми другое имя.");
         // A button carries the number of its option, and answers are counted by the question's id and the
         // option's text: all would point at something else if the form changed under messages already picked.
@@ -452,27 +516,7 @@ public partial class BroadcastCampaignService(
     private static DateTime LastActive(User user, IReadOnlyDictionary<Guid, DateTime>? lastActive) =>
         lastActive != null && lastActive.TryGetValue(user.Id, out var at) && at > user.RegisteredAtUtc ? at : user.RegisteredAtUtc;
 
-    /// <summary>
-    /// When each person last did something that leaves a dated trace: answered in a lesson of the
-    /// mini-app, added a word (bot or mini-app), started a quiz or a verb session. There is no
-    /// record of merely opening the mini-app or the chat, so "active" means "studied", and someone
-    /// with no trace at all counts from the day they registered.
-    /// </summary>
-    private async Task<Dictionary<Guid, DateTime>> LoadLastActivityAsync(CancellationToken ct)
-    {
-        var traces = new[]
-        {
-            await db.MiniAppUserProgresses.AsNoTracking().Where(p => p.LastPlayedAtUtc != null)
-                .GroupBy(p => p.UserId).Select(g => new { UserId = g.Key, At = g.Max(p => p.LastPlayedAtUtc)!.Value }).ToListAsync(ct),
-            await db.VocabularyEntries.AsNoTracking()
-                .GroupBy(v => v.UserId).Select(g => new { UserId = g.Key, At = g.Max(v => v.DateAddedUtc) }).ToListAsync(ct),
-            await db.Quizzes.AsNoTracking()
-                .GroupBy(q => q.UserId).Select(g => new { UserId = g.Key, At = g.Max(q => q.DateStarted) }).ToListAsync(ct),
-            await db.VerbSessions.AsNoTracking()
-                .GroupBy(s => s.UserId).Select(g => new { UserId = g.Key, At = g.Max(s => s.StartedAtUtc) }).ToListAsync(ct)
-        };
-        return traces.SelectMany(t => t).GroupBy(t => t.UserId).ToDictionary(g => g.Key, g => g.Max(t => t.At));
-    }
+    private Task<Dictionary<Guid, DateTime>> LoadLastActivityAsync(CancellationToken ct) => UserActivity.LoadLastAsync(db, ct);
 
     private static string? Trim(string? error) => error is { Length: > 500 } ? error[..500] : error;
 }
@@ -492,6 +536,9 @@ public class CampaignDraft
     /// <summary>The form of a survey (checked by <see cref="SurveyFormRules"/>); null — an ordinary campaign.
     /// A survey's message is made from the form — <see cref="Message"/> is not used.</summary>
     public SurveyForm? Survey { get; init; }
+    /// <summary>The campaign exists for another audience and this part is meant for one more: people already
+    /// in the campaign are skipped as always, so the message and the gift still reach a person once.</summary>
+    public bool AnotherAudience { get; init; }
     /// <summary>Refuse when a campaign with this key already exists (see <see cref="BroadcastCampaignService.PrepareNewSurveyAsync"/>).</summary>
     public bool MustBeNew { get; init; }
 }
@@ -522,6 +569,11 @@ public class CampaignPrepareResult
 
     public static CampaignPrepareResult Fail(string error) => new() { Error = error };
 }
+
+/// <param name="Pending">Picked and not sent yet — above zero means the sending is unfinished.</param>
+public record CampaignListItem(
+    string Key, bool IsSurvey, string Message, BroadcastAudience Audience, DateTime CreatedAtUtc, string? ButtonText, int GiftDays,
+    int Picked, int Pending, int Sent, int Opened, int Gifted);
 
 public class CampaignSendResult
 {

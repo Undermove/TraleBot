@@ -5,7 +5,6 @@ import { adminVerbs as mocked, ApiError } from '../../api'
 import catalog from '../../../../Verbs/verbs.json'
 import { cyr } from '../../verbs/types'
 import VerbReviewScreen from '../VerbReviewScreen'
-import VerbReviewEntry from '../../components/admin/VerbReviewEntry'
 
 vi.mock('../../api', () => ({
   ApiError: class ApiError extends Error { constructor(public status: number, public body: string) { super('api') } },
@@ -90,14 +89,6 @@ describe('VerbReviewScreen: очередь', () => {
     await userEvent.clear(screen.getByLabelText('Поиск'))
     await userEvent.type(screen.getByLabelText('Поиск'), write.lemma)
     expect(rows()).toEqual([write.lemma])
-  })
-
-  it('the admin screen has one way in, with how many verbs wait', async () => {
-    const onOpen = vi.fn()
-    render(<VerbReviewEntry onOpen={onOpen} />)
-    const entry = await screen.findByRole('button', { name: /Проверка глаголов · 2 ждут/ })
-    await userEvent.click(entry)
-    expect(onOpen).toHaveBeenCalled()
   })
 })
 
@@ -243,11 +234,11 @@ describe('VerbReviewScreen: один глагол', () => {
       .toBe('связь оборвалась; если шла пересборка, она продолжается — обнови через минуту'))
   })
 
-  it('Back goes from the verb to the queue and from the queue to the admin screen', async () => {
+  it('Back goes from the verb to the queue and from the queue out of the tab', async () => {
     await openVerb()
     await userEvent.click(screen.getByRole('button', { name: /назад|back/i }))
     expect(screen.getByTestId('verb-review-queue')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: /назад|back/i }))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin' })
+    expect(navigate).toHaveBeenCalledWith({ kind: 'profile' })
   })
 })

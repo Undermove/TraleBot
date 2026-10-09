@@ -255,6 +255,10 @@ async function setup(page: Page, opts: { me?: object; due?: boolean; messageStat
     return route.fulfill({ json: { ok: true } })
   })
   await page.route('**/api/admin/verbs/model-made', json({ verbs: [] }))
+  await page.route('**/api/admin/overview', (route) => route.fulfill({ json: {
+    totalUsers: 848, newUsers7d: 21, studiedToday: 9, studied7d: 61, payments30d: 2, stars30d: 700, activeSubscriptions: 2, onTrial: 17,
+    unansweredMessages: unansweredNow(), unfinishedSurveys: status.pending > 0 ? 1 : 0, unfinishedBroadcasts: 0, verbsToReview: 0,
+  } }))
   await page.route('**/api/admin/surveys/presets', json(kit))
   // Кампании: сервер сам называет новый опрос; выбранные получатели ждут, пока их не отправят.
   const NEW = 'survey-2026-10-users-2'
@@ -537,35 +541,21 @@ test.describe('владелец', () => {
     await page.goto('/?playwright=1')
     await page.getByRole('button', { name: 'Профиль' }).first().click()
     await page.getByRole('button', { name: /Админка/ }).click()
-    await expect(page.getByTestId('admin-sections')).toBeVisible()
+    await expect(page.getByTestId('admin-tabs')).toBeVisible()
+  }
+  /** Вкладка «Связь» → Опросы → «Новый опрос». */
+  async function openBuilder(page: Page) {
+    await openAdmin(page)
+    await page.getByTestId('admin-tab-feedback').click()
+    await page.getByRole('tab', { name: /Опросы/ }).click()
+    await page.getByTestId('survey-new').click()
   }
   const stepTitle = (page: Page) => page.getByTestId('survey-step-title')
   const card = (page: Page, i: number) => page.getByTestId(`survey-question-${i}`)
 
-  test('the admin has its sections on separate screens, and the broadcast form has no survey fields', async ({ page }) => {
-    await setup(page, { me: owner })
-    await openAdmin(page)
-    await expect(page.getByTestId('admin-sections').getByRole('button')).toHaveText([/^Опрос/, /^Отзывы/, /^Рассылка/])
-    await expect(page.getByTestId('campaign-panel')).toHaveCount(0)
-    await expect(page.getByTestId('admin-unanswered')).toHaveText('без ответа: 2')
-    await fits(page)
-    await shot(page, 'survey-0-admin-menu')
-
-    await page.getByTestId('admin-section-broadcast').click()
-
-    await expect(page.getByTestId('admin-broadcast-screen').getByTestId('campaign-panel')).toBeVisible()
-    await expect(page.getByTestId('campaign-send')).toBeDisabled()
-    await expect(page.getByTestId('campaign-send-hint')).toContainText('Отправка откроется, когда выберешь получателей')
-    await expect(page.getByText(/вариант/i)).toHaveCount(0)
-    await fits(page)
-    await page.getByRole('button', { name: 'Назад' }).click()
-    await expect(page.getByTestId('admin-sections')).toBeVisible()
-  })
-
   test('a form is built from a ready-made one with one question changed, walked through as a user and sent to oneself', async ({ page }) => {
     const calls = await setup(page, { me: owner })
-    await openAdmin(page)
-    await page.getByTestId('admin-section-survey').click()
+    await openBuilder(page)
 
     await expect(stepTitle(page)).toHaveText('Выбери опрос')
     await expect(page.locator('[data-testid^="survey-preset-"]')).toHaveCount(4)
@@ -655,8 +645,7 @@ test.describe('владелец', () => {
 
   test('the form for those who paid: the headline number survives renamed buttons, and the builder warns when it is lost', async ({ page }) => {
     const calls = await setup(page, { me: owner })
-    await openAdmin(page)
-    await page.getByTestId('admin-section-survey').click()
+    await openBuilder(page)
     await page.getByTestId('survey-preset-paid').click()
 
     await expect(page.getByTestId('survey-preview')).toContainText(`${paidIntro}\n\n${ifGone.text}`)
@@ -705,8 +694,7 @@ test.describe('владелец', () => {
 
   test('the builder explains why a question cannot stand first', async ({ page }) => {
     await setup(page, { me: owner })
-    await openAdmin(page)
-    await page.getByTestId('admin-section-survey').click()
+    await openBuilder(page)
     await page.getByTestId('survey-preset-users').click()
 
     await page.getByRole('button', { name: 'Поднять вопрос 3' }).click()
@@ -727,8 +715,7 @@ test.describe('владелец', () => {
   test('a survey left half sent is found again, finished, and sent to the rest of the group', async ({ page }) => {
     const calls = await setup(page, { me: owner })
     page.on('dialog', dialog => dialog.accept())
-    await openAdmin(page)
-    await page.getByTestId('admin-section-survey').click()
+    await openBuilder(page)
     await expect(page.getByTestId('survey-unfinished')).toHaveCount(0)
     await page.getByTestId('survey-preset-users').click()
     await page.getByTestId('survey-next').click()
@@ -740,9 +727,9 @@ test.describe('владелец', () => {
     await expect(page.getByTestId('survey-status')).toContainText('ждут 75 · дошло 25')
 
     // Владелец закрыл конструктор посередине и вернулся позже.
-    await page.getByRole('button', { name: 'Назад' }).click()
-    await expect(page.getByTestId('admin-sections')).toBeVisible()
-    await page.getByTestId('admin-section-survey').click()
+    await page.getByTestId('admin-close').click()
+    await expect(page.getByTestId('feedback-surveys')).toContainText('не дослано: отправлено 25 из 100')
+    await page.getByTestId('survey-new').click()
 
     const left = page.getByTestId('survey-unfinished')
     await expect(left).toContainText(ifGone.text)
@@ -794,9 +781,10 @@ test.describe('владелец', () => {
   test('«Отзывы»: a survey shows how far people got and every question; answers narrow to one option of the first question', async ({ page }) => {
     await setup(page, { me: owner })
     await openAdmin(page)
-    await page.getByTestId('admin-section-feedback').click()
+    await page.getByTestId('admin-tab-feedback').click()
+    await page.getByRole('tab', { name: /Опросы/ }).click()
 
-    const list = page.getByTestId('feedback-list')
+    const list = page.getByTestId('feedback-surveys')
     await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText(ifGone.text)
     await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText('8 октября · занимались за последние 30 дней · вопросов: 5')
     await expect(list.getByTestId(`feedback-open-survey-${KEY}`)).toContainText('получили 61 · ответили 34 · дошли до конца 15')
@@ -823,7 +811,7 @@ test.describe('владелец', () => {
     await shot(page, 'form-9-results-segment', true)
 
     await page.getByRole('button', { name: 'Назад' }).click()
-    await page.getByTestId('feedback-open-paywall').click()
+    await page.getByRole('tab', { name: 'Экран покупки' }).click()
     await expect(page.getByTestId('feedback-paywall')).toContainText('Спросили 41 · ответили 26')
     await expect(page.getByTestId('feedback-paywall')).toContainText('Месяц ещё ладно')
     await expect(page.getByTestId('feedback-paywall')).not.toContainText('expensive')
@@ -831,16 +819,15 @@ test.describe('владелец', () => {
     await shot(page, 'survey-7-paywall-answers', true)
 
     await page.getByRole('button', { name: 'Назад' }).click()
-    await page.getByRole('button', { name: 'Назад' }).click()
-    await expect(page.getByTestId('admin-sections')).toBeVisible()
+    await expect(page.getByRole('button', { name: /Админка/ })).toBeVisible()
   })
 
   test('the owner answers a person, the person sees the answer and writes back, and the status follows', async ({ page }) => {
     const calls = await setup(page, { me: owner })
     await openAdmin(page)
-    await page.getByTestId('admin-section-feedback').click()
-    await expect(page.getByTestId('feedback-unanswered')).toHaveText('без ответа: 2')
-    await page.getByTestId('feedback-open-threads').click()
+    await page.getByTestId('admin-tab-feedback').click()
+    await expect(page.getByTestId('admin-tab-badge-feedback')).toHaveText('2')
+    await page.getByRole('tab', { name: /Сообщения/ }).click()
 
     const person = page.getByTestId('feedback-thread-5000000101')
     await expect(person).toContainText('новое')
@@ -891,9 +878,9 @@ test.describe('владелец', () => {
 
     // У владельца человек снова наверху — «человек ответил», и его ответ в той же ленте.
     await openAdmin(page)
-    await expect(page.getByTestId('admin-unanswered')).toHaveText('без ответа: 2')
-    await page.getByTestId('admin-section-feedback').click()
-    await page.getByTestId('feedback-open-threads').click()
+    await expect(page.getByTestId('admin-tab-badge-feedback')).toHaveText('2')
+    await page.getByTestId('admin-tab-feedback').click()
+    await page.getByRole('tab', { name: /Сообщения/ }).click()
     await expect(page.getByTestId('feedback-thread-5000000101')).toContainText('человек ответил')
     await expect(page.getByTestId('feedback-thread-5000000101')).toContainText('Здорово, жду! А падежи покороче будут?')
     await fits(page)
@@ -915,13 +902,13 @@ test.describe('владелец', () => {
   test('«Ответить» next to a text opens the conversation quoting that text; a blocked bot is said in plain words', async ({ page }) => {
     const calls = await setup(page, { me: owner, delivery: 'blocked' })
     await openAdmin(page)
-    await page.getByTestId('admin-section-feedback').click()
-    await page.getByTestId('feedback-open-paywall').click()
+    await page.getByTestId('admin-tab-feedback').click()
+    await page.getByRole('tab', { name: 'Экран покупки' }).click()
     await expect(page.getByTestId('feedback-paywall').getByRole('button', { name: 'Ответить' })).toHaveCount(1)
     await fits(page)
     await shot(page, 'reply-6-paywall-answers', true)
-    await page.getByRole('button', { name: 'Назад' }).click()
 
+    await page.getByRole('tab', { name: /Опросы/ }).click()
     await page.getByTestId(`feedback-open-survey-${KEY}`).click()
     await page.getByTestId('feedback-question-q5').getByRole('button', { name: 'Ответить' }).first().click()
     await expect(page.getByTestId('feedback-thread')).toBeVisible()

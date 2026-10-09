@@ -50,8 +50,49 @@ public class GetUserDetailQuery(ITraleDbContext db)
             lastActivity = payments[0].PurchasedAtUtc;
         }
 
+        var now = DateTime.UtcNow;
+        var lastStudied = (await UserActivity.LoadLastAsync(db, ct)).TryGetValue(user.Id, out var studiedAt) ? studiedAt : (DateTime?)null;
+        var lessons = 0;
+        try
+        {
+            lessons = System.Text.Json.JsonSerializer
+                .Deserialize<Dictionary<string, List<int>>>(progress?.CompletedLessonsJson ?? "{}")?.Sum(m => m.Value.Count) ?? 0;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // An unreadable progress record must not hide the person's card.
+        }
+
+        // What the person said in surveys: every answer, with the question as it was asked.
+        var answers = await db.UserFeedback.AsNoTracking()
+            .Where(f => f.UserId == user.Id && f.Kind == Domain.Entities.UserFeedbackKind.Survey)
+            .OrderByDescending(f => f.UpdatedAtUtc ?? f.CreatedAtUtc)
+            .ToListAsync(ct);
+        var keys = answers.Select(a => a.CampaignKey).Distinct().ToList();
+        var surveys = (await db.BroadcastCampaigns.AsNoTracking().Where(c => keys.Contains(c.Key)).ToListAsync(ct))
+            .ToDictionary(c => c.Key, c => c.Survey);
+
         return new UserDetailDto
         {
+            AcquisitionSource = user.AcquisitionSource,
+            Access = GetAdminUsersQuery.AccessOf(user, now).ToString(),
+            AccessUntilUtc = user.HasActivePro(now) ? user.SubscribedUntil : user.HasActiveTrial(now) ? user.TrialEndsAtUtc : null,
+            NotificationsEnabled = user.NotificationsEnabled,
+            LastStudiedAtUtc = lastStudied,
+            LessonsCompleted = lessons,
+            QuizzesStarted = await db.Quizzes.CountAsync(q => q.UserId == user.Id, ct),
+            VerbSessionsStarted = await db.VerbSessions.CountAsync(s => s.UserId == user.Id, ct),
+            VerbSessionsFinished = await db.VerbSessions.CountAsync(s => s.UserId == user.Id && s.FinishedAtUtc != null, ct),
+            WrittenTexts = await db.UserFeedback.CountAsync(f => f.UserId == user.Id && f.Text != null, ct),
+            SurveyAnswers = answers.Select(a =>
+            {
+                surveys.TryGetValue(a.CampaignKey ?? "", out var survey);
+                return new UserSurveyAnswerDto
+                {
+                    CampaignKey = a.CampaignKey ?? "", Question = survey?.Question(a.QuestionId)?.Text ?? "", Option = a.Option, Text = a.Text,
+                    AtUtc = a.UpdatedAtUtc ?? a.CreatedAtUtc
+                };
+            }).ToList(),
             TelegramId = user.TelegramId,
             UserId = user.Id,
             IsPro = user.IsPro,
@@ -88,6 +129,32 @@ public class UserDetailDto
     public string Level { get; init; } = "n/a";
     public DateTime? LastActivityUtc { get; init; }
     public List<PaymentDto> Payments { get; init; } = new();
+
+    /// <summary>Where the person came from: a link tag, a referral, a campaign; null — unknown.</summary>
+    public string? AcquisitionSource { get; init; }
+    /// <summary>Paying / Trial / Ended / Lapsed — by the same rules the mini-app's paywall uses.</summary>
+    public string Access { get; init; } = "Ended";
+    /// <summary>When the access they have now ends; null — no access, or it never ends.</summary>
+    public DateTime? AccessUntilUtc { get; init; }
+    public bool NotificationsEnabled { get; init; }
+    /// <summary>The latest dated trace of studying (<see cref="UserActivity"/>); null — none.</summary>
+    public DateTime? LastStudiedAtUtc { get; init; }
+    public int LessonsCompleted { get; init; }
+    public int QuizzesStarted { get; init; }
+    public int VerbSessionsStarted { get; init; }
+    public int VerbSessionsFinished { get; init; }
+    /// <summary>Texts the person wrote: letters, own words in surveys, comments at the paywall — the conversation.</summary>
+    public int WrittenTexts { get; init; }
+    public List<UserSurveyAnswerDto> SurveyAnswers { get; init; } = new();
+}
+
+public class UserSurveyAnswerDto
+{
+    public string CampaignKey { get; init; } = string.Empty;
+    public string Question { get; init; } = string.Empty;
+    public string? Option { get; init; }
+    public string? Text { get; init; }
+    public DateTime AtUtc { get; init; }
 }
 
 public class PaymentDto

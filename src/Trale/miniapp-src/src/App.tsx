@@ -30,6 +30,13 @@ import VerbsSection from './screens/VerbsSection'
 import FeedbackScreen from './screens/FeedbackScreen'
 import SurveyScreen from './screens/SurveyScreen'
 import AdminBroadcastScreen from './screens/AdminBroadcastScreen'
+import AdminBroadcastsScreen from './screens/AdminBroadcastsScreen'
+import AdminUsersScreen from './screens/AdminUsersScreen'
+import AdminPaymentsScreen from './screens/AdminPaymentsScreen'
+import AdminSystemScreen from './screens/AdminSystemScreen'
+import { adminBack, adminLink, enterAdmin, goInnerBack, isAdminScreen, leaveAdmin, parseAdminLink, rememberScroll, scrollOf, tabEpoch } from './admin/adminNav'
+import AdminTabBar from './components/admin/AdminTabBar'
+import AdminMoreScreen from './screens/AdminMoreScreen'
 import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
 import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
 import { parseVerbsSectionLink } from './verbs/section/link'
@@ -86,6 +93,9 @@ function parseDeepLink(catalog: CatalogDto): Screen | null {
     return null
   }
 }
+
+/** Отложенные попытки вернуть прокрутку экрана админки. */
+const scrollRetries: ReturnType<typeof setTimeout>[] = []
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' })
@@ -162,10 +172,14 @@ export default function App() {
         const surveyLink: Screen | null = meData?.authenticated && query.get('screen') === 'survey' && surveyKey
           ? { kind: 'survey', key: surveyKey }
           : null
-        const deepLink = verbLink?.screen ?? reviewLink ?? feedbackLink ?? surveyLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
+        // ?screen=admin-… — экран админки; кто не владелец, тому сервер ничего не отдаст, и экран скажет «Нет доступа».
+        const adminScreen = meData?.authenticated ? parseAdminLink(query) : null
+        if (adminScreen && isAdminScreen(adminScreen)) enterAdmin(adminScreen)
+        const deepLink = verbLink?.screen ?? reviewLink ?? adminScreen ?? feedbackLink ?? surveyLink ?? (hasLevel ? sectionLink ?? parseDeepLink(catalogData) : null)
         if (deepLink) {
           // Consume the params so a later refresh/back doesn't re-force the deep-link.
-          window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? ''))
+          // Адрес экрана админки остаётся в строке — его можно скопировать и открыть снова.
+          window.history.replaceState({}, '', window.location.pathname + (verbLink?.search ?? (adminScreen ? window.location.search : '')))
         }
         // A push deep-link wins; otherwise resolveEntryScreen decides — a brand-new
         // user (level but no XP) gets the welcome lesson, and the dashboard hub is
@@ -223,6 +237,11 @@ export default function App() {
     const handler = () => {
       if (closeTopOverlay()) return
       if (!canBack) return
+      // Админка: сначала шаг назад внутри экрана (конструктор, один глагол), потом — на уровень выше.
+      if (isAdminScreen(screen)) {
+        if (!goInnerBack()) navigate(adminBack())
+        return
+      }
       if (
         screen.kind === 'module' ||
         screen.kind === 'profile' ||
@@ -308,12 +327,56 @@ export default function App() {
     if (s.kind === 'result') {
       setTodayLessons(incrementTodayLessons())
     }
+    // Админка: у каждого экрана свой адрес, у каждой вкладки свой стек. Вглубь — с начала страницы,
+    // обратно и при смене вкладки — туда, где страницу оставили.
+    if (isAdminScreen(screen)) rememberScroll(screen, scrolledTo())
+    if (isAdminScreen(s)) {
+      const move = enterAdmin(s)
+      window.history.replaceState({}, '', window.location.pathname + adminLink(s))
+      // Копия: повторный тап по вкладке отдаёт тот же объект экрана, а перерисовать его всё равно нужно.
+      setScreen({ ...s })
+      restoreScroll(move === 'pop' || move === 'switch' ? scrollOf(s) : 0)
+      return
+    }
+    if (isAdminScreen(screen)) {
+      leaveAdmin()
+      window.history.replaceState({}, '', window.location.pathname)
+    }
     setScreen(s)
     // Telegram WebView may scroll a container other than window
     window.scrollTo(0, 0)
     document.documentElement.scrollTop = 0
     document.body.scrollTop = 0
   }
+
+  /** Вернуть прокрутку: содержимое экрана может дорисоваться позже, поэтому несколько попыток. */
+  function restoreScroll(y: number) {
+    // Прежние попытки отменяем: иначе они утащили бы новую страницу на старое место.
+    scrollRetries.forEach(clearTimeout)
+    scrollRetries.length = 0
+    scrollPageTo(y)
+    if (y === 0) return
+    for (const delay of [0, 60, 200, 500]) {
+      scrollRetries.push(setTimeout(() => { if (Math.abs(scrolledTo() - y) > 2) scrollPageTo(y) }, delay))
+    }
+  }
+  // Прокручивается не обязательно окно: в мини-аппе это бывает body — читаем и ставим везде.
+  function scrolledTo() {
+    return window.scrollY || document.body.scrollTop || document.documentElement.scrollTop || 0
+  }
+  function scrollPageTo(y: number) {
+    window.scrollTo(0, y)
+    document.documentElement.scrollTop = y
+    document.body.scrollTop = y
+  }
+
+  /** Экран админки с нижней панелью вкладок. */
+  const admin = (el: JSX.Element) => (
+    <>
+      <div key={isAdminScreen(screen) ? `${adminLink(screen)}#${tabEpoch()}` : ''} className="flex-1 flex flex-col">{el}</div>
+      <AdminTabBar screen={screen} navigate={navigate} />
+    </>
+  )
 
   const proSuccessToast = showProSuccessToast && (
     <div
@@ -480,17 +543,27 @@ export default function App() {
     case 'survey':
       return <SurveyScreen progress={progress} surveyKey={screen.key} onBack={() => navigate(entryScreen())} />
     case 'admin':
-      return <AdminScreen progress={progress} navigate={navigate} />
-    case 'admin-broadcast':
-      return <AdminBroadcastScreen progress={progress} navigate={navigate} />
-    case 'admin-survey':
-      return <SurveyBuilderScreen progress={progress} resume={screen.resume} navigate={navigate} />
-    case 'admin-feedback':
-      return <AdminFeedbackScreen progress={progress} view={screen.view} navigate={navigate} />
-    case 'verb-review':
-      return <VerbReviewScreen lemma={screen.lemma} navigate={navigate} />
+      return admin(<AdminScreen navigate={navigate} />)
+    case 'admin-users':
+      return admin(<AdminUsersScreen navigate={navigate} />)
     case 'admin-user':
-      return <AdminUserScreen telegramId={screen.telegramId} progress={progress} navigate={navigate} />
+      return admin(<AdminUserScreen telegramId={screen.telegramId} navigate={navigate} />)
+    case 'admin-feedback':
+      return admin(<AdminFeedbackScreen view={screen.view} navigate={navigate} />)
+    case 'admin-survey':
+      return admin(<SurveyBuilderScreen resume={screen.resume} useDraft={screen.draft} navigate={navigate} />)
+    case 'admin-broadcasts':
+      return admin(<AdminBroadcastsScreen navigate={navigate} />)
+    case 'admin-broadcast':
+      return admin(<AdminBroadcastScreen campaignKey={screen.key} useDraft={screen.draft} navigate={navigate} />)
+    case 'admin-more':
+      return admin(<AdminMoreScreen navigate={navigate} />)
+    case 'admin-payments':
+      return admin(<AdminPaymentsScreen navigate={navigate} />)
+    case 'admin-system':
+      return admin(<AdminSystemScreen navigate={navigate} />)
+    case 'verb-review':
+      return admin(<VerbReviewScreen lemma={screen.lemma} navigate={navigate} />)
     case 'vocabulary-list':
       return (
         <>
