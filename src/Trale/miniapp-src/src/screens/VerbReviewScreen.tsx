@@ -7,7 +7,9 @@ import {
 } from '../components/admin/verbReview'
 import { adminVerbs, ApiError, type ModelMadeVerbDto, type RegenerateVerbDto } from '../api'
 import { cyr } from '../verbs/types'
-import { setInnerBack } from '../admin/adminNav'
+import { adminBack, setInnerBack } from '../admin/adminNav'
+import { useFocusMode } from '../admin/useKept'
+import { TAB_BAR_HEIGHT } from '../components/admin/AdminPage'
 import type { Screen } from '../types'
 
 // Проверка глаголов, которые составила нейросеть, — отдельный экран владельца. Сервер отдаёт данные
@@ -109,7 +111,9 @@ export default function VerbReviewScreen({ lemma, navigate }: Props) {
     window.scrollTo?.(0, 0)
   }
 
-  const back = () => (current ? setCurrent(null) : navigate({ kind: 'admin' }))
+  const back = () => (current ? setCurrent(null) : navigate(adminBack()))
+  // Один глагол — сфокусированный режим: панель вкладок спрятана, пока он открыт.
+  useFocusMode(current !== null)
   // Системное «Назад» Telegram из одного глагола возвращает к очереди, а не выходит из раздела.
   useEffect(() => {
     setInnerBack(current ? () => { setCurrent(null); return true } : null)
@@ -291,8 +295,8 @@ export default function VerbReviewScreen({ lemma, navigate }: Props) {
 
   return (
     <div className="flex flex-col min-h-full bg-cream">
-      <Header onBack={back} eyebrow="админка · глаголы" title={current ? 'Проверка глагола' : 'Проверка глаголов'} />
-      <div className="flex-1 px-5 pt-4" style={{ paddingBottom: 'calc(var(--safe-b) + 24px)' }}>{body()}</div>
+      <Header onBack={back} eyebrow="админка · ещё" title={current ? 'Проверка глагола' : 'Проверка глаголов'} />
+      <div className="flex-1 px-5 pt-4" style={{ paddingBottom: `calc(var(--safe-b) + ${current ? 24 : TAB_BAR_HEIGHT + 24}px)` }}>{body()}</div>
     </div>
   )
 }

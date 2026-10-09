@@ -3,8 +3,9 @@ import { mkdirSync, readFileSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
-// Админка глазами владельца на телефоне (375 px): обзор, каждый раздел на своём экране и по своему
-// адресу, «Назад» на уровень выше — и в шапке, и системная кнопка Telegram. API подменяется; глаголы
+// Админка глазами владельца на телефоне (375 px): нижняя панель из пяти вкладок, у каждой свой стек
+// экранов и своя память; прямые адреса; «Назад» — и в шапке, и системная кнопка Telegram; пошаговые
+// сценарии в сфокусированном режиме. API подменяется; глаголы
 // для экрана проверки берутся из каталога проекта. Конструктор опроса и переписка подробно пройдены
 // в feedback.spec.ts — здесь они открываются как разделы.
 // ADMIN_SHOTS=<папка> — дополнительно сохранить снимок каждого экрана.
@@ -139,6 +140,7 @@ const threads = {
     { telegramId: 5000000100, lastKind: 'message', lastText: 'Хочу слышать, как звучит слово, которое я добавил в словарь.', lastAtUtc: at(8, '10:12'), texts: 2, status: 'new' },
     { telegramId: 5000000102, lastKind: 'paywall', lastText: 'Месяц ещё ладно, но год сразу — много.', lastAtUtc: at(8, '09:40'), texts: 1, status: 'repliedBack' },
     { telegramId: 5000000104, lastKind: 'survey', lastText: 'Долгие уроки по падежам.', lastAtUtc: at(7, '12:30'), texts: 1, status: 'answered' },
+    { telegramId: 5000000109, lastKind: 'message', lastText: 'Привет! Как тебе новые уроки про падежи?', lastAtUtc: at(6, '10:00'), texts: 0, status: 'answered', lastFromOwner: true },
   ],
 }
 const thread = {
@@ -159,7 +161,7 @@ const kit = {
 
 interface Calls { prepared: any[]; sent: string[]; userQueries: URLSearchParams[]; back: number }
 
-async function setup(page: Page, opts: { owner?: boolean; fail?: string } = {}): Promise<Calls> {
+async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: string } = {}): Promise<Calls> {
   const calls: Calls = { prepared: [], sent: [], userQueries: [], back: 0 }
   const owner = opts.owner ?? true
   await page.addInitScript(() => {
@@ -173,7 +175,8 @@ async function setup(page: Page, opts: { owner?: boolean; fail?: string } = {}):
         openTelegramLink: () => {}, onEvent: () => {}, offEvent: () => {},
       },
     }
-    try { localStorage.clear() } catch {}
+    // Черновики должны переживать перезагрузку страницы, поэтому хранилище чистится один раз за тест.
+    try { if (!sessionStorage.getItem('cleaned')) { localStorage.clear(); sessionStorage.setItem('cleaned', '1') } } catch {}
   })
   // Настоящий telegram-web-app.js подменил бы window.Telegram — тогда системную кнопку «Назад» было бы не нажать.
   await page.route('https://telegram.org/**', route => route.abort())
@@ -184,7 +187,8 @@ async function setup(page: Page, opts: { owner?: boolean; fail?: string } = {}):
   await page.route('**/api/miniapp/referral', json({ link: '', shareText: '', invitedCount: 0, activatedCount: 0, rules: [], state: 'pro', bonusShortLabel: '', inviteLine: '', capReached: false }))
 
   // Всё, что под /api/admin: не владельцу сервер отвечает 404 на любой запрос.
-  await page.route(/\/api\/admin\//, (route) => {
+  await page.route(/\/api\/admin\//, async (route) => {
+    if (opts.slow && route.request().url().includes(`/api/admin/${opts.slow}`)) await new Promise(r => setTimeout(r, 1200))
     if (!owner) return route.fulfill({ status: 404, body: '' })
     const url = new URL(route.request().url())
     const path = url.pathname.replace('/api/admin/', '')
@@ -229,218 +233,287 @@ async function setup(page: Page, opts: { owner?: boolean; fail?: string } = {}):
   return calls
 }
 
-const title = (page: Page) => page.locator('.sticky .font-extrabold').first()
+const title = (page: Page) => page.getByTestId('admin-title')
+const tabs = (page: Page) => page.getByTestId('admin-tabs')
+const tab = (page: Page, id: string) => page.getByTestId(`admin-tab-${id}`)
 const backInHeader = (page: Page) => page.getByRole('button', { name: 'Назад' }).first()
 /** Нажать системную кнопку «Назад» Telegram. */
 const telegramBack = (page: Page) => page.evaluate(() => (window as any).__tgBack())
 const address = (page: Page) => new URL(page.url()).search
+const activeTab = async (page: Page) => (await tabs(page).locator('[aria-selected="true"]').textContent())?.replace(/\d+/g, '')
+const scrollY = (page: Page) => page.evaluate(() => Math.round(window.scrollY || document.body.scrollTop))
 
-test('the overview shows the main numbers and every section with what waits in it', async ({ page }) => {
+async function openAdmin(page: Page) {
+  await page.goto('/?playwright=1')
+  await page.getByRole('button', { name: 'Профиль' }).first().click()
+  await page.getByRole('button', { name: /Админка/ }).click()
+  await expect(tabs(page)).toBeVisible()
+}
+
+test('the admin opens on statistics — the screen it always was — with five tabs at the bottom', async ({ page }) => {
   await setup(page)
   await page.goto('/?playwright=1')
   await page.getByRole('button', { name: 'Профиль' }).first().click()
   const entry = page.getByRole('button', { name: /Админка/ })
   await entry.scrollIntoViewIfNeeded()
-  await expect(entry).toContainText('Люди, обратная связь, рассылки, оплаты')
   await expect(entry.locator('svg')).toHaveCount(1)
   await shot(page, 'admin-00-profile-entry')
   await entry.click()
 
-  await expect(page.getByTestId('admin-figures')).toContainText('21новых за 7 дней')
-  await expect(page.getByTestId('admin-figures')).toContainText('61занимались за 7 дней')
-  await expect(page.getByTestId('admin-figures')).toContainText('2оплат за 30 днейзвёзд 700')
-  await expect(page.getByTestId('admin-figures')).toContainText('2действующих подписок')
-  await expect(page.getByTestId('admin-feedback-waits')).toHaveText('без ответа: 2 · не дослано: 1')
-  await expect(page.getByTestId('admin-broadcasts-waits')).toHaveText('не дослано: 1')
-  await expect(page.getByTestId('admin-verbs-waits')).toHaveText('ждут: 2')
-  await expect(page.getByTestId('admin-sections').getByRole('button')).toHaveCount(6)
-  for (const tile of await page.getByTestId('admin-sections').getByRole('button').all()) expect((await tile.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  await expect(title(page)).toHaveText('Статистика')
   expect(address(page)).toBe('?screen=admin')
-  await fits(page)
-  await shot(page, 'admin-01-overview')
-})
+  const stats = page.getByTestId('admin-stats')
+  await expect(stats.locator('.jewel-tile .mn-eyebrow')).toHaveText([
+    'Всего', 'Активных', 'Pro', 'На триале', 'Free', 'Конверсия',
+    'Всего ⭐', 'За неделю ⭐', 'Покупок', 'Возвратов', 'Оплат за 30 дней', 'Подписок действует',
+    'Слов в словарях', 'Слов на юзера', 'Новых сегодня', 'За неделю', 'Занимались сегодня', 'Занимались за неделю',
+  ])
+  await expect(stats).toContainText('Новые юзеры')
+  await expect(stats.locator('svg rect')).toHaveCount(30)
 
-test('every section opens by its own address, and «Назад» — in the header and in Telegram — goes one level up', async ({ page }) => {
-  await setup(page)
-  // Адрес → заголовок экрана → адрес уровнем выше.
-  const levels: [string, string, string][] = [
-    ['?screen=admin-users', 'Пользователи', '?screen=admin'],
-    ['?screen=admin-user&id=5000000100', 'Пользователь 5000000100', '?screen=admin-users'],
-    ['?screen=admin-feedback', 'Обратная связь', '?screen=admin'],
-    ['?screen=admin-messages', 'Сообщения', '?screen=admin-feedback'],
-    ['?screen=admin-messages&id=5000000100', 'Переписка', '?screen=admin-messages'],
-    ['?screen=admin-surveys', 'Опросы', '?screen=admin-feedback'],
-    [`?screen=admin-surveys&key=${SURVEY}`, 'Опрос', '?screen=admin-surveys'],
-    ['?screen=admin-paywall', 'Экран покупки', '?screen=admin-feedback'],
-    ['?screen=admin-survey', 'Опрос', '?screen=admin-surveys'],
-    ['?screen=admin-broadcasts', 'Рассылки', '?screen=admin'],
-    ['?screen=admin-broadcast', 'Новая рассылка', '?screen=admin-broadcasts'],
-    [`?screen=admin-broadcast&key=${BROADCAST}`, 'Рассылка', '?screen=admin-broadcasts'],
-    ['?screen=admin-verbs', 'Проверка глаголов', '?screen=admin'],
-    ['?screen=admin-payments', 'Оплаты', '?screen=admin'],
-    ['?screen=admin-system', 'Система', '?screen=admin'],
-  ]
-  for (const [link, name, parent] of levels) {
-    await page.goto(`/?playwright=1&${link.slice(1)}`)
-    await expect(title(page), link).toHaveText(name)
-    await expect(page.getByTestId('admin-loading')).toHaveCount(0)
-    await fits(page)
-
-    await backInHeader(page).click()
-    await expect.poll(() => address(page), { message: `${link}: «Назад» в шапке` }).toBe(parent)
-
-    await page.goto(`/?playwright=1&${link.slice(1)}`)
-    await expect(title(page), link).toHaveText(name)
-    await telegramBack(page)
-    await expect.poll(() => address(page), { message: `${link}: «Назад» Telegram` }).toBe(parent)
+  await expect(tabs(page).getByRole('tab')).toHaveText([/^Статистика$/, /^Люди$/, /Связь/, /Рассылки/, /Ещё/])
+  expect(await activeTab(page)).toBe('Статистика')
+  await expect(page.getByTestId('admin-tab-badge-feedback')).toHaveText('3')
+  await expect(page.getByTestId('admin-tab-badge-broadcasts')).toHaveText('1')
+  await expect(page.getByTestId('admin-tab-badge-more')).toHaveText('2')
+  await expect(page.getByTestId('admin-tab-badge-people')).toHaveCount(0)
+  for (const t of await tabs(page).getByRole('tab').all()) {
+    const box = (await t.boundingBox())!
+    expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(44)
   }
-  // С обзора «Назад» ведёт в профиль, и адрес админки из строки уходит.
-  await page.goto('/?playwright=1&screen=admin')
-  await expect(page.getByTestId('admin-sections')).toBeVisible()
-  await telegramBack(page)
+  // Панель прижата к низу окна и не закрывает последнее на экране: под содержимым оставлено место.
+  const bar = (await tabs(page).boundingBox())!
+  expect(Math.round(bar.y + bar.height)).toBe(812)
+  await page.evaluate(() => { document.body.scrollTop = document.body.scrollHeight; window.scrollTo(0, document.body.scrollHeight) })
+  const last = (await stats.locator('.jewel-tile').last().boundingBox())!
+  expect(last.y + last.height).toBeLessThanOrEqual(bar.y)
+  await fits(page)
+  await shot(page, 'admin-01-statistics')
+
+  await backInHeader(page).click()
   await expect(page.getByRole('button', { name: /Админка/ })).toBeVisible()
+  await expect(tabs(page)).toHaveCount(0)
   expect(address(page)).toBe('')
 })
 
-test("users: search, filters, pages — and a person's card with a way to write", async ({ page }) => {
-  const calls = await setup(page)
-  await page.goto('/?playwright=1&screen=admin')
-  await page.getByTestId('admin-section-users').click()
-
-  await expect(page.getByTestId('users-total')).toHaveText('Найдено: 40')
+test('each tab keeps its place: filters, search, scroll and the screen it was left on; a second tap returns to its root', async ({ page }) => {
+  await setup(page)
+  await openAdmin(page)
+  await tab(page, 'people').click()
+  await expect(title(page)).toHaveText('Люди')
+  expect(await activeTab(page)).toBe('Люди')
   await expect(page.locator('[data-testid^="user-5"]')).toHaveCount(30)
-  await expect(page.getByTestId('user-5000000100')).toContainText('платит')
-  await expect(page.getByTestId('user-5000000100')).toContainText('откуда: по приглашению (309149393)')
-  await expect(page.getByTestId('user-5000000103')).toContainText('заблокировал бота')
-  await expect(page.getByTestId('users-filters').getByRole('radio')).toHaveText(['все · 848', 'платят · 2', 'пробный период · 17', 'доступ закончился · 829', 'заблокировали бота · 40'])
+  // Фильтры — одна лента, которая прокручивается вбок, а не несколько строк.
+  const strip = (await page.getByTestId('users-filters').boundingBox())!
+  expect(strip.height).toBeLessThan(70)
   await fits(page)
-  await shot(page, 'admin-02-users')
+  await shot(page, 'admin-02-people')
 
+  await page.getByRole('radio', { name: 'недавно пришли' }).click()
   await page.getByTestId('admin-more').click()
   await expect(page.locator('[data-testid^="user-5"]')).toHaveCount(40)
-  await expect(page.getByTestId('admin-more')).toHaveCount(0)
+  await page.getByTestId('user-5000000130').scrollIntoViewIfNeeded()
+  const left = await scrollY(page)
+  expect(left).toBeGreaterThan(1500)
+  await page.getByTestId('user-5000000130').click()
 
-  await page.getByRole('radio', { name: 'пробный период · 17' }).click()
-  await expect(page.locator('[data-testid^="user-5"]')).toHaveCount(1)
-  await page.getByRole('radio', { name: 'больше слов' }).click()
-  await expect.poll(() => calls.userQueries.at(-1)?.get('sort')).toBe('words')
-  await page.getByRole('radio', { name: 'все · 848' }).click()
+  // Список → карточка: с начала страницы; назад — туда, где список оставили.
+  await expect(title(page)).toHaveText('Пользователь 5000000130')
+  expect(await scrollY(page)).toBe(0)
+  expect(await activeTab(page)).toBe('Люди')
+  await shot(page, 'admin-03-person')
+  await telegramBack(page)
+  await expect(page.locator('[data-testid^="user-5"]')).toHaveCount(40)
+  await expect.poll(() => scrollY(page)).toBe(left)
+  await expect(page.getByRole('radio', { name: 'недавно пришли' })).toHaveAttribute('aria-checked', 'true')
+
+  // Ушёл в другую вкладку с карточки — вернулся на ту же карточку.
+  await page.getByTestId('user-5000000130').click()
+  await tab(page, 'broadcasts').click()
+  await expect(title(page)).toHaveText('Рассылки')
+  await tab(page, 'people').click()
+  await expect(title(page)).toHaveText('Пользователь 5000000130')
+  expect(address(page)).toBe('?screen=admin-user&id=5000000130')
+  await backInHeader(page).click()
+  await expect.poll(() => scrollY(page)).toBe(left)
+
+  // Повторный тап по активной вкладке — на её корень, вверх, с фильтрами по умолчанию.
+  await tab(page, 'people').click()
+  await expect(page.getByRole('radio', { name: 'недавно занимались' })).toHaveAttribute('aria-checked', 'true')
+  await expect(page.locator('[data-testid^="user-5"]')).toHaveCount(30)
+  expect(await scrollY(page)).toBe(0)
+
+  // Поиск тоже помнится между вкладками.
   await page.getByLabel('Поиск по Telegram id').fill('999999')
-  await expect(page.getByTestId('admin-empty')).toContainText('Никого не нашлось')
-  await fits(page)
-  await shot(page, 'admin-03-users-empty')
-  await page.getByLabel('Поиск по Telegram id').fill('5000000100')
-  await page.getByTestId('user-5000000100').click()
-
-  await expect(page.getByTestId('user-summary')).toContainText('откудапо приглашению (309149393)')
-  await expect(page.getByTestId('user-summary')).toContainText('доступплатит, до 30 окт. 2026 г. · 1 месяц')
-  await expect(page.getByTestId('user-activity')).toContainText('34уроков пройдено')
-  await expect(page.getByTestId('user-payments')).toContainText('возврат')
-  await expect(page.getByTestId('user-answers')).toContainText('Без него никак')
-  expect(address(page)).toBe('?screen=admin-user&id=5000000100')
-  await fits(page)
-  await shot(page, 'admin-04-user')
-
-  await page.getByTestId('user-write').click()
-  await expect(page.getByTestId('feedback-thread')).toBeVisible()
-  await expect(page.getByTestId('thread-user')).toHaveText('Пользователь 5000000100')
-  expect(address(page)).toBe('?screen=admin-messages&id=5000000100')
-  await fits(page)
-  await shot(page, 'admin-07-conversation')
+  await expect(page.getByTestId('admin-empty')).toContainText('Сними фильтр или сотри номер')
+  // Пока фокус в поле (клавиатура открыта), панели нет; клавиатуру убрали — панель вернулась.
+  await expect(tabs(page)).toHaveCount(0)
+  await page.getByLabel('Поиск по Telegram id').blur()
+  await shot(page, 'admin-04-people-empty')
+  await tab(page, 'stats').click()
+  await tab(page, 'people').click()
+  await expect(page.getByLabel('Поиск по Telegram id')).toHaveValue('999999')
+  await expect(page.getByTestId('admin-empty')).toBeVisible()
 })
 
-test('feedback: three sections — messages, surveys, the paywall question', async ({ page }) => {
+test('every address opens its screen in its tab, and «Назад» — in the header and in Telegram — leads to the root of the tab', async ({ page }) => {
   await setup(page)
-  await page.goto('/?playwright=1&screen=admin')
-  await page.getByTestId('admin-section-feedback').click()
+  // Адрес → заголовок → вкладка → адрес корня вкладки (null — экран сам корень: «Назад» ведёт в профиль).
+  const links: [string, string, string, string | null][] = [
+    ['?screen=admin', 'Статистика', 'Статистика', null],
+    ['?screen=admin-users', 'Люди', 'Люди', null],
+    ['?screen=admin-user&id=5000000100', 'Пользователь 5000000100', 'Люди', '?screen=admin-users'],
+    ['?screen=admin-messages', 'Связь', 'Связь', null],
+    ['?screen=admin-surveys', 'Связь', 'Связь', null],
+    ['?screen=admin-paywall', 'Связь', 'Связь', null],
+    ['?screen=admin-messages&id=5000000100', 'Переписка', 'Связь', '?screen=admin-messages'],
+    [`?screen=admin-surveys&key=${SURVEY}`, 'Опрос', 'Связь', '?screen=admin-messages'],
+    ['?screen=admin-broadcasts', 'Рассылки', 'Рассылки', null],
+    ['?screen=admin-more', 'Ещё', 'Ещё', null],
+    ['?screen=admin-payments', 'Оплаты', 'Ещё', '?screen=admin-more'],
+    ['?screen=admin-system', 'Система', 'Ещё', '?screen=admin-more'],
+  ]
+  for (const [link, name, tabName, root] of links) {
+    for (const back of [() => backInHeader(page).click(), () => telegramBack(page)]) {
+      await page.goto(`/?playwright=1&${link.slice(1)}`)
+      await expect(title(page), link).toHaveText(name)
+      expect(await activeTab(page), link).toBe(tabName)
+      await fits(page)
+      await back()
+      if (root) await expect.poll(() => address(page), { message: `${link}: назад` }).toBe(root)
+      else await expect(page.getByRole('button', { name: /Админка/ }), `${link}: назад в профиль`).toBeVisible()
+    }
+  }
+  // Старый адрес экрана-хаба открывает «Сообщения»; глаголы — во вкладке «Ещё».
+  await page.goto('/?playwright=1&screen=admin-feedback')
+  await expect(page.getByRole('tab', { name: /Сообщения/ })).toHaveAttribute('aria-selected', 'true')
+  await page.goto('/?playwright=1&screen=admin-verbs')
+  await expect(page.getByText('Проверка глаголов')).toBeVisible()
+  expect(await activeTab(page)).toBe('Ещё')
+  await telegramBack(page)
+  await expect.poll(() => address(page)).toBe('?screen=admin-more')
+})
 
-  await expect(page.getByTestId('feedback-list').getByRole('button')).toHaveCount(3)
-  await expect(page.getByTestId('feedback-unanswered')).toHaveText('без ответа: 2')
-  await expect(page.getByTestId('feedback-unfinished')).toHaveText('не дослано: 1')
-  await fits(page)
-  await shot(page, 'admin-05-feedback')
+test('«Связь»: three sections under a switch, a conversation and survey results on top, the section remembered', async ({ page }) => {
+  await setup(page)
+  await openAdmin(page)
+  await tab(page, 'feedback').click()
 
-  await page.getByTestId('feedback-open-threads').click()
+  await expect(page.getByTestId('admin-segments').getByRole('tab')).toHaveText(['Сообщения2', 'Опросы1', 'Экран покупки'])
+  await expect(page.getByRole('tab', { name: /Сообщения/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByTestId('feedback-thread-5000000102')).toContainText('человек ответил')
-  await expect(page.getByRole('radio', { name: 'Без ответа · 2' })).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('radio', { name: 'Все' }).click()
+  // Переписка, которую владелец начал первым, тоже в списке — «отвечено», с его словами.
+  await expect(page.getByTestId('feedback-thread-5000000109')).toContainText('отвечено')
+  await expect(page.getByTestId('feedback-thread-5000000109')).toContainText('ты: Привет! Как тебе новые уроки про падежи?')
   await fits(page)
-  await shot(page, 'admin-06-messages')
-  await backInHeader(page).click()
+  await shot(page, 'admin-05-messages')
+  await page.getByTestId('feedback-thread-5000000100').click()
+  await expect(title(page)).toHaveText('Переписка')
+  await expect(tabs(page)).toBeVisible()
+  await fits(page)
+  await shot(page, 'admin-06-conversation')
+  // Клавиатура открыта (окно стало ниже, фокус в поле): панель убрана и поле ответа не закрывает.
+  await page.setViewportSize({ width: 375, height: 420 })
+  await page.getByLabel('Твой ответ').focus()
+  await expect(tabs(page)).toHaveCount(0)
+  await page.getByLabel('Твой ответ').fill('Спасибо!')
+  await page.getByLabel('Твой ответ').scrollIntoViewIfNeeded()
+  const field = (await page.getByLabel('Твой ответ').boundingBox())!
+  expect(field.y).toBeGreaterThanOrEqual(0)
+  expect(field.y + field.height).toBeLessThanOrEqual(422)
+  await fits(page)
+  await shot(page, 'admin-07-conversation-keyboard')
+  await page.getByLabel('Твой ответ').blur()
+  await expect(tabs(page)).toBeVisible()
+  await page.setViewportSize({ width: 375, height: 812 })
+  await telegramBack(page)
+  await expect(page.getByRole('radio', { name: 'Все' })).toHaveAttribute('aria-checked', 'true')
 
-  await page.getByTestId('feedback-open-surveys').click()
-  await expect(page.getByTestId('survey-new')).toBeVisible()
+  await page.getByRole('tab', { name: /Опросы/ }).click()
+  expect(address(page)).toBe('?screen=admin-surveys')
+  await expect(page.getByTestId('survey-new')).toHaveText('Новый опрос')
   await expect(page.getByTestId('feedback-open-survey-survey-2026-10-left')).toContainText('не дослано: отправлено 25 из 100')
   await fits(page)
   await shot(page, 'admin-08-surveys')
   await page.getByTestId(`feedback-open-survey-${SURVEY}`).click()
   await expect(page.getByTestId('feedback-funnel')).toContainText('получили61')
-  await expect(page.getByTestId('feedback-headline')).toContainText('47%')
+  await expect(page.getByTestId('admin-segments')).toHaveCount(0)
   await fits(page)
   await shot(page, 'admin-09-survey-results')
   await backInHeader(page).click()
-  await page.getByTestId('survey-new').click()
-  await expect(page.getByTestId('survey-step-title')).toHaveText('Выбери опрос')
-  await expect(page.getByTestId('survey-unfinished')).toContainText('Ты сейчас учишь грузинский?')
-  await fits(page)
-  await shot(page, 'admin-10-survey-builder')
-  // Шаг назад внутри конструктора — системной кнопкой Telegram, а не выход из него.
-  await page.getByTestId('survey-preset-users').click()
-  await expect(page.getByTestId('survey-step-title')).toHaveText('Вопросы')
-  await telegramBack(page)
-  await expect(page.getByTestId('survey-step-title')).toHaveText('Выбери опрос')
-  await telegramBack(page)
-  await expect(page.getByTestId('feedback-surveys')).toBeVisible()
-  await backInHeader(page).click()
+  await expect(page.getByRole('tab', { name: /Опросы/ })).toHaveAttribute('aria-selected', 'true')
 
-  await page.getByTestId('feedback-open-paywall').click()
+  await page.getByRole('tab', { name: 'Экран покупки' }).click()
   await expect(page.getByTestId('feedback-paywall')).toContainText('Спросили 41 · ответили 26')
-  await expect(page.getByTestId('feedback-paywall').getByRole('button', { name: 'Ответить' })).toHaveCount(1)
   await fits(page)
-  await shot(page, 'admin-11-paywall')
+  await shot(page, 'admin-10-paywall')
+  // Вкладка помнит подраздел.
+  await tab(page, 'stats').click()
+  await tab(page, 'feedback').click()
+  await expect(page.getByRole('tab', { name: 'Экран покупки' })).toHaveAttribute('aria-selected', 'true')
+  await tab(page, 'feedback').click()
+  await expect(page.getByRole('tab', { name: /Сообщения/ })).toHaveAttribute('aria-selected', 'true')
 })
 
-test('broadcasts: the list, a new one step by step with a trial to oneself, and one more group for a running one', async ({ page }) => {
+test('a new broadcast is a focused flow: no tab bar, steps, the main button pinned, a draft kept on the device', async ({ page }) => {
   const calls = await setup(page)
-  await page.goto('/?playwright=1&screen=admin')
-  await page.getByTestId('admin-section-broadcasts').click()
-
-  await expect(page.getByTestId(`broadcast-${BROADCAST}`)).toContainText('идёт')
+  await openAdmin(page)
+  await tab(page, 'broadcasts').click()
   await expect(page.getByTestId(`broadcast-${BROADCAST}`)).toContainText('доступ закончился · отправлено 75 из 100')
-  await expect(page.getByTestId(`broadcast-${BROADCAST}`)).toContainText('открыли по кнопке 21 · подарков выдано 14 (3 дн.)')
-  await expect(page.getByTestId('broadcast-referral-2026-09')).toContainText('завершена')
-  await expect(page.getByTestId('broadcast-news-2026-08')).toContainText('черновик')
+  await expect(page.getByTestId('broadcast-draft')).toHaveCount(0)
   await fits(page)
-  await shot(page, 'admin-12-broadcasts')
+  await shot(page, 'admin-11-broadcasts')
   await page.getByTestId('broadcast-new').click()
 
   const step = page.getByTestId('broadcast-step-title')
   await expect(step).toHaveText('Текст')
+  await expect(tabs(page)).toHaveCount(0)
+  await expect(page.getByTestId('admin-section')).toHaveText('шаг 1 из 5')
+  await expect(page.getByTestId('admin-close')).toBeVisible()
   await expect(page.getByTestId('broadcast-next')).toBeDisabled()
   await page.getByLabel('Текст сообщения').fill('В мини-аппе появились уроки про падежи.\n\nЗагляни — первые три дня в подарок.')
+  await page.getByLabel('Текст сообщения').blur()
+  // Главная кнопка шага закреплена у нижнего края окна.
+  const pinned = async () => { const b = (await page.getByTestId('admin-footer').boundingBox())!; return Math.round(b.y + b.height) }
+  expect(await pinned()).toBe(812)
   await fits(page)
-  await shot(page, 'admin-13-broadcast-text')
+  await shot(page, 'admin-12-broadcast-text')
   await page.getByTestId('broadcast-next').click()
 
   await expect(step).toHaveText('Кнопка')
   await page.getByLabel('Текст кнопки').fill('Открыть глаголы')
+  await page.getByLabel('Текст кнопки').blur()
   await page.getByRole('radio', { name: 'Раздел «Глаголы»' }).click()
-  for (const choice of await page.getByTestId('broadcast-destinations').getByRole('radio').all()) expect((await choice.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  // Экран длиннее окна — кнопка всё равно у нижнего края.
+  expect(await page.evaluate(() => document.body.scrollHeight)).toBeGreaterThan(812)
+  expect(await pinned()).toBe(812)
   await fits(page)
-  await shot(page, 'admin-14-broadcast-button')
+  await shot(page, 'admin-13-broadcast-button')
   await page.getByTestId('broadcast-next').click()
-
-  await expect(step).toHaveText('Подарок')
   await page.getByRole('radio', { name: '3 дн. полного доступа' }).click()
-  await fits(page)
-  await shot(page, 'admin-15-broadcast-gift')
-  await page.getByTestId('broadcast-next').click()
+  await shot(page, 'admin-14-broadcast-gift')
 
-  await expect(step).toHaveText('Кому')
-  await expect(page.getByTestId('broadcast-audience-activeLately')).toContainText('61')
-  await page.getByTestId('broadcast-audience-activeLately').click()
+  // Случайно закрыл: спросили, черновик остался, из списка к нему можно вернуться.
+  let asked = ''
+  page.once('dialog', d => { asked = d.message(); void d.accept() })
+  await page.getByTestId('admin-close').click()
+  await expect(title(page)).toHaveText('Рассылки')
+  expect(asked).toContain('Черновик останется на этом устройстве')
+  await expect(tabs(page)).toBeVisible()
+  await expect(page.getByTestId('broadcast-draft')).toContainText('В мини-аппе появились уроки про падежи.')
   await fits(page)
+  await shot(page, 'admin-15-broadcast-draft')
+  await page.reload()
+  await page.getByTestId('broadcast-draft-continue').click()
+  await expect(step).toHaveText('Подарок')
+  await expect(page.getByRole('radio', { name: '3 дн. полного доступа' })).toHaveAttribute('aria-checked', 'true')
+
+  await page.getByTestId('broadcast-next').click()
+  await expect(step).toHaveText('Кому')
+  await page.getByTestId('broadcast-audience-activeLately').click()
   await shot(page, 'admin-16-broadcast-audience')
-  // Системное «Назад» — на шаг раньше; данные шага на месте.
+  // Системное «Назад» — на шаг раньше, а не из сценария.
   await telegramBack(page)
   await expect(step).toHaveText('Подарок')
   await page.getByTestId('broadcast-next').click()
@@ -452,75 +525,132 @@ test('broadcasts: the list, a new one step by step with a trial to oneself, and 
   await page.getByTestId('broadcast-send-me').click()
   await expect(page.getByTestId('broadcast-note')).toContainText('Отправил тебе в чат с ботом')
   expect(calls.prepared).toHaveLength(1)
-  expect(calls.prepared[0]).toMatchObject({
-    key: '', newBroadcast: true, newBroadcastSuffix: 'test', audience: 'owner', buttonText: 'Открыть глаголы', buttonQuery: 'screen=verbs', giftDays: 3, dryRun: false,
-  })
+  expect(calls.prepared[0]).toMatchObject({ key: '', newBroadcast: true, newBroadcastSuffix: 'test', audience: 'owner', buttonText: 'Открыть глаголы', buttonQuery: 'screen=verbs', giftDays: 3, dryRun: false })
   expect(calls.sent).toEqual([`${BROADCAST}-test`])
-  await expect(page.getByTestId('broadcast-send')).toBeDisabled()
   await fits(page)
   await shot(page, 'admin-17-broadcast-send')
 
-  // Идущая рассылка: дослать выбранным, а потом добавить ещё одну группу в ту же кампанию.
-  await page.goto(`/?playwright=1&screen=admin-broadcast&key=${BROADCAST}`)
+  // Получатели выбраны — черновика больше нет.
+  page.on('dialog', d => void d.accept())
+  await page.getByTestId('broadcast-pick').click()
+  await expect(page.getByTestId('broadcast-status')).toBeVisible()
+  await page.getByTestId('admin-close').click()
+  await expect(title(page)).toHaveText('Рассылки')
+  await expect(page.getByTestId('broadcast-draft')).toHaveCount(0)
+
+  // Идущая рассылка: та же кампания для ещё одной группы.
+  await page.getByTestId(`broadcast-${BROADCAST}`).click()
   await expect(step).toHaveText('Отправка')
-  await expect(page.getByTestId('broadcast-status')).toContainText('Выбрано 100 · ждут 25 · дошло 73 · заблокировали 2')
-  await expect(page.getByTestId('broadcast-status')).toContainText('открыли по кнопке 21 · подарков выдано 14')
-  await expect(page.getByTestId('broadcast-summary')).toContainText('Кнопка ведёт: /?moduleId=cases')
-  await expect(page.getByTestId('broadcast-send')).toBeEnabled()
-  await expect(page.getByTestId('broadcast-another')).toContainText('Это будет та же рассылка: кто уже получил сообщение, второй раз его не получит, и подарок достаётся человеку один раз')
-  await page.getByTestId('broadcast-another').getByRole('radio', { name: /занимались за последние 30 дней/ }).click()
-  await expect(page.getByTestId('broadcast-pick-another')).toBeDisabled()
-  await expect(page.getByTestId('broadcast-another')).toContainText('Сначала отправь тем, кто уже выбран.')
+  await expect(tabs(page)).toHaveCount(0)
+  await expect(page.getByTestId('broadcast-another')).toContainText('Это будет та же рассылка')
   await fits(page)
   await shot(page, 'admin-18-broadcast-running')
-  expect(calls.sent).toHaveLength(1)
+  await telegramBack(page)
+  await expect(title(page)).toHaveText('Рассылки')
 })
 
-test('verbs, payments and system each have their screen', async ({ page }) => {
+test('the survey builder is a focused flow too, and keeps its draft', async ({ page }) => {
   await setup(page)
-  await page.goto('/?playwright=1&screen=admin')
-  await page.getByTestId('admin-section-verbs').click()
-  await expect(title(page)).toHaveText('Проверка глаголов')
-  await expect(page.getByText('танцевать')).toBeVisible()
-  await fits(page)
-  await shot(page, 'admin-19-verbs')
-  await backInHeader(page).click()
+  await page.goto('/?playwright=1&screen=admin-surveys')
+  await page.getByTestId('survey-new').click()
 
-  await page.getByTestId('admin-section-payments').click()
-  await expect(page.getByTestId('payments-ending')).toContainText('5000000100до 30 окт. 2026 г. · 1 месяц')
-  await expect(page.getByTestId('payments-ended')).toContainText('3 месяца')
-  await expect(page.getByTestId('payments-list')).toContainText('возврат')
+  await expect(page.getByTestId('survey-step-title')).toHaveText('Выбери опрос')
+  await expect(tabs(page)).toHaveCount(0)
+  await expect(page.getByTestId('admin-section')).toHaveText('шаг 1 из 4')
+  await expect(page.getByTestId('survey-unfinished')).toContainText('Ты сейчас учишь грузинский?')
   await fits(page)
-  await shot(page, 'admin-20-payments')
+  await shot(page, 'admin-19-survey-choose')
+  await page.getByTestId('survey-preset-users').click()
+  await expect(page.getByTestId('survey-step-title')).toHaveText('Вопросы')
+  const footer = (await page.getByTestId('admin-footer').boundingBox())!
+  expect(Math.round(footer.y + footer.height)).toBe(812)
+  await fits(page)
+  await shot(page, 'admin-20-survey-questions')
+  await telegramBack(page)
+  await expect(page.getByTestId('survey-step-title')).toHaveText('Выбери опрос')
+  await page.getByTestId('survey-preset-users').click()
+  await page.getByTestId('survey-next').click()
+  await expect(page.getByTestId('survey-step-title')).toHaveText('Кому отправить')
+
+  page.once('dialog', d => void d.accept())
+  await page.getByTestId('admin-close').click()
+  await expect(page.getByRole('tab', { name: /Опросы/ })).toHaveAttribute('aria-selected', 'true')
+  await expect(tabs(page)).toBeVisible()
+  await page.getByTestId('survey-new').click()
+  await expect(page.getByTestId('survey-draft')).toContainText('Насколько TraleBot тебе нужен?')
+  await fits(page)
+  await shot(page, 'admin-21-survey-draft')
+  await page.getByTestId('survey-draft-continue').click()
+  await expect(page.getByTestId('survey-step-title')).toHaveText('Кому отправить')
+})
+
+test('«Ещё»: verbs, payments and system; one verb is a focused screen', async ({ page }) => {
+  await setup(page)
+  await openAdmin(page)
+  await tab(page, 'more').click()
+  await expect(page.getByTestId('admin-verbs-waits')).toHaveText('ждут: 2')
+  await fits(page)
+  await shot(page, 'admin-22-more')
+
+  await page.getByTestId('admin-more-verbs').click()
+  await expect(page.getByText('Проверка глаголов')).toBeVisible()
+  await expect(tabs(page)).toBeVisible()
+  await fits(page)
+  await shot(page, 'admin-23-verbs')
+  await page.getByText('танцевать').click()
+  await expect(page.getByText('Проверка глагола', { exact: true })).toBeVisible()
+  await expect(tabs(page)).toHaveCount(0)
+  await fits(page)
+  await shot(page, 'admin-24-verb')
+  await telegramBack(page)
+  await expect(page.getByText('Проверка глаголов')).toBeVisible()
+  await expect(tabs(page)).toBeVisible()
+  await telegramBack(page)
+
+  await page.getByTestId('admin-more-payments').click()
+  await expect(page.getByTestId('payments-ending')).toContainText('5000000100до 30 окт. 2026 г. · 1 месяц')
+  await fits(page)
+  await shot(page, 'admin-25-payments')
+  // Карточка человека открывается поверх — в этой же вкладке, и «Назад» возвращает к оплатам.
   await page.getByTestId('payments-ending').getByRole('button').click()
   await expect(title(page)).toHaveText('Пользователь 5000000100')
-  await page.goto('/?playwright=1&screen=admin')
+  expect(await activeTab(page)).toBe('Ещё')
+  await backInHeader(page).click()
+  await expect(title(page)).toHaveText('Оплаты')
+  await backInHeader(page).click()
 
-  await page.getByTestId('admin-section-system').click()
+  await page.getByTestId('admin-more-system').click()
   await expect(page.getByTestId('system-jobs')).toContainText('выполняются 1 · упали 3')
-  await expect(page.getByTestId('system-jobs')).toContainText('Переводы за сутки: ждут 1 · готово 37 · не вышло 2')
   await expect(page.getByTestId('system-pushes').getByRole('button')).toHaveCount(9)
-  for (const button of await page.getByTestId('system-pushes').getByRole('button').all()) expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  await expect(page.getByTestId('admin-system')).not.toContainText('Конверсия')
+  await expect(page.getByTestId('admin-system').locator('svg rect')).toHaveCount(0)
   await fits(page)
-  await shot(page, 'admin-21-system')
+  await shot(page, 'admin-26-system')
 })
 
 test('someone who is not the owner sees «Нет доступа.» on every admin address and nothing else', async ({ page }) => {
   await setup(page, { owner: false })
-  for (const link of ['admin', 'admin-users', 'admin-user&id=5000000100', 'admin-feedback', 'admin-messages', 'admin-messages&id=5000000100', 'admin-surveys',
+  for (const link of ['admin', 'admin-users', 'admin-user&id=5000000100', 'admin-messages', 'admin-messages&id=5000000100', 'admin-surveys',
     `admin-surveys&key=${SURVEY}`, 'admin-paywall', 'admin-survey', 'admin-broadcasts', `admin-broadcast&key=${BROADCAST}`, 'admin-verbs', 'admin-payments', 'admin-system']) {
     await page.goto(`/?playwright=1&screen=${link}`)
     await expect(page.getByText(/^Нет доступа/), link).toBeVisible()
-    await expect(page.locator('[data-testid^="user-5"], [data-testid="admin-sections"], [data-testid="payments-list"], [data-testid="thread-send"], [data-testid="broadcast-send"]'), link).toHaveCount(0)
+    await expect(tabs(page), link).toHaveCount(0)
+    await expect(page.locator('[data-testid^="user-5"], [data-testid="payments-list"], [data-testid="thread-send"], [data-testid="broadcast-send"], [data-testid="admin-tab-badge-feedback"]'), link).toHaveCount(0)
   }
-  await shot(page, 'admin-22-denied')
+  await shot(page, 'admin-27-denied')
 })
 
-test('a failed load says so and offers to try again', async ({ page }) => {
-  await setup(page, { fail: 'payments' })
+test('loading shows a skeleton in place of the content; a failed load offers to try again', async ({ page }) => {
+  await setup(page, { fail: 'payments', slow: 'stats' })
+  await page.goto('/?playwright=1&screen=admin')
+  await expect(page.getByTestId('admin-loading')).toBeVisible()
+  await expect(tabs(page)).toBeVisible()
+  await shot(page, 'admin-28-loading')
+  await expect(page.getByTestId('admin-stats')).toContainText('Пользователи')
+
   await page.goto('/?playwright=1&screen=admin-payments')
   await expect(page.getByTestId('admin-error')).toContainText('Не получилось загрузить')
   await expect(page.getByRole('button', { name: 'Попробовать ещё раз' })).toBeVisible()
   await fits(page)
-  await shot(page, 'admin-23-error')
+  await shot(page, 'admin-29-error')
 })

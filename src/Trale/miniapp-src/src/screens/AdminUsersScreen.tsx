@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { adminBack } from '../admin/adminNav'
+import { useKept } from '../admin/useKept'
 import AdminPage, { Empty, More, phaseOf, type AdminPhase } from '../components/admin/AdminPage'
 import { adminSections, type AdminUserFilter, type AdminUserRowDto, type AdminUserSort, type AdminUsersPageDto } from '../api'
 import { ACCESS, ago, dayYear, sourceName } from '../admin/words'
@@ -20,20 +22,22 @@ const SORTS: { id: AdminUserSort; name: string }[] = [
   { id: 'words', name: 'больше слов' }
 ]
 const PAGE = 30
-const chip = (on: boolean) => `px-3 min-h-[44px] rounded-xl border-2 font-sans text-[13px] font-bold tabular-nums whitespace-nowrap ${on ? 'border-jewelInk bg-cream-tile text-jewelInk' : 'border-jewelInk/20 bg-white text-jewelInk-mid'}`
+const chip = (on: boolean) => `shrink-0 px-3 min-h-[44px] rounded-xl border-2 font-sans text-[13px] font-bold tabular-nums whitespace-nowrap ${on ? 'border-jewelInk bg-cream-tile text-jewelInk' : 'border-jewelInk/20 bg-white text-jewelInk-mid'}`
 
 interface Props {
-  filter?: AdminUserFilter
   navigate: (s: Screen) => void
 }
 
-export default function AdminUsersScreen({ filter: initial = 'all', navigate }: Props) {
-  const [phase, setPhase] = useState<AdminPhase>('loading')
-  const [filter, setFilter] = useState<AdminUserFilter>(initial)
-  const [sort, setSort] = useState<AdminUserSort>('activity')
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState<AdminUsersPageDto | null>(null)
-  const [users, setUsers] = useState<AdminUserRowDto[]>([])
+export default function AdminUsersScreen({ navigate }: Props) {
+  // Фильтр, порядок, поиск и уже загруженный список вкладка помнит: вернулся из карточки — всё на месте.
+  const [filter, setFilter] = useKept<AdminUserFilter>('people/filter', 'all')
+  const [sort, setSort] = useKept<AdminUserSort>('people/sort', 'activity')
+  const [search, setSearch] = useKept('people/search', '')
+  const [page, setPage] = useKept<AdminUsersPageDto | null>('people/page', null)
+  const [users, setUsers] = useKept<AdminUserRowDto[]>('people/users', [])
+  const [phase, setPhase] = useState<AdminPhase>(page ? 'ready' : 'loading')
+  /** Список уже есть (вернулись на экран) — первый раз заново не грузим, чтобы прокрутка встала на место. */
+  const restored = useRef(page !== null)
   const [busy, setBusy] = useState(false)
   /** Ответ на устаревший запрос (человек уже набрал дальше) не должен перезаписать свежий. */
   const asked = useRef(0)
@@ -52,12 +56,13 @@ export default function AdminUsersScreen({ filter: initial = 'all', navigate }: 
       .finally(() => { if (mine === asked.current) setBusy(false) })
   }
   useEffect(() => {
+    if (restored.current) { restored.current = false; return }
     const timer = setTimeout(() => load(0), search ? 250 : 0)
     return () => clearTimeout(timer)
   }, [filter, sort, search]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <AdminPage title="Пользователи" onBack={() => navigate({ kind: 'admin' })} phase={phase} onRetry={() => { setPhase('loading'); load(0) }} testId="admin-users">
+    <AdminPage title="Люди" onBack={() => navigate(adminBack())} phase={phase} onRetry={() => { setPhase('loading'); load(0) }} testId="admin-users">
       <input
         type="search" inputMode="numeric" value={search} onChange={e => setSearch(e.target.value)} aria-label="Поиск по Telegram id"
         placeholder="Поиск по Telegram id"
@@ -65,21 +70,21 @@ export default function AdminUsersScreen({ filter: initial = 'all', navigate }: 
       />
       <div className="font-sans text-[11px] text-jewelInk-hint mb-3">Имён и юзернеймов бот не хранит — искать можно только по номеру.</div>
 
-      <div className="flex flex-wrap gap-2 pb-2" role="radiogroup" aria-label="Кого показать" data-testid="users-filters">
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-5 px-5 no-scrollbar" role="radiogroup" aria-label="Кого показать" data-testid="users-filters">
         {FILTERS.map(f => (
           <button key={f.id} type="button" role="radio" aria-checked={filter === f.id} className={chip(filter === f.id)} onClick={() => setFilter(f.id)}>
             {f.name}{page ? ` · ${page.counts[f.id]}` : ''}
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap gap-2 pb-3" role="radiogroup" aria-label="Порядок">
+      <div className="flex gap-2 overflow-x-auto pb-3 -mx-5 px-5 no-scrollbar" role="radiogroup" aria-label="Порядок">
         {SORTS.map(s => (
           <button key={s.id} type="button" role="radio" aria-checked={sort === s.id} className={chip(sort === s.id)} onClick={() => setSort(s.id)}>{s.name}</button>
         ))}
       </div>
 
       {page && <div className="font-sans text-[12px] text-jewelInk-mid tabular-nums mb-2" data-testid="users-total">Найдено: {page.total}</div>}
-      {page && users.length === 0 && <Empty>Никого не нашлось. Попробуй другой фильтр или номер.</Empty>}
+      {page && users.length === 0 && <Empty>Никого не нашлось. Сними фильтр или сотри номер в поиске.</Empty>}
       <div className="flex flex-col gap-2" data-testid="users-list">
         {users.map(u => (
           <button key={u.telegramId} type="button" onClick={() => navigate({ kind: 'admin-user', telegramId: u.telegramId })}

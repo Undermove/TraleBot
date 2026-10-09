@@ -984,6 +984,8 @@ export interface FeedbackThreadSummaryDto {
   lastAtUtc: string
   texts: number
   status: FeedbackThreadStatus
+  /** Последнее слово в переписке — владельца; lastText тогда его ответ. */
+  lastFromOwner?: boolean
 }
 
 export interface FeedbackThreadItemDto {

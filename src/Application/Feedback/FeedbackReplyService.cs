@@ -36,22 +36,31 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
             .Select(f => new { f.UserId, f.Kind, f.Text, At = f.UpdatedAtUtc ?? f.CreatedAtUtc })
             .ToListAsync(ct);
         var acts = await db.FeedbackReplies.AsNoTracking()
-            .Select(r => new { r.UserId, r.Kind, r.CreatedAtUtc })
+            .Select(r => new { r.UserId, r.Kind, r.CreatedAtUtc, r.Text })
             .ToListAsync(ct);
-        var userIds = texts.Select(t => t.UserId).Distinct().ToList();
+        // Also the people the owner wrote to first: the conversation exists from the owner's first message.
+        var userIds = texts.Select(t => t.UserId)
+            .Concat(acts.Where(a => a.Kind == FeedbackReplyKind.Reply).Select(a => a.UserId)).Distinct().ToList();
         var telegramIds = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.TelegramId, ct);
+        var textsByUser = texts.ToLookup(t => t.UserId);
         var actsByUser = acts.ToLookup(a => a.UserId);
 
-        return texts.GroupBy(t => t.UserId)
-            .Where(g => telegramIds.ContainsKey(g.Key))
-            .Select(g =>
+        return userIds
+            .Where(telegramIds.ContainsKey)
+            .Select(id =>
             {
-                var last = g.MaxBy(t => t.At)!;
-                var own = actsByUser[g.Key].ToList();
+                var theirs = textsByUser[id].ToList();
+                var own = actsByUser[id].ToList();
+                var last = theirs.MaxBy(t => t.At);
+                var lastReply = own.Where(a => a.Kind == FeedbackReplyKind.Reply).MaxBy(a => a.CreatedAtUtc);
+                // What the list shows is whatever was said last — by the person or by the owner.
+                var ownerLast = lastReply != null && (last == null || lastReply.CreatedAtUtc >= last.At);
                 return new FeedbackThreadSummary(
-                    telegramIds[g.Key], last.Kind, last.Text!, last.At, g.Count(),
-                    StatusOf(last.At, own.Select(a => (a.Kind, a.CreatedAtUtc))));
+                    telegramIds[id], last?.Kind ?? UserFeedbackKind.Message,
+                    ownerLast ? lastReply!.Text! : last!.Text!, ownerLast ? lastReply!.CreatedAtUtc : last!.At, theirs.Count,
+                    last == null ? FeedbackThreadStatus.Answered : StatusOf(last.At, own.Select(a => (a.Kind, a.CreatedAtUtc))),
+                    ownerLast);
             })
             .Where(t => !unansweredOnly || t.Status.IsUnanswered())
             .OrderByDescending(t => t.Status.IsUnanswered()).ThenByDescending(t => t.LastAtUtc)
@@ -223,8 +232,11 @@ public static class FeedbackThreadStatusExtensions
 }
 
 /// <param name="LastKind">Where the person's latest text came from.</param>
+/// <param name="LastText">What was said last in the conversation.</param>
+/// <param name="LastFromOwner">The last word is the owner's — <paramref name="LastText"/> is their answer.</param>
 public record FeedbackThreadSummary(
-    long TelegramId, UserFeedbackKind LastKind, string LastText, DateTime LastAtUtc, int Texts, FeedbackThreadStatus Status);
+    long TelegramId, UserFeedbackKind LastKind, string LastText, DateTime LastAtUtc, int Texts, FeedbackThreadStatus Status,
+    bool LastFromOwner);
 
 /// <param name="Kind">For the person's text — where it came from; null for the owner's answer.</param>
 /// <param name="Question">The survey question the text answers or was written after.</param>

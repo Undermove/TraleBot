@@ -900,7 +900,7 @@ public class AdminController : Controller
             unanswered = all.Count(t => t.Status.IsUnanswered()),
             threads = all.Where(t => !unanswered || t.Status.IsUnanswered()).Select(t => new
             {
-                t.TelegramId, lastKind = FeedbackKindName(t.LastKind), t.LastText, t.LastAtUtc, t.Texts, status = ThreadStatusName(t.Status)
+                t.TelegramId, lastKind = FeedbackKindName(t.LastKind), t.LastText, t.LastAtUtc, t.Texts, status = ThreadStatusName(t.Status), t.LastFromOwner
             })
         });
     }

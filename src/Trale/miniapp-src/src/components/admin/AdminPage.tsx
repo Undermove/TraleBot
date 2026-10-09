@@ -1,38 +1,78 @@
 import type { ReactNode } from 'react'
-import Header from '../Header'
-import LoaderLetter from '../LoaderLetter'
 import { ApiError } from '../../api'
 
-// Общая обвязка экранов админки: одна шапка с «Назад», одни и те же состояния — загрузка, нет доступа,
-// ошибка с «Попробовать ещё раз», пусто. Экран отдаёт сюда содержимое и говорит, в каком он состоянии.
+// Общая обвязка экранов админки: одна шапка, одни и те же состояния — загрузка (скелетон на месте
+// содержимого), нет доступа, ошибка с «Попробовать ещё раз», пусто. Снизу — место под панель вкладок;
+// в сфокусированном режиме (пошаговый сценарий) вместо «Назад» — «Закрыть», а главная кнопка шага
+// закреплена внизу экрана.
 
 export type AdminPhase = 'loading' | 'ready' | 'denied' | 'error'
 
 /** Чем закончилась загрузка: 404 от админского эндпоинта значит «ты не владелец». */
 export const phaseOf = (e: unknown): AdminPhase => (e instanceof ApiError && e.status === 404 ? 'denied' : 'error')
 
+/** Высота нижней панели вкладок — столько места под ней оставляет каждый экран. */
+export const TAB_BAR_HEIGHT = 60
+
 interface Props {
   title: string
-  /** Раздел, в котором экран: «админка», «админка · люди». */
+  /** Строка над заголовком: раздел или «шаг 2 из 4». */
   section?: string
   onBack: () => void
+  /** Сфокусированный режим: слева «Закрыть» вместо стрелки. */
+  close?: boolean
   phase?: AdminPhase
   onRetry?: () => void
+  /** Закреплено внизу экрана: главная кнопка шага. */
+  footer?: ReactNode
   testId?: string
   children?: ReactNode
 }
 
-export default function AdminPage({ title, section = 'админка', onBack, phase = 'ready', onRetry, testId, children }: Props) {
+export function AdminHeader({ title, section, onBack, close }: Pick<Props, 'title' | 'section' | 'onBack' | 'close'>) {
   return (
-    <div className="flex flex-col min-h-full bg-cream" data-testid={testId}>
-      <Header onBack={onBack} eyebrow={section} title={title} />
-      <div className="flex-1 px-5 pt-4" style={{ paddingBottom: 'calc(var(--safe-b) + 32px)' }}>
-        {phase === 'loading' && (
-          <div className="flex flex-col items-center gap-2 py-12" data-testid="admin-loading">
-            <LoaderLetter />
-            <div className="font-sans text-[13px] text-jewelInk-mid">Загружаем…</div>
-          </div>
+    <div className="sticky top-0 z-30 bg-cream/95 backdrop-blur-sm" data-testid="admin-header">
+      <div style={{ paddingTop: 'var(--safe-t)' }}><div className="mn-kilim" /></div>
+      <div className="px-5 py-3 flex items-center gap-3">
+        {close ? (
+          <button type="button" onClick={onBack} data-testid="admin-close"
+            className="shrink-0 min-w-[44px] h-11 px-2 font-sans text-[14px] font-bold text-navy underline">
+            Закрыть
+          </button>
+        ) : (
+          <button type="button" onClick={onBack} aria-label="Назад"
+            className="shrink-0 w-11 h-11 rounded-xl bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-75"
+            style={{ boxShadow: '2px 2px 0 #15100A' }}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M10 3 L4 8 L10 13" stroke="#15100A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         )}
+        <div className="flex-1 text-center min-w-0">
+          {section && <div className="mn-eyebrow text-navy mb-0.5 truncate" data-testid="admin-section">{section}</div>}
+          <div className="font-sans text-[18px] font-extrabold text-jewelInk leading-tight truncate" data-testid="admin-title">{title}</div>
+        </div>
+        <div className={close ? 'shrink-0 min-w-[44px] px-2' : 'w-11 shrink-0'} />
+      </div>
+    </div>
+  )
+}
+
+/** Серые плашки на месте будущего содержимого — экран не прыгает, когда оно загрузится. */
+export function Skeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="flex flex-col gap-2 animate-pulse" data-testid="admin-loading" aria-label="Загружаем">
+      {Array.from({ length: rows }, (_, i) => <div key={i} className="h-[72px] rounded-[14px] bg-jewelInk/10" />)}
+    </div>
+  )
+}
+
+export default function AdminPage({ title, section = 'админка', onBack, close, phase = 'ready', onRetry, footer, testId, children }: Props) {
+  return (
+    <div className="flex-1 flex flex-col min-h-full bg-cream" data-testid={testId}>
+      <AdminHeader title={title} section={section} onBack={onBack} close={close} />
+      <div className="flex-1 px-5 pt-4" style={{ paddingBottom: `calc(var(--safe-b) + ${close ? 24 : TAB_BAR_HEIGHT + 24}px)` }}>
+        {phase === 'loading' && <Skeleton />}
         {phase === 'denied' && <div className="font-sans text-[14px] text-jewelInk" data-testid="admin-denied">Нет доступа.</div>}
         {phase === 'error' && (
           <div className="flex flex-col gap-3" data-testid="admin-error">
@@ -46,6 +86,27 @@ export default function AdminPage({ title, section = 'админка', onBack, p
         )}
         {phase === 'ready' && children}
       </div>
+      {footer && phase === 'ready' && (
+        <div className="sticky bottom-0 z-20 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15 px-5 pt-3" data-testid="admin-footer"
+          style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}>
+          {footer}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Переключатель подразделов под шапкой: один из нескольких. */
+export function Segments<T extends string>({ items, value, onChange, label }: { items: { id: T; name: string; badge?: number }[]; value: T; onChange: (id: T) => void; label: string }) {
+  return (
+    <div className="flex rounded-xl border-[1.5px] border-jewelInk bg-white p-0.5 mb-4" role="tablist" aria-label={label} data-testid="admin-segments">
+      {items.map(i => (
+        <button key={i.id} type="button" role="tab" aria-selected={value === i.id} onClick={() => onChange(i.id)}
+          className={`flex-1 min-h-[44px] px-1 rounded-[10px] font-sans text-[13px] font-bold leading-tight ${value === i.id ? 'bg-jewelInk text-cream' : 'text-jewelInk'}`}>
+          {i.name}
+          {i.badge ? <span className={`ml-1 px-1.5 rounded-md text-[11px] font-extrabold tabular-nums ${value === i.id ? 'bg-cream text-jewelInk' : 'bg-ruby text-white'}`}>{i.badge}</span> : null}
+        </button>
+      ))}
     </div>
   )
 }

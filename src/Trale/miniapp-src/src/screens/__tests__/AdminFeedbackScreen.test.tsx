@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ApiError, adminFeedback as mocked, adminThreads as mockedThreads, type AdminFeedbackDto, type AdminSurveyDto, type AdminSurveyResultsDto } from '../../api'
 import { defaultProgress } from '../../progress'
+import { enterAdmin, leaveAdmin } from '../../admin/adminNav'
 import AdminFeedbackScreen from '../AdminFeedbackScreen'
 
 vi.mock('../../api', async () => ({
@@ -62,27 +63,33 @@ beforeEach(() => {
   api.overview.mockResolvedValue(overview)
   api.survey.mockResolvedValue(results)
   navigate = vi.fn<(s: Screen) => void>()
+  threads.list.mockResolvedValue({ unanswered: 0, threads: [] })
+  leaveAdmin()
 })
 
+/** Экран открыт так, как его открывает приложение: навигация знает, откуда на него пришли. */
+function at(...path: Screen[]) {
+  path.forEach(s => enterAdmin(s as Parameters<typeof enterAdmin>[0]))
+}
+
 describe('AdminFeedbackScreen', () => {
-  it('the first screen is three sections, each with what waits in it', async () => {
+  it('the root of the tab is three sections under a switch, with what waits in each; «Сообщения» open first', async () => {
     api.overview.mockResolvedValue({ ...overview, surveys: [summary, { ...summary, key: 'survey-2026-09-left', pending: 20 }] })
+    at({ kind: 'admin-feedback', view: 'threads' })
     render(<AdminFeedbackScreen navigate={navigate} />)
 
-    const list = await screen.findByTestId('feedback-list')
-    expect(within(list).getAllByRole('button').map(b => b.textContent)).toEqual([
-      expect.stringMatching(/^Сообщениябез ответа: 3/), expect.stringMatching(/^Опросыне дослано: 1.*всего 2/), expect.stringMatching(/^Экран покупки.*спросили 9 · ответили 6/)
-    ])
-    expect(api.survey).not.toHaveBeenCalled()
+    const tabs = await screen.findAllByRole('tab')
+    await waitFor(() => expect(tabs.map(t => t.textContent)).toEqual(['Сообщения3', 'Опросы1', 'Экран покупки']))
+    expect(tabs[0].getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByTestId('feedback-threads')).toBeTruthy()
+    expect(threads.list).toHaveBeenCalledWith(true)
 
-    await userEvent.click(screen.getByTestId('feedback-open-threads'))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: 'threads' })
-    await userEvent.click(screen.getByTestId('feedback-open-surveys'))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: 'surveys' })
-    await userEvent.click(screen.getByTestId('feedback-open-paywall'))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: 'paywall' })
+    await userEvent.click(screen.getByRole('tab', { name: /Опросы/ }))
+    expect(navigate).toHaveBeenLastCalledWith({ kind: 'admin-feedback', view: 'surveys' })
+    await userEvent.click(screen.getByRole('tab', { name: 'Экран покупки' }))
+    expect(navigate).toHaveBeenLastCalledWith({ kind: 'admin-feedback', view: 'paywall' })
     await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin' })
+    expect(navigate).toHaveBeenLastCalledWith({ kind: 'profile' })
   })
 
   it('«Опросы» names surveys by their first question, with the date, the audience and how far people got — never by the key', async () => {
@@ -96,11 +103,10 @@ describe('AdminFeedbackScreen', () => {
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { survey: KEY } })
     await userEvent.click(screen.getByTestId('survey-new'))
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-survey' })
-    await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback' })
   })
 
   it('one survey: the funnel, then every question with counts, shares and what was written', async () => {
+    at({ kind: 'admin-feedback', view: 'surveys' }, { kind: 'admin-feedback', view: { survey: KEY } })
     render(<AdminFeedbackScreen view={{ survey: KEY }} navigate={navigate} />)
 
     const funnel = await screen.findByTestId('feedback-funnel')
@@ -181,7 +187,7 @@ describe('AdminFeedbackScreen', () => {
     render(<AdminFeedbackScreen view={{ survey: KEY }} navigate={navigate} />)
     const second = await screen.findByTestId('feedback-question-q2')
     await userEvent.click(within(second).getByRole('button', { name: 'Ответить' }))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 111, quote: 'answer-111', back: { survey: KEY } } })
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 111, quote: 'answer-111' } })
     expect(within(screen.getByTestId('feedback-question-q1')).queryByRole('button', { name: 'Ответить' })).toBeNull()
   })
 
@@ -190,14 +196,14 @@ describe('AdminFeedbackScreen', () => {
     render(<AdminFeedbackScreen view="paywall" navigate={navigate} />)
     const paywall = await screen.findByTestId('feedback-paywall')
     expect(api.overview).toHaveBeenCalledWith({ kind: 'paywall' })
-    expect(paywall.textContent).toContain('Что смутило?')
     expect(paywall.textContent).toContain('Дорого4 · 67%')
     expect(paywall.textContent).toContain('Год сразу — много')
     expect(paywall.textContent).not.toContain('expensive')
     expect(screen.getAllByRole('button', { name: 'Ответить' })).toHaveLength(1)
+    expect(screen.getByRole('tab', { name: 'Экран покупки' }).getAttribute('aria-selected')).toBe('true')
 
     await userEvent.click(screen.getByRole('button', { name: 'Ответить' }))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 444, quote: 'answer-444', back: 'paywall' } })
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 444, quote: 'answer-444' } })
   })
 
   it('«Сообщения от людей» shows who waits for an answer first, with the status in words, and the filter «Без ответа»', async () => {
@@ -228,34 +234,44 @@ describe('AdminFeedbackScreen', () => {
     expect(threads.list).toHaveBeenLastCalledWith(false)
 
     await userEvent.click(first)
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 111, quote: undefined, back: 'threads' } })
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 111, quote: undefined } })
   })
 
   it('says so when nobody waits for an answer', async () => {
     threads.list.mockResolvedValue({ unanswered: 0, threads: [] })
     render(<AdminFeedbackScreen view="threads" navigate={navigate} />)
-    expect(await screen.findByText('Все сообщения разобраны.')).toBeTruthy()
+    expect(await screen.findByText(/Все сообщения разобраны\./)).toBeTruthy()
   })
 
   it('a conversation opens for its person and text, and «Назад» returns to where it was opened from', async () => {
-    render(<AdminFeedbackScreen view={{ thread: 111, quote: 'answer-111', back: { survey: KEY } }} navigate={navigate} />)
+    at({ kind: 'admin-feedback', view: 'surveys' }, { kind: 'admin-feedback', view: { survey: KEY } }, { kind: 'admin-feedback', view: { thread: 111, quote: 'answer-111' } })
+    render(<AdminFeedbackScreen view={{ thread: 111, quote: 'answer-111' }} navigate={navigate} />)
     expect((await screen.findByTestId('thread-stub')).textContent).toBe('111:answer-111')
-    expect(screen.queryByTestId('feedback-list')).toBeNull()
+    expect(screen.queryByRole('tab')).toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { survey: KEY } })
+  })
+
+  it('a conversation started by the owner is listed with «ты:» before the last words', async () => {
+    threads.list.mockResolvedValue({ unanswered: 0, threads: [{ telegramId: 777, lastKind: 'message', lastText: 'Привет! Как тебе уроки?', lastAtUtc: '2026-10-08T12:00:00Z', texts: 0, status: 'answered', lastFromOwner: true }] })
+    render(<AdminFeedbackScreen view="threads" navigate={navigate} />)
+    await userEvent.click(await screen.findByRole('radio', { name: 'Все' }))
+    expect((await screen.findByTestId('feedback-thread-777')).textContent).toContain('отвечено')
+    expect(screen.getByTestId('feedback-thread-777').textContent).toContain('ты: Привет! Как тебе уроки?')
   })
 
   it('says so when there are no surveys yet, and shows only «Нет доступа.» to anyone the server refuses', async () => {
     api.overview.mockResolvedValueOnce({ ...overview, surveys: [] })
     const first = render(<AdminFeedbackScreen view="surveys" navigate={navigate} />)
     expect(await screen.findByText(/Опросов пока не было/)).toBeTruthy()
-    await userEvent.click(screen.getByRole('button', { name: 'Собрать опрос' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Новый опрос' }))
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-survey' })
     first.unmount()
 
     api.overview.mockRejectedValueOnce(new ApiError(404, ''))
+    threads.list.mockRejectedValue(new ApiError(404, ''))
     render(<AdminFeedbackScreen navigate={navigate} />)
     expect((await screen.findByTestId('feedback-problem')).textContent).toBe('Нет доступа.')
-    expect(screen.queryByTestId('feedback-list')).toBeNull()
+    expect(screen.queryByTestId('feedback-threads')).toBeNull()
   })
 })

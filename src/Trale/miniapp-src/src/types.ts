@@ -41,11 +41,13 @@ export type Screen =
   /** Обратная связь. view — что открыто: разделы (по умолчанию), сообщения, опросы, один опрос, экран покупки или переписка с одним человеком. */
   | { kind: 'admin-feedback'; view?: FeedbackView | FeedbackThreadView }
   /** Конструктор опроса. resume — имя начатого опроса: открыть сразу его отправку, чтобы дослать. */
-  | { kind: 'admin-survey'; resume?: string }
+  | { kind: 'admin-survey'; resume?: string; draft?: boolean }
   /** Рассылки: список кампаний. */
   | { kind: 'admin-broadcasts' }
   /** Одна рассылка: без key — новая, по шагам; с key — её отправка и досылка. */
-  | { kind: 'admin-broadcast'; key?: string }
+  | { kind: 'admin-broadcast'; key?: string; draft?: boolean }
+  /** Вкладка «Ещё»: глаголы, оплаты, система. */
+  | { kind: 'admin-more' }
   | { kind: 'admin-payments' }
   | { kind: 'admin-system' }
   /** Проверка глаголов от нейросети (только владелец). lemma — сразу открыть этот глагол. */

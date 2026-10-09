@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import AdminPage, { Empty, Figure, More, phaseOf, type AdminPhase } from '../components/admin/AdminPage'
 import { adminSections, type AdminPaymentRowDto, type AdminPaymentsDto } from '../api'
 import { PLAN, dayYear, fmt } from '../admin/words'
+import { adminBack } from '../admin/adminNav'
 import type { Screen } from '../types'
 
 // Оплаты: у кого подписка скоро закончится или только что закончилась (этим людям стоит написать),
@@ -45,7 +46,7 @@ export default function AdminPaymentsScreen({ navigate }: { navigate: (s: Screen
   )
 
   return (
-    <AdminPage title="Оплаты" onBack={() => navigate({ kind: 'admin' })} phase={phase} onRetry={() => { setPhase('loading'); load(0) }} testId="admin-payments">
+    <AdminPage title="Оплаты" section="админка · ещё" onBack={() => navigate(adminBack())} phase={phase} onRetry={() => { setPhase('loading'); load(0) }} testId="admin-payments">
       {data && (
         <>
           <div className="grid grid-cols-2 gap-2 mb-5">

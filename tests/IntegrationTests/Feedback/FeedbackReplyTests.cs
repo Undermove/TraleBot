@@ -403,7 +403,10 @@ public class FeedbackReplyTests : TestBase
         message.Text.Should().Be("Дима, автор TraleBot: Привет! Как тебе новые уроки?", "there is nothing to quote");
         ((InlineKeyboardMarkup)message.ReplyMarkup!).InlineKeyboard.Single().Single().Text.Should().Be("Ответить");
         Items(await Thread(silent)).Should().Equal((true, "Привет! Как тебе новые уроки?", "sent"));
-        (await Threads()).Should().BeEmpty("the list is of people who wrote; the conversation shows up there once they reply");
+        (await Threads()).Single().Should().Be((silent.TelegramId, "answered", "Привет! Как тебе новые уроки?"), "the conversation is listed from the owner's first message");
+        (await Threads(unanswered: true)).Should().BeEmpty();
+        (await Unanswered()).Should().Be(0);
+        (await Admin(HttpMethod.Get, "feedback/threads")).Body.GetProperty("threads")[0].GetProperty("lastFromOwner").GetBoolean().Should().BeTrue();
         await Age(silent, 5);
         await Write(silent, "Нравятся!");
         (await Threads()).Single().Should().Be((silent.TelegramId, "repliedBack", "Нравятся!"));

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import AdminPage, { phaseOf, type AdminPhase } from '../components/admin/AdminPage'
 import { AUDIENCES, audienceName } from '../admin/words'
-import { setInnerBack } from '../admin/adminNav'
+import { adminBack, setInnerBack } from '../admin/adminNav'
+import { draft as drafts, useDraft, useFocusMode } from '../admin/useKept'
 import { adminCampaigns, ApiError, type CampaignAudience, type CampaignStatusDto } from '../api'
 import type { Screen } from '../types'
 
@@ -14,6 +15,8 @@ import type { Screen } from '../types'
 interface Props {
   /** Имя существующей кампании — открыть её отправку. */
   campaignKey?: string
+  /** Открыть с черновиком, сохранённым на этом устройстве. */
+  useDraft?: boolean
   navigate: (s: Screen) => void
 }
 
@@ -63,21 +66,24 @@ function Preview({ message, buttonText }: { message: string; buttonText: string 
   )
 }
 
-export default function AdminBroadcastScreen({ campaignKey, navigate }: Props) {
-  const [phase, setPhase] = useState<AdminPhase>(campaignKey ? 'loading' : 'ready')
-  const [step, setStep] = useState(campaignKey ? 5 : 1)
+interface Draft { step: number; message: string; hasButton: boolean; buttonText: string; destination: string; customQuery: string; giftDays: number; audience: CampaignAudience; sampleFirst: boolean; sampleSize: number; ownName: string }
 
-  const [message, setMessage] = useState('')
-  const [hasButton, setHasButton] = useState(true)
-  const [buttonText, setButtonText] = useState('Открыть TraleBot')
-  const [destination, setDestination] = useState('home')
-  const [customQuery, setCustomQuery] = useState('')
-  const [giftDays, setGiftDays] = useState(0)
+export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft, navigate }: Props) {
+  const [saved] = useState(() => (withDraft && !campaignKey ? drafts.read<Draft>('broadcast') : null))
+  const [phase, setPhase] = useState<AdminPhase>(campaignKey ? 'loading' : 'ready')
+  const [step, setStep] = useState(campaignKey ? 5 : saved?.step ?? 1)
+
+  const [message, setMessage] = useState(saved?.message ?? '')
+  const [hasButton, setHasButton] = useState(saved?.hasButton ?? true)
+  const [buttonText, setButtonText] = useState(saved?.buttonText ?? 'Открыть TraleBot')
+  const [destination, setDestination] = useState(saved?.destination ?? 'home')
+  const [customQuery, setCustomQuery] = useState(saved?.customQuery ?? '')
+  const [giftDays, setGiftDays] = useState(saved?.giftDays ?? 0)
   const [counts, setCounts] = useState<Partial<Record<CampaignAudience, number>>>({})
-  const [audience, setAudience] = useState<CampaignAudience>('accessEnded')
-  const [sampleFirst, setSampleFirst] = useState(true)
-  const [sampleSize, setSampleSize] = useState(100)
-  const [ownName, setOwnName] = useState('')
+  const [audience, setAudience] = useState<CampaignAudience>(saved?.audience ?? 'accessEnded')
+  const [sampleFirst, setSampleFirst] = useState(saved?.sampleFirst ?? true)
+  const [sampleSize, setSampleSize] = useState(saved?.sampleSize ?? 100)
+  const [ownName, setOwnName] = useState(saved?.ownName ?? '')
 
   /** Имя кампании на сервере; появляется, когда выбраны получатели. */
   const [key, setKey] = useState<string | null>(campaignKey ?? null)
@@ -88,6 +94,11 @@ export default function AdminBroadcastScreen({ campaignKey, navigate }: Props) {
   const [note, setNote] = useState<string | null>(null)
 
   const frozen = key !== null
+  // Пошаговый сценарий занимает весь экран — панель вкладок на это время спрятана.
+  useFocusMode(true)
+  // Незаконченная рассылка сохраняется на устройстве, пока получатели не выбраны: случайное закрытие её не сотрёт.
+  const unsaved = !frozen && message.trim().length > 0
+  useDraft('broadcast', unsaved ? { step, message, hasButton, buttonText, destination, customQuery, giftDays, audience, sampleFirst, sampleSize, ownName } satisfies Draft : null)
   const go = (next: number) => { setStep(next); setNote(null); window.scrollTo(0, 0) }
 
   useEffect(() => { adminCampaigns.audiences().then(setCounts).catch(() => {}) }, [])
@@ -107,7 +118,7 @@ export default function AdminBroadcastScreen({ campaignKey, navigate }: Props) {
 
   // «Назад» внутри рассылки: на шаг раньше, пока получатели не выбраны.
   useEffect(() => {
-    setInnerBack(!frozen && step > 1 ? () => { go(step - 1); return true } : null)
+    setInnerBack(() => { if (!frozen && step > 1) go(step - 1); else close(); return true })
     return () => setInnerBack(null)
   }, [step, frozen]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -151,6 +162,7 @@ export default function AdminBroadcastScreen({ campaignKey, navigate }: Props) {
     if (!confirm(`Выбрать ${who}: ${plan.picked} чел. (${audienceName(to)})?${already}\nСообщения пока НЕ уйдут — только список получателей.`)) return null
     const done = await adminCampaigns.prepare(draft(to, sample, false, extra))
     setKey(done.key)
+    drafts.clear('broadcast')
     setStatus(await adminCampaigns.status(done.key))
     setAnother(null)
     return `Получатели записаны: ${done.picked} чел. Теперь отправляй порциями.`
@@ -170,12 +182,22 @@ export default function AdminBroadcastScreen({ campaignKey, navigate }: Props) {
     return `Отправлено ${r.sent}, заблокировали бота ${r.blocked}, отказ ${r.rejected}, без ответа ${r.unknown}. Осталось ${r.status.pending}.${wait}`
   })
 
-  const back = () => (frozen || step === 1 ? navigate({ kind: 'admin-broadcasts' }) : go(step - 1))
+  const close = () => {
+    if (unsaved && !confirm('Закрыть рассылку? Черновик останется на этом устройстве — к нему можно вернуться из списка рассылок.')) return
+    navigate(adminBack())
+  }
   const total = counts[audience]
+  // Главная кнопка шага закреплена внизу экрана.
+  const footer = !frozen && (step > 1 || step < STEPS.length) ? (
+    <div className="flex gap-3">
+      {step > 1 && <button type="button" className={secondary} onClick={() => go(step - 1)} data-testid="broadcast-back">Назад</button>}
+      {step < STEPS.length && <button type="button" className={primary} disabled={problem !== null} onClick={() => go(step + 1)} data-testid="broadcast-next">Дальше</button>}
+    </div>
+  ) : undefined
 
   return (
-    <AdminPage title={frozen ? 'Рассылка' : 'Новая рассылка'} section={`админка · рассылки${frozen ? '' : ` · шаг ${step} из ${STEPS.length}`}`}
-      onBack={back} phase={phase} onRetry={() => { if (campaignKey) { setPhase('loading'); open(campaignKey).catch(e => setPhase(phaseOf(e))) } }} testId="admin-broadcast">
+    <AdminPage title={frozen ? 'Рассылка' : 'Новая рассылка'} section={frozen ? 'рассылки' : `шаг ${step} из ${STEPS.length}`} close
+      onBack={close} phase={phase} footer={footer} onRetry={() => { if (campaignKey) { setPhase('loading'); open(campaignKey).catch(e => setPhase(phaseOf(e))) } }} testId="admin-broadcast">
       <div className="flex flex-col gap-3">
         <div className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight" data-testid="broadcast-step-title">{STEPS[step - 1]}</div>
 
@@ -350,12 +372,6 @@ export default function AdminBroadcastScreen({ campaignKey, navigate }: Props) {
         )}
 
         {problem && <div className="font-sans text-[13px] text-ruby" data-testid="broadcast-problem">{problem}</div>}
-        {!frozen && (
-          <div className="flex gap-3 mt-3">
-            {step > 1 && <button type="button" className={secondary} onClick={() => go(step - 1)} data-testid="broadcast-back">Назад</button>}
-            {step < STEPS.length && <button type="button" className={primary} disabled={problem !== null} onClick={() => go(step + 1)} data-testid="broadcast-next">Дальше</button>}
-          </div>
-        )}
       </div>
     </AdminPage>
   )

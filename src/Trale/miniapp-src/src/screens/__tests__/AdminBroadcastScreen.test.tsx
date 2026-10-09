@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Screen } from '../../types'
 import { ApiError, adminCampaigns as mocked, type CampaignStatusDto } from '../../api'
-import { goInnerBack } from '../../admin/adminNav'
+import { enterAdmin, goInnerBack, leaveAdmin } from '../../admin/adminNav'
 import AdminBroadcastScreen from '../AdminBroadcastScreen'
 
 vi.mock('../../api', async () => ({
@@ -30,6 +30,10 @@ beforeEach(() => {
   confirm = vi.fn<(text: string) => boolean>(() => true)
   vi.stubGlobal('confirm', confirm)
   window.scrollTo = vi.fn() as never
+  leaveAdmin()
+  enterAdmin({ kind: 'admin-broadcasts' })
+  enterAdmin({ kind: 'admin-broadcast' })
+  try { localStorage.clear() } catch {}
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -80,9 +84,40 @@ describe('AdminBroadcastScreen — новая рассылка', () => {
     await userEvent.click(screen.getByTestId('broadcast-back'))
     expect(title()).toBe('Текст')
     expect((screen.getByLabelText('Текст сообщения') as HTMLTextAreaElement).value).toBe('Привет')
-    expect(goInnerBack()).toBe(false)
-    await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
+    // Незаконченное сохранено на устройстве; «Закрыть» спрашивает и уводит к списку рассылок.
+    expect(JSON.parse(localStorage.getItem('trale_admin_draft_broadcast')!)).toMatchObject({ step: 1, message: 'Привет', hasButton: false })
+    confirm.mockReturnValueOnce(false)
+    await userEvent.click(screen.getByTestId('admin-close'))
+    expect(confirm.mock.calls[confirm.mock.calls.length - 1][0]).toContain('Черновик останется на этом устройстве')
+    expect(navigate).not.toHaveBeenCalled()
+    // С первого шага системное «Назад» — то же, что «Закрыть».
+    expect(goInnerBack()).toBe(true)
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-broadcasts' })
+  })
+
+  it('opened with a draft, continues from the step where it was left; picking recipients clears the draft', async () => {
+    localStorage.setItem('trale_admin_draft_broadcast', JSON.stringify({
+      step: 4, message: 'Из черновика', hasButton: true, buttonText: 'Открыть', destination: 'verbs', customQuery: '', giftDays: 7,
+      audience: 'activeLately', sampleFirst: false, sampleSize: 100, ownName: ''
+    }))
+    api.prepare.mockResolvedValueOnce(picked(KEY, 61, true)).mockResolvedValueOnce(picked(KEY, 61, false))
+    api.status.mockResolvedValue(status)
+    render(<AdminBroadcastScreen useDraft navigate={navigate} />)
+
+    expect(title()).toBe('Кому')
+    expect(screen.getByTestId('broadcast-audience-activeLately').getAttribute('aria-checked')).toBe('true')
+    await next()
+    expect(screen.getByTestId('broadcast-summary').textContent).toBe('Кнопка ведёт: Раздел «Глаголы». Подарок: 7 дн. доступа. Кому: занимались за последние 30 дней — 61 чел.')
+    await userEvent.click(screen.getByTestId('broadcast-pick'))
+    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(localStorage.getItem('trale_admin_draft_broadcast')).toBeNull())
+  })
+
+  it('without being asked for the draft, a new broadcast starts clean', () => {
+    localStorage.setItem('trale_admin_draft_broadcast', JSON.stringify({ step: 4, message: 'Из черновика' }))
+    render(<AdminBroadcastScreen navigate={navigate} />)
+    expect(title()).toBe('Текст')
+    expect((screen.getByLabelText('Текст сообщения') as HTMLTextAreaElement).value).toBe('')
   })
 
   it('the button goes to a screen chosen by name; «Отправить себе» sends a trial to the owner only', async () => {

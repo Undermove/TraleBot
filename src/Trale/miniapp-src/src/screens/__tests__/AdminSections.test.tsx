@@ -6,6 +6,8 @@ import {
   ApiError, api as mockedApi, adminCampaigns as mockedCampaigns, adminSections as mocked,
   type AdminOverviewDto, type AdminPaymentsDto, type AdminUserDetail, type AdminUserRowDto, type AdminUsersPageDto, type CampaignListItemDto
 } from '../../api'
+import { enterAdmin, leaveAdmin } from '../../admin/adminNav'
+import AdminMoreScreen from '../AdminMoreScreen'
 import AdminScreen from '../AdminScreen'
 import AdminUsersScreen from '../AdminUsersScreen'
 import AdminUserScreen from '../AdminUserScreen'
@@ -14,7 +16,7 @@ import AdminBroadcastsScreen from '../AdminBroadcastsScreen'
 
 vi.mock('../../api', async () => ({
   ...(await vi.importActual<typeof import('../../api')>('../../api')),
-  api: { adminUserDetail: vi.fn(), adminGrantPro: vi.fn(), adminRevokePro: vi.fn() },
+  api: { adminUserDetail: vi.fn(), adminGrantPro: vi.fn(), adminRevokePro: vi.fn(), adminStats: vi.fn(), adminSignups: vi.fn() },
   adminSections: { overview: vi.fn(), users: vi.fn(), payments: vi.fn(), jobs: vi.fn() },
   adminCampaigns: { list: vi.fn(), audiences: vi.fn(), prepare: vi.fn(), send: vi.fn(), status: vi.fn() }
 }))
@@ -38,53 +40,80 @@ let navigate: Mock<(s: Screen) => void>
 beforeEach(() => {
   ;[...Object.values(sections), ...Object.values(api), ...Object.values(campaigns)].forEach(f => (f as ReturnType<typeof vi.fn>).mockReset())
   navigate = vi.fn<(s: Screen) => void>()
+  leaveAdmin()
+  try { localStorage.clear() } catch {}
 })
+
+function at(...path: Screen[]) {
+  path.forEach(s => enterAdmin(s as Parameters<typeof enterAdmin>[0]))
+}
 afterEach(() => vi.unstubAllGlobals())
 
-describe('AdminScreen — обзор', () => {
-  it('shows the main numbers and every section with what waits in it', async () => {
+const stats = {
+  totalUsers: 848, activeUsers: 808, proUsers: 6, trialUsers: 17, freeUsers: 825, newUsersToday: 3, newUsersWeek: 21, newUsersMonth: 64,
+  totalRevenueStars: 1500, revenueWeekStars: 100, totalPurchases: 6, totalRefunds: 1, totalVocabularyEntries: 9100, averageVocabularyPerUser: 10.7, conversionPostTrialPct: 0.7
+}
+
+describe('AdminScreen — статистика', () => {
+  beforeEach(() => {
+    api.adminStats.mockResolvedValue(stats as never)
+    api.adminSignups.mockResolvedValue({ days: 30, points: [{ date: '2026-10-08', count: 3 }] })
     sections.overview.mockResolvedValue(overview)
+  })
+
+  it('is the screen it always was — the same tiles in the same order and the signups chart — with four more numbers in the same grids', async () => {
     render(<AdminScreen navigate={navigate} />)
 
-    const figures = await screen.findByTestId('admin-figures')
-    expect(figures.textContent).toBe('21новых за 7 днейвсего людей 84861занимались за 7 днейза сутки 92оплат за 30 днейзвёзд 7002действующих подписокна пробном периоде 17')
-    const tiles = within(screen.getByTestId('admin-sections')).getAllByRole('button')
-    expect(tiles.map(t => t.textContent!.split(/[А-Я]/).length > 0 && t.querySelector('.font-extrabold')!.textContent)).toEqual([
-      'Пользователи', 'Обратная связьбез ответа: 3 · не дослано: 1', 'Рассылкине дослано: 2', 'Глаголыждут: 5', 'Оплаты', 'Система'
+    const page = await screen.findByTestId('admin-stats')
+    await waitFor(() => expect(page.textContent).toContain('Новые юзеры'))
+    // Подписи плиток по порядку: прежние, как на main, и за ними новые.
+    const labels = [...page.querySelectorAll('.jewel-tile .mn-eyebrow')].map(e => e.textContent)
+    expect(labels).toEqual([
+      'Всего', 'Активных', 'Pro', 'На триале', 'Free', 'Конверсия',
+      'Всего ⭐', 'За неделю ⭐', 'Покупок', 'Возвратов', 'Оплат за 30 дней', 'Подписок действует',
+      'Слов в словарях', 'Слов на юзера', 'Новых сегодня', 'За неделю', 'Занимались сегодня', 'Занимались за неделю'
     ])
+    expect([...page.querySelectorAll(':scope .mn-eyebrow.mb-2, :scope .flex > .mn-eyebrow')].map(e => e.textContent)).toEqual(['Пользователи', 'Выручка', 'Активность', 'Новые юзеры'])
+    expect(page.textContent).toContain('Конверсия0.7%')
+    expect(page.textContent).toContain('Подписок действует2')
+    expect(page.textContent).toContain('Занимались за неделю61')
+    expect(screen.getAllByRole('button', { name: /^(7|30|90)д$/ })).toHaveLength(3)
 
-    const opens: [string, Screen][] = [
-      ['admin-section-users', { kind: 'admin-users' }], ['admin-section-feedback', { kind: 'admin-feedback' }],
-      ['admin-section-broadcasts', { kind: 'admin-broadcasts' }], ['admin-section-verbs', { kind: 'verb-review' }],
-      ['admin-section-payments', { kind: 'admin-payments' }], ['admin-section-system', { kind: 'admin-system' }]
-    ]
-    for (const [testId, target] of opens) {
-      await userEvent.click(screen.getByTestId(testId))
-      expect(navigate).toHaveBeenLastCalledWith(target)
-    }
+    await userEvent.click(screen.getByRole('button', { name: '90д' }))
+    await waitFor(() => expect(api.adminSignups).toHaveBeenLastCalledWith(90))
     await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
     expect(navigate).toHaveBeenLastCalledWith({ kind: 'profile' })
   })
 
-  it('shows no badges when nothing waits; says «Нет доступа.» to a non-owner; offers a retry after a failure', async () => {
-    sections.overview.mockResolvedValueOnce({ ...overview, unansweredMessages: 0, unfinishedSurveys: 0, unfinishedBroadcasts: 0, verbsToReview: 0 })
-    const calm = render(<AdminScreen navigate={navigate} />)
-    await screen.findByTestId('admin-sections')
-    expect(screen.queryByTestId('admin-feedback-waits')).toBeNull()
-    expect(screen.queryByTestId('admin-broadcasts-waits')).toBeNull()
-    expect(screen.queryByTestId('admin-verbs-waits')).toBeNull()
-    calm.unmount()
+  it('still shows the old tiles when the new numbers could not be read; says «Нет доступа.» to a non-owner; offers a retry', async () => {
+    sections.overview.mockRejectedValueOnce(new Error('offline'))
+    const partial = render(<AdminScreen navigate={navigate} />)
+    await waitFor(() => expect(screen.getByTestId('admin-stats').textContent).toContain('Возвратов1'))
+    expect(screen.getByTestId('admin-stats').textContent).not.toContain('Подписок действует')
+    partial.unmount()
 
-    sections.overview.mockRejectedValueOnce(new ApiError(404, ''))
+    api.adminStats.mockRejectedValueOnce(new ApiError(404, ''))
     const denied = render(<AdminScreen navigate={navigate} />)
     expect((await screen.findByTestId('admin-denied')).textContent).toBe('Нет доступа.')
-    expect(screen.queryByTestId('admin-sections')).toBeNull()
     denied.unmount()
 
-    sections.overview.mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(overview)
+    api.adminStats.mockRejectedValueOnce(new Error('offline')).mockResolvedValue(stats as never)
     render(<AdminScreen navigate={navigate} />)
     await userEvent.click(await screen.findByRole('button', { name: 'Попробовать ещё раз' }))
-    expect(await screen.findByTestId('admin-sections')).toBeTruthy()
+    await waitFor(() => expect(screen.getByTestId('admin-stats').textContent).toContain('Пользователи'))
+  })
+})
+
+describe('AdminMoreScreen', () => {
+  it('leads to verbs (with how many wait), payments and system', async () => {
+    sections.overview.mockResolvedValue(overview)
+    render(<AdminMoreScreen navigate={navigate} />)
+    expect((await screen.findByTestId('admin-verbs-waits')).textContent).toBe('ждут: 5')
+    const opens: [string, Screen][] = [['admin-more-verbs', { kind: 'verb-review' }], ['admin-more-payments', { kind: 'admin-payments' }], ['admin-more-system', { kind: 'admin-system' }]]
+    for (const [testId, target] of opens) {
+      await userEvent.click(screen.getByTestId(testId))
+      expect(navigate).toHaveBeenLastCalledWith(target)
+    }
   })
 })
 
@@ -128,13 +157,23 @@ describe('AdminUsersScreen', () => {
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-user', telegramId: 5000000100 })
   })
 
-  it('opens on the filter it was asked for and says «Нет доступа.» to a non-owner', async () => {
-    sections.users.mockResolvedValueOnce(page([row(1)]))
-    const one = render(<AdminUsersScreen filter="blocked" navigate={navigate} />)
+  it('remembers the filter, the search and the loaded list when the owner comes back to the tab', async () => {
+    sections.users.mockResolvedValue(page([row(1), row(2)]))
+    const first = render(<AdminUsersScreen navigate={navigate} />)
     await screen.findByTestId('user-1')
-    expect(sections.users).toHaveBeenCalledWith(expect.objectContaining({ filter: 'blocked' }))
-    one.unmount()
+    await userEvent.click(screen.getByRole('radio', { name: 'платят · 2' }))
+    await waitFor(() => expect(sections.users).toHaveBeenLastCalledWith(expect.objectContaining({ filter: 'paying' })))
+    await screen.findByTestId('user-2')
+    const calls = sections.users.mock.calls.length
+    first.unmount()
 
+    render(<AdminUsersScreen navigate={navigate} />)
+    expect(screen.getByTestId('user-2')).toBeTruthy()
+    expect(screen.getByRole('radio', { name: 'платят · 2' }).getAttribute('aria-checked')).toBe('true')
+    expect(sections.users.mock.calls.length).toBe(calls)
+  })
+
+  it('says «Нет доступа.» to a non-owner', async () => {
     sections.users.mockRejectedValue(new ApiError(404, ''))
     render(<AdminUsersScreen navigate={navigate} />)
     expect(await screen.findByTestId('admin-denied')).toBeTruthy()
@@ -154,6 +193,7 @@ const card: AdminUserDetail = {
 describe('AdminUserScreen', () => {
   it('says where the person came from, what access they have, what they did, paid and answered — and lets the owner write', async () => {
     api.adminUserDetail.mockResolvedValue(card)
+    at({ kind: 'admin-users' }, { kind: 'admin-user', telegramId: 5000000100 })
     render(<AdminUserScreen telegramId={5000000100} navigate={navigate} />)
 
     const summary = await screen.findByTestId('user-summary')
@@ -265,9 +305,23 @@ describe('AdminBroadcastsScreen', () => {
     expect(navigate).toHaveBeenLastCalledWith({ kind: 'admin-broadcast' })
   })
 
+  it('offers to continue a draft left on this device, or to delete it', async () => {
+    vi.stubGlobal('confirm', vi.fn(() => true))
+    localStorage.setItem('trale_admin_draft_broadcast', JSON.stringify({ step: 3, message: 'Новые уроки про падежи\nЗагляни!' }))
+    campaigns.list.mockResolvedValue({ campaigns: [] })
+    const first = render(<AdminBroadcastsScreen navigate={navigate} />)
+    expect((await screen.findByTestId('broadcast-draft')).textContent).toContain('Новые уроки про падежи')
+    await userEvent.click(screen.getByTestId('broadcast-draft-continue'))
+    expect(navigate).toHaveBeenLastCalledWith({ kind: 'admin-broadcast', draft: true })
+    await userEvent.click(screen.getByRole('button', { name: 'Удалить' }))
+    expect(screen.queryByTestId('broadcast-draft')).toBeNull()
+    expect(localStorage.getItem('trale_admin_draft_broadcast')).toBeNull()
+    first.unmount()
+  })
+
   it('says so when there were none', async () => {
     campaigns.list.mockResolvedValue({ campaigns: [] })
     render(<AdminBroadcastsScreen navigate={navigate} />)
-    expect((await screen.findByTestId('admin-empty')).textContent).toBe('Рассылок пока не было.')
+    expect((await screen.findByTestId('admin-empty')).textContent).toContain('Рассылок пока не было.')
   })
 })

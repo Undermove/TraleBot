@@ -234,11 +234,11 @@ describe('VerbReviewScreen: один глагол', () => {
       .toBe('связь оборвалась; если шла пересборка, она продолжается — обнови через минуту'))
   })
 
-  it('Back goes from the verb to the queue and from the queue to the admin screen', async () => {
+  it('Back goes from the verb to the queue and from the queue out of the tab', async () => {
     await openVerb()
     await userEvent.click(screen.getByRole('button', { name: /назад|back/i }))
     expect(screen.getByTestId('verb-review-queue')).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: /назад|back/i }))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin' })
+    expect(navigate).toHaveBeenCalledWith({ kind: 'profile' })
   })
 })

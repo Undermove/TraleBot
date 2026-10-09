@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import AdminPage, { Empty, Figure, NavTile, phaseOf, type AdminPhase } from '../components/admin/AdminPage'
 import { api, type AdminUserAccess, type AdminUserDetail } from '../api'
 import { ACCESS, PLAN, ago, dayYear, fmt, sourceName, when } from '../admin/words'
+import { adminBack } from '../admin/adminNav'
 import type { Screen } from '../types'
 
 // Карточка человека: когда и откуда пришёл, какой у него доступ, чем занимался и когда в последний раз,
@@ -38,7 +39,7 @@ export default function AdminUserScreen({ telegramId, navigate }: Props) {
   const until = user?.subscriptionPlan === 'Lifetime' && access === 'paying' ? 'без срока' : user?.accessUntilUtc ? `до ${dayYear(user.accessUntilUtc)}` : null
 
   return (
-    <AdminPage title={`Пользователь ${telegramId}`} section="админка · пользователи" onBack={() => navigate({ kind: 'admin-users' })}
+    <AdminPage title={`Пользователь ${telegramId}`} section="админка · люди" onBack={() => navigate(adminBack())}
       phase={phase} onRetry={() => { setPhase('loading'); void load() }} testId="admin-user">
       {user && (
         <>

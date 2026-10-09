@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import AdminPage, { phaseOf, type AdminPhase } from '../components/admin/AdminPage'
-import { api, adminSections, AdminStats, type AdminJobsDto } from '../api'
+import { api, adminSections, type AdminJobsDto } from '../api'
+import { adminBack } from '../admin/adminNav'
 import type { Screen } from '../types'
 
-// «Система» — всё служебное: подробные цифры, фоновые задачи, тестовые пуши самому себе и старая
-// разовая рассылка по сегменту. Ничего здесь не уходит людям без отдельного подтверждения.
+// «Система» — служебное: фоновые задачи, тестовые пуши самому себе и старая разовая рассылка по сегменту. Ничего здесь не уходит людям без отдельного подтверждения.
 
 interface Props {
   navigate: (s: Screen) => void
@@ -14,21 +14,17 @@ const pushButton = 'px-3 min-h-[44px] rounded-xl font-sans text-[13px] font-bold
 
 export default function AdminSystemScreen({ navigate }: Props) {
   const [phase, setPhase] = useState<AdminPhase>('loading')
-  const [stats, setStats] = useState<AdminStats | null>(null)
   const [jobs, setJobs] = useState<AdminJobsDto | null>(null)
-  const [signups, setSignups] = useState<{ date: string; count: number }[]>([])
-  const [days, setDays] = useState<7 | 30 | 90>(30)
   const [pushBusy, setPushBusy] = useState(false)
   const [pushMsg, setPushMsg] = useState<string | null>(null)
 
   const load = () => {
     setPhase('loading')
-    Promise.all([api.adminStats(), adminSections.jobs().catch(() => null)])
-      .then(([s, j]) => { setStats(s); setJobs(j); setPhase('ready') })
+    adminSections.jobs()
+      .then(j => { setJobs(j); setPhase('ready') })
       .catch(e => setPhase(phaseOf(e)))
   }
   useEffect(load, [])
-  useEffect(() => { api.adminSignups(days).then(r => setSignups(r.points)).catch(() => {}) }, [days])
 
   async function push(send: () => Promise<{ ok: boolean }>, done: string) {
     setPushBusy(true)
@@ -44,59 +40,18 @@ export default function AdminSystemScreen({ navigate }: Props) {
   }
 
   return (
-    <AdminPage title="Система" onBack={() => navigate({ kind: 'admin' })} phase={phase} onRetry={load} testId="admin-system">
-      {stats && (
+    <AdminPage title="Система" section="админка · ещё" onBack={() => navigate(adminBack())} phase={phase} onRetry={load} testId="admin-system">
+      {jobs && (
         <>
           <div className="mn-eyebrow mb-2">Фоновые задачи</div>
           <div className="jewel-tile px-4 py-3 mb-5" data-testid="system-jobs">
             <div className="relative z-[1] font-sans text-[13px] text-jewelInk tabular-nums leading-relaxed">
-              {jobs ? (
-                <>
+              <>
                   Очередь: ждут {jobs.queue.enqueued} · по расписанию {jobs.queue.scheduled} · выполняются {jobs.queue.processing} · упали {jobs.queue.failed}
                   <br />Выполнено всего {fmt(jobs.queue.succeeded)} · серверов очереди {jobs.queue.servers}
                   <br />Переводы за сутки: ждут {jobs.translationsLast24h.pending} · готово {jobs.translationsLast24h.done} · не вышло {jobs.translationsLast24h.failed}
-                </>
-              ) : 'Не получилось прочитать очередь задач.'}
+              </>
             </div>
-          </div>
-
-          <div className="mn-eyebrow mb-2">Люди — подробно</div>
-          <div className="grid grid-cols-2 gap-2 mb-5">
-            <Tile label="Всего" value={fmt(stats.totalUsers)} />
-            <Tile label="Не блокировали бота" value={fmt(stats.activeUsers)} />
-            <Tile label="Платили" value={fmt(stats.proUsers)} accent="ruby" />
-            <Tile label="Первые 30 дней" value={fmt(stats.trialUsers)} accent="navy" />
-            <Tile label="Не платили, 30 дней прошло" value={fmt(stats.freeUsers)} />
-            <Tile label="Платят после 30 дней" value={`${stats.conversionPostTrialPct}%`} accent="gold" />
-            <Tile label="Новых за сутки" value={fmt(stats.newUsersToday)} />
-            <Tile label="Новых за неделю" value={fmt(stats.newUsersWeek)} />
-          </div>
-
-          <div className="mn-eyebrow mb-2">Выручка и словари</div>
-          <div className="grid grid-cols-2 gap-2 mb-5">
-            <Tile label="Звёзд всего" value={fmt(stats.totalRevenueStars)} accent="gold" />
-            <Tile label="Звёзд за неделю" value={fmt(stats.revenueWeekStars)} accent="gold" />
-            <Tile label="Покупок" value={fmt(stats.totalPurchases)} />
-            <Tile label="Возвратов" value={fmt(stats.totalRefunds)} />
-            <Tile label="Слов в словарях" value={fmt(stats.totalVocabularyEntries)} />
-            <Tile label="Слов на человека" value={`${stats.averageVocabularyPerUser}`} />
-          </div>
-
-          <div className="flex items-center justify-between mb-2">
-            <div className="mn-eyebrow">Новые люди по дням</div>
-            <div className="flex gap-1">
-              {([7, 30, 90] as const).map((d) => (
-                <button
-                  key={d} type="button" onClick={() => setDays(d)} aria-pressed={days === d}
-                  className={`px-3 min-h-[44px] rounded-xl font-sans text-[12px] font-bold border-[1.5px] ${days === d ? 'bg-jewelInk text-cream border-jewelInk' : 'bg-white text-jewelInk-mid border-jewelInk/25'}`}
-                >
-                  {d} дн
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="jewel-tile px-3 py-3 mb-5">
-            <div className="relative z-[1]"><SignupsChart points={signups} /></div>
           </div>
 
           <div className="mn-eyebrow mb-2">Тестовые пуши — только себе</div>
@@ -427,71 +382,6 @@ function BroadcastPanel() {
             </div>
           )}
         </div>
-      </div>
-    </div>
-  )
-}
-
-function Tile({
-  label,
-  value,
-  accent,
-}: {
-  label: string
-  value: string
-  accent?: 'navy' | 'ruby' | 'gold'
-}) {
-  const accentText =
-    accent === 'navy'
-      ? 'text-navy'
-      : accent === 'ruby'
-        ? 'text-ruby'
-        : accent === 'gold'
-          ? 'text-gold-deep'
-          : 'text-jewelInk'
-  return (
-    <div className="jewel-tile px-3 py-3">
-      <div className="relative z-[1]">
-        <div className="mn-eyebrow text-jewelInk-mid mb-1">{label}</div>
-        <div className={`font-sans text-[20px] font-extrabold tabular-nums leading-none ${accentText}`}>
-          {value}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SignupsChart({ points }: { points: { date: string; count: number }[] }) {
-  if (points.length === 0) return <div className="text-center text-jewelInk-mid font-sans text-[12px]">нет данных</div>
-  const w = 320
-  const h = 120
-  const max = Math.max(1, ...points.map((p) => p.count))
-  const barW = w / points.length
-  const total = points.reduce((sum, p) => sum + p.count, 0)
-  return (
-    <div>
-      <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none">
-        {points.map((p, i) => {
-          const barH = (p.count / max) * (h - 16)
-          const x = i * barW + barW * 0.15
-          const bw = barW * 0.7
-          return (
-            <rect
-              key={p.date}
-              x={x}
-              y={h - barH}
-              width={bw}
-              height={barH}
-              fill="#0d4a6e"
-              rx="1.5"
-            />
-          )
-        })}
-      </svg>
-      <div className="mt-1 flex justify-between font-sans text-[10px] text-jewelInk-mid">
-        <span>{points[0]?.date}</span>
-        <span className="font-bold">всего: {fmt(total)}</span>
-        <span>{points[points.length - 1]?.date}</span>
       </div>
     </div>
   )
