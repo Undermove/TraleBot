@@ -730,7 +730,9 @@ export interface SurveyQuestionDto {
   options: string[]
   /** У вопроса с вариантами есть ещё «Другое» с полем для своего ответа. */
   allowOther: boolean
-  /** Главная цифра вопроса: доля этого варианта среди ответивших, не считая выбравших headlineWithout. */
+  /** Устойчивые имена вариантов, по порядку («very», «unused»; пусто — у варианта имени нет). Остаются при варианте, как бы его ни переименовали. */
+  optionKeys?: string[] | null
+  /** Главная цифра вопроса: доля варианта с этим именем среди ответивших, не считая выбравших вариант с именем headlineWithout. */
   headlineOption?: string | null
   headlineWithout?: string | null
 }

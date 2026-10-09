@@ -748,7 +748,7 @@ public class AdminController : Controller
 
     private static object MapSurveyQuestion(Domain.Entities.SurveyQuestion q) => new
     {
-        q.Id, q.Text, kind = SurveyKindName(q.Kind), q.Options, q.AllowOther, q.HeadlineOption, q.HeadlineWithout
+        q.Id, q.Text, kind = SurveyKindName(q.Kind), q.Options, q.AllowOther, q.OptionKeys, q.HeadlineOption, q.HeadlineWithout
     };
 
     private static string SurveyKindName(Domain.Entities.SurveyQuestionKind kind) =>

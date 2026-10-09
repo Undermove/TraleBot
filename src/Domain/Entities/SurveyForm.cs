@@ -58,13 +58,28 @@ public class SurveyQuestion
     public bool AllowOther { get; set; }
 
     /// <summary>
-    /// The one number the owner reads this question for: the share of <see cref="HeadlineOption"/>
-    /// among those who answered, not counting those who chose <see cref="HeadlineWithout"/>
-    /// ("would be very disappointed" among people who still use the product). Null — no such number.
+    /// Stable names of the options, by position ("very", "unused"; empty for an option without one).
+    /// They stay with an option when its text is changed in the builder, so what refers to an
+    /// option by key — the headline number — does not depend on the wording. Null — no keys.
+    /// </summary>
+    public List<string>? OptionKeys { get; set; }
+
+    /// <summary>
+    /// The one number the owner reads this question for: the share of the option with this key
+    /// among those who answered, not counting those who chose the option with the key
+    /// <see cref="HeadlineWithout"/> ("would be very disappointed" among people who still use the
+    /// product). Null — no such number.
     /// </summary>
     public string? HeadlineOption { get; set; }
 
     public string? HeadlineWithout { get; set; }
+
+    /// <summary>The text of the option with this key as it is worded now; null when there is no such option.</summary>
+    public string? OptionByKey(string? key)
+    {
+        var index = string.IsNullOrEmpty(key) ? -1 : OptionKeys?.IndexOf(key) ?? -1;
+        return index >= 0 && index < Options.Count ? Options[index] : null;
+    }
 
     /// <summary>Everything a person can pick: the options and, when allowed, <see cref="SurveyForm.OtherLabel"/>.</summary>
     public IReadOnlyList<string> Choices() =>

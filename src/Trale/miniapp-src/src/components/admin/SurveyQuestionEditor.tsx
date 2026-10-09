@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CloseIcon } from '../../verbs/ui/icons'
 import type { SurveyBuilderKitDto, SurveyQuestionDto } from '../../api'
+import { headlineOf, keysOf, withOptions } from './surveyHeadline'
 
 // Один вопрос опроса на своём экране: текст, тип, варианты ответа и переключатель «Другое — свой ответ».
 // Варианты правятся тапами: назвать, убрать крестиком, добавить свой или готовый.
@@ -31,12 +32,16 @@ export default function SurveyQuestionEditor({ question, number, total, kit, pro
   const canAdd = options.length < max
   const offered = kit.suggestions.filter(s => !options.map(o => o.trim()).includes(s))
 
-  const setOptions = (next: string[]) => onChange({ ...question, options: next })
+  // Имена вариантов (optionKeys) ходят вместе с вариантами: переименование их не трогает, удаление убирает вместе с вариантом.
+  const keys = keysOf(question)
+  const rename = (i: number, value: string) => onChange(withOptions(question, options.map((x, j) => (j === i ? value : x)), keys))
+  const remove = (i: number) => onChange(withOptions(question, options.filter((_, j) => j !== i), keys.filter((_, j) => j !== i)))
   const addOption = (value = '') => {
     if (!canAdd) return
-    setOptions([...options, value])
+    onChange(withOptions(question, [...options, value], [...keys, '']))
     setRenaming(value ? null : options.length)
   }
+  const headline = headlineOf(question)
   const setKind = (kind: SurveyQuestionDto['kind']) => onChange({ ...question, kind, allowOther: kind === 'choice' ? question.allowOther : false })
 
   return (
@@ -73,7 +78,7 @@ export default function SurveyQuestionEditor({ question, number, total, kit, pro
                 {renaming === i ? (
                   <input
                     className={`${field} flex-1 min-w-0 min-h-[48px]`} autoFocus value={o} aria-label={`Вариант ${i + 1}`} maxLength={kit.limits.optionLength}
-                    onChange={e => setOptions(options.map((x, j) => (j === i ? e.target.value : x)))} onBlur={() => setRenaming(null)}
+                    onChange={e => rename(i, e.target.value)} onBlur={() => setRenaming(null)}
                     onKeyDown={e => { if (e.key === 'Enter') setRenaming(null) }}
                   />
                 ) : (
@@ -82,7 +87,7 @@ export default function SurveyQuestionEditor({ question, number, total, kit, pro
                   </button>
                 )}
                 <button
-                  type="button" onClick={() => { setOptions(options.filter((_, j) => j !== i)); setRenaming(null) }} aria-label={`Убрать вариант ${o.trim() || i + 1}`}
+                  type="button" onClick={() => { remove(i); setRenaming(null) }} aria-label={`Убрать вариант ${o.trim() || i + 1}`}
                   className="shrink-0 w-12 min-h-[48px] rounded-xl border-[1.5px] border-jewelInk/40 flex items-center justify-center"
                 >
                   <CloseIcon size={18} />
@@ -117,6 +122,18 @@ export default function SurveyQuestionEditor({ question, number, total, kit, pro
         </>
       ) : (
         <div className={small}>Человек увидит вопрос и поле, куда можно написать что угодно.</div>
+      )}
+
+      {headline.kind === 'ok' && (
+        <div className={small} data-testid="survey-headline-ok">
+          В результатах по этому вопросу будет главная цифра: доля «{headline.option}» среди ответивших
+          {headline.without ? `, не считая тех, кто выбрал «${headline.without}»` : ''}. Кнопки можно переименовать — цифра останется; убрать любую из этих двух — пропадёт.
+        </div>
+      )}
+      {headline.kind === 'lost' && (
+        <div className="font-sans text-[13px] font-bold text-ruby" data-testid="survey-headline-lost">
+          Главной цифры по этому вопросу в результатах не будет: {headline.why}. Чтобы вернуть её, добавь вопрос из готовых заново.
+        </div>
       )}
 
       {problem && <div className="font-sans text-[13px] text-ruby" data-testid="survey-editor-problem">{problem}</div>}

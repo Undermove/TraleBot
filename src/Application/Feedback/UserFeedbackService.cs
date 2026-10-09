@@ -369,10 +369,12 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
     /// chose the option it does not count. Null when the question has no such number or nobody is left to count.</summary>
     private static SurveyHeadline? Headline(SurveyQuestion question, IReadOnlyList<OptionCount> options)
     {
-        if (question.HeadlineOption == null) return null;
-        var counted = options.Where(o => o.Option != question.HeadlineWithout).Sum(o => o.Count);
-        var chose = options.First(o => o.Option == question.HeadlineOption).Count;
-        return new SurveyHeadline(question.HeadlineOption, question.HeadlineWithout, chose, counted);
+        var option = question.OptionByKey(question.HeadlineOption);
+        if (option == null) return null;
+        var without = question.OptionByKey(question.HeadlineWithout);
+        var counted = options.Where(o => o.Option != without).Sum(o => o.Count);
+        var chose = options.First(o => o.Option == option).Count;
+        return new SurveyHeadline(option, without, chose, counted);
     }
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
@@ -431,6 +433,7 @@ public record SurveyFunnel(int Sent, int AnsweredFirst, int OpenedForm, int Fini
 public record SurveySummary(
     string Key, string Title, int Questions, DateTime CreatedAtUtc, BroadcastAudience Audience, int Picked, int Pending, SurveyFunnel Funnel);
 
+/// <param name="Option">The headline option as it is worded in this survey.</param>
 /// <param name="Chose">People who chose <paramref name="Option"/>.</param>
 /// <param name="Of">People who answered the question, without those who chose <paramref name="Without"/>.</param>
 public record SurveyHeadline(string Option, string? Without, int Chose, int Of);

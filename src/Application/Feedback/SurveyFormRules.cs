@@ -47,7 +47,12 @@ public static class SurveyFormRules
             var question = new SurveyQuestion { Id = $"q{number}", Text = text, Kind = source!.Kind };
             if (source.Kind == SurveyQuestionKind.Choice)
             {
-                var options = (source.Options ?? []).Select(o => (o ?? "").Trim()).Where(o => o.Length > 0).ToList();
+                // Keys travel with their options: a blank option is dropped together with its key.
+                var kept = (source.Options ?? [])
+                    .Select((o, i) => (Text: (o ?? "").Trim(), Key: source.OptionKeys?.ElementAtOrDefault(i)?.Trim() ?? ""))
+                    .Where(o => o.Text.Length > 0).ToList();
+                var options = kept.Select(o => o.Text).ToList();
+                var keys = kept.Select(o => o.Key).ToList();
                 if (options.Count is < 2 or > MaxOptions) return $"Вопрос {number}: от 2 до {MaxOptions} вариантов ответа.";
                 if (options.Any(o => o.Length > MaxOptionLength)) return $"Вопрос {number}: вариант длиннее {MaxOptionLength} символов.";
                 if (options.Distinct().Count() != options.Count) return $"Вопрос {number}: варианты повторяются.";
@@ -55,12 +60,14 @@ public static class SurveyFormRules
                     return $"Вопрос {number}: вариант «{SurveyForm.OtherLabel}» уже добавляет переключатель «свой ответ» — убери его из списка.";
                 question.Options = options;
                 question.AllowOther = source.AllowOther;
-                // The headline number survives only while both of its options are still there.
-                if (source.HeadlineOption != null && options.Contains(source.HeadlineOption)
-                    && (source.HeadlineWithout == null || options.Contains(source.HeadlineWithout)))
+                if (keys.Where(k => k.Length > 0).GroupBy(k => k).Any(g => g.Count() > 1)) return $"Вопрос {number}: ключи вариантов повторяются.";
+                if (keys.Any(k => k.Length > 0)) question.OptionKeys = keys;
+                // The headline number lives while both of its options are still there — whatever they are called now.
+                if (!string.IsNullOrEmpty(source.HeadlineOption) && keys.Contains(source.HeadlineOption)
+                    && (string.IsNullOrEmpty(source.HeadlineWithout) || keys.Contains(source.HeadlineWithout)))
                 {
                     question.HeadlineOption = source.HeadlineOption;
-                    question.HeadlineWithout = source.HeadlineWithout;
+                    question.HeadlineWithout = string.IsNullOrEmpty(source.HeadlineWithout) ? null : source.HeadlineWithout;
                 }
             }
             else if (source.Kind != SurveyQuestionKind.Text)

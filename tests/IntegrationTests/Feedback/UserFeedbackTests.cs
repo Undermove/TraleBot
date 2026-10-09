@@ -611,6 +611,7 @@ public class UserFeedbackTests : TestBase
     // ── Опрос-форма: первый вопрос в боте, остальные — по странице в мини-аппе ──
 
     private static readonly string[] IfGone = ["Очень расстроюсь", "Немного расстроюсь", "Мне всё равно", "Уже не пользуюсь"];
+    private static readonly string[] IfGoneKeys = ["very", "somewhat", "indifferent", "unused"];
     private static readonly string[] WhatElse = ["Репетитор или курсы", "Другие приложения", "Только TraleBot"];
 
     /// <summary>q1 — in the bot, with a headline number; q2 — options and "Другое"; q3 — free text.</summary>
@@ -619,7 +620,7 @@ public class UserFeedbackTests : TestBase
         intro,
         questions = new object[]
         {
-            new { text = "Что ты почувствуешь, если TraleBot завтра исчезнет?", kind = "choice", options = IfGone, allowOther = false, headlineOption = IfGone[0], headlineWithout = IfGone[3] },
+            new { text = "Что ты почувствуешь, если TraleBot завтра исчезнет?", kind = "choice", options = IfGone, allowOther = false, optionKeys = IfGoneKeys, headlineOption = "very", headlineWithout = "unused" },
             Choice("Чем ещё ты пользуешься для грузинского?", WhatElse, allowOther: true),
             Free("А что в последний раз раздражало или мешало?")
         }
@@ -894,6 +895,61 @@ public class UserFeedbackTests : TestBase
         (await Call(people.Fan.TelegramId, HttpMethod.Get, "/api/admin/feedback/surveys/form-results")).Code.Should().Be(HttpStatusCode.NotFound);
     }
 
+    private static object IfGoneReworded(string[] options, string[] keys) => new
+    {
+        questions = new object[]
+        {
+            new { text = "Будешь скучать по TraleBot?", kind = "choice", options, allowOther = false, optionKeys = keys, headlineOption = "very", headlineWithout = "unused" },
+            Free("Почему?")
+        }
+    };
+
+    private async Task<JsonElement> HeadlineOf(string key) =>
+        (await Results(key)).GetProperty("questions")[0].GetProperty("headline");
+
+    [Test]
+    public async Task The_headline_number_follows_its_options_when_they_are_reworded_in_the_builder()
+    {
+        var fan = await AccessEnded();
+        var gone = await AccessEnded();
+        var lukewarm = await AccessEnded();
+        // The owner renamed every button, dropped one that is not a key option and put a blank line in between.
+        await LaunchForm("headline-renamed", IfGoneReworded(
+            ["Ещё как!", "", "Не особо", "Давно не захожу"], ["very", "somewhat", "indifferent", "unused"]));
+        await Press(fan, "headline-renamed", 0);
+        await Press(lukewarm, "headline-renamed", 1);
+        await Press(gone, "headline-renamed", 2);
+
+        var headline = await HeadlineOf("headline-renamed");
+        var stored = (await Admin(HttpMethod.Get, "campaigns/headline-renamed")).Body.GetProperty("survey").GetProperty("questions")[0];
+
+        (headline.GetProperty("option").GetString(), headline.GetProperty("without").GetString(), headline.GetProperty("chose").GetInt32(), headline.GetProperty("of").GetInt32())
+            .Should().Be(("Ещё как!", "Давно не захожу", 1, 2), "counted by the options' keys, shown in the words people saw");
+        stored.GetProperty("options").EnumerateArray().Select(o => o.GetString()).Should().Equal("Ещё как!", "Не особо", "Давно не захожу");
+        stored.GetProperty("optionKeys").EnumerateArray().Select(o => o.GetString()).Should().Equal("very", "indifferent", "unused");
+    }
+
+    [Test]
+    public async Task There_is_no_headline_number_once_one_of_its_two_options_is_gone()
+    {
+        await AccessEnded();
+        await LaunchForm("headline-no-very", IfGoneReworded(["Немного расстроюсь", "Мне всё равно", "Уже не пользуюсь"], ["somewhat", "indifferent", "unused"]));
+        await LaunchForm("headline-no-unused", IfGoneReworded(["Очень расстроюсь", "Немного расстроюсь", "Мне всё равно"], ["very", "somewhat", "indifferent"]));
+        // Options that merely read the same as the key ones, with no keys, are not the key ones.
+        await LaunchForm("headline-no-keys", new
+        {
+            questions = new object[] { new { text = "Будешь скучать?", kind = "choice", options = IfGone, allowOther = false, headlineOption = "very", headlineWithout = "unused" } }
+        });
+        var duplicateKeys = await PrepareForm("headline-dup", IfGoneReworded(["Да", "Нет"], ["very", "very"]));
+
+        (await HeadlineOf("headline-no-very")).ValueKind.Should().Be(JsonValueKind.Null);
+        (await HeadlineOf("headline-no-unused")).ValueKind.Should().Be(JsonValueKind.Null);
+        (await HeadlineOf("headline-no-keys")).ValueKind.Should().Be(JsonValueKind.Null);
+        var stored = (await Admin(HttpMethod.Get, "campaigns/headline-no-very")).Body.GetProperty("survey").GetProperty("questions")[0];
+        stored.GetProperty("headlineOption").ValueKind.Should().Be(JsonValueKind.Null, "the builder is told there will be no number");
+        duplicateKeys.Code.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Test]
     public async Task Results_can_be_narrowed_to_those_who_chose_one_option_of_the_first_question()
     {
@@ -1106,7 +1162,14 @@ public class UserFeedbackTests : TestBase
         var (code, body) = await Admin(HttpMethod.Get, "surveys/presets");
         code.Should().Be(HttpStatusCode.OK);
         var presets = body.GetProperty("presets").EnumerateArray().ToList();
-        presets.Select(p => p.GetProperty("id").GetString()).Should().Equal("users", "left");
+        presets.Select(p => p.GetProperty("id").GetString()).Should().Equal("users", "left", "paid");
+        var paid = presets[2].GetProperty("form");
+        paid.GetProperty("intro").GetString().Should().StartWith("Привет! Это автор TraleBot. Ты один из немногих, кто оформил подписку");
+        paid.GetProperty("questions").EnumerateArray().Select(q => q.GetProperty("kind").GetString()).Should().Equal("choice", "text", "text", "text", "choice");
+        paid.GetProperty("questions")[4].GetProperty("options").EnumerateArray().Select(o => o.GetString())
+            .Should().Equal("Подписка действует", "Перестал(а) заниматься", "Хватает бесплатного", "Дорого", "Просто забыл(а)");
+        presets.Should().OnlyContain(p => p.GetProperty("form").GetProperty("questions")[0].GetProperty("headlineOption").GetString() == "very"
+                                          || p.GetProperty("id").GetString() == "left", "the «would be very disappointed» question opens the forms for users and for those who paid");
 
         foreach (var preset in presets)
         {
@@ -1133,7 +1196,8 @@ public class UserFeedbackTests : TestBase
 
         // Every ready question can stand first or later in a built form — except that a free one cannot be first.
         var bank = body.GetProperty("bank").EnumerateArray().ToList();
-        bank.Select(q => q.GetProperty("text").GetString()).Should().OnlyHaveUniqueItems().And.HaveCountGreaterThanOrEqualTo(10);
+        bank.Select(q => q.GetProperty("text").GetString()).Should().OnlyHaveUniqueItems().And.HaveCount(13)
+            .And.Contain("Вспомни день, когда ты оформил(а) подписку. Что тогда подтолкнуло?").And.Contain("Если подписка у тебя закончилась — почему не продлил(а)?");
         foreach (var question in bank)
         {
             var (prepared, answer) = await Admin(HttpMethod.Post, "campaigns/prepare", new

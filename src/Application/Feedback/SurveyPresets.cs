@@ -40,7 +40,8 @@ public static class SurveyPresets
     {
         Text = "Что ты почувствуешь, если TraleBot завтра исчезнет?", Kind = SurveyQuestionKind.Choice,
         Options = ["Очень расстроюсь", "Немного расстроюсь", "Мне всё равно", "Уже не пользуюсь"],
-        HeadlineOption = "Очень расстроюсь", HeadlineWithout = "Уже не пользуюсь"
+        OptionKeys = ["very", "somewhat", "indifferent", "unused"],
+        HeadlineOption = "very", HeadlineWithout = "unused"
     };
     private static readonly SurveyQuestion WhatElseNow = Choice("Чем ещё ты пользуешься для грузинского?", true,
         "Репетитор или курсы", "Другие приложения", "Учебник или YouTube", "Только TraleBot");
@@ -60,6 +61,12 @@ public static class SurveyPresets
         "Читать вывески и меню", "Объясняться в быту", "Свободно разговаривать", "Понять, как устроен язык");
     private static readonly SurveyQuestion Disliked = Free("Что тебе не понравилось в TraleBot? Пиши как есть.");
 
+    // ── Тем, кто платил ──
+    public const string PaidIntro = "Привет! Это автор TraleBot. Ты один из немногих, кто оформил подписку, и мне очень важно твоё мнение. Это пять коротких вопросов.";
+    private static readonly SurveyQuestion WhyBought = Free("Вспомни день, когда ты оформил(а) подписку. Что тогда подтолкнуло?");
+    private static readonly SurveyQuestion WhyNotRenewed = Choice("Если подписка у тебя закончилась — почему не продлил(а)?", true,
+        "Подписка действует", "Перестал(а) заниматься", "Хватает бесплатного", "Дорого", "Просто забыл(а)");
+
     // ── Только в банке ──
     private static readonly SurveyQuestion Paywall = Choice("Что остановило от покупки полного доступа?", true,
         "Дорого", "Пока не нужно", "Не понял, что получу");
@@ -69,14 +76,16 @@ public static class SurveyPresets
         new("users", "Тем, кто пользуется", "Насколько TraleBot нужен, чем ещё занимаются и что помогает",
             Form(IfGone, WhatElseNow, WhyGeorgian, LastHelped, LastAnnoyed)),
         new("left", "Тем, кто перестал", "Ушли от TraleBot или от языка, после чего и чего хотели",
-            Form(LearningNow, AfterWhat, WhatElseThen, Goal, Disliked))
+            Form(LearningNow, AfterWhat, WhatElseThen, Goal, Disliked)),
+        new("paid", "Тем, кто платил", "Что подтолкнуло оформить подписку, что помогает и почему не продлили",
+            new SurveyForm { Intro = PaidIntro, Questions = [IfGone, WhyBought, LastHelped, LastAnnoyed, WhyNotRenewed] })
     ];
 
-    /// <summary>Ready questions the builder offers to add to a form: everything from the forms above and two more.</summary>
+    /// <summary>Ready questions the builder offers to add to a form: everything from the forms above and one more.</summary>
     public static readonly IReadOnlyList<SurveyQuestion> Bank =
     [
         IfGone, WhatElseNow, WhyGeorgian, LastHelped, LastAnnoyed,
-        LearningNow, AfterWhat, WhatElseThen, Goal, Disliked, Paywall
+        LearningNow, AfterWhat, WhatElseThen, Goal, Disliked, WhyBought, WhyNotRenewed, Paywall
     ];
 
     /// <summary>Answer buttons the builder offers to add by one tap.</summary>

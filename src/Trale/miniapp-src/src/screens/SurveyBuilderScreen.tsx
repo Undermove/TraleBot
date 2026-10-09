@@ -4,6 +4,7 @@ import LoaderLetter from '../components/LoaderLetter'
 import SurveyFormPages from '../components/SurveyFormPages'
 import SurveyQuestionEditor from '../components/admin/SurveyQuestionEditor'
 import { AUDIENCES } from '../components/admin/CampaignPanel'
+import { headlineOf, keysOf } from '../components/admin/surveyHeadline'
 import { CloseIcon } from '../verbs/ui/icons'
 import {
   adminCampaigns, adminFeedback, adminSurveys, ApiError,
@@ -69,9 +70,14 @@ export function questionProblem(q: SurveyQuestionDto, first: boolean, kit: Pick<
   return null
 }
 
-const clean = (q: SurveyQuestionDto): SurveyQuestionDto => ({
-  ...q, text: q.text.trim(), options: q.kind === 'choice' ? q.options.map(o => o.trim()).filter(Boolean) : [], allowOther: q.kind === 'choice' && q.allowOther
-})
+/** Вопрос в том виде, в каком он уходит на сервер: без пустых вариантов (вместе с их именами). */
+function clean(q: SurveyQuestionDto): SurveyQuestionDto {
+  const kept = q.kind === 'choice' ? q.options.map((o, i) => ({ text: o.trim(), key: keysOf(q)[i] })).filter(o => o.text) : []
+  return {
+    ...q, text: q.text.trim(), options: kept.map(o => o.text), allowOther: q.kind === 'choice' && q.allowOther,
+    optionKeys: kept.some(o => o.key) ? kept.map(o => o.key) : undefined
+  }
+}
 
 /** Сообщение так, как его увидит человек в Telegram: вступление, первый вопрос и кнопки-ответы под ним. */
 function TelegramPreview({ intro, first, otherLabel }: { intro: string; first?: SurveyQuestionDto; otherLabel: string }) {
@@ -109,6 +115,8 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
   const [presetId, setPresetId] = useState(CUSTOM)
   const [intro, setIntro] = useState('')
   const [questions, setQuestions] = useState<SurveyQuestionDto[]>([])
+  /** В выбранной готовой форме был вопрос с главной цифрой — чтобы сказать, если его убрали. */
+  const [presetHadHeadline, setPresetHadHeadline] = useState(false)
   /** Что открыто поверх списка вопросов: один вопрос, выбор готового вопроса или прогон формы. */
   const [view, setView] = useState<{ edit: number } | 'add' | 'preview' | 'intro' | null>(null)
 
@@ -157,6 +165,7 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
     setPresetId(preset?.id ?? CUSTOM)
     setIntro(preset?.form.intro ?? kit!.intro)
     setQuestions(preset ? preset.form.questions.map(q => ({ ...q, options: [...q.options] })) : [])
+    setPresetHadHeadline(Boolean(preset?.form.questions.some(q => q.headlineOption)))
     go(2)
     if (!preset) setView('add')
   }
@@ -177,7 +186,7 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
     setQuestions(next)
   }
   const add = (q: SurveyQuestionDto, open: boolean) => {
-    setQuestions([...questions, { ...q, id: undefined, options: [...q.options] }])
+    setQuestions([...questions, { ...q, id: undefined, options: [...q.options], optionKeys: q.optionKeys ? [...q.optionKeys] : undefined }])
     show(open ? { edit: questions.length } : null)
   }
 
@@ -312,6 +321,10 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
                       <div className={`${small} break-words mt-0.5`}>{summary(q, kit!.otherLabel)}</div>
                     </button>
                     {problems[i] && <div className="font-sans text-[12px] font-bold text-ruby mt-1" data-testid={`survey-question-problem-${i}`}>{problems[i]}</div>}
+                    {headlineOf(q).kind === 'ok' && <div className={`${small} mt-1`} data-testid={`survey-question-headline-${i}`}>с главной цифрой в результатах</div>}
+                    {headlineOf(q).kind === 'lost' && (
+                      <div className="font-sans text-[12px] font-bold text-ruby mt-1" data-testid={`survey-question-headline-${i}`}>главной цифры в результатах не будет — открой вопрос, там написано почему</div>
+                    )}
                     <div className="flex items-center gap-2 mt-2">
                       <button type="button" className={`${action} !min-h-[44px] flex-1`} onClick={() => show({ edit: i })}>Изменить</button>
                       <button type="button" className={iconButton} disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Поднять вопрос ${i + 1}`}><Arrow up /></button>
@@ -323,6 +336,11 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
               ))}
             </div>
 
+            {presetHadHeadline && !questions.some(q => q.headlineOption) && (
+              <div className="font-sans text-[13px] font-bold text-ruby" data-testid="survey-headline-removed">
+                В этой форме был вопрос с главной цифрой — «доля тех, кто очень расстроится без TraleBot». Ты его убрал, цифры в результатах не будет. Вернуть его можно через «Добавить вопрос».
+              </div>
+            )}
             {canAdd
               ? <button type="button" className={action} onClick={() => show('add')} data-testid="survey-add-question">Добавить вопрос</button>
               : <div className={small}>В опросе не больше {kit!.limits.questions} вопросов.</div>}

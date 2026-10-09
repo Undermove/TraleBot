@@ -22,7 +22,8 @@ const campaigns = vi.mocked(mockedCampaigns)
 const surveys = vi.mocked(mockedSurveys)
 const feedback = vi.mocked(mockedFeedback)
 
-const ifGone: SurveyQuestionDto = { text: 'Что ты почувствуешь, если TraleBot завтра исчезнет?', kind: 'choice', options: ['Очень расстроюсь', 'Немного расстроюсь', 'Мне всё равно', 'Уже не пользуюсь'], allowOther: false }
+const ifGone: SurveyQuestionDto = { text: 'Что ты почувствуешь, если TraleBot завтра исчезнет?', kind: 'choice', options: ['Очень расстроюсь', 'Немного расстроюсь', 'Мне всё равно', 'Уже не пользуюсь'], allowOther: false,
+  optionKeys: ['very', 'somewhat', 'indifferent', 'unused'], headlineOption: 'very', headlineWithout: 'unused' }
 const whyGeorgian: SurveyQuestionDto = { text: 'Зачем тебе грузинский?', kind: 'choice', options: ['Живу в Грузии', 'Собираюсь переехать', 'Еду в поездку', 'Семья или близкие', 'Просто интересно'], allowOther: true }
 const annoyed: SurveyQuestionDto = { text: 'А что в последний раз раздражало или мешало?', kind: 'text', options: [], allowOther: false }
 const paywall: SurveyQuestionDto = { text: 'Что остановило от покупки полного доступа?', kind: 'choice', options: ['Дорого', 'Пока не нужно'], allowOther: true }
@@ -150,6 +151,48 @@ describe('SurveyBuilderScreen', () => {
 
     expect(cardTexts()[1]).toBe('Вопрос 2Для чего тебе грузинский?Живу в Грузии · Собираюсь переехать · Для работы · Нет времени')
     expect(cardTexts()[0]).toContain(ifGone.text)
+  })
+
+  it('the headline number keeps to its two options through renaming, and the builder says so when one of them is removed', async () => {
+    campaigns.prepare.mockResolvedValue(picked('survey-2026-10-users-test', 1, false))
+    campaigns.send.mockResolvedValue({ sent: 1, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status })
+    await open()
+    await userEvent.click(screen.getByTestId('survey-preset-users'))
+    expect(screen.getByTestId('survey-question-headline-0').textContent).toBe('с главной цифрой в результатах')
+    expect(screen.queryByTestId('survey-question-headline-1')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('survey-question-open-0'))
+    expect(screen.getByTestId('survey-headline-ok').textContent).toContain('доля «Очень расстроюсь» среди ответивших, не считая тех, кто выбрал «Уже не пользуюсь»')
+    await userEvent.click(screen.getByTestId('survey-option-0'))
+    await userEvent.clear(screen.getByLabelText('Вариант 1'))
+    await userEvent.type(screen.getByLabelText('Вариант 1'), 'Ещё как!{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Убрать вариант Немного расстроюсь' }))
+    expect(screen.getByTestId('survey-headline-ok').textContent).toContain('доля «Ещё как!» среди ответивших, не считая тех, кто выбрал «Уже не пользуюсь»')
+    expect(screen.queryByTestId('survey-headline-lost')).toBeNull()
+    await userEvent.click(screen.getByTestId('survey-question-done'))
+    await next()
+    await next()
+    await userEvent.click(screen.getByTestId('survey-send-me'))
+    await waitFor(() => expect(campaigns.prepare).toHaveBeenCalledTimes(1))
+    expect(campaigns.prepare.mock.calls[0][0].survey?.questions[0]).toMatchObject({
+      options: ['Ещё как!', 'Мне всё равно', 'Уже не пользуюсь'], optionKeys: ['very', 'indifferent', 'unused'], headlineOption: 'very', headlineWithout: 'unused'
+    })
+
+    await userEvent.click(screen.getByTestId('survey-back'))
+    await userEvent.click(screen.getByTestId('survey-back'))
+    await userEvent.click(screen.getByTestId('survey-question-open-0'))
+    await userEvent.click(screen.getByRole('button', { name: 'Убрать вариант Уже не пользуюсь' }))
+    expect(screen.queryByTestId('survey-headline-ok')).toBeNull()
+    expect(screen.getByTestId('survey-headline-lost').textContent).toContain('Главной цифры по этому вопросу в результатах не будет: убран один из двух вариантов')
+    await userEvent.click(screen.getByTestId('survey-question-done'))
+    expect(screen.getByTestId('survey-question-headline-0').textContent).toContain('главной цифры в результатах не будет')
+    expect(screen.queryByTestId('survey-headline-removed')).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Убрать вопрос 1' }))
+    expect(screen.getByTestId('survey-headline-removed').textContent).toContain('Ты его убрал, цифры в результатах не будет')
+    await userEvent.click(screen.getByTestId('survey-add-question'))
+    await userEvent.click(within(screen.getByTestId('survey-bank')).getByRole('button', { name: new RegExp(ifGone.text.slice(0, 20)) }))
+    expect(screen.queryByTestId('survey-headline-removed')).toBeNull()
   })
 
   it('the first question cannot be free or have more than four options — the builder says why and does not go on', async () => {

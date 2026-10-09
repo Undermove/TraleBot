@@ -61,7 +61,7 @@ const plans = {
 
 const choice = (text: string, allowOther: boolean, ...options: string[]) => ({ text, kind: 'choice' as const, options, allowOther })
 const free = (text: string) => ({ text, kind: 'text' as const, options: [] as string[], allowOther: false })
-const ifGone = { ...choice('Что ты почувствуешь, если TraleBot завтра исчезнет?', false, 'Очень расстроюсь', 'Немного расстроюсь', 'Мне всё равно', 'Уже не пользуюсь'), headlineOption: 'Очень расстроюсь', headlineWithout: 'Уже не пользуюсь' }
+const ifGone = { ...choice('Что ты почувствуешь, если TraleBot завтра исчезнет?', false, 'Очень расстроюсь', 'Немного расстроюсь', 'Мне всё равно', 'Уже не пользуюсь'), optionKeys: ['very', 'somewhat', 'indifferent', 'unused'], headlineOption: 'very', headlineWithout: 'unused' }
 const whatElseNow = choice('Чем ещё ты пользуешься для грузинского?', true, 'Репетитор или курсы', 'Другие приложения', 'Учебник или YouTube', 'Только TraleBot')
 const whyGeorgian = choice('Зачем тебе грузинский?', true, 'Живу в Грузии', 'Собираюсь переехать', 'Еду в поездку', 'Семья или близкие', 'Просто интересно')
 const lastHelped = free('Вспомни последний раз, когда TraleBot тебе реально помог. Что это было?')
@@ -72,14 +72,18 @@ const whatElseThen = choice('Что ещё, кроме TraleBot, помогал�
 const goal = choice('Чего хотелось добиться в самом начале?', true, 'Читать вывески и меню', 'Объясняться в быту', 'Свободно разговаривать', 'Понять, как устроен язык')
 const disliked = free('Что тебе не понравилось в TraleBot? Пиши как есть.')
 const paywallQuestion = choice('Что остановило от покупки полного доступа?', true, 'Дорого', 'Пока не нужно', 'Не понял, что получу')
+const whyBought = free('Вспомни день, когда ты оформил(а) подписку. Что тогда подтолкнуло?')
+const whyNotRenewed = choice('Если подписка у тебя закончилась — почему не продлил(а)?', true, 'Подписка действует', 'Перестал(а) заниматься', 'Хватает бесплатного', 'Дорого', 'Просто забыл(а)')
+const paidIntro = 'Привет! Это автор TraleBot. Ты один из немногих, кто оформил подписку, и мне очень важно твоё мнение. Это пять коротких вопросов.'
 const intro = 'Привет! Это автор TraleBot. Помоги сделать его лучше — ответь на несколько коротких вопросов.'
 const users = [ifGone, whatElseNow, whyGeorgian, lastHelped, lastAnnoyed]
 const kit = {
   presets: [
     { id: 'users', title: 'Тем, кто пользуется', about: 'Насколько TraleBot нужен, чем ещё занимаются и что помогает', form: { intro, questions: users } },
     { id: 'left', title: 'Тем, кто перестал', about: 'Ушли от TraleBot или от языка, после чего и чего хотели', form: { intro, questions: [learningNow, afterWhat, whatElseThen, goal, disliked] } },
+    { id: 'paid', title: 'Тем, кто платил', about: 'Что подтолкнуло оформить подписку, что помогает и почему не продлили', form: { intro: paidIntro, questions: [ifGone, whyBought, lastHelped, lastAnnoyed, whyNotRenewed] } },
   ],
-  bank: [...users, learningNow, afterWhat, whatElseThen, goal, disliked, paywallQuestion],
+  bank: [...users, learningNow, afterWhat, whatElseThen, goal, disliked, whyBought, whyNotRenewed, paywallQuestion],
   suggestions: ['Нет времени', 'Дорого', 'Всё устраивает', 'Сложно', 'Скучно', 'Мало практики', 'Не помню', 'Не знаю'],
   intro,
   otherLabel: 'Другое',
@@ -506,7 +510,8 @@ test.describe('владелец', () => {
     await page.getByTestId('admin-section-survey').click()
 
     await expect(stepTitle(page)).toHaveText('Выбери опрос')
-    await expect(page.locator('[data-testid^="survey-preset-"]')).toHaveCount(3)
+    await expect(page.locator('[data-testid^="survey-preset-"]')).toHaveCount(4)
+    await expect(page.getByTestId('survey-preset-paid')).toContainText('Вспомни день, когда ты оформил(а) подписку. Что тогда подтолкнуло?')
     await expect(page.getByTestId('survey-preset-left')).toContainText('После чего ты перестал(а) открывать TraleBot?')
     await fits(page)
     await shot(page, 'form-1-choose', true)
@@ -582,12 +587,62 @@ test.describe('владелец', () => {
     expect(sent.survey.intro).toBe(intro)
     expect(sent.survey.questions.map((q: any) => q.text)).toEqual([ifGone.text, whatElseNow.text, whyGeorgian.text, lastHelped.text, lastAnnoyed.text])
     expect(sent.survey.questions[1]).toMatchObject({ kind: 'choice', options: ['Репетитор или курсы', 'Duolingo и другие приложения', 'Только TraleBot'], allowOther: true })
-    expect(sent.survey.questions[0]).toMatchObject({ headlineOption: 'Очень расстроюсь', headlineWithout: 'Уже не пользуюсь' })
+    expect(sent.survey.questions[0]).toMatchObject({ optionKeys: ['very', 'somewhat', 'indifferent', 'unused'], headlineOption: 'very', headlineWithout: 'unused' })
     expect(calls.sent).toEqual(['survey-2026-10-users-test'])
     await expect(page.getByTestId('survey-send')).toBeDisabled()
     await fits(page)
     await shot(page, 'form-7-send', true)
     expect(calls.formAnswers).toEqual([])
+  })
+
+  test('the form for those who paid: the headline number survives renamed buttons, and the builder warns when it is lost', async ({ page }) => {
+    const calls = await setup(page, { me: owner })
+    await openAdmin(page)
+    await page.getByTestId('admin-section-survey').click()
+    await page.getByTestId('survey-preset-paid').click()
+
+    await expect(page.getByTestId('survey-preview')).toContainText(`${paidIntro}\n\n${ifGone.text}`)
+    await expect(page.locator('[data-testid^="survey-question-open-"]')).toHaveCount(5)
+    await expect(card(page, 4)).toContainText('Подписка действует · Перестал(а) заниматься · Хватает бесплатного · Дорого · Просто забыл(а) · Другое')
+    await expect(page.getByTestId('survey-question-headline-0')).toHaveText('с главной цифрой в результатах')
+    await fits(page)
+    await shot(page, 'form-10-paid-questions', true)
+
+    await page.getByTestId('survey-question-open-0').click()
+    await page.getByTestId('survey-option-0').click()
+    await page.getByLabel('Вариант 1').fill('Будет очень жаль')
+    await page.getByLabel('Вариант 1').press('Enter')
+    await expect(page.getByTestId('survey-headline-ok')).toContainText('доля «Будет очень жаль» среди ответивших, не считая тех, кто выбрал «Уже не пользуюсь»')
+    await fits(page)
+    await shot(page, 'form-11-headline-kept', true)
+    await page.getByTestId('survey-question-done').click()
+    await page.getByTestId('survey-next').click()
+    await page.getByTestId('survey-audience-paying').click()
+    await page.getByTestId('survey-next').click()
+    await page.getByTestId('survey-send-me').click()
+    await expect(page.getByTestId('survey-note')).toContainText('пройди форму до конца')
+    expect(calls.prepared[0].newSurveySlug).toBe('paid-test')
+    expect(calls.prepared[0].survey.intro).toBe(paidIntro)
+    expect(calls.prepared[0].survey.questions[0]).toMatchObject({
+      options: ['Будет очень жаль', 'Немного расстроюсь', 'Мне всё равно', 'Уже не пользуюсь'],
+      optionKeys: ['very', 'somewhat', 'indifferent', 'unused'], headlineOption: 'very', headlineWithout: 'unused',
+    })
+
+    await page.getByTestId('survey-back').click()
+    await page.getByTestId('survey-back').click()
+    await page.getByTestId('survey-question-open-0').click()
+    await page.getByRole('button', { name: 'Убрать вариант Уже не пользуюсь' }).click()
+    await expect(page.getByTestId('survey-headline-ok')).toHaveCount(0)
+    await expect(page.getByTestId('survey-headline-lost')).toContainText('Главной цифры по этому вопросу в результатах не будет')
+    await fits(page)
+    await shot(page, 'form-12-headline-lost', true)
+    await page.getByTestId('survey-question-done').click()
+    await expect(page.getByTestId('survey-question-headline-0')).toContainText('главной цифры в результатах не будет')
+
+    await page.getByRole('button', { name: 'Убрать вопрос 1' }).click()
+    await expect(page.getByTestId('survey-headline-removed')).toContainText('Ты его убрал, цифры в результатах не будет')
+    await fits(page)
+    await shot(page, 'form-13-headline-question-removed', true)
   })
 
   test('the builder explains why a question cannot stand first', async ({ page }) => {
