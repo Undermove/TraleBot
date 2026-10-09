@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+import { adminFeedback } from '../../api'
 import type { Screen } from '../../types'
 
 // Подразделы админки: у рассылки, конструктора опроса и отзывов — свои экраны, сюда выведены только входы.
@@ -9,6 +11,10 @@ const SECTIONS: { id: string; screen: Screen; name: string; about: string }[] = 
 ]
 
 export default function AdminSections({ navigate }: { navigate: (s: Screen) => void }) {
+  /** Сколько человек написали и ждут ответа — на плитке «Отзывы». */
+  const [unanswered, setUnanswered] = useState(0)
+  useEffect(() => { adminFeedback.overview({ take: 1 }).then(r => setUnanswered(r.unanswered ?? 0)).catch(() => {}) }, [])
+
   return (
     <div className="mb-5" data-testid="admin-sections">
       <div className="mn-eyebrow mb-2">Разделы</div>
@@ -20,7 +26,14 @@ export default function AdminSections({ navigate }: { navigate: (s: Screen) => v
           >
             <div className="relative z-[1] flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="font-sans text-[15px] font-extrabold text-jewelInk">{s.name}</div>
+                <div className="font-sans text-[15px] font-extrabold text-jewelInk">
+                  {s.name}
+                  {s.id === 'feedback' && unanswered > 0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-lg bg-ruby text-white font-sans text-[12px] font-extrabold tabular-nums align-middle" data-testid="admin-unanswered">
+                      без ответа: {unanswered}
+                    </span>
+                  )}
+                </div>
                 <div className="font-sans text-[12px] text-jewelInk-mid mt-0.5">{s.about}</div>
               </div>
               <span aria-hidden className="text-jewelInk-hint text-[14px] shrink-0">→</span>

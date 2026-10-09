@@ -39,7 +39,7 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
   const [state, setState] = useState<State>('loading-plans')
   const [plans, setPlans] = useState<Plan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<string>(RECOMMENDED_PLAN)
-  // «Что остановило?»: сервер заранее говорит, есть ли что спросить, если шторку закроют не купив,
+  // «Что смутило?»: сервер заранее говорит, есть ли что спросить, если шторку закроют не купив,
   // — тогда закрытие не ждёт ответа сети, когда спрашивать нечего. Сам показ сервер запоминает при закрытии.
   const questionDue = useRef(false)
   const [questionId, setQuestionId] = useState<string | null>(null)
@@ -221,13 +221,13 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
         }}
         role="dialog"
         aria-modal="true"
-        aria-label={questionId ? 'Что остановило?' : 'Про-доступ'}
+        aria-label={questionId ? 'Что смутило?' : 'Про-доступ'}
       >
         {/* Drag handle */}
         <div className="w-8 h-1 bg-jewelInk/20 rounded-full mx-auto mt-3 mb-4" />
 
         <div className="px-5 pb-6 flex flex-col gap-4">
-          {/* «Что остановило?» replaces everything; otherwise the success state — a thank-you replacing the plan list */}
+          {/* «Что смутило?» replaces everything; otherwise the success state — a thank-you replacing the plan list */}
           {questionId ? (
             <PaywallDeclineQuestion questionId={questionId} onDone={dismiss} />
           ) : state === 'success' ? (

@@ -38,13 +38,17 @@ export type Screen =
   | { kind: 'admin-broadcast' }
   /** resume — имя начатого опроса: открыть сразу его отправку (шаг 4), чтобы дослать. */
   | { kind: 'admin-survey'; resume?: string }
-  /** view — что открыто: список (по умолчанию), один опрос, ответы с экрана покупки или «написали автору». */
-  | { kind: 'admin-feedback'; view?: { survey: string } | 'paywall' | 'messages' }
+  /** view — что открыто: список (по умолчанию), один опрос, ответы с экрана покупки, все, кто что-то написал, или переписка с одним человеком. */
+  | { kind: 'admin-feedback'; view?: FeedbackView | FeedbackThreadView }
   | { kind: 'admin-user'; telegramId: number }
   /** Проверка глаголов от нейросети (только владелец). lemma — сразу открыть этот глагол. */
   | { kind: 'verb-review'; lemma?: string }
   | { kind: 'vocabulary-list'; filter?: 'verbs'; verb?: import('./verbs/deepLink').VerbLink }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
+
+export type FeedbackView = { survey: string } | 'paywall' | 'threads'
+/** Переписка с человеком. quote — текст, на который отвечают; back — откуда пришли, туда и «Назад». */
+export interface FeedbackThreadView { thread: number; quote?: string; back?: FeedbackView }
 
 export interface QuizQuestion {
   id: string

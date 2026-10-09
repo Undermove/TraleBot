@@ -12,7 +12,7 @@ namespace Infrastructure.Telegram.Services;
 public class TelegramMessageSender(
     ITelegramBotClient bot,
     BotConfiguration config,
-    ILoggerFactory loggerFactory) : ITelegramMessageSender, ICampaignMessageSender
+    ILoggerFactory loggerFactory) : ITelegramMessageSender, ICampaignMessageSender, Application.Feedback.IFeedbackReplySender
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<TelegramMessageSender>();
 
@@ -70,6 +70,26 @@ public class TelegramMessageSender(
             });
         }
 
+        return await SendAsync(telegramId, text, keyboard, $"Campaign {campaignKey}", ct);
+    }
+
+    public const string ReplyButton = "Ответить";
+
+    /// <summary>The owner's answer to a person's feedback. The button under it opens "Написать автору"
+    /// in the mini-app with the conversation — a text typed in the chat is a word to translate, not a reply.</summary>
+    public Task<CampaignSendAttempt> SendAsync(long telegramId, string text, CancellationToken ct)
+    {
+        var keyboard = config.MiniAppEnabled && !string.IsNullOrEmpty(config.HostAddress)
+            ? new InlineKeyboardMarkup(InlineKeyboardButton.WithWebApp(
+                ReplyButton, new WebAppInfo { Url = $"{config.NormalizedHost()}/?screen=feedback&thread=1" }))
+            : null;
+        return SendAsync(telegramId, text, keyboard, "Feedback reply", ct);
+    }
+
+    /// <summary>One message, and what Telegram said about it. Never throws.</summary>
+    private async Task<CampaignSendAttempt> SendAsync(
+        long telegramId, string text, InlineKeyboardMarkup? keyboard, string what, CancellationToken ct)
+    {
         try
         {
             await bot.SendTextMessageAsync(telegramId, text, replyMarkup: keyboard, cancellationToken: ct);
@@ -86,13 +106,13 @@ public class TelegramMessageSender(
         catch (ApiRequestException ex)
         {
             // Telegram answered with an error — the message was not delivered.
-            _logger.LogWarning(ex, "Campaign {Campaign}: Telegram rejected the message for {TelegramId}", campaignKey, telegramId);
+            _logger.LogWarning(ex, "{What}: Telegram rejected the message for {TelegramId}", what, telegramId);
             return new CampaignSendAttempt(CampaignSendOutcome.Rejected, Error: $"{ex.ErrorCode}: {ex.Message}");
         }
         catch (Exception ex)
         {
             // No answer (network, timeout): unknown whether it was delivered.
-            _logger.LogWarning(ex, "Campaign {Campaign}: no answer from Telegram for {TelegramId}", campaignKey, telegramId);
+            _logger.LogWarning(ex, "{What}: no answer from Telegram for {TelegramId}", what, telegramId);
             return new CampaignSendAttempt(CampaignSendOutcome.Unknown, Error: ex.Message);
         }
     }

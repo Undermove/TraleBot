@@ -34,6 +34,7 @@ public interface ITraleDbContext
     DbSet<BroadcastDelivery> BroadcastDeliveries { get; }
     DbSet<QueuedTranslation> QueuedTranslations { get; }
     DbSet<UserFeedback> UserFeedback { get; }
+    DbSet<FeedbackReply> FeedbackReplies { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     EntityEntry Entry(object entity);

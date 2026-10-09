@@ -30,6 +30,31 @@ namespace Persistence.Migrations
                 nullable: true);
 
             migrationBuilder.CreateTable(
+                name: "FeedbackReplies",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Kind = table.Column<int>(type: "integer", nullable: false),
+                    Text = table.Column<string>(type: "character varying(3500)", maxLength: 3500, nullable: true),
+                    Quote = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Error = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    ClientToken = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FeedbackReplies", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FeedbackReplies_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UserFeedback",
                 columns: table => new
                 {
@@ -55,6 +80,17 @@ namespace Persistence.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_FeedbackReplies_ClientToken",
+                table: "FeedbackReplies",
+                column: "ClientToken",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FeedbackReplies_UserId_CreatedAtUtc",
+                table: "FeedbackReplies",
+                columns: new[] { "UserId", "CreatedAtUtc" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserFeedback_CreatedAtUtc",
                 table: "UserFeedback",
                 column: "CreatedAtUtc");
@@ -75,6 +111,9 @@ namespace Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "FeedbackReplies");
+
             migrationBuilder.DropTable(
                 name: "UserFeedback");
 

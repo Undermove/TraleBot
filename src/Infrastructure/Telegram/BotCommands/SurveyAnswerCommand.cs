@@ -26,8 +26,8 @@ public class SurveyAnswerCommand(
     private const string Prefix = "/survey|";
     private readonly ILogger _logger = loggerFactory.CreateLogger<SurveyAnswerCommand>();
 
-    public const string ThanksText = "Спасибо, записал! Хочешь рассказать подробнее — нажми кнопку ниже.";
-    public const string ThanksTextWithoutButton = "Спасибо, записал!";
+    public const string ThanksText = "Спасибо, ответ у меня! Хочешь рассказать подробнее — нажми кнопку ниже.";
+    public const string ThanksTextWithoutButton = "Спасибо, ответ у меня!";
     public const string TellMoreButton = "Написать подробнее";
     public const string ContinueButton = "Продолжить";
 
@@ -54,9 +54,9 @@ public class SurveyAnswerCommand(
 
         await AnswerPress(request, answer.Outcome switch
         {
-            SurveyAnswerOutcome.Recorded => "Спасибо, записал!",
-            SurveyAnswerOutcome.Changed => $"Поменял ответ: «{answer.Button}»",
-            SurveyAnswerOutcome.Same => "Этот ответ уже записан",
+            SurveyAnswerOutcome.Recorded => "Спасибо, ответ у меня!",
+            SurveyAnswerOutcome.Changed => $"Ответ изменён: «{answer.Button}»",
+            SurveyAnswerOutcome.Same => "Этот ответ уже у меня",
             _ => "Этот опрос уже закрыт"
         }, token);
 

@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
-import { Answers, Counts, answered, audienceName, day, paywallLabel } from '../components/admin/feedbackView'
-import { adminFeedback, ApiError, type AdminFeedbackDto, type AdminFeedbackItem, type AdminSurveyDto, type AdminSurveyResultsDto } from '../api'
-import type { ProgressState, Screen } from '../types'
+import { Answers, Counts, STATUS, answered, audienceName, day, paywallLabel, when } from '../components/admin/feedbackView'
+import FeedbackThread from '../components/admin/FeedbackThread'
+import {
+  adminFeedback, adminThreads, ApiError,
+  type AdminFeedbackDto, type AdminFeedbackItem, type AdminSurveyDto, type AdminSurveyResultsDto, type FeedbackThreadSummaryDto
+} from '../api'
+import type { FeedbackThreadView, FeedbackView, ProgressState, Screen } from '../types'
 
-// «Отзывы» — подраздел админки, только чтение. Список: экран покупки («Что остановило?»), «Написали
+// «Отзывы» — подраздел админки, только чтение. Список: экран покупки («Что смутило?»), «Написали
 // автору» и опросы по одному; по тапу — свой экран. У опроса: воронка (получили → ответили на первый
 // вопрос → открыли форму → дошли до конца), потом каждый вопрос со счётчиками и текстами; ответы можно
 // сузить до тех, кто выбрал определённый вариант первого вопроса.
+// У каждого текста — «Ответить»: открывается переписка с этим человеком (components/admin/FeedbackThread).
+// «Сообщения от людей» — все, кто что-то написал, со статусом и фильтром «Без ответа».
 // То же самое за любой срок — scripts/sql/feedback-report.sql.
 
 type View = Extract<Screen, { kind: 'admin-feedback' }>['view']
@@ -25,10 +31,11 @@ const heading = 'font-sans text-[17px] font-extrabold text-jewelInk leading-snug
 
 /** Какие ответы нужны экрану: у списка и опроса — только счётчики, у остальных — свои тексты. */
 function only(view: View): { kind?: AdminFeedbackItem['kind']; take?: number } {
-  if (view === 'paywall') return { kind: 'paywall' }
-  if (view === 'messages') return { kind: 'message' }
-  return { take: 1 }
+  return view === 'paywall' ? { kind: 'paywall' } : { take: 1 }
 }
+
+const isThread = (view: View): view is FeedbackThreadView => typeof view === 'object' && 'thread' in view
+const KIND: Record<AdminFeedbackItem['kind'], string> = { message: 'письмо автору', survey: 'ответ в опросе', paywall: 'экран покупки' }
 
 const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((100 * part) / whole)}%` : '—')
 
@@ -59,7 +66,20 @@ function Funnel({ survey }: { survey: AdminSurveyDto }) {
 export default function AdminFeedbackScreen({ progress, view, navigate }: Props) {
   const [data, setData] = useState<AdminFeedbackDto | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
-  const surveyKey = typeof view === 'object' ? view.survey : null
+  const surveyKey = typeof view === 'object' && 'survey' in view ? view.survey : null
+  const threadView = isThread(view) ? view : null
+  const [threads, setThreads] = useState<{ unanswered: number; threads: FeedbackThreadSummaryDto[] } | null>(null)
+  /** «Без ответа» — только те, кто ждёт; иначе все, кто что-то написал. */
+  const [waitingOnly, setWaitingOnly] = useState(true)
+
+  useEffect(() => {
+    if (view !== 'threads') return
+    let cancelled = false
+    adminThreads.list(waitingOnly)
+      .then(r => { if (!cancelled) setThreads(r) })
+      .catch(e => { if (!cancelled) setProblem(e instanceof ApiError && e.status === 404 ? 'Нет доступа.' : 'Не получилось загрузить. Попробуй ещё раз.') })
+    return () => { cancelled = true }
+  }, [view, waitingOnly])
   const [results, setResults] = useState<AdminSurveyResultsDto | null>(null)
   /** Вариант первого вопроса, по которому сужены ответы на остальные; null — все. */
   const [segment, setSegment] = useState<string | null>(null)
@@ -81,33 +101,42 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
       .then(d => { if (!cancelled) setData(d) })
       .catch(e => { if (!cancelled) setProblem(e instanceof ApiError && e.status === 404 ? 'Нет доступа.' : 'Не получилось загрузить. Попробуй ещё раз.') })
     return () => { cancelled = true }
-  }, [view === undefined ? '' : typeof view === 'string' ? view : view.survey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [view === undefined ? '' : typeof view === 'string' ? view : JSON.stringify(view)]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const open = (next: View) => navigate({ kind: 'admin-feedback', view: next })
   const openUser = (telegramId: number) => navigate({ kind: 'admin-user', telegramId })
-  const back = () => navigate(view ? { kind: 'admin-feedback' } : { kind: 'admin' })
+  const back = () => navigate(threadView ? { kind: 'admin-feedback', view: threadView.back } : view ? { kind: 'admin-feedback' } : { kind: 'admin' })
+  /** Переписка с автором текста; «Назад» из неё вернёт туда, откуда пришли. */
+  const reply = (item: { telegramId: number; id?: string }) =>
+    navigate({ kind: 'admin-feedback', view: { thread: item.telegramId, quote: item.id, back: isThread(view) ? undefined : (view as FeedbackView | undefined) } })
   const survey = results?.summary
-  const question = (key: string | null) => data?.surveys.find(s => s.key === key)?.title
 
   return (
     <div className="flex flex-col min-h-full bg-cream" data-testid="admin-feedback-screen">
       <Header progress={progress} onBack={back} eyebrow="админка" title="Отзывы" />
       <div className="flex-1 px-5 pt-4" style={{ paddingBottom: 'calc(var(--safe-b) + 32px)' }}>
         {problem && <div className="font-sans text-[14px] text-jewelInk" data-testid="feedback-problem">{problem}</div>}
-        {(!data || (surveyKey && !results)) && !problem && <div className="flex justify-center py-12"><LoaderLetter /></div>}
+        {!threadView && (!data || (surveyKey && !results)) && !problem && <div className="flex justify-center py-12"><LoaderLetter /></div>}
 
-        {data && !view && (
+        {data && !view && !problem && (
           <div className="flex flex-col gap-2" data-testid="feedback-list">
             <button type="button" className={tile} onClick={() => open('paywall')} data-testid="feedback-open-paywall">
               <div className="relative z-[1]">
-                <div className="font-sans text-[15px] font-extrabold text-jewelInk">Что остановило? — экран покупки</div>
+                <div className="font-sans text-[15px] font-extrabold text-jewelInk">Что смутило? — экран покупки</div>
                 <div className={`${small} tabular-nums mt-0.5`}>спросили {data.paywall.shown} · ответили {answered(data.paywall.options)}</div>
               </div>
             </button>
-            <button type="button" className={tile} onClick={() => open('messages')} data-testid="feedback-open-messages">
+            <button type="button" className={tile} onClick={() => open('threads')} data-testid="feedback-open-threads">
               <div className="relative z-[1]">
-                <div className="font-sans text-[15px] font-extrabold text-jewelInk">Написали автору</div>
-                <div className={`${small} tabular-nums mt-0.5`}>сообщений: {data.messages}</div>
+                <div className="font-sans text-[15px] font-extrabold text-jewelInk">
+                  Сообщения от людей
+                  {(data.unanswered ?? 0) > 0 && (
+                    <span className="ml-2 px-2 py-0.5 rounded-lg bg-ruby text-white font-sans text-[12px] font-extrabold tabular-nums align-middle" data-testid="feedback-unanswered">
+                      без ответа: {data.unanswered}
+                    </span>
+                  )}
+                </div>
+                <div className={`${small} mt-0.5`}>Письма автору, свои ответы в опросах, комментарии с экрана покупки — и твои ответы</div>
               </div>
             </button>
 
@@ -141,25 +170,56 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
 
         {data && view === 'paywall' && (
           <div data-testid="feedback-paywall">
-            <div className={heading}>Что остановило? — экран покупки</div>
+            <div className={heading}>Что смутило? — экран покупки</div>
             <div className={`${small} tabular-nums mb-3`}>
               Вопрос после закрытого без оплаты экрана покупки. Спросили {data.paywall.shown} · ответили {answered(data.paywall.options)}
             </div>
             <Counts options={data.paywall.options} label={paywallLabel} />
             <div className="mn-eyebrow mt-5 mb-1">Ответы</div>
-            <Answers items={data.recent} empty="Пока никто не ответил." onOpenUser={openUser} />
+            <Answers items={data.recent} empty="Пока никто не ответил." onOpenUser={openUser} onReply={reply} />
           </div>
         )}
 
-        {data && view === 'messages' && (
-          <div data-testid="feedback-messages">
-            <div className={heading}>Написали автору</div>
-            <div className={`${small} tabular-nums mb-3`}>Сообщения с экрана «Написать автору» и по кнопке «Написать подробнее» из опросов. Всего: {data.messages}</div>
-            <Answers
-              items={data.recent} empty="Пока никто ничего не написал." onOpenUser={openUser}
-              tag={r => (question(r.campaignKey) ? `из опроса: ${question(r.campaignKey)}` : null)}
-            />
+        {data && view === 'threads' && (
+          <div data-testid="feedback-threads">
+            <div className={heading}>Сообщения от людей</div>
+            <div className={`${small} mb-3`}>Все, кто что-то написал своими словами. Ответ уходит человеку сообщением бота.</div>
+            <div className="flex gap-2 mb-3" role="radiogroup" aria-label="Кого показать">
+              {[true, false].map(only => (
+                <button
+                  key={String(only)} type="button" role="radio" aria-checked={waitingOnly === only} onClick={() => setWaitingOnly(only)}
+                  className="px-3 min-h-[44px] rounded-xl border-2 font-sans text-[13px] font-bold text-jewelInk tabular-nums"
+                  style={{ borderColor: waitingOnly === only ? '#15100A' : 'rgba(21,16,10,0.18)', background: waitingOnly === only ? '#FBF6EC' : '#FFFEFA' }}
+                >
+                  {only ? `Без ответа${threads ? ` · ${threads.unanswered}` : ''}` : 'Все'}
+                </button>
+              ))}
+            </div>
+            {threads && threads.threads.length === 0 && (
+              <div className="font-sans text-[13px] text-jewelInk-mid">{waitingOnly ? 'Все сообщения разобраны.' : 'Пока никто ничего не написал.'}</div>
+            )}
+            <div className="flex flex-col gap-2">
+              {threads?.threads.map(t => {
+                const waiting = t.status === 'new' || t.status === 'repliedBack'
+                return (
+                  <button key={t.telegramId} type="button" className={tile} onClick={() => reply(t)} data-testid={`feedback-thread-${t.telegramId}`}>
+                    <div className="relative z-[1]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`px-2 py-0.5 rounded-lg font-sans text-[12px] font-extrabold ${waiting ? 'bg-ruby text-white' : 'bg-jewelInk/10 text-jewelInk'}`}>{STATUS[t.status]}</span>
+                        <span className={`${small} tabular-nums shrink-0`}>{when(t.lastAtUtc)}</span>
+                      </div>
+                      <div className="font-sans text-[14px] text-jewelInk line-clamp-2 break-words mt-1">{t.lastText}</div>
+                      <div className={`${small} tabular-nums mt-0.5`}>{KIND[t.lastKind]} · {t.telegramId}{t.texts > 1 ? ` · сообщений: ${t.texts}` : ''}</div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
+        )}
+
+        {threadView && !problem && (
+          <FeedbackThread key={threadView.thread} telegramId={threadView.thread} quoteId={threadView.quote} onOpenUser={openUser} />
         )}
 
         {data && surveyKey && results && survey && (
@@ -228,7 +288,7 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
                 {q.kind === 'choice' && <Counts options={q.options} />}
                 {(q.texts.length > 0 || q.kind === 'text') && (
                   <div className="mt-2">
-                    <Answers items={q.texts} empty="Пока никто ничего не написал." onOpenUser={openUser} />
+                    <Answers items={q.texts} empty="Пока никто ничего не написал." onOpenUser={openUser} onReply={reply} />
                   </div>
                 )}
               </div>
@@ -237,7 +297,7 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
             {results.written.length > 0 && (
               <>
                 <div className="mn-eyebrow mt-6 mb-1">Написали подробнее</div>
-                <Answers items={results.written} empty="" onOpenUser={openUser} />
+                <Answers items={results.written} empty="" onOpenUser={openUser} onReply={reply} />
               </>
             )}
           </div>

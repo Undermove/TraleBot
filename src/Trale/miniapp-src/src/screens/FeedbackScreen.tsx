@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Mascot from '../components/Mascot'
 import { ApiError, feedback, FEEDBACK_MAX_LENGTH } from '../api'
@@ -12,14 +12,17 @@ interface Props {
 }
 
 /**
- * «Написать автору»: поле и кнопка. Сюда ведут плитка в профиле и кнопка «Написать подробнее»
- * под ответом на опрос. Текст уходит владельцу как есть; ответа здесь не будет — для разговора
- * есть чат поддержки.
+ * «Написать автору»: поле и кнопка. Сюда ведут плитка в профиле, кнопка «Написать подробнее»
+ * под ответом на опрос и кнопка «Ответить» под ответом автора в боте. Автор отвечает из админки —
+ * ответ приходит сообщением бота; если переписка уже есть, последние сообщения видны над полем.
  */
 export default function FeedbackScreen({ progress, campaign, onBack }: Props) {
   const [text, setText] = useState('')
   const [state, setState] = useState<'writing' | 'sending' | 'sent'>('writing')
   const [error, setError] = useState<string | null>(null)
+  const [thread, setThread] = useState<{ fromOwner: boolean; text: string; atUtc: string }[]>([])
+
+  useEffect(() => { feedback.thread().then(r => setThread(r.items)).catch(() => {}) }, [])
 
   async function send() {
     if (!text.trim() || state !== 'writing') return
@@ -46,7 +49,7 @@ export default function FeedbackScreen({ progress, campaign, onBack }: Props) {
             <Mascot mood="cheer" size={110} />
             <div className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">Спасибо!</div>
             <div className="font-sans text-[14px] text-jewelInk-mid max-w-[280px]">
-              Сообщение у меня. Читаю всё сам.
+              Сообщение у меня. Отвечу сюда же, в чат с ботом.
             </div>
             <button type="button" onClick={onBack} className="jewel-btn jewel-btn-gold w-full mt-3 font-sans text-[16px] font-extrabold">
               Вернуться
@@ -54,10 +57,27 @@ export default function FeedbackScreen({ progress, campaign, onBack }: Props) {
           </div>
         ) : (
           <>
+            {thread.length > 0 && (
+              <div className="mb-4" data-testid="feedback-thread">
+                <div className="mn-eyebrow mb-2">Наша переписка</div>
+                <div className="flex flex-col gap-2">
+                  {thread.map((m, i) => (
+                    <div
+                      key={i} data-testid={m.fromOwner ? 'feedback-thread-owner' : 'feedback-thread-mine'}
+                      className={`max-w-[88%] rounded-2xl px-3 py-2 font-sans text-[14px] text-jewelInk whitespace-pre-wrap break-words border-[1.5px] ${m.fromOwner ? 'self-start bg-white border-jewelInk rounded-bl-md' : 'self-end bg-cream-tile border-jewelInk/30 rounded-br-md'}`}
+                    >
+                      {m.fromOwner && <div className="font-sans text-[11px] font-extrabold text-navy mb-0.5">Дима, автор TraleBot</div>}
+                      {m.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="font-sans text-[15px] text-jewelInk leading-snug mb-3">
               {campaign
                 ? 'Расскажи подробнее — пары слов хватит.'
-                : 'Что нравится, чего не хватает, что раздражает — пиши как есть.'}
+                : thread.length > 0 ? 'Напиши ответ — я прочитаю.' : 'Что нравится, чего не хватает, что неудобно — пиши как есть.'}
             </div>
 
             <textarea
@@ -87,8 +107,7 @@ export default function FeedbackScreen({ progress, campaign, onBack }: Props) {
             </button>
 
             <div className="mt-4 font-sans text-[12px] text-jewelInk-mid text-center">
-              Ответить отсюда не смогу. Нужен ответ — напиши в{' '}
-              <a href="https://t.me/TraleBotSupport" target="_blank" rel="noopener" className="underline">чат поддержки</a>.
+              Отвечу сюда же, в чат с ботом.
             </div>
           </>
         )}

@@ -543,7 +543,7 @@ public class MiniAppController : Controller
         });
     }
 
-    // ---- Feedback: "Что остановило?" at the paywall and "Написать автору". ----
+    // ---- Feedback: "Что смутило?" at the paywall and "Написать автору". ----
 
     /// <summary>The paywall opened: is there a question to ask if it is closed without a purchase?
     /// Changes nothing.</summary>
@@ -561,7 +561,7 @@ public class MiniAppController : Controller
     }
 
     /// <summary>The paywall was closed without a purchase. The server decides whether to ask
-    /// "Что остановило?" now: not for someone with paid access and not more often than once in
+    /// "Что смутило?" now: not for someone with paid access and not more often than once in
     /// 30 days — counted here, so another phone or a cleared browser does not ask again.</summary>
     [HttpPost("feedback/paywall-question")]
     public async Task<IActionResult> PaywallQuestion(
@@ -698,6 +698,22 @@ public class MiniAppController : Controller
         }
 
         return await feedback.FinishSurveyAsync(user.Id, key, ct) ? Ok(new { ok = true }) : NotFound(new { error = "not_found" });
+    }
+
+    /// <summary>The caller's conversation with the author — their texts and the answers that reached them,
+    /// oldest first. Empty until the author has answered at least once.</summary>
+    [HttpGet("feedback/thread")]
+    public async Task<IActionResult> FeedbackThread(
+        [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var items = await replies.GetOwnThreadAsync(user.Id, take: 6, ct);
+        return Ok(new { items = items.Select(i => new { i.FromOwner, i.Text, i.AtUtc }) });
     }
 
     private IActionResult FeedbackResult(Application.Feedback.FeedbackOutcome outcome) => outcome switch

@@ -23,7 +23,7 @@ namespace IntegrationTests.Feedback;
 
 /// <summary>
 /// What people tell the owner — over HTTP and through the bot's webhook, against real Postgres:
-/// "Что остановило?" after a paywall closed without a purchase (once in 30 days, counted by the
+/// "Что смутило?" after a paywall closed without a purchase (once in 30 days, counted by the
 /// server), a survey broadcast with answer buttons (one answer per person per campaign), a free
 /// message from the mini-app (length and frequency limits) — and what the owner then reads.
 /// </summary>
@@ -125,7 +125,7 @@ public class UserFeedbackTests : TestBase
     private async Task<HttpStatusCode> Write(User user, string? text, string? campaign = null) =>
         (await Call(user.TelegramId, HttpMethod.Post, "/api/miniapp/feedback", new { text, campaign })).Code;
 
-    // ── «Что остановило?» ────────────────────────────────────────────────────
+    // ── «Что смутило?» ────────────────────────────────────────────────────
 
     [Test]
     public async Task The_paywall_question_is_shown_once_in_thirty_days()
@@ -409,7 +409,7 @@ public class UserFeedbackTests : TestBase
         row.CampaignKey.Should().Be("survey-press");
         row.Option.Should().Be("Пока не нужно");
         row.Text.Should().BeNull();
-        PressAnswers(mark).Single().Text.Should().Be("Спасибо, записал!");
+        PressAnswers(mark).Single().Text.Should().Be("Спасибо, ответ у меня!");
         var thanks = SentTo(person, mark).Single();
         thanks.Text.Should().Be(SurveyAnswerCommand.ThanksText);
         var button = ((InlineKeyboardMarkup)thanks.ReplyMarkup!).InlineKeyboard.Single().Single();
@@ -434,7 +434,7 @@ public class UserFeedbackTests : TestBase
         row.Option.Should().Be("Не понял, что получу");
         row.CreatedAtUtc.Should().Be(firstRow.CreatedAtUtc);
         row.UpdatedAtUtc.Should().NotBeNull();
-        PressAnswers(mark).Select(a => a.Text).Should().Equal("Поменял ответ: «Не понял, что получу»", "Этот ответ уже записан");
+        PressAnswers(mark).Select(a => a.Text).Should().Equal("Ответ изменён: «Не понял, что получу»", "Этот ответ уже у меня");
         SentTo(person, mark).Should().BeEmpty("thanks are said once, on the first answer");
         var status = (await Admin(HttpMethod.Get, "campaigns/survey-change")).Body;
         status.GetProperty("surveyAnswers").EnumerateArray()
@@ -455,7 +455,7 @@ public class UserFeedbackTests : TestBase
         Options.Should().Contain(row.Option);
         SentTo(person, mark).Should().ContainSingle();
         PressAnswers(mark).Should().HaveCount(12);
-        PressAnswers(mark).Count(a => a.Text == "Спасибо, записал!").Should().Be(1);
+        PressAnswers(mark).Count(a => a.Text == "Спасибо, ответ у меня!").Should().Be(1);
     }
 
     [Test]
@@ -1164,10 +1164,14 @@ public class UserFeedbackTests : TestBase
         var presets = body.GetProperty("presets").EnumerateArray().ToList();
         presets.Select(p => p.GetProperty("id").GetString()).Should().Equal("users", "left", "paid");
         var paid = presets[2].GetProperty("form");
-        paid.GetProperty("intro").GetString().Should().StartWith("Привет! Это автор TraleBot. Ты один из немногих, кто оформил подписку");
+        paid.GetProperty("intro").GetString().Should().Be("Привет! Это Дима, я делаю TraleBot. Ты один из немногих, кто оформил подписку, и твоё мнение мне особенно важно. Пять коротких вопросов, это минута.");
+        presets.Should().OnlyContain(p => p.GetProperty("form").GetProperty("intro").GetString()!.StartsWith("Привет! Это Дима, я делаю TraleBot."));
+        presets.SelectMany(p => p.GetProperty("form").GetProperty("questions").EnumerateArray()).Concat(body.GetProperty("bank").EnumerateArray())
+            .SelectMany(q => q.GetProperty("options").EnumerateArray().Select(o => o.GetString()!).Append(q.GetProperty("text").GetString()!))
+            .Should().NotContain(text => text.Contains("(а)") || text.Contains("(ась)"), "the ready wording avoids grammatical gender");
         paid.GetProperty("questions").EnumerateArray().Select(q => q.GetProperty("kind").GetString()).Should().Equal("choice", "text", "text", "text", "choice");
         paid.GetProperty("questions")[4].GetProperty("options").EnumerateArray().Select(o => o.GetString())
-            .Should().Equal("Подписка действует", "Перестал(а) заниматься", "Хватает бесплатного", "Дорого", "Просто забыл(а)");
+            .Should().Equal("Подписка действует", "Пауза в учёбе", "Хватает бесплатного", "Дорого", "Просто забылось");
         presets.Should().OnlyContain(p => p.GetProperty("form").GetProperty("questions")[0].GetProperty("headlineOption").GetString() == "very"
                                           || p.GetProperty("id").GetString() == "left", "the «would be very disappointed» question opens the forms for users and for those who paid");
 
@@ -1197,7 +1201,7 @@ public class UserFeedbackTests : TestBase
         // Every ready question can stand first or later in a built form — except that a free one cannot be first.
         var bank = body.GetProperty("bank").EnumerateArray().ToList();
         bank.Select(q => q.GetProperty("text").GetString()).Should().OnlyHaveUniqueItems().And.HaveCount(13)
-            .And.Contain("Вспомни день, когда ты оформил(а) подписку. Что тогда подтолкнуло?").And.Contain("Если подписка у тебя закончилась — почему не продлил(а)?");
+            .And.Contain("Вспомни день покупки подписки. Что тогда подтолкнуло?").And.Contain("Если подписка закончилась — что помешало продлить?").And.Contain("Насколько TraleBot тебе нужен?");
         foreach (var question in bank)
         {
             var (prepared, answer) = await Admin(HttpMethod.Post, "campaigns/prepare", new
@@ -1400,7 +1404,7 @@ public class UserFeedbackTests : TestBase
         await InScope(sp => sp.GetRequiredService<TraleDbContext>().Database.ExecuteSqlInterpolatedAsync(
             $"""UPDATE "UserFeedback" SET "UpdatedAtUtc" = "CreatedAtUtc" WHERE "UserId" = {longAgo.Id}"""));
         var queries = ReportQueries();
-        queries.Should().HaveCount(3);
+        queries.Should().HaveCount(4);
 
         var summary = (await Query(queries[0]))
             .ToDictionary(r => ((string)r["kind"]!, (string)r["campaign"]!, (string)r["answer"]!));

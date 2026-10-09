@@ -16,8 +16,7 @@ public record SurveyPreset(string Id, string Title, string About, SurveyForm For
 /// <summary>
 /// The questions ask about facts and the past, not about wishes; nothing is asked that the
 /// database already shows (which sections a person uses); "left TraleBot" and "left the language"
-/// are told apart. Wording avoids grammatical gender where it reads naturally and uses the
-/// mini-app's "(а)" where it does not.
+/// are told apart. The wording is friendly and avoids grammatical gender.
 /// </summary>
 public static class SurveyPresets
 {
@@ -28,7 +27,8 @@ public static class SurveyPresets
     /// <summary>Id of a survey the owner builds from scratch.</summary>
     public const string Custom = "custom";
 
-    public const string Intro = "Привет! Это автор TraleBot. Помоги сделать его лучше — ответь на несколько коротких вопросов.";
+    public const string Intro = "Привет! Это Дима, я делаю TraleBot. Хочу сделать его лучше — помоги, пожалуйста: пять коротких вопросов, это минута.";
+    public const string LeftIntro = "Привет! Это Дима, я делаю TraleBot. Мы давно не виделись — расскажи, пожалуйста, как у тебя дела с грузинским. Пять коротких вопросов, это минута.";
 
     private static SurveyQuestion Choice(string text, bool other, params string[] options) =>
         new() { Text = text, Kind = SurveyQuestionKind.Choice, Options = [.. options], AllowOther = other };
@@ -36,10 +36,12 @@ public static class SurveyPresets
     private static SurveyQuestion Free(string text) => new() { Text = text, Kind = SurveyQuestionKind.Text };
 
     // ── Тем, кто пользуется ──
+    // The headline number: the share of "Без него никак" (key "very" — "would be very disappointed
+    // without it") among those who answered, without "Уже не пользуюсь" (key "unused").
     private static readonly SurveyQuestion IfGone = new()
     {
-        Text = "Что ты почувствуешь, если TraleBot завтра исчезнет?", Kind = SurveyQuestionKind.Choice,
-        Options = ["Очень расстроюсь", "Немного расстроюсь", "Мне всё равно", "Уже не пользуюсь"],
+        Text = "Насколько TraleBot тебе нужен?", Kind = SurveyQuestionKind.Choice,
+        Options = ["Без него никак", "Полезен, но обойдусь", "Могу и без него", "Уже не пользуюсь"],
         OptionKeys = ["very", "somewhat", "indifferent", "unused"],
         HeadlineOption = "very", HeadlineWithout = "unused"
     };
@@ -48,35 +50,35 @@ public static class SurveyPresets
     private static readonly SurveyQuestion WhyGeorgian = Choice("Зачем тебе грузинский?", true,
         "Живу в Грузии", "Собираюсь переехать", "Еду в поездку", "Семья или близкие", "Просто интересно");
     private static readonly SurveyQuestion LastHelped = Free("Вспомни последний раз, когда TraleBot тебе реально помог. Что это было?");
-    private static readonly SurveyQuestion LastAnnoyed = Free("А что в последний раз раздражало или мешало?");
+    private static readonly SurveyQuestion LastAnnoyed = Free("А что в последний раз было неудобно или сбивало с толку?");
 
     // ── Тем, кто перестал ──
     private static readonly SurveyQuestion LearningNow = Choice("Ты сейчас учишь грузинский?", false,
-        "Да, другим способом", "Пауза, вернусь", "Нет, бросил(а)", "Он мне больше не нужен");
-    private static readonly SurveyQuestion AfterWhat = Choice("После чего ты перестал(а) открывать TraleBot?", true,
+        "Да, другим способом", "Пауза, вернусь", "Пока нет", "Грузинский уже не нужен");
+    private static readonly SurveyQuestion AfterWhat = Choice("Что помешало заниматься дальше?", true,
         "Не было времени", "Стало слишком сложно", "Стало скучно", "Закончился бесплатный доступ", "Не помню");
     private static readonly SurveyQuestion WhatElseThen = Choice("Что ещё, кроме TraleBot, помогало тебе с грузинским?", true,
         "Репетитор или курсы", "Другие приложения", "Учебник или YouTube", "Ничего");
     private static readonly SurveyQuestion Goal = Choice("Чего хотелось добиться в самом начале?", true,
         "Читать вывески и меню", "Объясняться в быту", "Свободно разговаривать", "Понять, как устроен язык");
-    private static readonly SurveyQuestion Disliked = Free("Что тебе не понравилось в TraleBot? Пиши как есть.");
+    private static readonly SurveyQuestion Disliked = Free("Что нам стоит исправить в первую очередь? Пиши как есть, не обидимся.");
 
     // ── Тем, кто платил ──
-    public const string PaidIntro = "Привет! Это автор TraleBot. Ты один из немногих, кто оформил подписку, и мне очень важно твоё мнение. Это пять коротких вопросов.";
-    private static readonly SurveyQuestion WhyBought = Free("Вспомни день, когда ты оформил(а) подписку. Что тогда подтолкнуло?");
-    private static readonly SurveyQuestion WhyNotRenewed = Choice("Если подписка у тебя закончилась — почему не продлил(а)?", true,
-        "Подписка действует", "Перестал(а) заниматься", "Хватает бесплатного", "Дорого", "Просто забыл(а)");
+    public const string PaidIntro = "Привет! Это Дима, я делаю TraleBot. Ты один из немногих, кто оформил подписку, и твоё мнение мне особенно важно. Пять коротких вопросов, это минута.";
+    private static readonly SurveyQuestion WhyBought = Free("Вспомни день покупки подписки. Что тогда подтолкнуло?");
+    private static readonly SurveyQuestion WhyNotRenewed = Choice("Если подписка закончилась — что помешало продлить?", true,
+        "Подписка действует", "Пауза в учёбе", "Хватает бесплатного", "Дорого", "Просто забылось");
 
     // ── Только в банке ──
     private static readonly SurveyQuestion Paywall = Choice("Что остановило от покупки полного доступа?", true,
-        "Дорого", "Пока не нужно", "Не понял, что получу");
+        "Дорого", "Пока не нужно", "Непонятно, что я получу");
 
     public static readonly IReadOnlyList<SurveyPreset> All =
     [
         new("users", "Тем, кто пользуется", "Насколько TraleBot нужен, чем ещё занимаются и что помогает",
             Form(IfGone, WhatElseNow, WhyGeorgian, LastHelped, LastAnnoyed)),
         new("left", "Тем, кто перестал", "Ушли от TraleBot или от языка, после чего и чего хотели",
-            Form(LearningNow, AfterWhat, WhatElseThen, Goal, Disliked)),
+            new SurveyForm { Intro = LeftIntro, Questions = [LearningNow, AfterWhat, WhatElseThen, Goal, Disliked] }),
         new("paid", "Тем, кто платил", "Что подтолкнуло оформить подписку, что помогает и почему не продлили",
             new SurveyForm { Intro = PaidIntro, Questions = [IfGone, WhyBought, LastHelped, LastAnnoyed, WhyNotRenewed] })
     ];

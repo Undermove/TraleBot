@@ -685,15 +685,15 @@ export function reportCampaignOpen(key: string) {
   return request<{ ok: boolean; gift?: CampaignGiftDto | null }>('/api/miniapp/campaign-open', { method: 'POST', body: JSON.stringify({ key }) })
 }
 
-// ── Обратная связь: «Что остановило?» на экране покупки, «Написать автору», ответы для владельца ──
+// ── Обратная связь: «Что смутило?» на экране покупки, «Написать автору», ответы для владельца ──
 
 export const FEEDBACK_MAX_LENGTH = 2000
 
-/** Варианты ответа на «Что остановило?» — на сервер уходит код, человеку показываем подпись. */
+/** Варианты ответа на «Что смутило?» — на сервер уходит код, человеку показываем подпись. */
 export const PAYWALL_DECLINE_OPTIONS = [
   { id: 'expensive', label: 'Дорого' },
   { id: 'not_now', label: 'Пока не нужно' },
-  { id: 'unclear', label: 'Не понял, что получу' },
+  { id: 'unclear', label: 'Непонятно, что я получу' },
   { id: 'other', label: 'Другое' }
 ] as const
 
@@ -708,10 +708,14 @@ export const feedback = {
     request<{ ok: boolean }>('/api/miniapp/feedback/paywall-answer', { method: 'POST', body: JSON.stringify({ id, option, text }) }),
   /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее». */
   send: (text: string, campaign?: string | null) =>
-    request<{ ok: boolean }>('/api/miniapp/feedback', { method: 'POST', body: JSON.stringify({ text, campaign: campaign ?? null }) })
+    request<{ ok: boolean }>('/api/miniapp/feedback', { method: 'POST', body: JSON.stringify({ text, campaign: campaign ?? null }) }),
+  /** Переписка человека с автором: его сообщения и дошедшие ответы, старые сверху. Пусто, пока автор ни разу не ответил. */
+  thread: () => request<{ items: { fromOwner: boolean; text: string; atUtc: string }[] }>('/api/miniapp/feedback/thread')
 }
 
 export interface AdminFeedbackItem {
+  /** По нему владелец отвечает именно на этот текст. */
+  id?: string
   kind: 'paywall' | 'survey' | 'message'
   campaignKey: string | null
   questionId?: string | null
@@ -810,6 +814,8 @@ export interface AdminFeedbackDto {
   paywall: { shown: number; options: FeedbackOptionCount[] }
   /** Сколько всего сообщений написали автору. */
   messages: number
+  /** Сколько человек что-то написали и ждут ответа. */
+  unanswered?: number
   /** Опросы, отправленные людям, новые сверху (пробные «только себе» сюда не попадают). */
   surveys: AdminSurveyDto[]
 }
@@ -843,6 +849,57 @@ export interface SurveyBuilderKitDto {
 
 export const adminSurveys = {
   presets: () => request<SurveyBuilderKitDto>('/api/admin/surveys/presets')
+}
+
+/** new — написал, ему не отвечали; repliedBack — написал снова после ответа; answered — последнее слово за владельцем; closed — отмечено «не требует ответа». */
+export type FeedbackThreadStatus = 'new' | 'answered' | 'repliedBack' | 'closed'
+/** Что сказал Telegram про ответ владельца. */
+export type ReplyDelivery = 'sending' | 'sent' | 'blocked' | 'rejected' | 'unknown'
+
+export interface FeedbackThreadSummaryDto {
+  telegramId: number
+  lastKind: AdminFeedbackItem['kind']
+  lastText: string
+  lastAtUtc: string
+  texts: number
+  status: FeedbackThreadStatus
+}
+
+export interface FeedbackThreadItemDto {
+  id: string
+  fromOwner: boolean
+  text: string
+  atUtc: string
+  /** Откуда текст человека; у ответа владельца — null. */
+  kind: AdminFeedbackItem['kind'] | null
+  /** Вопрос опроса, на который это ответ или после которого написано. */
+  question: string | null
+  option: string | null
+  delivery: ReplyDelivery | null
+  quote: string | null
+}
+
+export interface FeedbackThreadDto {
+  telegramId: number
+  /** false — человек заблокировал бота, ответ до него не дойдёт. */
+  reachable: boolean
+  status: FeedbackThreadStatus
+  items: FeedbackThreadItemDto[]
+  maxReplyLength: number
+  signature: string
+}
+
+export const adminThreads = {
+  list: (unanswered = false) =>
+    request<{ unanswered: number; threads: FeedbackThreadSummaryDto[] }>(`/api/admin/feedback/threads?unanswered=${unanswered}`),
+  get: (telegramId: number) => request<FeedbackThreadDto>(`/api/admin/feedback/threads/${telegramId}`),
+  /** Ответ уходит человеку сообщением бота. token — один на написанный ответ: повторный запрос с ним ничего не отправит. */
+  reply: (telegramId: number, text: string, token: string, quoteId?: string | null) =>
+    request<{ delivery: ReplyDelivery; repeated: boolean }>(`/api/admin/feedback/threads/${telegramId}/reply`, {
+      method: 'POST', body: JSON.stringify({ text, token, quoteId: quoteId ?? null })
+    }),
+  /** «Не требует ответа»: убрать из неотвеченных, ничего не отправляя. */
+  dismiss: (telegramId: number) => request<{ ok: boolean }>(`/api/admin/feedback/threads/${telegramId}/dismiss`, { method: 'POST' })
 }
 
 export const adminFeedback = {

@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Application.Feedback;
 
 /// <summary>
-/// What people tell the owner, in one table: the answer to "Что остановило?" after a paywall closed
+/// What people tell the owner, in one table: the answer to "Что смутило?" after a paywall closed
 /// without a purchase, the answers to a survey broadcast (the first question by a button in the bot, the
 /// rest in the mini-app's form), a free message from the mini-app.
 ///
@@ -29,7 +29,7 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
     public const int MaxMessagesPerDay = 5;
 
     /// <summary>
-    /// Whether "Что остановило?" may be shown to this person now: not to someone with paid access
+    /// Whether "Что смутило?" may be shown to this person now: not to someone with paid access
     /// and not more often than once in <see cref="PaywallQuestionEveryDays"/> days. Read-only — the
     /// mini-app asks this when the paywall opens, so that closing it is not held up by a request
     /// when there is nothing to ask.
@@ -275,7 +275,7 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
             .OrderByDescending(f => f.UpdatedAtUtc ?? f.CreatedAtUtc)
             .Take(take)
             .Join(db.Users, f => f.UserId, u => u.Id, (f, u) => new FeedbackItem(
-                f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
+                f.Id, f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
             .ToListAsync(ct);
 
         var paywall = await db.UserFeedback.AsNoTracking()
@@ -344,12 +344,12 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
                 ? rows
                 : rows.Where(f => rows.Any(a => a.UserId == f.UserId && a.QuestionId == first.Id && a.Option == segment)))
             .Join(db.Users, f => f.UserId, u => u.Id, (f, u) => new FeedbackItem(
-                f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
+                f.Id, f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
             .ToListAsync(ct);
         var written = await db.UserFeedback.AsNoTracking()
             .Where(f => f.Kind == UserFeedbackKind.Message && f.CampaignKey == key)
             .Join(db.Users, f => f.UserId, u => u.Id, (f, u) => new FeedbackItem(
-                f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
+                f.Id, f.Kind, f.CampaignKey, f.QuestionId, f.Option, f.Text, f.UpdatedAtUtc ?? f.CreatedAtUtc, u.TelegramId))
             .ToListAsync(ct);
 
         var questions = form.Questions.Select(q =>
@@ -450,9 +450,9 @@ public record SurveyResults(
     SurveySummary Summary, string? Segment, IReadOnlyList<SurveyQuestionResults> Questions, IReadOnlyList<FeedbackItem> Written);
 
 public record FeedbackItem(
-    UserFeedbackKind Kind, string? CampaignKey, string? QuestionId, string? Option, string? Text, DateTime AtUtc, long TelegramId);
+    Guid Id, UserFeedbackKind Kind, string? CampaignKey, string? QuestionId, string? Option, string? Text, DateTime AtUtc, long TelegramId);
 
-/// <param name="PaywallShown">How many times "Что остановило?" was shown, answered or not.</param>
+/// <param name="PaywallShown">How many times "Что смутило?" was shown, answered or not.</param>
 public record FeedbackOverview(
     IReadOnlyList<FeedbackItem> Recent,
     int PaywallShown,

@@ -1,10 +1,10 @@
 -- Что говорят пользователи (только чтение). Запуск:
 --   psql … -v days=30 -f scripts/sql/feedback-report.sql
--- days — за сколько последних дней смотреть. Три результата подряд: сводка по вариантам, список текстов
--- и разрез опросов по ответу на первый вопрос.
+-- days — за сколько последних дней смотреть. Четыре результата подряд: сводка по вариантам, список текстов,
+-- разрез опросов по ответу на первый вопрос и те, кто написал и ждёт ответа.
 --
 -- Откуда строки (kind):
---   paywall — вопрос «Что остановило?», который мини-апп задаёт, когда экран покупки закрыли, не купив
+--   paywall — вопрос «Что смутило?», который мини-апп задаёт, когда экран покупки закрыли, не купив
 --   survey  — ответ на вопрос опроса-рассылки: первый вопрос — кнопкой в боте, остальные — в форме мини-аппа
 --             (один ответ на человека на вопрос)
 --   message — «Написать автору» в мини-аппе; campaign заполнен, если пришли кнопкой «Написать подробнее» из опроса
@@ -15,7 +15,7 @@
 --   question    — текст вопроса
 --   answer      — выбранный вариант; «Другое» — человек ответил своими словами; (text) — ответ на вопрос
 --                 без вариантов. У paywall: expensive — «Дорого», not_now — «Пока не нужно»,
---                 unclear — «Не понял, что получу», other — «Другое»,
+--                 unclear — «Непонятно, что я получу», other — «Другое»,
 --                 (no answer) — вопрос показали, человек закрыл его без ответа
 --   answers     — сколько таких ответов
 --   with_text   — из них с текстом своими словами
@@ -68,7 +68,7 @@ WHERE f."Text" IS NOT NULL
 ORDER BY 1 DESC;
 
 -- 3. Опросы в разрезе ответа на первый вопрос: что на остальные вопросы ответили те, кто в первом
---    выбрал такой-то вариант (например, чем ещё пользуются те, кто «Очень расстроюсь»).
+--    выбрал такой-то вариант (например, чем ещё пользуются те, кому «Без него никак»).
 --   first_answer — вариант первого вопроса
 --   people       — сколько человек выбрали этот вариант первого вопроса
 --   question_no, question, answer — как в сводке; answers — сколько из этих людей так ответили
@@ -97,3 +97,30 @@ JOIN "UserFeedback" f ON f."Kind" = 1 AND f."CampaignKey" = fa.campaign AND f."U
 JOIN question q ON q.campaign = f."CampaignKey" AND q.id = f."QuestionId" AND q.no > 1
 GROUP BY fa.campaign, fa.answer, fa.people, q.no, q.text, f."Option"
 ORDER BY 1, 2, 4, answers DESC;
+
+-- 4. Неотвеченные: люди, которые что-то написали (автору, своими словами в опросе, на экране покупки)
+--    и после этого не получили ответа из админки и не отмечены «не требует ответа». За всё время.
+--   last_at_utc  — когда человек написал в последний раз
+--   status       — «новое» — ему ещё не отвечали; «человек ответил» — написал снова после ответа
+--   texts        — сколько всего текстов от него
+--   last_text    — последний текст
+SELECT u."TelegramId"                                                              AS telegram_id,
+       t.last_at                                                                   AS last_at_utc,
+       CASE WHEN COALESCE(r.replies, 0) > 0 THEN 'человек ответил' ELSE 'новое' END AS status,
+       t.texts                                                                     AS texts,
+       t.last_text                                                                 AS last_text
+FROM (SELECT f."UserId",
+             max(COALESCE(f."UpdatedAtUtc", f."CreatedAtUtc"))                     AS last_at,
+             count(*)                                                              AS texts,
+             (array_agg(f."Text" ORDER BY COALESCE(f."UpdatedAtUtc", f."CreatedAtUtc") DESC))[1] AS last_text
+      FROM "UserFeedback" f
+      WHERE f."Text" IS NOT NULL
+      GROUP BY f."UserId") t
+JOIN "Users" u ON u."Id" = t."UserId"
+LEFT JOIN (SELECT a."UserId",
+                  max(a."CreatedAtUtc")                                            AS last_at,
+                  count(*) FILTER (WHERE a."Kind" = 0)                             AS replies
+           FROM "FeedbackReplies" a
+           GROUP BY a."UserId") r ON r."UserId" = t."UserId"
+WHERE r.last_at IS NULL OR r.last_at < t.last_at
+ORDER BY t.last_at DESC;

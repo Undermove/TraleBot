@@ -8,7 +8,7 @@ interface Props {
 }
 
 /**
- * «Что остановило?» — один вопрос в той же шторке, когда экран покупки закрыли не купив.
+ * «Что смутило?» — один вопрос в той же шторке, когда экран покупки закрыли не купив.
  * Показывать его или нет, решает сервер (раз в 30 дней, не тем, кто платит) — см. ProPaywall.
  * Можно закрыть, не отвечая; ответ — один вариант и, по желанию, пара слов.
  */
@@ -41,13 +41,13 @@ export default function PaywallDeclineQuestion({ questionId, onDone }: Props) {
   return (
     <div className="flex flex-col gap-3 pt-1" data-testid="paywall-question">
       <div className="text-center">
-        <div className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight">Что остановило?</div>
+        <div className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight">Что смутило?</div>
         <div className="font-sans text-[13px] text-jewelInk-mid mt-1">
-          Один вопрос, чтобы сделать мини-апп лучше. Можно не отвечать.
+          Один вопрос — он поможет сделать мини-апп лучше. Можно не отвечать.
         </div>
       </div>
 
-      <div className="flex flex-col gap-2" role="radiogroup" aria-label="Что остановило?">
+      <div className="flex flex-col gap-2" role="radiogroup" aria-label="Что смутило?">
         {PAYWALL_DECLINE_OPTIONS.map((o) => {
           const selected = o.id === option
           return (

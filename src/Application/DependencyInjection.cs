@@ -129,6 +129,7 @@ public static class DependencyInjection
         services.AddScoped<BroadcastService>();
         services.AddScoped<BroadcastCampaignService>();
         services.AddScoped<Application.Feedback.UserFeedbackService>();
+        services.AddScoped<Application.Feedback.FeedbackReplyService>();
 
         return services;
     }

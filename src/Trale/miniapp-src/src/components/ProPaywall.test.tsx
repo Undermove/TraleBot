@@ -35,7 +35,7 @@ async function open() {
 
 const decline = () => userEvent.click(screen.getByRole('button', { name: 'Нет, пока нет' }))
 
-describe('ProPaywall — «Что остановило?»', () => {
+describe('ProPaywall — «Что смутило?»', () => {
   it('closing without a purchase asks one question in the same sheet', async () => {
     const { onClose } = await open()
     expect(feedback.paywallQuestion).not.toHaveBeenCalled()
@@ -43,8 +43,8 @@ describe('ProPaywall — «Что остановило?»', () => {
     await decline()
 
     expect(await screen.findByTestId('paywall-question')).toBeTruthy()
-    expect(screen.getByRole('dialog', { name: 'Что остановило?' })).toBeTruthy()
-    expect(screen.getAllByRole('radio').map(r => r.textContent)).toEqual(['Дорого', 'Пока не нужно', 'Не понял, что получу', 'Другое'])
+    expect(screen.getByRole('dialog', { name: 'Что смутило?' })).toBeTruthy()
+    expect(screen.getAllByRole('radio').map(r => r.textContent)).toEqual(['Дорого', 'Пока не нужно', 'Непонятно, что я получу', 'Другое'])
     expect(screen.queryByText('1 месяц')).toBeNull()
     expect(feedback.paywallQuestion).toHaveBeenCalledTimes(1)
     expect(onClose).not.toHaveBeenCalled()

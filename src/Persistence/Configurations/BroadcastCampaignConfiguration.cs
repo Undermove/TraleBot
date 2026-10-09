@@ -34,6 +34,22 @@ public class BroadcastDeliveryConfiguration : IEntityTypeConfiguration<Broadcast
     }
 }
 
+public class FeedbackReplyConfiguration : IEntityTypeConfiguration<FeedbackReply>
+{
+    public void Configure(EntityTypeBuilder<FeedbackReply> builder)
+    {
+        builder.HasKey(r => r.Id);
+        builder.Property(r => r.Text).HasMaxLength(3500);
+        builder.Property(r => r.Quote).HasMaxLength(200);
+        builder.Property(r => r.Error).HasMaxLength(500);
+        builder.Property(r => r.ClientToken).HasMaxLength(64);
+        // One answer per token — a double tap or a retried request sends nothing the second time.
+        builder.HasIndex(r => r.ClientToken).IsUnique();
+        builder.HasIndex(r => new { r.UserId, r.CreatedAtUtc });
+        builder.HasOne<User>().WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
 public class UserFeedbackConfiguration : IEntityTypeConfiguration<UserFeedback>
 {
     public void Configure(EntityTypeBuilder<UserFeedback> builder)

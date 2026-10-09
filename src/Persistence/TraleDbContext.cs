@@ -43,6 +43,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<BroadcastDelivery> BroadcastDeliveries { get; set; } = null!;
     public DbSet<QueuedTranslation> QueuedTranslations { get; set; } = null!;
     public DbSet<UserFeedback> UserFeedback { get; set; } = null!;
+    public DbSet<FeedbackReply> FeedbackReplies { get; set; } = null!;
 
     public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
@@ -200,6 +201,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new BroadcastCampaignConfiguration());
         modelBuilder.ApplyConfiguration(new BroadcastDeliveryConfiguration());
         modelBuilder.ApplyConfiguration(new UserFeedbackConfiguration());
+        modelBuilder.ApplyConfiguration(new FeedbackReplyConfiguration());
     }
     
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

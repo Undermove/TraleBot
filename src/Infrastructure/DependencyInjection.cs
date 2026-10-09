@@ -87,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<ITelegramRefundClient, TelegramRefundClient>();
         services.AddScoped<Application.Admin.ITelegramMessageSender, Infrastructure.Telegram.Services.TelegramMessageSender>();
         services.AddScoped<Application.Admin.ICampaignMessageSender, Infrastructure.Telegram.Services.TelegramMessageSender>();
+        services.AddScoped<Application.Feedback.IFeedbackReplySender, Infrastructure.Telegram.Services.TelegramMessageSender>();
         
         // Georgian quiz services
         services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();

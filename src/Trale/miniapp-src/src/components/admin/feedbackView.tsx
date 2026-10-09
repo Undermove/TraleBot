@@ -1,4 +1,4 @@
-import { PAYWALL_DECLINE_OPTIONS, type AdminFeedbackItem, type CampaignAudience, type FeedbackOptionCount } from '../../api'
+import { PAYWALL_DECLINE_OPTIONS, type AdminFeedbackItem, type CampaignAudience, type FeedbackOptionCount, type FeedbackThreadStatus } from '../../api'
 import { AUDIENCES } from './CampaignPanel'
 
 // Общие куски экранов «Опрос» и «Отзывы»: полоски-счётчики, список ответов, подписи.
@@ -11,7 +11,12 @@ export function day(iso: string): string {
   return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 }
 
-function when(iso: string): string {
+/** Состояние переписки словами. */
+export const STATUS: Record<FeedbackThreadStatus, string> = {
+  new: 'новое', repliedBack: 'человек ответил', answered: 'отвечено', closed: 'не требует ответа'
+}
+
+export function when(iso: string): string {
   return new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
@@ -39,13 +44,15 @@ export function Counts({ options, label = o => o }: { options: FeedbackOptionCou
   )
 }
 
-/** Ответы по одному: когда, кто (по тапу — карточка пользователя), выбранный вариант и текст. */
-export function Answers({ items, empty, tag, onOpenUser }: {
+/** Ответы по одному: когда, кто (по тапу — карточка пользователя), выбранный вариант и текст; у текста — «Ответить». */
+export function Answers({ items, empty, tag, onOpenUser, onReply }: {
   items: AdminFeedbackItem[]
   empty: string
   /** Пометка над ответом — например, из какого он опроса. */
   tag?: (item: AdminFeedbackItem) => string | null
   onOpenUser: (telegramId: number) => void
+  /** Открыть переписку с автором этого текста. */
+  onReply?: (item: AdminFeedbackItem) => void
 }) {
   if (items.length === 0) return <div className="font-sans text-[13px] text-jewelInk-mid">{empty}</div>
   return (
@@ -63,6 +70,11 @@ export function Answers({ items, empty, tag, onOpenUser }: {
             <div className="font-sans text-[13px] font-bold text-jewelInk">{r.kind === 'paywall' ? paywallLabel(r.option) : r.option}</div>
           )}
           {r.text && <div className="font-sans text-[14px] text-jewelInk whitespace-pre-wrap break-words">{r.text}</div>}
+          {r.text && onReply && (
+            <button type="button" onClick={() => onReply(r)} className="font-sans text-[13px] font-bold text-navy underline min-h-[44px]" data-testid="feedback-reply">
+              Ответить
+            </button>
+          )}
         </div>
       ))}
     </div>

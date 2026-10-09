@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Application.Admin;
 using Application.Common;
 using Application.Common.Interfaces;
+using Application.Feedback;
 using Application.Notifications;
 using Application.Notifications.Holidays;
 using Infrastructure.Telegram;
@@ -760,7 +761,8 @@ public class AdminController : Controller
     /// <param name="campaign">Only what belongs to this survey campaign in <c>recent</c>.</param>
     [HttpGet("feedback")]
     public async Task<IActionResult> Feedback(
-        [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct,
+        [FromServices] Application.Feedback.UserFeedbackService feedback,
+        [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct,
         [FromQuery] int take = 50, [FromQuery] string? kind = null, [FromQuery] string? campaign = null)
     {
         if (!await IsOwnerAsync(ct)) return NotFound();
@@ -777,6 +779,8 @@ public class AdminController : Controller
             recent = overview.Recent.Select(MapFeedbackItem),
             paywall = new { shown = overview.PaywallShown, options = overview.PaywallOptions.Select(MapOptionCount) },
             messages = overview.Messages,
+            // People who wrote something and wait for an answer — the badge on the admin's «Отзывы».
+            unanswered = await replies.CountUnansweredAsync(ct),
             surveys = overview.Surveys.Select(MapSurveySummary)
         });
     }
@@ -804,6 +808,98 @@ public class AdminController : Controller
         });
     }
 
+    // ---- Conversations: the owner answers people who wrote something. ----
+
+    /// <summary>Everyone who wrote something, those waiting for an answer first.</summary>
+    [HttpGet("feedback/threads")]
+    public async Task<IActionResult> FeedbackThreads(
+        [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct, [FromQuery] bool unanswered = false)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var all = await replies.ListThreadsAsync(unansweredOnly: false, ct);
+        return Ok(new
+        {
+            unanswered = all.Count(t => t.Status.IsUnanswered()),
+            threads = all.Where(t => !unanswered || t.Status.IsUnanswered()).Select(t => new
+            {
+                t.TelegramId, lastKind = FeedbackKindName(t.LastKind), t.LastText, t.LastAtUtc, t.Texts, status = ThreadStatusName(t.Status)
+            })
+        });
+    }
+
+    [HttpGet("feedback/threads/{telegramId:long}")]
+    public async Task<IActionResult> FeedbackThread(
+        long telegramId, [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var thread = await replies.GetThreadAsync(telegramId, ct);
+        if (thread == null) return NotFound(new { error = "no_such_person" });
+        return Ok(new
+        {
+            thread.TelegramId, thread.Reachable, status = ThreadStatusName(thread.Status),
+            items = thread.Items.Select(MapThreadItem),
+            maxReplyLength = Application.Feedback.FeedbackReplyService.MaxReplyLength,
+            signature = Application.Feedback.FeedbackReplyService.Signature
+        });
+    }
+
+    public class FeedbackReplyRequest
+    {
+        public string? Text { get; set; }
+        /// <summary>The person's text the answer quotes; null — their latest one.</summary>
+        public Guid? QuoteId { get; set; }
+        /// <summary>Made by the mini-app once per written answer — the same token never sends twice.</summary>
+        public string? Token { get; set; }
+    }
+
+    /// <summary>Sends the owner's answer to this one person by the bot. Never to anyone else, never twice for one token.</summary>
+    [HttpPost("feedback/threads/{telegramId:long}/reply")]
+    public async Task<IActionResult> FeedbackReply(
+        long telegramId, [FromBody] FeedbackReplyRequest request,
+        [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var result = await replies.ReplyAsync(telegramId, request.Text, request.QuoteId, request.Token, ct);
+        return result.Outcome switch
+        {
+            Application.Feedback.FeedbackReplyOutcome.Done or Application.Feedback.FeedbackReplyOutcome.AlreadySent => Ok(new
+            {
+                delivery = DeliveryName(result.Status!.Value),
+                repeated = result.Outcome == Application.Feedback.FeedbackReplyOutcome.AlreadySent
+            }),
+            Application.Feedback.FeedbackReplyOutcome.NoSuchPerson => NotFound(new { error = "no_such_person" }),
+            Application.Feedback.FeedbackReplyOutcome.TooLong => BadRequest(new { error = $"Ответ длиннее {Application.Feedback.FeedbackReplyService.MaxReplyLength} символов." }),
+            Application.Feedback.FeedbackReplyOutcome.NothingToAnswer => BadRequest(new { error = "Этот человек ничего не писал — отвечать не на что." }),
+            _ => BadRequest(new { error = "Пустой ответ." })
+        };
+    }
+
+    /// <summary>"Не требует ответа": takes the person out of the unanswered ones; sends nothing.</summary>
+    [HttpPost("feedback/threads/{telegramId:long}/dismiss")]
+    public async Task<IActionResult> FeedbackDismiss(
+        long telegramId, [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return await replies.MarkNoReplyNeededAsync(telegramId, ct) ? Ok(new { ok = true }) : NotFound(new { error = "no_such_person" });
+    }
+
+    internal static object MapThreadItem(Application.Feedback.FeedbackThreadItem i) => new
+    {
+        i.Id, i.FromOwner, i.Text, i.AtUtc, kind = i.Kind == null ? null : FeedbackKindName(i.Kind.Value), i.Question, i.Option,
+        delivery = i.Delivery == null ? null : DeliveryName(i.Delivery.Value), i.Quote
+    };
+
+    private static string ThreadStatusName(Application.Feedback.FeedbackThreadStatus status) => status switch
+    {
+        Application.Feedback.FeedbackThreadStatus.New => "new",
+        Application.Feedback.FeedbackThreadStatus.RepliedBack => "repliedBack",
+        Application.Feedback.FeedbackThreadStatus.Closed => "closed",
+        _ => "answered"
+    };
+
+    private static string DeliveryName(Domain.Entities.FeedbackReplyStatus status) =>
+        char.ToLowerInvariant(status.ToString()[0]) + status.ToString()[1..];
+
     private static object MapSurveySummary(Application.Feedback.SurveySummary s) => new
     {
         s.Key, s.Title, s.Questions, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Picked, s.Pending,
@@ -812,12 +908,12 @@ public class AdminController : Controller
 
     private static object MapFeedbackItem(Application.Feedback.FeedbackItem r) => new
     {
-        kind = FeedbackKindName(r.Kind), r.CampaignKey, r.QuestionId, r.Option, r.Text, r.AtUtc, r.TelegramId
+        r.Id, kind = FeedbackKindName(r.Kind), r.CampaignKey, r.QuestionId, r.Option, r.Text, r.AtUtc, r.TelegramId
     };
 
     private static object MapOptionCount(Application.Feedback.OptionCount c) => new { c.Option, c.Count };
 
-    private static string FeedbackKindName(Domain.Entities.UserFeedbackKind kind) => kind switch
+    internal static string FeedbackKindName(Domain.Entities.UserFeedbackKind kind) => kind switch
     {
         Domain.Entities.UserFeedbackKind.PaywallDecline => "paywall",
         Domain.Entities.UserFeedbackKind.Survey => "survey",

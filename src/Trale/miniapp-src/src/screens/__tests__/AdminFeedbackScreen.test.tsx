@@ -2,16 +2,21 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import type { Screen } from '../../types'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ApiError, adminFeedback as mocked, type AdminFeedbackDto, type AdminSurveyDto, type AdminSurveyResultsDto } from '../../api'
+import { ApiError, adminFeedback as mocked, adminThreads as mockedThreads, type AdminFeedbackDto, type AdminSurveyDto, type AdminSurveyResultsDto } from '../../api'
 import { defaultProgress } from '../../progress'
 import AdminFeedbackScreen from '../AdminFeedbackScreen'
 
 vi.mock('../../api', async () => ({
   ...(await vi.importActual<typeof import('../../api')>('../../api')),
-  adminFeedback: { overview: vi.fn(), survey: vi.fn() }
+  adminFeedback: { overview: vi.fn(), survey: vi.fn() },
+  adminThreads: { list: vi.fn(), get: vi.fn(), reply: vi.fn(), dismiss: vi.fn() }
+}))
+vi.mock('../../components/admin/FeedbackThread', () => ({
+  default: ({ telegramId, quoteId }: { telegramId: number; quoteId?: string }) => <div data-testid="thread-stub">{telegramId}:{quoteId ?? ''}</div>
 }))
 vi.mock('../../components/LoaderLetter', () => ({ default: () => null }))
 const api = vi.mocked(mocked)
+const threads = vi.mocked(mockedThreads)
 
 const KEY = 'survey-2026-10-users'
 const summary: AdminSurveyDto = {
@@ -25,10 +30,11 @@ const overview: AdminFeedbackDto = {
     options: [{ option: 'expensive', count: 4 }, { option: 'not_now', count: 1 }, { option: 'unclear', count: 0 }, { option: 'other', count: 1 }]
   },
   messages: 7,
+  unanswered: 3,
   surveys: [summary]
 }
 const text = (questionId: string, option: string | null, words: string, telegramId: number) =>
-  ({ kind: 'survey' as const, campaignKey: KEY, questionId, option, text: words, atUtc: '2026-10-08T11:00:00Z', telegramId })
+  ({ id: `answer-${telegramId}`, kind: 'survey' as const, campaignKey: KEY, questionId, option, text: words, atUtc: '2026-10-08T11:00:00Z', telegramId })
 const results: AdminSurveyResultsDto = {
   summary,
   segment: null,
@@ -48,11 +54,11 @@ const results: AdminSurveyResultsDto = {
   written: []
 }
 const message = { kind: 'message' as const, campaignKey: KEY, option: null, text: 'Хочу слышать, как звучит слово', atUtc: '2026-10-08T11:00:00Z', telegramId: 333 }
-const declined = { kind: 'paywall' as const, campaignKey: null, option: 'expensive', text: 'Год сразу — много', atUtc: '2026-10-07T11:00:00Z', telegramId: 444 }
+const declined = { id: 'answer-444', kind: 'paywall' as const, campaignKey: null, option: 'expensive', text: 'Год сразу — много', atUtc: '2026-10-07T11:00:00Z', telegramId: 444 }
 
 let navigate: Mock<(s: Screen) => void>
 beforeEach(() => {
-  Object.values(api).forEach(f => f.mockReset())
+  ;[...Object.values(api), ...Object.values(threads)].forEach(f => (f as ReturnType<typeof vi.fn>).mockReset())
   api.overview.mockResolvedValue(overview)
   api.survey.mockResolvedValue(results)
   navigate = vi.fn<(s: Screen) => void>()
@@ -66,15 +72,15 @@ describe('AdminFeedbackScreen', () => {
     expect(survey.textContent).toBe(`${summary.title}8 октября · занимались за последние 30 дней · вопросов: 3получили 120 · ответили 40 · дошли до конца 18`)
     expect(screen.getByTestId('feedback-list').textContent).not.toContain('survey-2026')
     expect(screen.getByTestId('feedback-open-paywall').textContent).toContain('спросили 9 · ответили 6')
-    expect(screen.getByTestId('feedback-open-messages').textContent).toContain('сообщений: 7')
+    expect(screen.getByTestId('feedback-open-threads').textContent).toContain('Сообщения от людейбез ответа: 3')
     expect(api.survey).not.toHaveBeenCalled()
 
     await userEvent.click(survey)
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { survey: KEY } })
     await userEvent.click(screen.getByTestId('feedback-open-paywall'))
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: 'paywall' })
-    await userEvent.click(screen.getByTestId('feedback-open-messages'))
-    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: 'messages' })
+    await userEvent.click(screen.getByTestId('feedback-open-threads'))
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: 'threads' })
   })
 
   it('one survey: the funnel, then every question with counts, shares and what was written', async () => {
@@ -154,22 +160,72 @@ describe('AdminFeedbackScreen', () => {
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-survey', resume: KEY })
   })
 
-  it('the paywall answers are shown in words, the messages say which survey they came from', async () => {
-    api.overview.mockResolvedValueOnce({ ...overview, recent: [declined] })
-    const first = render(<AdminFeedbackScreen progress={defaultProgress} view="paywall" navigate={navigate} />)
+  it('every text has «Ответить», which opens the conversation with its author and remembers where to go back', async () => {
+    render(<AdminFeedbackScreen progress={defaultProgress} view={{ survey: KEY }} navigate={navigate} />)
+    const second = await screen.findByTestId('feedback-question-q2')
+    await userEvent.click(within(second).getByRole('button', { name: 'Ответить' }))
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 111, quote: 'answer-111', back: { survey: KEY } } })
+    expect(within(screen.getByTestId('feedback-question-q1')).queryByRole('button', { name: 'Ответить' })).toBeNull()
+  })
+
+  it('the paywall answers are shown in words and can be answered', async () => {
+    api.overview.mockResolvedValueOnce({ ...overview, recent: [declined, { ...declined, id: 'answer-555', text: null, telegramId: 555 }] })
+    render(<AdminFeedbackScreen progress={defaultProgress} view="paywall" navigate={navigate} />)
     const paywall = await screen.findByTestId('feedback-paywall')
     expect(api.overview).toHaveBeenCalledWith({ kind: 'paywall' })
+    expect(paywall.textContent).toContain('Что смутило? — экран покупки')
     expect(paywall.textContent).toContain('Дорого4 · 67%')
     expect(paywall.textContent).toContain('Год сразу — много')
     expect(paywall.textContent).not.toContain('expensive')
-    first.unmount()
+    expect(screen.getAllByRole('button', { name: 'Ответить' })).toHaveLength(1)
 
-    api.overview.mockResolvedValueOnce({ ...overview, recent: [message] })
-    render(<AdminFeedbackScreen progress={defaultProgress} view="messages" navigate={navigate} />)
-    const messages = await screen.findByTestId('feedback-messages')
-    expect(api.overview).toHaveBeenLastCalledWith({ kind: 'message' })
-    expect(messages.textContent).toContain(`из опроса: ${summary.title}`)
-    expect(messages.textContent).toContain('Хочу слышать, как звучит слово')
+    await userEvent.click(screen.getByRole('button', { name: 'Ответить' }))
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 444, quote: 'answer-444', back: 'paywall' } })
+  })
+
+  it('«Сообщения от людей» shows who waits for an answer first, with the status in words, and the filter «Без ответа»', async () => {
+    const waiting = [
+      { telegramId: 111, lastKind: 'message' as const, lastText: 'А про падежи?', lastAtUtc: '2026-10-08T12:00:00Z', texts: 2, status: 'repliedBack' as const },
+      { telegramId: 222, lastKind: 'survey' as const, lastText: 'Долгие уроки', lastAtUtc: '2026-10-08T11:00:00Z', texts: 1, status: 'new' as const }
+    ]
+    threads.list.mockImplementation(async (only?: boolean) => ({
+      unanswered: 2,
+      threads: only ? waiting : [...waiting, { telegramId: 333, lastKind: 'paywall' as const, lastText: 'Год — дорого', lastAtUtc: '2026-10-07T11:00:00Z', texts: 1, status: 'answered' as const },
+        { telegramId: 444, lastKind: 'message' as const, lastText: 'Спасибо!', lastAtUtc: '2026-10-06T11:00:00Z', texts: 1, status: 'closed' as const }]
+    }))
+    render(<AdminFeedbackScreen progress={defaultProgress} view="threads" navigate={navigate} />)
+
+    const first = await screen.findByTestId('feedback-thread-111')
+    expect(threads.list).toHaveBeenCalledWith(true)
+    expect(first.textContent).toContain('человек ответил')
+    expect(first.textContent).toContain('А про падежи?')
+    expect(first.textContent).toContain('письмо автору · 111 · сообщений: 2')
+    expect(screen.getByTestId('feedback-thread-222').textContent).toContain('новое')
+    expect(screen.getByTestId('feedback-thread-222').textContent).toContain('ответ в опросе · 222')
+    expect(screen.getByRole('radio', { name: 'Без ответа · 2' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.queryByTestId('feedback-thread-333')).toBeNull()
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Все' }))
+    expect((await screen.findByTestId('feedback-thread-333')).textContent).toContain('отвечено')
+    expect(screen.getByTestId('feedback-thread-444').textContent).toContain('не требует ответа')
+    expect(threads.list).toHaveBeenLastCalledWith(false)
+
+    await userEvent.click(first)
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { thread: 111, quote: undefined, back: 'threads' } })
+  })
+
+  it('says so when nobody waits for an answer', async () => {
+    threads.list.mockResolvedValue({ unanswered: 0, threads: [] })
+    render(<AdminFeedbackScreen progress={defaultProgress} view="threads" navigate={navigate} />)
+    expect(await screen.findByText('Все сообщения разобраны.')).toBeTruthy()
+  })
+
+  it('a conversation opens for its person and text, and «Назад» returns to where it was opened from', async () => {
+    render(<AdminFeedbackScreen progress={defaultProgress} view={{ thread: 111, quote: 'answer-111', back: { survey: KEY } }} navigate={navigate} />)
+    expect((await screen.findByTestId('thread-stub')).textContent).toBe('111:answer-111')
+    expect(screen.queryByTestId('feedback-list')).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
+    expect(navigate).toHaveBeenCalledWith({ kind: 'admin-feedback', view: { survey: KEY } })
   })
 
   it('says so when there are no surveys yet, and shows only «Нет доступа.» to anyone the server refuses', async () => {

@@ -39,7 +39,7 @@ public class UserFeedback
 
 public enum UserFeedbackKind
 {
-    /// <summary>"Что остановило?" after the paywall was closed without a purchase. The row appears
+    /// <summary>"Что смутило?" after the paywall was closed without a purchase. The row appears
     /// when the question is shown — this is what limits it to once in 30 days.</summary>
     PaywallDecline = 0,
     /// <summary>An answer to one question of a survey broadcast. One row per person per question.</summary>
@@ -48,7 +48,7 @@ public enum UserFeedbackKind
     Message = 2
 }
 
-/// <summary>Answers to "Что остановило?" — stored as codes, shown in Russian by the mini-app.</summary>
+/// <summary>Answers to "Что смутило?" — stored as codes, shown in Russian by the mini-app.</summary>
 public static class PaywallDeclineOptions
 {
     public const string Expensive = "expensive";
