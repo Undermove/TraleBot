@@ -174,8 +174,8 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
 
     private async Task<IReadOnlyList<VerbBaseMatch>> FindGeorgianAsync(string word, CancellationToken ct)
     {
-        // A form can sit in several (tense, person) cells and in several verbs. Per verb the first
-        // cell by person wins, as in VerbQueries.FindInTextsAsync; verbs go by catalog order.
+        // A form can sit in several (tense, person) cells and in several verbs. Per verb one cell
+        // wins, as in VerbQueries.FindInTextsAsync; verbs go by catalog order.
         var byForm = await dbContext.VerbForms
             .AsNoTracking()
             .Where(f => f.Form == word)
@@ -187,7 +187,13 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
             .ToListAsync(ct);
         if (byForm.Count > 0)
         {
-            return byForm.GroupBy(m => m.Lemma).Select(g => g.First()).Take(MaxResults).ToList();
+            // Of the cells one verb has for the form, the tense a learner meets first is the reading:
+            // «он был» before «чтобы ты был».
+            return byForm
+                .GroupBy(m => m.Lemma)
+                .Select(g => g.OrderBy(m => VerbCardWording.Rank(m.Tense!)).ThenBy(m => m.Person).First())
+                .Take(MaxResults)
+                .ToList();
         }
 
         return await dbContext.Verbs
@@ -275,7 +281,7 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
         return bracket < 0 ? part : part[..bracket].TrimEnd();
     }
 
-    private static IEnumerable<string> RussianParts(string translation) =>
+    internal static IEnumerable<string> RussianParts(string translation) =>
         translation.ToLowerInvariant().Replace('ё', 'е').Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
     /// <summary>

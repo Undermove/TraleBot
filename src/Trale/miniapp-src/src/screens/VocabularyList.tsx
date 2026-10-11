@@ -11,7 +11,8 @@ import LevelBadge from '../verbs/session/LevelBadge'
 import type { MyVerbDto } from '../verbs/types'
 import { VerbHint } from '../verbs/parts'
 import OwnVerbUnlocked, { ownVerbIsNews } from '../verbs/section/OwnVerbUnlocked'
-import type { VerbFormHitDto } from '../verbs/types'
+import VerbTranslationCard from '../verbs/translate/VerbTranslationCard'
+import type { VerbCardDto, VerbFormHitDto } from '../verbs/types'
 import { ProgressState, Screen } from '../types'
 import { api, ApiError, VocabularyItem, VocabularyQuizMode } from '../api'
 
@@ -43,7 +44,7 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   const [translateState, setTranslateState] = useState<TranslateState>('idle')
   // Перевод не пришёл сразу: null — ещё не ждём, true — ищется глагол (до минуты), false — просто медленно.
   const [translatePending, setTranslatePending] = useState<boolean | null>(null)
-  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string; verb?: VerbFormHitDto | null } | null>(null)
+  const [translateResult, setTranslateResult] = useState<{ word: string; definition: string; additionalInfo: string; example: string; verb?: VerbFormHitDto | null; verbCard?: VerbCardDto | null; exists: boolean } | null>(null)
   // Карточка глагола открывается шторкой поверх словаря — из слова, из перевода, из списка.
   /** Открытый вид глагола; entryId — если пришли с записи словаря, которая сама — форма этого глагола. */
   const [verbSheet, setVerbSheet] = useState<{ verbId: string; tense?: string; person?: number; entryId?: string } | null>(null)
@@ -141,21 +142,26 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
   function openCard(item: VocabularyItem) {
     // Запись — сама форма глагола: сразу вид глагола (слово, уровень, игра), без промежуточной карточки слова.
     if (item.verb?.single && !isStarterMode) {
-      setVerbSheet({ verbId: item.verb.verbId, tense: item.verb.tense, person: item.verb.person, entryId: item.id })
+      setVerbSheet({ verbId: item.verb.verbId, ...cellOf(item.verb), entryId: item.id })
       return
     }
     setCardItem(item)
   }
 
+  /** Запись-название действия («делать») — не форма: подсвечивать в таблице нечего. */
+  function cellOf(hit?: VerbFormHitDto) {
+    return hit && !hit.actionName ? { tense: hit.tense, person: hit.person } : {}
+  }
+
   function openVerb(hit: VerbFormHitDto) {
-    setVerbSheet({ verbId: hit.verbId, tense: hit.tense, person: hit.person })
+    setVerbSheet({ verbId: hit.verbId, ...cellOf(hit) })
   }
 
   /** Строка «моего глагола»: если в словаре есть его слово — открываем с него, иначе просто глагол. */
   function openMyVerb(verb: MyVerbDto) {
     const entry = items.find((i) => i.verb?.single && i.verb.verbId === verb.id)
     const first = verb.saved[0]
-    setVerbSheet({ verbId: verb.id, tense: (entry?.verb ?? first)?.tense, person: (entry?.verb ?? first)?.person, entryId: entry?.id })
+    setVerbSheet({ verbId: verb.id, ...cellOf(entry?.verb ?? first), entryId: entry?.id })
   }
 
   /** После игры уровень глагола мог вырасти — перечитываем словарь тихо, без экрана загрузки. */
@@ -273,9 +279,11 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
           definition: r.definition ?? '',
           additionalInfo: r.additionalInfo ?? '',
           example: r.example ?? '',
-          verb: r.verb
+          verb: r.verb,
+          verbCard: r.verbCard,
+          exists: r.status === 'exists'
         })
-        setOwnVerbNews(!!r.verb && ownVerbIsNews())
+        setOwnVerbNews((!!r.verb || !!r.verbCard) && ownVerbIsNews())
         setTranslateState('success')
         setTranslateInput('')
         if (r.status === 'success') {
@@ -493,7 +501,28 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
               {translateState === 'translating' ? '...' : '→'}
             </button>
           </div>
-          {translateState === 'success' && translateResult && (
+          {translateState === 'success' && translateResult?.verbCard && (
+            // Слово — глагол базы: вместо одного слова-перевода карточка с формами.
+            <>
+              <VerbTranslationCard
+                card={translateResult.verbCard}
+                word={translateResult.word}
+                definition={translateResult.definition}
+                alreadySaved={translateResult.exists}
+                example={translateResult.example}
+                onOpen={(verbId, at) => setVerbSheet({ verbId, ...at })}
+              />
+              {ownVerbNews && (
+                <div className="mt-2.5">
+                  <OwnVerbUnlocked
+                    ru={translateResult.verbCard.verbs[0]?.ru ?? translateResult.word} action="Показать, где он"
+                    onAction={() => navigate({ kind: 'verbs' })} onClose={() => setOwnVerbNews(false)}
+                  />
+                </div>
+              )}
+            </>
+          )}
+          {translateState === 'success' && translateResult && !translateResult.verbCard && (
             <div className="mt-3 jewel-tile px-4 py-3">
               <div className="relative z-[1]">
                 <div className="flex items-baseline gap-2">

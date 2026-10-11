@@ -501,19 +501,34 @@ public class GeorgianTranslationPipeline(
     private async Task<TranslationResult.Success> AnswerFromVerb(
         string key, TranslationDirection direction, VerbBaseMatch verb, string? infinitive, CancellationToken ct)
     {
-        if (direction == TranslationDirection.RussianToGeorgian)
+        if (direction == TranslationDirection.RussianToGeorgian && verb.Form == null)
         {
-            // Asked by the Russian infinitive, the answer is the dictionary form of the verb (the lemma is
-            // a real form in the index, so the reply gets its parse line and the dictionary entry opens
-            // the verb view); the name of the action is added next to it. An inflected word the base has
-            // no phrase for gets the same, with the verb it was read as.
-            var georgian = verb.Form ?? verb.Lemma;
+            // Asked by the Russian infinitive, the answer is the name of the action — what the dictionary
+            // keeps and quizzes ask («делать» — the action, not «он делает»). The forms a learner needs
+            // first go next to it; the reply itself is the verb card (VerbTranslationCardQuery). A verb
+            // the base has no name of the action for is answered with its dictionary form, and says so.
+            var card = await dbContext.Verbs.AsNoTracking().Where(v => v.Lemma == verb.Lemma).Select(v => v.CardJson).FirstOrDefaultAsync(ct);
+            var lines = card == null ? [] : VerbTranslationCardQuery.KeyForms(card);
+            var i = lines.FirstOrDefault(l => l is { Tense: "present", Person: 0, Meaning: not null });
+            var he = lines.FirstOrDefault(l => l is { Tense: "present", Person: 2, Meaning: not null });
+            var actionName = VerbTranslationCardQuery.ActionNameOf(verb.Lemma, verb.Title);
             string?[] parts =
             [
                 infinitive == null ? null : $"это глагол «{infinitive}»",
-                verb.Form == null && verb.Title != verb.Lemma ? $"название действия: {verb.Title}" : null
+                actionName != null ? VerbCardWording.ActionName : he == null ? null : $"это форма «{he.Meaning}»",
+                i == null ? null : $"«{i.Meaning}» — {i.Georgian}",
+                actionName == null || he == null ? null : $"«{he.Meaning}» — {he.Georgian}"
             ];
-            var info = string.Join("; ", parts.Where(p => p != null));
+            var answer = actionName ?? verb.Lemma;
+            return new TranslationResult.Success(
+                answer, string.Join("; ", parts.Where(p => p != null)) + Transcription(answer), Example(card, verb.Lemma));
+        }
+
+        if (direction == TranslationDirection.RussianToGeorgian)
+        {
+            // An inflected Russian word the analyst tied to a form of the base: that form is the answer.
+            var georgian = verb.Form;
+            var info = infinitive == null ? string.Empty : $"это глагол «{infinitive}»";
             info += await UnverifiedNote(verb.Lemma, georgian, info.Length == 0 ? string.Empty : "; ", ct);
             return new TranslationResult.Success(georgian, info + Transcription(georgian), await ExampleFor(verb.Lemma, georgian, ct));
         }
@@ -561,9 +576,14 @@ public class GeorgianTranslationPipeline(
         }
 
         var card = await dbContext.Verbs.AsNoTracking().Where(v => v.Lemma == lemma).Select(v => v.CardJson).FirstOrDefaultAsync(ct);
-        var sentence = card == null
+        return Example(card, form);
+    }
+
+    private static string Example(string? cardJson, string form)
+    {
+        var sentence = cardJson == null
             ? null
-            : JsonNode.Parse(card)?["sentences"]?.AsArray().FirstOrDefault(s => s?["form"]?.GetValue<string>() == form);
+            : JsonNode.Parse(cardJson)?["sentences"]?.AsArray().FirstOrDefault(s => s?["form"]?.GetValue<string>() == form);
         return sentence == null ? string.Empty : $"{sentence["ka"]} — {sentence["ru"]}";
     }
 

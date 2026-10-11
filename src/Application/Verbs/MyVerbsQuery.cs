@@ -33,7 +33,7 @@ public class MyVerbsQuery(ITraleDbContext dbContext, VerbQueries verbs)
     public async Task<MyVerbs> GetAsync(
         Guid userId, IReadOnlyList<(string Word, string Definition)> entries, CancellationToken ct)
     {
-        var hits = await verbs.FindInTextsAsync(entries.SelectMany(e => new[] { e.Word, e.Definition }).ToList(), ct);
+        var found = await verbs.FindInEntriesAsync(entries, ct);
         var started = await dbContext.UserVerbs
             .AsNoTracking()
             .Where(v => v.UserId == userId)
@@ -43,7 +43,6 @@ public class MyVerbsQuery(ITraleDbContext dbContext, VerbQueries verbs)
         var levels = started.ToDictionary(v => v.Lemma, v => v.Level);
         VerbLevel LevelOf(string lemma) => levels.GetValueOrDefault(lemma, VerbLevel.New);
 
-        var found = entries.Select(e => Find(e.Word, e.Definition, hits)).ToList();
         var byEntry = found
             .Select(f => f == null ? null : new DictionaryVerbHit(f.Value.Hit, f.Value.Single, LevelOf(f.Value.Hit.Lemma)))
             .ToList();

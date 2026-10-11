@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddSingleton<IVerbLexicon>(_ => VerbLexicon.Load(Path.Combine(AppContext.BaseDirectory, "Verbs")));
         services.AddScoped<RuntimeVerbStore>();
         services.AddScoped<VerbReplyHintQuery>();
+        services.AddScoped<VerbTranslationCardQuery>();
         
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, BasicSmallTalkerChecker>();
         services.AddScoped<IAchievementChecker<IAchievementTrigger>, AdvancedSmallTalkerChecker>();

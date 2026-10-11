@@ -56,7 +56,16 @@ public class VerbReplyHintQuery(ITraleDbContext dbContext)
                 f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Verb.Status, f.Form, f.Tense, f.Person,
                 f.Meaning, f.MeaningNote))
             .ToListAsync(ct);
-        var byForm = words.Select(w => forms.FirstOrDefault(f => f.Form == w)).FirstOrDefault(f => f != null);
+        // Of the cells the first verb has for the word, the tense a learner meets first is the reading.
+        var byForm = words
+            .Select(w => forms.Where(f => f.Form == w).ToList())
+            .Where(cells => cells.Count > 0)
+            .Select(cells => cells
+                .Where(f => f.Lemma == cells[0].Lemma)
+                .OrderBy(f => VerbCardWording.Rank(f.Tense!))
+                .ThenBy(f => f.Person)
+                .First())
+            .FirstOrDefault();
         if (byForm != null)
         {
             return byForm;

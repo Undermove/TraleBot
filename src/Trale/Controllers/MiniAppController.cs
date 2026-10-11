@@ -998,6 +998,7 @@ public class MiniAppController : Controller
         }
 
         var word = request.Word.Trim();
+        var learning = user.Settings.CurrentLanguage;
         var (job, elsewhere) = await jobs.StartOrJoinAsync(user.Id, word, ct);
         if (job == null)
         {
@@ -1009,12 +1010,12 @@ public class MiniAppController : Controller
         if (await Task.WhenAny(job.Translation, wait) == job.Translation && job.QueuedId == null)
         {
             jobs.Forget(user.Id, word);
-            return await TranslationAnswer(await job.Translation, word, verbs, ct);
+            return await TranslationAnswer(await job.Translation, word, learning, verbs, ct);
         }
 
         // Before the mini-app is told to ask again, the job is on record — the question may reach another instance.
         await Task.WhenAny(job.Completion, job.Queued).WaitAsync(ct);
-        return await TranslationJobStatus(user.Id, word, job, jobs, verbs, ct);
+        return await TranslationJobStatus(user.Id, word, learning, job, jobs, verbs, ct);
     }
 
     /// <summary>
@@ -1037,16 +1038,17 @@ public class MiniAppController : Controller
         }
 
         var word = (request.Word ?? string.Empty).Trim();
+        var learning = user.Settings.CurrentLanguage;
         var job = jobs.Find(user.Id, word);
         if (job != null)
         {
-            return await TranslationJobStatus(user.Id, word, job, jobs, verbs, ct);
+            return await TranslationJobStatus(user.Id, word, learning, job, jobs, verbs, ct);
         }
 
         var queued = await jobs.FindQueuedAsync(user.Id, word, ct);
         if (queued != null)
         {
-            return await QueuedTranslationStatus(queued, word, verbs, ct);
+            return await QueuedTranslationStatus(queued, word, learning, verbs, ct);
         }
 
         var typed = word.ToLowerInvariant();
@@ -1059,12 +1061,12 @@ public class MiniAppController : Controller
             ? Ok(new { status = "pending", verbLookup = false })
             : await TranslationAnswer(
                 new CreateVocabularyEntryResult.TranslationSuccess(saved.Definition, saved.AdditionalInfo, saved.Example, saved.Id),
-                word, verbs, ct);
+                word, learning, verbs, ct);
     }
 
     /// <summary>The state of a job this instance started. Once the job is on record, the record decides: a failed run may be followed by another.</summary>
     private async Task<IActionResult> TranslationJobStatus(
-        Guid userId, string word, TranslationJob job, TranslationJobs jobs, VerbQueries verbs, CancellationToken ct)
+        Guid userId, string word, Language learning, TranslationJob job, TranslationJobs jobs, VerbQueries verbs, CancellationToken ct)
     {
         var queued = job.QueuedId is { } id ? await jobs.FindQueuedAsync(id, ct) : null;
         if (queued is { IsFinished: false } || (queued == null && !job.Translation.IsCompleted))
@@ -1075,15 +1077,15 @@ public class MiniAppController : Controller
         jobs.Forget(userId, word);
         if (job.Translation.IsCompletedSuccessfully && queued?.State != QueuedTranslationState.Failed)
         {
-            return await TranslationAnswer(job.Translation.Result, word, verbs, ct);
+            return await TranslationAnswer(job.Translation.Result, word, learning, verbs, ct);
         }
 
-        return queued == null ? Ok(new { status = "failure" }) : await QueuedTranslationStatus(queued, word, verbs, ct);
+        return queued == null ? Ok(new { status = "failure" }) : await QueuedTranslationStatus(queued, word, learning, verbs, ct);
     }
 
     /// <summary>The state of a job as its record in the database tells it — all an instance that does not run the job knows.</summary>
     private async Task<IActionResult> QueuedTranslationStatus(
-        QueuedTranslation queued, string word, VerbQueries verbs, CancellationToken ct)
+        QueuedTranslation queued, string word, Language learning, VerbQueries verbs, CancellationToken ct)
     {
         if (!queued.IsFinished)
         {
@@ -1105,18 +1107,26 @@ public class MiniAppController : Controller
             QueuedTranslationOutcome.Emoji => new CreateVocabularyEntryResult.EmojiDetected(),
             _ => new CreateVocabularyEntryResult.TranslationFailure()
         };
-        return await TranslationAnswer(result, word, verbs, ct);
+        return await TranslationAnswer(result, word, learning, verbs, ct);
     }
 
     private async Task<IActionResult> TranslationAnswer(
-        CreateVocabularyEntryResult result, string word, VerbQueries verbs, CancellationToken ct)
+        CreateVocabularyEntryResult result, string word, Language learning, VerbQueries verbs, CancellationToken ct)
     {
         word = word.ToLowerInvariant();
 
+        // A word that is a verb of the base — a Russian infinitive, a Georgian form — comes with its
+        // card: the forms and what they say. The screen shows it instead of the bare translation.
+        var card = result is CreateVocabularyEntryResult.TranslationSuccess or CreateVocabularyEntryResult.TranslationExists
+            ? await Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<VerbTranslationCardQuery>(HttpContext.RequestServices).FindForAsync(word, learning, ct)
+            : null;
+
+        // The verb of the saved entry, as the dictionary will show it: a known form in the word or in
+        // its translation, or — for a verb asked by its infinitive — the name of its action.
         async Task<object> VerbIn(string definition)
         {
-            var hits = await verbs.FindInTextsAsync(new[] { word, definition }, ct);
-            return hits.TryGetValue(word, out var hit) || hits.TryGetValue(definition, out hit) ? VerbHitDto(hit) : null;
+            var found = await verbs.FindInEntriesAsync([(word, definition)], ct);
+            return found[0] is { } verb ? VerbHitDto(verb.Hit) : null;
         }
 
         return result switch
@@ -1129,7 +1139,8 @@ public class MiniAppController : Controller
                 additionalInfo = s.AdditionalInfo,
                 example = s.Example,
                 vocabularyEntryId = s.VocabularyEntryId,
-                verb = await VerbIn(s.Definition)
+                verb = await VerbIn(s.Definition),
+                verbCard = VerbCardDto(card)
             }),
             CreateVocabularyEntryResult.TranslationExists e => Ok(new
             {
@@ -1139,7 +1150,8 @@ public class MiniAppController : Controller
                 additionalInfo = e.AdditionalInfo,
                 example = e.Example,
                 vocabularyEntryId = e.VocabularyEntryId,
-                verb = await VerbIn(e.Definition)
+                verb = await VerbIn(e.Definition),
+                verbCard = VerbCardDto(card)
             }),
             CreateVocabularyEntryResult.TranslationFailure => Ok(new { status = "failure" }),
             // Gibberish or a message to the bot: nothing was translated or saved; the screen says so.
@@ -1605,8 +1617,49 @@ public class MiniAppController : Controller
         person = v.Hit.Person,
         meaning = v.Hit.Meaning,
         meaningNote = v.Hit.MeaningNote,
+        actionName = v.Hit.ActionName,
         single = v.Single,
         level = VerbLevelRules.Key(v.Level)
+    };
+
+    /// <summary>
+    /// The verb card of a translated word. Every Georgian word comes with its Cyrillic transcription;
+    /// <c>caption</c> says who and when in plain words (no tense is called by its textbook name).
+    /// </summary>
+    private static object VerbCardDto(VerbTranslationCard card) => card == null ? null : new
+    {
+        kind = card.Kind switch
+        {
+            VerbCardKind.Form => "form",
+            VerbCardKind.ActionName => "actionName",
+            _ => "infinitive"
+        },
+        text = card.Text,
+        transcription = card.Kind == VerbCardKind.Infinitive ? null : card.TextTranscription,
+        moreVerbs = card.MoreVerbs,
+        related = card.Related ?? [],
+        verbs = card.Verbs.Select(v => new
+        {
+            verbId = v.Lemma,
+            lemma = v.Lemma,
+            lemmaTranscription = v.LemmaTranscription,
+            actionName = v.ActionName,
+            actionNameTranscription = v.ActionNameTranscription,
+            ru = v.Translation,
+            lines = v.Lines.Select(l => new
+            {
+                forms = l.Variants.Select(f => new
+                {
+                    form = f,
+                    transcription = Application.Translation.Languages.GeorgianTranscriptionExtension.GetTranscription(f)
+                }),
+                tense = l.Tense,
+                person = l.Person,
+                meaning = l.Meaning,
+                note = l.Note,
+                caption = l.Caption
+            })
+        })
     };
 
     private static object VerbHitDto(VerbFormHit h) => new
@@ -1619,7 +1672,9 @@ public class MiniAppController : Controller
         person = h.Person,
         // The form in plain Russian («я хотел(а)») and, rarely, a note that tells two tenses apart.
         meaning = h.Meaning,
-        meaningNote = h.MeaningNote
+        meaningNote = h.MeaningNote,
+        // The entry is the name of the verb's action, not one of its forms: tense and person are the dictionary form's.
+        actionName = h.ActionName
     };
 
     /// <summary>Null when the caller may use the verbs section; otherwise the response to return.</summary>

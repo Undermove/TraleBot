@@ -18,6 +18,9 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
     private static readonly string Write =
         Catalog().Select(v => v!.AsObject()).Single(v => v["ru"]!.GetValue<string>() == "писать")["lemma"]!.GetValue<string>();
 
+    private static string Cyrillic(string georgian) =>
+        Application.Translation.Languages.GeorgianTranscriptionExtension.GetTranscription(georgian);
+
     private int _updateId = 5000;
 
     /// <summary>Sends a chat message to the bot through the webhook and returns the bot's last reply.</summary>
@@ -31,7 +34,7 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Reply_to_a_verb_form_ends_with_the_parse_line()
+    public async Task Reply_to_a_verb_form_says_what_the_form_means_and_whose_it_is()
     {
         await SeedCatalogWithout();
         var verb = CatalogVerb(Write);
@@ -41,9 +44,10 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
 
         var reply = await Say(910001, form);
 
-        reply.Text.Should().StartWith("Определение: мы писали\nДругие значения: глагол «писать»");
-        reply.Text.Should().EndWith($"Разбор: {form} — «мы писали» (один раз · сделано). Глагол {title} — писать.",
+        reply.Text.Should().StartWith($"{form} [{Cyrillic(form)}] — «мы писали»\nФорма: мы, прошедшее время: сделал один раз.",
             because: "the chat explains a form by what it means in plain Russian, not by the name of its tense");
+        reply.Text.Should().Contain($"Глагол «писать», название действия: {title} [{Cyrillic(title)}].");
+        reply.Text.Should().EndWith($"В словарь записано: {form} — мы писали");
     }
 
     [Test]
@@ -80,7 +84,7 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Reply_to_a_russian_infinitive_gives_the_dictionary_form_with_its_parse()
+    public async Task Reply_to_a_russian_infinitive_is_the_verb_card_with_the_name_of_the_action_and_key_forms()
     {
         await SeedCatalogWithout();
         var title = CatalogVerb(Write)["title"]!.GetValue<string>();
@@ -88,11 +92,13 @@ public class TranslateCommandVerbReplyTests : TranslationPipelineTestBase
 
         var reply = await Say(910002, "писать");
 
-        // Asked by the infinitive, the answer is the dictionary form with the name of the action next
-        // to it, and the parse line that makes the word a verb for the learner.
-        reply.Text.Should().StartWith($"Определение: {Write}");
-        reply.Text.Should().Contain($"название действия: {title}");
-        reply.Text.Should().EndWith($"Разбор: {Write} — «он пишет». Глагол {title} — писать.");
+        // Asked by the infinitive, the answer is the verb: the name of its action and the forms a
+        // learner needs first, each with what it says. The dictionary keeps the name of the action.
+        var verb = CatalogVerb(Write);
+        var i = Form(verb, "present", 0);
+        reply.Text.Should().StartWith($"Глагол «писать»\n\nНазвание действия: {title} [{Cyrillic(title)}]\n\nя пишу — {i} [{Cyrillic(i)}]\nон пишет — {Write} [{Cyrillic(Write)}]\n");
+        reply.Text.Should().EndWith($"В словарь записано: писать — {title}");
+        reply.Text.Should().NotContain("Определение:");
     }
 
     [Test]

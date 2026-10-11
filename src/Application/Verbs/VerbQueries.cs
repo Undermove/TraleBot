@@ -17,9 +17,13 @@ public record VerbSummary(
 
 /// <param name="Meaning">The form in plain Russian («я хотел(а)»); null when the base has no phrase for it.</param>
 /// <param name="MeaningNote">Tells apart tenses with the same phrase («один раз · сделано»); usually null.</param>
+/// <param name="ActionName">
+/// Not a form: a dictionary entry that is the name of the verb's action («делать» — the card title).
+/// <c>Form</c> is then that name, <c>Meaning</c> says so, and tense / person point at the dictionary form.
+/// </param>
 public record VerbFormHit(
     string Form, string Lemma, string Title, string Translation, string Tense, int Person,
-    string? Meaning = null, string? MeaningNote = null);
+    string? Meaning = null, string? MeaningNote = null, bool ActionName = false);
 
 /// <summary>
 /// Read side of the "Глаголы" section: the list, one card, and the parse of a pasted form.
@@ -99,8 +103,10 @@ public class VerbQueries(ITraleDbContext dbContext)
             .Select(f => new VerbFormHit(
                 f.Form, f.Verb.Lemma, f.Verb.Title, f.Verb.Translation, f.Tense, f.Person, f.Meaning, f.MeaningNote))
             .ToListAsync(ct);
-        // A form can belong to several (tense, person) cells; the first by verb order and person wins.
-        var byForm = hits.GroupBy(h => h.Form).ToDictionary(g => g.Key, g => g.First());
+        // A form can belong to several verbs and several (tense, person) cells: the first verb by
+        // catalog order wins, and of its cells the tense a learner meets first («он был» before
+        // «чтобы ты был»), then the person.
+        var byForm = hits.GroupBy(h => h.Form).ToDictionary(g => g.Key, BestCell);
 
         var result = new Dictionary<string, VerbFormHit>();
         foreach (var (text, textWords) in wordsByText)
@@ -113,6 +119,81 @@ public class VerbQueries(ITraleDbContext dbContext)
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The verb in each dictionary entry (aligned with <paramref name="entries"/>; null — none) and
+    /// whether the entry is that verb's word alone. A known form anywhere in the entry, as in
+    /// <see cref="FindInTextsAsync"/>; or — what a verb translated by its Russian infinitive is saved
+    /// as — the name of the action on one side and the verb's Russian gloss on the other. The gloss is
+    /// required: the name of an action is often an everyday noun too («игра»), and a noun saved as a
+    /// noun is not a verb of the learner's.
+    /// </summary>
+    public async Task<IReadOnlyList<(VerbFormHit Hit, bool Single)?>> FindInEntriesAsync(
+        IReadOnlyList<(string Word, string Definition)> entries, CancellationToken ct)
+    {
+        if (entries.Count == 0)
+        {
+            return [];
+        }
+
+        var hits = await FindInTextsAsync(entries.SelectMany(e => new[] { e.Word, e.Definition }).ToList(), ct);
+        var found = entries.Select(e => MyVerbsQuery.Find(e.Word, e.Definition, hits)).ToList();
+
+        var named = entries
+            .Select((e, n) => found[n] != null ? null : GeorgianAndRussian(e.Word, e.Definition))
+            .ToList();
+        var names = named.Where(x => x != null).Select(x => x!.Value.Georgian).Distinct().ToList();
+        if (names.Count == 0)
+        {
+            return found;
+        }
+
+        var verbs = await dbContext.Verbs
+            .AsNoTracking()
+            .Where(v => names.Contains(v.Title) && v.Title != v.Lemma)
+            .OrderBy(v => v.SortOrder)
+            .ThenBy(v => v.Lemma)
+            .Select(v => new { v.Lemma, v.Title, v.Translation })
+            .ToListAsync(ct);
+        for (var n = 0; n < entries.Count && verbs.Count > 0; n++)
+        {
+            if (named[n] is not var (georgian, russian))
+            {
+                continue;
+            }
+
+            var verb = verbs.FirstOrDefault(v =>
+                v.Title == georgian
+                && (VerbBaseSearch.RussianParts(v.Translation).Contains(russian)
+                    || string.Join(", ", VerbBaseSearch.RussianParts(v.Translation)) == russian));
+            if (verb != null)
+            {
+                found[n] = (new VerbFormHit(
+                    verb.Title, verb.Lemma, verb.Title, verb.Translation, "present", 2, VerbCardWording.ActionName, ActionName: true), true);
+            }
+        }
+
+        return found;
+    }
+
+    /// <summary>The two sides of an entry when one of them is a single Georgian word; the Russian one normalised like a gloss.</summary>
+    private static (string Georgian, string Russian)? GeorgianAndRussian(string word, string definition)
+    {
+        var (a, b) = (word.Trim(), definition.Trim());
+        var (georgian, other) = VerbParadigm.GeorgianWord.IsMatch(a) ? (a, b) : VerbParadigm.GeorgianWord.IsMatch(b) ? (b, a) : (null, null);
+        var russian = Translation.Cache.TranslationCacheKey.Normalize(other);
+        return georgian == null || russian == null ? null : (georgian, russian);
+    }
+
+    internal static VerbFormHit BestCell(IEnumerable<VerbFormHit> cellsInVerbOrder)
+    {
+        var cells = cellsInVerbOrder.ToList();
+        return cells
+            .Where(h => h.Lemma == cells[0].Lemma)
+            .OrderBy(h => VerbCardWording.Rank(h.Tense))
+            .ThenBy(h => h.Person)
+            .First();
     }
 
     /// <summary>
