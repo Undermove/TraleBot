@@ -20,6 +20,29 @@ export const BoneIcon = ({ size = 18, className }: P) => (
   </svg>
 )
 
+export const LetterIcon = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <rect x="3" y="5.5" width="18" height="13" rx="2.5" fill="#FDFAEF" />
+    <path d="M3.800 7.500l8.200 6 8.200-6" />
+  </svg>
+)
+
+export const BellIcon = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <path d="M6 16.500V11a6 6 0 0 1 12 0v5.500l1.500 2h-15z" fill="#F5B820" />
+    <path d="M10 20.500a2 2 0 0 0 4 0" />
+  </svg>
+)
+
+export const DeskIcon = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <rect x="3.500" y="3.500" width="7" height="7" rx="1.500" fill="#1B5FB0" />
+    <rect x="13.500" y="3.500" width="7" height="7" rx="1.500" fill="#FDFAEF" />
+    <rect x="3.500" y="13.500" width="7" height="7" rx="1.500" fill="#FDFAEF" />
+    <rect x="13.500" y="13.500" width="7" height="7" rx="1.500" fill="#F5B820" />
+  </svg>
+)
+
 export const LockIcon = ({ size = 18, className }: P) => (
   <svg {...base(size, className)}>
     <path d="M7.5 10.5V8a4.5 4.5 0 0 1 9 0v2.500" />

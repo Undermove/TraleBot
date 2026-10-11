@@ -29,12 +29,35 @@ export type Screen =
   /** Раздел «Глаголы». source — метка, с которой пришли (кампания рассылки, ссылка); без неё — плитка на главной. */
   | { kind: 'verbs'; source?: string }
   | { kind: 'profile' }
+  /** Форма опроса-рассылки: вопросы по одному на странице. key — имя опроса из ссылки ?screen=survey&s=… */
+  | { kind: 'survey'; key: string }
+  /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее»; from — куда вернуться. */
+  | { kind: 'feedback'; campaign?: string; from?: 'profile' }
+  // Админка (только владелец). У каждого экрана свой адрес ?screen=admin-… — см. admin/adminNav.ts.
+  /** Обзор: главные цифры и разделы со счётчиками того, что ждёт владельца. */
   | { kind: 'admin' }
+  | { kind: 'admin-users'; filter?: import('./api').AdminUserFilter }
   | { kind: 'admin-user'; telegramId: number }
+  /** Обратная связь. view — что открыто: разделы (по умолчанию), сообщения, опросы, один опрос, экран покупки или переписка с одним человеком. */
+  | { kind: 'admin-feedback'; view?: FeedbackView | FeedbackThreadView }
+  /** Конструктор опроса. resume — имя начатого опроса: открыть сразу его отправку, чтобы дослать. */
+  | { kind: 'admin-survey'; resume?: string; draft?: boolean }
+  /** Рассылки: список кампаний. */
+  | { kind: 'admin-broadcasts' }
+  /** Одна рассылка: без key — новая, по шагам; с key — её отправка и досылка. */
+  | { kind: 'admin-broadcast'; key?: string; draft?: boolean }
+  /** Вкладка «Ещё»: глаголы, оплаты, система. */
+  | { kind: 'admin-more' }
+  | { kind: 'admin-payments' }
+  | { kind: 'admin-system' }
   /** Проверка глаголов от нейросети (только владелец). lemma — сразу открыть этот глагол. */
   | { kind: 'verb-review'; lemma?: string }
   | { kind: 'vocabulary-list'; filter?: 'verbs'; verb?: import('./verbs/deepLink').VerbLink }
   | { kind: 'vocabulary-quiz'; mode: 'all' | 'new' | 'weak' | 'custom' | 'starter'; wordIds?: string[] }
+
+export type FeedbackView = { survey: string } | 'paywall' | 'threads' | 'surveys'
+/** Переписка с человеком. quote — текст, на который отвечают; back — откуда пришли, туда и «Назад». */
+export interface FeedbackThreadView { thread: number; quote?: string; back?: FeedbackView }
 
 export interface QuizQuestion {
   id: string

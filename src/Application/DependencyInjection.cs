@@ -124,10 +124,15 @@ public static class DependencyInjection
         services.AddScoped<GetUserSignupsTimeseriesQuery>();
         services.AddScoped<GetRecentUsersQuery>();
         services.AddScoped<GetUserDetailQuery>();
+        services.AddScoped<GetAdminOverviewQuery>();
+        services.AddScoped<GetAdminUsersQuery>();
+        services.AddScoped<GetAdminPaymentsQuery>();
         services.AddScoped<GrantProService>();
         services.AddScoped<RevokeProService>();
         services.AddScoped<BroadcastService>();
         services.AddScoped<BroadcastCampaignService>();
+        services.AddScoped<Application.Feedback.UserFeedbackService>();
+        services.AddScoped<Application.Feedback.FeedbackReplyService>();
 
         return services;
     }

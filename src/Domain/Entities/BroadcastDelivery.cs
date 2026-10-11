@@ -31,6 +31,12 @@ public class BroadcastDelivery
     /// <summary>Until when the gift gave access.</summary>
     public DateTime? GiftAccessUntilUtc { get; set; }
 
+    /// <summary>Survey campaigns: first time the recipient opened the survey's form in the mini-app.</summary>
+    public DateTime? SurveyOpenedAtUtc { get; set; }
+
+    /// <summary>Survey campaigns: first time the recipient went through the form to its last page.</summary>
+    public DateTime? SurveyFinishedAtUtc { get; set; }
+
     /// <summary>Telegram's answer for Blocked / Rejected / Unknown.</summary>
     public string? Error { get; set; }
 }

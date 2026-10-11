@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Application.Admin;
 using Application.Common;
 using Application.Common.Interfaces;
+using Application.Feedback;
 using Application.Notifications;
 using Application.Notifications.Holidays;
 using Infrastructure.Telegram;
@@ -62,6 +63,72 @@ public class AdminController : Controller
         _notifications = notifications;
         _holidayCalendar = holidayCalendar;
     }
+
+    /// <summary>The admin's first screen: the main numbers and how much waits for the owner in each section.</summary>
+    [HttpGet("overview")]
+    public async Task<IActionResult> Overview([FromServices] GetAdminOverviewQuery query, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return Ok(await query.ExecuteAsync(ct));
+    }
+
+    /// <summary>People, the most recently active first. <c>search</c> — a part of the Telegram id;
+    /// <c>filter</c> — all | paying | trial | accessEnded | blocked; <c>sort</c> — activity | registered | words;
+    /// <c>skip</c> / <c>take</c> — the page.</summary>
+    [HttpGet("users")]
+    public async Task<IActionResult> Users(
+        [FromServices] GetAdminUsersQuery query, CancellationToken ct,
+        [FromQuery] string? search = null, [FromQuery] string? filter = null, [FromQuery] string? sort = null,
+        [FromQuery] int skip = 0, [FromQuery] int take = 30)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        if (!Enum.TryParse<AdminUserFilter>(filter ?? "all", ignoreCase: true, out var by) || !Enum.IsDefined(by) || int.TryParse(filter, out _))
+            return BadRequest(new { error = $"Неизвестный фильтр: {filter}" });
+
+        if (!Enum.TryParse<AdminUserSort>(sort ?? "activity", ignoreCase: true, out var order) || !Enum.IsDefined(order) || int.TryParse(sort, out _))
+            return BadRequest(new { error = $"Неизвестный порядок: {sort}" });
+
+        var page = await query.ExecuteAsync(search, by, order, skip, take, ct);
+        return Ok(new
+        {
+            page.Total,
+            counts = page.Counts.ToDictionary(c => Camel(c.Key.ToString()), c => c.Value),
+            users = page.Users.Select(u => new
+            {
+                u.TelegramId, access = Camel(u.Access.ToString()), u.IsActive, u.RegisteredAtUtc, u.LastActivityUtc, u.AcquisitionSource, u.VocabularyCount
+            })
+        });
+    }
+
+    /// <summary>Payments, newest first, and the subscriptions that end soon or have just ended.</summary>
+    [HttpGet("payments")]
+    public async Task<IActionResult> Payments(
+        [FromServices] GetAdminPaymentsQuery query, CancellationToken ct, [FromQuery] int skip = 0, [FromQuery] int take = 30)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return Ok(await query.ExecuteAsync(skip, take, ct));
+    }
+
+    /// <summary>Every campaign sent to people, newest first, with how far it got. <c>?surveys=true|false</c> — only surveys or only ordinary ones.</summary>
+    [HttpGet("campaigns")]
+    public async Task<IActionResult> Campaigns(
+        [FromServices] BroadcastCampaignService campaigns, CancellationToken ct, [FromQuery] bool? surveys = null)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var all = await campaigns.ListAsync(ct);
+        return Ok(new
+        {
+            campaigns = all.Where(c => surveys == null || c.IsSurvey == surveys).Select(c => new
+            {
+                c.Key, c.IsSurvey, c.Message, audience = AudienceName(c.Audience), c.CreatedAtUtc, c.ButtonText, c.GiftDays,
+                c.Picked, c.Pending, c.Sent, c.Opened, c.Gifted,
+                // draft — nobody picked yet; running — picked people still wait; done — everyone picked was handled.
+                state = c.Picked == 0 ? "draft" : c.Pending > 0 ? "running" : "done"
+            })
+        });
+    }
+
+    private static string Camel(string name) => char.ToLowerInvariant(name[0]) + name[1..];
 
     [HttpGet("stats")]
     public async Task<IActionResult> Stats(CancellationToken ct)
@@ -652,6 +719,43 @@ public class AdminController : Controller
         public int GiftDays { get; set; }
         /// <summary>For how many days after the campaign is created the gift can still be taken; null — 14.</summary>
         public int? GiftOfferDays { get; set; }
+        /// <summary>A survey: the form of questions (the first goes under the message as buttons, the rest are
+        /// answered in the mini-app); null — an ordinary campaign. The message is made from the form.</summary>
+        public Domain.Entities.SurveyForm? Survey { get; set; }
+        /// <summary>The broadcast builder starting a new ordinary campaign: with an empty <see cref="Key"/> the server
+        /// names it itself — <c>broadcast-2026-10</c>, with a number when taken — and returns the key.
+        /// <see cref="NewBroadcastSuffix"/> — "test" for a trial sent to oneself.</summary>
+        public bool NewBroadcast { get; set; }
+        public string? NewBroadcastSuffix { get; set; }
+        /// <summary>This part of an existing campaign is for one more audience: the campaign stays the same, so
+        /// whoever already got the message — or the gift — does not get it again.</summary>
+        public bool AnotherAudience { get; set; }
+        /// <summary>The survey builder starting a new survey: with an empty <see cref="Key"/> the server names the
+        /// campaign itself — <c>survey-2026-10-&lt;slug&gt;</c>, with a number when taken — and returns the key.</summary>
+        public string? NewSurveySlug { get; set; }
+    }
+
+    /// <summary>Ready-made surveys for the survey builder and the answer buttons it offers by one tap.</summary>
+    [HttpGet("surveys/presets")]
+    public async Task<IActionResult> SurveyPresetList(CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return Ok(new
+        {
+            presets = Application.Feedback.SurveyPresets.All.Select(p => new { p.Id, p.Title, p.About, form = MapSurvey(p.Form) }),
+            bank = Application.Feedback.SurveyPresets.Bank.Select(MapSurveyQuestion),
+            suggestions = Application.Feedback.SurveyPresets.Suggestions,
+            intro = Application.Feedback.SurveyPresets.Intro,
+            otherLabel = Domain.Entities.SurveyForm.OtherLabel,
+            limits = new
+            {
+                questions = Application.Feedback.SurveyFormRules.MaxQuestions,
+                options = Application.Feedback.SurveyFormRules.MaxOptions,
+                botOptions = Application.Feedback.SurveyFormRules.MaxBotOptions,
+                optionLength = Application.Feedback.SurveyFormRules.MaxOptionLength,
+                questionLength = Application.Feedback.SurveyFormRules.MaxQuestionLength
+            }
+        });
     }
 
     [HttpPost("campaigns/prepare")]
@@ -662,14 +766,19 @@ public class AdminController : Controller
         if (!TryParseAudience(req.Audience, out var audience))
             return BadRequest(CampaignPrepareResult.Fail($"Неизвестная аудитория: {req.Audience}"));
 
-        var result = await campaigns.PrepareAsync(
-            new CampaignDraft
-            {
-                Key = req.Key, Audience = audience, Message = req.Message,
-                ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
-                GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays
-            },
-            req.SampleSize, req.DryRun, OwnerTelegramId, ct);
+        var draft = new CampaignDraft
+        {
+            Key = req.Key, Audience = audience, Message = req.Message,
+            ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
+            GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, Survey = req.Survey,
+            AnotherAudience = req.AnotherAudience
+        };
+        var unnamed = string.IsNullOrWhiteSpace(req.Key);
+        var result = unnamed && req.NewSurveySlug != null
+            ? await campaigns.PrepareNewSurveyAsync(draft, req.NewSurveySlug, req.SampleSize, req.DryRun, OwnerTelegramId, ct)
+            : unnamed && req.NewBroadcast
+                ? await campaigns.PrepareNewBroadcastAsync(draft, req.NewBroadcastSuffix, req.SampleSize, req.DryRun, OwnerTelegramId, ct)
+                : await campaigns.PrepareAsync(draft, req.SampleSize, req.DryRun, OwnerTelegramId, ct);
         return result.Error != null ? BadRequest(result) : Ok(result);
     }
 
@@ -705,7 +814,188 @@ public class AdminController : Controller
     {
         s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc,
         s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened,
-        s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen
+        s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen,
+        // In the order of the buttons, also before anyone has answered — this is how the survey builder gets a survey back.
+        surveyAnswers = s.SurveyAnswers.Select(MapOptionCount),
+        survey = s.Survey == null ? null : MapSurvey(s.Survey)
+    };
+
+    internal static object MapSurvey(Domain.Entities.SurveyForm form) => new
+    {
+        form.Intro, questions = form.Questions.Select(MapSurveyQuestion)
+    };
+
+    private static object MapSurveyQuestion(Domain.Entities.SurveyQuestion q) => new
+    {
+        q.Id, q.Text, kind = SurveyKindName(q.Kind), q.Options, q.AllowOther, q.OptionKeys, q.HeadlineOption, q.HeadlineWithout
+    };
+
+    private static string SurveyKindName(Domain.Entities.SurveyQuestionKind kind) =>
+        kind == Domain.Entities.SurveyQuestionKind.Text ? "text" : "choice";
+
+    // ---- Feedback: what people answered at the paywall, in surveys and wrote themselves. ----
+
+    /// <param name="kind">paywall | survey | message — only such answers in <c>recent</c>.</param>
+    /// <param name="campaign">Only what belongs to this survey campaign in <c>recent</c>.</param>
+    [HttpGet("feedback")]
+    public async Task<IActionResult> Feedback(
+        [FromServices] Application.Feedback.UserFeedbackService feedback,
+        [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct,
+        [FromQuery] int take = 50, [FromQuery] string? kind = null, [FromQuery] string? campaign = null)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        Domain.Entities.UserFeedbackKind? onlyKind = kind switch
+        {
+            "paywall" => Domain.Entities.UserFeedbackKind.PaywallDecline,
+            "survey" => Domain.Entities.UserFeedbackKind.Survey,
+            "message" => Domain.Entities.UserFeedbackKind.Message,
+            _ => null
+        };
+        var overview = await feedback.GetOverviewAsync(take, onlyKind, campaign, ct);
+        return Ok(new
+        {
+            recent = overview.Recent.Select(MapFeedbackItem),
+            paywall = new { shown = overview.PaywallShown, options = overview.PaywallOptions.Select(MapOptionCount) },
+            messages = overview.Messages,
+            // People who wrote something and wait for an answer — the badge on the admin's «Отзывы».
+            unanswered = await replies.CountUnansweredAsync(ct),
+            surveys = overview.Surveys.Select(MapSurveySummary)
+        });
+    }
+
+    /// <summary>One survey: the funnel, per question — counts per option and what was written.</summary>
+    /// <param name="segment">An option of the first question: count the other questions only for those who chose it.</param>
+    [HttpGet("feedback/surveys/{key}")]
+    public async Task<IActionResult> SurveyResults(
+        string key, [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct, [FromQuery] string? segment = null)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var results = await feedback.GetSurveyResultsAsync(key, segment, ct);
+        if (results == null) return NotFound(new { error = "no_such_survey" });
+        return Ok(new
+        {
+            summary = MapSurveySummary(results.Summary),
+            results.Segment,
+            questions = results.Questions.Select(q => new
+            {
+                q.Id, q.Text, kind = SurveyKindName(q.Kind), q.Answered, options = q.Options.Select(MapOptionCount),
+                headline = q.Headline == null ? null : new { q.Headline.Option, q.Headline.Without, q.Headline.Chose, q.Headline.Of },
+                texts = q.Texts.Select(MapFeedbackItem)
+            }),
+            written = results.Written.Select(MapFeedbackItem)
+        });
+    }
+
+    // ---- Conversations: the owner answers people who wrote something. ----
+
+    /// <summary>Everyone who wrote something, those waiting for an answer first.</summary>
+    [HttpGet("feedback/threads")]
+    public async Task<IActionResult> FeedbackThreads(
+        [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct, [FromQuery] bool unanswered = false)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var all = await replies.ListThreadsAsync(unansweredOnly: false, ct);
+        return Ok(new
+        {
+            unanswered = all.Count(t => t.Status.IsUnanswered()),
+            threads = all.Where(t => !unanswered || t.Status.IsUnanswered()).Select(t => new
+            {
+                t.TelegramId, lastKind = FeedbackKindName(t.LastKind), t.LastText, t.LastAtUtc, t.Texts, status = ThreadStatusName(t.Status), t.LastFromOwner
+            })
+        });
+    }
+
+    [HttpGet("feedback/threads/{telegramId:long}")]
+    public async Task<IActionResult> FeedbackThread(
+        long telegramId, [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var thread = await replies.GetThreadAsync(telegramId, ct);
+        if (thread == null) return NotFound(new { error = "no_such_person" });
+        return Ok(new
+        {
+            thread.TelegramId, thread.Reachable, status = ThreadStatusName(thread.Status),
+            items = thread.Items.Select(MapThreadItem),
+            maxReplyLength = Application.Feedback.FeedbackReplyService.MaxReplyLength,
+            signature = Application.Feedback.FeedbackReplyService.Signature
+        });
+    }
+
+    public class FeedbackReplyRequest
+    {
+        public string? Text { get; set; }
+        /// <summary>The person's text the answer quotes; null — their latest one.</summary>
+        public Guid? QuoteId { get; set; }
+        /// <summary>Made by the mini-app once per written answer — the same token never sends twice.</summary>
+        public string? Token { get; set; }
+    }
+
+    /// <summary>Sends the owner's answer to this one person by the bot. Never to anyone else, never twice for one token.</summary>
+    [HttpPost("feedback/threads/{telegramId:long}/reply")]
+    public async Task<IActionResult> FeedbackReply(
+        long telegramId, [FromBody] FeedbackReplyRequest request,
+        [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var result = await replies.ReplyAsync(telegramId, request.Text, request.QuoteId, request.Token, ct);
+        return result.Outcome switch
+        {
+            Application.Feedback.FeedbackReplyOutcome.Done or Application.Feedback.FeedbackReplyOutcome.AlreadySent => Ok(new
+            {
+                delivery = DeliveryName(result.Status!.Value),
+                repeated = result.Outcome == Application.Feedback.FeedbackReplyOutcome.AlreadySent
+            }),
+            Application.Feedback.FeedbackReplyOutcome.NoSuchPerson => NotFound(new { error = "no_such_person" }),
+            Application.Feedback.FeedbackReplyOutcome.TooLong => BadRequest(new { error = $"Ответ длиннее {Application.Feedback.FeedbackReplyService.MaxReplyLength} символов." }),
+            Application.Feedback.FeedbackReplyOutcome.NothingToAnswer => BadRequest(new { error = "Этого текста у человека нет — выбери другой или напиши без цитаты." }),
+            _ => BadRequest(new { error = "Пустой ответ." })
+        };
+    }
+
+    /// <summary>"Не требует ответа": takes the person out of the unanswered ones; sends nothing.</summary>
+    [HttpPost("feedback/threads/{telegramId:long}/dismiss")]
+    public async Task<IActionResult> FeedbackDismiss(
+        long telegramId, [FromServices] Application.Feedback.FeedbackReplyService replies, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return await replies.MarkNoReplyNeededAsync(telegramId, ct) ? Ok(new { ok = true }) : NotFound(new { error = "no_such_person" });
+    }
+
+    internal static object MapThreadItem(Application.Feedback.FeedbackThreadItem i) => new
+    {
+        i.Id, i.FromOwner, i.Text, i.AtUtc, kind = i.Kind == null ? null : FeedbackKindName(i.Kind.Value), i.Question, i.Option,
+        delivery = i.Delivery == null ? null : DeliveryName(i.Delivery.Value), i.Quote
+    };
+
+    private static string ThreadStatusName(Application.Feedback.FeedbackThreadStatus status) => status switch
+    {
+        Application.Feedback.FeedbackThreadStatus.New => "new",
+        Application.Feedback.FeedbackThreadStatus.RepliedBack => "repliedBack",
+        Application.Feedback.FeedbackThreadStatus.Closed => "closed",
+        _ => "answered"
+    };
+
+    private static string DeliveryName(Domain.Entities.FeedbackReplyStatus status) =>
+        char.ToLowerInvariant(status.ToString()[0]) + status.ToString()[1..];
+
+    private static object MapSurveySummary(Application.Feedback.SurveySummary s) => new
+    {
+        s.Key, s.Title, s.Questions, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Picked, s.Pending,
+        funnel = new { s.Funnel.Sent, s.Funnel.AnsweredFirst, s.Funnel.OpenedForm, s.Funnel.Finished }
+    };
+
+    private static object MapFeedbackItem(Application.Feedback.FeedbackItem r) => new
+    {
+        r.Id, kind = FeedbackKindName(r.Kind), r.CampaignKey, r.QuestionId, r.Option, r.Text, r.AtUtc, r.TelegramId
+    };
+
+    private static object MapOptionCount(Application.Feedback.OptionCount c) => new { c.Option, c.Count };
+
+    internal static string FeedbackKindName(Domain.Entities.UserFeedbackKind kind) => kind switch
+    {
+        Domain.Entities.UserFeedbackKind.PaywallDecline => "paywall",
+        Domain.Entities.UserFeedbackKind.Survey => "survey",
+        _ => "message"
     };
 
     private static string AudienceName(Domain.Entities.BroadcastAudience a) =>
