@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Mascot from './Mascot'
 import LoaderLetter from './LoaderLetter'
-import { api } from '../api'
+import PaywallDeclineQuestion from './PaywallDeclineQuestion'
+import { api, feedback } from '../api'
 
 export type PaywallTrigger = 'module' | 'vocabulary_limit'
 
@@ -22,6 +23,9 @@ interface Plan {
 
 type State = 'default' | 'loading-plans' | 'loading-invoice' | 'waiting-payment' | 'success' | 'error'
 
+/** Сколько шторка ждёт решения сервера о вопросе, прежде чем просто закрыться. */
+const QUESTION_WAIT_MS = 2000
+
 // Default/recommended plan highlighted first by the UI.
 const RECOMMENDED_PLAN = 'Year'
 
@@ -35,6 +39,15 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
   const [state, setState] = useState<State>('loading-plans')
   const [plans, setPlans] = useState<Plan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<string>(RECOMMENDED_PLAN)
+  // «Что смутило?»: сервер заранее говорит, есть ли что спросить, если шторку закроют не купив,
+  // — тогда закрытие не ждёт ответа сети, когда спрашивать нечего. Сам показ сервер запоминает при закрытии.
+  const questionDue = useRef(false)
+  const [questionId, setQuestionId] = useState<string | null>(null)
+  const closing = useRef(false)
+
+  useEffect(() => {
+    feedback.paywallQuestionDue().then((r) => { questionDue.current = r.due }).catch(() => {})
+  }, [])
 
   // Slide-up on mount
   useEffect(() => {
@@ -95,10 +108,24 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
     onPurchaseSuccess()
   }
 
-  function handleClose() {
+  function dismiss() {
+    closing.current = true
     stopPolling()
     setVisible(false)
     setTimeout(onClose, 220)
+  }
+
+  function handleClose() {
+    // Спрашиваем только того, кто видел тарифы и ушёл: не посреди оплаты, не после неё и не при ошибке загрузки.
+    if (state !== 'default' || !questionDue.current || questionId) return dismiss()
+    questionDue.current = false
+    const answer = feedback.paywallQuestion().then((r) => (r.show ? r.id : null)).catch(() => null)
+    const tooLong = new Promise<null>((resolve) => setTimeout(() => resolve(null), QUESTION_WAIT_MS))
+    Promise.race([answer, tooLong]).then((id) => {
+      if (closing.current) return // закрыли вторым нажатием, не дождавшись
+      if (id) setQuestionId(id)
+      else dismiss()
+    })
   }
 
   async function handlePurchase() {
@@ -178,7 +205,7 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
           background: 'rgba(21,16,10,0.4)',
           opacity: visible ? 1 : 0,
         }}
-        onClick={handleClose}
+        onClick={questionId ? dismiss : handleClose}
         aria-hidden="true"
       />
 
@@ -194,14 +221,16 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
         }}
         role="dialog"
         aria-modal="true"
-        aria-label="Про-доступ"
+        aria-label={questionId ? 'Что смутило?' : 'Про-доступ'}
       >
         {/* Drag handle */}
         <div className="w-8 h-1 bg-jewelInk/20 rounded-full mx-auto mt-3 mb-4" />
 
         <div className="px-5 pb-6 flex flex-col gap-4">
-          {/* Success state — celebratory thank-you replacing plan list */}
-          {state === 'success' ? (
+          {/* «Что смутило?» replaces everything; otherwise the success state — a thank-you replacing the plan list */}
+          {questionId ? (
+            <PaywallDeclineQuestion questionId={questionId} onDone={dismiss} />
+          ) : state === 'success' ? (
             <div className="flex flex-col items-center gap-3 pt-2 pb-1">
               <div className="relative">
                 <Mascot mood="cheer" size={96} />

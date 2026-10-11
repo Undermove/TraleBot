@@ -9,6 +9,7 @@ import BomboraSays from '../components/BomboraSays'
 import { resetSaysMemory } from '../bomboraSays'
 import { AlphabetLetterDto, CatalogDto, ProgressState, Screen } from '../types'
 import { api } from '../api'
+import { BellIcon, DeskIcon, LetterIcon } from '../verbs/ui/icons'
 
 interface Props {
   catalog: CatalogDto
@@ -311,6 +312,25 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
         {/* Notifications on/off */}
         <NotificationsToggle />
 
+        {/* Write to the author — what is liked, what is missing */}
+        <button
+          onClick={() => navigate({ kind: 'feedback', from: 'profile' })}
+          data-testid="feedback-entry"
+          className="jewel-tile jewel-pressable w-full text-left px-4 py-3 mt-3"
+        >
+          <div className="relative z-[1] flex items-center justify-between gap-3">
+            <div>
+              <div className="font-sans text-[14px] font-bold text-jewelInk flex items-center gap-1.5">
+                <LetterIcon size={18} /> Написать автору
+              </div>
+              <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
+                Что нравится, чего не хватает — читаю всё сам
+              </div>
+            </div>
+            <span className="text-jewelInk-hint text-[14px] shrink-0">→</span>
+          </div>
+        </button>
+
         {/* Referral — invite friends, get bonus */}
         <ReferralCard />
 
@@ -332,9 +352,9 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           >
             <div className="relative z-[1] flex items-center justify-between gap-3">
               <div>
-                <div className="font-sans text-[14px] font-bold text-jewelInk">📊 Админка</div>
+                <div className="font-sans text-[14px] font-bold text-jewelInk flex items-center gap-1.5"><DeskIcon size={18} /> Админка</div>
                 <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
-                  Аналитика, пользователи, гранты
+                  Люди, обратная связь, рассылки, оплаты
                 </div>
               </div>
               <span className="text-jewelInk-hint text-[14px] shrink-0">→</span>
@@ -690,7 +710,7 @@ function NotificationsToggle() {
     <div className="jewel-tile w-full px-4 py-3 mt-3">
       <div className="relative z-[1] flex items-center justify-between gap-3">
         <div>
-          <div className="font-sans text-[14px] font-bold text-jewelInk">🔔 Уведомления</div>
+          <div className="font-sans text-[14px] font-bold text-jewelInk flex items-center gap-1.5"><BellIcon size={18} /> Уведомления</div>
           <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
             {enabled === false
               ? 'Выключены — Бомбора не будет напоминать о себе'

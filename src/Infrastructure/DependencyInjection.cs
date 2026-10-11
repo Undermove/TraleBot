@@ -87,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<ITelegramRefundClient, TelegramRefundClient>();
         services.AddScoped<Application.Admin.ITelegramMessageSender, Infrastructure.Telegram.Services.TelegramMessageSender>();
         services.AddScoped<Application.Admin.ICampaignMessageSender, Infrastructure.Telegram.Services.TelegramMessageSender>();
+        services.AddScoped<Application.Feedback.IFeedbackReplySender, Infrastructure.Telegram.Services.TelegramMessageSender>();
         
         // Georgian quiz services
         services.AddScoped<IGeorgianQuizSessionService, GeorgianQuizSessionService>();
@@ -95,6 +96,8 @@ public static class DependencyInjection
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, StopCommand>();
+        // Before everything that reads the text as a word or a quiz answer: a button press is never one.
+        services.AddScoped<IBotCommand, SurveyAnswerCommand>();
         services.AddScoped<IBotCommand, HelpCommand>();
         services.AddScoped<IBotCommand, HowToCommand>();
         services.AddScoped<IBotCommand, MenuCommand>();

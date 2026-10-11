@@ -95,6 +95,9 @@ namespace Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("SurveyJson")
+                        .HasColumnType("jsonb");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Key")
@@ -137,6 +140,12 @@ namespace Persistence.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("SurveyFinishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("SurveyOpenedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<long>("TelegramId")
                         .HasColumnType("bigint");
 
@@ -153,6 +162,50 @@ namespace Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("BroadcastDeliveries");
+                });
+
+            modelBuilder.Entity("Domain.Entities.FeedbackReply", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClientToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Quote")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(3500)
+                        .HasColumnType("character varying(3500)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientToken")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CreatedAtUtc");
+
+                    b.ToTable("FeedbackReplies");
                 });
 
             modelBuilder.Entity("Domain.Entities.GeorgianQuizSession", b =>
@@ -798,6 +851,53 @@ namespace Persistence.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Domain.Entities.UserFeedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CampaignKey")
+                        .HasMaxLength(48)
+                        .HasColumnType("character varying(48)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Option")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("QuestionId")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("UserId", "CampaignKey", "QuestionId")
+                        .IsUnique()
+                        .HasFilter("\"Kind\" = 1");
+
+                    b.HasIndex("UserId", "Kind", "CreatedAtUtc");
+
+                    b.ToTable("UserFeedback", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.UserSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1295,6 +1395,15 @@ namespace Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Domain.Entities.FeedbackReply", b =>
+                {
+                    b.HasOne("Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Entities.GeorgianQuizSession", b =>
                 {
                     b.HasOne("Domain.Entities.User", "User")
@@ -1391,6 +1500,15 @@ namespace Persistence.Migrations
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("Quiz");
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserFeedback", b =>
+                {
+                    b.HasOne("Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Domain.Entities.UserSettings", b =>

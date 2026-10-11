@@ -418,7 +418,29 @@ export interface AdminRecentUser {
   lastActivityUtc: string | null
 }
 
+export interface AdminUserSurveyAnswer {
+  campaignKey: string
+  question: string
+  option: string | null
+  text: string | null
+  atUtc: string
+}
+
 export interface AdminUserDetail {
+  /** Откуда человек пришёл: метка ссылки, реферал, кампания; null — неизвестно. */
+  acquisitionSource?: string | null
+  /** Paying / Trial / Ended / Lapsed. */
+  access?: string
+  accessUntilUtc?: string | null
+  notificationsEnabled?: boolean
+  lastStudiedAtUtc?: string | null
+  lessonsCompleted?: number
+  quizzesStarted?: number
+  verbSessionsStarted?: number
+  verbSessionsFinished?: number
+  /** Сколько текстов человек написал — письма, свои ответы в опросах, комментарии с экрана покупки. */
+  writtenTexts?: number
+  surveyAnswers?: AdminUserSurveyAnswer[]
   telegramId: number
   userId: string
   isPro: boolean
@@ -515,7 +537,12 @@ export function markUiHintSeen(hintKey: string) {
 
 // ── Рассылка-кампания (админка владельца) и отметка «открыл по кнопке из рассылки» ──
 
-export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner'
+export interface FeedbackOptionCount {
+  option: string
+  count: number
+}
+
+export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner' | 'activeLately' | 'inactiveLong'
 
 export interface CampaignStatusDto {
   key: string
@@ -531,6 +558,10 @@ export interface CampaignStatusDto {
   rejected: number
   unknown: number
   opened: number
+  /** Опрос: кнопки первого вопроса (он приходит в бот) и сколько человек выбрали каждую. У обычной кампании пусто. */
+  surveyAnswers?: FeedbackOptionCount[]
+  /** Опрос: его форма целиком — по ней конструктор возвращается к начатому опросу. */
+  survey?: SurveyFormDto | null
   /** Подарок кампании: сколько дней доступа получает открывший кнопку; 0 — подарка нет. */
   giftDays: number
   /** До какого момента открытие ещё даёт подарок. */
@@ -556,13 +587,23 @@ export const adminCampaigns = {
   prepare: (body: {
     key: string
     audience: CampaignAudience
-    message: string
+    message?: string
     buttonText: string | null
     buttonQuery: string | null
     sampleSize: number | null
     dryRun: boolean
     giftDays?: number
     giftOfferDays?: number | null
+    /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания. */
+    survey?: SurveyFormDto | null
+    /** Конструктор рассылки начинает новую кампанию: при пустом key сервер сам её называет (broadcast-2026-10, -2, …). */
+    newBroadcast?: boolean
+    /** «test» — пробная рассылка себе. */
+    newBroadcastSuffix?: string | null
+    /** Эта часть — ещё одной группе той же кампании: кто уже получил сообщение или подарок, второй раз не получит. */
+    anotherAudience?: boolean
+    /** Конструктор начинает новый опрос: при пустом key сервер сам называет кампанию и возвращает имя в ответе. */
+    newSurveySlug?: string | null
   }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
   /** Отправить следующую порцию уже выбранных получателей. */
   send: (key: string, limit: number) =>
@@ -570,7 +611,100 @@ export const adminCampaigns = {
       `/api/admin/campaigns/${encodeURIComponent(key)}/send`,
       { method: 'POST', body: JSON.stringify({ limit }) }
     ),
-  status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`)
+  status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`),
+  /** Все кампании, отправленные людям, новые сверху. surveys — только опросы или только обычные рассылки. */
+  list: (surveys?: boolean) =>
+    request<{ campaigns: CampaignListItemDto[] }>(`/api/admin/campaigns${surveys == null ? '' : `?surveys=${surveys}`}`)
+}
+
+export interface CampaignListItemDto {
+  key: string
+  isSurvey: boolean
+  message: string
+  audience: CampaignAudience
+  createdAtUtc: string
+  buttonText: string | null
+  giftDays: number
+  picked: number
+  pending: number
+  sent: number
+  opened: number
+  gifted: number
+  /** draft — получателей ещё не выбирали; running — выбранные ждут отправки; done — все выбранные обработаны. */
+  state: 'draft' | 'running' | 'done'
+}
+
+// ── Админка: обзор, люди, оплаты ──
+
+export interface AdminOverviewDto {
+  totalUsers: number
+  newUsers7d: number
+  /** Занимались — оставили след с датой: ответ в уроке, слово, квиз, игра с глаголом. */
+  studiedToday: number
+  studied7d: number
+  payments30d: number
+  stars30d: number
+  activeSubscriptions: number
+  onTrial: number
+  unansweredMessages: number
+  unfinishedSurveys: number
+  unfinishedBroadcasts: number
+  verbsToReview: number
+}
+
+export type AdminUserFilter = 'all' | 'paying' | 'trial' | 'accessEnded' | 'blocked'
+export type AdminUserSort = 'activity' | 'registered' | 'words'
+export type AdminUserAccess = 'paying' | 'trial' | 'ended' | 'lapsed'
+
+export interface AdminUserRowDto {
+  telegramId: number
+  access: AdminUserAccess
+  /** false — заблокировал бота. */
+  isActive: boolean
+  registeredAtUtc: string
+  lastActivityUtc: string | null
+  acquisitionSource: string | null
+  vocabularyCount: number
+}
+
+export interface AdminUsersPageDto {
+  total: number
+  counts: Record<AdminUserFilter, number>
+  users: AdminUserRowDto[]
+}
+
+export interface AdminPaymentRowDto {
+  telegramId: number
+  purchasedAtUtc: string
+  plan: string
+  amount: number
+  currency: string
+  refundedAtUtc: string | null
+}
+
+export interface AdminPaymentsDto {
+  total: number
+  payments: AdminPaymentRowDto[]
+  starsTotal: number
+  refunds: number
+  endingSoon: { telegramId: number; plan: string | null; untilUtc: string }[]
+  endedLately: { telegramId: number; plan: string | null; untilUtc: string }[]
+}
+
+export interface AdminJobsDto {
+  queue: { enqueued: number; scheduled: number; processing: number; succeeded: number; failed: number; servers: number }
+  translationsLast24h: { pending: number; done: number; failed: number }
+}
+
+export const adminSections = {
+  overview: () => request<AdminOverviewDto>('/api/admin/overview'),
+  users: (q: { search?: string; filter?: AdminUserFilter; sort?: AdminUserSort; skip?: number; take?: number } = {}) => {
+    const params = new URLSearchParams({ skip: String(q.skip ?? 0), take: String(q.take ?? 30), filter: q.filter ?? 'all', sort: q.sort ?? 'activity' })
+    if (q.search) params.set('search', q.search)
+    return request<AdminUsersPageDto>(`/api/admin/users?${params}`)
+  },
+  payments: (skip = 0, take = 30) => request<AdminPaymentsDto>(`/api/admin/payments?skip=${skip}&take=${take}`),
+  jobs: () => request<AdminJobsDto>('/api/admin/jobs')
 }
 
 /** Основное время, которого нет в таблице глагола от нейросети, и почему. */
@@ -670,4 +804,236 @@ export interface CampaignGiftDto {
 
 export function reportCampaignOpen(key: string) {
   return request<{ ok: boolean; gift?: CampaignGiftDto | null }>('/api/miniapp/campaign-open', { method: 'POST', body: JSON.stringify({ key }) })
+}
+
+// ── Обратная связь: «Что смутило?» на экране покупки, «Написать автору», ответы для владельца ──
+
+export const FEEDBACK_MAX_LENGTH = 2000
+
+/** Варианты ответа на «Что смутило?» — на сервер уходит код, человеку показываем подпись. */
+export const PAYWALL_DECLINE_OPTIONS = [
+  { id: 'expensive', label: 'Дорого' },
+  { id: 'not_now', label: 'Пока не нужно' },
+  { id: 'unclear', label: 'Непонятно, что я получу' },
+  { id: 'other', label: 'Другое' }
+] as const
+
+export type PaywallDeclineOption = (typeof PAYWALL_DECLINE_OPTIONS)[number]['id']
+
+export const feedback = {
+  /** Экран покупки открылся: есть ли вопрос, который стоит задать, если его закроют не купив. Ничего не записывает. */
+  paywallQuestionDue: () => request<{ due: boolean }>('/api/miniapp/feedback/paywall-question'),
+  /** Экран покупки закрыли не купив. Сервер решает, показывать ли вопрос (раз в 30 дней), и запоминает показ. */
+  paywallQuestion: () => request<{ show: boolean; id: string | null }>('/api/miniapp/feedback/paywall-question', { method: 'POST' }),
+  paywallAnswer: (id: string, option: PaywallDeclineOption, text: string) =>
+    request<{ ok: boolean }>('/api/miniapp/feedback/paywall-answer', { method: 'POST', body: JSON.stringify({ id, option, text }) }),
+  /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее». */
+  send: (text: string, campaign?: string | null) =>
+    request<{ ok: boolean }>('/api/miniapp/feedback', { method: 'POST', body: JSON.stringify({ text, campaign: campaign ?? null }) }),
+  /** Переписка человека с автором: его сообщения и дошедшие ответы, старые сверху. Пусто, пока автор ни разу не ответил. */
+  thread: () => request<{ items: { fromOwner: boolean; text: string; atUtc: string }[] }>('/api/miniapp/feedback/thread')
+}
+
+export interface AdminFeedbackItem {
+  /** По нему владелец отвечает именно на этот текст. */
+  id?: string
+  kind: 'paywall' | 'survey' | 'message'
+  campaignKey: string | null
+  questionId?: string | null
+  option: string | null
+  text: string | null
+  atUtc: string
+  telegramId: number
+}
+
+/** Вопрос опроса. id даёт сервер («q1», «q2»… по порядку), когда опрос заведён. */
+export interface SurveyQuestionDto {
+  id?: string
+  text: string
+  /** choice — выбор одного варианта, text — свободный ответ. */
+  kind: 'choice' | 'text'
+  options: string[]
+  /** У вопроса с вариантами есть ещё «Другое» с полем для своего ответа. */
+  allowOther: boolean
+  /** Устойчивые имена вариантов, по порядку («very», «unused»; пусто — у варианта имени нет). Остаются при варианте, как бы его ни переименовали. */
+  optionKeys?: string[] | null
+  /** Главная цифра вопроса: доля варианта с этим именем среди ответивших, не считая выбравших вариант с именем headlineWithout. */
+  headlineOption?: string | null
+  headlineWithout?: string | null
+}
+
+export interface SurveyFormDto {
+  /** Короткая строка перед первым вопросом в сообщении бота. */
+  intro: string | null
+  questions: SurveyQuestionDto[]
+}
+
+/** Ответ на один вопрос: вариант, либо «Другое» со своими словами, либо просто текст. */
+export interface SurveyAnswerDto {
+  option: string | null
+  other: boolean
+  text: string | null
+}
+
+/** Форма опроса глазами получателя (мини-апп): вопросы и то, что человек уже ответил. */
+export const surveyApi = {
+  open: (key: string) =>
+    request<{ key: string; survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto> }>(
+      `/api/miniapp/surveys/${encodeURIComponent(key)}/open`, { method: 'POST' }),
+  answer: (key: string, questionId: string, answer: SurveyAnswerDto) =>
+    request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/answer`, { method: 'POST', body: JSON.stringify({ questionId, ...answer }) }),
+  finish: (key: string) => request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/finish`, { method: 'POST' })
+}
+
+/** Воронка опроса: получили → ответили на первый вопрос → открыли форму в мини-аппе → дошли до конца. */
+export interface SurveyFunnelDto {
+  sent: number
+  answeredFirst: number
+  openedForm: number
+  finished: number
+}
+
+export interface AdminSurveyDto {
+  key: string
+  /** Первый вопрос — по нему владелец узнаёт опрос. */
+  title: string
+  /** Сколько в опросе вопросов. */
+  questions: number
+  createdAtUtc: string
+  audience: CampaignAudience
+  /** Сколько получателей выбрано на сегодня. */
+  picked: number
+  /** Из них ещё ждут отправки: больше нуля — отправку бросили посередине, к опросу можно вернуться. */
+  pending: number
+  funnel: SurveyFunnelDto
+}
+
+export interface AdminSurveyQuestionDto {
+  id: string
+  text: string
+  kind: 'choice' | 'text'
+  /** Сколько человек ответили на вопрос (в выбранном разрезе). */
+  answered: number
+  options: FeedbackOptionCount[]
+  headline: { option: string; without: string | null; chose: number; of: number } | null
+  /** Что написали: «Другое» со словами и ответы на вопрос без вариантов. */
+  texts: AdminFeedbackItem[]
+}
+
+export interface AdminSurveyResultsDto {
+  summary: AdminSurveyDto
+  /** Вариант первого вопроса, по которому сужены вопросы; null — все. */
+  segment: string | null
+  questions: AdminSurveyQuestionDto[]
+  /** Сообщения по кнопке «Написать подробнее» из этого опроса. */
+  written: AdminFeedbackItem[]
+}
+
+export interface AdminFeedbackDto {
+  recent: AdminFeedbackItem[]
+  /** shown — сколько раз вопрос показали, с ответом или без. */
+  paywall: { shown: number; options: FeedbackOptionCount[] }
+  /** Сколько всего сообщений написали автору. */
+  messages: number
+  /** Сколько человек что-то написали и ждут ответа. */
+  unanswered?: number
+  /** Опросы, отправленные людям, новые сверху (пробные «только себе» сюда не попадают). */
+  surveys: AdminSurveyDto[]
+}
+
+/** Готовая форма для конструктора: вопросы и варианты уже написаны. */
+export interface SurveyPresetDto {
+  id: string
+  title: string
+  about: string
+  form: SurveyFormDto
+}
+
+export interface SurveyLimitsDto {
+  questions: number
+  options: number
+  /** Первый вопрос приходит в бот кнопками — вариантов у него меньше. */
+  botOptions: number
+  optionLength: number
+  questionLength: number
+}
+
+export interface SurveyBuilderKitDto {
+  presets: SurveyPresetDto[]
+  /** Готовые вопросы, которые можно добавить в свою форму. */
+  bank: SurveyQuestionDto[]
+  suggestions: string[]
+  intro: string
+  otherLabel: string
+  limits: SurveyLimitsDto
+}
+
+export const adminSurveys = {
+  presets: () => request<SurveyBuilderKitDto>('/api/admin/surveys/presets')
+}
+
+/** new — написал, ему не отвечали; repliedBack — написал снова после ответа; answered — последнее слово за владельцем; closed — отмечено «не требует ответа». */
+export type FeedbackThreadStatus = 'new' | 'answered' | 'repliedBack' | 'closed'
+/** Что сказал Telegram про ответ владельца. */
+export type ReplyDelivery = 'sending' | 'sent' | 'blocked' | 'rejected' | 'unknown'
+
+export interface FeedbackThreadSummaryDto {
+  telegramId: number
+  lastKind: AdminFeedbackItem['kind']
+  lastText: string
+  lastAtUtc: string
+  texts: number
+  status: FeedbackThreadStatus
+  /** Последнее слово в переписке — владельца; lastText тогда его ответ. */
+  lastFromOwner?: boolean
+}
+
+export interface FeedbackThreadItemDto {
+  id: string
+  fromOwner: boolean
+  text: string
+  atUtc: string
+  /** Откуда текст человека; у ответа владельца — null. */
+  kind: AdminFeedbackItem['kind'] | null
+  /** Вопрос опроса, на который это ответ или после которого написано. */
+  question: string | null
+  option: string | null
+  delivery: ReplyDelivery | null
+  quote: string | null
+}
+
+export interface FeedbackThreadDto {
+  telegramId: number
+  /** false — человек заблокировал бота, ответ до него не дойдёт. */
+  reachable: boolean
+  status: FeedbackThreadStatus
+  items: FeedbackThreadItemDto[]
+  maxReplyLength: number
+  signature: string
+}
+
+export const adminThreads = {
+  list: (unanswered = false) =>
+    request<{ unanswered: number; threads: FeedbackThreadSummaryDto[] }>(`/api/admin/feedback/threads?unanswered=${unanswered}`),
+  get: (telegramId: number) => request<FeedbackThreadDto>(`/api/admin/feedback/threads/${telegramId}`),
+  /** Ответ уходит человеку сообщением бота. token — один на написанный ответ: повторный запрос с ним ничего не отправит. */
+  reply: (telegramId: number, text: string, token: string, quoteId?: string | null) =>
+    request<{ delivery: ReplyDelivery; repeated: boolean }>(`/api/admin/feedback/threads/${telegramId}/reply`, {
+      method: 'POST', body: JSON.stringify({ text, token, quoteId: quoteId ?? null })
+    }),
+  /** «Не требует ответа»: убрать из неотвеченных, ничего не отправляя. */
+  dismiss: (telegramId: number) => request<{ ok: boolean }>(`/api/admin/feedback/threads/${telegramId}/dismiss`, { method: 'POST' })
+}
+
+export const adminFeedback = {
+  /** recent можно сузить до одного вида ответов и/или одного опроса; счётчики всегда целиком. */
+  overview: (only: { kind?: AdminFeedbackItem['kind']; campaign?: string; take?: number } = {}) => {
+    const params = new URLSearchParams({ take: String(only.take ?? 100) })
+    if (only.kind) params.set('kind', only.kind)
+    if (only.campaign) params.set('campaign', only.campaign)
+    return request<AdminFeedbackDto>(`/api/admin/feedback?${params}`)
+  },
+  /** Один опрос: воронка и ответы по вопросам. segment — вариант первого вопроса: остальные вопросы считаются только у выбравших его. */
+  survey: (key: string, segment?: string | null) =>
+    request<AdminSurveyResultsDto>(`/api/admin/feedback/surveys/${encodeURIComponent(key)}${segment ? `?segment=${encodeURIComponent(segment)}` : ''}`)
 }
