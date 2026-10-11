@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
-import Header from '../components/Header'
-import LoaderLetter from '../components/LoaderLetter'
+import { AdminHeader, Segments, Skeleton, TAB_BAR_HEIGHT } from '../components/admin/AdminPage'
+import { adminBack } from '../admin/adminNav'
+import { useKept } from '../admin/useKept'
 import { Answers, Counts, STATUS, answered, audienceName, day, paywallLabel, when } from '../components/admin/feedbackView'
 import FeedbackThread from '../components/admin/FeedbackThread'
 import {
   adminFeedback, adminThreads, ApiError,
   type AdminFeedbackDto, type AdminFeedbackItem, type AdminSurveyDto, type AdminSurveyResultsDto, type FeedbackThreadSummaryDto
 } from '../api'
-import type { FeedbackThreadView, FeedbackView, ProgressState, Screen } from '../types'
+import type { FeedbackThreadView, FeedbackView, Screen } from '../types'
 
-// «Отзывы» — подраздел админки, только чтение. Список: экран покупки («Что смутило?»), «Написали
-// автору» и опросы по одному; по тапу — свой экран. У опроса: воронка (получили → ответили на первый
+// «Связь» — вкладка админки. Корень вкладки — три подраздела под переключателем: «Сообщения» (переписки
+// со статусами), «Опросы» (собрать новый, недосланные, результаты) и «Экран покупки» (ответы на
+// «Что смутило?»); у каждого свой адрес. Результаты опроса и переписка открываются поверх. У опроса: воронка (получили → ответили на первый
 // вопрос → открыли форму → дошли до конца), потом каждый вопрос со счётчиками и текстами; ответы можно
 // сузить до тех, кто выбрал определённый вариант первого вопроса.
 // У каждого текста — «Ответить»: открывается переписка с этим человеком (components/admin/FeedbackThread).
@@ -20,7 +22,6 @@ import type { FeedbackThreadView, FeedbackView, ProgressState, Screen } from '..
 type View = Extract<Screen, { kind: 'admin-feedback' }>['view']
 
 interface Props {
-  progress: ProgressState
   view?: View
   navigate: (s: Screen) => void
 }
@@ -33,6 +34,9 @@ const heading = 'font-sans text-[17px] font-extrabold text-jewelInk leading-snug
 function only(view: View): { kind?: AdminFeedbackItem['kind']; take?: number } {
   return view === 'paywall' ? { kind: 'paywall' } : { take: 1 }
 }
+
+const TITLE = (view: View) => (typeof view === 'object' ? ('thread' in view ? 'Переписка' : 'Опрос') : 'Связь')
+const SEGMENTS = [{ id: 'threads' as const, name: 'Сообщения' }, { id: 'surveys' as const, name: 'Опросы' }, { id: 'paywall' as const, name: 'Экран покупки' }]
 
 const isThread = (view: View): view is FeedbackThreadView => typeof view === 'object' && 'thread' in view
 const KIND: Record<AdminFeedbackItem['kind'], string> = { message: 'письмо автору', survey: 'ответ в опросе', paywall: 'экран покупки' }
@@ -63,14 +67,17 @@ function Funnel({ survey }: { survey: AdminSurveyDto }) {
   )
 }
 
-export default function AdminFeedbackScreen({ progress, view, navigate }: Props) {
+export default function AdminFeedbackScreen({ view: asked, navigate }: Props) {
+  // Без подраздела в адресе открываются «Сообщения».
+  const view: View = asked ?? 'threads'
+  const tabSegment = typeof view === 'string' ? view : null
   const [data, setData] = useState<AdminFeedbackDto | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
   const surveyKey = typeof view === 'object' && 'survey' in view ? view.survey : null
   const threadView = isThread(view) ? view : null
   const [threads, setThreads] = useState<{ unanswered: number; threads: FeedbackThreadSummaryDto[] } | null>(null)
   /** «Без ответа» — только те, кто ждёт; иначе все, кто что-то написал. */
-  const [waitingOnly, setWaitingOnly] = useState(true)
+  const [waitingOnly, setWaitingOnly] = useKept('feedback/waitingOnly', true)
 
   useEffect(() => {
     if (view !== 'threads') return
@@ -105,50 +112,29 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
 
   const open = (next: View) => navigate({ kind: 'admin-feedback', view: next })
   const openUser = (telegramId: number) => navigate({ kind: 'admin-user', telegramId })
-  const back = () => navigate(threadView ? { kind: 'admin-feedback', view: threadView.back } : view ? { kind: 'admin-feedback' } : { kind: 'admin' })
+  const back = () => navigate(adminBack())
   /** Переписка с автором текста; «Назад» из неё вернёт туда, откуда пришли. */
-  const reply = (item: { telegramId: number; id?: string }) =>
-    navigate({ kind: 'admin-feedback', view: { thread: item.telegramId, quote: item.id, back: isThread(view) ? undefined : (view as FeedbackView | undefined) } })
+  const reply = (item: { telegramId: number; id?: string }) => navigate({ kind: 'admin-feedback', view: { thread: item.telegramId, quote: item.id } })
   const survey = results?.summary
+  const unfinished = data?.surveys.filter(s => s.pending > 0).length ?? 0
 
   return (
     <div className="flex flex-col min-h-full bg-cream" data-testid="admin-feedback-screen">
-      <Header progress={progress} onBack={back} eyebrow="админка" title="Отзывы" />
-      <div className="flex-1 px-5 pt-4" style={{ paddingBottom: 'calc(var(--safe-b) + 32px)' }}>
+      <AdminHeader onBack={back} section={tabSegment ? 'админка' : 'админка · связь'} title={TITLE(view)} />
+      <div className="flex-1 px-5 pt-4" style={{ paddingBottom: `calc(var(--safe-b) + ${TAB_BAR_HEIGHT + 24}px)` }}>
+        {tabSegment && (
+          <Segments label="Подраздел" value={tabSegment} onChange={id => open(id)}
+            items={SEGMENTS.map(x => ({ ...x, badge: x.id === 'threads' ? data?.unanswered : x.id === 'surveys' ? unfinished : undefined }))} />
+        )}
         {problem && <div className="font-sans text-[14px] text-jewelInk" data-testid="feedback-problem">{problem}</div>}
-        {!threadView && (!data || (surveyKey && !results)) && !problem && <div className="flex justify-center py-12"><LoaderLetter /></div>}
+        {!threadView && (!data || (surveyKey && !results)) && !problem && <Skeleton />}
 
-        {data && !view && !problem && (
-          <div className="flex flex-col gap-2" data-testid="feedback-list">
-            <button type="button" className={tile} onClick={() => open('paywall')} data-testid="feedback-open-paywall">
-              <div className="relative z-[1]">
-                <div className="font-sans text-[15px] font-extrabold text-jewelInk">Что смутило? — экран покупки</div>
-                <div className={`${small} tabular-nums mt-0.5`}>спросили {data.paywall.shown} · ответили {answered(data.paywall.options)}</div>
-              </div>
+        {data && view === 'surveys' && !problem && (
+          <div className="flex flex-col gap-2" data-testid="feedback-surveys">
+            <button type="button" onClick={() => navigate({ kind: 'admin-survey' })} data-testid="survey-new" className="jewel-btn jewel-btn-gold w-full mb-2 font-sans text-[16px] font-extrabold">
+              Новый опрос
             </button>
-            <button type="button" className={tile} onClick={() => open('threads')} data-testid="feedback-open-threads">
-              <div className="relative z-[1]">
-                <div className="font-sans text-[15px] font-extrabold text-jewelInk">
-                  Сообщения от людей
-                  {(data.unanswered ?? 0) > 0 && (
-                    <span className="ml-2 px-2 py-0.5 rounded-lg bg-ruby text-white font-sans text-[12px] font-extrabold tabular-nums align-middle" data-testid="feedback-unanswered">
-                      без ответа: {data.unanswered}
-                    </span>
-                  )}
-                </div>
-                <div className={`${small} mt-0.5`}>Письма автору, свои ответы в опросах, комментарии с экрана покупки — и твои ответы</div>
-              </div>
-            </button>
-
-            <div className="mn-eyebrow mt-4 mb-1">Опросы</div>
-            {data.surveys.length === 0 && (
-              <div className="font-sans text-[13px] text-jewelInk-mid">
-                Опросов пока не было.{' '}
-                <button type="button" className="underline text-navy font-bold min-h-[44px]" onClick={() => navigate({ kind: 'admin-survey' })}>
-                  Собрать первый
-                </button>
-              </div>
-            )}
+            {data.surveys.length === 0 && <div className="font-sans text-[13px] text-jewelInk-mid py-4">Опросов пока не было. Нажми «Новый опрос» — есть готовые формы, и сначала опрос можно отправить себе.</div>}
             {data.surveys.map(s => (
               <button key={s.key} type="button" className={tile} onClick={() => open({ survey: s.key })} data-testid={`feedback-open-survey-${s.key}`}>
                 <div className="relative z-[1]">
@@ -170,7 +156,7 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
 
         {data && view === 'paywall' && (
           <div data-testid="feedback-paywall">
-            <div className={heading}>Что смутило? — экран покупки</div>
+            <div className={heading}>Что смутило?</div>
             <div className={`${small} tabular-nums mb-3`}>
               Вопрос после закрытого без оплаты экрана покупки. Спросили {data.paywall.shown} · ответили {answered(data.paywall.options)}
             </div>
@@ -182,7 +168,6 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
 
         {data && view === 'threads' && (
           <div data-testid="feedback-threads">
-            <div className={heading}>Сообщения от людей</div>
             <div className={`${small} mb-3`}>Все, кто что-то написал своими словами. Ответ уходит человеку сообщением бота.</div>
             <div className="flex gap-2 mb-3" role="radiogroup" aria-label="Кого показать">
               {[true, false].map(only => (
@@ -196,7 +181,7 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
               ))}
             </div>
             {threads && threads.threads.length === 0 && (
-              <div className="font-sans text-[13px] text-jewelInk-mid">{waitingOnly ? 'Все сообщения разобраны.' : 'Пока никто ничего не написал.'}</div>
+              <div className="font-sans text-[13px] text-jewelInk-mid">{waitingOnly ? 'Все сообщения разобраны. Остальные переписки — под «Все».' : 'Пока никто ничего не написал. Написать человеку первым можно из его карточки во вкладке «Люди».'}</div>
             )}
             <div className="flex flex-col gap-2">
               {threads?.threads.map(t => {
@@ -208,7 +193,7 @@ export default function AdminFeedbackScreen({ progress, view, navigate }: Props)
                         <span className={`px-2 py-0.5 rounded-lg font-sans text-[12px] font-extrabold ${waiting ? 'bg-ruby text-white' : 'bg-jewelInk/10 text-jewelInk'}`}>{STATUS[t.status]}</span>
                         <span className={`${small} tabular-nums shrink-0`}>{when(t.lastAtUtc)}</span>
                       </div>
-                      <div className="font-sans text-[14px] text-jewelInk line-clamp-2 break-words mt-1">{t.lastText}</div>
+                      <div className="font-sans text-[14px] text-jewelInk line-clamp-2 break-words mt-1">{t.lastFromOwner && <span className="text-jewelInk-mid">ты: </span>}{t.lastText}</div>
                       <div className={`${small} tabular-nums mt-0.5`}>{KIND[t.lastKind]} · {t.telegramId}{t.texts > 1 ? ` · сообщений: ${t.texts}` : ''}</div>
                     </div>
                   </button>

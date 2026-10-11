@@ -64,7 +64,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 async function open() {
-  render(<SurveyBuilderScreen progress={defaultProgress} navigate={navigate} />)
+  render(<SurveyBuilderScreen navigate={navigate} />)
   await screen.findByTestId('survey-preset-users')
 }
 const title = () => screen.getByTestId('survey-step-title').textContent
@@ -363,7 +363,7 @@ describe('SurveyBuilderScreen', () => {
     campaigns.status.mockResolvedValueOnce(sampleLeft).mockResolvedValueOnce(sampleLeft).mockResolvedValue({ ...sampleDone, total: 553, pending: 453 })
     campaigns.send.mockResolvedValue({ sent: 20, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: sampleDone })
     campaigns.prepare.mockResolvedValueOnce(picked('survey-2026-10-users', 453, true)).mockResolvedValueOnce(picked('survey-2026-10-users', 453, false))
-    render(<SurveyBuilderScreen progress={defaultProgress} resume="survey-2026-10-users" navigate={navigate} />)
+    render(<SurveyBuilderScreen resume="survey-2026-10-users" navigate={navigate} />)
     await waitFor(() => expect(title()).toBe('Отправка'))
 
     await userEvent.click(screen.getByTestId('survey-send'))
@@ -380,13 +380,13 @@ describe('SurveyBuilderScreen', () => {
   it('shows nothing but the reason to anyone the server refuses or for a name of no survey', async () => {
     const { ApiError } = await import('../../api')
     surveys.presets.mockRejectedValueOnce(new ApiError(404, ''))
-    const first = render(<SurveyBuilderScreen progress={defaultProgress} navigate={navigate} />)
+    const first = render(<SurveyBuilderScreen navigate={navigate} />)
     expect(await screen.findByText('Нет доступа.')).toBeTruthy()
     expect(screen.queryByTestId('survey-step-title')).toBeNull()
     first.unmount()
 
     campaigns.status.mockRejectedValue(new ApiError(404, ''))
-    render(<SurveyBuilderScreen progress={defaultProgress} resume="survey-2026-10-gone" navigate={navigate} />)
+    render(<SurveyBuilderScreen resume="survey-2026-10-gone" navigate={navigate} />)
     expect(await screen.findByText('Такого опроса нет.')).toBeTruthy()
     expect(screen.queryByTestId('survey-send')).toBeNull()
   })

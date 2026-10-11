@@ -36,22 +36,31 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
             .Select(f => new { f.UserId, f.Kind, f.Text, At = f.UpdatedAtUtc ?? f.CreatedAtUtc })
             .ToListAsync(ct);
         var acts = await db.FeedbackReplies.AsNoTracking()
-            .Select(r => new { r.UserId, r.Kind, r.CreatedAtUtc })
+            .Select(r => new { r.UserId, r.Kind, r.CreatedAtUtc, r.Text })
             .ToListAsync(ct);
-        var userIds = texts.Select(t => t.UserId).Distinct().ToList();
+        // Also the people the owner wrote to first: the conversation exists from the owner's first message.
+        var userIds = texts.Select(t => t.UserId)
+            .Concat(acts.Where(a => a.Kind == FeedbackReplyKind.Reply).Select(a => a.UserId)).Distinct().ToList();
         var telegramIds = await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.TelegramId, ct);
+        var textsByUser = texts.ToLookup(t => t.UserId);
         var actsByUser = acts.ToLookup(a => a.UserId);
 
-        return texts.GroupBy(t => t.UserId)
-            .Where(g => telegramIds.ContainsKey(g.Key))
-            .Select(g =>
+        return userIds
+            .Where(telegramIds.ContainsKey)
+            .Select(id =>
             {
-                var last = g.MaxBy(t => t.At)!;
-                var own = actsByUser[g.Key].ToList();
+                var theirs = textsByUser[id].ToList();
+                var own = actsByUser[id].ToList();
+                var last = theirs.MaxBy(t => t.At);
+                var lastReply = own.Where(a => a.Kind == FeedbackReplyKind.Reply).MaxBy(a => a.CreatedAtUtc);
+                // What the list shows is whatever was said last — by the person or by the owner.
+                var ownerLast = lastReply != null && (last == null || lastReply.CreatedAtUtc >= last.At);
                 return new FeedbackThreadSummary(
-                    telegramIds[g.Key], last.Kind, last.Text!, last.At, g.Count(),
-                    StatusOf(last.At, own.Select(a => (a.Kind, a.CreatedAtUtc))));
+                    telegramIds[id], last?.Kind ?? UserFeedbackKind.Message,
+                    ownerLast ? lastReply!.Text! : last!.Text!, ownerLast ? lastReply!.CreatedAtUtc : last!.At, theirs.Count,
+                    last == null ? FeedbackThreadStatus.Answered : StatusOf(last.At, own.Select(a => (a.Kind, a.CreatedAtUtc))),
+                    ownerLast);
             })
             .Where(t => !unansweredOnly || t.Status.IsUnanswered())
             .OrderByDescending(t => t.Status.IsUnanswered()).ThenByDescending(t => t.LastAtUtc)
@@ -139,11 +148,12 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
         var quoted = quoteId == null
             ? await written.OrderByDescending(f => f.UpdatedAtUtc ?? f.CreatedAtUtc).FirstOrDefaultAsync(ct)
             : await written.FirstOrDefaultAsync(f => f.Id == quoteId, ct);
-        if (quoted == null) return FeedbackReplyResult.Refused(FeedbackReplyOutcome.NothingToAnswer);
+        // A text was named and it is not this person's — refuse; no text at all — the owner writes first, without a quote.
+        if (quoted == null && quoteId != null) return FeedbackReplyResult.Refused(FeedbackReplyOutcome.NothingToAnswer);
 
         var reply = new FeedbackReply
         {
-            Id = Guid.NewGuid(), UserId = user.Id, Kind = FeedbackReplyKind.Reply, Text = text, Quote = Shorten(quoted.Text!),
+            Id = Guid.NewGuid(), UserId = user.Id, Kind = FeedbackReplyKind.Reply, Text = text, Quote = quoted == null ? null : Shorten(quoted.Text!),
             Status = FeedbackReplyStatus.Sending, ClientToken = clientToken, CreatedAtUtc = DateTime.UtcNow
         };
         db.FeedbackReplies.Add(reply);
@@ -161,7 +171,7 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
         }
 
         // The answer is recorded — from here the request being dropped must not lose what Telegram says.
-        var attempt = await sender.SendAsync(user.TelegramId, MessageText(reply.Quote!, text), CancellationToken.None);
+        var attempt = await sender.SendAsync(user.TelegramId, MessageText(reply.Quote, text), CancellationToken.None);
         reply.Status = attempt.Outcome switch
         {
             CampaignSendOutcome.Sent => FeedbackReplyStatus.Sent,
@@ -193,7 +203,8 @@ public class FeedbackReplyService(ITraleDbContext db, IFeedbackReplySender sende
     }
 
     /// <summary>What the person receives: their own words, shortened, then the answer signed by the author.</summary>
-    public static string MessageText(string quote, string text) => $"Твоё сообщение: «{quote}»\n\n{Signature}: {text}";
+    public static string MessageText(string? quote, string text) =>
+        quote == null ? $"{Signature}: {text}" : $"Твоё сообщение: «{quote}»\n\n{Signature}: {text}";
 
     private static string Shorten(string text)
     {
@@ -221,8 +232,11 @@ public static class FeedbackThreadStatusExtensions
 }
 
 /// <param name="LastKind">Where the person's latest text came from.</param>
+/// <param name="LastText">What was said last in the conversation.</param>
+/// <param name="LastFromOwner">The last word is the owner's — <paramref name="LastText"/> is their answer.</param>
 public record FeedbackThreadSummary(
-    long TelegramId, UserFeedbackKind LastKind, string LastText, DateTime LastAtUtc, int Texts, FeedbackThreadStatus Status);
+    long TelegramId, UserFeedbackKind LastKind, string LastText, DateTime LastAtUtc, int Texts, FeedbackThreadStatus Status,
+    bool LastFromOwner);
 
 /// <param name="Kind">For the person's text — where it came from; null for the owner's answer.</param>
 /// <param name="Question">The survey question the text answers or was written after.</param>
@@ -244,7 +258,7 @@ public enum FeedbackReplyOutcome
     TooLong,
     NoToken,
     NoSuchPerson,
-    /// <summary>The person has written nothing — there is nothing to answer.</summary>
+    /// <summary>The text to answer was named, and it is not this person's.</summary>
     NothingToAnswer
 }
 

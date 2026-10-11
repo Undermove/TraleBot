@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import Header from '../components/Header'
-import LoaderLetter from '../components/LoaderLetter'
+import { AdminHeader, Skeleton } from '../components/admin/AdminPage'
 import SurveyFormPages from '../components/SurveyFormPages'
 import SurveyQuestionEditor from '../components/admin/SurveyQuestionEditor'
-import { AUDIENCES } from '../components/admin/CampaignPanel'
+import { AUDIENCES } from '../admin/words'
 import { headlineOf, keysOf } from '../components/admin/surveyHeadline'
 import { CloseIcon } from '../verbs/ui/icons'
 import {
@@ -11,7 +10,9 @@ import {
   type AdminSurveyDto, type CampaignAudience, type CampaignStatusDto, type SurveyBuilderKitDto, type SurveyFormDto,
   type SurveyPresetDto, type SurveyQuestionDto
 } from '../api'
-import type { ProgressState, Screen } from '../types'
+import { adminBack, setInnerBack } from '../admin/adminNav'
+import { draft as drafts, useDraft, useFocusMode } from '../admin/useKept'
+import type { Screen } from '../types'
 
 // Конструктор опроса — подраздел админки. Опрос — форма из нескольких вопросов: первый приходит человеку
 // в бот кнопками (один тап — уже ответ), остальные он проходит в мини-аппе, по вопросу на странице.
@@ -23,9 +24,10 @@ import type { ProgressState, Screen } from '../types'
 // первом шаге в блоке «Не дослано», «Продолжить» возвращает на его отправку с тем, что уже сделано.
 
 interface Props {
-  progress: ProgressState
   /** Имя начатого опроса — открыть сразу его отправку. */
   resume?: string
+  /** Открыть с черновиком, сохранённым на этом устройстве. */
+  useDraft?: boolean
   navigate: (s: Screen) => void
 }
 
@@ -104,26 +106,30 @@ function TelegramPreview({ intro, first, otherLabel }: { intro: string; first?: 
 const summary = (q: SurveyQuestionDto, otherLabel: string) =>
   q.kind === 'text' ? 'свободный ответ' : [...q.options.filter(o => o.trim()), ...(q.allowOther ? [otherLabel] : [])].join(' · ')
 
-export default function SurveyBuilderScreen({ progress, resume, navigate }: Props) {
-  const [step, setStep] = useState(1)
+interface Draft { step: number; presetId: string; intro: string; questions: SurveyQuestionDto[]; audience: CampaignAudience; sampleFirst: boolean; sampleSize: number }
+
+export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navigate }: Props) {
+  const [saved, setSaved] = useState(() => (resume ? null : drafts.read<Draft>('survey')))
+  const start = withDraft ? saved : null
+  const [step, setStep] = useState(start?.step ?? 1)
   const [kit, setKit] = useState<SurveyBuilderKitDto | null>(null)
   /** Опросы, которым выбрали получателей, но отправили не всем. */
   const [unfinished, setUnfinished] = useState<AdminSurveyDto[]>([])
   const [resuming, setResuming] = useState(Boolean(resume))
   const [denied, setDenied] = useState<string | null>(null)
 
-  const [presetId, setPresetId] = useState(CUSTOM)
-  const [intro, setIntro] = useState('')
-  const [questions, setQuestions] = useState<SurveyQuestionDto[]>([])
+  const [presetId, setPresetId] = useState(start?.presetId ?? CUSTOM)
+  const [intro, setIntro] = useState(start?.intro ?? '')
+  const [questions, setQuestions] = useState<SurveyQuestionDto[]>(start?.questions ?? [])
   /** В выбранной готовой форме был вопрос с главной цифрой — чтобы сказать, если его убрали. */
   const [presetHadHeadline, setPresetHadHeadline] = useState(false)
   /** Что открыто поверх списка вопросов: один вопрос, выбор готового вопроса или прогон формы. */
   const [view, setView] = useState<{ edit: number } | 'add' | 'preview' | 'intro' | null>(null)
 
   const [counts, setCounts] = useState<Partial<Record<CampaignAudience, number>>>({})
-  const [audience, setAudience] = useState<CampaignAudience>('accessEnded')
-  const [sampleFirst, setSampleFirst] = useState(true)
-  const [sampleSize, setSampleSize] = useState(100)
+  const [audience, setAudience] = useState<CampaignAudience>(start?.audience ?? 'accessEnded')
+  const [sampleFirst, setSampleFirst] = useState(start?.sampleFirst ?? true)
+  const [sampleSize, setSampleSize] = useState(start?.sampleSize ?? 100)
 
   /** Имя кампании на сервере; появляется, когда выбраны получатели. */
   const [key, setKey] = useState<string | null>(null)
@@ -223,6 +229,7 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
     if (!confirm(`Выбрать ${who}: ${plan.picked} чел. (${audienceTitle})?\nСообщения пока НЕ уйдут — только список получателей. Вопросы после этого уже не поменять.`)) return null
     const done = await adminCampaigns.prepare(draft(sample, false))
     setKey(done.key)
+    drafts.clear('survey')
     setStatus(await adminCampaigns.status(done.key))
     return `Получатели записаны: ${done.picked} чел. Теперь отправляй порциями.`
   })
@@ -240,21 +247,37 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
     return `Отправлено ${r.sent}, заблокировали бота ${r.blocked}, отказ ${r.rejected}, без ответа ${r.unknown}. Осталось ${r.status.pending}.${wait}`
   })
 
+  // Пошаговый сценарий занимает весь экран — панель вкладок на это время спрятана.
+  useFocusMode(true)
+  // Незаконченный опрос сохраняется на устройстве, пока получатели не выбраны.
+  const unsaved = !frozen && step > 1 && questions.length > 0
+  useDraft('survey', unsaved ? { step, presetId, intro, questions, audience, sampleFirst, sampleSize } satisfies Draft : null)
+
+  const close = () => {
+    if (unsaved && !confirm('Закрыть опрос? Черновик останется на этом устройстве — к нему можно вернуться с первого шага.')) return
+    navigate(adminBack())
+  }
+  /** Шаг назад внутри конструктора; с первого шага — закрыть. */
   const back = () => {
     if (view) return show(null)
-    return step === 1 || frozen ? navigate({ kind: 'admin' }) : go(step - 1)
+    return step === 1 || frozen ? close() : go(step - 1)
   }
+  // Системное «Назад» Telegram делает шаг назад внутри конструктора, а с первого шага закрывает его.
+  useEffect(() => {
+    setInnerBack(() => { back(); return true })
+    return () => setInnerBack(null)
+  })
   const answers = status?.surveyAnswers?.reduce((sum, a) => sum + a.count, 0) ?? 0
   const editing = typeof view === 'object' && view ? view.edit : null
   const offered = kit?.bank.filter(b => !questions.some(q => q.text.trim() === b.text)) ?? []
 
   return (
     <div className="flex flex-col min-h-full bg-cream" data-testid="survey-builder">
-      <Header progress={progress} onBack={back} eyebrow={`шаг ${step} из ${STEPS.length}`} title="Опрос" />
+      <AdminHeader onBack={view ? back : close} close={!view} section={view ? 'опрос · вопросы' : frozen ? 'опросы' : `шаг ${step} из ${STEPS.length}`} title="Опрос" />
 
-      <div className="flex-1 px-5 pt-4 flex flex-col gap-3" style={{ paddingBottom: 'calc(var(--safe-b) + 32px)' }}>
+      <div className="flex-1 px-5 pt-4 flex flex-col gap-3" style={{ paddingBottom: 'calc(var(--safe-b) + 24px)' }}>
         {denied && <div className="font-sans text-[14px] text-jewelInk">{denied}</div>}
-        {(!kit || resuming) && !denied && <div className="flex justify-center py-12"><LoaderLetter /></div>}
+        {(!kit || resuming) && !denied && <Skeleton />}
 
         {ready && !view && (
           <div className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight" data-testid="survey-step-title">{STEPS[step - 1]}</div>
@@ -262,6 +285,25 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
 
         {ready && step === 1 && (
           <>
+            {saved && (
+              <div className="jewel-tile px-4 py-3" data-testid="survey-draft">
+                <div className="relative z-[1]">
+                  <div className="mn-eyebrow text-navy">Черновик на этом устройстве</div>
+                  <div className="font-sans text-[15px] font-extrabold text-jewelInk leading-snug line-clamp-2 break-words mt-1">{saved.questions[0]?.text || 'Без вопросов'}</div>
+                  <div className={`${small} tabular-nums`}>вопросов: {saved.questions.length}</div>
+                  <div className="flex gap-2 mt-2">
+                    <button type="button" className={`${action} flex-1`} style={{ background: '#F5B820' }} data-testid="survey-draft-continue"
+                      onClick={() => { setPresetId(saved.presetId); setIntro(saved.intro); setQuestions(saved.questions); setAudience(saved.audience); setSampleFirst(saved.sampleFirst); setSampleSize(saved.sampleSize); go(saved.step) }}>
+                      Продолжить черновик
+                    </button>
+                    <button type="button" className="min-h-[48px] px-3 font-sans text-[14px] font-bold text-ruby underline"
+                      onClick={() => { if (confirm('Удалить черновик опроса?')) { drafts.clear('survey'); setSaved(null) } }}>
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {unfinished.length > 0 && (
               <div data-testid="survey-unfinished">
                 <div className="mn-eyebrow text-ruby mb-2">Не дослано</div>
@@ -490,16 +532,18 @@ export default function SurveyBuilderScreen({ progress, resume, navigate }: Prop
           </>
         )}
 
-        {ready && step > 1 && !view && (
-          <div className="flex gap-3 mt-3">
-            {!frozen && <button type="button" className={secondary} onClick={() => go(step - 1)} data-testid="survey-back">Назад</button>}
+        {frozen && <div className={small}>Получатели выбраны — вопросы уже не поменять. Нужен другой опрос — собери новый.</div>}
+      </div>
+      {ready && step > 1 && !view && !frozen && (
+        <div className="sticky bottom-0 z-20 bg-cream/95 backdrop-blur-sm border-t border-jewelInk/15 px-5 pt-3" data-testid="admin-footer" style={{ paddingBottom: 'calc(var(--safe-b) + 12px)' }}>
+          <div className="flex gap-3">
+            <button type="button" className={secondary} onClick={() => go(step - 1)} data-testid="survey-back">Назад</button>
             {step < STEPS.length && (
               <button type="button" className={primary} disabled={step === 2 && problem !== null} onClick={() => go(step + 1)} data-testid="survey-next">Дальше</button>
             )}
           </div>
-        )}
-        {frozen && <div className={small}>Получатели выбраны — вопросы уже не поменять. Нужен другой опрос — собери новый.</div>}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

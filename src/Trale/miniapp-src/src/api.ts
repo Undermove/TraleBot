@@ -418,7 +418,29 @@ export interface AdminRecentUser {
   lastActivityUtc: string | null
 }
 
+export interface AdminUserSurveyAnswer {
+  campaignKey: string
+  question: string
+  option: string | null
+  text: string | null
+  atUtc: string
+}
+
 export interface AdminUserDetail {
+  /** Откуда человек пришёл: метка ссылки, реферал, кампания; null — неизвестно. */
+  acquisitionSource?: string | null
+  /** Paying / Trial / Ended / Lapsed. */
+  access?: string
+  accessUntilUtc?: string | null
+  notificationsEnabled?: boolean
+  lastStudiedAtUtc?: string | null
+  lessonsCompleted?: number
+  quizzesStarted?: number
+  verbSessionsStarted?: number
+  verbSessionsFinished?: number
+  /** Сколько текстов человек написал — письма, свои ответы в опросах, комментарии с экрана покупки. */
+  writtenTexts?: number
+  surveyAnswers?: AdminUserSurveyAnswer[]
   telegramId: number
   userId: string
   isPro: boolean
@@ -574,6 +596,12 @@ export const adminCampaigns = {
     giftOfferDays?: number | null
     /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания. */
     survey?: SurveyFormDto | null
+    /** Конструктор рассылки начинает новую кампанию: при пустом key сервер сам её называет (broadcast-2026-10, -2, …). */
+    newBroadcast?: boolean
+    /** «test» — пробная рассылка себе. */
+    newBroadcastSuffix?: string | null
+    /** Эта часть — ещё одной группе той же кампании: кто уже получил сообщение или подарок, второй раз не получит. */
+    anotherAudience?: boolean
     /** Конструктор начинает новый опрос: при пустом key сервер сам называет кампанию и возвращает имя в ответе. */
     newSurveySlug?: string | null
   }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
@@ -583,7 +611,100 @@ export const adminCampaigns = {
       `/api/admin/campaigns/${encodeURIComponent(key)}/send`,
       { method: 'POST', body: JSON.stringify({ limit }) }
     ),
-  status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`)
+  status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`),
+  /** Все кампании, отправленные людям, новые сверху. surveys — только опросы или только обычные рассылки. */
+  list: (surveys?: boolean) =>
+    request<{ campaigns: CampaignListItemDto[] }>(`/api/admin/campaigns${surveys == null ? '' : `?surveys=${surveys}`}`)
+}
+
+export interface CampaignListItemDto {
+  key: string
+  isSurvey: boolean
+  message: string
+  audience: CampaignAudience
+  createdAtUtc: string
+  buttonText: string | null
+  giftDays: number
+  picked: number
+  pending: number
+  sent: number
+  opened: number
+  gifted: number
+  /** draft — получателей ещё не выбирали; running — выбранные ждут отправки; done — все выбранные обработаны. */
+  state: 'draft' | 'running' | 'done'
+}
+
+// ── Админка: обзор, люди, оплаты ──
+
+export interface AdminOverviewDto {
+  totalUsers: number
+  newUsers7d: number
+  /** Занимались — оставили след с датой: ответ в уроке, слово, квиз, игра с глаголом. */
+  studiedToday: number
+  studied7d: number
+  payments30d: number
+  stars30d: number
+  activeSubscriptions: number
+  onTrial: number
+  unansweredMessages: number
+  unfinishedSurveys: number
+  unfinishedBroadcasts: number
+  verbsToReview: number
+}
+
+export type AdminUserFilter = 'all' | 'paying' | 'trial' | 'accessEnded' | 'blocked'
+export type AdminUserSort = 'activity' | 'registered' | 'words'
+export type AdminUserAccess = 'paying' | 'trial' | 'ended' | 'lapsed'
+
+export interface AdminUserRowDto {
+  telegramId: number
+  access: AdminUserAccess
+  /** false — заблокировал бота. */
+  isActive: boolean
+  registeredAtUtc: string
+  lastActivityUtc: string | null
+  acquisitionSource: string | null
+  vocabularyCount: number
+}
+
+export interface AdminUsersPageDto {
+  total: number
+  counts: Record<AdminUserFilter, number>
+  users: AdminUserRowDto[]
+}
+
+export interface AdminPaymentRowDto {
+  telegramId: number
+  purchasedAtUtc: string
+  plan: string
+  amount: number
+  currency: string
+  refundedAtUtc: string | null
+}
+
+export interface AdminPaymentsDto {
+  total: number
+  payments: AdminPaymentRowDto[]
+  starsTotal: number
+  refunds: number
+  endingSoon: { telegramId: number; plan: string | null; untilUtc: string }[]
+  endedLately: { telegramId: number; plan: string | null; untilUtc: string }[]
+}
+
+export interface AdminJobsDto {
+  queue: { enqueued: number; scheduled: number; processing: number; succeeded: number; failed: number; servers: number }
+  translationsLast24h: { pending: number; done: number; failed: number }
+}
+
+export const adminSections = {
+  overview: () => request<AdminOverviewDto>('/api/admin/overview'),
+  users: (q: { search?: string; filter?: AdminUserFilter; sort?: AdminUserSort; skip?: number; take?: number } = {}) => {
+    const params = new URLSearchParams({ skip: String(q.skip ?? 0), take: String(q.take ?? 30), filter: q.filter ?? 'all', sort: q.sort ?? 'activity' })
+    if (q.search) params.set('search', q.search)
+    return request<AdminUsersPageDto>(`/api/admin/users?${params}`)
+  },
+  payments: (skip = 0, take = 30) => request<AdminPaymentsDto>(`/api/admin/payments?skip=${skip}&take=${take}`),
+  jobs: () => request<AdminJobsDto>('/api/admin/jobs')
 }
 
 /** Основное время, которого нет в таблице глагола от нейросети, и почему. */
@@ -863,6 +984,8 @@ export interface FeedbackThreadSummaryDto {
   lastAtUtc: string
   texts: number
   status: FeedbackThreadStatus
+  /** Последнее слово в переписке — владельца; lastText тогда его ответ. */
+  lastFromOwner?: boolean
 }
 
 export interface FeedbackThreadItemDto {

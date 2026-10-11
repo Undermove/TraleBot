@@ -64,6 +64,72 @@ public class AdminController : Controller
         _holidayCalendar = holidayCalendar;
     }
 
+    /// <summary>The admin's first screen: the main numbers and how much waits for the owner in each section.</summary>
+    [HttpGet("overview")]
+    public async Task<IActionResult> Overview([FromServices] GetAdminOverviewQuery query, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return Ok(await query.ExecuteAsync(ct));
+    }
+
+    /// <summary>People, the most recently active first. <c>search</c> — a part of the Telegram id;
+    /// <c>filter</c> — all | paying | trial | accessEnded | blocked; <c>sort</c> — activity | registered | words;
+    /// <c>skip</c> / <c>take</c> — the page.</summary>
+    [HttpGet("users")]
+    public async Task<IActionResult> Users(
+        [FromServices] GetAdminUsersQuery query, CancellationToken ct,
+        [FromQuery] string? search = null, [FromQuery] string? filter = null, [FromQuery] string? sort = null,
+        [FromQuery] int skip = 0, [FromQuery] int take = 30)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        if (!Enum.TryParse<AdminUserFilter>(filter ?? "all", ignoreCase: true, out var by) || !Enum.IsDefined(by) || int.TryParse(filter, out _))
+            return BadRequest(new { error = $"Неизвестный фильтр: {filter}" });
+
+        if (!Enum.TryParse<AdminUserSort>(sort ?? "activity", ignoreCase: true, out var order) || !Enum.IsDefined(order) || int.TryParse(sort, out _))
+            return BadRequest(new { error = $"Неизвестный порядок: {sort}" });
+
+        var page = await query.ExecuteAsync(search, by, order, skip, take, ct);
+        return Ok(new
+        {
+            page.Total,
+            counts = page.Counts.ToDictionary(c => Camel(c.Key.ToString()), c => c.Value),
+            users = page.Users.Select(u => new
+            {
+                u.TelegramId, access = Camel(u.Access.ToString()), u.IsActive, u.RegisteredAtUtc, u.LastActivityUtc, u.AcquisitionSource, u.VocabularyCount
+            })
+        });
+    }
+
+    /// <summary>Payments, newest first, and the subscriptions that end soon or have just ended.</summary>
+    [HttpGet("payments")]
+    public async Task<IActionResult> Payments(
+        [FromServices] GetAdminPaymentsQuery query, CancellationToken ct, [FromQuery] int skip = 0, [FromQuery] int take = 30)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        return Ok(await query.ExecuteAsync(skip, take, ct));
+    }
+
+    /// <summary>Every campaign sent to people, newest first, with how far it got. <c>?surveys=true|false</c> — only surveys or only ordinary ones.</summary>
+    [HttpGet("campaigns")]
+    public async Task<IActionResult> Campaigns(
+        [FromServices] BroadcastCampaignService campaigns, CancellationToken ct, [FromQuery] bool? surveys = null)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var all = await campaigns.ListAsync(ct);
+        return Ok(new
+        {
+            campaigns = all.Where(c => surveys == null || c.IsSurvey == surveys).Select(c => new
+            {
+                c.Key, c.IsSurvey, c.Message, audience = AudienceName(c.Audience), c.CreatedAtUtc, c.ButtonText, c.GiftDays,
+                c.Picked, c.Pending, c.Sent, c.Opened, c.Gifted,
+                // draft — nobody picked yet; running — picked people still wait; done — everyone picked was handled.
+                state = c.Picked == 0 ? "draft" : c.Pending > 0 ? "running" : "done"
+            })
+        });
+    }
+
+    private static string Camel(string name) => char.ToLowerInvariant(name[0]) + name[1..];
+
     [HttpGet("stats")]
     public async Task<IActionResult> Stats(CancellationToken ct)
     {
@@ -656,6 +722,14 @@ public class AdminController : Controller
         /// <summary>A survey: the form of questions (the first goes under the message as buttons, the rest are
         /// answered in the mini-app); null — an ordinary campaign. The message is made from the form.</summary>
         public Domain.Entities.SurveyForm? Survey { get; set; }
+        /// <summary>The broadcast builder starting a new ordinary campaign: with an empty <see cref="Key"/> the server
+        /// names it itself — <c>broadcast-2026-10</c>, with a number when taken — and returns the key.
+        /// <see cref="NewBroadcastSuffix"/> — "test" for a trial sent to oneself.</summary>
+        public bool NewBroadcast { get; set; }
+        public string? NewBroadcastSuffix { get; set; }
+        /// <summary>This part of an existing campaign is for one more audience: the campaign stays the same, so
+        /// whoever already got the message — or the gift — does not get it again.</summary>
+        public bool AnotherAudience { get; set; }
         /// <summary>The survey builder starting a new survey: with an empty <see cref="Key"/> the server names the
         /// campaign itself — <c>survey-2026-10-&lt;slug&gt;</c>, with a number when taken — and returns the key.</summary>
         public string? NewSurveySlug { get; set; }
@@ -696,11 +770,15 @@ public class AdminController : Controller
         {
             Key = req.Key, Audience = audience, Message = req.Message,
             ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
-            GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, Survey = req.Survey
+            GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, Survey = req.Survey,
+            AnotherAudience = req.AnotherAudience
         };
-        var result = string.IsNullOrWhiteSpace(req.Key) && req.NewSurveySlug != null
+        var unnamed = string.IsNullOrWhiteSpace(req.Key);
+        var result = unnamed && req.NewSurveySlug != null
             ? await campaigns.PrepareNewSurveyAsync(draft, req.NewSurveySlug, req.SampleSize, req.DryRun, OwnerTelegramId, ct)
-            : await campaigns.PrepareAsync(draft, req.SampleSize, req.DryRun, OwnerTelegramId, ct);
+            : unnamed && req.NewBroadcast
+                ? await campaigns.PrepareNewBroadcastAsync(draft, req.NewBroadcastSuffix, req.SampleSize, req.DryRun, OwnerTelegramId, ct)
+                : await campaigns.PrepareAsync(draft, req.SampleSize, req.DryRun, OwnerTelegramId, ct);
         return result.Error != null ? BadRequest(result) : Ok(result);
     }
 
@@ -822,7 +900,7 @@ public class AdminController : Controller
             unanswered = all.Count(t => t.Status.IsUnanswered()),
             threads = all.Where(t => !unanswered || t.Status.IsUnanswered()).Select(t => new
             {
-                t.TelegramId, lastKind = FeedbackKindName(t.LastKind), t.LastText, t.LastAtUtc, t.Texts, status = ThreadStatusName(t.Status)
+                t.TelegramId, lastKind = FeedbackKindName(t.LastKind), t.LastText, t.LastAtUtc, t.Texts, status = ThreadStatusName(t.Status), t.LastFromOwner
             })
         });
     }
@@ -869,7 +947,7 @@ public class AdminController : Controller
             }),
             Application.Feedback.FeedbackReplyOutcome.NoSuchPerson => NotFound(new { error = "no_such_person" }),
             Application.Feedback.FeedbackReplyOutcome.TooLong => BadRequest(new { error = $"Ответ длиннее {Application.Feedback.FeedbackReplyService.MaxReplyLength} символов." }),
-            Application.Feedback.FeedbackReplyOutcome.NothingToAnswer => BadRequest(new { error = "Этот человек ничего не писал — отвечать не на что." }),
+            Application.Feedback.FeedbackReplyOutcome.NothingToAnswer => BadRequest(new { error = "Этого текста у человека нет — выбери другой или напиши без цитаты." }),
             _ => BadRequest(new { error = "Пустой ответ." })
         };
     }

@@ -548,3 +548,7 @@ input:focus-visible {
   background-repeat: repeat-x;
   background-size: 32px 8px;
 }
+
+/* Горизонтальная лента чипов: прокручивается пальцем, полосы прокрутки не видно. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
