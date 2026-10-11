@@ -5,7 +5,8 @@ import ProPaywall from '../components/ProPaywall'
 import KilimProgress from '../components/KilimProgress'
 import AlphabetGrid from '../components/AlphabetGrid'
 import LetterPopover from '../components/LetterPopover'
-import GeorgianNameCard from '../components/GeorgianNameCard'
+import BomboraSays from '../components/BomboraSays'
+import { resetSaysMemory } from '../bomboraSays'
 import { AlphabetLetterDto, CatalogDto, ProgressState, Screen } from '../types'
 import { api } from '../api'
 
@@ -20,31 +21,8 @@ interface Props {
   navigate: (s: Screen) => void
 }
 
-// Phrase of the day — small daily learning hit on the Profile screen.
-const DAILY_PHRASES: { ge: string; ru: string; hint: string }[] = [
-  { ge: 'როგორ ხარ?', ru: 'Как дела?', hint: 'Самый частый вопрос на улице' },
-  { ge: 'მადლობა', ru: 'Спасибо', hint: 'Можно сократить до მადლი' },
-  { ge: 'არაფერი', ru: 'Не за что', hint: 'Дословно — «ничего»' },
-  { ge: 'ყავა, თუ შეიძლება', ru: 'Кофе, если можно', hint: 'Вежливая просьба' },
-  { ge: 'ნახვამდის', ru: 'До свидания', hint: 'Дословно — «до встречи»' },
-  { ge: 'ბოდიში', ru: 'Извини / простите', hint: 'Универсальное' },
-  { ge: 'რამდენი ღირს?', ru: 'Сколько стоит?', hint: 'На рынке и в такси' },
-  { ge: 'მე მიყვარს', ru: 'Я люблю', hint: 'Дательный: «мне любится»' },
-  { ge: 'სუპერ!', ru: 'Супер!', hint: 'Заимствование, но звучит по-грузински' },
-  { ge: 'წადი', ru: 'Иди / поехали', hint: 'Императив от წავიდე' },
-  { ge: 'რა გქვია?', ru: 'Как тебя зовут?', hint: 'Дословно — «как тебе называется»' },
-  { ge: 'აქ', ru: 'Здесь', hint: 'Минимум — два звука' },
-  { ge: 'იქ', ru: 'Там', hint: 'И тоже два звука' },
-  { ge: 'კარგია', ru: 'Хорошо', hint: 'Дословно — «есть хорошее»' },
-]
-
-function pickDailyPhrase(): { ge: string; ru: string; hint: string } {
-  const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24))
-  return DAILY_PHRASES[day % DAILY_PHRASES.length]
-}
-
 function pickEncouragement(streak: number, totalLessons: number): string {
-  if (streak >= 7) return `🔥 Стрик ${streak} дн — ты уже привычка!`
+  if (streak >= 7) return `Стрик ${streak} дн — ты уже привычка!`
   if (streak >= 3) return `Третий день подряд — продолжай.`
   if (totalLessons === 0) return `Открой первый урок — алфавит ждёт.`
   if (totalLessons < 5) return `Уже несколько уроков. Ещё чуть-чуть — и почувствуешь язык.`
@@ -64,7 +42,6 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
     (s, arr) => s + arr.length,
     0
   )
-  const phrase = pickDailyPhrase()
   const encouragement = pickEncouragement(progress.streak, totalDone)
 
   // Favorite module = module with the highest absolute completion progress
@@ -162,8 +139,8 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
         className="flex-1 px-5 pt-6 pb-in"
         style={{ paddingBottom: 'calc(var(--safe-b) + 40px)' }}
       >
-        {/* Hero — mascot + greeting + encouragement */}
-        <div className="jewel-tile px-5 py-5 mb-5 relative overflow-hidden">
+        {/* Hero — Бомбора подбадривает, говорит фразу дня или имя по-грузински */}
+        <div className="jewel-tile px-4 py-4 mb-5 relative overflow-hidden">
           {isPro && (
             <div
               className="absolute top-0 right-0 z-[2] bg-gold text-jewelInk text-[11px] font-extrabold px-2 py-1 border-l-[1.5px] border-b-[1.5px] border-jewelInk rounded-bl-md"
@@ -174,33 +151,13 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
             </div>
           )}
 
-          <div className="relative z-[1] flex items-center gap-4">
-            <div className="shrink-0">
-              <Mascot mood={progress.streak >= 3 ? 'cheer' : 'happy'} size={88} />
-            </div>
-            <div className="flex-1">
-              <div className="mn-eyebrow mb-1">გამარჯობა</div>
-              <div className="font-sans text-[18px] font-extrabold text-jewelInk leading-tight">
-                {encouragement}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Phrase of the day — daily learning hit */}
-        <div className="mn-eyebrow mb-2">фраза дня</div>
-        <div className="jewel-tile px-5 py-4 mb-5">
-          <div className="relative z-[1] text-center">
-            <div className="font-geo text-[26px] font-extrabold text-jewelInk leading-tight">
-              {phrase.ge}
-            </div>
-            <div className="font-sans text-[14px] text-jewelInk-mid mt-1">
-              {phrase.ru}
-            </div>
-            <div className="mn-eyebrow text-jewelInk-hint mt-3">
-              {phrase.hint}
-            </div>
-          </div>
+          <BomboraSays
+            encouragement={encouragement}
+            cheerMood={progress.streak >= 3 ? 'cheer' : 'happy'}
+            firstName={tgFirstName}
+            alphabetDone={alphabetDone}
+            cornerBadge={isPro}
+          />
         </div>
 
         {/* Streak heatmap — last 35 days (5 weeks × 7) */}
@@ -280,14 +237,6 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
             </div>
           )}
         </div>
-
-        {/* Georgian name — only when Telegram provides first_name */}
-        {tgFirstName && (
-          <GeorgianNameCard
-            firstName={tgFirstName}
-            alphabetDone={alphabetDone}
-          />
-        )}
 
         {/* Favorite module */}
         {favorite && favorite.done > 0 && (
@@ -896,6 +845,7 @@ function OwnerDebugPanel() {
     { label: 'Сбросить reveal ქ', hint: 'Покажет оверлей буквы ქ снова', fn: () => clearKeys(['bombora_kani_reveal_shown'], 'kani reveal') },
     { label: 'Сбросить unlock-анимации', hint: 'Повторит анимацию открытия секций', fn: () => clearKeys(['bombora_unlocked_once'], 'unlock') },
     { label: 'Сбросить алфавит 33/33', hint: 'Повторит анимацию завершения алфавита', fn: () => clearKeys(['bombora_alphabet_complete_shown'], 'alphabet complete') },
+    { label: 'Сбросить реплики Бомборы', hint: 'В профиле снова начнёт с имени и фразы дня', fn: () => { resetSaysMemory(); clearKeys(['bombora_profile_says'], 'bombora says') } },
     { label: 'Очистить весь localStorage', hint: 'Онбординг, прогресс UI, флаги', fn: clearAllLocalStorage },
     { label: 'Reload мини-аппа', hint: 'location.reload()', fn: reload },
   ]

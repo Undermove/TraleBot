@@ -97,7 +97,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `MistakesResult.tsx` | `mistakes-result` | Summary after mistakes review. |
 | `VocabularyList.tsx` | `vocabulary-list` | Personal vocabulary with search/filter + starter-deck onboarding card. A dictionary entry that IS a verb form opens the verb view directly on tap (the saved word and its plain meaning first, then level and the play button, then the forms table; «в квиз» / «удалить» as quiet actions at the bottom) and shows the verb's level instead of the mastery dot. The «глаголы» filter (can be pre-selected: dashboard line, deep link) lists "my verbs", one row per verb with its level and saved forms (`verbs/dictionary/MyVerbRows`), including verbs started from a lesson or a translation. A phrase that merely contains a verb form keeps the «глагол» badge and opens the word card; the word card and the translation result show the parse with «все формы», which opens the verb card sheet `VerbSheet`: six main forms, person switcher, collapsed rare tenses and explanation, one quiet line «составлено нейросетью» for model-made verbs, the verb level and one play button (`verbs/session/SessionEntry`) that starts a session composed by the app. Deep link `?screen=verb&verbId=<lemma>[&tense=&person=]` opens the dictionary with the verb card on top. |
 | `VocabularyPractice.tsx` | `vocabulary-quiz` | Quiz built from personal vocabulary. |
-| `Profile.tsx` | `profile` | Profile, alphabet progress, daily phrase banner, Share button, Pro CTA, OwnerDebugPanel (owner-only). «Позови друга» card at the bottom — rules, own link, share / copy, counters — for everyone except those who reached the yearly referral cap; the rules text comes from `/api/miniapp/referral` and matches the user's state. |
+| `Profile.tsx` | `profile` | Profile, alphabet progress, Share button, Pro CTA, OwnerDebugPanel (owner-only). The first block is Bombora speaking (`BomboraSays.tsx`): encouragement, the phrase of the day or the user's name in Georgian — there are no separate «Фраза дня» / «Моё имя по-грузински» sections. «Позови друга» card at the bottom — rules, own link, share / copy, counters — for everyone except those who reached the yearly referral cap; the rules text comes from `/api/miniapp/referral` and matches the user's state. |
 | `Onboarding.tsx` | n/a (initial load) | Level picker (Beginner / Intermediate). |
 | `Welcome.tsx` | `welcome` | Soft-onboarding first lesson: meet letter ა (name + sound + audio), a listening task and a name task; awards the first XP before the hub is revealed. |
 | `LandingScreen.tsx` | n/a | Marketing page when Telegram context is missing. |
@@ -137,7 +137,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 | `InkDivider.tsx` | Ink-style divider. |
 | `ModulePhraseBanner.tsx` | Daily phrase banner on Profile. |
 | `ComingSoonTile.tsx` | Placeholder tile for not-yet-built modules. |
-| `GeorgianNameCard.tsx` | Profile widget: user's name rendered in Georgian script (transliteration phase → reveal phase). |
+| `BomboraSays.tsx` | First block of Profile: Bombora with a speech bubble that says one of three things — the usual encouragement, the phrase of the day («Фраза на сегодня:» — Georgian, Cyrillic transcription, Russian, a short note) or the user's name in Georgian («Кстати, по-грузински ты —», with Cyrillic transcription). When the profile opens (`bomboraSays.ts`, `pickOpening`): the name on the very first open and then at most once in `NAME_EVERY_DAYS` (4) days, the phrase on the first open of a day, encouragement otherwise; the name and the phrase never open the same visit. A tap on the block goes round encouragement → phrase → name, so both are always reachable; the block keeps its height. What was said and when is remembered on the device (`localStorage` key `bombora_profile_says`), with an in-memory copy when storage is unavailable. No name in Telegram (or one that cannot be written in Georgian) — no name line. |
 | `DialogOfDayCard.tsx` | Dashboard card: «Диалог дня» — daily mini-dialogue (tap-to-reveal translations, collapse toggle). |
 | `AudioPlayer.tsx` | Audio play-button component (idle/loading/playing/played/error states) for Listen & Choose questions. |
 | `AudioChoiceCard.tsx` | Jewel-tile card for audio-choice questions: eyebrow «Послушай и выбери», AudioPlayer, transcript reveal (fades in after first play or on error). Used in Practice.tsx and PracticeMistakes.tsx. |
@@ -170,7 +170,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `conditionals/` — 15 Georgian conditional-mood TTS clips (ka-GE Natia voice; conjunctions თუ/რომ, imperfect forms, conditional-mood forms, subjunctive forms), used by `audio-choice` lesson 6 in `conditionals`.
 
 ### Utilities (`src/utils/`)
-- `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration for the Profile name widget.
+- `georgianizerName.ts` — Latin/Cyrillic → Georgian transliteration of the user's name for Bombora's line on Profile (`BomboraSays.tsx`).
 
 ### Verb sessions (`src/verbs/session/`) and their scenes
 One button on the verb card — «Выучить играя» (label follows the state: «Продолжить игру», «Играть дальше», «Сыграть и сдать экзамен», «Сыграть ещё») — starts a 2–3 minute session of at most three short scenes. The learner never picks a game: `planSession` (`session/plan.ts`, a pure function) composes the session from the verb's level, per-form progress, what the verb supports and what the learner can do (no typing before the alphabet is finished), and remembers past sessions so two days do not start the same way. Every scene reports per-form results into `VerbFormProgress`; the header bar shows only this session and grows after every task. Session position, level and the director's memory live on the server (`UserVerb`, `VerbSession`), so a reload or another device continues from the same place. A finished session earns XP and marks the day active, once.
@@ -486,7 +486,7 @@ Validation: loader logs a warning and skips any sentence-builder question whose 
 - **Multi-language vocabulary**: Georgian + English. Premium for keeping multiple vocabs simultaneously.
 - **Telegram Stars (XTR) payments**: all current Pro purchases on the mini-app.
 - **Ink / kilim visual style**: shared across Result, LessonTheory, VocabularyList, Profile via `KilimProgress`, `InkDivider`.
-- **Georgian name transliteration widget** (`GeorgianNameCard.tsx`) — Latin/Cyrillic → Georgian glyphs on Profile, uses `georgianizerName.ts` (~60-name dictionary + symbol fallback).
+- **Georgian name on Profile** (`BomboraSays.tsx`) — Bombora says the user's name in Georgian glyphs with a Cyrillic transcription, uses `georgianizerName.ts` (~60-name dictionary + symbol fallback).
 
 ---
 

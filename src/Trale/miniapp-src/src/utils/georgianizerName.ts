@@ -164,20 +164,3 @@ export function transliterateToGeorgian(name: string): GeorgianNameResult | null
 
   return { geo, translit: trimmed }
 }
-
-/**
- * Adaptive font size for the Georgian name display:
- * shorter names → bigger, very long → smaller.
- */
-export function clampNameFontSize(geo: string): string {
-  if (geo.length <= 6) return '36px'
-  if (geo.length <= 9) return '28px'
-  return '22px'
-}
-
-/**
- * Letter-spacing class: long names need tighter spacing to fit on 375px.
- */
-export function nameLetterSpacingClass(geo: string): string {
-  return geo.length <= 8 ? 'tracking-widest' : 'tracking-normal'
-}
