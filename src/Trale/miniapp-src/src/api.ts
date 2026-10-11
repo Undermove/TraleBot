@@ -264,6 +264,10 @@ export const api = {
       shareText: string
       invitedCount: number
       activatedCount: number
+      /** Сколько дней доступа человек уже получил за друзей. */
+      earnedDays?: number
+      /** Что получит друг, одной короткой строкой. */
+      friendLine?: string
       rules: string[]
       /** Какая награда положена сейчас. */
       state?: 'trial' | 'accessEnded' | 'pro' | 'lifetime'

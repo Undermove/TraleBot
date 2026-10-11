@@ -360,6 +360,39 @@ public class ReferralBonusTests : TestBase
     }
 
     [Test]
+    public async Task The_offer_counts_friends_and_the_days_they_actually_brought()
+    {
+        var referrer = await NewUser(registeredDaysAgo: 90);
+        (await Activate(await Invite(referrer))).Result.Should().Be(TryActivateReferralResult.Activated);
+        (await Activate(await Invite(referrer))).Result.Should().Be(TryActivateReferralResult.Activated);
+        await Invite(referrer); // came by the link, has not started yet
+
+        var offer = await Get(referrer, "referral");
+
+        offer.GetProperty("invitedCount").GetInt32().Should().Be(3);
+        offer.GetProperty("activatedCount").GetInt32().Should().Be(2);
+        offer.GetProperty("earnedDays").GetInt32().Should().Be(2 * TryActivateReferralService.ReferrerTrialBonusDays);
+        offer.GetProperty("friendLine").GetString().Should().Be("Другу — 60 дней бесплатно");
+    }
+
+    [Test]
+    public async Task Lifetime_has_friends_counted_but_no_days_earned()
+    {
+        var referrer = await NewUser(registeredDaysAgo: 120, u =>
+        {
+            u.IsPro = true;
+            u.SubscriptionPlan = SubscriptionPlan.Lifetime;
+        });
+        await Activate(await Invite(referrer));
+
+        var offer = await Get(referrer, "referral");
+
+        offer.GetProperty("activatedCount").GetInt32().Should().Be(1);
+        offer.GetProperty("earnedDays").GetInt32().Should().Be(0);
+        offer.GetProperty("friendLine").GetString().Should().Be("Другу — 60 дней бесплатно");
+    }
+
+    [Test]
     public async Task What_a_user_sends_to_a_friend_and_reads_in_the_rules_has_no_jargon()
     {
         var onTrial = await NewUser(registeredDaysAgo: 3);

@@ -26,6 +26,11 @@ public class GetReferralInfoQuery(ITraleDbContext db)
         var activated = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == userId && r.ActivatedAtUtc != null, ct);
 
+        // What the referrer has actually been given so far (zero rows for Lifetime and capped ones).
+        var earnedDays = await db.Referrals
+            .Where(r => r.ReferrerUserId == userId && r.ActivatedAtUtc != null)
+            .SumAsync(r => r.BonusReferrerDays, ct);
+
         var yearAgo = DateTime.UtcNow.AddDays(-365);
         var yearActivated = await db.Referrals
             .CountAsync(r => r.ReferrerUserId == userId
@@ -80,6 +85,8 @@ public class GetReferralInfoQuery(ITraleDbContext db)
             ReferrerTelegramId = user.TelegramId,
             InvitedCount = invited,
             ActivatedCount = activated,
+            EarnedDays = earnedDays,
+            FriendLine = $"Другу — {inviteeTotalTrial} дней бесплатно",
             Rules = rules,
             State = state,
             BonusShortLabel = bonusShortLabel,
@@ -113,6 +120,11 @@ public class GetReferralInfoResult
     public long ReferrerTelegramId { get; init; }
     public int InvitedCount { get; init; }
     public int ActivatedCount { get; init; }
+    /// <summary>Days of access the user has received for friends so far, summed over the
+    /// activated referrals as they were recorded at the time.</summary>
+    public int EarnedDays { get; init; }
+    /// <summary>What the friend gets, as one short line («Другу — 60 дней бесплатно»).</summary>
+    public string FriendLine { get; init; } = "";
     public IReadOnlyList<string> Rules { get; init; } = new List<string>();
     public ReferralOfferState State { get; init; }
     /// <summary>Short name of the reward the activator gives in the user's current state
