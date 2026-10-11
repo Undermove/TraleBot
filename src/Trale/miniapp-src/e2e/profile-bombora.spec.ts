@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mkdirSync } from 'fs'
 import { resolve } from 'path'
-import { setup } from './verbs-section.setup'
+import { backToDashboard, openProfile, openProfileApp } from './profile.setup'
 import { DAILY_PHRASES, dayKey, phraseOfDay } from '../src/bomboraSays'
 
 // Профиль глазами человека на телефоне (375 px): разделов «Фраза дня» и «Моё имя по-грузински» нет,
@@ -15,15 +15,6 @@ const longest = DAILY_PHRASES.reduce((a, b) => (b.ge.length > a.ge.length ? b : 
 const DAY = new Date(2026, 9, 11, 12, 0)
 while (phraseOfDay(dayKey(DAY)) !== longest) DAY.setDate(DAY.getDate() + 1)
 
-const lesson = (id: number, title: string) => ({ id, title, short: '', theory: { title, goal: '', blocks: [] } })
-const catalog = {
-  botUsername: 'TraleBot', miniAppEnabled: true,
-  modules: [
-    { id: 'alphabet-progressive', title: 'Алфавит', emoji: '', description: '', lessons: [lesson(1, 'Первые буквы'), lesson(2, 'Ещё буквы')] },
-    { id: 'my-vocabulary', title: 'Мой словарь', emoji: '', description: 'Личный словарь', lessons: [] }
-  ]
-}
-
 const shotsDir = process.env.PROFILE_SHOTS
 async function shot(page: Page, name: string) {
   if (!shotsDir) return
@@ -34,22 +25,8 @@ async function shot(page: Page, name: string) {
 
 async function openApp(page: Page, firstName: string | null) {
   await page.clock.setFixedTime(DAY)
-  await setup(page)
-  // Профилю нужны теория уроков (виджет алфавита) и правила приглашения — в общей заготовке их нет.
-  await page.route('**/api/miniapp/content', (route) => route.fulfill({ json: catalog }))
-  await page.route('**/api/miniapp/referral', (route) =>
-    route.fulfill({ json: { link: 'https://t.me/TraleBot?start=ref_123456', shareText: '', invitedCount: 0, activatedCount: 0, rules: ['Позови друга — оба получите бонус'], capReached: false } })
-  )
-  // Настоящий скрипт Telegram заменил бы подставленного пользователя пустым.
-  await page.route('https://telegram.org/**', (route) => route.abort())
-  await page.addInitScript((name) => {
-    ;(window as any).Telegram.WebApp.initDataUnsafe = { user: name ? { id: 123456, first_name: name } : { id: 123456 } }
-  }, firstName)
-  await page.goto('/?playwright=1')
-  await openProfile(page)
+  await openProfileApp(page, { firstName })
 }
-const openProfile = (page: Page) => page.getByRole('button', { name: 'Профиль', exact: true }).click()
-const backToDashboard = (page: Page) => page.getByRole('button', { name: 'Назад' }).click()
 
 const says = (page: Page) => page.getByTestId('bombora-says')
 const reply = (page: Page, kind: string) => page.getByTestId(`bombora-says-${kind}`)

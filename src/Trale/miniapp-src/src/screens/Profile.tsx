@@ -6,6 +6,7 @@ import KilimProgress from '../components/KilimProgress'
 import AlphabetGrid from '../components/AlphabetGrid'
 import LetterPopover from '../components/LetterPopover'
 import BomboraSays from '../components/BomboraSays'
+import ReferralCard from '../components/ReferralCard'
 import { resetSaysMemory } from '../bomboraSays'
 import { AlphabetLetterDto, CatalogDto, ProgressState, Screen } from '../types'
 import { api } from '../api'
@@ -161,6 +162,9 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           />
         </div>
 
+        {/* Referral — invite friends, get bonus */}
+        <ReferralCard />
+
         {/* Streak heatmap — last 35 days (5 weeks × 7) */}
         <div className="mn-eyebrow mb-2">активность · 35 дней</div>
         <div className="jewel-tile px-4 py-4 mb-5">
@@ -293,21 +297,8 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           }
         `}</style>
 
-        {/* Settings: change level */}
-        <div className="mn-eyebrow mb-2 mt-2">настройки</div>
-        <button
-          onClick={() => navigate({ kind: 'onboarding' })}
-          className="jewel-tile jewel-pressable w-full text-left px-4 py-3"
-        >
-          <div className="relative z-[1]">
-            <div className="font-sans text-[14px] font-bold text-jewelInk">
-              Сменить уровень
-            </div>
-            <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
-              Если хочешь начать заново или поменять стартовую точку
-            </div>
-          </div>
-        </button>
+        {/* Settings */}
+        <div className="mn-eyebrow -mb-1 mt-2">настройки</div>
 
         {/* Notifications on/off */}
         <NotificationsToggle />
@@ -330,9 +321,6 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
             <span className="text-jewelInk-hint text-[14px] shrink-0">→</span>
           </div>
         </button>
-
-        {/* Referral — invite friends, get bonus */}
-        <ReferralCard />
 
         {/* Telegram ID for support — copyable */}
         {telegramId != null && <TelegramIdCard telegramId={telegramId} />}
@@ -395,104 +383,6 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
           onClose={() => setSelectedLetter(null)}
         />
       )}
-    </div>
-  )
-}
-
-function ReferralCard() {
-  const [data, setData] = useState<{
-    link: string
-    shareText: string
-    invitedCount: number
-    activatedCount: number
-    rules: string[]
-    capReached: boolean
-  } | null>(null)
-  const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    api
-      .referral()
-      .then((r) => { if (!cancelled) setData(r) })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [])
-
-  if (!data) return null
-  // When the referrer has used up their bonus slots, drop the whole card —
-  // owner wants no visual reminder of an exhausted feature.
-  if (data.capReached) return null
-
-  async function copy() {
-    if (!data) return
-    try {
-      const tg = (window as any).Telegram?.WebApp
-      if (tg?.HapticFeedback?.impactOccurred) tg.HapticFeedback.impactOccurred('light')
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(data.link)
-      } else {
-        const ta = document.createElement('textarea')
-        ta.value = data.link
-        ta.style.position = 'fixed'
-        ta.style.left = '-9999px'
-        document.body.appendChild(ta)
-        ta.select()
-        document.execCommand('copy')
-        document.body.removeChild(ta)
-      }
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {}
-  }
-
-  function share() {
-    const tg = (window as any).Telegram?.WebApp
-    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(
-      data!.link
-    )}&text=${encodeURIComponent(data!.shareText)}`
-    if (tg?.openTelegramLink) {
-      tg.openTelegramLink(shareUrl)
-    } else {
-      window.open(shareUrl, '_blank', 'noopener')
-    }
-  }
-
-  return (
-    <div className="mt-6">
-      <div className="mn-eyebrow mb-2">позови друга</div>
-      <div className="jewel-tile px-4 py-4" data-testid="referral-card">
-        <div className="relative z-[1]">
-          <ul className="font-sans text-[13px] text-jewelInk-mid mb-3 leading-snug list-disc pl-5 space-y-1">
-            {data.rules.map((line, i) => <li key={i}>{line}</li>)}
-          </ul>
-          <div className="flex items-center gap-2 mb-3 jewel-tile px-3 py-2">
-            <div className="relative z-[1] flex-1 min-w-0 font-sans text-[12px] text-jewelInk truncate">
-              {data.link}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={share}
-              className="flex-1 font-sans text-[13px] font-extrabold text-jewelInk min-h-[40px] rounded border-[1.5px] border-jewelInk"
-              style={{ background: '#F5B820', boxShadow: '0 2px 0 #15100A' }}
-            >
-              Поделиться
-            </button>
-            <button
-              onClick={copy}
-              className="flex-1 font-sans text-[13px] font-bold text-jewelInk min-h-[40px] rounded border-[1.5px] border-jewelInk/40"
-            >
-              {copied ? '✓ скопировано' : 'Копировать'}
-            </button>
-          </div>
-          {data.invitedCount > 0 && (
-            <div className="mt-3 font-sans text-[11px] text-jewelInk-mid">
-              Пришли по твоей ссылке: {data.invitedCount} · начали заниматься: {data.activatedCount}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

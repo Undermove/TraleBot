@@ -506,6 +506,8 @@ public class MiniAppController : Controller
             shareText = info.ShareText,
             invitedCount = info.InvitedCount,
             activatedCount = info.ActivatedCount,
+            earnedDays = info.EarnedDays,
+            friendLine = info.FriendLine,
             rules = info.Rules,
             // "trial" | "accessEnded" | "pro" | "lifetime" — which reward applies right now.
             state = char.ToLowerInvariant(info.State.ToString()[0]) + info.State.ToString()[1..],
