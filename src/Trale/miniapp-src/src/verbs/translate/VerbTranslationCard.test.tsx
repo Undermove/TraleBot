@@ -54,15 +54,28 @@ describe('VerbTranslationCard', () => {
     expect(onOpen).toHaveBeenCalledWith(walk.id, undefined)
   })
 
-  it('a verb without a name of the action in the base shows its forms and no made-up name', () => {
+  it('«быть» shows the name of its action, and the dictionary keeps it', () => {
     const be = verbRu('быть')
-    expect(be.title).toBe(be.id)
-    show(infinitiveCard('быть'), be.id, true)
+    expect(be.title).not.toBe(be.id)
+    show(infinitiveCard('быть'), be.title, true)
 
-    expect(screen.queryByTestId('verb-card-action-name')).toBeNull()
+    const name = screen.getByTestId('verb-card-action-name').textContent!
+    expect(name).toContain(be.title)
+    expect(name).toContain(cyr(be.title))
     const lines = screen.getAllByTestId('verb-card-line').map(l => l.textContent!)
     expect(lines.map(l => l.replace(/[ა-ჰ].*$/, ''))).toEqual(['я есть', 'он есть', 'я буду', 'я был(а)'])
-    expect(screen.getByTestId('verb-card-saved').textContent).toContain(`Уже в словаре: быть — ${be.id}`)
+    expect(screen.getByTestId('verb-card-saved').textContent).toContain(`Уже в словаре: быть — ${be.title}`)
+    plainWordsOnly()
+  })
+
+  it('a verb without a name of the action in the base shows its forms and no made-up name', () => {
+    // В каталоге таких больше нет; у глагола, добавленного на лету, заголовок может повторять словарную форму.
+    const dance = verbRu('танцевать')
+    show(infinitiveCard('танцевать', [{ ...dance, title: dance.id }]), dance.id)
+
+    expect(screen.queryByTestId('verb-card-action-name')).toBeNull()
+    expect(screen.getAllByTestId('verb-card-line')[0].textContent).toContain('я танцую')
+    expect(screen.getByTestId('verb-card-saved').textContent).toContain(`В словарь записано: танцевать — ${dance.id}`)
     plainWordsOnly()
   })
 
@@ -113,8 +126,9 @@ describe('VerbTranslationCard', () => {
     expect(readings[0]).toContain('он/она, прошедшее время: сделал один раз')
     expect(readings[1]).toContain('«тебе надо быть»')
     expect(readings[1]).toContain('«чтобы ты…» — так говорят после «надо», «хочу»')
-    // Названия действия у «быть» в базе нет — показана словарная форма, и так и подписана.
-    expect(screen.getByTestId('verb-card-verb').textContent).toContain('словарная форма')
+    const verb = screen.getByTestId('verb-card-verb').textContent!
+    expect(verb).toContain('название действия')
+    expect(verb).toContain(be.title)
     plainWordsOnly()
   })
 })

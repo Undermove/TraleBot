@@ -10,6 +10,9 @@
 //   ru.unsure.json      { лемма: "в чём сомнение" } — попадает в REVIEW.md, на сборку не влияет
 //   ru-forms.json       русские формы переводов для фраз «я хочу», «ты хотел(а)» (ru-forms.py + pymorphy3;
 //                       после правки ru.json его нужно пересобрать — сборка проверяет, что он не отстал)
+//   titles.json         { лемма: { title, evidence, sources } } — название действия (заголовок карточки),
+//                       вписанное руками там, где выгрузка его не даёт или даёт слово другого глагола;
+//                       каждое сверено по открытым словарям, ссылки — в sources (см. SOURCES.md)
 //   verbs.skip.json     { лемма: "почему вычеркнут" } — глаголы, вычеркнутые при вычитке
 //   sentences.skip.json [id, …] — предложения Tatoeba, вычеркнутые при вычитке
 //
@@ -51,6 +54,8 @@ const unsure = read('ru.unsure.json')
 // Русские формы переводов (ru-forms.py) — из них собираются фразы «я хочу», «ты хотел(а)».
 const ruForms = read('ru-forms.json')
 const skipVerbs = read('verbs.skip.json')
+// Названия действия, вписанные руками по словарям: выгрузка Викисловаря не даёт их у части глаголов.
+const titles = read('titles.json')
 const prodLookups = read('prod-lookups.json').words
 const wanted = read('wanted.json')
 
@@ -151,8 +156,9 @@ function sentencesFor(v) {
 
 // Заголовок карточки — масдар. Сначала тот, что Викисловарь даёт в шапке статьи («verbal noun»),
 // иначе самый короткий из шапки таблицы (в паре «с превербом / без» это масдар без преверба),
-// иначе сама лемма.
-const titleOf = v => v.masdar.head ?? [...v.masdar.imperfective, ...v.masdar.perfective].sort((a, b) => a.length - b.length)[0] ?? v.lemma
+// иначе сама лемма. Запись в titles.json (сверена по словарям) важнее всего этого.
+const sourceTitleOf = v => v.masdar.head ?? [...v.masdar.imperfective, ...v.masdar.perfective].sort((a, b) => a.length - b.length)[0] ?? v.lemma
+const titleOf = v => titles[v.lemma]?.title ?? sourceTitleOf(v)
 
 const analysed = chosen.map(v => ({ v, a: analyze(v, { partial: isPartial(v) }) }))
 // Образец схемы — самый употребительный глагол «по образцу» с той же схемой, кроме самого глагола.
@@ -190,9 +196,22 @@ const verbs = analysed.map(entry => {
     // Собственный масдар глагола сюда не входит — это то же слово, подсказка про глагол к месту.
     notForParse: (v.homographs ?? []).filter(f => f !== titleOf(v) && !v.masdar.perfective.includes(f)),
     sentences: sentencesFor(v),
-    source: v.source
+    source: v.source,
+    // Откуда название действия, если оно не из выгрузки Викисловаря, а вписано по словарям (titles.json).
+    titleSources: titles[v.lemma]?.sources
   }
 })
+
+for (const [lemma, entry] of Object.entries(titles)) {
+  const v = raw.find(r => r.lemma === lemma)
+  if (!v) { fail.push(`titles.json: глагола ${lemma} нет в verbs.raw.json`); continue }
+  if (!entry.title || !entry.evidence) fail.push(`titles.json: у ${lemma} нет title или evidence`)
+  if (!Array.isArray(entry.sources) || entry.sources.length < 2 || !entry.sources.every(u => /^https?:\/\//.test(u))) {
+    fail.push(`titles.json: у ${lemma} должно быть не меньше двух ссылок на источники`)
+  }
+  if (entry.title === lemma) fail.push(`titles.json: у ${lemma} название действия повторяет лемму`)
+  if (entry.title === sourceTitleOf(v)) fail.push(`titles.json: ${lemma} — «${entry.title}» и так берётся из выгрузки, запись лишняя`)
+}
 
 const orphans = [...pinned.keys()].filter(lemma => !verbs.some(v => v.lemma === lemma))
 if (orphans.length) fail.push(`комиксы ссылаются на глаголы, которых нет в каталоге: ${orphans.join(', ')}`)

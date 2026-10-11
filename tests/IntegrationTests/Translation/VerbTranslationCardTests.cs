@@ -105,26 +105,55 @@ public class VerbTranslationCardTests : TranslationPipelineTestBase
     // ── 1. A Russian infinitive of the base ──────────────────────────────────────────────────────
 
     [Test]
-    public async Task Byt_is_answered_with_the_forms_of_the_verb_and_not_with_one_form_passed_for_the_infinitive()
+    public async Task Byt_is_answered_with_the_name_of_the_action_and_the_forms_and_not_with_one_form_passed_for_the_infinitive()
     {
         var be = VerbFor("быть");
         var (i, he, will, was) = (Form(be, "present", 0), Form(be, "present", 2), Form(be, "future", 0), Form(be, "aorist", 0));
+        Title(be).Should().NotBe(Lemma(be), "the catalog names the action of «быть»");
 
         var reply = await Say("быть");
 
         reply.Text.Should().StartWith(
             "Глагол «быть»\n\n"
+            + $"Название действия: {Title(be)} [{Cyr(Title(be))}]\n\n"
             + $"я есть — {i} [{Cyr(i)}]\n"
             + $"он есть — {he} [{Cyr(he)}]\n"
             + $"я буду — {will} [{Cyr(will)}]\n"
             + $"я был(а) — {was} [{Cyr(was)}]\n");
-        // The base has no name of the action for this verb (its card title is the dictionary form):
-        // the dictionary gets that form, and the reply says which form it is.
-        Title(be).Should().Be(Lemma(be));
-        reply.Text.Should().EndWith(
-            $"В словарь записано: быть — {he} (это «он есть»; названия действия для этого глагола в базе пока нет)");
-        (await Saved("быть"))!.Definition.Should().Be(he);
+        reply.Text.Should().EndWith($"В словарь записано: быть — {Title(be)}");
+        reply.Text.Should().NotContain("названия действия для этого глагола в базе пока нет");
+        (await Saved("быть"))!.Definition.Should().Be(Title(be), because: "the dictionary keeps the name of the action, not «он есть»");
         External.Calls.Should().Be(0);
+    }
+
+    [Test]
+    public void Every_catalog_verb_has_a_name_of_the_action_of_its_own()
+    {
+        Catalog().Select(v => v!.AsObject()).Where(v => Title(v) == Lemma(v)).Select(v => v["ru"]!.GetValue<string>())
+            .Should().BeEmpty("a card title that repeats the dictionary form is «он …» passed for the name of the action");
+    }
+
+    [Test]
+    public async Task Verb_the_base_has_no_name_of_the_action_for_is_saved_as_its_dictionary_form_and_the_reply_says_so()
+    {
+        // No catalog verb is like that any more; a verb stored at runtime can be (its title falls back to the lemma).
+        var dance = VerbFor("танцевать");
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            var row = await db.Verbs.FirstAsync(v => v.Lemma == Lemma(dance));
+            row.Title = row.Lemma;
+            await db.SaveChangesAsync(CancellationToken.None);
+            return 0;
+        });
+
+        var reply = await Say("танцевать");
+
+        reply.Text.Should().StartWith($"Глагол «танцевать»\n\nя танцую — ");
+        reply.Text.Should().NotContain("Название действия");
+        reply.Text.Should().EndWith(
+            $"В словарь записано: танцевать — {Lemma(dance)} (это «он танцует»; названия действия для этого глагола в базе пока нет)");
+        (await Saved("танцевать"))!.Definition.Should().Be(Lemma(dance));
     }
 
     [Test]
@@ -236,7 +265,7 @@ public class VerbTranslationCardTests : TranslationPipelineTestBase
         reply.Text.Should().StartWith(
             $"{typed} [{Cyr(typed)}] — «мне надо быть»\n"
             + "Форма: «чтобы я…» — так говорят после «надо», «хочу».\n"
-            + $"Глагол «быть» ({Lemma(be)} [{Cyr(Lemma(be))}]).");
+            + $"Глагол «быть», название действия: {Title(be)} [{Cyr(Title(be))}].");
         (await Saved(typed))!.Definition.Should().Be("мне надо быть");
     }
 
@@ -268,7 +297,7 @@ public class VerbTranslationCardTests : TranslationPipelineTestBase
 
         reply.Text.Should().StartWith(
             $"{form} [{Cyr(form)}] — у этого слова несколько значений:\n\n"
-            + $"Глагол «быть» ({Lemma(be)} [{Cyr(Lemma(be))}])\n"
+            + $"Глагол «быть», название действия: {Title(be)} [{Cyr(Title(be))}]\n"
             + "• «он был» · он/она, прошедшее время: сделал один раз\n"
             + "• «тебе надо быть» · «чтобы ты…» — так говорят после «надо», «хочу»");
         (await Saved(form))!.Definition.Should().Be("он был", because: "the dictionary keeps the first reading of the card");
@@ -294,17 +323,28 @@ public class VerbTranslationCardTests : TranslationPipelineTestBase
     [Test]
     public async Task Name_of_an_action_typed_in_georgian_lists_the_verbs_it_names()
     {
-        var go = VerbFor("идти, уходить");
-        var walk = VerbFor("ходить");
-        Title(walk).Should().Be(Title(go));
+        var take = VerbFor("брать");
+        var open = Catalog().Select(v => v!.AsObject()).Single(v => Title(v) == Title(take) && Lemma(v) != Lemma(take));
+        open["ru"]!.GetValue<string>().Should().Be("открывать", "the test relies on two verbs sharing the name of the action");
 
-        var card = await Card(Title(go));
+        var card = await Card(Title(take));
 
         card!.Kind.Should().Be(VerbCardKind.ActionName);
-        card.Verbs.Select(v => v.Lemma).Should().Equal(Lemma(go), Lemma(walk));
-        VerbCardReplyFormatter.Text(card, Title(go), "идти, уходить", null, alreadySaved: true)
-            .Should().StartWith($"{Title(go)} [{Cyr(Title(go))}] — название действия. Так называются 2 глагола:\n\n1. «идти, уходить» — ")
-            .And.EndWith($"Уже в словаре: {Title(go)} — идти, уходить");
+        card.Verbs.Select(v => v.Lemma).Should().Equal(Lemma(take), Lemma(open));
+        VerbCardReplyFormatter.Text(card, Title(take), "брать", null, alreadySaved: true)
+            .Should().StartWith($"{Title(take)} [{Cyr(Title(take))}] — название действия. Так называются 2 глагола:\n\n1. «брать» — ")
+            .And.EndWith($"Уже в словаре: {Title(take)} — брать");
+    }
+
+    [Test]
+    public async Task Walking_and_going_have_names_of_the_action_of_their_own()
+    {
+        var go = VerbFor("идти, уходить");
+        var walk = VerbFor("ходить");
+        Title(walk).Should().NotBe(Title(go));
+
+        (await Card(Title(walk)))!.Verbs.Should().ContainSingle().Which.Lemma.Should().Be(Lemma(walk));
+        (await Card(Title(go)))!.Verbs.Should().ContainSingle().Which.Lemma.Should().Be(Lemma(go));
     }
 
     // ── 3. Not a verb of the base: as before ─────────────────────────────────────────────────────
@@ -370,7 +410,6 @@ public class VerbTranslationCardTests : TranslationPipelineTestBase
         lines[0]!["forms"]![0]!["form"]!.GetValue<string>().Should().Be(Form(walk, "present", 0));
         lines[0]!["forms"]![0]!["transcription"]!.GetValue<string>().Should().Be(Cyr(Form(walk, "present", 0)));
 
-        // The name of the action is shared with «идти»; the entry is tied to the verb the Russian side names.
         var item = (await Api(HttpMethod.Get, "vocabulary"))["items"]!.AsArray().Should().ContainSingle().Subject!;
         item["verb"]!["verbId"]!.GetValue<string>().Should().Be(Lemma(walk));
         item["verb"]!["actionName"]!.GetValue<bool>().Should().BeTrue();
@@ -394,6 +433,19 @@ public class VerbTranslationCardTests : TranslationPipelineTestBase
         line["meaning"]!.GetValue<string>().Should().Be("я нахожу");
         line["caption"]!.GetValue<string>().Should().Be("я, настоящее время");
         (line["tense"]!.GetValue<string>(), line["person"]!.GetValue<int>()).Should().Be(("present", 0));
+    }
+
+    [Test]
+    public async Task Entry_whose_name_of_the_action_two_verbs_share_is_tied_to_the_verb_its_russian_side_names()
+    {
+        var take = VerbFor("брать");
+        var open = Catalog().Select(v => v!.AsObject()).First(v => Title(v) == Title(take) && Lemma(v) != Lemma(take));
+
+        await Api(HttpMethod.Post, "translate", new { word = "открывать" });
+
+        var item = (await Api(HttpMethod.Get, "vocabulary"))["items"]!.AsArray().Should().ContainSingle().Subject!;
+        item["definition"]!.GetValue<string>().Should().Be(Title(take));
+        item["verb"]!["verbId"]!.GetValue<string>().Should().Be(Lemma(open), because: "«брать» comes first in the catalog, but the entry says «открывать»");
     }
 
     [Test]

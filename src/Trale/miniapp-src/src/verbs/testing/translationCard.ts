@@ -33,9 +33,8 @@ export function cardVerb(verb: VerbDto, lines: VerbCardLineDto[] = keyForms(verb
   }
 }
 
-/** Карточка русского инфинитива: все глаголы каталога с таким значением. */
-export function infinitiveCard(ru: string): VerbCardDto {
-  const verbs = CATALOG.filter(v => v.ru.split(', ').includes(ru))
+/** Карточка русского инфинитива: все глаголы каталога с таким значением (или переданные — для случая, которого в каталоге нет). */
+export function infinitiveCard(ru: string, verbs: VerbDto[] = CATALOG.filter(v => v.ru.split(', ').includes(ru))): VerbCardDto {
   if (!verbs.length) throw new Error(`В каталоге нет глагола «${ru}»`)
   return { kind: 'infinitive', text: ru, transcription: null, moreVerbs: 0, related: [], verbs: verbs.map(v => cardVerb(v)) }
 }

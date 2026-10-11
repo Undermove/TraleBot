@@ -31,7 +31,7 @@ const catalog = {
 
 const persons = (forms: string[]) => forms.map((f) => [f])
 const walk = {
-  id: 'დადის', title: 'სვლა', ru: 'ходить', kind: 'special', present: ['დავდივარ'], masdarWithPreverb: [], reason: '', root: '',
+  id: 'დადის', title: 'სიარული', ru: 'ходить', kind: 'special', present: ['დავდივარ'], masdarWithPreverb: [], reason: '', root: '',
   oddTenses: [], model: null, sentences: [], source: 'https://en.wiktionary.org/wiki/x', status: 'verified',
   tenses: { present: persons(['დავდივარ', 'დადიხარ', 'დადის', 'დავდივართ', 'დადიხართ', 'დადიან']) },
   meanings: { present: ['я хожу', 'ты ходишь', 'он ходит', 'мы ходим', 'вы ходите', 'они ходят'] },
@@ -43,7 +43,7 @@ const line = (form: string, transcription: string, tense: string, person: number
 const walkCard = {
   kind: 'infinitive', text: 'ходить', transcription: null, moreVerbs: 0, related: [],
   verbs: [{
-    verbId: 'დადის', lemma: 'დადის', lemmaTranscription: 'дадис', actionName: 'სვლა', actionNameTranscription: 'свла', ru: 'ходить',
+    verbId: 'დადის', lemma: 'დადის', lemmaTranscription: 'дадис', actionName: 'სიარული', actionNameTranscription: 'сиарули', ru: 'ходить',
     lines: [
       line('დავდივარ', 'давдивар', 'present', 0, 'я хожу', 'я, настоящее время'),
       line('დადის', 'дадис', 'present', 2, 'он ходит', 'он/она, настоящее время'),
@@ -55,7 +55,7 @@ const walkCard = {
 const wasCard = {
   kind: 'form', text: 'იყო', transcription: 'икъо', moreVerbs: 0, related: [],
   verbs: [{
-    verbId: 'არის', lemma: 'არის', lemmaTranscription: 'арис', actionName: null, actionNameTranscription: null, ru: 'быть',
+    verbId: 'არის', lemma: 'არის', lemmaTranscription: 'арис', actionName: 'ყოფნა', actionNameTranscription: 'къопна', ru: 'быть',
     lines: [
       line('იყო', 'икъо', 'aorist', 2, 'он был', 'он/она, прошедшее время: сделал один раз'),
       line('იყო', 'икъо', 'optative', 1, 'тебе надо быть', '«чтобы ты…» — так говорят после «надо», «хочу»'),
@@ -111,22 +111,22 @@ async function translate(page: any, word: string) {
 
 test('a Russian infinitive is answered with the verb card, and «Открыть в глаголах» opens that verb', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
-  const opened = await setupApi(page, { ходить: { status: 'success', word: 'ходить', definition: 'სვლა', verb: null, verbCard: walkCard } })
+  const opened = await setupApi(page, { ходить: { status: 'success', word: 'ходить', definition: 'სიარული', verb: null, verbCard: walkCard } })
   await openDictionary(page)
 
   await translate(page, 'ходить')
 
   const card = page.getByTestId('verb-translation-card')
   await expect(card).toBeVisible()
-  await expect(card.getByTestId('verb-card-action-name')).toContainText('სვლა')
-  await expect(card.getByTestId('verb-card-action-name')).toContainText('свла')
+  await expect(card.getByTestId('verb-card-action-name')).toContainText('სიარული')
+  await expect(card.getByTestId('verb-card-action-name')).toContainText('сиарули')
   const lines = card.getByTestId('verb-card-line')
   await expect(lines).toHaveCount(3)
   await expect(lines.nth(0)).toContainText('я хожу')
   await expect(lines.nth(0)).toContainText('დავდივარ')
   await expect(lines.nth(0)).toContainText('давдивар')
   await expect(lines.nth(1)).toContainText('он ходит')
-  await expect(card.getByTestId('verb-card-saved')).toContainText('В словарь записано: ходить — სვლა')
+  await expect(card.getByTestId('verb-card-saved')).toContainText('В словарь записано: ходить — სიარული')
 
   // Fits a 375px screen, and the button is a full-size tap target.
   const box = (await card.boundingBox())!
