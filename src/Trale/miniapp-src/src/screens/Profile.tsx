@@ -142,7 +142,7 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
         style={{ paddingBottom: 'calc(var(--safe-b) + 40px)' }}
       >
         {/* Hero — Бомбора подбадривает, говорит фразу дня или имя по-грузински */}
-        <div className="jewel-tile px-4 py-4 mb-5 relative overflow-hidden">
+        <div className="jewel-tile px-3 py-2.5 mb-3 relative overflow-hidden">
           {isPro && (
             <div
               className="absolute top-0 right-0 z-[2] bg-gold text-jewelInk text-[11px] font-extrabold px-2 py-1 border-l-[1.5px] border-b-[1.5px] border-jewelInk rounded-bl-md"

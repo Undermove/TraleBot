@@ -50,16 +50,15 @@ const SEAT_LOOK: Record<Seat, { fill: string; stroke: string }> = {
   free: { fill: 'none', stroke: '#B5A68B' }
 }
 
-function Paw({ seat, pulse }: { seat: Seat; pulse: boolean }) {
+function Paw({ seat, size = 28, className = '' }: { seat: Seat; size?: number; className?: string }) {
   const { fill, stroke } = SEAT_LOOK[seat]
   return (
     <svg
-      width="28"
-      height="28"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
-      data-testid="referral-seat"
       data-seat={seat}
-      className={pulse ? 'referral-paw-pulse' : ''}
+      className={className}
       fill={fill}
       stroke={stroke}
       strokeWidth="1.5"
@@ -75,14 +74,47 @@ function Paw({ seat, pulse }: { seat: Seat; pulse: boolean }) {
   )
 }
 
+const OPENED_KEY = 'bombora_referral_opened'
+
+/** Карточку уже раскрывали на этом устройстве — привлекать к ней внимание больше не нужно. */
+export function wasReferralOpened(): boolean {
+  try {
+    return localStorage.getItem(OPENED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function rememberReferralOpened() {
+  try {
+    localStorage.setItem(OPENED_KEY, '1')
+  } catch {
+    // Хранилища нет — подсветка вернётся при следующем открытии мини-аппа, это не страшно.
+  }
+}
+
+const prefersReducedMotion = () => {
+  try {
+    return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  } catch {
+    return false
+  }
+}
+
 /**
- * «Позови друга» в профиле: ряд мест-лапок вместо списка правил. Лапка закрашивается, когда друг
- * начал заниматься; бледная — пришёл по ссылке, но ещё не начал. Что кому положено, решает сервер
- * (/api/miniapp/referral) — здесь только его слова и цифры. Правила — по нажатию «как это работает».
+ * «Позови друга» в профиле. Свёрнута в одну строку: название, мелкий ряд мест-лапок, награда и
+ * шеврон; нажатие на строку раскрывает на месте крупный ряд, цифры, кнопку и «как это работает».
+ * Пока карточку ни разу не раскрывали, она мягко зовёт: покачивается первое свободное место и по
+ * награде пробегает блик (не при «уменьшить движение»). Лапка закрашивается, когда друг начал
+ * заниматься; бледная — пришёл по ссылке, но ещё не начал. Что кому положено, решает сервер
+ * (/api/miniapp/referral) — здесь только его слова и цифры.
  * Тем, кто исчерпал годовой лимит, карточка не показывается.
  */
 export default function ReferralCard() {
   const [offer, setOffer] = useState<Offer | null>(null)
+  const [open, setOpen] = useState(false)
+  const [everOpened, setEverOpened] = useState(wasReferralOpened)
+  const [calm] = useState(prefersReducedMotion)
   const [shared, setShared] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -103,6 +135,19 @@ export default function ReferralCard() {
   const nextSeat = seats.findIndex((s) => s !== 'started')
   // Навсегда-подписчику бонус не положен — ему честно: это подарок другу.
   const reward = offer.bonusShortLabel ? `тебе ${offer.bonusShortLabel}` : 'подарок другу'
+
+  const attract = !everOpened && !calm
+
+  function toggle() {
+    try {
+      ;(window as any).Telegram?.WebApp?.HapticFeedback?.impactOccurred?.('light')
+    } catch {}
+    if (!everOpened) {
+      rememberReferralOpened()
+      setEverOpened(true)
+    }
+    setOpen((v) => !v)
+  }
 
   function invite() {
     try {
@@ -132,82 +177,144 @@ export default function ReferralCard() {
   }
 
   return (
-    <div className="jewel-tile px-4 py-3 mb-5" data-testid="referral-card" data-state={offer.state}>
-      <div className="relative z-[1]">
-        <div className="flex items-center justify-between gap-2">
-          <div className="font-sans text-[15px] font-extrabold text-jewelInk leading-tight">Позови друга</div>
-          <div
-            data-testid="referral-reward"
-            className="shrink-0 font-sans text-[11px] font-extrabold text-jewelInk bg-gold-wash border border-jewelInk rounded-full px-2 py-0.5"
-          >
-            {reward}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between gap-2">
-          <div className="font-sans text-[12px] text-jewelInk-mid" data-testid="referral-friend-line">
-            {offer.friendLine}
-          </div>
-          <button
-            type="button"
-            onClick={() => setRulesOpen((v) => !v)}
-            aria-expanded={rulesOpen}
-            className="shrink-0 -my-1 min-h-[44px] pl-3 font-sans text-[11px] text-jewelInk-mid underline underline-offset-2 decoration-jewelInk/30"
-          >
-            как это работает
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1.5" data-testid="referral-seats">
-          {seats.map((seat, i) => (
-            <Paw key={i} seat={seat} pulse={shared && i === nextSeat} />
-          ))}
-          {row > 1 && (
-            <span className="ml-1 font-sans text-[11px] font-bold text-jewelInk-hint" data-testid="referral-row">
-              ряд {row}
+    <div
+      className="jewel-tile mb-5"
+      data-testid="referral-card"
+      data-state={offer.state}
+      data-open={open}
+      data-attract={attract}
+    >
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        aria-controls="referral-body"
+        data-testid="referral-toggle"
+        className="relative z-[1] w-full min-h-[58px] px-3 py-2 flex items-center gap-2 text-left"
+      >
+        <span className="flex-1 min-w-0">
+          <span className="block font-sans text-[15px] font-extrabold text-jewelInk leading-tight">Позови друга</span>
+          {!open && (
+            <span className="flex items-center gap-0.5 h-[16px] mt-0.5" data-testid="referral-mini-seats">
+              {seats.map((seat, i) => (
+                <Paw key={i} seat={seat} size={15} className={attract && i === nextSeat ? 'referral-paw-call' : ''} />
+              ))}
+              {row > 1 && <span className="ml-1 font-sans text-[10px] font-bold text-jewelInk-hint">ряд {row}</span>}
             </span>
           )}
-        </div>
-
-        <div
-          aria-live="polite"
-          data-testid="referral-caption"
-          className="flex items-center gap-1.5 min-h-[22px] mt-1 font-sans text-[11px] text-jewelInk-mid leading-tight"
+        </span>
+        <span
+          data-testid="referral-reward"
+          className={`relative overflow-hidden shrink-0 font-sans text-[11px] font-extrabold text-jewelInk bg-gold-wash border border-jewelInk rounded-full px-2 py-0.5 ${attract ? 'referral-shine' : ''}`}
         >
-          {shared ? (
-            <>
-              <span className="shrink-0 -my-1"><Mascot mood="cheer" size={22} /></span>
-              <span className="anim-fade">Спасибо! Жду друга — тут появится его лапка.</span>
-            </>
-          ) : (
-            seatCaption(offer)
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={invite}
-          className="mt-2 w-full font-sans text-[14px] font-extrabold text-jewelInk min-h-[44px] rounded border-[1.5px] border-jewelInk"
-          style={{ background: '#F5B820', boxShadow: '0 2px 0 #15100A' }}
+          {reward}
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={INK}
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          className="shrink-0"
+          style={{ transform: open ? 'rotate(180deg)' : undefined, transition: calm ? undefined : 'transform 220ms ease' }}
         >
-          {shared ? 'Позвать ещё' : 'Позвать друга'}
-        </button>
+          <path d="M5 9l7 7 7-7" />
+        </svg>
+      </button>
 
-        {rulesOpen && (
-          <div className="mt-3 anim-fade" data-testid="referral-rules">
-            <ul className="font-sans text-[12px] text-jewelInk-mid leading-snug list-disc pl-5 space-y-1">
-              <li>Закрашенная лапка — друг начал заниматься, бледная — пришёл по ссылке, но ещё не начал.</li>
-              {offer.rules.map((line, i) => <li key={i}>{line}</li>)}
-            </ul>
+      {/* Раскрытие на месте: строка сетки растёт от 0 до высоты содержимого. */}
+      <div
+        id="referral-body"
+        data-testid="referral-body"
+        aria-hidden={!open}
+        className="relative z-[1] grid"
+        style={{
+          gridTemplateRows: open ? '1fr' : '0fr',
+          // В раскрытом виде тело подтянуто к названию: место мелкого ряда в шапке не пустует.
+          marginTop: open ? -12 : 0,
+          visibility: open ? 'visible' : 'hidden',
+          transition: calm ? undefined : `grid-template-rows 220ms ease, margin-top 220ms ease, visibility 0s linear ${open ? '0s' : '220ms'}`
+        }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="px-3 pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-sans text-[12px] text-jewelInk-mid" data-testid="referral-friend-line">
+                {offer.friendLine}
+              </div>
+              <button
+                type="button"
+                onClick={() => setRulesOpen((v) => !v)}
+                aria-expanded={rulesOpen}
+                tabIndex={open ? 0 : -1}
+                className="shrink-0 -my-3 min-h-[44px] pl-3 font-sans text-[11px] text-jewelInk-mid underline underline-offset-2 decoration-jewelInk/30"
+              >
+                как это работает
+              </button>
+            </div>
+
+            <div className="flex items-center mt-1">
+              <div className="flex items-center gap-1.5" data-testid="referral-seats">
+                {seats.map((seat, i) => (
+                  <span key={i} data-testid="referral-seat" data-seat={seat} className={shared && !calm && i === nextSeat ? 'referral-paw-pulse' : ''}>
+                    <Paw seat={seat} />
+                  </span>
+                ))}
+                {row > 1 && (
+                  <span className="ml-1 font-sans text-[11px] font-bold text-jewelInk-hint" data-testid="referral-row">
+                    ряд {row}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div
+              aria-live="polite"
+              data-testid="referral-caption"
+              className="flex items-center gap-1.5 min-h-[22px] mt-1 font-sans text-[11px] text-jewelInk-mid leading-tight"
+            >
+              {shared ? (
+                <>
+                  <span className="shrink-0 -my-1"><Mascot mood="cheer" size={22} /></span>
+                  <span className="anim-fade">Спасибо! Жду друга — тут появится его лапка.</span>
+                </>
+              ) : (
+                seatCaption(offer)
+              )}
+            </div>
+
             <button
               type="button"
-              onClick={copy}
-              className="mt-2 w-full font-sans text-[13px] font-bold text-jewelInk min-h-[44px] rounded border-[1.5px] border-jewelInk/40"
+              onClick={invite}
+              tabIndex={open ? 0 : -1}
+              className="mt-2 w-full font-sans text-[14px] font-extrabold text-jewelInk min-h-[44px] rounded border-[1.5px] border-jewelInk"
+              style={{ background: '#F5B820', boxShadow: '0 2px 0 #15100A' }}
             >
-              {copied ? 'Ссылка скопирована' : 'Скопировать ссылку'}
+              {shared ? 'Позвать ещё' : 'Позвать друга'}
             </button>
+
+            {rulesOpen && (
+              <div className="mt-3 anim-fade" data-testid="referral-rules">
+                <ul className="font-sans text-[12px] text-jewelInk-mid leading-snug list-disc pl-5 space-y-1">
+                  <li>Закрашенная лапка — друг начал заниматься, бледная — пришёл по ссылке, но ещё не начал.</li>
+                  {offer.rules.map((line, i) => <li key={i}>{line}</li>)}
+                </ul>
+                <button
+                  type="button"
+                  onClick={copy}
+                  tabIndex={open ? 0 : -1}
+                  className="mt-2 w-full font-sans text-[13px] font-bold text-jewelInk min-h-[44px] rounded border-[1.5px] border-jewelInk/40"
+                >
+                  {copied ? 'Ссылка скопирована' : 'Скопировать ссылку'}
+                </button>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <style>{`
@@ -216,7 +323,32 @@ export default function ReferralCard() {
           30% { transform: scale(1.25) rotate(-10deg); }
           60% { transform: scale(1.1) rotate(8deg); }
         }
-        .referral-paw-pulse { animation: referralPawPulse 900ms ease-in-out 2; transform-origin: center; }
+        .referral-paw-pulse { display: inline-flex; animation: referralPawPulse 900ms ease-in-out 2; transform-origin: center; }
+        /* Зов: раз в несколько секунд свободное место покачивается, по награде пробегает блик. */
+        @keyframes referralPawCall {
+          0%, 78%, 100% { transform: scale(1) rotate(0deg); }
+          84% { transform: scale(1.35) rotate(-14deg); }
+          90% { transform: scale(1.2) rotate(10deg); }
+          96% { transform: scale(1.1) rotate(-4deg); }
+        }
+        .referral-paw-call { animation: referralPawCall 4s ease-in-out infinite; transform-origin: center; }
+        @keyframes referralShine {
+          0%, 70% { transform: translateX(-140%) skewX(-20deg); }
+          100% { transform: translateX(340%) skewX(-20deg); }
+        }
+        .referral-shine::after {
+          content: '';
+          position: absolute;
+          top: 0; bottom: 0; left: 0;
+          width: 40%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+          animation: referralShine 4s ease-in-out infinite;
+          pointer-events: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .referral-paw-pulse, .referral-paw-call, .referral-shine::after { animation: none; }
+          .referral-shine::after { display: none; }
+        }
       `}</style>
     </div>
   )

@@ -20,7 +20,7 @@ async function shot(page: Page, name: string) {
   if (!shotsDir) return
   mkdirSync(shotsDir, { recursive: true })
   await page.waitForTimeout(700) // реплика проявляется плавно
-  await page.screenshot({ path: resolve(shotsDir, `${name}.png`) })
+  await page.getByTestId('bombora-says').locator('..').screenshot({ path: resolve(shotsDir, `compact-bombora-${name.replace('after-', '')}.png`) })
 }
 
 async function openApp(page: Page, firstName: string | null) {
@@ -47,6 +47,8 @@ test('фразу дня и имя говорит Бомбора, отдельн�
   await expect(reply(page, 'phrase')).toBeHidden()
   const tall = await height(page)
   expect(tall).toBeGreaterThanOrEqual(44)
+  // Плотный блок: в первой версии он был 174 px на этой же, самой длинной фразе.
+  expect(tall).toBeLessThanOrEqual(174 / 1.4)
   await noSidewaysScroll(page)
   await shot(page, 'after-name')
 

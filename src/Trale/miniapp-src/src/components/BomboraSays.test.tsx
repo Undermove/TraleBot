@@ -56,9 +56,18 @@ describe('BomboraSays', () => {
     expect(said()).toBe('name')
     expect(reply('name').getByText('Кстати, по-грузински ты —')).toBeInTheDocument()
     expect(reply('name').getByText(name.geo)).toBeInTheDocument()
-    expect(reply('name').getByText(cyr(name.geo))).toBeInTheDocument()
+    expect(reply('name').getByText(cyr(name.geo).replace(/’/g, ''))).toBeInTheDocument()
     expect(screen.getByTestId('bombora-says-name').textContent).not.toMatch(/[a-z]/i)
     expect(reply('name').getByText('Выучи алфавит — прочитаешь без подсказки.')).toBeInTheDocument()
+  })
+
+  it('в транскрипции имени нет апострофов, а во фразе дня стандарт прежний', () => {
+    open({ firstName: 'Дмитрий' })
+    const name = transliterateToGeorgian('Дмитрий')!
+    expect(cyr(name.geo)).toContain('’')
+    expect(screen.getByTestId('bombora-says-name').textContent).not.toContain('’')
+    expect(reply('name').getByText(cyr(name.geo).replace(/’/g, ''))).toBeInTheDocument()
+    expect(reply('phrase').getByText(cyr(phraseOfDay(today()).ge))).toBeInTheDocument()
   })
 
   it('тому, кто прошёл алфавит, говорит, что подсказка уже не нужна', () => {
@@ -76,7 +85,7 @@ describe('BomboraSays', () => {
     expect(said()).toBe('name')
     await tap()
     expect(said()).toBe('cheer')
-    expect(screen.getByText('нажми — скажу ещё')).toBeInTheDocument()
+    expect(screen.getByTestId('bombora-says').textContent).toContain('нажми —скажу ещё')
   })
 
   it('перерисовка реплику не меняет', () => {
