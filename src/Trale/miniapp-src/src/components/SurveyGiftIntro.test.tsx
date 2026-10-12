@@ -70,6 +70,7 @@ describe('SurveyGiftIntro', () => {
   it('does not say «доступ уже твой» to someone the days were not added to', () => {
     render(<SurveyGiftIntro gift={gift('lifetime', null)} questions={5} onStart={() => {}} onClose={() => {}} now={NOW} />)
     expect(screen.getByTestId('survey-gift').getAttribute('data-outcome')).toBe('lifetime')
+    expect(screen.getByTestId('survey-gift-eyebrow').textContent).toBe('твой доступ')
     expect(screen.getByTestId('survey-gift-invite').textContent).toBe('Здесь 5 коротких вопросов. По ответам я решаю, что делать в боте дальше. Отвечать не обязательно.')
   })
 })

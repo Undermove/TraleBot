@@ -87,7 +87,10 @@ export default function SurveyGiftIntro({ gift, questions, onStart, onClose, now
               <GiftIcon size={36} />
             </div>
             <div className="min-w-0">
-              <div className="mn-eyebrow text-navy">подарок</div>
+              {/* Кому дни не прибавились, тому это не «подарок», а справка о его доступе. */}
+              <div className="mn-eyebrow text-navy" data-testid="survey-gift-eyebrow">
+                {['lifetime', 'subscriptionIsLonger', 'freeAccessIsLonger'].includes(gift.outcome) ? 'твой доступ' : 'подарок'}
+              </div>
               <div className="font-sans text-[19px] font-extrabold text-jewelInk leading-tight break-words mt-0.5" data-testid="survey-gift-title">{words.title}</div>
               <div className="font-sans text-[14px] text-jewelInk-mid leading-snug mt-1" data-testid="survey-gift-line">{words.line}</div>
             </div>
