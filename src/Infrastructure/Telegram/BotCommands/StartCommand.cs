@@ -3,6 +3,7 @@ using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
 using Domain.Entities;
 using Infrastructure.Telegram.BotCommands.Quiz;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -49,9 +50,11 @@ public class StartCommand(
 
     public async Task Execute(TelegramRequest request, CancellationToken token)
     {
-        var isNewUser = request.User is not { IsActive: true };
+        // New = registered by this very /start. Someone who had blocked the bot and came back is
+        // reactivated by CreateUser but is not new: the first-step promise is not for them.
+        var isNewUser = false;
         var user = request.User;
-        if (isNewUser)
+        if (request.User is not { IsActive: true })
         {
             var userCreatedResultType = await mediator.Send(new CreateUser {TelegramId = request.UserTelegramId}, token);
             user = userCreatedResultType switch
@@ -60,6 +63,7 @@ public class StartCommand(
                 CreateUserResult.UserExists exists => exists.User,
                 _ => throw new ArgumentOutOfRangeException()
             };
+            isNewUser = userCreatedResultType is CreateUserResult.UserCreated;
         }
 
         var commandWithArgs = request.Text.Split(' ');
@@ -120,8 +124,8 @@ public class StartCommand(
             : null;
 
         // /app is the focused launchpad: a single WebApp button, no chat-menu
-        // fallback. /start keeps both buttons because for first-time and
-        // returning users, the chat menu is still a useful secondary path.
+        // fallback. /start keeps both buttons for returning users — the chat menu
+        // is a useful secondary path for them. A newcomer gets one button only (below).
         var isAppLauncher = request.Text.Contains("/app", StringComparison.OrdinalIgnoreCase);
 
         var rows = new List<InlineKeyboardButton[]>();
@@ -145,38 +149,16 @@ public class StartCommand(
 
         if (isNewUser)
         {
-            var trialLine = referralRecorded
-                ? "Тебе ещё и бонус: 60 дней бесплатно вместо 30 — за то, что пришёл по приглашению. 🎁"
-                : "Первые 30 дней — всё бесплатно.";
-
-            // Message 1: short welcome — fits on one screen so users see CTA without scrolling.
+            // One short message from Bombora with one button: nothing else competes with opening
+            // the mini-app. The chat menu and word translation stay available (/menu, any text).
             await client.SendTextMessageAsync(
                 request.UserTelegramId,
-$@"გამარჯობა, {request.UserName}! 👋
-
-Я — TraleBot, приложение для изучения грузинского. Ты уже выучил первое слово: გამარჯობა — «привет».
-
-{trialLine}",
+                FirstStepMessage.WelcomeText(
+                    request.UserName, referralRecorded, verbsSectionTag != null, miniApp: miniAppUrl != null),
+                replyMarkup: miniAppUrl != null
+                    ? FirstStepMessage.Keyboard(miniAppUrl, verbsSectionTag != null)
+                    : keyboard,
                 cancellationToken: token);
-
-            // Message 2: dedicated CTA — single big WebApp button, impossible to miss.
-            // Older users get a clear «what to do next» without parsing a long text wall.
-            if (miniAppUrl != null)
-            {
-                await client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "↓ Жми кнопку, чтобы открыть приложение. Там алфавит, грамматика, твой словарь и щенок Бомбора 🐶 — гид по грузинскому.\n\nА в чат можешь писать любое слово — переведу и добавлю в словарь.",
-                    replyMarkup: keyboard,
-                    cancellationToken: token);
-            }
-            else
-            {
-                await client.SendTextMessageAsync(
-                    request.UserTelegramId,
-                    "Напиши мне любое слово или фразу — переведу и добавлю в твой словарь.",
-                    replyMarkup: keyboard,
-                    cancellationToken: token);
-            }
         }
         else
         {

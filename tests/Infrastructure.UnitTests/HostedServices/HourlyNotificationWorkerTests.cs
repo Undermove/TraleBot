@@ -92,6 +92,24 @@ public class HourlyNotificationWorkerTests
     }
 
     [Test]
+    public async Task RunOnceAsync_InvokesTheFirstOpenReminder_EvenWhenAnEarlierDispatcherThrows()
+    {
+        var streak = new Mock<IStreakNotificationService>();
+        streak.Setup(s => s.DispatchAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("streak blip"));
+        var reminder = new Mock<IFirstOpenReminderService>();
+        reminder.Setup(s => s.DispatchAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        var services = new ServiceCollection();
+        services.AddSingleton(streak.Object);
+        services.AddSingleton(reminder.Object);
+        var worker = BuildWorker(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>());
+
+        await worker.RunOnceAsync(CancellationToken.None);
+
+        reminder.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
     public async Task RunOnceAsync_WhenHolidayThrows_StillInvokesCoinsAndStreak()
     {
         // Fault-isolation AC: a holiday-side bug must not silence the other two contexts.

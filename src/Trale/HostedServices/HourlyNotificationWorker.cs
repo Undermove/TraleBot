@@ -9,7 +9,8 @@ using Microsoft.Extensions.Logging;
 namespace Trale.HostedServices;
 
 /// <summary>
-/// Orchestrates the contextual push dispatchers (holiday / coins / streak — #993 / #994 / #995)
+/// Orchestrates the contextual push dispatchers (holiday / coins / streak — #993 / #994 / #995 — and
+/// the first-open reminder)
 /// once per hour at top-of-hour. Each dispatcher decides on its own whether to send (cooldown,
 /// milestone match, time-of-day guard via <see cref="Application.Notifications.TbilisiMorningWindow"/>);
 /// the worker only ticks them.
@@ -74,6 +75,7 @@ public class HourlyNotificationWorker(
         await DispatchSafelyAsync<IHolidayNotificationService>(sp, "Holiday", ct);
         await DispatchSafelyAsync<ICoinsNotificationService>(sp, "Coins", ct);
         await DispatchSafelyAsync<IStreakNotificationService>(sp, "Streak", ct);
+        await DispatchSafelyAsync<IFirstOpenReminderService>(sp, "FirstOpenReminder", ct);
     }
 
     private async Task DispatchSafelyAsync<TService>(IServiceProvider sp, string contextName, CancellationToken ct)
@@ -105,7 +107,7 @@ public class HourlyNotificationWorker(
     private static Task InvokeDispatchAsync<TService>(TService service, CancellationToken ct)
         where TService : class
     {
-        // All three contextual dispatchers share the same method signature but no common
+        // The contextual dispatchers share the same method signature but no common
         // interface (they're separated by domain on purpose). A typed switch keeps the
         // call site allocation-free and avoids reflection.
         return service switch
@@ -113,6 +115,7 @@ public class HourlyNotificationWorker(
             IHolidayNotificationService h => h.DispatchAsync(ct),
             ICoinsNotificationService c => c.DispatchAsync(ct),
             IStreakNotificationService s => s.DispatchAsync(ct),
+            IFirstOpenReminderService f => f.DispatchAsync(ct),
             _ => throw new InvalidOperationException(
                 $"Unsupported dispatcher type {typeof(TService).FullName}"),
         };

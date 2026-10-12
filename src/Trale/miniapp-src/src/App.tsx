@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { CatalogDto, ProgressState, Screen } from './types'
 import { defaultProgress, onProgressPublished, progressFromDto } from './progress'
 import { onOpenLessonModule } from './verbs/family/nav'
-import { resolveEntryScreen, hasEarnedXp } from './entryFlow'
+import { resolveEntryScreen, hasEarnedXp, findFirstLesson } from './entryFlow'
 import { api } from './api'
 import Dashboard from './screens/Dashboard'
 import ModuleMap from './screens/ModuleMap'
@@ -406,27 +406,39 @@ export default function App() {
   )
 
   switch (screen.kind) {
-    case 'welcome':
+    case 'welcome': {
+      // What comes after the welcome lesson — the same lesson the dashboard would suggest.
+      const nextRef = findFirstLesson(catalog, progress.completedLessons)
+      const nextModule = nextRef ? catalog.modules.find((m) => m.id === nextRef.moduleId) : undefined
+      const nextLesson = nextModule?.lessons.find((l) => l.id === nextRef!.lessonId)
       return (
         <Welcome
-          onFinish={() => {
+          next={
+            nextModule && nextLesson
+              ? { moduleTitle: nextModule.title, lessonId: nextLesson.id, title: nextLesson.title, short: nextLesson.short }
+              : null
+          }
+          onComplete={() => {
             // The welcome lesson is recorded under its own "welcome" module id, so it
             // awards the first XP (flipping the entry gate to the dashboard) without
-            // touching the real alphabet progression. Navigate regardless of the API
-            // result so a transient failure doesn't trap the user on the welcome screen.
+            // touching the real alphabet progression. Recorded the moment the last task
+            // is solved — closing the app on the win screen no longer loses the lesson.
             // Re-fetch me() afterwards: completing welcome unlocks the first onboarding
-            // hint, but the initial me() (taken before welcome) returned none — without a
-            // refresh the dashboard spotlight only appears after a manual reload.
+            // hint, but the initial me() (taken before welcome) returned none.
             api
               .completeLesson({ moduleId: 'welcome', lessonId: 1, correct: 1, total: 1 })
               .then((res) => setProgress(progressFromDto(res.progress)))
               .then(() => api.me())
               .then((meData) => setOnboardingHint((meData as any).onboardingHint ?? null))
               .catch(() => {})
-              .finally(() => navigate({ kind: 'dashboard' }))
           }}
+          onNext={() =>
+            navigate(nextRef ? { kind: 'lesson-theory', moduleId: nextRef.moduleId, lessonId: nextRef.lessonId } : { kind: 'dashboard' })
+          }
+          onBrowse={() => navigate({ kind: 'dashboard' })}
         />
       )
+    }
     case 'onboarding':
       return (
         <Onboarding
