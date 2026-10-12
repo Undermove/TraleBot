@@ -15,6 +15,7 @@ import type { FeedbackThreadView, FeedbackView, Screen } from '../types'
 // «Что смутило?»); у каждого свой адрес. Результаты опроса и переписка открываются поверх. У опроса: воронка (получили → ответили на первый
 // вопрос → открыли форму → дошли до конца), потом каждый вопрос со счётчиками и текстами; ответы можно
 // сузить до тех, кто выбрал определённый вариант первого вопроса.
+// У опроса с подарком воронка другая: получили → открыли → получили подарок → ответили хотя бы на один вопрос → дошли до конца.
 // У каждого текста — «Ответить»: открывается переписка с этим человеком (components/admin/FeedbackThread).
 // «Сообщения от людей» — все, кто что-то написал, со статусом и фильтром «Без ответа».
 // То же самое за любой срок — scripts/sql/feedback-report.sql.
@@ -46,8 +47,10 @@ const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((100 * p
 /** Как далеко дошли люди: каждая ступень — число и доля от получивших. */
 function Funnel({ survey }: { survey: AdminSurveyDto }) {
   const f = survey.funnel
-  const steps: [string, number][] = [['получили', f.sent], ['ответили на первый вопрос', f.answeredFirst]]
-  if (survey.questions > 1) steps.push(['открыли форму в мини-аппе', f.openedForm], ['дошли до конца', f.finished])
+  const steps: [string, number][] = survey.giftDays > 0
+    ? [['получили', f.sent], ['открыли', f.openedForm], ['получили подарок', f.gifted], ['ответили хотя бы на один вопрос', f.answered], ['дошли до конца', f.finished]]
+    : [['получили', f.sent], ['ответили на первый вопрос', f.answeredFirst]]
+  if (!(survey.giftDays > 0) && survey.questions > 1) steps.push(['открыли форму в мини-аппе', f.openedForm], ['дошли до конца', f.finished])
   return (
     <div className="flex flex-col gap-2" data-testid="feedback-funnel">
       {steps.map(([name, count], i) => (
@@ -143,7 +146,9 @@ export default function AdminFeedbackScreen({ view: asked, navigate }: Props) {
                     {day(s.createdAtUtc)} · {audienceName(s.audience)} · вопросов: {s.questions}
                   </div>
                   <div className={`${small} tabular-nums`}>
-                    получили {s.funnel.sent} · ответили {s.funnel.answeredFirst}{s.questions > 1 ? ` · дошли до конца ${s.funnel.finished}` : ''}
+                    {s.giftDays > 0
+                      ? `получили ${s.funnel.sent} · открыли ${s.funnel.openedForm} · подарок ${s.funnel.gifted} · ответили ${s.funnel.answered}`
+                      : `получили ${s.funnel.sent} · ответили ${s.funnel.answeredFirst}${s.questions > 1 ? ` · дошли до конца ${s.funnel.finished}` : ''}`}
                   </div>
                   {s.pending > 0 && (
                     <div className="font-sans text-[12px] font-bold text-ruby tabular-nums">не дослано: отправлено {s.picked - s.pending} из {s.picked}</div>
@@ -212,6 +217,7 @@ export default function AdminFeedbackScreen({ view: asked, navigate }: Props) {
             <div className={`${heading} break-words`}>{survey.title}</div>
             <div className={`${small} tabular-nums mb-3`}>
               {day(survey.createdAtUtc)} · {audienceName(survey.audience)} · вопросов: {survey.questions}
+              {survey.giftDays > 0 ? ` · подарок: ${survey.giftDays} дн. доступа` : ''}
             </div>
             {survey.pending > 0 ? (
               <div className="mb-4" data-testid="feedback-survey-unfinished">
@@ -258,7 +264,7 @@ export default function AdminFeedbackScreen({ view: asked, navigate }: Props) {
 
             {results.questions.map((q, i) => (
               <div key={q.id} className="mt-6" data-testid={`feedback-question-${q.id}`}>
-                <div className="mn-eyebrow text-navy">Вопрос {i + 1}{i === 0 && survey.questions > 1 ? ' · в боте' : ''}</div>
+                <div className="mn-eyebrow text-navy">Вопрос {i + 1}{i === 0 && survey.questions > 1 && !(survey.giftDays > 0) ? ' · в боте' : ''}</div>
                 <div className="font-sans text-[16px] font-extrabold text-jewelInk leading-snug break-words">{q.text}</div>
                 <div className={`${small} tabular-nums mb-2`}>ответили {q.answered}</div>
                 {q.headline && (

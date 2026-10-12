@@ -34,12 +34,22 @@ public class BroadcastCampaign
 
     /// <summary>The form of a survey campaign (<see cref="SurveyForm"/> as JSON): its first question goes
     /// under the message as buttons, the rest are answered in the mini-app; answers are recorded in
-    /// <see cref="UserFeedback"/>. Null — an ordinary campaign.</summary>
+    /// <see cref="UserFeedback"/>. Null — an ordinary campaign. A survey with a gift is different,
+    /// see <see cref="IsGiftSurvey"/>.</summary>
     public string? SurveyJson { get; set; }
 
     public bool IsSurvey => SurveyJson != null;
 
     public SurveyForm? Survey => SurveyForm.FromJson(SurveyJson);
+
+    /// <summary>A survey that carries a gift of access. Its message is the form's intro with one
+    /// button into the mini-app (<see cref="ButtonText"/>): pressing it gives the gift, and all the
+    /// questions — the first one too — are answered in the mini-app, so that "press the button" in
+    /// the message means one thing.</summary>
+    public bool IsGiftSurvey => IsSurvey && GiftDays > 0;
+
+    /// <summary>What the button of a survey with a gift opens: the survey's form in the mini-app.</summary>
+    public static string GiftSurveyButtonQuery(string key) => $"screen=survey&s={key}";
 
     public bool GiftOffered(DateTime now) => GiftDays > 0 && GiftOfferEndsAtUtc is { } ends && now < ends;
 }

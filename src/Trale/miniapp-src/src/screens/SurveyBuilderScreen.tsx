@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AdminHeader, Skeleton } from '../components/admin/AdminPage'
 import SurveyFormPages from '../components/SurveyFormPages'
+import SurveyGiftIntro from '../components/SurveyGiftIntro'
 import SurveyQuestionEditor from '../components/admin/SurveyQuestionEditor'
 import { AUDIENCES } from '../admin/words'
 import { headlineOf, keysOf } from '../components/admin/surveyHeadline'
@@ -16,6 +17,8 @@ import type { Screen } from '../types'
 
 // Конструктор опроса — подраздел админки. Опрос — форма из нескольких вопросов: первый приходит человеку
 // в бот кнопками (один тап — уже ответ), остальные он проходит в мини-аппе, по вопросу на странице.
+// Опрос может нести подарок — дни полного доступа. Тогда под сообщением одна кнопка, подарок включается
+// её нажатием (отвечать не обязательно), а все вопросы, включая первый, человек проходит в мини-аппе.
 // Четыре шага, каждый на своём экране: выбрать готовую форму, собрать вопросы (каждый вопрос правится
 // на отдельном экране), выбрать, кому, и отправить — сначала себе, потом людям порциями.
 // Имя кампании владелец не придумывает: его даёт сервер, когда выбраны получатели. С этого момента
@@ -34,6 +37,9 @@ interface Props {
 const STEPS = ['Выбери опрос', 'Вопросы', 'Кому отправить', 'Отправка']
 const CUSTOM = 'custom'
 const BATCH = 25
+/** Кнопка под сообщением, когда подарок добавлен к форме, у которой своей кнопки нет. */
+const DEFAULT_GIFT_BUTTON = 'Забрать подарок'
+const BUTTON_MAX = 64
 const PEOPLE = AUDIENCES.filter(a => a.id !== 'owner')
 
 const primary = 'jewel-btn jewel-btn-gold flex-1 font-sans text-[16px] font-extrabold'
@@ -81,15 +87,24 @@ function clean(q: SurveyQuestionDto): SurveyQuestionDto {
   }
 }
 
-/** Сообщение так, как его увидит человек в Telegram: вступление, первый вопрос и кнопки-ответы под ним. */
-function TelegramPreview({ intro, first, otherLabel }: { intro: string; first?: SurveyQuestionDto; otherLabel: string }) {
-  const buttons = first ? [...first.options.filter(o => o.trim()), ...(first.kind === 'choice' && first.allowOther ? [otherLabel] : [])] : []
+/**
+ * Сообщение так, как его увидит человек в Telegram: вступление, первый вопрос и кнопки-ответы под ним.
+ * У опроса с подарком (giftButton задан) — только сообщение и одна кнопка: вопросы ждут в мини-аппе.
+ */
+function TelegramPreview({ intro, first, otherLabel, giftButton }: { intro: string; first?: SurveyQuestionDto; otherLabel: string; giftButton?: string | null }) {
+  const gift = giftButton != null
+  const buttons = gift ? [giftButton.trim() || 'Текст кнопки']
+    : first ? [...first.options.filter(o => o.trim()), ...(first.kind === 'choice' && first.allowOther ? [otherLabel] : [])] : []
   return (
     <div className="rounded-2xl p-3" style={{ background: '#D5E0D0' }} data-testid="survey-preview">
       <div className="max-w-[92%]">
         <div className="rounded-2xl rounded-bl-md bg-white px-3 py-2 font-sans text-[15px] text-jewelInk whitespace-pre-wrap break-words shadow-sm">
-          {intro.trim() && <>{intro.trim()}{'\n\n'}</>}
-          {first?.text.trim() || <span className="text-jewelInk-hint">Здесь будет первый вопрос</span>}
+          {gift
+            ? intro.trim() || <span className="text-jewelInk-hint">Здесь будет сообщение</span>
+            : <>
+              {intro.trim() && <>{intro.trim()}{'\n\n'}</>}
+              {first?.text.trim() || <span className="text-jewelInk-hint">Здесь будет первый вопрос</span>}
+            </>}
         </div>
         <div className="flex flex-col gap-1 mt-1">
           {buttons.map((o, i) => (
@@ -106,7 +121,10 @@ function TelegramPreview({ intro, first, otherLabel }: { intro: string; first?: 
 const summary = (q: SurveyQuestionDto, otherLabel: string) =>
   q.kind === 'text' ? 'свободный ответ' : [...q.options.filter(o => o.trim()), ...(q.allowOther ? [otherLabel] : [])].join(' · ')
 
-interface Draft { step: number; presetId: string; intro: string; questions: SurveyQuestionDto[]; audience: CampaignAudience; sampleFirst: boolean; sampleSize: number }
+interface Draft {
+  step: number; presetId: string; intro: string; questions: SurveyQuestionDto[]; audience: CampaignAudience; sampleFirst: boolean; sampleSize: number
+  giftDays?: number; buttonText?: string; presetGiftDays?: number
+}
 
 export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navigate }: Props) {
   const [saved, setSaved] = useState(() => (resume ? null : drafts.read<Draft>('survey')))
@@ -123,8 +141,16 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
   const [questions, setQuestions] = useState<SurveyQuestionDto[]>(start?.questions ?? [])
   /** В выбранной готовой форме был вопрос с главной цифрой — чтобы сказать, если его убрали. */
   const [presetHadHeadline, setPresetHadHeadline] = useState(false)
+  /** Подарок: дней полного доступа тому, кто нажмёт кнопку под сообщением; 0 — опрос без подарка. */
+  const [giftDays, setGiftDays] = useState(start?.giftDays ?? 0)
+  /** Текст кнопки под сообщением у опроса с подарком. */
+  const [buttonText, setButtonText] = useState(start?.buttonText ?? '')
+  /** Сколько дней обещают сообщение и кнопка готовой формы — чтобы напомнить поправить текст, если число изменили. */
+  const [presetGiftDays, setPresetGiftDays] = useState(start?.presetGiftDays ?? 0)
   /** Что открыто поверх списка вопросов: один вопрос, выбор готового вопроса или прогон формы. */
   const [view, setView] = useState<{ edit: number } | 'add' | 'preview' | 'intro' | null>(null)
+  /** В предпросмотре опроса с подарком: первый экран уже пройден. */
+  const [previewStarted, setPreviewStarted] = useState(false)
 
   const [counts, setCounts] = useState<Partial<Record<CampaignAudience, number>>>({})
   const [audience, setAudience] = useState<CampaignAudience>(start?.audience ?? 'accessEnded')
@@ -146,7 +172,7 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
   }, [])
 
   const go = (next: number) => { setStep(next); setNote(null); setView(null); window.scrollTo(0, 0) }
-  const show = (next: typeof view) => { setView(next); window.scrollTo(0, 0) }
+  const show = (next: typeof view) => { setView(next); setPreviewStarted(false); window.scrollTo(0, 0) }
 
   // Вернуться к начатому опросу: всё, что нужно, чтобы дослать, сервер помнит сам — вопросы, кому, сколько ждут.
   async function resumeSurvey(surveyKey: string) {
@@ -157,6 +183,8 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
       setStatus(current)
       setIntro(current.survey?.intro ?? '')
       setQuestions(current.survey?.questions ?? [])
+      setGiftDays(current.giftDays)
+      setButtonText(current.buttonText ?? '')
       setAudience(current.audience)
       go(4)
     } catch (e) {
@@ -172,16 +200,28 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
     setIntro(preset?.form.intro ?? kit!.intro)
     setQuestions(preset ? preset.form.questions.map(q => ({ ...q, options: [...q.options] })) : [])
     setPresetHadHeadline(Boolean(preset?.form.questions.some(q => q.headlineOption)))
+    setGiftDays(preset?.giftDays ?? 0)
+    setPresetGiftDays(preset?.giftDays ?? 0)
+    setButtonText(preset?.buttonText ?? '')
     go(2)
     if (!preset) setView('add')
   }
 
   const ready = kit !== null && !resuming && !denied
-  const problems = kit ? questions.map((q, i) => questionProblem(q, i === 0, kit)) : []
+  const withGift = giftDays > 0
+  // У опроса с подарком первый вопрос в бот не уходит — к нему нет особых требований.
+  const problems = kit ? questions.map((q, i) => questionProblem(q, i === 0 && !withGift, kit)) : []
   // Почему пока нельзя дальше — одной фразой; null — всё в порядке.
   const problem = questions.length === 0 ? 'Добавь хотя бы один вопрос.'
     : problems.some(Boolean) ? `Поправь вопрос ${problems.findIndex(Boolean) + 1}: он отмечен красным.`
-      : null
+      : withGift && !intro.trim() ? 'У опроса с подарком сообщение — это вступление. Напиши его.'
+        : withGift && !buttonText.trim() ? 'Напиши текст кнопки под сообщением.'
+          : null
+  const setGift = (days: number) => {
+    const next = Math.min(kit?.limits.giftDays ?? 30, Math.max(0, days))
+    if (next > 0 && !buttonText.trim()) setButtonText(DEFAULT_GIFT_BUTTON)
+    setGiftDays(next)
+  }
   const canAdd = kit !== null && questions.length < kit.limits.questions
   const form: SurveyFormDto = { intro: intro.trim() || null, questions: questions.map(clean) }
 
@@ -202,7 +242,7 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
   const waiting = (status?.pending ?? 0) > 0
   const draft = (sample: number | null, dryRun: boolean, to: CampaignAudience = audience, test = false) => ({
     key: test ? '' : key ?? '', newSurveySlug: test ? `${presetId}-test` : presetId, audience: to,
-    buttonText: null, buttonQuery: null, sampleSize: sample, dryRun, survey: form
+    buttonText: withGift ? buttonText.trim() : null, buttonQuery: null, giftDays, sampleSize: sample, dryRun, survey: form
   })
 
   async function run(work: () => Promise<string | null>) {
@@ -216,9 +256,10 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
     const trial = await adminCampaigns.prepare(draft(null, false, 'owner', true))
     if (trial.picked === 0) return 'Себе отправить не вышло: у тебя выключены уведомления бота.'
     const sent = await adminCampaigns.send(trial.key, 1)
-    return sent.sent === 1
-      ? 'Отправил тебе в чат с ботом. Ответь на первый вопрос кнопкой и пройди форму до конца — так её увидят люди.'
-      : 'Telegram не принял сообщение. Попробуй ещё раз.'
+    return sent.sent !== 1 ? 'Telegram не принял сообщение. Попробуй ещё раз.'
+      : withGift
+        ? 'Отправил тебе в чат с ботом. Нажми кнопку под сообщением: откроется первый экран — он скажет, что с подарком у тебя, — и за ним вопросы. Если у тебя полный доступ и так есть, дни не прибавятся; как экран выглядит у получившего подарок, покажет «Посмотреть как пользователь».'
+        : 'Отправил тебе в чат с ботом. Ответь на первый вопрос кнопкой и пройди форму до конца — так её увидят люди.'
   })
 
   const sample = !frozen && sampleFirst ? sampleSize : null
@@ -240,7 +281,8 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
     setStatus(current)
     if (current.pending === 0) return 'Отправлять некого: все выбранные уже получили опрос.'
     const n = Math.min(BATCH, current.pending)
-    if (!confirm(`ОТПРАВИТЬ опрос ${n} людям?\n\n${current.message}\n\nЭто настоящая отправка через бота.`)) return null
+    const gift = current.giftDays > 0 ? `\n\n[ ${current.buttonText} ]\nС подарком: ${current.giftDays} дн. доступа тому, кто нажмёт кнопку.` : ''
+    if (!confirm(`ОТПРАВИТЬ опрос ${n} людям?\n\n${current.message}${gift}\n\nЭто настоящая отправка через бота.`)) return null
     const r = await adminCampaigns.send(key, BATCH)
     setStatus(r.status)
     const wait = r.retryAfterSeconds > 0 ? ` Telegram просит подождать ${r.retryAfterSeconds} с.` : ''
@@ -251,7 +293,7 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
   useFocusMode(true)
   // Незаконченный опрос сохраняется на устройстве, пока получатели не выбраны.
   const unsaved = !frozen && step > 1 && questions.length > 0
-  useDraft('survey', unsaved ? { step, presetId, intro, questions, audience, sampleFirst, sampleSize } satisfies Draft : null)
+  useDraft('survey', unsaved ? { step, presetId, intro, questions, audience, sampleFirst, sampleSize, giftDays, buttonText, presetGiftDays } satisfies Draft : null)
 
   const close = () => {
     if (unsaved && !confirm('Закрыть опрос? Черновик останется на этом устройстве — к нему можно вернуться с первого шага.')) return
@@ -293,7 +335,7 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
                   <div className={`${small} tabular-nums`}>вопросов: {saved.questions.length}</div>
                   <div className="flex gap-2 mt-2">
                     <button type="button" className={`${action} flex-1`} style={{ background: '#F5B820' }} data-testid="survey-draft-continue"
-                      onClick={() => { setPresetId(saved.presetId); setIntro(saved.intro); setQuestions(saved.questions); setAudience(saved.audience); setSampleFirst(saved.sampleFirst); setSampleSize(saved.sampleSize); go(saved.step) }}>
+                      onClick={() => { setPresetId(saved.presetId); setIntro(saved.intro); setQuestions(saved.questions); setAudience(saved.audience); setSampleFirst(saved.sampleFirst); setSampleSize(saved.sampleSize); setGiftDays(saved.giftDays ?? 0); setButtonText(saved.buttonText ?? ''); setPresetGiftDays(saved.presetGiftDays ?? 0); go(saved.step) }}>
                       Продолжить черновик
                     </button>
                     <button type="button" className="min-h-[48px] px-3 font-sans text-[14px] font-bold text-ruby underline"
@@ -328,7 +370,7 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
               <button key={p.id} type="button" onClick={() => choose(p)} data-testid={`survey-preset-${p.id}`} className="jewel-tile jewel-pressable w-full text-left px-4 py-3">
                 <div className="relative z-[1]">
                   <div className="font-sans text-[17px] font-extrabold text-jewelInk leading-snug">{p.title}</div>
-                  <div className={`${small} mb-2`}>{p.about} · вопросов: {p.form.questions.length}</div>
+                  <div className={`${small} mb-2`}>{p.about} · вопросов: {p.form.questions.length}{p.giftDays > 0 ? ` · подарок: ${p.giftDays} дн. доступа` : ''}</div>
                   <ol className="flex flex-col gap-1">
                     {p.form.questions.map((q, i) => (
                       <li key={i} className="font-sans text-[13px] text-jewelInk leading-snug flex gap-1.5">
@@ -345,18 +387,62 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
 
         {ready && step === 2 && !view && (
           <>
-            <div className={small}>Первый вопрос придёт в бот кнопками — так, как на картинке. Остальные человек пройдёт в мини-аппе, по одному на странице.</div>
-            <TelegramPreview intro={intro} first={questions[0]} otherLabel={kit!.otherLabel} />
+            <div className={small} data-testid="survey-how">
+              {withGift
+                ? 'В бот придёт сообщение с одной кнопкой — так, как на картинке. Кнопка включает подарок и открывает мини-апп; все вопросы человек пройдёт там, по одному на странице.'
+                : 'Первый вопрос придёт в бот кнопками — так, как на картинке. Остальные человек пройдёт в мини-аппе, по одному на странице.'}
+            </div>
+            <TelegramPreview intro={intro} first={questions[0]} otherLabel={kit!.otherLabel} giftButton={withGift ? buttonText : null} />
             <button type="button" onClick={() => show('intro')} data-testid="survey-intro" className="font-sans text-[13px] font-bold text-navy underline min-h-[44px] text-left">
-              Поменять вступление
+              {withGift ? 'Поменять сообщение' : 'Поменять вступление'}
             </button>
+
+            <div className="jewel-tile px-3 py-3" data-testid="survey-gift-settings">
+              <div className="relative z-[1] flex flex-col gap-2">
+                <div className="mn-eyebrow text-navy">Подарок</div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="number" min={0} max={kit!.limits.giftDays} value={giftDays} aria-label="Дней доступа в подарок" data-testid="survey-gift-days"
+                    onChange={e => setGift(parseInt(e.target.value) || 0)}
+                    className="w-20 px-2 min-h-[44px] rounded-xl border-[1.5px] border-jewelInk/40 bg-white font-sans text-[15px] font-extrabold tabular-nums"
+                  />
+                  <span className="font-sans text-[14px] text-jewelInk">дней полного доступа · 0 — без подарка</span>
+                </label>
+                {withGift ? (
+                  <>
+                    <label className="flex flex-col gap-1">
+                      <span className={small}>Кнопка под сообщением</span>
+                      <input
+                        type="text" maxLength={BUTTON_MAX} value={buttonText} aria-label="Текст кнопки" data-testid="survey-gift-button"
+                        onChange={e => setButtonText(e.target.value)} className={`${field} min-h-[44px]`}
+                      />
+                    </label>
+                    <div className={small} data-testid="survey-gift-rules">
+                      Подарок включается, когда человек нажмёт кнопку, — отвечать для этого не нужно. Один раз на человека; забрать можно 14 дней после того, как выбраны получатели.
+                      Это {giftDays} дн. доступа с дня нажатия: у кого подписка и так длиннее или доступ пожизненный, тем дни не прибавятся — первый экран скажет им об этом прямо.
+                    </div>
+                    {presetGiftDays > 0 && giftDays !== presetGiftDays && (
+                      <div className="font-sans text-[12px] font-bold text-ruby" data-testid="survey-gift-text-warning">
+                        Готовое сообщение и кнопка обещают {presetGiftDays === 30 ? 'месяц' : `${presetGiftDays} дн.`} — поправь их под новое число дней.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className={small}>
+                    {presetGiftDays > 0
+                      ? 'Без подарка первый вопрос уйдёт в бот кнопками. Готовое сообщение обещает подарок — перепиши его.'
+                      : 'С подарком под сообщением будет одна кнопка: она включает дни доступа и открывает вопросы в мини-аппе.'}
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="flex flex-col gap-2" data-testid="survey-questions">
               {questions.map((q, i) => (
                 <div key={i} className="jewel-tile px-3 py-3" data-testid={`survey-question-${i}`}>
                   <div className="relative z-[1]">
                     <button type="button" onClick={() => show({ edit: i })} className="w-full text-left min-h-[44px]" data-testid={`survey-question-open-${i}`}>
-                      <div className="mn-eyebrow text-navy">Вопрос {i + 1}{i === 0 ? ' · в боте' : ''}</div>
+                      <div className="mn-eyebrow text-navy">Вопрос {i + 1}{i === 0 && !withGift ? ' · в боте' : ''}</div>
                       <div className="font-sans text-[15px] font-extrabold text-jewelInk leading-snug break-words">
                         {q.text.trim() || <span className="text-jewelInk-hint font-normal">Без текста</span>}
                       </div>
@@ -393,9 +479,13 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
 
         {ready && step === 2 && view === 'intro' && (
           <>
-            <div className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight">Вступление</div>
-            <div className={small}>Строка перед первым вопросом в сообщении бота. Можно оставить пустой.</div>
-            <textarea className={field} rows={4} autoFocus maxLength={500} value={intro} aria-label="Вступление" onChange={e => setIntro(e.target.value)} />
+            <div className="font-sans text-[20px] font-extrabold text-jewelInk leading-tight">{withGift ? 'Сообщение' : 'Вступление'}</div>
+            <div className={small}>
+              {withGift
+                ? 'Всё сообщение бота: под ним будет одна кнопка, вопросы — в мини-аппе. До 500 символов.'
+                : 'Строка перед первым вопросом в сообщении бота. Можно оставить пустой.'}
+            </div>
+            <textarea className={field} rows={withGift ? 12 : 4} autoFocus maxLength={500} value={intro} aria-label={withGift ? 'Сообщение' : 'Вступление'} onChange={e => setIntro(e.target.value)} />
             <button type="button" className={primary} onClick={() => show(null)}>Готово</button>
           </>
         )}
@@ -429,10 +519,17 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
             <div className="rounded-xl border-[1.5px] border-jewelInk/30 bg-white px-3 py-2 mb-4 font-sans text-[12px] text-jewelInk-mid">
               Предпросмотр: так форму увидит человек. Ответы никуда не записываются.
             </div>
-            <SurveyFormPages
-              questions={form.questions} initial={{}} finished={false} otherLabel={kit!.otherLabel} preview
-              save={async () => {}} finish={async () => {}} onExit={() => show(null)}
-            />
+            {withGift && !previewStarted ? (
+              <SurveyGiftIntro
+                gift={{ outcome: 'given', days: giftDays, untilUtc: new Date(Date.now() + giftDays * 86400000).toISOString() }}
+                questions={form.questions.length} onStart={() => { setPreviewStarted(true); window.scrollTo(0, 0) }} onClose={() => show(null)}
+              />
+            ) : (
+              <SurveyFormPages
+                questions={form.questions} initial={{}} finished={false} otherLabel={kit!.otherLabel} preview
+                save={async () => {}} finish={async () => {}} onExit={() => show(null)}
+              />
+            )}
           </div>
         )}
 
@@ -491,9 +588,10 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
 
         {ready && step === 4 && (
           <>
-            <TelegramPreview intro={intro} first={questions[0]} otherLabel={kit!.otherLabel} />
+            <TelegramPreview intro={intro} first={questions[0]} otherLabel={kit!.otherLabel} giftButton={withGift ? buttonText : null} />
             <div className={small} data-testid="survey-summary">
-              Вопросов: {questions.length}{questions.length > 1 ? ' — первый в боте, остальные в мини-аппе' : ''}. Кому: {audienceTitle}{total != null ? ` — ${total} чел.` : ''}
+              Вопросов: {questions.length}{withGift ? ' — все в мини-аппе' : questions.length > 1 ? ' — первый в боте, остальные в мини-аппе' : ''}.{' '}
+              {withGift ? `Подарок: ${giftDays} дн. доступа за нажатие кнопки. ` : ''}Кому: {audienceTitle}{total != null ? ` — ${total} чел.` : ''}
               {!frozen && sampleFirst ? `, сначала пробной группе из ${Math.min(sampleSize, total ?? sampleSize)}` : ''}
             </div>
 
@@ -521,7 +619,7 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
             {status && (
               <div className={`${small} tabular-nums`} data-testid="survey-status">
                 Выбрано {status.total} · ждут {status.pending} · дошло {status.sent} · заблокировали {status.blocked} · отказ {status.rejected} · без
-                ответа Telegram {status.unknown} · ответили {answers}
+                ответа Telegram {status.unknown}{status.giftDays > 0 ? ` · открыли ${status.opened} · подарков выдано ${status.gifted}` : ''} · ответили {answers}
               </div>
             )}
             {frozen && (

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
 import SurveyFormPages from '../components/SurveyFormPages'
-import { ApiError, surveyApi, type SurveyAnswerDto, type SurveyFormDto } from '../api'
+import SurveyGiftIntro from '../components/SurveyGiftIntro'
+import { ApiError, surveyApi, type SurveyAnswerDto, type SurveyFormDto, type SurveyGiftDto } from '../api'
+import { takeCampaignGift } from '../campaignOpen'
 import { ProgressState } from '../types'
 
 interface Props {
@@ -16,13 +18,20 @@ interface Props {
  * Форма опроса для получателя рассылки. Сюда ведёт кнопка «Продолжить» под ответом на первый вопрос
  * в боте: тот ответ уже записан, форма открывается на следующем вопросе. Кому опрос не отправляли,
  * тот формы не увидит — сервер отвечает 404.
+ *
+ * У опроса с подарком сюда ведёт единственная кнопка под сообщением: подарок выдан самим открытием,
+ * и первый экран говорит, что человек получил, — вопросы начинаются только по его желанию.
  */
 export default function SurveyScreen({ progress, surveyKey, onBack }: Props) {
-  const [form, setForm] = useState<{ survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto> } | null>(null)
+  const [form, setForm] = useState<{ survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto>; gift?: SurveyGiftDto | null } | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
+  /** Человек нажал «Ответить на вопросы» на экране подарка. */
+  const [started, setStarted] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    // О подарке говорит этот экран — строка о нём в других разделах уже не нужна.
+    takeCampaignGift()
     surveyApi.open(surveyKey)
       .then(r => { if (!cancelled) setForm(r) })
       .catch(e => {
@@ -42,7 +51,10 @@ export default function SurveyScreen({ progress, surveyKey, onBack }: Props) {
           </div>
         )}
         {!form && !problem && <div className="flex justify-center py-12"><LoaderLetter /></div>}
-        {form && (
+        {form && form.gift && !started && !form.finished && (
+          <SurveyGiftIntro gift={form.gift} questions={form.survey.questions.length} onStart={() => { setStarted(true); window.scrollTo(0, 0) }} onClose={onBack} />
+        )}
+        {form && (!form.gift || started || form.finished) && (
           <SurveyFormPages
             questions={form.survey.questions} initial={form.answers} finished={form.finished} otherLabel="Другое"
             save={(questionId, answer) => surveyApi.answer(surveyKey, questionId, answer)}

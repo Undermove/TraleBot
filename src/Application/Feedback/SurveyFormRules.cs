@@ -6,7 +6,8 @@ namespace Application.Feedback;
 
 /// <summary>
 /// What a survey form must be to be sent: checked the same way for a ready-made form and for one
-/// the owner built. The first question lives in the bot's message, so it is stricter than the rest.
+/// the owner built. The first question lives in the bot's message, so it is stricter than the rest —
+/// unless the survey carries a gift: then the message has one button and every question is in the mini-app.
 /// </summary>
 public static class SurveyFormRules
 {
@@ -22,13 +23,14 @@ public static class SurveyFormRules
     /// Returns the form trimmed, with ids given by position ("q1", "q2"…), or null and the reason
     /// in plain Russian. Blank options are dropped before counting.
     /// </summary>
-    public static SurveyForm? Normalize(SurveyForm? form, out string? error)
+    /// <param name="firstInBot">The first question goes out as buttons in the chat (a survey without a gift).</param>
+    public static SurveyForm? Normalize(SurveyForm? form, out string? error, bool firstInBot = true)
     {
-        error = Check(form, out var normalized);
+        error = Check(form, firstInBot, out var normalized);
         return error == null ? normalized : null;
     }
 
-    private static string? Check(SurveyForm? form, out SurveyForm? normalized)
+    private static string? Check(SurveyForm? form, bool firstInBot, out SurveyForm? normalized)
     {
         normalized = null;
         if (form?.Questions is not { Count: > 0 }) return "В опросе нет ни одного вопроса.";
@@ -78,9 +80,14 @@ public static class SurveyFormRules
         }
 
         var first = questions[0];
-        if (first.Kind != SurveyQuestionKind.Choice)
+        if (!firstInBot)
+        {
+            // The message is all a person sees in the chat — without it the button hangs under nothing.
+            if (intro == null) return "У опроса с подарком сообщение — это вступление. Напиши его.";
+        }
+        else if (first.Kind != SurveyQuestionKind.Choice)
             return "Первый вопрос приходит в бот кнопками, поэтому он должен быть с вариантами ответа. Поставь свободный вопрос вторым или дальше.";
-        if (first.Options.Count > MaxBotOptions)
+        else if (first.Options.Count > MaxBotOptions)
             return $"Первый вопрос приходит в бот кнопками — у него не больше {MaxBotOptions} вариантов. Убери лишние или поставь первым другой вопрос.";
 
         normalized = new SurveyForm { Intro = intro, Questions = questions };

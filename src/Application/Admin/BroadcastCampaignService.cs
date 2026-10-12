@@ -88,7 +88,8 @@ public partial class BroadcastCampaignService(
         return await PrepareAsync(
             new CampaignDraft
             {
-                Key = key, MustBeNew = true, Audience = draft.Audience, Survey = draft.Survey
+                Key = key, MustBeNew = true, Audience = draft.Audience, Survey = draft.Survey,
+                ButtonText = draft.ButtonText, GiftDays = draft.GiftDays, GiftOfferDays = draft.GiftOfferDays
             },
             sampleSize, dryRun, ownerTelegramId, ct);
     }
@@ -190,13 +191,26 @@ public partial class BroadcastCampaignService(
         string? surveyJson = null;
         if (draft.Survey != null)
         {
-            var survey = SurveyFormRules.Normalize(draft.Survey, out var surveyError);
+            var withGift = draft.GiftDays > 0;
+            var survey = SurveyFormRules.Normalize(draft.Survey, out var surveyError, firstInBot: !withGift);
             if (survey == null) return CampaignPrepareResult.Fail(surveyError!);
-            if (buttonText != null || draft.GiftDays > 0)
-                return CampaignPrepareResult.Fail("У опроса кнопки — это варианты ответа: кнопку мини-аппа и подарок к нему не добавить.");
+            if (buttonQuery.Length > 0)
+                return CampaignPrepareResult.Fail("Куда ведёт кнопка опроса, решает сам опрос — адрес для неё не задаётся.");
             surveyJson = survey.ToJson();
-            // What leaves is the intro and the first question; the rest is answered in the mini-app.
-            message = survey.BotMessage();
+            if (withGift)
+            {
+                // One button, pressing it gives the gift; every question — the first too — is in the mini-app.
+                message = survey.Intro!;
+                buttonQuery = BroadcastCampaign.GiftSurveyButtonQuery(key);
+            }
+            else
+            {
+                // Without a gift the buttons under the message are the answers to the first question.
+                if (buttonText != null)
+                    return CampaignPrepareResult.Fail("У опроса без подарка кнопки — это варианты ответа: кнопку мини-аппа к нему не добавить.");
+                // What leaves is the intro and the first question; the rest is answered in the mini-app.
+                message = survey.BotMessage();
+            }
         }
 
         var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
@@ -322,7 +336,7 @@ public partial class BroadcastCampaignService(
 
             var outcome = await sender.SendAsync(
                 delivery.TelegramId, campaign.Message, campaign.ButtonText, campaign.ButtonQuery, campaign.Key,
-                campaign.Survey?.BotButtons(), CancellationToken.None);
+                campaign.IsGiftSurvey ? null : campaign.Survey?.BotButtons(), CancellationToken.None);
 
             switch (outcome.Outcome)
             {
@@ -461,6 +475,43 @@ public partial class BroadcastCampaignService(
     }
 
     /// <summary>
+    /// The recipient opened the form of a survey that carries a gift. The open is what gives the gift
+    /// (<see cref="MarkOpenedAsync"/> — at once, whether or not anything is answered, once per person
+    /// per campaign), and the answer says what the person actually has now, so the form's first screen
+    /// can tell the truth: the days were added, or there was nothing to add them to, or the offer is over.
+    /// Unlike <see cref="CampaignOpenResult.Gift"/> it is the same on every later open.
+    /// Null for a survey without a gift and for anyone but a recipient.
+    /// </summary>
+    public async Task<SurveyGiftState?> OpenGiftSurveyAsync(Guid userId, string? key, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(key) || !KeyPattern().IsMatch(key)) return null;
+        var campaign = await db.BroadcastCampaigns.AsNoTracking().FirstOrDefaultAsync(c => c.Key == key, ct);
+        if (campaign is not { IsGiftSurvey: true }) return null;
+
+        await MarkOpenedAsync(userId, key, ct);
+
+        var delivery = await db.BroadcastDeliveries.AsNoTracking()
+            .Where(d => d.CampaignId == campaign.Id && d.UserId == userId
+                        && (d.Status == BroadcastDeliveryStatus.Sent || d.Status == BroadcastDeliveryStatus.Sending))
+            .Select(d => new { d.GiftGrantedAtUtc, d.GiftAccessUntilUtc })
+            .FirstOrDefaultAsync(ct);
+        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (delivery == null || user == null) return null;
+
+        var now = DateTime.UtcNow;
+        if (delivery.GiftGrantedAtUtc != null)
+            return new SurveyGiftState(SurveyGiftOutcome.Given, campaign.GiftDays, delivery.GiftAccessUntilUtc);
+        // Not given: the person already has more than the gift would give — or the offer has ended.
+        if (user.IsLifetime) return new SurveyGiftState(SurveyGiftOutcome.Lifetime, campaign.GiftDays, null);
+        if (user.HasActivePro(now) && user.SubscribedUntil >= now.AddDays(campaign.GiftDays))
+            return new SurveyGiftState(SurveyGiftOutcome.SubscriptionIsLonger, campaign.GiftDays, user.SubscribedUntil);
+        if (user.HasActiveTrial(now) && user.TrialEndsAtUtc >= now.AddDays(campaign.GiftDays))
+            return new SurveyGiftState(SurveyGiftOutcome.FreeAccessIsLonger, campaign.GiftDays, user.TrialEndsAtUtc);
+        return new SurveyGiftState(
+            campaign.GiftOffered(now) ? SurveyGiftOutcome.NotGiven : SurveyGiftOutcome.OfferEnded, campaign.GiftDays, campaign.GiftOfferEndsAtUtc);
+    }
+
+    /// <summary>
     /// Gives the campaign's gift to one recipient. The mark on the delivery row and the change of the
     /// user's access are one transaction, and the mark is an atomic claim: of several parallel calls
     /// exactly one changes the user. Nothing is marked when the person already has that much access,
@@ -545,6 +596,28 @@ public class CampaignDraft
 
 /// <summary>A gift of access given by a campaign: how many days and until when the person now has access.</summary>
 public record CampaignGift(int Days, DateTime AccessUntilUtc);
+
+/// <summary>What the gift of a survey came to for one recipient — for the form's first screen.</summary>
+/// <param name="Days">How many days the survey gives.</param>
+/// <param name="UntilUtc">Given — until when the gift gave access; a longer subscription or free access —
+/// until when that runs; the offer ended — when it ended.</param>
+public record SurveyGiftState(SurveyGiftOutcome Outcome, int Days, DateTime? UntilUtc);
+
+public enum SurveyGiftOutcome
+{
+    /// <summary>The days were given: access runs until <see cref="SurveyGiftState.UntilUtc"/>.</summary>
+    Given,
+    /// <summary>Nothing to add: the access never ends.</summary>
+    Lifetime,
+    /// <summary>Nothing was added: the paid subscription already runs longer than the gift would.</summary>
+    SubscriptionIsLonger,
+    /// <summary>Nothing was added: the free access already runs longer than the gift would.</summary>
+    FreeAccessIsLonger,
+    /// <summary>The button was pressed after the offer's deadline.</summary>
+    OfferEnded,
+    /// <summary>The gift should have been given and was not (a failed write) — the next open gives it.</summary>
+    NotGiven
+}
 
 /// <param name="FirstOpen">This call recorded the recipient's first open.</param>
 /// <param name="Gift">The gift given by this very call; null on every later call.</param>

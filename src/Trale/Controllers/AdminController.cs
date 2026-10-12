@@ -742,7 +742,7 @@ public class AdminController : Controller
         if (!await IsOwnerAsync(ct)) return NotFound();
         return Ok(new
         {
-            presets = Application.Feedback.SurveyPresets.All.Select(p => new { p.Id, p.Title, p.About, form = MapSurvey(p.Form) }),
+            presets = Application.Feedback.SurveyPresets.All.Select(p => new { p.Id, p.Title, p.About, form = MapSurvey(p.Form), p.GiftDays, p.ButtonText }),
             bank = Application.Feedback.SurveyPresets.Bank.Select(MapSurveyQuestion),
             suggestions = Application.Feedback.SurveyPresets.Suggestions,
             intro = Application.Feedback.SurveyPresets.Intro,
@@ -753,7 +753,8 @@ public class AdminController : Controller
                 options = Application.Feedback.SurveyFormRules.MaxOptions,
                 botOptions = Application.Feedback.SurveyFormRules.MaxBotOptions,
                 optionLength = Application.Feedback.SurveyFormRules.MaxOptionLength,
-                questionLength = Application.Feedback.SurveyFormRules.MaxQuestionLength
+                questionLength = Application.Feedback.SurveyFormRules.MaxQuestionLength,
+                giftDays = BroadcastCampaignService.MaxGiftDays
             }
         });
     }
@@ -980,8 +981,8 @@ public class AdminController : Controller
 
     private static object MapSurveySummary(Application.Feedback.SurveySummary s) => new
     {
-        s.Key, s.Title, s.Questions, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Picked, s.Pending,
-        funnel = new { s.Funnel.Sent, s.Funnel.AnsweredFirst, s.Funnel.OpenedForm, s.Funnel.Finished }
+        s.Key, s.Title, s.Questions, s.CreatedAtUtc, audience = AudienceName(s.Audience), s.Picked, s.Pending, s.GiftDays,
+        funnel = new { s.Funnel.Sent, s.Funnel.AnsweredFirst, s.Funnel.OpenedForm, s.Funnel.Finished, s.Funnel.Gifted, s.Funnel.Answered }
     };
 
     private static object MapFeedbackItem(Application.Feedback.FeedbackItem r) => new

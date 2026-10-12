@@ -600,7 +600,8 @@ export const adminCampaigns = {
     dryRun: boolean
     giftDays?: number
     giftOfferDays?: number | null
-    /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания. */
+    /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания.
+     *  Опрос с подарком (giftDays > 0) уходит одной кнопкой buttonText, все вопросы — в мини-аппе. */
     survey?: SurveyFormDto | null
     /** Конструктор рассылки начинает новую кампанию: при пустом key сервер сам её называет (broadcast-2026-10, -2, …). */
     newBroadcast?: boolean
@@ -881,10 +882,23 @@ export interface SurveyAnswerDto {
   text: string | null
 }
 
-/** Форма опроса глазами получателя (мини-апп): вопросы и то, что человек уже ответил. */
+/**
+ * Что вышло с подарком опроса у этого человека. Подарок выдаётся при открытии формы, отвечать не обязательно;
+ * первый экран формы говорит, что именно человек получил:
+ * given — дни выданы, доступ до untilUtc; lifetime — доступ и так бессрочный; subscriptionIsLonger /
+ * freeAccessIsLonger — подписка или бесплатный доступ и так длиннее подарка (untilUtc — до какого числа);
+ * offerEnded — кнопку нажали после срока (untilUtc — когда он вышел); notGiven — запись не прошла, выдаст следующее открытие.
+ */
+export interface SurveyGiftDto {
+  outcome: 'given' | 'lifetime' | 'subscriptionIsLonger' | 'freeAccessIsLonger' | 'offerEnded' | 'notGiven'
+  days: number
+  untilUtc: string | null
+}
+
+/** Форма опроса глазами получателя (мини-апп): вопросы и то, что человек уже ответил. gift — у опроса с подарком. */
 export const surveyApi = {
   open: (key: string) =>
-    request<{ key: string; survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto> }>(
+    request<{ key: string; survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto>; gift?: SurveyGiftDto | null }>(
       `/api/miniapp/surveys/${encodeURIComponent(key)}/open`, { method: 'POST' }),
   answer: (key: string, questionId: string, answer: SurveyAnswerDto) =>
     request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/answer`, { method: 'POST', body: JSON.stringify({ questionId, ...answer }) }),
@@ -897,6 +911,10 @@ export interface SurveyFunnelDto {
   answeredFirst: number
   openedForm: number
   finished: number
+  /** Опрос с подарком: скольким подарок выдан. */
+  gifted: number
+  /** Сколько человек ответили хотя бы на один вопрос. */
+  answered: number
 }
 
 export interface AdminSurveyDto {
@@ -911,6 +929,8 @@ export interface AdminSurveyDto {
   picked: number
   /** Из них ещё ждут отправки: больше нуля — отправку бросили посередине, к опросу можно вернуться. */
   pending: number
+  /** Дней доступа в подарок тому, кто откроет опрос; 0 — опрос без подарка (первый вопрос — кнопками в боте). */
+  giftDays: number
   funnel: SurveyFunnelDto
 }
 
@@ -953,6 +973,10 @@ export interface SurveyPresetDto {
   title: string
   about: string
   form: SurveyFormDto
+  /** Подарок по умолчанию: дней полного доступа тому, кто нажмёт кнопку; 0 — без подарка. */
+  giftDays: number
+  /** Текст единственной кнопки под сообщением у формы с подарком. */
+  buttonText: string | null
 }
 
 export interface SurveyLimitsDto {
@@ -962,6 +986,8 @@ export interface SurveyLimitsDto {
   botOptions: number
   optionLength: number
   questionLength: number
+  /** Самый большой подарок, дней. */
+  giftDays: number
 }
 
 export interface SurveyBuilderKitDto {

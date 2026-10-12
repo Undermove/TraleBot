@@ -625,13 +625,16 @@ public class MiniAppController : Controller
         return FeedbackResult(await feedback.LeaveMessageAsync(user.Id, request.Text, request.Campaign, ct));
     }
 
-    // ---- Survey form: the questions of a survey broadcast after the first one, a page each. ----
+    // ---- Survey form: the questions of a survey broadcast, a page each. ----
 
     /// <summary>The recipient opened the survey's form: its questions and what they have answered so far.
-    /// The first open is recorded. 404 for anyone the survey was not sent to.</summary>
+    /// The first open is recorded. A survey with a gift gives it here — at the open, whether or not
+    /// anything is answered — and <c>gift</c> says what the person has now. 404 for anyone the survey
+    /// was not sent to.</summary>
     [HttpPost("surveys/{key}/open")]
     public async Task<IActionResult> SurveyOpen(
-        string key, [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+        string key, [FromServices] Application.Feedback.UserFeedbackService feedback,
+        [FromServices] Application.Admin.BroadcastCampaignService campaigns, CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -645,11 +648,19 @@ public class MiniAppController : Controller
             return NotFound(new { error = "not_found" });
         }
 
+        var gift = await campaigns.OpenGiftSurveyAsync(user.Id, key, ct);
         return Ok(new
         {
             key = state.Key,
             survey = AdminController.MapSurvey(state.Form),
             finished = state.Finished,
+            // "given" | "lifetime" | "subscriptionIsLonger" | "freeAccessIsLonger" | "offerEnded" | "notGiven"; null — a survey without a gift.
+            gift = gift == null ? null : new
+            {
+                outcome = char.ToLowerInvariant(gift.Outcome.ToString()[0]) + gift.Outcome.ToString()[1..],
+                days = gift.Days,
+                untilUtc = gift.UntilUtc
+            },
             answers = state.Answers.ToDictionary(a => a.Key, a => new { a.Value.Option, a.Value.Other, a.Value.Text })
         });
     }

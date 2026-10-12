@@ -43,6 +43,15 @@ export const DeskIcon = ({ size = 18, className }: P) => (
   </svg>
 )
 
+export const GiftIcon = ({ size = 18, className }: P) => (
+  <svg {...base(size, className)}>
+    <rect x="4.500" y="11" width="15" height="9.500" rx="1.500" fill="#FDFAEF" />
+    <rect x="3" y="7.500" width="18" height="3.500" rx="1.200" fill="#F5B820" />
+    <rect x="10.500" y="7.500" width="3" height="13" fill="#E01A3C" />
+    <path d="M12 7.500C10.500 4 7 3.500 7 5.700c0 1.500 2.500 1.800 5 1.800zM12 7.500c1.500-3.500 5-4 5-1.800 0 1.500-2.500 1.800-5 1.800z" fill="#E01A3C" />
+  </svg>
+)
+
 export const LockIcon = ({ size = 18, className }: P) => (
   <svg {...base(size, className)}>
     <path d="M7.5 10.5V8a4.5 4.5 0 0 1 9 0v2.500" />
