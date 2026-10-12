@@ -280,6 +280,115 @@ public class VerbCatalogTests : TestBase
         (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs.CountAsync())).Should().BeGreaterThan(0);
     }
 
+    /// <summary>scripts/verbs of the repository the tests are run from.</summary>
+    private static string ScriptsFile(string name)
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "scripts", "verbs", name)))
+        {
+            directory = directory.Parent;
+        }
+
+        return Path.Combine(directory!.FullName, "scripts", "verbs", name);
+    }
+
+    private static string? StopWordIn(string text, JsonNode stoplist)
+    {
+        const string letter = "а-яёa-zა-ჰ";
+        var lower = text.ToLowerInvariant();
+        string Escaped(JsonNode? word) => System.Text.RegularExpressions.Regex.Escape(word!.GetValue<string>().ToLowerInvariant());
+        return stoplist["prefixes"]!.AsArray().Select(Escaped)
+                   .FirstOrDefault(w => System.Text.RegularExpressions.Regex.IsMatch(lower, $"(^|[^{letter}]){w}"))
+               ?? stoplist["words"]!.AsArray().Select(Escaped)
+                   .FirstOrDefault(w => System.Text.RegularExpressions.Regex.IsMatch(lower, $"(^|[^{letter}]){w}($|[^{letter}])"));
+    }
+
+    [Test]
+    public void Example_sentences_have_no_word_of_the_stop_list()
+    {
+        // The list is the owner's (scripts/verbs/sentences.stoplist.json): countries and topics that
+        // have no place in a learner's examples. The catalog build has the same gate.
+        var stoplist = JsonNode.Parse(File.ReadAllText(ScriptsFile("sentences.stoplist.json")))!;
+        var allowed = stoplist["allow"]!.AsObject().Select(a => a.Key).ToHashSet();
+
+        var found = JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray()
+            .SelectMany(v => v!["sentences"]!.AsArray())
+            .Where(s => !allowed.Contains(s!["id"]!.GetValue<long>().ToString()))
+            .Select(s => (Sentence: $"{s!["id"]} {s["ka"]} — {s["ru"]}", Word: StopWordIn($"{s["ka"]} {s["ru"]}", stoplist)))
+            .Where(x => x.Word != null)
+            .Select(x => $"{x.Sentence} [{x.Word}]")
+            .Distinct()
+            .ToList();
+
+        found.Should().BeEmpty("strike the sentence out in scripts/verbs/sentences.skip.json and rebuild the catalog");
+    }
+
+    [TestCase("Я из России.", "росси")]
+    [TestCase("მე რუსეთიდან ვარ.", "რუსეთ")]
+    [TestCase("Мы победили врага.", "враг")]
+    [TestCase("Кто будет нашим следующим президентом?", "президент")]
+    [TestCase("Русские идут.", "русские")]
+    [TestCase("ფილმი ომის შესახებ არის", "ომის")]
+    [TestCase("Вы говорите по-русски?", null)]
+    [TestCase("Я учу русский язык.", null)]
+    [TestCase("ლაპარაკობ რუსულად?", null)]
+    [TestCase("ლომი დიდია.", null)]
+    [TestCase("Это двойной звук.", null)]
+    [TestCase("Я из Испании.", null)]
+    public void Stop_list_catches_the_topic_and_not_the_language_or_a_word_that_only_contains_the_letters(string text, string? word)
+    {
+        var stoplist = JsonNode.Parse(File.ReadAllText(ScriptsFile("sentences.stoplist.json")))!;
+
+        StopWordIn(text, stoplist).Should().Be(word);
+    }
+
+    [Test]
+    public void I_am_has_a_neutral_example_with_that_very_form()
+    {
+        var be = JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray().Single(v => v!["ru"]!.GetValue<string>() == "быть")!;
+        var i = be["tenses"]!["present"]![0]![0]!.GetValue<string>();
+
+        var examples = be["sentences"]!.AsArray().Where(s => s!["form"]!.GetValue<string>() == i).ToList();
+
+        examples.Should().NotBeEmpty();
+        var spain = examples.Single(s => s!["ru"]!.GetValue<string>() == "Я из Испании.")!;
+        System.Text.RegularExpressions.Regex.Matches(spain["ka"]!.GetValue<string>(), "[ა-ჰ]+").Select(m => m.Value).Should().Contain(i);
+        spain["source"]!.GetValue<string>().Should().Contain("MiniAppContentProvider.cs", because: "a sentence written in by hand names where its Georgian comes from");
+        examples.Select(s => s!["ru"]!.GetValue<string>()).Should().NotContain(ru => ru.Contains("Росси"));
+    }
+
+    [Test]
+    public async Task Example_replaced_in_the_catalog_reaches_a_base_seeded_before()
+    {
+        // The base as it was seeded before: «быть» had another example where the new one is now.
+        var before = JsonNode.Parse(CatalogJson())!;
+        var be = before["verbs"]!.AsArray().Single(v => v!["ru"]!.GetValue<string>() == "быть")!;
+        var lemma = be["lemma"]!.GetValue<string>();
+        var replaced = be["sentences"]!.AsArray().Single(s => s!["id"]!.GetValue<long>() < 0)!.AsObject();
+        replaced["id"] = 2229216;
+        replaced["ru"] = "прежний пример";
+        replaced.Remove("source");
+        var verbId = await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            db.Verbs.RemoveRange(await db.Verbs.ToListAsync());
+            await db.SaveChangesAsync(CancellationToken.None);
+            await sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(before.ToJsonString(), CancellationToken.None);
+            var row = await db.Verbs.AsNoTracking().SingleAsync(v => v.Lemma == lemma);
+            row.CardJson.Should().Contain("прежний пример");
+            return row.Id;
+        });
+
+        // The next start of the server: the catalog as it is now.
+        var result = await InScope(sp => sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(CatalogJson(), CancellationToken.None));
+
+        result.Written.Should().Be(1, because: "only the verb whose examples changed is rewritten");
+        var card = await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync(lemma, CancellationToken.None));
+        card.Should().Contain("Я из Испании.").And.NotContain("прежний пример");
+        (await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs.AsNoTracking().SingleAsync(v => v.Lemma == lemma)))
+            .Id.Should().Be(verbId, because: "the row is updated in place, so what learners have stays attached");
+    }
+
     [Test]
     public void Catalog_is_what_the_build_gates_promise()
     {
