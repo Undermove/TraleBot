@@ -15,6 +15,11 @@
 //                       каждое сверено по открытым словарям, ссылки — в sources (см. SOURCES.md)
 //   verbs.skip.json     { лемма: "почему вычеркнут" } — глаголы, вычеркнутые при вычитке
 //   sentences.skip.json [id, …] — предложения Tatoeba, вычеркнутые при вычитке
+//   sentences.manual.json [{ id, ka, ru, source, why }] — примеры, вписанные руками взамен вычеркнутых:
+//                       id отрицательный (не пересекается с Tatoeba), грузинский текст — только из
+//                       названного источника (уроки этого репозитория), не из головы
+//   sentences.stoplist.json  слова, которых не должно быть в примерах (страны и темы, которые здесь
+//                       не к месту); сборка падает, если такое слово нашлось
 //
 //   node scripts/verbs/build-catalog.mjs [--force] [--check]
 //     --force  записать, даже если глаголов стало меньше, чем в лежащем в git verbs.json
@@ -113,8 +118,20 @@ const chosen = pool.slice(0, LIMIT)
 // ── предложения ──────────────────────────────────────────────────────────────────────────────
 // Живые предложения с формами глаголов: Tatoeba (CC BY 2.0 FR), пары «грузинский — русский».
 // Корпус пишут добровольцы, в нём бывают ошибки: id в sentences.skip.json исключаются после проверки.
-const sentences = read('sentences.raw.json')
+// Вписанные руками идут первыми: так они точно попадают в лимит на форму.
+const manual = read('sentences.manual.json')
+const sentences = [...manual, ...read('sentences.raw.json')]
 const skip = new Set(read('sentences.skip.json'))
+const stoplist = read('sentences.stoplist.json')
+// Слово из стоп-списка в тексте: prefixes — с начала слова, words — слово целиком. Границу слова
+// считаем сами: \b в JavaScript не знает ни кириллицы, ни грузинского.
+const LETTER = 'а-яёa-zა-ჰ'
+const stopWordIn = text => {
+  const lower = text.toLowerCase()
+  const esc = w => w.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return stoplist.prefixes.find(w => new RegExp(`(^|[^${LETTER}])${esc(w)}`).test(lower))
+    ?? stoplist.words.find(w => new RegExp(`(^|[^${LETTER}])${esc(w)}($|[^${LETTER}])`).test(lower))
+}
 const MAX_SENTENCES_PER_FORM = 4
 const wordsOf = text => text.match(/[ა-ჰ]+/g) ?? []
 
@@ -144,7 +161,8 @@ function sentencesFor(v) {
     const count = perForm.get(form) ?? 0
     if (count >= MAX_SENTENCES_PER_FORM && !pins.has(s.id)) continue
     perForm.set(form, count + 1)
-    out.push({ id: s.id, ka: s.ka, ru: s.ru, form })
+    // source — только у вписанных руками: откуда взят грузинский текст.
+    out.push({ id: s.id, ka: s.ka, ru: s.ru, form, source: s.source })
   }
   const lost = [...pins].filter(id => !out.some(s => s.id === id))
   if (lost.length) {
@@ -239,6 +257,18 @@ for (const v of verbs) {
   if (titleGloss.has(key)) fail.push(`${v.lemma} и ${titleGloss.get(key)}: одинаковые заголовок и перевод (${v.title} — ${v.ru}) — похоже на дубль`)
   titleGloss.set(key, v.lemma)
   for (const s of v.sentences) if (!Object.values(v.tenses).flat(2).includes(s.form)) fail.push(`${v.lemma}: предложение ${s.id} привязано к чужой форме ${s.form}`)
+}
+// Вписанные руками примеры: свой id, названный источник, и каждый должен попасть хотя бы в одну карточку.
+for (const m of manual) {
+  if (!Number.isInteger(m.id) || m.id >= 0) fail.push(`sentences.manual.json: у «${m.ru}» id должен быть отрицательным целым`)
+  if (manual.filter(o => o.id === m.id).length > 1) fail.push(`sentences.manual.json: id ${m.id} повторяется`)
+  if (!m.ka || !m.ru || !m.source) fail.push(`sentences.manual.json: у ${m.id} нужны ka, ru и source (откуда взят грузинский текст)`)
+  if (!skip.has(m.id) && !verbs.some(v => v.sentences.some(s => s.id === m.id))) fail.push(`sentences.manual.json: ${m.id} «${m.ru}» не попал ни в одну карточку — в нём нет формы глагола каталога`)
+}
+// Стоп-список: в примерах не должно быть стран и тем, которые ученику здесь не к месту.
+for (const v of verbs) for (const s of v.sentences) {
+  const word = String(s.id) in stoplist.allow ? undefined : stopWordIn(`${s.ka} ${s.ru}`)
+  if (word) fail.push(`${v.lemma}: предложение ${s.id} «${s.ru}» — слово «${word}» из sentences.stoplist.json; вычеркни id в sentences.skip.json (или, если оно уместно, добавь в allow с причиной)`)
 }
 for (const v of verbs) if (v.model && !lemmas.has(v.model.id)) fail.push(`${v.lemma}: глагол-образец ${v.model.id} не найден в каталоге`)
 for (const lemma of Object.keys(skipVerbs)) if (!raw.some(v => v.lemma === lemma)) fail.push(`verbs.skip.json: ${lemma} нет в verbs.raw.json — опечатка?`)

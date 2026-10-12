@@ -28,6 +28,14 @@ export function tenseCard(verb, table, key, { level = 'h3', id = '', meanings = 
   return `<section class="tense"${id ? ` id="${id}"` : ''}><${level}>${esc(TENSES[key].name)}${chip} ${term(TENSES[key].term)}</${level}><table class="forms"><tbody>${body}</tbody></table></section>`
 }
 
+/**
+ * Where an example comes from: a Tatoeba sentence links to its page; a sentence written into the
+ * catalog by hand (scripts/verbs/sentences.manual.json — it has `source` and no Tatoeba id) is from our lessons.
+ */
+export const sentenceSource = (s) => s.source
+  ? 'из уроков TraleBot'
+  : `<a href="https://tatoeba.org/sentences/show/${s.id}" rel="noopener nofollow">Tatoeba №${s.id}</a>`
+
 /** Up to `max` sentences, different forms first — so the examples show the verb in different persons and times. */
 export function pickSentences(verb, max = 5) {
   const picked = []
@@ -141,11 +149,11 @@ ${say.length ? `<h2 id="say">Как сказать по-грузински</h2>
 <dl class="say">${say.map((x) => `<dt>Как будет «${esc(x.phrase)}» по-грузински?</dt><dd>${sayAnswerHtml(x)}</dd>`).join('')}</dl>` : ''}
 ${behaviour(verb, byLemma, verbs)}
 ${sentences.length ? `<h2 id="examples">Примеры с переводом</h2>
-${sentences.map((s) => `<div class="ex"><p class="k">${ka(s.ka)}</p><p class="tr">${esc(cyr(s.ka))}</p><p class="r">${esc(s.ru)}</p><p class="src">Форма ${ka(s.form, 'f')} · <a href="https://tatoeba.org/sentences/show/${s.id}" rel="noopener nofollow">Tatoeba №${s.id}</a></p></div>`).join('')}` : ''}
+${sentences.map((s) => `<div class="ex"><p class="k">${ka(s.ka)}</p><p class="tr">${esc(cyr(s.ka))}</p><p class="r">${esc(s.ru)}</p><p class="src">Форма ${ka(s.form, 'f')} · ${sentenceSource(s)}</p></div>`).join('')}` : ''}
 ${rare.length ? `<h2 id="rare">Редкие времена</h2>
 <details><summary>Показать ещё ${rare.length}: ${rare.map((t) => esc(TENSES[t].name.toLowerCase())).join(', ')}</summary><div class="in"><p>Эти формы нужны реже. Сначала хватит шести времён выше.</p><div class="tenses">${rare.map((t) => tenseCard(verb, verb.tenses, t, { level: 'h3', id: `t-${t}` })).join('')}</div></div></details>` : ''}
 ${verb.alt.length ? `<h2 id="alt">Этот же глагол с другими приставками</h2>${altBlocks(verb)}` : ''}
-<p class="sources">Источники. Формы: <a href="${esc(verb.source)}" rel="noopener nofollow">Викисловарь, статья ${ka(verb.lemma)}</a> (CC BY-SA 4.0).${sentences.length ? ' Примеры: <a href="https://tatoeba.org" rel="noopener nofollow">Tatoeba</a> (CC BY 2.0 FR), ссылка у каждого предложения.' : ''} Русские фразы к формам — TraleBot. В транскрипции знак ’ после буквы — резкий звук без выдоха, подробнее в <a href="/grammar/alphabet/">алфавите</a>.</p>
+<p class="sources">Источники. Формы: <a href="${esc(verb.source)}" rel="noopener nofollow">Викисловарь, статья ${ka(verb.lemma)}</a> (CC BY-SA 4.0).${sentences.some((s) => !s.source) ? ' Примеры: <a href="https://tatoeba.org" rel="noopener nofollow">Tatoeba</a> (CC BY 2.0 FR), ссылка у каждого предложения.' : ''} Русские фразы к формам — TraleBot. В транскрипции знак ’ после буквы — резкий звук без выдоха, подробнее в <a href="/grammar/alphabet/">алфавите</a>.</p>
 </article>`
 
   const prev = verbs[verb.rank - 2]
