@@ -4,8 +4,9 @@ import type { SurveyGiftDto } from '../api'
 
 // Первый экран опроса с подарком. Подарок уже выдан — в тот момент, когда человек нажал кнопку под
 // сообщением, — поэтому экран ничего не просит взамен: говорит, что именно человек получил и до какого
-// числа, зовёт к вопросам и даёт просто уйти. Кому дни не прибавились (доступ и так длиннее или
-// бессрочный, срок подарка вышел), тому экран говорит об этом прямо, а не «включено».
+// числа, зовёт к вопросам и даёт просто уйти. Дни прибавляются к тому, что у человека уже есть:
+// у кого доступа не было — «включён», у кого подписка или пробный период идут — «добавлен» и новая дата.
+// Кому прибавлять нечего (доступ бессрочный) или поздно (срок подарка вышел), тому экран говорит об этом прямо.
 // Этот же компонент показывает владельцу предпросмотр в конструкторе.
 
 interface Props {
@@ -48,20 +49,17 @@ export function giftWords(gift: SurveyGiftDto, now: Date = new Date()): { title:
         title: gift.days === 30 ? 'Месяц полного доступа включён' : `Полный доступ на ${span} включён`,
         line: `Действует до ${until}. Открыто всё: уроки, глаголы и словарь.`
       }
+    case 'addedToSubscription':
+    case 'addedToFreeAccess':
+      if (!gift.untilUtc || new Date(gift.untilUtc) <= now) return null
+      return {
+        title: gift.days === 30 ? 'Месяц полного доступа добавлен' : `Полный доступ продлён на ${span}`,
+        line: gift.outcome === 'addedToSubscription' ? `Подписка теперь действует до ${until}.` : `Бесплатный доступ теперь открыт до ${until}.`
+      }
     case 'lifetime':
       return {
         title: 'У тебя пожизненный доступ',
         line: 'Он не заканчивается, поэтому прибавить к нему нечего. Спасибо за поддержку!'
-      }
-    case 'subscriptionIsLonger':
-      return {
-        title: until ? `Подписка действует до ${until}` : 'Подписка действует',
-        line: 'Это дольше подарка, поэтому новые дни к ней не прибавились. Полный доступ у тебя и так открыт. Спасибо за поддержку!'
-      }
-    case 'freeAccessIsLonger':
-      return {
-        title: until ? `Полный доступ открыт до ${until}` : 'Полный доступ уже открыт',
-        line: 'Это дольше подарка, поэтому новые дни не прибавились.'
       }
     case 'offerEnded':
       return {
@@ -78,6 +76,7 @@ export function giftWords(gift: SurveyGiftDto, now: Date = new Date()): { title:
 
 export default function SurveyGiftIntro({ gift, questions, onStart, onClose, now }: Props) {
   const words = giftWords(gift, now)
+  const given = gift.outcome === 'given' || gift.outcome === 'addedToSubscription' || gift.outcome === 'addedToFreeAccess'
   return (
     <div className="flex flex-col gap-4" data-testid="survey-gift" data-outcome={gift.outcome}>
       {words && (
@@ -89,7 +88,7 @@ export default function SurveyGiftIntro({ gift, questions, onStart, onClose, now
             <div className="min-w-0">
               {/* Кому дни не прибавились, тому это не «подарок», а справка о его доступе. */}
               <div className="mn-eyebrow text-navy" data-testid="survey-gift-eyebrow">
-                {['lifetime', 'subscriptionIsLonger', 'freeAccessIsLonger'].includes(gift.outcome) ? 'твой доступ' : 'подарок'}
+                {gift.outcome === 'lifetime' ? 'твой доступ' : 'подарок'}
               </div>
               <div className="font-sans text-[19px] font-extrabold text-jewelInk leading-tight break-words mt-0.5" data-testid="survey-gift-title">{words.title}</div>
               <div className="font-sans text-[14px] text-jewelInk-mid leading-snug mt-1" data-testid="survey-gift-line">{words.line}</div>
@@ -98,10 +97,16 @@ export default function SurveyGiftIntro({ gift, questions, onStart, onClose, now
         </div>
       )}
 
+      {gift.trial && (
+        <div className="rounded-xl border-[1.5px] border-jewelInk/30 bg-white px-3 py-2 font-sans text-[12px] text-jewelInk-mid" data-testid="survey-gift-trial">
+          Пробная отправка: дни не начислены. Так экран выглядит для человека с таким доступом, как у тебя.
+        </div>
+      )}
+
       <div>
         <div className="font-sans text-[17px] font-extrabold text-jewelInk leading-snug">Если найдётся минута</div>
         <div className="font-sans text-[14px] text-jewelInk-mid leading-snug mt-1" data-testid="survey-gift-invite">
-          Здесь {questionsText(questions)}. По ответам я решаю, что делать в боте дальше. Отвечать не обязательно{gift.outcome === 'given' && words ? ' — доступ уже твой' : ''}.
+          Здесь {questionsText(questions)}. По ответам я решаю, что делать в боте дальше. Отвечать не обязательно{given && words ? ' — доступ уже твой' : ''}.
         </div>
       </div>
 

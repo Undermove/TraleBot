@@ -61,11 +61,12 @@ describe('SurveyScreen', () => {
   })
 
   it('the gift screen can simply be closed — nothing is answered and nothing is asked', async () => {
-    api.open.mockResolvedValue({ key: 'survey-2026-10-paid', survey, finished: false, answers: {}, gift: { outcome: 'subscriptionIsLonger', days: 30, untilUtc: '2099-03-05T00:00:00Z' } })
+    api.open.mockResolvedValue({ key: 'survey-2026-10-paid', survey, finished: false, answers: {}, gift: { outcome: 'addedToSubscription', days: 30, untilUtc: '2099-03-05T12:00:00Z' } })
     const back = vi.fn()
     render(<SurveyScreen progress={defaultProgress} surveyKey="survey-2026-10-paid" onBack={back} />)
 
-    expect((await screen.findByTestId('survey-gift-title')).textContent).toBe('Подписка действует до 5 марта 2099')
+    expect((await screen.findByTestId('survey-gift-title')).textContent).toBe('Месяц полного доступа добавлен')
+    expect(screen.getByTestId('survey-gift-line').textContent).toBe('Подписка теперь действует до 5 марта 2099.')
     await userEvent.click(screen.getByTestId('survey-gift-close'))
     expect(back).toHaveBeenCalledTimes(1)
     expect(api.answer).not.toHaveBeenCalled()

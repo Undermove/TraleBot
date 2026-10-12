@@ -1154,7 +1154,7 @@ public class UserFeedbackTests : TestBase
         (await Admin(HttpMethod.Get, "surveys/presets")).Body.GetProperty("presets").EnumerateArray().Single(p => p.GetProperty("id").GetString() == "paid");
 
     /// <summary>The ready form "Тем, кто платил" exactly as the builder sends it, to this audience; sent to everyone in it.</summary>
-    private async Task LaunchPaid(string key, string audience, int? giftDays = null)
+    private async Task LaunchPaid(string key, string audience, int? giftDays = null, bool anotherAudience = false)
     {
         var preset = await PaidPreset();
         var days = giftDays ?? preset.GetProperty("giftDays").GetInt32();
@@ -1162,7 +1162,7 @@ public class UserFeedbackTests : TestBase
         {
             // Without a gift the builder sends no button: the answer buttons of the first question go instead.
             key, audience, buttonText = days > 0 ? preset.GetProperty("buttonText").GetString() : null, buttonQuery = (string?)null,
-            sampleSize = (int?)null, dryRun = false, giftDays = days,
+            sampleSize = (int?)null, dryRun = false, giftDays = days, anotherAudience,
             survey = JsonSerializer.Deserialize<object>(preset.GetProperty("form").GetRawText())
         });
         code.Should().Be(HttpStatusCode.OK, body.ValueKind == JsonValueKind.Undefined ? "" : body.GetRawText());
@@ -1297,35 +1297,33 @@ public class UserFeedbackTests : TestBase
         (await Admin(HttpMethod.Get, "campaigns/paid-once")).Body.GetProperty("gifted").GetInt32().Should().Be(1);
     }
 
-    [Test]
-    public async Task A_subscription_that_ends_within_the_month_is_topped_up_to_a_month_from_today()
-    {
-        var person = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(9));
-        await LaunchPaid("paid-short", "paying");
-
-        var gift = Gift((await OpenForm(person, "paid-short")).Body);
-
-        gift.Outcome.Should().Be("given");
-        gift.Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
-        (await Reload(person)).SubscribedUntil.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near, "a month from today, not a month on top of the nine days");
-    }
+    // A day's time without fractions, so that "the end moved by exactly 30 days" can be compared as is.
+    private static DateTime Day(int daysAhead) => DateTime.UtcNow.Date.AddDays(daysAhead).AddHours(12);
 
     [Test]
-    public async Task A_subscription_longer_than_the_gift_gets_nothing_and_the_form_says_so()
+    public async Task A_running_subscription_gets_the_month_on_top_of_its_own_end()
     {
-        var until = new DateTime(DateTime.UtcNow.Year + 1, 3, 5, 0, 0, 0, DateTimeKind.Utc);
-        var person = await Subscriber(SubscriptionPlan.Year, until);
-        await LaunchPaid("paid-year", "paying");
+        // «До 3 ноября → до 3 декабря», «до июня 2027 → до июля 2027».
+        var shortUntil = Day(22);
+        var yearUntil = new DateTime(DateTime.UtcNow.Year + 1, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var shortOne = await Subscriber(SubscriptionPlan.Month, shortUntil);
+        var yearly = await Subscriber(SubscriptionPlan.Year, yearUntil);
+        await LaunchPaid("paid-running", "paying");
 
-        var gift = Gift((await OpenForm(person, "paid-year")).Body);
-        var again = Gift((await OpenForm(person, "paid-year")).Body);
+        var toShort = Gift((await OpenForm(shortOne, "paid-running")).Body);
+        var toYearly = Gift((await OpenForm(yearly, "paid-running")).Body);
+        var again = Gift((await OpenForm(yearly, "paid-running")).Body);
 
-        gift.Should().Be(("subscriptionIsLonger", 30, until));
-        again.Should().Be(gift);
-        (await Reload(person)).SubscribedUntil.Should().Be(until, "nothing is taken away and nothing is added");
-        (await Delivery(person, "paid-year")).GiftGrantedAtUtc.Should().BeNull();
-        (await Delivery(person, "paid-year")).OpenedAtUtc.Should().NotBeNull();
-        (await Admin(HttpMethod.Get, "campaigns/paid-year")).Body.GetProperty("gifted").GetInt32().Should().Be(0);
+        toShort.Should().Be(("addedToSubscription", 30, shortUntil.AddDays(30)));
+        toYearly.Should().Be(("addedToSubscription", 30, yearUntil.AddDays(30)));
+        yearUntil.AddDays(30).Should().Be(new DateTime(DateTime.UtcNow.Year + 1, 7, 15, 12, 0, 0, DateTimeKind.Utc));
+        again.Should().Be(toYearly, "a second open adds nothing and says the same");
+        (await Reload(shortOne)).SubscribedUntil.Should().Be(shortUntil.AddDays(30));
+        var after = await Reload(yearly);
+        after.SubscribedUntil.Should().Be(yearUntil.AddDays(30));
+        after.SubscriptionPlan.Should().Be(SubscriptionPlan.Year, "the plan stays what was bought");
+        (await Delivery(yearly, "paid-running")).GiftGrantedAtUtc.Should().NotBeNull();
+        (await Admin(HttpMethod.Get, "campaigns/paid-running")).Body.GetProperty("gifted").GetInt32().Should().Be(2);
     }
 
     [Test]
@@ -1344,26 +1342,60 @@ public class UserFeedbackTests : TestBase
     }
 
     [Test]
-    public async Task Free_access_is_extended_to_a_month_from_today_or_left_alone_when_it_is_longer()
+    public async Task Free_access_gets_the_month_on_top_of_what_is_running_or_from_today_when_it_is_over()
     {
         var ended = await AccessEnded();
         var fewDaysLeft = await AddUser(25);
-        var longTrial = await AddUser(5, u => u.TrialBonusDays = 60);
+        var onBonus = await AddUser(200, u => u.BonusAccessUntilUtc = Day(4));
         await LaunchPaid("gift-ended", "accessEnded");
         await LaunchPaid("gift-trial", "onTrial");
 
         var toEnded = Gift((await OpenForm(ended, "gift-ended")).Body);
-        var toShort = Gift((await OpenForm(fewDaysLeft, "gift-trial")).Body);
-        var toLong = Gift((await OpenForm(longTrial, "gift-trial")).Body);
+        var toTrial = Gift((await OpenForm(fewDaysLeft, "gift-trial")).Body);
+        var toBonus = Gift((await OpenForm(onBonus, "gift-trial")).Body);
 
         toEnded.Outcome.Should().Be("given");
-        (await Reload(ended)).TrialEndsAtUtc.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
+        toEnded.Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
         (await Reload(ended)).HasActiveTrial(DateTime.UtcNow).Should().BeTrue();
-        toShort.Outcome.Should().Be("given");
-        (await Reload(fewDaysLeft)).TrialEndsAtUtc.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near, "a month from today, not on top of the five days left");
-        toLong.Outcome.Should().Be("freeAccessIsLonger");
-        toLong.Until.Should().BeCloseTo(longTrial.RegisteredAtUtc.AddDays(90), Near);
-        (await Reload(longTrial)).BonusAccessUntilUtc.Should().BeNull();
+        // Five days of the trial were left: they stay, the month goes after them.
+        toTrial.Outcome.Should().Be("addedToFreeAccess");
+        var trial = await Reload(fewDaysLeft);
+        trial.TrialBonusDays.Should().Be(30);
+        trial.TrialEndsAtUtc.Should().BeCloseTo(fewDaysLeft.RegisteredAtUtc.AddDays(60), TimeSpan.FromSeconds(1));
+        toTrial.Until.Should().BeCloseTo(trial.TrialEndsAtUtc, TimeSpan.FromSeconds(1));
+        // A bonus period earned by inviting a friend is running: the month goes after it.
+        toBonus.Should().Be(("addedToFreeAccess", 30, Day(34)));
+        var bonus = await Reload(onBonus);
+        bonus.BonusAccessUntilUtc.Should().Be(Day(34));
+        new[] { trial, bonus, await Reload(ended) }.Should().OnlyContain(u => !u.IsPro && u.SubscribedUntil == null, "free access stays free access");
+    }
+
+    [Test]
+    public async Task A_purchase_after_the_gift_starts_from_the_gifted_end_neither_losing_nor_doubling_the_days()
+    {
+        var subscriber = await Subscriber(SubscriptionPlan.Month, Day(22));
+        var lapsed = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
+        var onTrial = await AddUser(25);
+        await LaunchPaid("gift-then-buy", "paying");
+        await LaunchPaid("gift-then-buy", "proLapsed", anotherAudience: true);
+        await LaunchPaid("gift-then-buy", "onTrial", anotherAudience: true);
+        foreach (var person in new[] { subscriber, lapsed, onTrial }) (await OpenForm(person, "gift-then-buy")).Code.Should().Be(HttpStatusCode.OK);
+        var gifted = await Reload(onTrial);
+
+        foreach (var person in new[] { subscriber, lapsed, onTrial })
+        {
+            (await InScope(sp => sp.GetRequiredService<MediatR.IMediator>().Send(
+                new Application.MiniApp.Commands.ActivateProStars { UserId = person.Id, Payload = "Stars_Pro_Month", ChargeId = $"charge-{person.TelegramId}" })))
+                .Should().Be(Application.MiniApp.Commands.ActivateProStarsResult.Success);
+            (await OpenForm(person, "gift-then-buy")).Code.Should().Be(HttpStatusCode.OK, "coming back by the button after buying");
+        }
+
+        (await Reload(subscriber)).SubscribedUntil.Should().Be(Day(22).AddDays(60), "22 days left + the gifted month + the bought month");
+        (await Reload(lapsed)).SubscribedUntil.Should().BeCloseTo(DateTime.UtcNow.AddDays(60), Near, "the gifted month, then the bought one");
+        var bought = await Reload(onTrial);
+        bought.SubscribedUntil.Should().BeCloseTo(gifted.TrialEndsAtUtc.AddDays(30), TimeSpan.FromSeconds(1), "the bought month starts where the trial with the gift ends");
+        bought.TrialBonusDays.Should().Be(30, "and the gift is not given a second time");
+        (await Admin(HttpMethod.Get, "campaigns/gift-then-buy")).Body.GetProperty("gifted").GetInt32().Should().Be(3);
     }
 
     [Test]
@@ -1485,10 +1517,26 @@ public class UserFeedbackTests : TestBase
         (status.GetProperty("opened").GetInt32(), status.GetProperty("gifted").GetInt32()).Should().Be((3, 3));
     }
 
-    [Test]
-    public async Task A_trial_sent_to_the_owner_gives_the_gift_too_and_each_new_trial_can_be_walked_again()
+    [TestCase("trial", "addedToFreeAccess")]
+    [TestCase("lapsed", "given")]
+    [TestCase("subscriber", "addedToSubscription")]
+    [TestCase("lifetime", "lifetime")]
+    public async Task A_trial_sent_to_the_owner_shows_the_recipients_screen_and_gives_no_days_however_many_times(string access, string expected)
     {
-        // The owner here is on a trial with 25 days left.
+        // The owner comes on a trial with 25 days left; the other cases give them another kind of access.
+        var subscribedUntil = Day(22);
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            var me = await db.Users.SingleAsync(u => u.TelegramId == Owner);
+            if (access != "trial")
+            {
+                me.IsPro = true;
+                me.SubscriptionPlan = access == "lifetime" ? SubscriptionPlan.Lifetime : SubscriptionPlan.Month;
+                me.SubscribedUntil = access == "lifetime" ? null : access == "lapsed" ? DateTime.UtcNow.AddDays(-40) : subscribedUntil;
+            }
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
         var owner = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Users.AsNoTracking().SingleAsync(u => u.TelegramId == Owner));
         var preset = await PaidPreset();
         async Task<string> SendToMe()
@@ -1506,19 +1554,51 @@ public class UserFeedbackTests : TestBase
         }
 
         var first = await SendToMe();
+        var byCampaign = await Call(Owner, HttpMethod.Post, "/api/miniapp/campaign-open", new { key = first });
         var opened = await OpenForm(owner, first);
         (await AnswerInForm(owner, first, "q1", "Занимаюсь регулярно")).Should().Be(HttpStatusCode.OK);
         (await FinishForm(owner, first)).Should().Be(HttpStatusCode.OK);
         var second = await SendToMe();
         var openedAgain = await OpenForm(owner, second);
+        await OpenForm(owner, second);
 
         second.Should().NotBe(first, "every trial is a new survey");
-        Gift(opened.Body).Outcome.Should().Be("given");
-        Gift(openedAgain.Body).Outcome.Should().Be("given");
+        byCampaign.Body.GetProperty("gift").ValueKind.Should().Be(JsonValueKind.Null);
+        foreach (var screen in new[] { opened.Body, openedAgain.Body })
+        {
+            // The very screen a recipient with this access would get — marked as a trial.
+            Gift(screen).Outcome.Should().Be(expected);
+            screen.GetProperty("gift").GetProperty("trial").GetBoolean().Should().BeTrue();
+        }
+        if (expected != "given") Gift(openedAgain.Body).Until.Should().Be(Gift(opened.Body).Until, "the second trial promises no more than the first");
+        if (expected == "addedToSubscription") Gift(opened.Body).Until.Should().Be(subscribedUntil.AddDays(30));
+        if (expected == "given") Gift(openedAgain.Body).Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
         openedAgain.Body.GetProperty("finished").GetBoolean().Should().BeFalse("a new trial starts from the first screen");
         openedAgain.Body.GetProperty("answers").EnumerateObject().Should().BeEmpty();
-        (await Reload(owner)).TrialEndsAtUtc.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near, "trials do not stack: it is always a month from today");
+
+        var after = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Users.AsNoTracking().SingleAsync(u => u.TelegramId == Owner));
+        (after.SubscribedUntil, after.TrialBonusDays, after.BonusAccessUntilUtc, after.TrialEndsAtUtc)
+            .Should().Be((owner.SubscribedUntil, owner.TrialBonusDays, owner.BonusAccessUntilUtc, owner.TrialEndsAtUtc), "no days are given on a trial");
+        (await Delivery(owner, first)).GiftGrantedAtUtc.Should().BeNull();
+        (await Delivery(owner, second)).GiftGrantedAtUtc.Should().BeNull();
         (await Admin(HttpMethod.Get, "feedback")).Body.GetProperty("surveys").GetArrayLength().Should().Be(0, "trials are not listed among surveys");
+    }
+
+    [Test]
+    public async Task An_ordinary_broadcast_gift_keeps_its_own_rule_days_from_the_open_and_nothing_for_longer_access()
+    {
+        var shortUntil = Day(2);
+        var longUntil = Day(200);
+        var shortOne = await Subscriber(SubscriptionPlan.Month, shortUntil);
+        var longOne = await Subscriber(SubscriptionPlan.Year, longUntil);
+        (await Prepare("plain-gift", null, audience: "paying", buttonText: "Открыть", giftDays: 7, message: "Подарок")).Code.Should().Be(HttpStatusCode.OK);
+        await Admin(HttpMethod.Post, "campaigns/plain-gift/send", new { limit = 100 });
+
+        foreach (var person in new[] { shortOne, longOne })
+            await Call(person.TelegramId, HttpMethod.Post, "/api/miniapp/campaign-open", new { key = "plain-gift" });
+
+        (await Reload(shortOne)).SubscribedUntil.Should().BeCloseTo(DateTime.UtcNow.AddDays(7), Near, "seven days from the open, not on top of the two left");
+        (await Reload(longOne)).SubscribedUntil.Should().Be(longUntil, "nothing is added to access that already runs longer");
     }
 
     // ── Конструктор опроса ───────────────────────────────────────────────────

@@ -17,22 +17,24 @@ describe('giftWords — the first screen says what the person actually got', () 
     expect(giftWords(gift('given', '2026-11-02T09:00:00Z', 21), NOW)!.title).toBe('Полный доступ на 21 день включён')
   })
 
-  it('a subscription that runs longer is not called a gift: its own date, with the year when it is another one', () => {
-    const words = giftWords(gift('subscriptionIsLonger', '2027-03-05T09:00:00Z'), NOW)!
-    expect(words.title).toBe('Подписка действует до 5 марта 2027')
-    expect(words.line).toContain('новые дни к ней не прибавились')
-    expect(words.title + words.line).not.toContain('включён')
+  it('a running subscription gets the month on top: «добавлен» and its new end, with the year when it is another one', () => {
+    expect(giftWords(gift('addedToSubscription', '2027-07-15T09:00:00Z'), NOW)).toEqual({
+      title: 'Месяц полного доступа добавлен', line: 'Подписка теперь действует до 15 июля 2027.'
+    })
+    expect(giftWords(gift('addedToSubscription', '2026-12-03T09:00:00Z'), NOW)!.line).toBe('Подписка теперь действует до 3 декабря.')
+    expect(giftWords(gift('addedToSubscription', '2026-11-10T09:00:00Z', 7), NOW)!.title).toBe('Полный доступ продлён на 7 дней')
     expect(untilText('2026-12-31T09:00:00Z', NOW)).toBe('31 декабря')
   })
 
-  it('lifetime access, longer free access and an ended offer each get their own honest words', () => {
+  it('a running trial gets the month on top too; lifetime access and an ended offer get their own honest words', () => {
+    expect(giftWords(gift('addedToFreeAccess', '2026-12-01T09:00:00Z'), NOW)).toEqual({
+      title: 'Месяц полного доступа добавлен', line: 'Бесплатный доступ теперь открыт до 1 декабря.'
+    })
     const lifetime = giftWords(gift('lifetime', null), NOW)!
     expect(lifetime.title).toBe('У тебя пожизненный доступ')
     expect(lifetime.line).toContain('прибавить к нему нечего')
+    expect(lifetime.title + lifetime.line).not.toMatch(/включён|добавлен/)
 
-    expect(giftWords(gift('freeAccessIsLonger', '2026-12-01T09:00:00Z'), NOW)).toEqual({
-      title: 'Полный доступ открыт до 1 декабря', line: 'Это дольше подарка, поэтому новые дни не прибавились.'
-    })
     const ended = giftWords(gift('offerEnded', '2026-10-10T09:00:00Z'), NOW)!
     expect(ended.title).toBe('Подарок можно было забрать до 10 октября')
     expect(ended.line).toContain('доступ не изменился')
@@ -41,10 +43,11 @@ describe('giftWords — the first screen says what the person actually got', () 
 
   it('a gift that ran out long ago is not announced again', () => {
     expect(giftWords(gift('given', '2026-09-01T09:00:00Z'), NOW)).toBeNull()
+    expect(giftWords(gift('addedToSubscription', '2026-09-01T09:00:00Z'), NOW)).toBeNull()
   })
 
   it('no wording depends on the reader’s gender and there are no emoji', () => {
-    const all = (['given', 'lifetime', 'subscriptionIsLonger', 'freeAccessIsLonger', 'offerEnded', 'notGiven'] as const)
+    const all = (['given', 'addedToSubscription', 'addedToFreeAccess', 'lifetime', 'offerEnded', 'notGiven'] as const)
       .map(o => giftWords(gift(o, '2026-11-11T09:00:00Z'), NOW)!).map(w => w.title + ' ' + w.line).join(' ')
     expect(all).not.toMatch(/\(а\)|\(ась\)|получил[аи]? |\p{Extended_Pictographic}/u)
   })
@@ -67,10 +70,18 @@ describe('SurveyGiftIntro', () => {
     expect(start).toHaveBeenCalledTimes(1)
   })
 
-  it('does not say «доступ уже твой» to someone the days were not added to', () => {
+  it('lifetime access: thanks, no «доступ уже твой», and it is not called a gift', () => {
     render(<SurveyGiftIntro gift={gift('lifetime', null)} questions={5} onStart={() => {}} onClose={() => {}} now={NOW} />)
     expect(screen.getByTestId('survey-gift').getAttribute('data-outcome')).toBe('lifetime')
     expect(screen.getByTestId('survey-gift-eyebrow').textContent).toBe('твой доступ')
     expect(screen.getByTestId('survey-gift-invite').textContent).toBe('Здесь 5 коротких вопросов. По ответам я решаю, что делать в боте дальше. Отвечать не обязательно.')
+    expect(screen.queryByTestId('survey-gift-trial')).toBeNull()
+  })
+
+  it('the owner’s trial shows the same screen with a note that no days were given', () => {
+    render(<SurveyGiftIntro gift={{ ...gift('addedToSubscription', '2026-12-03T09:00:00Z'), trial: true }} questions={4} onStart={() => {}} onClose={() => {}} now={NOW} />)
+    expect(screen.getByTestId('survey-gift-title').textContent).toBe('Месяц полного доступа добавлен')
+    expect(screen.getByTestId('survey-gift-eyebrow').textContent).toBe('подарок')
+    expect(screen.getByTestId('survey-gift-trial').textContent).toContain('Пробная отправка: дни не начислены')
   })
 })

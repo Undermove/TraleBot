@@ -468,7 +468,8 @@ public partial class BroadcastCampaignService(
             await db.SaveChangesAsync(ct);
         }
 
-        var gift = delivery.GiftGrantedAtUtc == null && campaign.GiftOffered(now)
+        // A gift survey the owner sent to themselves gives nothing: see BroadcastCampaign.IsGiftSurveyTrial.
+        var gift = delivery.GiftGrantedAtUtc == null && campaign.GiftOffered(now) && !campaign.IsGiftSurveyTrial
             ? await GiveGiftAsync(delivery.Id, userId, campaign, now, ct)
             : null;
         return new CampaignOpenResult(firstOpen, gift);
@@ -478,7 +479,8 @@ public partial class BroadcastCampaignService(
     /// The recipient opened the form of a survey that carries a gift. The open is what gives the gift
     /// (<see cref="MarkOpenedAsync"/> — at once, whether or not anything is answered, once per person
     /// per campaign), and the answer says what the person actually has now, so the form's first screen
-    /// can tell the truth: the days were added, or there was nothing to add them to, or the offer is over.
+    /// can tell the truth: the days count from today, or were added to a subscription or a trial, or
+    /// there was nothing to add them to (Lifetime), or the offer is over.
     /// Unlike <see cref="CampaignOpenResult.Gift"/> it is the same on every later open.
     /// Null for a survey without a gift and for anyone but a recipient.
     /// </summary>
@@ -499,23 +501,41 @@ public partial class BroadcastCampaignService(
         if (delivery == null || user == null) return null;
 
         var now = DateTime.UtcNow;
-        if (delivery.GiftGrantedAtUtc != null)
-            return new SurveyGiftState(SurveyGiftOutcome.Given, campaign.GiftDays, delivery.GiftAccessUntilUtc);
-        // Not given: the person already has more than the gift would give — or the offer has ended.
-        if (user.IsLifetime) return new SurveyGiftState(SurveyGiftOutcome.Lifetime, campaign.GiftDays, null);
-        if (user.HasActivePro(now) && user.SubscribedUntil >= now.AddDays(campaign.GiftDays))
-            return new SurveyGiftState(SurveyGiftOutcome.SubscriptionIsLonger, campaign.GiftDays, user.SubscribedUntil);
-        if (user.HasActiveTrial(now) && user.TrialEndsAtUtc >= now.AddDays(campaign.GiftDays))
-            return new SurveyGiftState(SurveyGiftOutcome.FreeAccessIsLonger, campaign.GiftDays, user.TrialEndsAtUtc);
+        var days = campaign.GiftDays;
+        if (campaign.IsGiftSurveyTrial)
+        {
+            // Nothing is given on a trial; the screen is the one a recipient with this access would see.
+            // `user` is not tracked, so trying the gift on it changes nothing.
+            if (user.IsLifetime) return new SurveyGiftState(SurveyGiftOutcome.Lifetime, days, null, Trial: true);
+            if (!campaign.GiftOffered(now)) return new SurveyGiftState(SurveyGiftOutcome.OfferEnded, days, campaign.GiftOfferEndsAtUtc, Trial: true);
+            var would = user.HasActivePro(now) ? SurveyGiftOutcome.AddedToSubscription
+                : user.HasActiveTrial(now) ? SurveyGiftOutcome.AddedToFreeAccess
+                : SurveyGiftOutcome.Given;
+            return new SurveyGiftState(would, days, user.ExtendAccessDays(days, now), Trial: true);
+        }
+
+        if (delivery.GiftGrantedAtUtc is { } grantedAt && delivery.GiftAccessUntilUtc is { } until)
+        {
+            // Days counted from the open mean there was no access to add them to; a later end means
+            // they went on top of a subscription or of free access that was running.
+            if (until - grantedAt <= TimeSpan.FromDays(days) + TimeSpan.FromMinutes(1))
+                return new SurveyGiftState(SurveyGiftOutcome.Given, days, until);
+            // The end as it is now: the person may have bought or earned more since.
+            return user.IsPro
+                ? new SurveyGiftState(SurveyGiftOutcome.AddedToSubscription, days, user.HasActivePro(now) ? user.SubscribedUntil : until)
+                : new SurveyGiftState(SurveyGiftOutcome.AddedToFreeAccess, days, user.HasActiveTrial(now) ? user.TrialEndsAtUtc : until);
+        }
+        if (user.IsLifetime) return new SurveyGiftState(SurveyGiftOutcome.Lifetime, days, null);
         return new SurveyGiftState(
-            campaign.GiftOffered(now) ? SurveyGiftOutcome.NotGiven : SurveyGiftOutcome.OfferEnded, campaign.GiftDays, campaign.GiftOfferEndsAtUtc);
+            campaign.GiftOffered(now) ? SurveyGiftOutcome.NotGiven : SurveyGiftOutcome.OfferEnded, days, campaign.GiftOfferEndsAtUtc);
     }
 
     /// <summary>
     /// Gives the campaign's gift to one recipient. The mark on the delivery row and the change of the
     /// user's access are one transaction, and the mark is an atomic claim: of several parallel calls
-    /// exactly one changes the user. Nothing is marked when the person already has that much access,
-    /// so the offer stays open for them until its deadline.
+    /// exactly one changes the user. Nothing is marked when nothing was changed (an ordinary campaign:
+    /// the person already has that much access, so the offer stays open for them until its deadline;
+    /// a survey: lifetime access).
     /// </summary>
     private async Task<CampaignGift?> GiveGiftAsync(
         Guid deliveryId, Guid userId, BroadcastCampaign campaign, DateTime now, CancellationToken ct)
@@ -525,7 +545,11 @@ public partial class BroadcastCampaignService(
         if (user == null) return null;
         await db.Entry(user).ReloadAsync(ct);
 
-        var until = user.GiftAccessDays(campaign.GiftDays, now);
+        // An ordinary campaign gives "days from now" and nothing to someone who already has as much;
+        // a survey's gift is added to the end of the access the person has.
+        var until = campaign.IsGiftSurvey
+            ? user.ExtendAccessDays(campaign.GiftDays, now)
+            : user.GiftAccessDays(campaign.GiftDays, now);
         if (until == null) return null;
         if (!await db.TryClaimCampaignGiftAsync(deliveryId, now, until.Value, ct))
         {
@@ -599,20 +623,21 @@ public record CampaignGift(int Days, DateTime AccessUntilUtc);
 
 /// <summary>What the gift of a survey came to for one recipient — for the form's first screen.</summary>
 /// <param name="Days">How many days the survey gives.</param>
-/// <param name="UntilUtc">Given — until when the gift gave access; a longer subscription or free access —
-/// until when that runs; the offer ended — when it ended.</param>
-public record SurveyGiftState(SurveyGiftOutcome Outcome, int Days, DateTime? UntilUtc);
+/// <param name="UntilUtc">Until when the person has access now; the offer ended — when it ended; null for Lifetime.</param>
+/// <param name="Trial">The owner's trial of the survey: nothing was given, this is what a person with
+/// the owner's access would see.</param>
+public record SurveyGiftState(SurveyGiftOutcome Outcome, int Days, DateTime? UntilUtc, bool Trial = false);
 
 public enum SurveyGiftOutcome
 {
-    /// <summary>The days were given: access runs until <see cref="SurveyGiftState.UntilUtc"/>.</summary>
+    /// <summary>There was no access: the days count from the open.</summary>
     Given,
+    /// <summary>The days were added to the end of a running paid subscription.</summary>
+    AddedToSubscription,
+    /// <summary>The days were added to the end of a running trial or bonus period.</summary>
+    AddedToFreeAccess,
     /// <summary>Nothing to add: the access never ends.</summary>
     Lifetime,
-    /// <summary>Nothing was added: the paid subscription already runs longer than the gift would.</summary>
-    SubscriptionIsLonger,
-    /// <summary>Nothing was added: the free access already runs longer than the gift would.</summary>
-    FreeAccessIsLonger,
     /// <summary>The button was pressed after the offer's deadline.</summary>
     OfferEnded,
     /// <summary>The gift should have been given and was not (a failed write) — the next open gives it.</summary>

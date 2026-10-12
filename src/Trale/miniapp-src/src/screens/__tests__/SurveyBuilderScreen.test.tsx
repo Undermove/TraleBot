@@ -305,11 +305,18 @@ describe('SurveyBuilderScreen', () => {
     expect((screen.getByTestId('survey-gift-days') as HTMLInputElement).value).toBe('30')
     expect((screen.getByTestId('survey-gift-button') as HTMLInputElement).value).toBe('Забрать месяц')
     expect(screen.getByTestId('survey-gift-rules').textContent).toContain('отвечать для этого не нужно')
+    expect(screen.getByTestId('survey-gift-rules').textContent).toContain('продлеваются на 30 дн. от своего конца')
     expect(screen.queryByTestId('survey-gift-text-warning')).toBeNull()
 
     // The owner walks it as a recipient: the gift screen first, then the questions.
     await userEvent.click(screen.getByTestId('survey-try'))
     expect(screen.getByTestId('survey-gift-title').textContent).toBe('Месяц полного доступа включён')
+    // What a person gets depends on the access they have — the owner can look at each screen.
+    await userEvent.click(screen.getByTestId('survey-preview-who-addedToSubscription'))
+    expect(screen.getByTestId('survey-gift-title').textContent).toBe('Месяц полного доступа добавлен')
+    expect(screen.getByTestId('survey-gift-line').textContent).toContain('Подписка теперь действует до')
+    await userEvent.click(screen.getByTestId('survey-preview-who-lifetime'))
+    expect(screen.getByTestId('survey-gift-title').textContent).toBe('У тебя пожизненный доступ')
     await userEvent.click(screen.getByTestId('survey-gift-start'))
     expect(screen.getByTestId('survey-progress').textContent).toBe('Вопрос 1 из 2')
     await userEvent.click(screen.getByRole('button', { name: 'Назад' }))
@@ -319,6 +326,7 @@ describe('SurveyBuilderScreen', () => {
     expect(screen.getByTestId('survey-summary').textContent).toContain('Вопросов: 2 — все в мини-аппе. Подарок: 30 дн. доступа за нажатие кнопки.')
     await userEvent.click(screen.getByTestId('survey-send-me'))
     expect((await screen.findByTestId('survey-note')).textContent).toContain('Нажми кнопку под сообщением')
+    expect(screen.getByTestId('survey-note').textContent).toContain('дни тебе не начисляются')
     expect(campaigns.prepare.mock.calls[0][0]).toMatchObject({
       key: '', newSurveySlug: 'paid-test', audience: 'owner', buttonText: 'Забрать месяц', buttonQuery: null, giftDays: 30, dryRun: false
     })

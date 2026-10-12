@@ -615,17 +615,28 @@ test.describe('опрос с подарком', () => {
     expect(calls.formFinished).toBe(1)
   })
 
-  test('to whom the days were not added the first screen says so instead of «включён»', async ({ page }) => {
-    const nextYear = new Date(Date.UTC(new Date().getFullYear() + 1, 2, 5, 12))
-    await setup(page, { me: { isPro: true, hasAccess: true }, form: paidForm({ outcome: 'subscriptionIsLonger', days: 30, untilUtc: nextYear.toISOString() }) })
+  test('a running subscription gets the month on top: «добавлен» and the new end of the subscription', async ({ page }) => {
+    const nextYear = new Date(Date.UTC(new Date().getFullYear() + 1, 6, 15, 12))
+    await setup(page, { me: { isPro: true, hasAccess: true }, form: paidForm({ outcome: 'addedToSubscription', days: 30, untilUtc: nextYear.toISOString() }) })
     await pressButton(page)
 
-    await expect(page.getByTestId('survey-gift-title')).toHaveText(`Подписка действует до 5 марта ${nextYear.getFullYear()}`)
-    await expect(page.getByTestId('survey-gift-line')).toContainText('новые дни к ней не прибавились')
-    await expect(page.getByTestId('survey-gift')).not.toContainText('включён')
-    await expect(page.getByTestId('survey-gift-invite')).toHaveText('Здесь 4 коротких вопроса. По ответам я решаю, что делать в боте дальше. Отвечать не обязательно.')
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа добавлен')
+    await expect(page.getByTestId('survey-gift-line')).toHaveText(`Подписка теперь действует до 15 июля ${nextYear.getFullYear()}.`)
+    await expect(page.getByTestId('survey-gift-invite')).toHaveText('Здесь 4 коротких вопроса. По ответам я решаю, что делать в боте дальше. Отвечать не обязательно — доступ уже твой.')
+    await expect(page.getByTestId('survey-gift-trial')).toHaveCount(0)
     await fits(page)
-    await shot(page, 'paid-survey-5-subscription-is-longer')
+    await shot(page, 'paid-survey-5-added-to-subscription')
+  })
+
+  test('the owner’s trial shows the recipient’s screen and says that no days were given', async ({ page }) => {
+    await setup(page, { me: { isPro: true, hasAccess: true }, form: paidForm({ outcome: 'addedToSubscription', days: 30, untilUtc: inDays(52).toISOString(), trial: true }) })
+    await pressButton(page)
+
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа добавлен')
+    await expect(page.getByTestId('survey-gift-line')).toHaveText(`Подписка теперь действует до ${dayMonth(inDays(52))}.`)
+    await expect(page.getByTestId('survey-gift-trial')).toContainText('Пробная отправка: дни не начислены')
+    await fits(page)
+    await shot(page, 'paid-survey-8-owner-trial')
   })
 
   for (const [outcome, title, name] of [
@@ -637,6 +648,7 @@ test.describe('опрос с подарком', () => {
       await pressButton(page)
       await expect(page.getByTestId('survey-gift-title')).toContainText(title)
       await expect(page.getByTestId('survey-gift')).not.toContainText('включён')
+      await expect(page.getByTestId('survey-gift')).not.toContainText('добавлен')
       await expect(page.getByTestId('survey-gift-start')).toBeVisible()
       await fits(page)
       await shot(page, name)
@@ -908,7 +920,7 @@ test.describe('владелец', () => {
     await expect(card(page, 3)).toContainText('свободный ответ')
     await expect(page.getByTestId('survey-gift-days')).toHaveValue('30')
     await expect(page.getByTestId('survey-gift-button')).toHaveValue('Забрать месяц')
-    await expect(page.getByTestId('survey-gift-rules')).toContainText('у кого подписка и так длиннее или доступ пожизненный, тем дни не прибавятся')
+    await expect(page.getByTestId('survey-gift-rules')).toContainText('действующая подписка или пробный период продлеваются на 30 дн. от своего конца')
     await expect(page.getByTestId('survey-problem')).toHaveCount(0)
     for (const control of [page.getByTestId('survey-gift-days'), page.getByTestId('survey-gift-button')]) {
       expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44)
@@ -930,6 +942,16 @@ test.describe('владелец', () => {
     await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа включён')
     await fits(page)
     await shot(page, 'paid-builder-3-preview-gift', true)
+    for (const who of await page.getByRole('radiogroup', { name: 'Чей экран показать' }).getByRole('radio').all()) {
+      expect((await who.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    }
+    await page.getByTestId('survey-preview-who-addedToSubscription').click()
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа добавлен')
+    await expect(page.getByTestId('survey-gift-line')).toContainText('Подписка теперь действует до')
+    await shot(page, 'paid-builder-3b-preview-subscriber', true)
+    await page.getByTestId('survey-preview-who-lifetime').click()
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('У тебя пожизненный доступ')
+    await page.getByTestId('survey-preview-who-given').click()
     await page.getByTestId('survey-gift-start').click()
     await expect(page.getByTestId('survey-progress')).toHaveText('Вопрос 1 из 4')
     await page.getByRole('button', { name: 'Назад' }).first().click()
@@ -941,7 +963,7 @@ test.describe('владелец', () => {
     await fits(page)
     await shot(page, 'paid-builder-4-sending', true)
     await page.getByTestId('survey-send-me').click()
-    await expect(page.getByTestId('survey-note')).toContainText('Нажми кнопку под сообщением')
+    await expect(page.getByTestId('survey-note')).toContainText('дни тебе не начисляются')
     expect(calls.prepared[0]).toMatchObject({ key: '', newSurveySlug: 'paid-test', audience: 'owner', buttonText: 'Забрать месяц', buttonQuery: null, giftDays: 30, dryRun: false })
     expect(calls.prepared[0].survey.intro).toBe(paidIntro)
     expect(calls.prepared[0].survey.questions.map((q: { text: string }) => q.text)).toEqual(paid.map(q => q.text))

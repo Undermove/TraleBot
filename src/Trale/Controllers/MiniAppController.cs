@@ -654,12 +654,14 @@ public class MiniAppController : Controller
             key = state.Key,
             survey = AdminController.MapSurvey(state.Form),
             finished = state.Finished,
-            // "given" | "lifetime" | "subscriptionIsLonger" | "freeAccessIsLonger" | "offerEnded" | "notGiven"; null — a survey without a gift.
+            // "given" | "addedToSubscription" | "addedToFreeAccess" | "lifetime" | "offerEnded" | "notGiven"; null — a survey without a gift.
+            // trial — the owner's own trial of the survey: the screen is real, the days are not given.
             gift = gift == null ? null : new
             {
                 outcome = char.ToLowerInvariant(gift.Outcome.ToString()[0]) + gift.Outcome.ToString()[1..],
                 days = gift.Days,
-                untilUtc = gift.UntilUtc
+                untilUtc = gift.UntilUtc,
+                trial = gift.Trial
             },
             answers = state.Answers.ToDictionary(a => a.Key, a => new { a.Value.Option, a.Value.Other, a.Value.Text })
         });

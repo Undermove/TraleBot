@@ -883,16 +883,18 @@ export interface SurveyAnswerDto {
 }
 
 /**
- * Что вышло с подарком опроса у этого человека. Подарок выдаётся при открытии формы, отвечать не обязательно;
- * первый экран формы говорит, что именно человек получил:
- * given — дни выданы, доступ до untilUtc; lifetime — доступ и так бессрочный; subscriptionIsLonger /
- * freeAccessIsLonger — подписка или бесплатный доступ и так длиннее подарка (untilUtc — до какого числа);
+ * Что вышло с подарком опроса у этого человека. Подарок выдаётся при открытии формы, отвечать не обязательно,
+ * и прибавляется к тому доступу, который уже есть; первый экран формы говорит, что именно человек получил:
+ * given — доступа не было, дни идут с сегодняшнего дня; addedToSubscription / addedToFreeAccess — дни прибавлены
+ * к концу действующей подписки или пробного периода (untilUtc — новый конец); lifetime — доступ и так бессрочный;
  * offerEnded — кнопку нажали после срока (untilUtc — когда он вышел); notGiven — запись не прошла, выдаст следующее открытие.
+ * trial — пробная отправка владельцу: экран настоящий, дни не начислены.
  */
 export interface SurveyGiftDto {
-  outcome: 'given' | 'lifetime' | 'subscriptionIsLonger' | 'freeAccessIsLonger' | 'offerEnded' | 'notGiven'
+  outcome: 'given' | 'addedToSubscription' | 'addedToFreeAccess' | 'lifetime' | 'offerEnded' | 'notGiven'
   days: number
   untilUtc: string | null
+  trial?: boolean
 }
 
 /** Форма опроса глазами получателя (мини-апп): вопросы и то, что человек уже ответил. gift — у опроса с подарком. */

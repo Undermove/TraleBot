@@ -40,6 +40,12 @@ const BATCH = 25
 /** Кнопка под сообщением, когда подарок добавлен к форме, у которой своей кнопки нет. */
 const DEFAULT_GIFT_BUTTON = 'Забрать подарок'
 const BUTTON_MAX = 64
+/** Чей первый экран показать в предпросмотре: что получает человек, зависит от доступа, который у него уже есть. */
+const GIFT_PREVIEWS = [
+  { id: 'given', name: 'Подписка закончилась', ahead: 0 },
+  { id: 'addedToSubscription', name: 'Подписка действует', ahead: 22 },
+  { id: 'lifetime', name: 'Пожизненный', ahead: 0 }
+] as const
 const PEOPLE = AUDIENCES.filter(a => a.id !== 'owner')
 
 const primary = 'jewel-btn jewel-btn-gold flex-1 font-sans text-[16px] font-extrabold'
@@ -151,6 +157,8 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
   const [view, setView] = useState<{ edit: number } | 'add' | 'preview' | 'intro' | null>(null)
   /** В предпросмотре опроса с подарком: первый экран уже пройден. */
   const [previewStarted, setPreviewStarted] = useState(false)
+  /** В предпросмотре опроса с подарком: чей экран подарка показать. */
+  const [previewWho, setPreviewWho] = useState<(typeof GIFT_PREVIEWS)[number]['id']>('given')
 
   const [counts, setCounts] = useState<Partial<Record<CampaignAudience, number>>>({})
   const [audience, setAudience] = useState<CampaignAudience>(start?.audience ?? 'accessEnded')
@@ -258,7 +266,7 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
     const sent = await adminCampaigns.send(trial.key, 1)
     return sent.sent !== 1 ? 'Telegram не принял сообщение. Попробуй ещё раз.'
       : withGift
-        ? 'Отправил тебе в чат с ботом. Нажми кнопку под сообщением: откроется первый экран — он скажет, что с подарком у тебя, — и за ним вопросы. Если у тебя полный доступ и так есть, дни не прибавятся; как экран выглядит у получившего подарок, покажет «Посмотреть как пользователь».'
+        ? 'Отправил тебе в чат с ботом. Нажми кнопку под сообщением: откроется первый экран, за ним вопросы. Это пробная отправка — дни тебе не начисляются, а экран показывает, что получил бы человек с таким доступом, как у тебя. Экраны для других людей — в «Посмотреть как пользователь».'
         : 'Отправил тебе в чат с ботом. Ответь на первый вопрос кнопкой и пройди форму до конца — так её увидят люди.'
   })
 
@@ -419,7 +427,8 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
                     </label>
                     <div className={small} data-testid="survey-gift-rules">
                       Подарок включается, когда человек нажмёт кнопку, — отвечать для этого не нужно. Один раз на человека; забрать можно 14 дней после того, как выбраны получатели.
-                      Это {giftDays} дн. доступа с дня нажатия: у кого подписка и так длиннее или доступ пожизненный, тем дни не прибавятся — первый экран скажет им об этом прямо.
+                      Дни прибавляются к тому, что уже есть: действующая подписка или пробный период продлеваются на {giftDays} дн. от своего конца, у кого доступа нет — {giftDays} дн. с дня нажатия.
+                      Пожизненному доступу прибавлять нечего — первый экран скажет об этом и поблагодарит.
                     </div>
                     {presetGiftDays > 0 && giftDays !== presetGiftDays && (
                       <div className="font-sans text-[12px] font-bold text-ruby" data-testid="survey-gift-text-warning">
@@ -520,10 +529,27 @@ export default function SurveyBuilderScreen({ resume, useDraft: withDraft, navig
               Предпросмотр: так форму увидит человек. Ответы никуда не записываются.
             </div>
             {withGift && !previewStarted ? (
-              <SurveyGiftIntro
-                gift={{ outcome: 'given', days: giftDays, untilUtc: new Date(Date.now() + giftDays * 86400000).toISOString() }}
-                questions={form.questions.length} onStart={() => { setPreviewStarted(true); window.scrollTo(0, 0) }} onClose={() => show(null)}
-              />
+              <>
+                <div className="flex flex-wrap gap-2 mb-4" role="radiogroup" aria-label="Чей экран показать">
+                  {GIFT_PREVIEWS.map(w => (
+                    <button
+                      key={w.id} type="button" role="radio" aria-checked={previewWho === w.id} onClick={() => setPreviewWho(w.id)} data-testid={`survey-preview-who-${w.id}`}
+                      className="px-3 min-h-[44px] rounded-xl border-2 font-sans text-[13px] font-bold text-jewelInk"
+                      style={{ borderColor: previewWho === w.id ? '#15100A' : 'rgba(21,16,10,0.18)', background: previewWho === w.id ? '#FBF6EC' : '#FFFEFA' }}
+                    >
+                      {w.name}
+                    </button>
+                  ))}
+                </div>
+                <SurveyGiftIntro
+                  gift={{
+                    outcome: previewWho, days: giftDays,
+                    untilUtc: previewWho === 'lifetime' ? null
+                      : new Date(Date.now() + (giftDays + GIFT_PREVIEWS.find(w => w.id === previewWho)!.ahead) * 86400000).toISOString()
+                  }}
+                  questions={form.questions.length} onStart={() => { setPreviewStarted(true); window.scrollTo(0, 0) }} onClose={() => show(null)}
+                />
+              </>
             ) : (
               <SurveyFormPages
                 questions={form.questions} initial={{}} finished={false} otherLabel={kit!.otherLabel} preview

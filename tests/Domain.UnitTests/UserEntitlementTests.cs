@@ -592,4 +592,56 @@ public class UserEntitlementTests
         user.HasActivePro(Now).ShouldBeTrue();
         user.HasMiniAppAccess(Now).ShouldBeTrue();
     }
+
+    // ----- ExtendAccessDays: a gift added on top of the access a person has (survey gifts) -----
+
+    [Test]
+    public void ExtendAccessDays_RunningSubscription_MovesItsEndByThatManyDays()
+    {
+        var shortOne = NewUser(u => { u.IsPro = true; u.SubscriptionPlan = SubscriptionPlan.Month; u.SubscribedUntil = new DateTime(2026, 11, 3, 0, 0, 0, DateTimeKind.Utc); });
+        var yearly = NewUser(u => { u.IsPro = true; u.SubscriptionPlan = SubscriptionPlan.Year; u.SubscribedUntil = new DateTime(2027, 6, 15, 0, 0, 0, DateTimeKind.Utc); });
+        var today = new DateTime(2026, 10, 12, 12, 0, 0, DateTimeKind.Utc);
+
+        shortOne.ExtendAccessDays(30, today).ShouldBe(new DateTime(2026, 12, 3, 0, 0, 0, DateTimeKind.Utc));
+        yearly.ExtendAccessDays(30, today).ShouldBe(new DateTime(2027, 7, 15, 0, 0, 0, DateTimeKind.Utc));
+        shortOne.SubscribedUntil.ShouldBe(new DateTime(2026, 12, 3, 0, 0, 0, DateTimeKind.Utc));
+        yearly.SubscriptionPlan.ShouldBe(SubscriptionPlan.Year);
+    }
+
+    [Test]
+    public void ExtendAccessDays_LapsedSubscription_ComesBackForTheDaysFromNow()
+    {
+        var user = NewUser(u => { u.IsPro = true; u.SubscriptionPlan = SubscriptionPlan.Month; u.SubscribedUntil = Now.AddDays(-40); });
+
+        user.ExtendAccessDays(30, Now).ShouldBe(Now.AddDays(30));
+        user.HasActivePro(Now).ShouldBeTrue();
+        user.BonusAccessUntilUtc.ShouldBeNull("the free window is closed to anyone who has ever paid");
+    }
+
+    [Test]
+    public void ExtendAccessDays_FreeAccess_IsAddedToTheEndOfWhatIsRunning_OrCountsFromNow()
+    {
+        var onTrial = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-25));
+        var ended = NewUser(u => u.RegisteredAtUtc = Now.AddDays(-200));
+        var onBonus = NewUser(u => { u.RegisteredAtUtc = Now.AddDays(-200); u.BonusAccessUntilUtc = Now.AddDays(4); });
+
+        onTrial.ExtendAccessDays(30, Now).ShouldBe(Now.AddDays(35));
+        onTrial.TrialBonusDays.ShouldBe(30);
+        ended.ExtendAccessDays(30, Now).ShouldBe(Now.AddDays(30));
+        ended.HasActiveTrial(Now).ShouldBeTrue();
+        onBonus.ExtendAccessDays(30, Now).ShouldBe(Now.AddDays(34));
+        new[] { onTrial, ended, onBonus }.ShouldAllBe(u => !u.IsPro && u.SubscribedUntil == null);
+    }
+
+    [Test]
+    public void ExtendAccessDays_Lifetime_OrNoDays_ChangesNothing()
+    {
+        var lifetime = NewUser(u => { u.IsPro = true; u.SubscriptionPlan = SubscriptionPlan.Lifetime; });
+        var plain = NewUser();
+
+        lifetime.ExtendAccessDays(30, Now).ShouldBeNull();
+        lifetime.SubscribedUntil.ShouldBeNull();
+        plain.ExtendAccessDays(0, Now).ShouldBeNull();
+        plain.TrialBonusDays.ShouldBe(0);
+    }
 }
