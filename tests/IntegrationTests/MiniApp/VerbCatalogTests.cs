@@ -320,6 +320,9 @@ public class VerbCatalogTests : TestBase
             .Distinct()
             .ToList();
 
+        JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray().SelectMany(v => v!["sentences"]!.AsArray())
+            .Where(s => s!["id"]!.GetValue<long>() < 0)
+            .Should().OnlyContain(s => s!["source"] != null, "a sentence written in by hand names where its Georgian comes from");
         found.Should().BeEmpty("strike the sentence out in scripts/verbs/sentences.skip.json and rebuild the catalog");
     }
 
@@ -329,6 +332,19 @@ public class VerbCatalogTests : TestBase
     [TestCase("Кто будет нашим следующим президентом?", "президент")]
     [TestCase("Русские идут.", "русские")]
     [TestCase("ფილმი ომის შესახებ არის", "ომის")]
+    [TestCase("Том положил свой пистолет под подушку.", "пистолет")]
+    [TestCase("Она знает, кто убил её собаку.", "убил")]
+    [TestCase("Вы были арестованы?", "арестован")]
+    [TestCase("Откройте дверь, или мы её взломаем!", "взлома")]
+    [TestCase("Вы это украли?", "украл")]
+    [TestCase("Вы думаете, что Том умер?", "умер")]
+    [TestCase("Вы потеряли много крови?", "крови")]
+    [TestCase("Климат здесь умеренный.", null)]
+    [TestCase("Я умею плавать.", null)]
+    [TestCase("Где моя кровать?", null)]
+    [TestCase("Кровля протекает.", null)]
+    [TestCase("Том слишком много выпил.", null)]
+    [TestCase("Я хочу меч!", null)]
     [TestCase("Вы говорите по-русски?", null)]
     [TestCase("Я учу русский язык.", null)]
     [TestCase("ლაპარაკობ რუსულად?", null)]
