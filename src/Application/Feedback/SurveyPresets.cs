@@ -11,7 +11,7 @@ namespace Application.Feedback;
 /// <param name="Id">Latin, lower case — becomes a part of the campaign key (<c>survey-2026-10-users</c>).</param>
 /// <param name="Title">What the card in the builder is called.</param>
 /// <param name="About">Whom the form is for, in a line.</param>
-/// <param name="GiftDays">Days of full access the survey gives to whoever opens its button; 0 — no gift.
+/// <param name="GiftDays">Days of full access the survey gives to whoever goes through it; 0 — no gift.
 /// The owner can change the number in the builder.</param>
 /// <param name="ButtonText">The caption of the one button under a survey with a gift; null for a survey without one.</param>
 public record SurveyPreset(string Id, string Title, string About, SurveyForm Form, int GiftDays = 0, string? ButtonText = null);
@@ -67,14 +67,14 @@ public static class SurveyPresets
     private static readonly SurveyQuestion Disliked = Free("Что нам стоит исправить в первую очередь? Пиши как есть, не обидимся.");
 
     // ── Тем, кто платил ──
-    // A thank-you with a gift: the message promises a month of access for pressing the button and
-    // asks nothing in return, so the whole form — the first question too — lives in the mini-app.
+    // A thank-you with a gift for answering: one button under the message, the whole form — the first
+    // question too — in the mini-app, a month of access right after the last question.
     public const string PaidIntro =
         "Привет! Это Дима, я делаю TraleBot.\n\n" +
         "Спасибо за подписку на TraleBot: такая поддержка помогает мне развивать бота дальше.\n\n" +
-        "В благодарность дарю месяц полного доступа. Он включится, как только нажмёшь кнопку, отвечать ни на что не обязательно.\n\n" +
-        "А если найдётся минута — там четыре коротких вопроса. По ответам я решаю, что делать в боте дальше.";
-    public const string PaidButton = "Забрать месяц";
+        "Помоги, пожалуйста, ещё раз: ответь на четыре коротких вопроса, это минута. По ответам я решаю, что делать в боте дальше.\n\n" +
+        "В благодарность подарю месяц полного доступа — он включится сразу после последнего вопроса.";
+    public const string PaidButton = "Ответить на вопросы";
     public const int PaidGiftDays = 30;
     private static readonly SurveyQuestion HowIsGeorgian = Choice("Как у тебя сейчас с грузинским?", true,
         "Занимаюсь регулярно", "Иногда захожу", "Сейчас пауза", "Уже не нужен");
@@ -96,7 +96,7 @@ public static class SurveyPresets
             Form(IfGone, WhatElseNow, WhyGeorgian, LastHelped, LastAnnoyed)),
         new("left", "Тем, кто перестал", "Ушли от TraleBot или от языка, после чего и чего хотели",
             new SurveyForm { Intro = LeftIntro, Questions = [LearningNow, AfterWhat, WhatElseThen, Goal, Disliked] }),
-        new("paid", "Тем, кто платил", "Спасибо за подписку и месяц доступа в подарок; как с грузинским, что полезнее всего и что сделать первым",
+        new("paid", "Тем, кто платил", "Спасибо за подписку; за ответы — месяц доступа в подарок. Как с грузинским, что полезнее всего и что сделать первым",
             new SurveyForm { Intro = PaidIntro, Questions = [HowIsGeorgian, MostUseful, WhatElseNow, DoFirst] },
             PaidGiftDays, PaidButton)
     ];

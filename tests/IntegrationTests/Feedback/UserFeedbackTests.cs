@@ -1147,8 +1147,8 @@ public class UserFeedbackTests : TestBase
     private const string PaidMessage =
         "Привет! Это Дима, я делаю TraleBot.\n\n" +
         "Спасибо за подписку на TraleBot: такая поддержка помогает мне развивать бота дальше.\n\n" +
-        "В благодарность дарю месяц полного доступа. Он включится, как только нажмёшь кнопку, отвечать ни на что не обязательно.\n\n" +
-        "А если найдётся минута — там четыре коротких вопроса. По ответам я решаю, что делать в боте дальше.";
+        "Помоги, пожалуйста, ещё раз: ответь на четыре коротких вопроса, это минута. По ответам я решаю, что делать в боте дальше.\n\n" +
+        "В благодарность подарю месяц полного доступа — он включится сразу после последнего вопроса.";
 
     private async Task<JsonElement> PaidPreset() =>
         (await Admin(HttpMethod.Get, "surveys/presets")).Body.GetProperty("presets").EnumerateArray().Single(p => p.GetProperty("id").GetString() == "paid");
@@ -1187,6 +1187,22 @@ public class UserFeedbackTests : TestBase
         u.ProPurchasedAtUtc = DateTime.UtcNow.AddDays(-200);
     });
 
+    /// <summary>The person reaches the end of the form: what the mini-app is told about the gift.</summary>
+    private async Task<JsonElement> Finish(User user, string key)
+    {
+        var (code, body) = await Call(user.TelegramId, HttpMethod.Post, $"/api/miniapp/surveys/{key}/finish");
+        code.Should().Be(HttpStatusCode.OK);
+        return body;
+    }
+
+    /// <summary>Opens the form, answers its first question and goes to the end — what earns the gift.</summary>
+    private async Task<(string? Outcome, int Days, DateTime? Until)> GoThrough(User user, string key)
+    {
+        (await OpenForm(user, key)).Code.Should().Be(HttpStatusCode.OK);
+        (await AnswerInForm(user, key, "q1", "Сейчас пауза")).Should().Be(HttpStatusCode.OK);
+        return Gift(await Finish(user, key));
+    }
+
     private static (string? Outcome, int Days, DateTime? Until) Gift(JsonElement opened)
     {
         var gift = opened.GetProperty("gift");
@@ -1203,9 +1219,9 @@ public class UserFeedbackTests : TestBase
         var preset = await PaidPreset();
 
         preset.GetProperty("title").GetString().Should().Be("Тем, кто платил");
-        preset.GetProperty("about").GetString().Should().Contain("месяц доступа в подарок");
+        preset.GetProperty("about").GetString().Should().Contain("за ответы — месяц доступа в подарок");
         preset.GetProperty("giftDays").GetInt32().Should().Be(30);
-        preset.GetProperty("buttonText").GetString().Should().Be("Забрать месяц");
+        preset.GetProperty("buttonText").GetString().Should().Be("Ответить на вопросы");
         var form = preset.GetProperty("form");
         form.GetProperty("intro").GetString().Should().Be(PaidMessage);
         var questions = form.GetProperty("questions").EnumerateArray().ToList();
@@ -1234,66 +1250,101 @@ public class UserFeedbackTests : TestBase
         var message = SentTo(person, mark).Single();
         message.Text.Should().Be(PaidMessage, "the first question is not in the chat");
         var button = ((InlineKeyboardMarkup)message.ReplyMarkup!).InlineKeyboard.Single().Single();
-        button.Text.Should().Be("Забрать месяц");
+        button.Text.Should().Be("Ответить на вопросы");
         button.CallbackData.Should().BeNull("there are no answer buttons in the chat");
         button.WebApp!.Url.Should().Be($"{SignedMiniApp.Host}/?screen=survey&s=paid-out&c=paid-out");
         var status = (await Admin(HttpMethod.Get, "campaigns/paid-out")).Body;
         status.GetProperty("giftDays").GetInt32().Should().Be(30);
-        status.GetProperty("buttonText").GetString().Should().Be("Забрать месяц");
+        status.GetProperty("buttonText").GetString().Should().Be("Ответить на вопросы");
         status.GetProperty("giftOfferEndsAtUtc").GetDateTime().ToUniversalTime().Should().BeCloseTo(DateTime.UtcNow.AddDays(14), Near);
-        (await Reload(person)).SubscribedUntil.Should().BeBefore(DateTime.UtcNow, "sending gives nothing — the button does");
+        (await Reload(person)).SubscribedUntil.Should().BeBefore(DateTime.UtcNow, "sending gives nothing — the answers do");
         (await Rows(person)).Should().BeEmpty();
     }
 
     [Test]
-    public async Task Opening_gives_a_lapsed_subscriber_a_month_at_once_whether_or_not_anything_is_answered()
+    public async Task Opening_the_form_gives_nothing_the_month_comes_after_the_last_question()
     {
         var person = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
         await LaunchPaid("paid-lapsed", "proLapsed");
 
+        // Opened by the button (both marks) and closed.
+        var byCampaign = await Call(person.TelegramId, HttpMethod.Post, "/api/miniapp/campaign-open", new { key = "paid-lapsed" });
         var (code, opened) = await OpenForm(person, "paid-lapsed");
+        var afterOpen = await Reload(person);
+        var deliveryAfterOpen = await Delivery(person, "paid-lapsed");
+        // Came back, answered one question, skipped the rest and reached the end.
+        (await AnswerInForm(person, "paid-lapsed", "q2", "Глаголы")).Should().Be(HttpStatusCode.OK);
+        var afterAnswer = await Reload(person);
+        var finished = Gift(await Finish(person, "paid-lapsed"));
+        var reopened = Gift((await OpenForm(person, "paid-lapsed")).Body);
 
         code.Should().Be(HttpStatusCode.OK);
-        var gift = Gift(opened);
-        gift.Outcome.Should().Be("given");
-        gift.Days.Should().Be(30);
-        gift.Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
+        byCampaign.Body.GetProperty("gift").ValueKind.Should().Be(JsonValueKind.Null);
+        Gift(opened).Should().Be(("promised", 30, null));
         opened.GetProperty("survey").GetProperty("questions").GetArrayLength().Should().Be(4);
-        opened.GetProperty("answers").EnumerateObject().Should().BeEmpty();
+        afterOpen.HasActivePro(DateTime.UtcNow).Should().BeFalse("opening gives nothing");
+        deliveryAfterOpen.GiftGrantedAtUtc.Should().BeNull();
+        deliveryAfterOpen.OpenedAtUtc.Should().NotBeNull();
+        deliveryAfterOpen.SurveyOpenedAtUtc.Should().NotBeNull();
+        afterAnswer.HasActivePro(DateTime.UtcNow).Should().BeFalse("an answer alone gives nothing — the end of the form does");
+
+        finished.Outcome.Should().Be("given");
+        finished.Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
+        reopened.Should().Be(finished, "coming back, the person is reminded until when the access runs");
         var after = await Reload(person);
         after.SubscribedUntil.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
         after.HasActivePro(DateTime.UtcNow).Should().BeTrue("a month of full access, as the message promised");
-        (await Rows(person)).Should().BeEmpty("nothing had to be answered for it");
         var delivery = await Delivery(person, "paid-lapsed");
         delivery.GiftGrantedAtUtc.Should().NotBeNull();
-        delivery.OpenedAtUtc.Should().NotBeNull();
-        delivery.SurveyOpenedAtUtc.Should().NotBeNull();
-        delivery.SurveyFinishedAtUtc.Should().BeNull();
+        delivery.SurveyFinishedAtUtc.Should().NotBeNull();
     }
 
     [Test]
-    public async Task The_gift_is_given_once_per_person_per_survey_however_the_button_is_reported()
+    public async Task Skipping_every_question_brings_no_gift_until_one_is_answered()
+    {
+        var person = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
+        await LaunchPaid("paid-skipped", "proLapsed");
+        await OpenForm(person, "paid-skipped");
+
+        var skippedAll = Gift(await Finish(person, "paid-skipped"));
+        var reopened = Gift((await OpenForm(person, "paid-skipped")).Body);
+        var afterSkipping = await Reload(person);
+        // Went back to the questions, answered one and reached the end again.
+        (await AnswerInForm(person, "paid-skipped", "q4", text: "Больше глаголов")).Should().Be(HttpStatusCode.OK);
+        var answered = Gift(await Finish(person, "paid-skipped"));
+
+        skippedAll.Should().Be(("needsAnswer", 30, null));
+        reopened.Should().Be(("needsAnswer", 30, null));
+        afterSkipping.HasActivePro(DateTime.UtcNow).Should().BeFalse();
+        (await Rows(person)).Should().ContainSingle();
+        answered.Outcome.Should().Be("given");
+        (await Reload(person)).SubscribedUntil.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
+        (await Admin(HttpMethod.Get, "campaigns/paid-skipped")).Body.GetProperty("gifted").GetInt32().Should().Be(1);
+    }
+
+    [Test]
+    public async Task The_gift_is_given_once_per_person_per_survey_however_many_times_the_end_is_reported()
     {
         var person = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
         await LaunchPaid("paid-once", "proLapsed");
+        await OpenForm(person, "paid-once");
+        (await AnswerInForm(person, "paid-once", "q1", "Сейчас пауза")).Should().Be(HttpStatusCode.OK);
 
-        // The button's link carries both marks: the mini-app reports the campaign open, then opens the form — and again at once.
-        var byCampaign = await Call(person.TelegramId, HttpMethod.Post, "/api/miniapp/campaign-open", new { key = "paid-once" });
-        var opens = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => OpenForm(person, "paid-once")));
+        // The last page reported from several devices at once.
+        var ends = await Task.WhenAll(Enumerable.Range(0, 6).Select(_ => Finish(person, "paid-once")));
         var first = (await Reload(person)).SubscribedUntil;
-        // Later the person comes back by the same button.
+        // Later the person corrects an answer and goes to the end again.
         await InScope(sp => sp.GetRequiredService<TraleDbContext>().Database.ExecuteSqlInterpolatedAsync(
             $"""UPDATE "Users" SET "SubscribedUntil" = {DateTime.UtcNow.AddDays(3)} WHERE "Id" = {person.Id}"""));
-        var later = await OpenForm(person, "paid-once");
-        var again = await Call(person.TelegramId, HttpMethod.Post, "/api/miniapp/campaign-open", new { key = "paid-once" });
+        (await AnswerInForm(person, "paid-once", "q1", "Иногда захожу")).Should().Be(HttpStatusCode.OK);
+        var later = Gift(await Finish(person, "paid-once"));
+        var reopened = Gift((await OpenForm(person, "paid-once")).Body);
 
-        byCampaign.Body.GetProperty("gift").GetProperty("days").GetInt32().Should().Be(30);
-        opens.Should().OnlyContain(o => o.Code == HttpStatusCode.OK && Gift(o.Body).Outcome == "given");
-        first.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
-        Gift(later.Body).Outcome.Should().Be("given", "the screen keeps saying what was given");
-        Gift(later.Body).Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
-        again.Body.GetProperty("gift").ValueKind.Should().Be(JsonValueKind.Null);
-        (await Reload(person)).SubscribedUntil.Should().BeCloseTo(DateTime.UtcNow.AddDays(3), Near, "a second open adds nothing");
+        ends.Should().OnlyContain(e => Gift(e).Outcome == "given");
+        first.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near, "one month, not six");
+        later.Outcome.Should().Be("given", "the screen keeps saying what was given");
+        reopened.Outcome.Should().Be("given");
+        (await Reload(person)).SubscribedUntil.Should().BeCloseTo(DateTime.UtcNow.AddDays(3), Near, "a second end of the form adds nothing");
         (await Admin(HttpMethod.Get, "campaigns/paid-once")).Body.GetProperty("gifted").GetInt32().Should().Be(1);
     }
 
@@ -1310,14 +1361,18 @@ public class UserFeedbackTests : TestBase
         var yearly = await Subscriber(SubscriptionPlan.Year, yearUntil);
         await LaunchPaid("paid-running", "paying");
 
-        var toShort = Gift((await OpenForm(shortOne, "paid-running")).Body);
-        var toYearly = Gift((await OpenForm(yearly, "paid-running")).Body);
+        var promised = Gift((await OpenForm(yearly, "paid-running")).Body);
+        var untouched = await Reload(yearly);
+        var toShort = await GoThrough(shortOne, "paid-running");
+        var toYearly = await GoThrough(yearly, "paid-running");
         var again = Gift((await OpenForm(yearly, "paid-running")).Body);
 
+        promised.Should().Be(("promised", 30, null));
+        untouched.SubscribedUntil.Should().Be(yearUntil, "opening gives nothing");
         toShort.Should().Be(("addedToSubscription", 30, shortUntil.AddDays(30)));
         toYearly.Should().Be(("addedToSubscription", 30, yearUntil.AddDays(30)));
         yearUntil.AddDays(30).Should().Be(new DateTime(DateTime.UtcNow.Year + 1, 7, 15, 12, 0, 0, DateTimeKind.Utc));
-        again.Should().Be(toYearly, "a second open adds nothing and says the same");
+        again.Should().Be(toYearly, "coming back adds nothing and says the same");
         (await Reload(shortOne)).SubscribedUntil.Should().Be(shortUntil.AddDays(30));
         var after = await Reload(yearly);
         after.SubscribedUntil.Should().Be(yearUntil.AddDays(30));
@@ -1332,8 +1387,10 @@ public class UserFeedbackTests : TestBase
         var person = await Subscriber(SubscriptionPlan.Lifetime, null);
         await LaunchPaid("paid-lifetime", "paying");
 
-        var gift = Gift((await OpenForm(person, "paid-lifetime")).Body);
+        var atOpen = Gift((await OpenForm(person, "paid-lifetime")).Body);
+        var gift = await GoThrough(person, "paid-lifetime");
 
+        atOpen.Should().Be(("lifetime", 30, null), "no month is promised to someone whose access never ends");
         gift.Should().Be(("lifetime", 30, null));
         var after = await Reload(person);
         after.SubscribedUntil.Should().BeNull();
@@ -1350,9 +1407,9 @@ public class UserFeedbackTests : TestBase
         await LaunchPaid("gift-ended", "accessEnded");
         await LaunchPaid("gift-trial", "onTrial");
 
-        var toEnded = Gift((await OpenForm(ended, "gift-ended")).Body);
-        var toTrial = Gift((await OpenForm(fewDaysLeft, "gift-trial")).Body);
-        var toBonus = Gift((await OpenForm(onBonus, "gift-trial")).Body);
+        var toEnded = await GoThrough(ended, "gift-ended");
+        var toTrial = await GoThrough(fewDaysLeft, "gift-trial");
+        var toBonus = await GoThrough(onBonus, "gift-trial");
 
         toEnded.Outcome.Should().Be("given");
         toEnded.Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
@@ -1379,7 +1436,7 @@ public class UserFeedbackTests : TestBase
         await LaunchPaid("gift-then-buy", "paying");
         await LaunchPaid("gift-then-buy", "proLapsed", anotherAudience: true);
         await LaunchPaid("gift-then-buy", "onTrial", anotherAudience: true);
-        foreach (var person in new[] { subscriber, lapsed, onTrial }) (await OpenForm(person, "gift-then-buy")).Code.Should().Be(HttpStatusCode.OK);
+        foreach (var person in new[] { subscriber, lapsed, onTrial }) (await GoThrough(person, "gift-then-buy")).Outcome.Should().NotBe("promised");
         var gifted = await Reload(onTrial);
 
         foreach (var person in new[] { subscriber, lapsed, onTrial })
@@ -1387,7 +1444,7 @@ public class UserFeedbackTests : TestBase
             (await InScope(sp => sp.GetRequiredService<MediatR.IMediator>().Send(
                 new Application.MiniApp.Commands.ActivateProStars { UserId = person.Id, Payload = "Stars_Pro_Month", ChargeId = $"charge-{person.TelegramId}" })))
                 .Should().Be(Application.MiniApp.Commands.ActivateProStarsResult.Success);
-            (await OpenForm(person, "gift-then-buy")).Code.Should().Be(HttpStatusCode.OK, "coming back by the button after buying");
+            (await GoThrough(person, "gift-then-buy")).Outcome.Should().BeOneOf(["given", "addedToSubscription"], "coming back by the button after buying and going through again");
         }
 
         (await Reload(subscriber)).SubscribedUntil.Should().Be(Day(22).AddDays(60), "22 days left + the gifted month + the bought month");
@@ -1398,23 +1455,35 @@ public class UserFeedbackTests : TestBase
         (await Admin(HttpMethod.Get, "campaigns/gift-then-buy")).Body.GetProperty("gifted").GetInt32().Should().Be(3);
     }
 
+    private Task EndOffer(string key, DateTime at) => InScope(sp => sp.GetRequiredService<TraleDbContext>().Database.ExecuteSqlInterpolatedAsync(
+        $"""UPDATE "BroadcastCampaigns" SET "GiftOfferEndsAtUtc" = {at} WHERE "Key" = {key}"""));
+
     [Test]
-    public async Task After_the_offer_ends_the_button_still_opens_the_questions_but_gives_nothing()
+    public async Task The_deadline_is_for_opening_the_form_whoever_started_in_time_may_finish_later()
     {
-        var person = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
+        var early = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
+        var late = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
         await LaunchPaid("paid-late", "proLapsed");
-        var ended = DateTime.UtcNow.AddDays(-1);
+        (await OpenForm(early, "paid-late")).Code.Should().Be(HttpStatusCode.OK);
+        // That open was two hours ago; the offer ended an hour ago.
         await InScope(sp => sp.GetRequiredService<TraleDbContext>().Database.ExecuteSqlInterpolatedAsync(
-            $"""UPDATE "BroadcastCampaigns" SET "GiftOfferEndsAtUtc" = {ended} WHERE "Key" = 'paid-late'"""));
+            $"""UPDATE "BroadcastDeliveries" SET "SurveyOpenedAtUtc" = {DateTime.UtcNow.AddHours(-2)} WHERE "UserId" = {early.Id}"""));
+        var ended = DateTime.UtcNow.AddHours(-1);
+        await EndOffer("paid-late", ended);
 
-        var (code, opened) = await OpenForm(person, "paid-late");
+        var toEarly = await GoThrough(early, "paid-late");
+        var (code, lateOpened) = await OpenForm(late, "paid-late");
+        var toLate = await GoThrough(late, "paid-late");
 
-        code.Should().Be(HttpStatusCode.OK);
-        Gift(opened).Outcome.Should().Be("offerEnded");
-        Gift(opened).Until.Should().BeCloseTo(ended, Near);
-        (await Reload(person)).HasActivePro(DateTime.UtcNow).Should().BeFalse();
-        (await Delivery(person, "paid-late")).GiftGrantedAtUtc.Should().BeNull();
-        (await AnswerInForm(person, "paid-late", "q1", "Сейчас пауза")).Should().Be(HttpStatusCode.OK, "the questions stay open");
+        toEarly.Outcome.Should().Be("given", "the form was opened while the offer ran");
+        (await Reload(early)).HasActivePro(DateTime.UtcNow).Should().BeTrue();
+        code.Should().Be(HttpStatusCode.OK, "the questions stay open");
+        Gift(lateOpened).Outcome.Should().Be("offerEnded");
+        Gift(lateOpened).Until.Should().BeCloseTo(ended, Near);
+        toLate.Outcome.Should().Be("offerEnded");
+        (await Reload(late)).HasActivePro(DateTime.UtcNow).Should().BeFalse();
+        (await Delivery(late, "paid-late")).GiftGrantedAtUtc.Should().BeNull();
+        (await Rows(late)).Should().ContainSingle("the answer is kept all the same");
     }
 
     [Test]
@@ -1425,11 +1494,11 @@ public class UserFeedbackTests : TestBase
         var stranger = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
 
         (await OpenForm(stranger, "paid-mine")).Code.Should().Be(HttpStatusCode.NotFound);
-        (await Call(stranger.TelegramId, HttpMethod.Post, "/api/miniapp/campaign-open", new { key = "paid-mine" }))
-            .Body.GetProperty("gift").ValueKind.Should().Be(JsonValueKind.Null);
+        (await AnswerInForm(stranger, "paid-mine", "q1", "Сейчас пауза")).Should().Be(HttpStatusCode.NotFound);
+        (await FinishForm(stranger, "paid-mine")).Should().Be(HttpStatusCode.NotFound);
 
         (await Reload(stranger)).HasActivePro(DateTime.UtcNow).Should().BeFalse("a forwarded button gives nothing");
-        (await Reload(recipient)).HasActivePro(DateTime.UtcNow).Should().BeFalse("and nobody takes the recipient's gift for them");
+        (await Reload(recipient)).HasActivePro(DateTime.UtcNow).Should().BeFalse("and nobody earns the recipient's gift for them");
     }
 
     [Test]
@@ -1441,12 +1510,15 @@ public class UserFeedbackTests : TestBase
 
         var message = SentTo(person, mark).Single();
         var (code, opened) = await OpenForm(person, "paid-plain");
+        (await AnswerInForm(person, "paid-plain", "q1", "Сейчас пауза")).Should().Be(HttpStatusCode.OK);
+        var finished = await Finish(person, "paid-plain");
 
         message.Text.Should().Be($"{PaidMessage}\n\nКак у тебя сейчас с грузинским?");
         ((InlineKeyboardMarkup)message.ReplyMarkup!).InlineKeyboard.Select(r => r.Single().CallbackData).Should().Equal(
             "/survey|paid-plain|0", "/survey|paid-plain|1", "/survey|paid-plain|2", "/survey|paid-plain|3", "/survey|paid-plain|4");
         code.Should().Be(HttpStatusCode.OK);
         opened.GetProperty("gift").ValueKind.Should().Be(JsonValueKind.Null);
+        finished.GetProperty("gift").ValueKind.Should().Be(JsonValueKind.Null);
         (await Reload(person)).HasActivePro(DateTime.UtcNow).Should().BeFalse();
         var delivery = await Delivery(person, "paid-plain");
         delivery.GiftGrantedAtUtc.Should().BeNull();
@@ -1476,24 +1548,29 @@ public class UserFeedbackTests : TestBase
     }
 
     [Test]
-    public async Task Results_of_a_gift_survey_show_who_opened_who_got_the_gift_and_who_answered_without_a_headline_number()
+    public async Task Results_of_a_gift_survey_show_who_opened_who_answered_who_finished_and_who_got_the_gift_without_a_headline_number()
     {
         var silent = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
-        var taker = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
+        var looker = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
         var talker = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
+        var halfway = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
         var skipper = await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
-        await Subscriber(SubscriptionPlan.Month, DateTime.UtcNow.AddDays(-40));
         await LaunchPaid("paid-results", "proLapsed");
 
-        await OpenForm(taker, "paid-results");
+        // Opened and closed.
+        await OpenForm(looker, "paid-results");
+        // Answered and reached the end: the only one who earned the gift.
         await OpenForm(talker, "paid-results");
         (await AnswerInForm(talker, "paid-results", "q1", "Иногда захожу")).Should().Be(HttpStatusCode.OK);
         (await AnswerInForm(talker, "paid-results", "q2", "Мой словарь и перевод слов")).Should().Be(HttpStatusCode.OK);
         (await AnswerInForm(talker, "paid-results", "q4", text: "Больше глаголов")).Should().Be(HttpStatusCode.OK);
-        (await FinishForm(talker, "paid-results")).Should().Be(HttpStatusCode.OK);
-        // Skipped the first question and answered a later one: still someone who answered.
+        Gift(await Finish(talker, "paid-results")).Outcome.Should().Be("given");
+        // Skipped the first question, answered a later one and left before the end.
+        await OpenForm(halfway, "paid-results");
+        (await AnswerInForm(halfway, "paid-results", "q3", other: true, text: "Подкасты")).Should().Be(HttpStatusCode.OK);
+        // Reached the end skipping everything.
         await OpenForm(skipper, "paid-results");
-        (await AnswerInForm(skipper, "paid-results", "q3", other: true, text: "Подкасты")).Should().Be(HttpStatusCode.OK);
+        Gift(await Finish(skipper, "paid-results")).Outcome.Should().Be("needsAnswer");
 
         var results = await Results("paid-results");
         var listed = (await Admin(HttpMethod.Get, "feedback")).Body.GetProperty("surveys").EnumerateArray().Single();
@@ -1502,19 +1579,21 @@ public class UserFeedbackTests : TestBase
         summary.GetProperty("giftDays").GetInt32().Should().Be(30);
         summary.GetProperty("title").GetString().Should().Be("Как у тебя сейчас с грузинским?");
         var funnel = summary.GetProperty("funnel");
-        (funnel.GetProperty("sent").GetInt32(), funnel.GetProperty("openedForm").GetInt32(), funnel.GetProperty("gifted").GetInt32(),
-                funnel.GetProperty("answered").GetInt32(), funnel.GetProperty("answeredFirst").GetInt32(), funnel.GetProperty("finished").GetInt32())
-            .Should().Be((5, 3, 3, 2, 1, 1));
-        listed.GetProperty("funnel").GetProperty("gifted").GetInt32().Should().Be(3);
+        (funnel.GetProperty("sent").GetInt32(), funnel.GetProperty("openedForm").GetInt32(), funnel.GetProperty("answered").GetInt32(),
+                funnel.GetProperty("finished").GetInt32(), funnel.GetProperty("gifted").GetInt32(), funnel.GetProperty("answeredFirst").GetInt32())
+            .Should().Be((5, 4, 2, 2, 1, 1));
+        listed.GetProperty("funnel").GetProperty("gifted").GetInt32().Should().Be(1);
         listed.GetProperty("giftDays").GetInt32().Should().Be(30);
         var questions = results.GetProperty("questions").EnumerateArray().ToList();
         questions.Should().HaveCount(4).And.OnlyContain(q => q.GetProperty("headline").ValueKind == JsonValueKind.Null);
         questions[1].GetProperty("options").EnumerateArray().Single(o => o.GetProperty("option").GetString() == "Мой словарь и перевод слов")
             .GetProperty("count").GetInt32().Should().Be(1);
         questions[3].GetProperty("texts").EnumerateArray().Single().GetProperty("text").GetString().Should().Be("Больше глаголов");
-        (await Reload(silent)).HasActivePro(DateTime.UtcNow).Should().BeFalse("who did not press the button got nothing");
+        foreach (var person in new[] { silent, looker, halfway, skipper })
+            (await Reload(person)).HasActivePro(DateTime.UtcNow).Should().BeFalse("only going through with an answer brings the gift");
+        (await Reload(talker)).HasActivePro(DateTime.UtcNow).Should().BeTrue();
         var status = (await Admin(HttpMethod.Get, "campaigns/paid-results")).Body;
-        (status.GetProperty("opened").GetInt32(), status.GetProperty("gifted").GetInt32()).Should().Be((3, 3));
+        status.GetProperty("gifted").GetInt32().Should().Be(1);
     }
 
     [TestCase("trial", "addedToFreeAccess")]
@@ -1556,24 +1635,28 @@ public class UserFeedbackTests : TestBase
         var first = await SendToMe();
         var byCampaign = await Call(Owner, HttpMethod.Post, "/api/miniapp/campaign-open", new { key = first });
         var opened = await OpenForm(owner, first);
+        var skipped = await Finish(owner, first);
         (await AnswerInForm(owner, first, "q1", "Занимаюсь регулярно")).Should().Be(HttpStatusCode.OK);
-        (await FinishForm(owner, first)).Should().Be(HttpStatusCode.OK);
+        var finished = await Finish(owner, first);
         var second = await SendToMe();
         var openedAgain = await OpenForm(owner, second);
-        await OpenForm(owner, second);
+        (await AnswerInForm(owner, second, "q1", "Занимаюсь регулярно")).Should().Be(HttpStatusCode.OK);
+        var finishedAgain = await Finish(owner, second);
 
         second.Should().NotBe(first, "every trial is a new survey");
         byCampaign.Body.GetProperty("gift").ValueKind.Should().Be(JsonValueKind.Null);
-        foreach (var screen in new[] { opened.Body, openedAgain.Body })
-        {
-            // The very screen a recipient with this access would get — marked as a trial.
-            Gift(screen).Outcome.Should().Be(expected);
+        // The very screens a recipient with this access would get — marked as a trial.
+        var lifetime = expected == "lifetime";
+        Gift(opened.Body).Outcome.Should().Be(lifetime ? "lifetime" : "promised");
+        Gift(skipped).Outcome.Should().Be(lifetime ? "lifetime" : "needsAnswer");
+        Gift(openedAgain.Body).Outcome.Should().Be(lifetime ? "lifetime" : "promised", "a new trial starts from the beginning");
+        foreach (var screen in new[] { opened.Body, skipped, finished, openedAgain.Body, finishedAgain })
             screen.GetProperty("gift").GetProperty("trial").GetBoolean().Should().BeTrue();
-        }
-        if (expected != "given") Gift(openedAgain.Body).Until.Should().Be(Gift(opened.Body).Until, "the second trial promises no more than the first");
-        if (expected == "addedToSubscription") Gift(opened.Body).Until.Should().Be(subscribedUntil.AddDays(30));
-        if (expected == "given") Gift(openedAgain.Body).Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
-        openedAgain.Body.GetProperty("finished").GetBoolean().Should().BeFalse("a new trial starts from the first screen");
+        foreach (var screen in new[] { finished, finishedAgain }) Gift(screen).Outcome.Should().Be(expected);
+        if (expected != "given") Gift(finishedAgain).Until.Should().Be(Gift(finished).Until, "the second trial promises no more than the first");
+        if (expected == "addedToSubscription") Gift(finished).Until.Should().Be(subscribedUntil.AddDays(30));
+        if (expected == "given") Gift(finishedAgain).Until.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), Near);
+        openedAgain.Body.GetProperty("finished").GetBoolean().Should().BeFalse("a new trial starts from the first question");
         openedAgain.Body.GetProperty("answers").EnumerateObject().Should().BeEmpty();
 
         var after = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Users.AsNoTracking().SingleAsync(u => u.TelegramId == Owner));

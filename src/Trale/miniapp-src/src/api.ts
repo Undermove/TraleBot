@@ -601,7 +601,7 @@ export const adminCampaigns = {
     giftDays?: number
     giftOfferDays?: number | null
     /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания.
-     *  Опрос с подарком (giftDays > 0) уходит одной кнопкой buttonText, все вопросы — в мини-аппе. */
+     *  Опрос с подарком (giftDays > 0) уходит одной кнопкой buttonText, все вопросы — в мини-аппе, подарок — после последнего. */
     survey?: SurveyFormDto | null
     /** Конструктор рассылки начинает новую кампанию: при пустом key сервер сам её называет (broadcast-2026-10, -2, …). */
     newBroadcast?: boolean
@@ -883,15 +883,16 @@ export interface SurveyAnswerDto {
 }
 
 /**
- * Что вышло с подарком опроса у этого человека. Подарок выдаётся при открытии формы, отвечать не обязательно,
- * и прибавляется к тому доступу, который уже есть; первый экран формы говорит, что именно человек получил:
- * given — доступа не было, дни идут с сегодняшнего дня; addedToSubscription / addedToFreeAccess — дни прибавлены
+ * Что с подарком опроса у этого человека. Подарок — за ответы: он выдаётся, когда человек дошёл до конца формы
+ * и ответил хотя бы на один вопрос, и прибавляется к тому доступу, который уже есть.
+ * promised — ещё не выдан, ждёт конца формы; needsAnswer — человек дошёл до конца, не ответив ни на один вопрос;
+ * given — выдан, доступа не было, дни идут с момента выдачи; addedToSubscription / addedToFreeAccess — дни прибавлены
  * к концу действующей подписки или пробного периода (untilUtc — новый конец); lifetime — доступ и так бессрочный;
- * offerEnded — кнопку нажали после срока (untilUtc — когда он вышел); notGiven — запись не прошла, выдаст следующее открытие.
- * trial — пробная отправка владельцу: экран настоящий, дни не начислены.
+ * offerEnded — опрос открыли после срока (untilUtc — когда он вышел); notGiven — запись не прошла, выдаст следующее открытие.
+ * trial — пробная отправка владельцу: экраны настоящие, дни не начисляются.
  */
 export interface SurveyGiftDto {
-  outcome: 'given' | 'addedToSubscription' | 'addedToFreeAccess' | 'lifetime' | 'offerEnded' | 'notGiven'
+  outcome: 'promised' | 'needsAnswer' | 'given' | 'addedToSubscription' | 'addedToFreeAccess' | 'lifetime' | 'offerEnded' | 'notGiven'
   days: number
   untilUtc: string | null
   trial?: boolean
@@ -904,7 +905,7 @@ export const surveyApi = {
       `/api/miniapp/surveys/${encodeURIComponent(key)}/open`, { method: 'POST' }),
   answer: (key: string, questionId: string, answer: SurveyAnswerDto) =>
     request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/answer`, { method: 'POST', body: JSON.stringify({ questionId, ...answer }) }),
-  finish: (key: string) => request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/finish`, { method: 'POST' })
+  finish: (key: string) => request<{ ok: boolean; gift?: SurveyGiftDto | null }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/finish`, { method: 'POST' })
 }
 
 /** Воронка опроса: получили → ответили на первый вопрос → открыли форму в мини-аппе → дошли до конца. */

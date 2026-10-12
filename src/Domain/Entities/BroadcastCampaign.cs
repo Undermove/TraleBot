@@ -43,15 +43,16 @@ public class BroadcastCampaign
     public SurveyForm? Survey => SurveyForm.FromJson(SurveyJson);
 
     /// <summary>A survey that carries a gift of access. Its message is the form's intro with one
-    /// button into the mini-app (<see cref="ButtonText"/>): pressing it gives the gift, and all the
-    /// questions — the first one too — are answered in the mini-app, so that "press the button" in
-    /// the message means one thing. Its gift is added on top of the access a person already has
-    /// (<see cref="User.ExtendAccessDays"/>), unlike an ordinary campaign's "days from the open"
-    /// (<see cref="User.GiftAccessDays"/>).</summary>
+    /// button into the mini-app (<see cref="ButtonText"/>), and all the questions — the first one too —
+    /// are answered there. The gift is for going through the form: it is given when the recipient
+    /// reaches the end having answered at least one question (opening gives nothing), and is added on
+    /// top of the access a person already has (<see cref="User.ExtendAccessDays"/>), unlike an ordinary
+    /// campaign's "days from the open" (<see cref="User.GiftAccessDays"/>).
+    /// <see cref="GiftOfferEndsAtUtc"/> is the deadline for opening the form, not for finishing it.</summary>
     public bool IsGiftSurvey => IsSurvey && GiftDays > 0;
 
-    /// <summary>A gift survey the owner sent only to themselves to look at it. Its button gives no days —
-    /// otherwise every trial would add another month to the owner — but the form's first screen shows
+    /// <summary>A gift survey the owner sent only to themselves to look at it. It gives no days —
+    /// otherwise every trial would add another month to the owner — but its last screen shows
     /// what a person with the owner's access would get.</summary>
     public bool IsGiftSurveyTrial => IsGiftSurvey && Audience == BroadcastAudience.Owner;
 

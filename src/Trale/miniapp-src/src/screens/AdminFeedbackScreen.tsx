@@ -15,7 +15,7 @@ import type { FeedbackThreadView, FeedbackView, Screen } from '../types'
 // «Что смутило?»); у каждого свой адрес. Результаты опроса и переписка открываются поверх. У опроса: воронка (получили → ответили на первый
 // вопрос → открыли форму → дошли до конца), потом каждый вопрос со счётчиками и текстами; ответы можно
 // сузить до тех, кто выбрал определённый вариант первого вопроса.
-// У опроса с подарком воронка другая: получили → открыли → получили подарок → ответили хотя бы на один вопрос → дошли до конца.
+// У опроса с подарком воронка другая: получили → открыли → ответили хотя бы на один вопрос → дошли до конца → получили подарок.
 // У каждого текста — «Ответить»: открывается переписка с этим человеком (components/admin/FeedbackThread).
 // «Сообщения от людей» — все, кто что-то написал, со статусом и фильтром «Без ответа».
 // То же самое за любой срок — scripts/sql/feedback-report.sql.
@@ -48,7 +48,7 @@ const pct = (part: number, whole: number) => (whole > 0 ? `${Math.round((100 * p
 function Funnel({ survey }: { survey: AdminSurveyDto }) {
   const f = survey.funnel
   const steps: [string, number][] = survey.giftDays > 0
-    ? [['получили', f.sent], ['открыли', f.openedForm], ['получили подарок', f.gifted], ['ответили хотя бы на один вопрос', f.answered], ['дошли до конца', f.finished]]
+    ? [['получили', f.sent], ['открыли', f.openedForm], ['ответили хотя бы на один вопрос', f.answered], ['дошли до конца', f.finished], ['получили подарок', f.gifted]]
     : [['получили', f.sent], ['ответили на первый вопрос', f.answeredFirst]]
   if (!(survey.giftDays > 0) && survey.questions > 1) steps.push(['открыли форму в мини-аппе', f.openedForm], ['дошли до конца', f.finished])
   return (
@@ -147,7 +147,7 @@ export default function AdminFeedbackScreen({ view: asked, navigate }: Props) {
                   </div>
                   <div className={`${small} tabular-nums`}>
                     {s.giftDays > 0
-                      ? `получили ${s.funnel.sent} · открыли ${s.funnel.openedForm} · подарок ${s.funnel.gifted} · ответили ${s.funnel.answered}`
+                      ? `получили ${s.funnel.sent} · открыли ${s.funnel.openedForm} · ответили ${s.funnel.answered} · подарок ${s.funnel.gifted}`
                       : `получили ${s.funnel.sent} · ответили ${s.funnel.answeredFirst}${s.questions > 1 ? ` · дошли до конца ${s.funnel.finished}` : ''}`}
                   </div>
                   {s.pending > 0 && (

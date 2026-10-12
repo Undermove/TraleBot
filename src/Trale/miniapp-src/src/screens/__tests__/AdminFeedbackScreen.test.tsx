@@ -147,10 +147,10 @@ describe('AdminFeedbackScreen', () => {
     expect(chips.getByRole('button', { name: 'Очень расстроюсь' }).getAttribute('aria-pressed')).toBe('true')
   })
 
-  it('a survey with a gift: opened, got the gift, answered — and no headline number is needed', async () => {
+  it('a survey with a gift: opened, answered, reached the end, got the gift — and no headline number is needed', async () => {
     const gifted: AdminSurveyDto = {
       ...summary, key: 'survey-2026-10-paid', title: 'Как у тебя сейчас с грузинским?', questions: 4, audience: 'proLapsed', picked: 6, giftDays: 30,
-      funnel: { sent: 6, answeredFirst: 2, openedForm: 4, finished: 2, gifted: 3, answered: 3 }
+      funnel: { sent: 6, answeredFirst: 2, openedForm: 4, finished: 2, gifted: 2, answered: 3 }
     }
     api.overview.mockResolvedValue({ ...overview, surveys: [gifted] })
     api.survey.mockResolvedValue({
@@ -163,7 +163,7 @@ describe('AdminFeedbackScreen', () => {
     render(<AdminFeedbackScreen view={{ survey: gifted.key }} navigate={navigate} />)
 
     expect((await screen.findByTestId('feedback-funnel')).textContent)
-      .toBe('получили6открыли4 · 67%получили подарок3 · 50%ответили хотя бы на один вопрос3 · 50%дошли до конца2 · 33%')
+      .toBe('получили6открыли4 · 67%ответили хотя бы на один вопрос3 · 50%дошли до конца2 · 33%получили подарок2 · 33%')
     expect(screen.getByTestId('feedback-survey').textContent).toContain('подарок: 30 дн. доступа')
     expect(screen.queryByTestId('feedback-headline')).toBeNull()
     expect(screen.getByTestId('feedback-question-q1').textContent).not.toContain('в боте')
@@ -173,7 +173,7 @@ describe('AdminFeedbackScreen', () => {
   it('«Опросы» shows a gift survey by opens, gifts and answers', async () => {
     api.overview.mockResolvedValue({ ...overview, surveys: [{ ...summary, giftDays: 30, funnel: { sent: 6, answeredFirst: 2, openedForm: 4, finished: 2, gifted: 3, answered: 3 } }] })
     render(<AdminFeedbackScreen view="surveys" navigate={navigate} />)
-    expect((await screen.findByTestId(`feedback-open-survey-${KEY}`)).textContent).toContain('получили 6 · открыли 4 · подарок 3 · ответили 3')
+    expect((await screen.findByTestId(`feedback-open-survey-${KEY}`)).textContent).toContain('получили 6 · открыли 4 · ответили 3 · подарок 3')
   })
 
   it('a survey of one question has a short funnel, no narrowing, and shows what was written by «Написать подробнее»', async () => {

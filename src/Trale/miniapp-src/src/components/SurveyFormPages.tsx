@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import Mascot from './Mascot'
 import KilimProgress from './KilimProgress'
-import { FEEDBACK_MAX_LENGTH, type SurveyAnswerDto, type SurveyQuestionDto } from '../api'
+import { GiftPromiseLine, GiftResultCard } from './SurveyGift'
+import { FEEDBACK_MAX_LENGTH, type SurveyAnswerDto, type SurveyGiftDto, type SurveyQuestionDto } from '../api'
 
 // Форма опроса: один вопрос на странице. Ответ сохраняется при переходе на следующую страницу —
 // брошенная посередине форма всё равно даёт ответы. Вопрос можно пропустить: тогда ничего не пишется
 // и ничего не стирается. Этот же компонент показывает владельцу предпросмотр в конструкторе —
 // там save и finish ничего не отправляют.
+// У опроса с подарком над вопросами стоит строка о подарке, а последний экран говорит, что человек получил:
+// подарок выдаёт сервер в ответ на finish — тому, кто ответил хотя бы на один вопрос (components/SurveyGift.tsx).
 
 interface Props {
   questions: SurveyQuestionDto[]
@@ -17,8 +20,13 @@ interface Props {
   /** Подпись варианта «свой ответ». */
   otherLabel: string
   save: (questionId: string, answer: SurveyAnswerDto) => Promise<unknown>
-  finish: () => Promise<unknown>
+  /** Человек дошёл до конца. answeredAny — ответил ли он хоть на один вопрос (нужно предпросмотру). У опроса с подарком в ответе — что с подарком теперь. */
+  finish: (answeredAny: boolean) => Promise<{ gift?: SurveyGiftDto | null } | unknown>
   onExit: () => void
+  /** Опрос с подарком: что с подарком у этого человека на момент открытия. */
+  gift?: SurveyGiftDto | null
+  /** Подарок изменился (выдан) — экран опроса узнаёт об этом, чтобы обновить доступ при выходе. */
+  onGift?: (gift: SurveyGiftDto) => void
   /** Предпросмотр владельца: ответы никуда не записываются. */
   preview?: boolean
 }
@@ -42,25 +50,42 @@ const selectedStyle = (on: boolean) => ({
   borderColor: on ? '#15100A' : 'rgba(21,16,10,0.18)', background: on ? '#FBF6EC' : '#FFFEFA', boxShadow: on ? '0 2px 0 #15100A' : 'none'
 })
 
-export default function SurveyFormPages({ questions, initial, finished, otherLabel, save, finish, onExit, preview }: Props) {
+export default function SurveyFormPages({ questions, initial, finished, otherLabel, save, finish, onExit, preview, gift: giftAtOpen, onGift }: Props) {
   const [answers, setAnswers] = useState(initial)
+  const [gift, setGift] = useState(giftAtOpen ?? null)
+  /** На какие вопросы ответ записан (а не просто набран и пропущен). */
+  const [savedIds, setSavedIds] = useState(() => questions.map(idOf).filter(id => said(initial[id])))
   const [page, setPage] = useState(() => firstOpenPage(questions, initial))
   const [phase, setPhase] = useState<'already' | 'asking' | 'thanks'>(finished ? 'already' : 'asking')
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
 
   if (phase !== 'asking') {
+    const exit = preview ? 'Закрыть предпросмотр' : gift ? 'В приложение' : 'Вернуться'
+    // Дошёл до конца, не ответив ни на один вопрос: подарок ждёт одного ответа.
+    if (gift?.outcome === 'needsAnswer') {
+      return (
+        <div className="flex flex-col items-center gap-3 pt-2 text-center" data-testid="survey-needs-answer">
+          <GiftResultCard gift={gift} />
+          <button type="button" className="jewel-btn jewel-btn-gold w-full mt-1 font-sans text-[16px] font-extrabold" onClick={() => { setPage(0); setPhase('asking'); window.scrollTo(0, 0) }} data-testid="survey-back-to-questions">
+            К вопросам
+          </button>
+          <button type="button" className={quiet} onClick={onExit}>{exit}</button>
+        </div>
+      )
+    }
     return (
       <div className="flex flex-col items-center gap-3 pt-6 text-center" data-testid={phase === 'thanks' ? 'survey-thanks' : 'survey-already'}>
-        <Mascot mood="cheer" size={120} />
+        {!gift && <Mascot mood="cheer" size={120} />}
         <div className="font-sans text-[22px] font-extrabold text-jewelInk leading-tight">Спасибо!</div>
         <div className="font-sans text-[14px] text-jewelInk-mid max-w-[290px]">
           {phase === 'thanks'
             ? 'Твои ответы у меня. Они помогут сделать TraleBot лучше.'
             : 'Твои ответы уже у меня. Если что-то изменилось — их можно поправить.'}
         </div>
-        <button type="button" onClick={onExit} className="jewel-btn jewel-btn-gold w-full mt-3 font-sans text-[16px] font-extrabold">
-          {preview ? 'Закрыть предпросмотр' : 'Вернуться'}
+        {gift && <GiftResultCard gift={gift} />}
+        <button type="button" onClick={onExit} className="jewel-btn jewel-btn-gold w-full mt-3 font-sans text-[16px] font-extrabold" data-testid="survey-exit">
+          {exit}
         </button>
         {phase === 'already' && (
           <button type="button" className={quiet} onClick={() => { setPage(0); setPhase('asking') }}>Поправить ответы</button>
@@ -81,15 +106,18 @@ export default function SurveyFormPages({ questions, initial, finished, otherLab
     setBusy(true)
     setFailed(false)
     try {
+      const saved = saveFirst && !savedIds.includes(id) ? [...savedIds, id] : savedIds
       if (saveFirst) {
         await save(id, {
           option: answer.other ? null : answer.option,
           other: answer.other,
           text: question.kind === 'text' || answer.other ? answer.text?.trim() || null : null
         })
+        setSavedIds(saved)
       }
       if (last) {
-        await finish()
+        const done = await finish(saved.length > 0) as { gift?: SurveyGiftDto | null } | undefined
+        if (done?.gift) { setGift(done.gift); onGift?.(done.gift) }
         setPhase('thanks')
       } else {
         setPage(page + 1)
@@ -104,6 +132,7 @@ export default function SurveyFormPages({ questions, initial, finished, otherLab
 
   return (
     <div className="flex flex-col gap-3" data-testid="survey-page">
+      {gift && <GiftPromiseLine gift={gift} questions={questions.length} />}
       <div className="flex items-center justify-between gap-3">
         <div className="mn-eyebrow text-navy" data-testid="survey-progress">Вопрос {page + 1} из {questions.length}</div>
         <KilimProgress done={page + 1} total={questions.length} size="sm" />
