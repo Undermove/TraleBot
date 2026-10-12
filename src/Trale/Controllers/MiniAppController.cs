@@ -625,13 +625,16 @@ public class MiniAppController : Controller
         return FeedbackResult(await feedback.LeaveMessageAsync(user.Id, request.Text, request.Campaign, ct));
     }
 
-    // ---- Survey form: the questions of a survey broadcast after the first one, a page each. ----
+    // ---- Survey form: the questions of a survey broadcast, a page each. ----
 
     /// <summary>The recipient opened the survey's form: its questions and what they have answered so far.
-    /// The first open is recorded. 404 for anyone the survey was not sent to.</summary>
+    /// The first open is recorded. For a survey with a gift <c>gift</c> says where the person stands:
+    /// the gift is promised for going through the form, or has been given and until when. 404 for
+    /// anyone the survey was not sent to.</summary>
     [HttpPost("surveys/{key}/open")]
     public async Task<IActionResult> SurveyOpen(
-        string key, [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+        string key, [FromServices] Application.Feedback.UserFeedbackService feedback,
+        [FromServices] Application.Admin.BroadcastCampaignService campaigns, CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -645,14 +648,27 @@ public class MiniAppController : Controller
             return NotFound(new { error = "not_found" });
         }
 
+        var gift = await campaigns.OpenGiftSurveyAsync(user.Id, key, ct);
         return Ok(new
         {
             key = state.Key,
             survey = AdminController.MapSurvey(state.Form),
             finished = state.Finished,
+            gift = MapSurveyGift(gift),
             answers = state.Answers.ToDictionary(a => a.Key, a => new { a.Value.Option, a.Value.Other, a.Value.Text })
         });
     }
+
+    /// <summary><c>outcome</c>: "promised" | "needsAnswer" | "given" | "addedToSubscription" | "addedToFreeAccess" |
+    /// "lifetime" | "offerEnded" | "notGiven"; null — a survey without a gift. <c>trial</c> — the owner's
+    /// own trial of the survey: the screens are real, the days are not given.</summary>
+    private static object? MapSurveyGift(Application.Admin.SurveyGiftState? gift) => gift == null ? null : new
+    {
+        outcome = char.ToLowerInvariant(gift.Outcome.ToString()[0]) + gift.Outcome.ToString()[1..],
+        days = gift.Days,
+        untilUtc = gift.UntilUtc,
+        trial = gift.Trial
+    };
 
     public class SurveyAnswerRequest
     {
@@ -688,10 +704,12 @@ public class MiniAppController : Controller
         };
     }
 
-    /// <summary>The person reached the last page of the form.</summary>
+    /// <summary>The person reached the last page of the form. A survey with a gift gives it here — to
+    /// someone who answered at least one question, once — and <c>gift</c> says what the person has now.</summary>
     [HttpPost("surveys/{key}/finish")]
     public async Task<IActionResult> SurveyFinish(
-        string key, [FromServices] Application.Feedback.UserFeedbackService feedback, CancellationToken ct)
+        string key, [FromServices] Application.Feedback.UserFeedbackService feedback,
+        [FromServices] Application.Admin.BroadcastCampaignService campaigns, CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -699,7 +717,12 @@ public class MiniAppController : Controller
             return Unauthorized(new { error = "not_authenticated" });
         }
 
-        return await feedback.FinishSurveyAsync(user.Id, key, ct) ? Ok(new { ok = true }) : NotFound(new { error = "not_found" });
+        if (!await feedback.FinishSurveyAsync(user.Id, key, ct))
+        {
+            return NotFound(new { error = "not_found" });
+        }
+
+        return Ok(new { ok = true, gift = MapSurveyGift(await campaigns.FinishGiftSurveyAsync(user.Id, key, ct)) });
     }
 
     /// <summary>The caller's conversation with the author — their texts and the answers that reached them,

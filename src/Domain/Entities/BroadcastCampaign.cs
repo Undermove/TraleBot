@@ -34,12 +34,30 @@ public class BroadcastCampaign
 
     /// <summary>The form of a survey campaign (<see cref="SurveyForm"/> as JSON): its first question goes
     /// under the message as buttons, the rest are answered in the mini-app; answers are recorded in
-    /// <see cref="UserFeedback"/>. Null — an ordinary campaign.</summary>
+    /// <see cref="UserFeedback"/>. Null — an ordinary campaign. A survey with a gift is different,
+    /// see <see cref="IsGiftSurvey"/>.</summary>
     public string? SurveyJson { get; set; }
 
     public bool IsSurvey => SurveyJson != null;
 
     public SurveyForm? Survey => SurveyForm.FromJson(SurveyJson);
+
+    /// <summary>A survey that carries a gift of access. Its message is the form's intro with one
+    /// button into the mini-app (<see cref="ButtonText"/>), and all the questions — the first one too —
+    /// are answered there. The gift is for going through the form: it is given when the recipient
+    /// reaches the end having answered at least one question (opening gives nothing), and is added on
+    /// top of the access a person already has (<see cref="User.ExtendAccessDays"/>), unlike an ordinary
+    /// campaign's "days from the open" (<see cref="User.GiftAccessDays"/>).
+    /// <see cref="GiftOfferEndsAtUtc"/> is the deadline for opening the form, not for finishing it.</summary>
+    public bool IsGiftSurvey => IsSurvey && GiftDays > 0;
+
+    /// <summary>A gift survey the owner sent only to themselves to look at it. It gives no days —
+    /// otherwise every trial would add another month to the owner — but its last screen shows
+    /// what a person with the owner's access would get.</summary>
+    public bool IsGiftSurveyTrial => IsGiftSurvey && Audience == BroadcastAudience.Owner;
+
+    /// <summary>What the button of a survey with a gift opens: the survey's form in the mini-app.</summary>
+    public static string GiftSurveyButtonQuery(string key) => $"screen=survey&s={key}";
 
     public bool GiftOffered(DateTime now) => GiftDays > 0 && GiftOfferEndsAtUtc is { } ends && now < ends;
 }

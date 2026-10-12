@@ -28,13 +28,18 @@ const whyGeorgian: SurveyQuestionDto = { text: 'Зачем тебе грузин
 const annoyed: SurveyQuestionDto = { text: 'А что в последний раз раздражало или мешало?', kind: 'text', options: [], allowOther: false }
 const paywall: SurveyQuestionDto = { text: 'Что остановило от покупки полного доступа?', kind: 'choice', options: ['Дорого', 'Пока не нужно'], allowOther: true }
 const intro = 'Привет! Это автор TraleBot.'
+const paidIntro = 'Привет! Это Дима.\n\nОтветь на вопросы — подарю месяц полного доступа, он включится сразу после последнего вопроса.'
+const paidPreset = {
+  id: 'paid', title: 'Тем, кто платил', about: 'Спасибо и месяц в подарок',
+  form: { intro: paidIntro, questions: [whyGeorgian, annoyed] }, giftDays: 30, buttonText: 'Ответить на вопросы'
+}
 const kit: SurveyBuilderKitDto = {
-  presets: [{ id: 'users', title: 'Тем, кто пользуется', about: 'Насколько TraleBot нужен', form: { intro, questions: [ifGone, whyGeorgian, annoyed] } }],
+  presets: [{ id: 'users', title: 'Тем, кто пользуется', about: 'Насколько TraleBot нужен', form: { intro, questions: [ifGone, whyGeorgian, annoyed] }, giftDays: 0, buttonText: null }, paidPreset],
   bank: [ifGone, whyGeorgian, annoyed, paywall],
   suggestions: ['Нет времени', 'Дорого'],
   intro,
   otherLabel: 'Другое',
-  limits: { questions: 6, options: 6, botOptions: 4, optionLength: 64, questionLength: 300 }
+  limits: { questions: 6, options: 6, botOptions: 4, optionLength: 64, questionLength: 300, giftDays: 30 }
 }
 const form = { intro, questions: [ifGone, whyGeorgian, annoyed] }
 const status = {
@@ -46,8 +51,8 @@ const status = {
 }
 const picked = (key: string, n: number, dryRun: boolean) => ({ key, dryRun, audienceTotal: 553, alreadyInCampaign: 0, picked: n, leftForLater: 553 - n })
 const survey = (key: string, title: string, sent: number, total: number) => ({
-  key, title, questions: 3, createdAtUtc: '2026-10-08T10:00:00Z', audience: 'accessEnded' as const, picked: total, pending: total - sent,
-  funnel: { sent, answeredFirst: 0, openedForm: 0, finished: 0 }
+  key, title, questions: 3, createdAtUtc: '2026-10-08T10:00:00Z', audience: 'accessEnded' as const, picked: total, pending: total - sent, giftDays: 0,
+  funnel: { sent, answeredFirst: 0, openedForm: 0, finished: 0, gifted: 0, answered: 0 }
 })
 const listed = (items: ReturnType<typeof survey>[]) => ({ recent: [], paywall: { shown: 0, options: [] }, messages: 0, surveys: items })
 
@@ -282,6 +287,99 @@ describe('SurveyBuilderScreen', () => {
     expect(campaigns.send).toHaveBeenCalledWith('survey-2026-10-users-test', 1)
     expect((screen.getByTestId('survey-send') as HTMLButtonElement).disabled).toBe(true)
     expect(screen.getByTestId('survey-back')).toBeTruthy()
+  })
+
+  it('a form with a gift: one button under the message, every question in the mini-app, the gift after the last one', async () => {
+    campaigns.prepare.mockResolvedValue(picked('survey-2026-10-paid-test', 1, false))
+    campaigns.send.mockResolvedValue({ sent: 1, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: { ...status, pending: 0, sent: 1 } })
+    await open()
+    expect(screen.getByTestId('survey-preset-paid').textContent).toContain('подарок: 30 дн. доступа')
+    await userEvent.click(screen.getByTestId('survey-preset-paid'))
+
+    // The message is the intro alone, with one button; the first question is not in the chat.
+    expect(screen.getByTestId('survey-preview').textContent).toBe(`${paidIntro}Ответить на вопросы`)
+    expect(screen.getByTestId('survey-how').textContent).toContain('Подарок включится после последнего вопроса')
+    expect(cardTexts()[0]).toMatch(/^Вопрос 1Зачем тебе грузинский\?/)
+    // Five options would be too many for the chat — here the first question is in the mini-app, so it is fine.
+    expect(screen.queryByTestId('survey-problem')).toBeNull()
+    expect((screen.getByTestId('survey-gift-days') as HTMLInputElement).value).toBe('30')
+    expect((screen.getByTestId('survey-gift-button') as HTMLInputElement).value).toBe('Ответить на вопросы')
+    expect(screen.getByTestId('survey-gift-rules').textContent).toContain('включается после последнего вопроса — тому, кто ответил хотя бы на один')
+    expect(screen.getByTestId('survey-gift-rules').textContent).toContain('продлеваются на 30 дн. от своего конца')
+    expect(screen.queryByTestId('survey-gift-text-warning')).toBeNull()
+
+    // The owner walks it as a recipient: the first question at once, the promise above it.
+    await userEvent.click(screen.getByTestId('survey-try'))
+    expect(screen.getByTestId('survey-progress').textContent).toBe('Вопрос 1 из 2')
+    expect(screen.getByTestId('survey-gift-promise').textContent).toBe('Два коротких вопроса — и месяц полного доступа твой')
+    // Skipping everything brings no gift — one answer does.
+    await userEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }))
+    expect(screen.getByTestId('survey-gift-title').textContent).toBe('Ответь хотя бы на один вопрос, и месяц твой')
+    await userEvent.click(screen.getByTestId('survey-back-to-questions'))
+    await userEvent.click(screen.getByRole('radio', { name: 'Живу в Грузии' }))
+    await userEvent.click(screen.getByTestId('survey-page-next'))
+    await userEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }))
+    expect(screen.getByTestId('survey-gift-title').textContent).toBe('Месяц полного доступа включён')
+
+    // What a person gets depends on the access they have — the owner can walk it as each of them.
+    await userEvent.click(screen.getByTestId('survey-preview-who-addedToSubscription'))
+    expect(screen.getByTestId('survey-gift-promise').textContent).toBe('Два коротких вопроса — и месяц полного доступа твой')
+    await userEvent.click(screen.getByRole('radio', { name: 'Живу в Грузии' }))
+    await userEvent.click(screen.getByTestId('survey-page-next'))
+    await userEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }))
+    expect(screen.getByTestId('survey-gift-title').textContent).toBe('Месяц полного доступа добавлен')
+    expect(screen.getByTestId('survey-gift-line').textContent).toContain('Подписка теперь действует до')
+    await userEvent.click(screen.getByTestId('survey-preview-who-lifetime'))
+    expect(screen.getByTestId('survey-gift-promise').textContent).toBe('Спасибо за поддержку! Два коротких вопроса помогут мне решить, что делать дальше')
+    await userEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Пропустить вопрос' }))
+    expect(screen.getByTestId('survey-gift-title').textContent).toBe('У тебя пожизненный доступ')
+    await userEvent.click(screen.getByRole('button', { name: 'Закрыть предпросмотр' }))
+
+    await next()
+    await next()
+    expect(screen.getByTestId('survey-summary').textContent).toContain('Вопросов: 2 — все в мини-аппе. Подарок: 30 дн. доступа после последнего вопроса.')
+    await userEvent.click(screen.getByTestId('survey-send-me'))
+    expect((await screen.findByTestId('survey-note')).textContent).toContain('пройди форму до конца')
+    expect(screen.getByTestId('survey-note').textContent).toContain('дни тебе не начисляются')
+    expect(campaigns.prepare.mock.calls[0][0]).toMatchObject({
+      key: '', newSurveySlug: 'paid-test', audience: 'owner', buttonText: 'Ответить на вопросы', buttonQuery: null, giftDays: 30, dryRun: false
+    })
+  })
+
+  it('the gift can be changed or taken away: other days ask to fix the promise, zero days put the first question back into the bot', async () => {
+    await open()
+    await userEvent.click(screen.getByTestId('survey-preset-paid'))
+    const days = screen.getByTestId('survey-gift-days')
+
+    await userEvent.clear(days)
+    await userEvent.type(days, '14')
+    expect(screen.getByTestId('survey-gift-text-warning').textContent).toContain('обещают месяц')
+    await userEvent.clear(days)
+    await userEvent.type(days, '99')
+    expect((days as HTMLInputElement).value).toBe('30')
+
+    await userEvent.clear(screen.getByTestId('survey-gift-button'))
+    expect(screen.getByTestId('survey-problem').textContent).toBe('Напиши текст кнопки под сообщением.')
+    expect((screen.getByTestId('survey-next') as HTMLButtonElement).disabled).toBe(true)
+
+    await userEvent.clear(days)
+    expect(screen.queryByTestId('survey-gift-button')).toBeNull()
+    expect(cardTexts()[0]).toMatch(/^Вопрос 1 · в боте/)
+    expect(screen.getByTestId('survey-problem').textContent).toBe('Поправь вопрос 1: он отмечен красным.')
+    expect(screen.getByTestId('survey-preview').textContent).toContain('Живу в Грузии')
+  })
+
+  it('a form without a gift gets one by setting the days: a button appears with a ready caption', async () => {
+    await open()
+    await userEvent.click(screen.getByTestId('survey-preset-users'))
+    expect((screen.getByTestId('survey-gift-days') as HTMLInputElement).value).toBe('0')
+    expect(screen.getByTestId('survey-preview').textContent).toContain('Очень расстроюсь')
+
+    await userEvent.type(screen.getByTestId('survey-gift-days'), '7')
+    expect((screen.getByTestId('survey-gift-button') as HTMLInputElement).value).toBe('Ответить на вопросы')
+    expect(screen.getByTestId('survey-preview').textContent).toBe(`${intro}Ответить на вопросы`)
   })
 
   it('a batch cannot be sent until recipients are picked; picking asks first and sends nothing', async () => {

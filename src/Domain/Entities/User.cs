@@ -152,6 +152,26 @@ public class User
         return until;
     }
 
+    /// <summary>
+    /// Adds <paramref name="days"/> of full access on top of whatever the person has — the gift of a
+    /// survey, which promises "a month" to people who may already be subscribed. The same rule as the
+    /// referral reward: a running subscription is extended from its own end, a lapsed one comes back
+    /// for these days from now (the free window is closed to anyone who has ever paid); free access
+    /// goes through <see cref="GrantFreeAccessDays"/> — added to the end of a running trial or bonus
+    /// period, from now when there is none. A later purchase starts from the end reached here
+    /// (see ActivateProStars), so the days are neither lost nor counted twice.
+    /// Returns the new end of access, or null when nothing was changed (Lifetime: nothing to add to).
+    /// </summary>
+    public DateTime? ExtendAccessDays(int days, DateTime now)
+    {
+        if (days <= 0 || IsLifetime) return null;
+        if (!IsPro) return GrantFreeAccessDays(days, now);
+
+        var startFrom = SubscribedUntil is { } paidUntil && paidUntil > now ? paidUntil : now;
+        SubscribedUntil = startFrom.AddDays(days);
+        return SubscribedUntil;
+    }
+
     /// <summary>How many days before trial end we start surfacing the "extend via referral" CTA.</summary>
     public const int TrialExtensionCtaThresholdDays = 3;
 

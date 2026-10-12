@@ -600,7 +600,8 @@ export const adminCampaigns = {
     dryRun: boolean
     giftDays?: number
     giftOfferDays?: number | null
-    /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания. */
+    /** Опрос: форма из вопросов (первый уходит кнопками под сообщением, остальные — в мини-аппе). Пусто — обычная кампания.
+     *  Опрос с подарком (giftDays > 0) уходит одной кнопкой buttonText, все вопросы — в мини-аппе, подарок — после последнего. */
     survey?: SurveyFormDto | null
     /** Конструктор рассылки начинает новую кампанию: при пустом key сервер сам её называет (broadcast-2026-10, -2, …). */
     newBroadcast?: boolean
@@ -881,14 +882,30 @@ export interface SurveyAnswerDto {
   text: string | null
 }
 
-/** Форма опроса глазами получателя (мини-апп): вопросы и то, что человек уже ответил. */
+/**
+ * Что с подарком опроса у этого человека. Подарок — за ответы: он выдаётся, когда человек дошёл до конца формы
+ * и ответил хотя бы на один вопрос, и прибавляется к тому доступу, который уже есть.
+ * promised — ещё не выдан, ждёт конца формы; needsAnswer — человек дошёл до конца, не ответив ни на один вопрос;
+ * given — выдан, доступа не было, дни идут с момента выдачи; addedToSubscription / addedToFreeAccess — дни прибавлены
+ * к концу действующей подписки или пробного периода (untilUtc — новый конец); lifetime — доступ и так бессрочный;
+ * offerEnded — опрос открыли после срока (untilUtc — когда он вышел); notGiven — запись не прошла, выдаст следующее открытие.
+ * trial — пробная отправка владельцу: экраны настоящие, дни не начисляются.
+ */
+export interface SurveyGiftDto {
+  outcome: 'promised' | 'needsAnswer' | 'given' | 'addedToSubscription' | 'addedToFreeAccess' | 'lifetime' | 'offerEnded' | 'notGiven'
+  days: number
+  untilUtc: string | null
+  trial?: boolean
+}
+
+/** Форма опроса глазами получателя (мини-апп): вопросы и то, что человек уже ответил. gift — у опроса с подарком. */
 export const surveyApi = {
   open: (key: string) =>
-    request<{ key: string; survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto> }>(
+    request<{ key: string; survey: SurveyFormDto; finished: boolean; answers: Record<string, SurveyAnswerDto>; gift?: SurveyGiftDto | null }>(
       `/api/miniapp/surveys/${encodeURIComponent(key)}/open`, { method: 'POST' }),
   answer: (key: string, questionId: string, answer: SurveyAnswerDto) =>
     request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/answer`, { method: 'POST', body: JSON.stringify({ questionId, ...answer }) }),
-  finish: (key: string) => request<{ ok: boolean }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/finish`, { method: 'POST' })
+  finish: (key: string) => request<{ ok: boolean; gift?: SurveyGiftDto | null }>(`/api/miniapp/surveys/${encodeURIComponent(key)}/finish`, { method: 'POST' })
 }
 
 /** Воронка опроса: получили → ответили на первый вопрос → открыли форму в мини-аппе → дошли до конца. */
@@ -897,6 +914,10 @@ export interface SurveyFunnelDto {
   answeredFirst: number
   openedForm: number
   finished: number
+  /** Опрос с подарком: скольким подарок выдан. */
+  gifted: number
+  /** Сколько человек ответили хотя бы на один вопрос. */
+  answered: number
 }
 
 export interface AdminSurveyDto {
@@ -911,6 +932,8 @@ export interface AdminSurveyDto {
   picked: number
   /** Из них ещё ждут отправки: больше нуля — отправку бросили посередине, к опросу можно вернуться. */
   pending: number
+  /** Дней доступа в подарок тому, кто откроет опрос; 0 — опрос без подарка (первый вопрос — кнопками в боте). */
+  giftDays: number
   funnel: SurveyFunnelDto
 }
 
@@ -953,6 +976,10 @@ export interface SurveyPresetDto {
   title: string
   about: string
   form: SurveyFormDto
+  /** Подарок по умолчанию: дней полного доступа тому, кто нажмёт кнопку; 0 — без подарка. */
+  giftDays: number
+  /** Текст единственной кнопки под сообщением у формы с подарком. */
+  buttonText: string | null
 }
 
 export interface SurveyLimitsDto {
@@ -962,6 +989,8 @@ export interface SurveyLimitsDto {
   botOptions: number
   optionLength: number
   questionLength: number
+  /** Самый большой подарок, дней. */
+  giftDays: number
 }
 
 export interface SurveyBuilderKitDto {

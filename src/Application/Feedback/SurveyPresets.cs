@@ -11,7 +11,10 @@ namespace Application.Feedback;
 /// <param name="Id">Latin, lower case — becomes a part of the campaign key (<c>survey-2026-10-users</c>).</param>
 /// <param name="Title">What the card in the builder is called.</param>
 /// <param name="About">Whom the form is for, in a line.</param>
-public record SurveyPreset(string Id, string Title, string About, SurveyForm Form);
+/// <param name="GiftDays">Days of full access the survey gives to whoever goes through it; 0 — no gift.
+/// The owner can change the number in the builder.</param>
+/// <param name="ButtonText">The caption of the one button under a survey with a gift; null for a survey without one.</param>
+public record SurveyPreset(string Id, string Title, string About, SurveyForm Form, int GiftDays = 0, string? ButtonText = null);
 
 /// <summary>
 /// The questions ask about facts and the past, not about wishes; nothing is asked that the
@@ -64,12 +67,26 @@ public static class SurveyPresets
     private static readonly SurveyQuestion Disliked = Free("Что нам стоит исправить в первую очередь? Пиши как есть, не обидимся.");
 
     // ── Тем, кто платил ──
-    public const string PaidIntro = "Привет! Это Дима, я делаю TraleBot. Ты один из немногих, кто оформил подписку, и твоё мнение мне особенно важно. Пять коротких вопросов, это минута.";
+    // A thank-you with a gift for answering: one button under the message, the whole form — the first
+    // question too — in the mini-app, a month of access right after the last question.
+    public const string PaidIntro =
+        "Привет! Это Дима, я делаю TraleBot.\n\n" +
+        "Спасибо за подписку на TraleBot: такая поддержка помогает мне развивать бота дальше.\n\n" +
+        "Помоги, пожалуйста, ещё раз: ответь на четыре коротких вопроса, это минута. По ответам я решаю, что делать в боте дальше.\n\n" +
+        "В благодарность подарю месяц полного доступа — он включится сразу после последнего вопроса.";
+    public const string PaidButton = "Ответить на вопросы";
+    public const int PaidGiftDays = 30;
+    private static readonly SurveyQuestion HowIsGeorgian = Choice("Как у тебя сейчас с грузинским?", true,
+        "Занимаюсь регулярно", "Иногда захожу", "Сейчас пауза", "Уже не нужен");
+    // The sections are named the way the mini-app names them: «Мой словарь», «Глаголы», «Алфавит».
+    private static readonly SurveyQuestion MostUseful = Choice("Что в TraleBot для тебя самое полезное?", true,
+        "Уроки", "Мой словарь и перевод слов", "Повторение и квизы", "Глаголы", "Алфавит");
+    private static readonly SurveyQuestion DoFirst = Free("Что мне сделать в TraleBot в первую очередь?");
+
+    // ── Только в банке ──
     private static readonly SurveyQuestion WhyBought = Free("Вспомни день покупки подписки. Что тогда подтолкнуло?");
     private static readonly SurveyQuestion WhyNotRenewed = Choice("Если подписка закончилась — что помешало продлить?", true,
         "Подписка действует", "Пауза в учёбе", "Хватает бесплатного", "Дорого", "Просто забылось");
-
-    // ── Только в банке ──
     private static readonly SurveyQuestion Paywall = Choice("Что остановило от покупки полного доступа?", true,
         "Дорого", "Пока не нужно", "Непонятно, что я получу");
 
@@ -79,15 +96,16 @@ public static class SurveyPresets
             Form(IfGone, WhatElseNow, WhyGeorgian, LastHelped, LastAnnoyed)),
         new("left", "Тем, кто перестал", "Ушли от TraleBot или от языка, после чего и чего хотели",
             new SurveyForm { Intro = LeftIntro, Questions = [LearningNow, AfterWhat, WhatElseThen, Goal, Disliked] }),
-        new("paid", "Тем, кто платил", "Что подтолкнуло оформить подписку, что помогает и почему не продлили",
-            new SurveyForm { Intro = PaidIntro, Questions = [IfGone, WhyBought, LastHelped, LastAnnoyed, WhyNotRenewed] })
+        new("paid", "Тем, кто платил", "Спасибо за подписку; за ответы — месяц доступа в подарок. Как с грузинским, что полезнее всего и что сделать первым",
+            new SurveyForm { Intro = PaidIntro, Questions = [HowIsGeorgian, MostUseful, WhatElseNow, DoFirst] },
+            PaidGiftDays, PaidButton)
     ];
 
     /// <summary>Ready questions the builder offers to add to a form: everything from the forms above and one more.</summary>
     public static readonly IReadOnlyList<SurveyQuestion> Bank =
     [
         IfGone, WhatElseNow, WhyGeorgian, LastHelped, LastAnnoyed,
-        LearningNow, AfterWhat, WhatElseThen, Goal, Disliked, WhyBought, WhyNotRenewed, Paywall
+        LearningNow, AfterWhat, WhatElseThen, Goal, Disliked, HowIsGeorgian, MostUseful, DoFirst, WhyBought, WhyNotRenewed, Paywall
     ];
 
     /// <summary>Answer buttons the builder offers to add by one tap.</summary>

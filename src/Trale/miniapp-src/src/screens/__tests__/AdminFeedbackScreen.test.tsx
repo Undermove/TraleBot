@@ -22,7 +22,7 @@ const threads = vi.mocked(mockedThreads)
 const KEY = 'survey-2026-10-users'
 const summary: AdminSurveyDto = {
   key: KEY, title: 'Что ты почувствуешь, если TraleBot завтра исчезнет?', questions: 3, createdAtUtc: '2026-10-08T10:00:00Z', audience: 'activeLately',
-  picked: 120, pending: 0, funnel: { sent: 120, answeredFirst: 40, openedForm: 30, finished: 18 }
+  picked: 120, pending: 0, giftDays: 0, funnel: { sent: 120, answeredFirst: 40, openedForm: 30, finished: 18, gifted: 0, answered: 41 }
 }
 const overview: AdminFeedbackDto = {
   recent: [],
@@ -145,6 +145,35 @@ describe('AdminFeedbackScreen', () => {
     await waitFor(() => expect(screen.getByTestId('feedback-question-q2').textContent).toContain('Репетитор или курсы9 · 75%'))
     expect(screen.getByTestId('feedback-funnel').textContent).toContain('получили120')
     expect(chips.getByRole('button', { name: 'Очень расстроюсь' }).getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('a survey with a gift: opened, answered, reached the end, got the gift — and no headline number is needed', async () => {
+    const gifted: AdminSurveyDto = {
+      ...summary, key: 'survey-2026-10-paid', title: 'Как у тебя сейчас с грузинским?', questions: 4, audience: 'proLapsed', picked: 6, giftDays: 30,
+      funnel: { sent: 6, answeredFirst: 2, openedForm: 4, finished: 2, gifted: 2, answered: 3 }
+    }
+    api.overview.mockResolvedValue({ ...overview, surveys: [gifted] })
+    api.survey.mockResolvedValue({
+      summary: gifted, segment: null, written: [],
+      questions: [
+        { id: 'q1', text: gifted.title, kind: 'choice', answered: 2, options: [{ option: 'Занимаюсь регулярно', count: 1 }, { option: 'Сейчас пауза', count: 1 }], headline: null, texts: [] },
+        { id: 'q2', text: 'Что мне сделать в TraleBot в первую очередь?', kind: 'text', answered: 1, options: [], headline: null, texts: [text('q2', null, 'Больше глаголов', 555)] }
+      ]
+    })
+    render(<AdminFeedbackScreen view={{ survey: gifted.key }} navigate={navigate} />)
+
+    expect((await screen.findByTestId('feedback-funnel')).textContent)
+      .toBe('получили6открыли4 · 67%ответили хотя бы на один вопрос3 · 50%дошли до конца2 · 33%получили подарок2 · 33%')
+    expect(screen.getByTestId('feedback-survey').textContent).toContain('подарок: 30 дн. доступа')
+    expect(screen.queryByTestId('feedback-headline')).toBeNull()
+    expect(screen.getByTestId('feedback-question-q1').textContent).not.toContain('в боте')
+    expect(screen.getByTestId('feedback-question-q2').textContent).toContain('Больше глаголов')
+  })
+
+  it('«Опросы» shows a gift survey by opens, gifts and answers', async () => {
+    api.overview.mockResolvedValue({ ...overview, surveys: [{ ...summary, giftDays: 30, funnel: { sent: 6, answeredFirst: 2, openedForm: 4, finished: 2, gifted: 3, answered: 3 } }] })
+    render(<AdminFeedbackScreen view="surveys" navigate={navigate} />)
+    expect((await screen.findByTestId(`feedback-open-survey-${KEY}`)).textContent).toContain('получили 6 · открыли 4 · ответили 3 · подарок 3')
   })
 
   it('a survey of one question has a short funnel, no narrowing, and shows what was written by «Написать подробнее»', async () => {

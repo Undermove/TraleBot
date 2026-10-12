@@ -313,16 +313,22 @@ public class UserFeedbackService(ITraleDbContext db, ILoggerFactory loggerFactor
                 Pending = g.Count(d => d.Status == BroadcastDeliveryStatus.Pending),
                 Sent = g.Count(d => d.Status == BroadcastDeliveryStatus.Sent),
                 Opened = g.Count(d => d.SurveyOpenedAtUtc != null),
-                Finished = g.Count(d => d.SurveyFinishedAtUtc != null)
+                Finished = g.Count(d => d.SurveyFinishedAtUtc != null),
+                Gifted = g.Count(d => d.GiftGrantedAtUtc != null)
             })
             .FirstOrDefaultAsync(ct);
         var firstId = form.Questions[0].Id;
         var answeredFirst = await db.UserFeedback.AsNoTracking().CountAsync(
             f => f.Kind == UserFeedbackKind.Survey && f.CampaignKey == campaign.Key && f.QuestionId == firstId, ct);
+        var answeredAny = await db.UserFeedback.AsNoTracking()
+            .Where(f => f.Kind == UserFeedbackKind.Survey && f.CampaignKey == campaign.Key && f.QuestionId != null)
+            .Select(f => f.UserId).Distinct().CountAsync(ct);
         return new SurveySummary(
             campaign.Key, form.Questions[0].Text, form.Questions.Count, campaign.CreatedAtUtc, campaign.Audience,
             deliveries?.Picked ?? 0, deliveries?.Pending ?? 0,
-            new SurveyFunnel(deliveries?.Sent ?? 0, answeredFirst, deliveries?.Opened ?? 0, deliveries?.Finished ?? 0));
+            new SurveyFunnel(deliveries?.Sent ?? 0, answeredFirst, deliveries?.Opened ?? 0, deliveries?.Finished ?? 0,
+                deliveries?.Gifted ?? 0, answeredAny),
+            campaign.GiftDays);
     }
 
     /// <summary>
@@ -425,13 +431,18 @@ public record OptionCount(string Option, int Count);
 
 /// <summary>How far people got: delivered → answered the first question (in the bot or in the form) →
 /// opened the form in the mini-app → reached its last page.</summary>
-public record SurveyFunnel(int Sent, int AnsweredFirst, int OpenedForm, int Finished);
+/// <param name="Gifted">A survey with a gift: recipients the gift was given to.</param>
+/// <param name="Answered">People who answered at least one question, whichever it was.</param>
+public record SurveyFunnel(int Sent, int AnsweredFirst, int OpenedForm, int Finished, int Gifted, int Answered);
 
 /// <param name="Title">The first question — what the owner knows the survey by.</param>
 /// <param name="Picked">People picked as recipients so far.</param>
 /// <param name="Pending">Of them, still waiting to be sent — above zero means the sending was left unfinished.</param>
+/// <param name="GiftDays">Days of access the survey gives to whoever opens it; 0 — a survey without a gift,
+/// whose first question is answered in the bot.</param>
 public record SurveySummary(
-    string Key, string Title, int Questions, DateTime CreatedAtUtc, BroadcastAudience Audience, int Picked, int Pending, SurveyFunnel Funnel);
+    string Key, string Title, int Questions, DateTime CreatedAtUtc, BroadcastAudience Audience, int Picked, int Pending, SurveyFunnel Funnel,
+    int GiftDays);
 
 /// <param name="Option">The headline option as it is worded in this survey.</param>
 /// <param name="Chose">People who chose <paramref name="Option"/>.</param>

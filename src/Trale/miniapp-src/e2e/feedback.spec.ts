@@ -74,21 +74,30 @@ const disliked = free('Что нам стоит исправить в перву
 const paywallQuestion = choice('Что остановило от покупки полного доступа?', true, 'Дорого', 'Пока не нужно', 'Непонятно, что я получу')
 const whyBought = free('Вспомни день покупки подписки. Что тогда подтолкнуло?')
 const whyNotRenewed = choice('Если подписка закончилась — что помешало продлить?', true, 'Подписка действует', 'Пауза в учёбе', 'Хватает бесплатного', 'Дорого', 'Просто забылось')
-const paidIntro = 'Привет! Это Дима, я делаю TraleBot. Ты один из немногих, кто оформил подписку, и твоё мнение мне особенно важно. Пять коротких вопросов, это минута.'
+const paidIntro = [
+  'Привет! Это Дима, я делаю TraleBot.',
+  'Спасибо за подписку на TraleBot: такая поддержка помогает мне развивать бота дальше.',
+  'Помоги, пожалуйста, ещё раз: ответь на четыре коротких вопроса, это минута. По ответам я решаю, что делать в боте дальше.',
+  'В благодарность подарю месяц полного доступа — он включится сразу после последнего вопроса.',
+].join('\n\n')
+const howIsGeorgian = choice('Как у тебя сейчас с грузинским?', true, 'Занимаюсь регулярно', 'Иногда захожу', 'Сейчас пауза', 'Уже не нужен')
+const mostUseful = choice('Что в TraleBot для тебя самое полезное?', true, 'Уроки', 'Мой словарь и перевод слов', 'Повторение и квизы', 'Глаголы', 'Алфавит')
+const doFirst = free('Что мне сделать в TraleBot в первую очередь?')
+const paid = [howIsGeorgian, mostUseful, whatElseNow, doFirst]
 const leftIntro = 'Привет! Это Дима, я делаю TraleBot. Мы давно не виделись — расскажи, пожалуйста, как у тебя дела с грузинским. Пять коротких вопросов, это минута.'
 const intro = 'Привет! Это Дима, я делаю TraleBot. Хочу сделать его лучше — помоги, пожалуйста: пять коротких вопросов, это минута.'
 const users = [ifGone, whatElseNow, whyGeorgian, lastHelped, lastAnnoyed]
 const kit = {
   presets: [
-    { id: 'users', title: 'Тем, кто пользуется', about: 'Насколько TraleBot нужен, чем ещё занимаются и что помогает', form: { intro, questions: users } },
-    { id: 'left', title: 'Тем, кто перестал', about: 'Ушли от TraleBot или от языка, после чего и чего хотели', form: { intro: leftIntro, questions: [learningNow, afterWhat, whatElseThen, goal, disliked] } },
-    { id: 'paid', title: 'Тем, кто платил', about: 'Что подтолкнуло оформить подписку, что помогает и почему не продлили', form: { intro: paidIntro, questions: [ifGone, whyBought, lastHelped, lastAnnoyed, whyNotRenewed] } },
+    { id: 'users', title: 'Тем, кто пользуется', about: 'Насколько TraleBot нужен, чем ещё занимаются и что помогает', form: { intro, questions: users }, giftDays: 0, buttonText: null },
+    { id: 'left', title: 'Тем, кто перестал', about: 'Ушли от TraleBot или от языка, после чего и чего хотели', form: { intro: leftIntro, questions: [learningNow, afterWhat, whatElseThen, goal, disliked] }, giftDays: 0, buttonText: null },
+    { id: 'paid', title: 'Тем, кто платил', about: 'Спасибо за подписку; за ответы — месяц доступа в подарок. Как с грузинским, что полезнее всего и что сделать первым', form: { intro: paidIntro, questions: paid }, giftDays: 30, buttonText: 'Ответить на вопросы' },
   ],
-  bank: [...users, learningNow, afterWhat, whatElseThen, goal, disliked, whyBought, whyNotRenewed, paywallQuestion],
+  bank: [...users, learningNow, afterWhat, whatElseThen, goal, disliked, howIsGeorgian, mostUseful, doFirst, whyBought, whyNotRenewed, paywallQuestion],
   suggestions: ['Нет времени', 'Дорого', 'Всё устраивает', 'Сложно', 'Скучно', 'Мало практики', 'Не помню', 'Не знаю'],
   intro,
   otherLabel: 'Другое',
-  limits: { questions: 6, options: 6, botOptions: 4, optionLength: 64, questionLength: 300 },
+  limits: { questions: 6, options: 6, botOptions: 4, optionLength: 64, questionLength: 300, giftDays: 30 },
 }
 const withIds = (questions: object[]) => questions.map((q, i) => ({ ...q, id: `q${i + 1}` }))
 
@@ -143,7 +152,11 @@ interface ThreadItem { id: string; fromOwner: boolean; text: string; atUtc: stri
 
 interface Calls { replies: any[]; dismissed: number[]; threadsOpened: string[]; asked: number; answers: any[]; messages: any[]; prepared: any[]; sent: string[]; formAnswers: any[]; formOpened: number; formFinished: number }
 
-interface FormState { survey: { intro: string | null; questions: object[] }; finished: boolean; answers: Record<string, object> }
+interface FormState {
+  survey: { intro: string | null; questions: object[] }; finished: boolean; answers: Record<string, object>; gift?: object | null
+  /** Опрос с подарком: что сервер отвечает о подарке на «дошёл до конца» — по числу записанных ответов. */
+  afterFinish?: (answers: number) => object
+}
 
 async function setup(page: Page, opts: { me?: object; due?: boolean; messageStatus?: number; form?: FormState | null; delivery?: string } = {}): Promise<Calls> {
   const calls: Calls = { replies: [], dismissed: [], threadsOpened: [], asked: 0, answers: [], messages: [], prepared: [], sent: [], formAnswers: [], formOpened: 0, formFinished: 0 }
@@ -249,9 +262,12 @@ async function setup(page: Page, opts: { me?: object; due?: boolean; messageStat
   await page.route('**/api/miniapp/surveys/**', (route) => {
     const path = new URL(route.request().url()).pathname
     if (!opts.form) return route.fulfill({ status: 404, json: { error: 'not_found' } })
-    if (path.endsWith('/open')) { calls.formOpened += 1; return route.fulfill({ json: { key: KEY, ...opts.form } }) }
+    if (path.endsWith('/open')) { calls.formOpened += 1; return route.fulfill({ json: { key: KEY, ...opts.form, afterFinish: undefined } }) }
     if (path.endsWith('/answer')) calls.formAnswers.push(route.request().postDataJSON())
-    if (path.endsWith('/finish')) calls.formFinished += 1
+    if (path.endsWith('/finish')) {
+      calls.formFinished += 1
+      return route.fulfill({ json: { ok: true, gift: opts.form.afterFinish?.(calls.formAnswers.length) ?? null } })
+    }
     return route.fulfill({ json: { ok: true } })
   })
   await page.route('**/api/admin/verbs/model-made', json({ verbs: [] }))
@@ -531,6 +547,176 @@ test.describe('форма опроса', () => {
   })
 })
 
+test.describe('опрос с подарком', () => {
+  test.use({ viewport: { width: 375, height: 812 } })
+  const PAID = 'survey-2026-10-paid'
+  const inDays = (days: number) => new Date(Date.now() + days * 86400000)
+  const dayMonth = (date: Date) => date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+  const promised = { outcome: 'promised', days: 30, untilUtc: null }
+  const needsAnswer = { outcome: 'needsAnswer', days: 30, untilUtc: null }
+  /** Подарок выдаётся в ответ на «дошёл до конца» — тому, кто ответил хотя бы на один вопрос. */
+  const paidForm = (earned: object, atOpen: object = promised, finished = false): FormState =>
+    ({ survey: { intro: paidIntro, questions: withIds(paid) }, finished, answers: {}, gift: atOpen, afterFinish: answers => (answers > 0 ? earned : needsAnswer) })
+  /** Кнопка под сообщением открывает мини-апп с обеими метками: форма опроса и открытие кампании. */
+  async function pressButton(page: Page) {
+    const opens: object[] = []
+    await page.route('**/api/miniapp/campaign-open', (route) => {
+      opens.push(route.request().postDataJSON())
+      return route.fulfill({ json: { ok: true, gift: null } })
+    })
+    await page.goto(`/?playwright=1&screen=survey&s=${PAID}&c=${PAID}`)
+    return opens
+  }
+  const promise = (page: Page) => page.getByTestId('survey-gift-promise')
+
+  test('the button opens the first question at once with the promise above it; the month comes after the last question', async ({ page }) => {
+    const until = inDays(30)
+    const calls = await setup(page, { form: paidForm({ outcome: 'given', days: 30, untilUtc: until.toISOString() }) })
+    const opens = await pressButton(page)
+
+    await expect(page.getByTestId('survey-progress')).toHaveText('Вопрос 1 из 4')
+    await expect(promise(page)).toHaveText('Четыре коротких вопроса — и месяц полного доступа твой')
+    await expect(promise(page).locator('svg')).toHaveCount(1)
+    expect(await page.getByTestId('survey-screen').innerText()).not.toMatch(/\p{Extended_Pictographic}/u)
+    await expect(page.getByTestId('survey-page-question')).toHaveText('Как у тебя сейчас с грузинским?')
+    await expect(page.getByRole('radio')).toHaveText(['Занимаюсь регулярно', 'Иногда захожу', 'Сейчас пауза', 'Уже не нужен', 'Другое'])
+    await expect(page.getByTestId('survey-gift')).toHaveCount(0)
+    expect(opens).toEqual([{ key: PAID }])
+    await fits(page)
+    await shot(page, 'paid-survey-1-first-question', true)
+    await page.getByRole('radio', { name: 'Иногда захожу' }).click()
+    await page.getByTestId('survey-page-next').click()
+
+    await expect(page.getByTestId('survey-page-question')).toHaveText('Что в TraleBot для тебя самое полезное?')
+    await expect(page.getByRole('radio')).toHaveText(['Уроки', 'Мой словарь и перевод слов', 'Повторение и квизы', 'Глаголы', 'Алфавит', 'Другое'])
+    await fits(page)
+    await shot(page, 'paid-survey-2-question-2', true)
+    await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+    await expect(page.getByRole('radio')).toHaveText(['Репетитор или курсы', 'Другие приложения', 'Учебник или YouTube', 'Только TraleBot', 'Другое'])
+    await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+
+    await expect(page.getByTestId('survey-progress')).toHaveText('Вопрос 4 из 4')
+    await expect(page.getByTestId('survey-page-question')).toHaveText('Что мне сделать в TraleBot в первую очередь?')
+    await page.getByLabel('Твой ответ').fill('Больше глаголов движения')
+    await shot(page, 'paid-survey-3-question-4', true)
+    await page.getByTestId('survey-page-next').click()
+
+    const thanks = page.getByTestId('survey-thanks')
+    await expect(thanks).toContainText('Спасибо!')
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа включён')
+    await expect(page.getByTestId('survey-gift-line')).toHaveText(`Действует до ${dayMonth(until)}. Открыто всё: уроки, глаголы и словарь.`)
+    expect(await thanks.innerText()).not.toMatch(/\p{Extended_Pictographic}/u)
+    for (const button of await thanks.getByRole('button').all()) expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    expect(calls.formAnswers).toEqual([
+      { questionId: 'q1', option: 'Иногда захожу', other: false, text: null },
+      { questionId: 'q4', option: null, other: false, text: 'Больше глаголов движения' },
+    ])
+    expect(calls.formFinished).toBe(1)
+    await fits(page)
+    await shot(page, 'paid-survey-4-thanks-month-on')
+
+    // «В приложение» запускает мини-апп заново: о новом доступе узнают все экраны.
+    await page.getByRole('button', { name: 'В приложение' }).click()
+    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+    expect(new URL(page.url()).searchParams.get('screen')).toBeNull()
+  })
+
+  test('opening and closing gives nothing; skipping every question brings back to them: one answer, and the month is theirs', async ({ page }) => {
+    const calls = await setup(page, { form: paidForm({ outcome: 'given', days: 30, untilUtc: inDays(30).toISOString() }) })
+    await pressButton(page)
+
+    await expect(promise(page)).toBeVisible()
+    for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Ответь хотя бы на один вопрос, и месяц твой')
+    await expect(page.getByTestId('survey-needs-answer')).not.toContainText('включён')
+    expect(calls.formAnswers).toEqual([])
+    await fits(page)
+    await shot(page, 'paid-survey-5-needs-answer')
+    await page.getByTestId('survey-back-to-questions').click()
+
+    await expect(page.getByTestId('survey-progress')).toHaveText('Вопрос 1 из 4')
+    await page.getByRole('radio', { name: 'Сейчас пауза' }).click()
+    await page.getByTestId('survey-page-next').click()
+    for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа включён')
+    expect(calls.formFinished).toBe(2)
+  })
+
+  test('a running subscription gets the month on top: «добавлен» and the new end of the subscription', async ({ page }) => {
+    const nextYear = new Date(Date.UTC(new Date().getFullYear() + 1, 6, 15, 12))
+    await setup(page, { me: { isPro: true, hasAccess: true }, form: paidForm({ outcome: 'addedToSubscription', days: 30, untilUtc: nextYear.toISOString() }) })
+    await pressButton(page)
+
+    await expect(promise(page)).toHaveText('Четыре коротких вопроса — и месяц полного доступа твой')
+    await page.getByRole('radio', { name: 'Занимаюсь регулярно' }).click()
+    await page.getByTestId('survey-page-next').click()
+    for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа добавлен')
+    await expect(page.getByTestId('survey-gift-line')).toHaveText(`Подписка теперь действует до 15 июля ${nextYear.getFullYear()}.`)
+    await expect(page.getByTestId('survey-gift-trial')).toHaveCount(0)
+    await fits(page)
+    await shot(page, 'paid-survey-6-added-to-subscription')
+  })
+
+  test('lifetime access is not promised a month: thanks before the questions and after them', async ({ page }) => {
+    const lifetime = { outcome: 'lifetime', days: 30, untilUtc: null }
+    await setup(page, { me: { isPro: true, hasAccess: true }, form: { ...paidForm(lifetime, lifetime), afterFinish: () => lifetime } })
+    await pressButton(page)
+
+    await expect(promise(page)).toHaveText('Спасибо за поддержку! Четыре коротких вопроса помогут мне решить, что делать дальше')
+    await fits(page)
+    await shot(page, 'paid-survey-7-lifetime-first-question', true)
+    for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('У тебя пожизненный доступ')
+    await expect(page.getByTestId('survey-thanks')).not.toContainText('включён')
+    await expect(page.getByTestId('survey-thanks')).not.toContainText('добавлен')
+    await shot(page, 'paid-survey-8-lifetime-thanks')
+  })
+
+  test('someone who has been through it is reminded until when the access runs', async ({ page }) => {
+    const until = inDays(21)
+    await setup(page, { form: paidForm({}, { outcome: 'given', days: 30, untilUtc: until.toISOString() }, true) })
+    await pressButton(page)
+
+    await expect(page.getByTestId('survey-already')).toContainText('Твои ответы уже у меня')
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа включён')
+    await expect(page.getByTestId('survey-gift-line')).toContainText(`Действует до ${dayMonth(until)}`)
+    await expect(page.getByRole('button', { name: 'Поправить ответы' })).toBeVisible()
+    await fits(page)
+    await shot(page, 'paid-survey-9-already')
+    await page.getByRole('button', { name: 'В приложение' }).click()
+    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+  })
+
+  test('the owner’s trial walks the recipient’s screens and says that no days are given', async ({ page }) => {
+    const would = { outcome: 'addedToSubscription', days: 30, untilUtc: inDays(52).toISOString(), trial: true }
+    await setup(page, { me: { isPro: true, hasAccess: true }, form: paidForm(would, { ...promised, trial: true }) })
+    await pressButton(page)
+
+    await expect(promise(page)).toHaveText('Четыре коротких вопроса — и месяц полного доступа твой')
+    await expect(page.getByTestId('survey-gift-trial')).toContainText('Пробная отправка: дни не начисляются')
+    await page.getByRole('radio', { name: 'Занимаюсь регулярно' }).click()
+    await page.getByTestId('survey-page-next').click()
+    for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа добавлен')
+    await expect(page.getByTestId('survey-gift-line')).toHaveText(`Подписка теперь действует до ${dayMonth(inDays(52))}.`)
+    await expect(page.getByTestId('survey-gift-trial')).toContainText('Пробная отправка: дни не начислены')
+    await fits(page)
+    await shot(page, 'paid-survey-10-owner-trial')
+  })
+
+  test('opened after the offer’s deadline: the questions are there, the gift is not promised', async ({ page }) => {
+    const ended = { outcome: 'offerEnded', days: 30, untilUtc: inDays(-2).toISOString() }
+    await setup(page, { form: { ...paidForm(ended, ended), afterFinish: () => ended } })
+    await pressButton(page)
+    await expect(promise(page)).toHaveText(`Подарок можно было получить до ${dayMonth(inDays(-2))}. На вопросы по-прежнему можно ответить.`)
+    await fits(page)
+  })
+})
+
 test.describe('владелец', () => {
   // Ширина телефона, под которую свёрстан мини-апп.
   test.use({ viewport: { width: 375, height: 812 } })
@@ -559,7 +745,7 @@ test.describe('владелец', () => {
 
     await expect(stepTitle(page)).toHaveText('Выбери опрос')
     await expect(page.locator('[data-testid^="survey-preset-"]')).toHaveCount(4)
-    await expect(page.getByTestId('survey-preset-paid')).toContainText('Вспомни день покупки подписки. Что тогда подтолкнуло?')
+    await expect(page.getByTestId('survey-preset-paid')).toContainText('Что мне сделать в TraleBot в первую очередь?')
     await expect(page.getByTestId('survey-preset-left')).toContainText('Что помешало заниматься дальше?')
     await fits(page)
     await shot(page, 'form-1-choose', true)
@@ -643,14 +829,14 @@ test.describe('владелец', () => {
     expect(calls.formAnswers).toEqual([])
   })
 
-  test('the form for those who paid: the headline number survives renamed buttons, and the builder warns when it is lost', async ({ page }) => {
+  test('the headline number survives renamed buttons, and the builder warns when it is lost', async ({ page }) => {
     const calls = await setup(page, { me: owner })
     await openBuilder(page)
-    await page.getByTestId('survey-preset-paid').click()
+    await page.getByTestId('survey-preset-users').click()
 
-    await expect(page.getByTestId('survey-preview')).toContainText(`${paidIntro}\n\n${ifGone.text}`)
+    await expect(page.getByTestId('survey-preview')).toContainText(`${intro}\n\n${ifGone.text}`)
     await expect(page.locator('[data-testid^="survey-question-open-"]')).toHaveCount(5)
-    await expect(card(page, 4)).toContainText('Подписка действует · Пауза в учёбе · Хватает бесплатного · Дорого · Просто забылось · Другое')
+    await expect(card(page, 4)).toContainText(lastAnnoyed.text)
     await expect(page.getByTestId('survey-question-headline-0')).toHaveText('с главной цифрой в результатах')
     await fits(page)
     await shot(page, 'form-10-paid-questions', true)
@@ -668,8 +854,8 @@ test.describe('владелец', () => {
     await page.getByTestId('survey-next').click()
     await page.getByTestId('survey-send-me').click()
     await expect(page.getByTestId('survey-note')).toContainText('пройди форму до конца')
-    expect(calls.prepared[0].newSurveySlug).toBe('paid-test')
-    expect(calls.prepared[0].survey.intro).toBe(paidIntro)
+    expect(calls.prepared[0].newSurveySlug).toBe('users-test')
+    expect(calls.prepared[0].survey.intro).toBe(intro)
     expect(calls.prepared[0].survey.questions[0]).toMatchObject({
       options: ['Будет очень жаль', 'Полезен, но обойдусь', 'Могу и без него', 'Уже не пользуюсь'],
       optionKeys: ['very', 'somewhat', 'indifferent', 'unused'], headlineOption: 'very', headlineWithout: 'unused',
@@ -776,6 +962,110 @@ test.describe('владелец', () => {
     await page.getByTestId('feedback-survey-resume').click()
     await expect(stepTitle(page)).toHaveText('Отправка')
     await expect(page.getByTestId('survey-status')).toContainText('Выбрано 553 · ждут 453 · дошло 100')
+  })
+
+  test('the form for those who paid carries a month: one button in the chat, the days and the caption can be changed, and it is sent to oneself', async ({ page }) => {
+    const calls = await setup(page, { me: owner })
+    await openBuilder(page)
+
+    await expect(page.getByTestId('survey-preset-paid')).toContainText('вопросов: 4 · подарок: 30 дн. доступа')
+    await fits(page)
+    await shot(page, 'paid-builder-1-presets', true)
+    await page.getByTestId('survey-preset-paid').click()
+
+    await expect(page.getByTestId('survey-preview')).toHaveText(`${paidIntro}Ответить на вопросы`)
+    await expect(page.getByTestId('survey-how')).toContainText('Подарок включится после последнего вопроса')
+    await expect(page.locator('[data-testid^="survey-question-open-"]')).toHaveCount(4)
+    await expect(card(page, 0)).not.toContainText('в боте')
+    await expect(card(page, 1)).toContainText('Уроки · Мой словарь и перевод слов · Повторение и квизы · Глаголы · Алфавит · Другое')
+    await expect(card(page, 3)).toContainText('свободный ответ')
+    await expect(page.getByTestId('survey-gift-days')).toHaveValue('30')
+    await expect(page.getByTestId('survey-gift-button')).toHaveValue('Ответить на вопросы')
+    await expect(page.getByTestId('survey-gift-rules')).toContainText('включается после последнего вопроса — тому, кто ответил хотя бы на один')
+    await expect(page.getByTestId('survey-gift-rules')).toContainText('действующая подписка или пробный период продлеваются на 30 дн. от своего конца')
+    await expect(page.getByTestId('survey-problem')).toHaveCount(0)
+    for (const control of [page.getByTestId('survey-gift-days'), page.getByTestId('survey-gift-button')]) {
+      expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    }
+    await fits(page)
+    await shot(page, 'paid-builder-2-questions-and-gift', true)
+
+    // Другое число дней — напоминание поправить обещание; ноль — обычный опрос с первым вопросом в боте.
+    await page.getByTestId('survey-gift-days').fill('14')
+    await expect(page.getByTestId('survey-gift-text-warning')).toContainText('обещают месяц')
+    await page.getByTestId('survey-gift-days').fill('0')
+    await expect(page.getByTestId('survey-preview')).toContainText('Как у тебя сейчас с грузинским?Занимаюсь регулярно')
+    await expect(card(page, 0)).toContainText('в боте')
+    await page.getByTestId('survey-gift-days').fill('30')
+    await expect(page.getByTestId('survey-preview')).toHaveText(`${paidIntro}Ответить на вопросы`)
+
+    // Как пользователь: сразу первый вопрос со строкой о подарке, подарок — на последнем экране.
+    await page.getByTestId('survey-try').click()
+    await expect(page.getByTestId('survey-progress')).toHaveText('Вопрос 1 из 4')
+    await expect(page.getByTestId('survey-gift-promise')).toHaveText('Четыре коротких вопроса — и месяц полного доступа твой')
+    for (const who of await page.getByRole('radiogroup', { name: 'Чьими глазами смотреть' }).getByRole('radio').all()) {
+      expect((await who.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    }
+    await fits(page)
+    await shot(page, 'paid-builder-3-preview-first-question', true)
+    await page.getByTestId('survey-preview-who-addedToSubscription').click()
+    await page.getByRole('radio', { name: 'Занимаюсь регулярно' }).click()
+    await page.getByTestId('survey-page-next').click()
+    for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Месяц полного доступа добавлен')
+    await expect(page.getByTestId('survey-gift-line')).toContainText('Подписка теперь действует до')
+    await shot(page, 'paid-builder-3b-preview-subscriber-thanks', true)
+    await page.getByTestId('survey-preview-who-lifetime').click()
+    await expect(page.getByTestId('survey-gift-promise')).toContainText('Спасибо за поддержку!')
+    await page.getByTestId('survey-preview-who-given').click()
+    for (let i = 0; i < 4; i++) await page.getByRole('button', { name: 'Пропустить вопрос' }).click()
+    await expect(page.getByTestId('survey-gift-title')).toHaveText('Ответь хотя бы на один вопрос, и месяц твой')
+    await page.getByRole('button', { name: 'Закрыть предпросмотр' }).click()
+
+    await page.getByTestId('survey-next').click()
+    await page.getByTestId('survey-audience-proLapsed').click()
+    await page.getByTestId('survey-next').click()
+    await expect(page.getByTestId('survey-summary')).toContainText('Вопросов: 4 — все в мини-аппе. Подарок: 30 дн. доступа после последнего вопроса.')
+    await fits(page)
+    await shot(page, 'paid-builder-4-sending', true)
+    await page.getByTestId('survey-send-me').click()
+    await expect(page.getByTestId('survey-note')).toContainText('дни тебе не начисляются')
+    expect(calls.prepared[0]).toMatchObject({ key: '', newSurveySlug: 'paid-test', audience: 'owner', buttonText: 'Ответить на вопросы', buttonQuery: null, giftDays: 30, dryRun: false })
+    expect(calls.prepared[0].survey.intro).toBe(paidIntro)
+    expect(calls.prepared[0].survey.questions.map((q: { text: string }) => q.text)).toEqual(paid.map(q => q.text))
+    expect(calls.sent).toEqual(['survey-2026-10-paid-test'])
+  })
+
+  test('«Отзывы» of a gift survey: opened, answered, reached the end, got the gift — and the screen does not need the headline number', async ({ page }) => {
+    await setup(page, { me: owner })
+    const PAID = 'survey-2026-10-paid'
+    const summary = { key: PAID, title: howIsGeorgian.text, questions: 4, createdAtUtc: at(9, '08:00'), audience: 'proLapsed', picked: 6, pending: 0, giftDays: 30,
+      funnel: { sent: 6, answeredFirst: 3, openedForm: 5, finished: 2, gifted: 2, answered: 3 } }
+    const counts = (q: { options: string[] }, numbers: number[]) => [...q.options, 'Другое'].map((option, i) => ({ option, count: numbers[i] ?? 0 }))
+    await page.route(`**/api/admin/feedback/surveys/${PAID}*`, (route) => route.fulfill({ json: {
+      summary, segment: null, written: [],
+      questions: [
+        { id: 'q1', text: howIsGeorgian.text, kind: 'choice', answered: 3, options: counts(howIsGeorgian, [1, 1, 1, 0, 0]), headline: null, texts: [] },
+        { id: 'q2', text: mostUseful.text, kind: 'choice', answered: 3, options: counts(mostUseful, [1, 1, 0, 1, 0, 0]), headline: null, texts: [] },
+        { id: 'q3', text: whatElseNow.text, kind: 'choice', answered: 2, options: counts(whatElseNow, [1, 0, 0, 1, 0]), headline: null, texts: [] },
+        { id: 'q4', text: doFirst.text, kind: 'text', answered: 1, options: [], headline: null, texts: [{ id: 's9', kind: 'survey', campaignKey: PAID, questionId: 'q4', option: null, text: 'Больше глаголов движения', atUtc: at(9, '10:00'), telegramId: 5000000301 }] },
+      ],
+    } }))
+    await page.route(/\/api\/admin\/feedback\?/, (route) => route.fulfill({ json: { ...overview, unanswered: 0, surveys: [summary, ...overview.surveys], recent: [] } }))
+    await openAdmin(page)
+    await page.getByTestId('admin-tab-feedback').click()
+    await page.getByRole('tab', { name: /Опросы/ }).click()
+
+    await expect(page.getByTestId(`feedback-open-survey-${PAID}`)).toContainText('получили 6 · открыли 5 · ответили 3 · подарок 2')
+    await page.getByTestId(`feedback-open-survey-${PAID}`).click()
+    await expect(page.getByTestId('feedback-funnel')).toHaveText('получили6открыли5 · 83%ответили хотя бы на один вопрос3 · 50%дошли до конца2 · 33%получили подарок2 · 33%')
+    await expect(page.getByTestId('feedback-survey')).toContainText('подарок: 30 дн. доступа')
+    await expect(page.getByTestId('feedback-headline')).toHaveCount(0)
+    await expect(page.getByTestId('feedback-question-q1')).not.toContainText('в боте')
+    await expect(page.getByTestId('feedback-question-q2')).toContainText('Мой словарь и перевод слов1 · 33%')
+    await expect(page.getByTestId('feedback-question-q4')).toContainText('Больше глаголов движения')
+    await fits(page)
+    await shot(page, 'paid-results-1-funnel', true)
   })
 
   test('«Отзывы»: a survey shows how far people got and every question; answers narrow to one option of the first question', async ({ page }) => {
