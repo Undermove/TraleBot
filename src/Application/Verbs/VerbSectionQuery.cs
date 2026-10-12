@@ -253,13 +253,11 @@ public class VerbSectionQuery(
             .OrderByDescending(v => v.DateAddedUtc)
             .Select(v => new { v.Word, v.Definition })
             .ToListAsync(ct);
-        var hits = entries.Count == 0
-            ? new Dictionary<string, VerbFormHit>()
-            : await verbs.FindInTextsAsync(entries.SelectMany(e => new[] { e.Word, e.Definition }).ToList(), ct);
+        var found = await verbs.FindInEntriesAsync(entries.Select(e => (e.Word, e.Definition)).ToList(), ct);
 
         var startedLemmas = started.Select(v => v.Lemma).ToHashSet();
-        var saved = entries
-            .Select(e => MyVerbsQuery.Find(e.Word, e.Definition, hits)?.Hit)
+        var saved = found
+            .Select(f => f?.Hit)
             .Where(hit => hit != null && !startedLemmas.Contains(hit.Lemma))
             .DistinctBy(hit => hit!.Lemma)
             .ToList();

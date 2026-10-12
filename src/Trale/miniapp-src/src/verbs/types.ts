@@ -71,10 +71,51 @@ export interface VerbFormHitDto {
   meaning?: string | null
   /** Пометка, когда у двух времён фраза одна: «один раз · сделано». Обычно нет. */
   meaningNote?: string | null
+  /** Запись — не форма, а название действия глагола («делать»): так сохраняется глагол, переведённый с русского инфинитива. */
+  actionName?: boolean
   /** Только в словаре: запись — это сама форма глагола, а не фраза, в которой она есть. Такая запись открывает вид глагола. */
   single?: boolean
   /** Только в словаре: уровень знания этого глагола. */
   level?: import('./session/types').VerbLevelKey
+}
+
+/** Строка карточки перевода: форма (с вариантами), что она значит и что это за форма простыми словами. */
+export interface VerbCardLineDto {
+  forms: { form: string; transcription: string }[]
+  tense: TenseKey
+  person: number
+  /** Русская фраза из базы: «я нахожу». Нет — у редких времён. */
+  meaning: string | null
+  /** Пометка, когда у двух времён фраза одна: «один раз · сделано». */
+  note: string | null
+  /** «я, настоящее время»; «чтобы я…» — так говорят после «надо», «хочу». */
+  caption: string
+}
+
+export interface VerbCardVerbDto {
+  verbId: string
+  lemma: string
+  lemmaTranscription: string
+  /** Название действия; null — в базе его нет (у «быть» заголовок карточки повторяет словарную форму). */
+  actionName: string | null
+  actionNameTranscription: string | null
+  ru: string
+  lines: VerbCardLineDto[]
+}
+
+/**
+ * Карточка глагола в ответе перевода: infinitive — русский инфинитив (главные формы каждого глагола),
+ * form — грузинская форма (её прочтения), actionName — грузинское название действия.
+ */
+export interface VerbCardDto {
+  kind: 'infinitive' | 'form' | 'actionName'
+  text: string
+  /** Кириллическая транскрипция введённого грузинского слова. */
+  transcription: string | null
+  moreVerbs: number
+  /** Другие глаголы базы — то же слово с уточнением: «писать (кому-то)». */
+  related: string[]
+  verbs: VerbCardVerbDto[]
 }
 
 /** Один из «моих глаголов»: его формы сохранены в словаре, или с ним уже играли, или и то и другое. */

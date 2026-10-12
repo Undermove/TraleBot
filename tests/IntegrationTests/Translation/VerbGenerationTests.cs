@@ -92,8 +92,8 @@ public class VerbGenerationTests : TranslationPipelineTestBase
         Models.GeneratorModel.Calls.Should().Be(1);
         Models.ReviewerModel.Calls.Should().Be(1);
         var answer = result.Should().BeOfType<TranslationResult.Success>().Subject;
-        answer.Definition.Should().Be(Dance);
-        answer.AdditionalInfo.Should().Contain($"название действия: {DanceVerb["title"]!.GetValue<string>()}");
+        answer.Definition.Should().Be(ActionName(Dance));
+        answer.AdditionalInfo.Should().StartWith("название действия; «я танцую» — ");
 
         // Stored like a catalog verb: the table, the phrases of every cell, the classification by our code.
         var stored = await StoredVerb(Dance);
@@ -194,7 +194,7 @@ public class VerbGenerationTests : TranslationPipelineTestBase
 
         var result = await Translate("танцевать");
 
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Dance);
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(ActionName(Dance));
         Log.Paths.Should().Equal("lexicon-no-table>generator>stored+repair");
         (Models.GeneratorModel.Calls, Models.ReviewerModel.Calls).Should().Be((2, 2));
         var repair = LastUserText(Models.GeneratorModel);
@@ -400,7 +400,7 @@ public class VerbGenerationTests : TranslationPipelineTestBase
         Models.ClassifierModel.AnswerWith("""{"notTranslatable":false,"isVerb":true,"russianInfinitive":"плясать"}""");
         var result = await Translate("плясать");
 
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Dance);
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(ActionName(Dance));
         (Models.GeneratorModel.Calls, Models.ReviewerModel.Calls).Should().Be(calls, because: "the lexicon gives the word for a stored verb");
         (await StoredVerb(Dance))!.Translation.Should().Be("танцевать, плясать");
         Log.Paths.Last().Should().Be("lexicon-no-table>generator>existing");
@@ -433,7 +433,7 @@ public class VerbGenerationTests : TranslationPipelineTestBase
         stored!.Status.Should().Be(VerbStatus.Verified);
         JsonNode.Parse(stored.CardJson)!["tenses"]!.ToJsonString().Should().Be(catalog["tenses"]!.ToJsonString());
         (await Provenance(paint)).Should().BeNull();
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(paint);
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(ActionName(paint));
     }
 
     // ── A full citizen ───────────────────────────────────────────────────────────────────────────

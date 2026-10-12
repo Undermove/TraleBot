@@ -63,12 +63,18 @@ public static class VerbReplyFormatter
     /// </summary>
     public static InlineKeyboardButton Button(VerbReplyHint hint, string miniAppUrl)
     {
-        var url = $"{miniAppUrl.TrimEnd('/')}/?screen=verb&verbId={Uri.EscapeDataString(hint.Lemma)}";
-        if (hint.Tense != null && hint.Person != null)
+        return InlineKeyboardButton.WithWebApp(
+            $"Все формы: {hint.Title}", new WebAppInfo { Url = Link(miniAppUrl, hint.Lemma, hint.Tense, hint.Person) });
+    }
+
+    public static string Link(string miniAppUrl, string lemma, string? tense, int? person)
+    {
+        var url = $"{miniAppUrl.TrimEnd('/')}/?screen=verb&verbId={Uri.EscapeDataString(lemma)}";
+        if (tense != null && person != null)
         {
-            url += $"&tense={Uri.EscapeDataString(hint.Tense)}&person={hint.Person}";
+            url += $"&tense={Uri.EscapeDataString(tense)}&person={person}";
         }
 
-        return InlineKeyboardButton.WithWebApp($"Все формы: {hint.Title}", new WebAppInfo { Url = url });
+        return url;
     }
 }

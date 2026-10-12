@@ -21,7 +21,8 @@ public static class TranslationKeyboard
         bool isOwner = false,
         string? miniAppUrl = null,
         VerbReplyHint? verb = null,
-        int? replyTo = null)
+        int? replyTo = null,
+        VerbTranslationCard? card = null)
     {
         var removeFromVocabularyText = "❌ Не добавлять в словарь.";
         return SendTranslation(
@@ -36,7 +37,9 @@ public static class TranslationKeyboard
             isOwner,
             miniAppUrl,
             verb,
-            replyTo);
+            replyTo,
+            card,
+            alreadySaved: false);
     }
 
     public static Task UpdateTranslation(this ITelegramBotClient client,
@@ -73,7 +76,8 @@ public static class TranslationKeyboard
         bool isOwner = false,
         string? miniAppUrl = null,
         VerbReplyHint? verb = null,
-        int? replyTo = null)
+        int? replyTo = null,
+        VerbTranslationCard? card = null)
     {
         var removeFromVocabularyText = "❌ Есть в словаре. Удалить?";
         return SendTranslation(
@@ -88,7 +92,9 @@ public static class TranslationKeyboard
             isOwner,
             miniAppUrl,
             verb,
-            replyTo);
+            replyTo,
+            card,
+            alreadySaved: true);
     }
 
     public static Task UpdateExistedTranslation(this ITelegramBotClient client,
@@ -258,12 +264,18 @@ public static class TranslationKeyboard
         bool isOwner = false,
         string? miniAppUrl = null,
         VerbReplyHint? verb = null,
-        int? replyTo = null)
+        int? replyTo = null,
+        VerbTranslationCard? card = null,
+        bool alreadySaved = false)
     {
         var replyMarkup = new List<InlineKeyboardButton[]>();
 
         // The word is a verb we know: the verb card is the most useful next tap, so it goes first.
-        if (verb != null && !string.IsNullOrEmpty(miniAppUrl))
+        if (card != null && !string.IsNullOrEmpty(miniAppUrl))
+        {
+            replyMarkup.AddRange(VerbCardReplyFormatter.Buttons(card, miniAppUrl).Select(button => new[] { button }));
+        }
+        else if (verb != null && !string.IsNullOrEmpty(miniAppUrl))
         {
             replyMarkup.Add([VerbReplyFormatter.Button(verb, miniAppUrl)]);
         }
@@ -310,7 +322,13 @@ public static class TranslationKeyboard
         var text = @$"Определение: {definition}
 Другие значения: {additionalInfo}
 Пример употребления: {example}";
-        if (verb != null)
+        if (card != null)
+        {
+            // A verb of the base is answered with its card — the forms and what they say — instead of
+            // one word and a parse line.
+            text = VerbCardReplyFormatter.Text(card, request.Text.Trim().ToLowerInvariant(), definition, example, alreadySaved);
+        }
+        else if (verb != null)
         {
             text += "\n\n" + VerbReplyFormatter.Line(verb);
         }

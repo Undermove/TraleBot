@@ -2,7 +2,7 @@
  "verbs": [
   {
    "lemma": "არის",
-   "title": "არის",
+   "title": "ყოფნა",
    "ru": "быть",
    "kind": "special",
    "reason": "В разных временах разные корни — учить целиком.",
@@ -479,7 +479,8 @@
      "form": "ვყოფილვარ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A0%E1%83%98%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A0%E1%83%98%E1%83%A1#Georgian",
+   "titleSources": ["https://www.ganmarteba.ge/word/%E1%83%A7%E1%83%9D%E1%83%A4%E1%83%9C%E1%83%90/1","https://ru.wiktionary.org/w/index.php?title=%E1%83%A7%E1%83%9D%E1%83%A4%E1%83%9C%E1%83%90&oldid=9310588","https://ka.wiktionary.org/w/index.php?title=%E1%83%A7%E1%83%9D%E1%83%A4%E1%83%9C%E1%83%90&oldid=101116","https://en.wiktionary.org/w/index.php?title=%E1%83%90%E1%83%A0%E1%83%98%E1%83%A1&oldid=88173551"]
   },
   {
    "lemma": "აქვს",
@@ -3675,14 +3676,14 @@
   },
   {
    "lemma": "დადის",
-   "title": "სვლა",
+   "title": "სიარული",
    "ru": "ходить",
    "kind": "special",
    "reason": "В источнике есть только часть времён — учить формы целиком.",
    "root": "",
    "oddTenses": [],
    "model": null,
-   "masdarWithPreverb": ["სიარული"],
+   "masdarWithPreverb": [],
    "tenses": {
     "present": [["დავდივარ"],["დადიხარ"],["დადის"],["დავდივართ"],["დადიხართ"],["დადიან"]],
     "imperfect": [["დავდიოდი"],["დადიოდი"],["დადიოდა"],["დავდიოდით"],["დადიოდით"],["დადიოდნენ"]],
@@ -3771,7 +3772,8 @@
      "form": "დავდივარ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%93%E1%83%90%E1%83%93%E1%83%98%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%93%E1%83%90%E1%83%93%E1%83%98%E1%83%A1#Georgian",
+   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%A1%E1%83%98%E1%83%90%E1%83%A0%E1%83%A3%E1%83%9A%E1%83%98&oldid=85671607","https://en.wiktionary.org/w/index.php?title=%E1%83%93%E1%83%90%E1%83%93%E1%83%98%E1%83%A1&oldid=85672054","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MTU6IuGDk+GDkOGDk+GDmOGDoSI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjE6IuGDoeGDmOGDkOGDoOGDo+GDmuGDmCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9"]
   },
   {
    "lemma": "გადის",
@@ -4354,7 +4356,7 @@
   },
   {
    "lemma": "ეშინია",
-   "title": "ეშინია",
+   "title": "შიში",
    "ru": "бояться",
    "kind": "special",
    "reason": "Перевёртыш: кто действует, показывает начало формы («мне», «тебе», «нам»), а не окончание.",
@@ -4474,7 +4476,8 @@
      "form": "შეგეშინდეთ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%94%E1%83%A8%E1%83%98%E1%83%9C%E1%83%98%E1%83%90#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%94%E1%83%A8%E1%83%98%E1%83%9C%E1%83%98%E1%83%90#Georgian",
+   "titleSources": ["https://www.ganmarteba.ge/word/%E1%83%A8%E1%83%98%E1%83%A8%E1%83%98","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MTI6IuGDqOGDmOGDqOGDmCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://en.wiktionary.org/w/index.php?title=%E1%83%A8%E1%83%98%E1%83%A8%E1%83%98&oldid=88392337"]
   },
   {
    "lemma": "ადის",
@@ -4894,7 +4897,7 @@
   },
   {
    "lemma": "სტკივა",
-   "title": "სტკივა",
+   "title": "ტკივილი",
    "ru": "болеть (у кого-то болит)",
    "kind": "special",
    "reason": "Перевёртыш: кто действует, показывает начало формы («мне», «тебе», «нам»), а не окончание. В источнике есть только часть времён.",
@@ -4936,11 +4939,12 @@
      "form": "გტკიოდათ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A1%E1%83%A2%E1%83%99%E1%83%98%E1%83%95%E1%83%90#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A1%E1%83%A2%E1%83%99%E1%83%98%E1%83%95%E1%83%90#Georgian",
+   "titleSources": ["https://www.ganmarteba.ge/word/%E1%83%A2%E1%83%99%E1%83%98%E1%83%95%E1%83%98%E1%83%9A%E1%83%98","https://en.wiktionary.org/w/index.php?title=%E1%83%A1%E1%83%A2%E1%83%99%E1%83%98%E1%83%95%E1%83%90&oldid=88277098","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjE6IuGDouGDmeGDmOGDleGDmOGDmuGDmCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9"]
   },
   {
    "lemma": "ყიდის",
-   "title": "ყიდის",
+   "title": "გაყიდვა",
    "ru": "продавать",
    "kind": "pattern",
    "reason": "Будущее и прошедшее «сделал» = приставка გა- + основа настоящего.",
@@ -5001,11 +5005,12 @@
      "form": "ვყიდი"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%98%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%98%E1%83%A1#Georgian",
+   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%95%E1%83%90&oldid=88047085","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjE6IuGDkuGDkOGDp+GDmOGDk+GDleGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://www.ganmarteba.ge/word/%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%95%E1%83%90"]
   },
   {
    "lemma": "ირჩევს",
-   "title": "ირჩევს",
+   "title": "არჩევა",
    "ru": "выбирать, избирать",
    "kind": "feature",
    "reason": "В прошедшем «сделал» меняется основа, а не только окончание.",
@@ -5048,7 +5053,8 @@
      "form": "აირჩიეთ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%98%E1%83%A0%E1%83%A9%E1%83%94%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%98%E1%83%A0%E1%83%A9%E1%83%94%E1%83%95%E1%83%A1#Georgian",
+   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%90%E1%83%98%E1%83%A0%E1%83%A9%E1%83%94%E1%83%95%E1%83%A1&oldid=88051204","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MTg6IuGDkOGDoOGDqeGDlOGDleGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://www.ganmarteba.ge/word/%E1%83%90%E1%83%A0%E1%83%A9%E1%83%94%E1%83%95%E1%83%90","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MTU6IuGDoOGDqeGDlOGDleGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9"]
   },
   {
    "lemma": "აპირებს",
@@ -6492,7 +6498,7 @@
   },
   {
    "lemma": "ჩერდება",
-   "title": "ჩერდება",
+   "title": "გაჩერება",
    "ru": "останавливаться",
    "kind": "pattern",
    "reason": "Будущее и прошедшее «сделал» = приставка გა- + основа настоящего.",
@@ -6542,7 +6548,8 @@
      "form": "გავჩერდით"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A9%E1%83%94%E1%83%A0%E1%83%93%E1%83%94%E1%83%91%E1%83%90#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A9%E1%83%94%E1%83%A0%E1%83%93%E1%83%94%E1%83%91%E1%83%90#Georgian",
+   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%93%E1%83%94%E1%83%91%E1%83%90&oldid=88244198","https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%90&oldid=85680467","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjQ6IuGDkuGDkOGDqeGDlOGDoOGDlOGDkeGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://www.ganmarteba.ge/word/%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%90"]
   },
   {
    "lemma": "ამთავრებს",
@@ -7531,7 +7538,7 @@
   },
   {
    "lemma": "შია",
-   "title": "შია",
+   "title": "შიმშილი",
    "ru": "быть голодным",
    "kind": "special",
    "reason": "Перевёртыш: кто действует, показывает начало формы («мне», «тебе», «нам»), а не окончание. В источнике есть только часть времён.",
@@ -7554,7 +7561,8 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A8%E1%83%98%E1%83%90#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A8%E1%83%98%E1%83%90#Georgian",
+   "titleSources": ["https://www.ganmarteba.ge/word/%E1%83%A8%E1%83%98%E1%83%9B%E1%83%A8%E1%83%98%E1%83%9A%E1%83%98","https://en.wiktionary.org/w/index.php?title=%E1%83%A8%E1%83%98%E1%83%90&oldid=91725282","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjE6IuGDqOGDmOGDm+GDqOGDmOGDmuGDmCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9"]
   },
   {
    "lemma": "ცვლის",
@@ -12039,7 +12047,7 @@
   },
   {
    "lemma": "ტრიალებს",
-   "title": "ტრიალებს",
+   "title": "ტრიალი",
    "ru": "вращаться, крутиться",
    "kind": "pattern",
    "reason": "Будущее и прошедшее «сделал» получают ი- в начале (после буквы для «я» и «мы»), приставки нет.",
@@ -12079,7 +12087,8 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A2%E1%83%A0%E1%83%98%E1%83%90%E1%83%9A%E1%83%94%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A2%E1%83%A0%E1%83%98%E1%83%90%E1%83%9A%E1%83%94%E1%83%91%E1%83%A1#Georgian",
+   "titleSources": ["https://www.ganmarteba.ge/word/%E1%83%A2%E1%83%A0%E1%83%98%E1%83%90%E1%83%9A%E1%83%98/1","https://en.wiktionary.org/w/index.php?title=%E1%83%A2%E1%83%A0%E1%83%98%E1%83%90%E1%83%9A%E1%83%98&oldid=84103415","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MTg6IuGDouGDoOGDmOGDkOGDmuGDmCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9"]
   },
   {
    "lemma": "კეტავს",

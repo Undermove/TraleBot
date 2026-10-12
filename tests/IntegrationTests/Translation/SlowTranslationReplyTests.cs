@@ -133,7 +133,7 @@ public class SlowTranslationReplyTests : TranslationPipelineTestBase
         await Post(Form(write, "aorist", 3));
 
         await Task.Delay(300);
-        Replies().Should().ContainSingle().Which.Text.Should().StartWith("Определение: мы писали");
+        Replies().Should().ContainSingle().Which.Text.Should().Contain(" — «мы писали»");
     }
 
     [Test]

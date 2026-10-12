@@ -20,6 +20,7 @@ public class BotTranslationReply(
     ITelegramBotClient client,
     BotConfiguration botConfig,
     VerbReplyHintQuery verbHints,
+    VerbTranslationCardQuery verbCards,
     ILogger<BotTranslationReply> logger,
     TelegramRequest request) : ITranslationReply
 {
@@ -27,6 +28,7 @@ public class BotTranslationReply(
         services.GetRequiredService<ITelegramBotClient>(),
         services.GetRequiredService<BotConfiguration>(),
         services.GetRequiredService<VerbReplyHintQuery>(),
+        services.GetRequiredService<VerbTranslationCardQuery>(),
         services.GetRequiredService<ILogger<BotTranslationReply>>(),
         request);
 
@@ -53,9 +55,16 @@ public class BotTranslationReply(
             : null;
         int? replyTo = late ? request.MessageId : null;
 
-        // A known verb form in the word or in its translation gets a parse line and a button to the verb card.
+        // A word that is a verb of the base — a Russian infinitive, a Georgian form — is answered with
+        // the verb card. Otherwise a known verb form in the word or in its translation gets a parse
+        // line and a button to the verb card, as before.
+        var translated = result is CreateVocabularyEntryResult.TranslationSuccess or CreateVocabularyEntryResult.TranslationExists;
+        var card = translated
+            ? await verbCards.FindForAsync(request.Text, request.User!.Settings.CurrentLanguage, ct)
+            : null;
         var verb = result switch
         {
+            _ when card != null => null,
             CreateVocabularyEntryResult.TranslationSuccess s => await verbHints.FindAsync([request.Text, s.Definition], ct),
             CreateVocabularyEntryResult.TranslationExists e => await verbHints.FindAsync([request.Text, e.Definition], ct),
             _ => null
@@ -63,8 +72,8 @@ public class BotTranslationReply(
 
         await (result switch
         {
-            CreateVocabularyEntryResult.TranslationSuccess success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, ct, isOwner, miniAppUrl, verb, replyTo),
-            CreateVocabularyEntryResult.TranslationExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, ct, isOwner, miniAppUrl, verb, replyTo),
+            CreateVocabularyEntryResult.TranslationSuccess success => client.SendTranslation(request, success.VocabularyEntryId, success.Definition, success.AdditionalInfo, success.Example, ct, isOwner, miniAppUrl, verb, replyTo, card),
+            CreateVocabularyEntryResult.TranslationExists exists => client.SendExistedTranslation(request, exists.VocabularyEntryId, exists.Definition, exists.AdditionalInfo, exists.Example, ct, isOwner, miniAppUrl, verb, replyTo, card),
             CreateVocabularyEntryResult.EmojiDetected => client.HandleEmojiDetected(request, ct),
             CreateVocabularyEntryResult.PromptLengthExceeded => client.HandlePromptLengthExceeded(request, ct),
             CreateVocabularyEntryResult.TranslationFailure => client.HandleFailure(request, ct),

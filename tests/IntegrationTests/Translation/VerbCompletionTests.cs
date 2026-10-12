@@ -115,7 +115,7 @@ public class VerbCompletionTests : TranslationPipelineTestBase
 
         var result = await Translate("танцевать");
 
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Dance);
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(ActionName(Dance));
         Log.Paths.Should().Equal("lexicon-no-table>generator>stored+completion");
         (Models.GeneratorModel.Calls, Models.ReviewerModel.Calls).Should().Be((2, 1));
 
@@ -272,7 +272,7 @@ public class VerbCompletionTests : TranslationPipelineTestBase
 
         var result = await Translate("танцевать");
 
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Dance);
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(ActionName(Dance));
         Log.Paths.Should().Equal("lexicon-no-table>generator>stored+completion+rows-left-out");
         (Models.GeneratorModel.Calls, Models.ReviewerModel.Calls).Should().Be((2, 1), because: "a row of the second ask is stored only if confirmed; no repair round is spent on it");
         var card = await Card();

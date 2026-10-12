@@ -156,6 +156,9 @@ public abstract class TranslationPipelineTestBase
     protected static JsonObject CatalogVerb(string lemma) =>
         Catalog().Select(v => v!.AsObject()).Single(v => v["lemma"]!.GetValue<string>() == lemma);
 
+    /// <summary>The name of the verb's action (the card title) — what a Russian infinitive is answered with.</summary>
+    protected static string ActionName(string lemma) => CatalogVerb(lemma)["title"]!.GetValue<string>();
+
     protected static string Form(JsonObject verb, string tense, int person) =>
         verb["tenses"]![tense]![person]![0]!.GetValue<string>();
 

@@ -1,4 +1,4 @@
-import type { VerbDto, VerbFormHitDto } from './verbs/types'
+import type { VerbCardDto, VerbDto, VerbFormHitDto } from './verbs/types'
 function getInitData(): string {
   const tg = (window as any).Telegram?.WebApp
   return tg?.initData ?? ''
@@ -35,6 +35,8 @@ export interface TranslateWordResponse {
   example?: string
   vocabularyEntryId?: string
   verb?: VerbFormHitDto | null
+  /** Слово — глагол базы (русский инфинитив, грузинская форма): карточка с формами вместо одного слова. */
+  verbCard?: VerbCardDto | null
 }
 
 export const TRANSLATE_POLL_MS = 2000

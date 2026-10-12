@@ -84,18 +84,20 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Russian_infinitive_of_a_catalog_verb_is_answered_with_its_dictionary_form_with_the_agent_off()
+    public async Task Russian_infinitive_of_a_catalog_verb_is_answered_with_the_name_of_the_action_with_the_agent_off()
     {
         await SeedCatalogWithout();
         Models.Configured = false;
 
         var result = await Translate("Писать");
 
-        // The lemma is a real form in the index, so the reply gets its parse and the dictionary entry
-        // opens the verb view; the name of the action goes next to it.
+        // The dictionary keeps the name of the action for an infinitive («писать» is not «он пишет»);
+        // the two forms a learner needs first go next to it.
+        var verb = CatalogVerb(Write);
         var answer = result.Should().BeOfType<TranslationResult.Success>().Subject;
-        answer.Definition.Should().Be(Write);
-        answer.AdditionalInfo.Should().Contain($"название действия: {CatalogVerb(Write)["title"]!.GetValue<string>()}");
+        answer.Definition.Should().Be(ActionName(Write));
+        answer.AdditionalInfo.Should().StartWith(
+            $"название действия; «я пишу» — {Form(verb, "present", 0)}; «он пишет» — {Write}");
         External.Calls.Should().Be(0);
         Log.Paths.Should().Equal("verb-base");
     }
@@ -164,7 +166,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
 
         var result = await Translate("писать");
 
-        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(Write);
+        result.Should().BeOfType<TranslationResult.Success>().Which.Definition.Should().Be(ActionName(Write));
         Log.Paths.Should().Equal("verb-base");
     }
 
@@ -275,7 +277,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         var result = await Translate("рисовать");
 
         result.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(Paint);
+            .Which.Definition.Should().Be(ActionName(Paint));
         var stored = await StoredVerb(Paint);
         stored!.Status.Should().Be(VerbStatus.Verified);
         stored.Translation.Should().Be("рисовать, красить");
@@ -287,7 +289,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         Models.ClassifierModel.AnswerWith(RussianVerb("рисовать"));
         var inflected = await Translate("рисовал");
         inflected.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(Paint);
+            .Which.Definition.Should().Be(ActionName(Paint));
         Models.AnalystModel.Calls.Should().Be(0);
         Log.Paths.Last().Should().Be("verb-base-by-infinitive");
 
@@ -370,7 +372,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         var result = await Translate("рисовать");
 
         result.Should().BeOfType<TranslationResult.Success>()
-            .Which.Definition.Should().Be(Paint);
+            .Which.Definition.Should().Be(ActionName(Paint));
         (await StoredVerb(Paint))!.Translation.Should().Be("изображать, рисовать");
         var callsSoFar = Models.ModelCalls;
         await Translate("рисовать");

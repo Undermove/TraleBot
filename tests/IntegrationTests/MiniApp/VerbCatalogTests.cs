@@ -78,6 +78,82 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Name_of_the_action_corrected_in_the_catalog_reaches_a_base_seeded_before_and_keeps_what_learners_have()
+    {
+        // The base as it was seeded before the correction: these verbs had the dictionary form (or
+        // another verb's word) for a title and no titleSources.
+        var corrected = JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray()
+            .Select(v => v!.AsObject()).Where(v => v.ContainsKey("titleSources")).ToList();
+        corrected.Select(v => v["ru"]!.GetValue<string>()).Should().Contain(["быть", "ходить"]);
+        var before = JsonNode.Parse(CatalogJson())!;
+        foreach (var verb in before["verbs"]!.AsArray().Select(v => v!.AsObject()).Where(v => v.ContainsKey("titleSources")))
+        {
+            verb["title"] = verb["lemma"]!.GetValue<string>();
+            verb.Remove("titleSources");
+        }
+
+        var be = corrected.Single(v => v["ru"]!.GetValue<string>() == "быть");
+        var lemma = be["lemma"]!.GetValue<string>();
+        var (verbId, formsBefore) = await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            db.Verbs.RemoveRange(await db.Verbs.ToListAsync());
+            await db.SaveChangesAsync(CancellationToken.None);
+            await sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(before.ToJsonString(), CancellationToken.None);
+
+            var row = await db.Verbs.SingleAsync(v => v.Lemma == lemma);
+            row.Title.Should().Be(lemma);
+            var user = IntegrationTests.DSL.Create.User(Random.Shared.NextInt64(1, long.MaxValue), "Learner");
+            db.Users.Add(user);
+            db.UserVerbs.Add(new UserVerb { Id = Guid.NewGuid(), UserId = user.Id, VerbId = row.Id, StartedAtUtc = DateTime.UtcNow });
+            db.VerbFormProgresses.Add(new VerbFormProgress { Id = Guid.NewGuid(), UserId = user.Id, VerbId = row.Id, Tense = "present", Person = 0, Step = 2, BestStep = 2, CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow });
+            await db.SaveChangesAsync(CancellationToken.None);
+            return (row.Id, await db.VerbForms.CountAsync(f => f.VerbId == row.Id));
+        });
+
+        // The next start of the server: the catalog as it is now.
+        var result = await InScope(sp => sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(CatalogJson(), CancellationToken.None));
+
+        result.Written.Should().Be(corrected.Count, because: "only the corrected verbs are rewritten");
+        result.Removed.Should().Be(0);
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            foreach (var verb in corrected)
+            {
+                var stored = await db.Verbs.AsNoTracking().SingleAsync(v => v.Lemma == verb["lemma"]!.GetValue<string>());
+                stored.Title.Should().Be(verb["title"]!.GetValue<string>());
+                JsonNode.Parse(stored.CardJson)!["title"]!.GetValue<string>().Should().Be(stored.Title);
+            }
+
+            var row = await db.Verbs.AsNoTracking().SingleAsync(v => v.Lemma == lemma);
+            row.Id.Should().Be(verbId, because: "the row is updated in place, so what learners have stays attached");
+            (await db.VerbForms.CountAsync(f => f.VerbId == verbId)).Should().Be(formsBefore);
+            (await db.UserVerbs.CountAsync(v => v.VerbId == verbId)).Should().Be(1);
+            (await db.VerbFormProgresses.SingleAsync(p => p.VerbId == verbId)).Step.Should().Be(2);
+            return 0;
+        });
+
+        var again = await InScope(sp => sp.GetRequiredService<VerbCatalogSeeder>().SeedAsync(CatalogJson(), CancellationToken.None));
+        again.Written.Should().Be(0);
+    }
+
+    [Test]
+    public void Name_of_the_action_written_by_hand_names_its_sources()
+    {
+        foreach (var verb in JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray().Select(v => v!.AsObject()))
+        {
+            var lemma = verb["lemma"]!.GetValue<string>();
+            verb["title"]!.GetValue<string>().Should().NotBe(lemma, $"{lemma}: the card title is the name of the action, not the dictionary form");
+            if (verb["titleSources"] is JsonArray sources)
+            {
+                sources.Count.Should().BeGreaterThanOrEqualTo(2, $"{lemma}: a title written by hand is checked against two sources");
+                sources.Select(s => s!.GetValue<string>()).Should().OnlyContain(url => url.StartsWith("http"));
+            }
+        }
+    }
+
+    [Test]
     public async Task Moving_a_verb_in_the_catalog_updates_its_position_without_rewriting_forms()
     {
         var catalog = JsonNode.Parse(CatalogJson())!;
