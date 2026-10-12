@@ -5,7 +5,7 @@
 
 import { esc, ka } from '../template.mjs'
 import { MAIN_TENSES, ALL_TENSES, TENSES, cyr, cell } from '../data/verbs.mjs'
-import { tenseCard, form, inlineForm, pickSentences } from './verbs.mjs'
+import { tenseCard, form, inlineForm, pickSentences, sentenceSource } from './verbs.mjs'
 
 const term = (t) => `<span class="term">в учебниках — ${esc(t)}</span>`
 const vlink = (v) => `<a href="${v.path}">${esc(v.ru)}</a>`
@@ -164,7 +164,7 @@ ${pair('present')}
 <h2 id="past">У меня было и у меня будет</h2>
 ${pair('imperfect')}${pair('future')}
 ${tatoeba.length ? `<h2 id="examples">Ещё примеры</h2>
-${tatoeba.map((s) => `<div class="ex"><p class="k">${ka(s.ka)}</p><p class="tr">${esc(cyr(s.ka))}</p><p class="r">${esc(s.ru)}</p><p class="src"><a href="https://tatoeba.org/sentences/show/${s.id}" rel="noopener nofollow">Tatoeba №${s.id}</a></p></div>`).join('')}` : ''}
+${tatoeba.map((s) => `<div class="ex"><p class="k">${ka(s.ka)}</p><p class="tr">${esc(cyr(s.ka))}</p><p class="r">${esc(s.ru)}</p><p class="src">${sentenceSource(s)}</p></div>`).join('')}` : ''}
 <p>Полные таблицы: <a href="${thing.path}">${ka(thing.lemma)} «${esc(thing.ru)}»</a> и <a href="${being.path}">${ka(being.lemma)} «${esc(being.ru)}»</a>.</p>
 <p class="sources">Формы — Викисловарь (CC BY-SA 4.0), ссылки на статьи — на страницах глаголов. Примеры со ссылкой — <a href="https://tatoeba.org" rel="noopener nofollow">Tatoeba</a> (CC BY 2.0 FR), остальные — из уроков TraleBot.</p>`
     }, updated))

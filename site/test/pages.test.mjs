@@ -120,8 +120,13 @@ test('verb pages: example sentences are the catalog\'s Tatoeba sentences, each l
   for (const v of result.verbs) {
     const h = html(v.path)
     const ids = [...h.matchAll(/https:\/\/tatoeba\.org\/sentences\/show\/(\d+)/g)].map((m) => Number(m[1]))
-    assert.ok(ids.length <= 5)
-    assert.equal(ids.length, Math.min(5, v.sentences.length), `${v.path}: 3–5 examples when the catalog has them`)
+    // A sentence written into the catalog by hand (it has `source`, a negative id) is not Tatoeba's:
+    // it is shown as "из уроков TraleBot" and never linked there.
+    const own = v.sentences.filter((x) => x.source && h.includes(x.ka)).length
+    assert.ok(!/tatoeba\.org\/sentences\/show\/-/.test(h), `${v.path}: a sentence of ours linked to Tatoeba`)
+    assert.equal((h.match(/из уроков TraleBot<\/p><\/div>/g) ?? []).length, own, `${v.path}: our own sentences say where they are from`)
+    assert.ok(ids.length + own <= 5)
+    assert.equal(ids.length + own, Math.min(5, v.sentences.length), `${v.path}: 3–5 examples when the catalog has them`)
     for (const id of ids) {
       const s = v.sentences.find((x) => x.id === id)
       assert.ok(s, `${v.path}: sentence ${id} is not in the catalog for this verb`)
