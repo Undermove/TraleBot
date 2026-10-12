@@ -60,4 +60,11 @@ public interface IUserNotificationService
     /// </summary>
     Task SendReferralBonusGrantedAsync(
         User referrer, ReferralBonusKind bonus, int days, DateTime accessUntilUtc, CancellationToken ct);
+
+    /// <summary>
+    /// The one reminder to a newcomer who started the bot and has not opened the mini-app
+    /// (see <c>FirstOpenReminderService</c>): Bombora's line and the same single button as under the
+    /// first message. 403 → user flagged inactive; 429 → single retry after the suggested delay.
+    /// </summary>
+    Task SendFirstOpenReminderAsync(User user, CancellationToken ct);
 }

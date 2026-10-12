@@ -3,9 +3,24 @@ import Mascot from '../components/Mascot'
 import Button from '../components/Button'
 import AudioPlayer from '../components/AudioPlayer'
 
+/** The lesson the app would suggest next — the same one the dashboard points at. */
+export interface WelcomeNextLesson {
+  moduleTitle: string
+  lessonId: number
+  title: string
+  /** What the lesson is about in a few characters, e.g. the letters it teaches. */
+  short: string
+}
+
 interface Props {
-  /** Called when the user finishes the mini-lesson — App records the first XP and reveals the hub. */
-  onFinish: () => void
+  /** The last task is solved: App records the lesson (first XP) right away, not on a later tap. */
+  onComplete: () => void
+  /** Next lesson by the app's own order; null when the catalog has none. */
+  next: WelcomeNextLesson | null
+  /** The main action of the win screen: go straight to the next lesson. */
+  onNext: () => void
+  /** The quiet way out: the hub with all lessons. */
+  onBrowse: () => void
 }
 
 type Step = 'meet' | 'listen' | 'name' | 'done'
@@ -27,14 +42,15 @@ const LETTER_OPTIONS: ReadonlyArray<{ letter: string; sound: string }> = [
 ]
 const NAME_OPTIONS: ReadonlyArray<string> = ['ани', 'бани', 'мани']
 
-export default function Welcome({ onFinish }: Props) {
+export default function Welcome({ onComplete, next, onNext, onBrowse }: Props) {
   const [step, setStep] = useState<Step>('meet')
   const [wrong, setWrong] = useState<string | null>(null)
 
-  function answer(pick: string, correct: string, next: Step) {
+  function answer(pick: string, correct: string, nextStep: Step) {
     if (pick === correct) {
       setWrong(null)
-      setStep(next)
+      setStep(nextStep)
+      if (nextStep === 'done') onComplete()
     } else {
       setWrong(pick)
     }
@@ -169,19 +185,65 @@ export default function Welcome({ onFinish }: Props) {
         {/* ── Step 4 · win ───────────────────────────────────────── */}
         {step === 'done' && (
           <>
-            <Mascot mood="cheer" size={130} />
-            <div className="mn-eyebrow text-ruby mt-4 mb-1">первая победа 🎉</div>
+            <Mascot mood="cheer" size={112} />
+            <div className="mn-eyebrow text-ruby mt-3 mb-1">первая победа</div>
             <h2 className="font-sans text-[24px] font-extrabold text-jewelInk text-center leading-tight tracking-tight">
               Готово! Буква <span className="font-geo">ა</span> «{LETTER_NAME}» — твоя
             </h2>
-            <p className="font-sans text-[15px] text-jewelInk-mid text-center mt-3 max-w-[300px] leading-snug">
-              Ты узнал имя, звук и услышал её. Заработал первый опыт ⭐ Дальше — твой блокнот с уроками.
+            <p className="font-sans text-[15px] text-jewelInk-mid text-center mt-2 max-w-[300px] leading-snug">
+              Теперь ты знаешь, как она выглядит, звучит и называется.
             </p>
 
-            <div className="mt-auto w-full pt-6">
-              <Button variant="green" onClick={onFinish}>
-                открыть приложение →
-              </Button>
+            {next && (
+              <div
+                className="mt-6 w-full rounded-2xl bg-cream-tile border-[1.5px] border-jewelInk px-4 py-3.5 flex items-center gap-3.5"
+                style={{ boxShadow: '2px 2px 0 #15100A' }}
+                data-testid="welcome-next-lesson"
+              >
+                <div
+                  className="shrink-0 w-11 h-11 rounded-xl bg-ruby border-[1.5px] border-jewelInk flex items-center justify-center"
+                  style={{ boxShadow: '2px 2px 0 #15100A' }}
+                  aria-hidden="true"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M8 5 L18 12 L8 19 Z" fill="#FBF6EC" stroke="#FBF6EC" strokeWidth="2" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="mn-eyebrow text-ruby mb-0.5">дальше · пара минут</div>
+                  <div className="font-sans text-[16px] font-bold text-jewelInk leading-tight">
+                    {next.title}
+                    {next.short && (
+                      <span className="font-geo font-semibold text-jewelInk-mid"> · {next.short}</span>
+                    )}
+                  </div>
+                  <div className="font-sans text-[12px] text-jewelInk-mid mt-0.5">
+                    {next.moduleTitle} · урок {next.lessonId}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-auto w-full pt-6 flex flex-col items-center gap-1">
+              {next ? (
+                <>
+                  <Button variant="green" onClick={onNext}>
+                    следующий урок →
+                  </Button>
+                  <button
+                    onClick={onBrowse}
+                    data-testid="welcome-browse"
+                    className="font-sans text-[14px] font-semibold text-jewelInk-mid underline underline-offset-4 px-4"
+                    style={{ minHeight: '44px' }}
+                  >
+                    посмотреть все уроки
+                  </button>
+                </>
+              ) : (
+                <Button variant="green" onClick={onBrowse}>
+                  открыть приложение →
+                </Button>
+              )}
             </div>
           </>
         )}

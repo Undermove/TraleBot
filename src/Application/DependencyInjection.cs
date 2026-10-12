@@ -44,6 +44,11 @@ public static class DependencyInjection
         services.AddScoped<ICoinsNotificationService>(
             sp => sp.GetRequiredService<CoinsNotificationService>());
 
+        // One reminder to a newcomer who started the bot and never opened the mini-app.
+        services.AddScoped<FirstOpenReminderService>();
+        services.AddScoped<IFirstOpenReminderService>(
+            sp => sp.GetRequiredService<FirstOpenReminderService>());
+
         // Holiday catalog (#894 / #992). Pure stateless lookup — singleton.
         services.AddSingleton<IHolidayCalendarService, HolidayCalendarService>();
 

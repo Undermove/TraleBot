@@ -2,6 +2,7 @@ using Application.Common.Interfaces;
 using Application.MiniApp.Commands;
 using Application.Notifications.Holidays;
 using Domain.Entities;
+using Infrastructure.Telegram.CommonComponents;
 using Infrastructure.Telegram.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -392,6 +393,46 @@ public class TelegramNotificationService : IUserNotificationService
                 $"Твой друг начал заниматься — твоя подписка стала длиннее на {days} дней, до {until}.",
             _ => null,
         };
+    }
+
+    public async Task SendFirstOpenReminderAsync(Domain.Entities.User user, CancellationToken ct)
+    {
+        // No mini-app in this environment — there is nothing to open, so nothing to remind about.
+        if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return;
+
+        var keyboard = FirstStepMessage.Keyboard(_botConfig.NormalizedHost() + "/");
+
+        try
+        {
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: FirstStepMessage.ReminderText,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "First-open reminder for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(
+                chatId: user.TelegramId,
+                text: FirstStepMessage.ReminderText,
+                replyMarkup: keyboard,
+                cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation(
+                "First-open reminder for {TelegramId} blocked (403); marking user inactive",
+                user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
     }
 
     private InlineKeyboardMarkup? BuildReferralBonusKeyboard()

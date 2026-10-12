@@ -118,7 +118,8 @@ test('the first-lesson spotlight appears right after the welcome lesson — no r
   await page.getByRole('button', { name: /дальше/i }).click()
   await page.getByTestId('welcome-listen-а').click()
   await page.getByTestId('welcome-name-ани').click()
-  await page.getByRole('button', { name: /открыть приложение/i }).click()
+  // The win screen offers the next lesson first; the quiet link leads to the hub.
+  await page.getByTestId('welcome-browse').click()
 
   // Spotlight is there immediately on the dashboard — without any reload.
   await expect(page.getByTestId('onboarding-spotlight-first_lesson')).toBeVisible()
