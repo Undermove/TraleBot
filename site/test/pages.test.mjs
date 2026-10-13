@@ -210,10 +210,13 @@ test('internal links: none is broken; every page is one click from its hub and l
       assert.ok(inMain.size >= 3 || p.md !== undefined, `${p.path}: only ${inMain.size} links to related pages`)
     }
   }
-  // The home page (SPA shell) exposes the hubs to crawlers without JavaScript.
+  // The home page exposes the hubs to crawlers without JavaScript: the build renders the landing into
+  // index.html as plain HTML (staticHomePlugin in miniapp-src/vite.config.ts), so the links the landing
+  // has are the links a script-less reader gets.
   const shell = readFileSync(join(repo, 'src/Trale/miniapp-src/index.html'), 'utf8')
-  const noscript = shell.slice(shell.indexOf('<noscript>'), shell.indexOf('</noscript>'))
-  for (const hub of hubs) assert.ok(noscript.includes(`href="${hub.path}"`), `home page <noscript> lacks ${hub.path}`)
+  assert.ok(shell.includes('<div id="static-home"><!--static-home--></div>'), 'index.html has no place for the plain-HTML landing')
+  const landing = readFileSync(join(repo, 'src/Trale/miniapp-src/src/screens/LandingScreen.tsx'), 'utf8')
+  for (const hub of hubs) assert.ok(landing.includes(`href="${hub.path}"`), `the landing lacks a link to ${hub.path}`)
 })
 
 test('phrase and word pages: every row has Georgian, a translation and a transcription', () => {
