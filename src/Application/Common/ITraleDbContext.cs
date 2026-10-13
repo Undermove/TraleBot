@@ -29,6 +29,7 @@ public interface ITraleDbContext
     DbSet<UserVerb> UserVerbs { get; }
     DbSet<VerbSession> VerbSessions { get; }
     DbSet<VerbSectionVisit> VerbSectionVisits { get; }
+    DbSet<WaitlistEntry> WaitlistEntries { get; }
     DbSet<TranslationCacheEntry> TranslationCache { get; }
     DbSet<BroadcastCampaign> BroadcastCampaigns { get; }
     DbSet<BroadcastDelivery> BroadcastDeliveries { get; }

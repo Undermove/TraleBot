@@ -184,7 +184,7 @@ test('sitemap lists every indexable page exactly once, with lastmod', () => {
   const xml = readFileSync(join(out, 'sitemap.xml'), 'utf8')
   const urls = urlsFromSitemap(xml)
   assert.equal(new Set(urls).size, urls.length, 'duplicate URL in sitemap')
-  const pages = result.pages.filter((p) => !p.draft)
+  const pages = [...result.pages, ...result.learn].filter((p) => !p.draft)
   for (const p of pages) {
     assert.ok(urls.includes(config.baseUrl + p.path), `${p.path} is missing from sitemap`)
     assert.match(p.updated, /^\d{4}-\d{2}-\d{2}$/, `${p.path} has no lastmod`)

@@ -9,12 +9,13 @@
 //   * hand-written:  content/<section>/_index.md + content/<section>/<slug>.md
 //   * data-driven:   /verbs/* from src/Trale/Verbs/verbs.json, /phrases/* and /words/* from the
 //                    lesson theory and lexicons, cross-verb tables in /grammar/ (lib/pages/*)
+//   * /learn/*:      English pages with a waitlist form, one per language (lib/pages/learn.mjs)
 // Output: <out>/<section>/index.html, <out>/<section>/<slug>/index.html, <out>/sitemap.xml,
 //         plus everything from static/ copied to <out>/ (verification files, IndexNow key, og images).
 //
 // Rules (see ../CLAUDE.md → "Сайт vs мини-апп"):
 //  * never touch <out>/index.html or <out>/assets — those belong to the mini-app build
-//  * pages are pure HTML + inline CSS, no JS, no calls to /api
+//  * pages are pure HTML + inline CSS, no JS, no calls to /api (the /learn/ form is a plain POST to /waitlist)
 //  * Georgian comes only from the repo data; the generator never invents a form
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, statSync, existsSync, copyFileSync } from 'node:fs'
@@ -30,6 +31,7 @@ import { verbPage, verbsIndex } from './lib/pages/verbs.mjs'
 import { grammarPages } from './lib/pages/grammar.mjs'
 import { makeSelectors, referencePage } from './lib/pages/reference.mjs'
 import { SECTIONS, referenceDefs } from './data/reference.mjs'
+import { learnPages } from './lib/pages/learn.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 export const SLUG_LOCK = join(here, 'data', 'verb-slugs.json')
@@ -326,10 +328,13 @@ export function build({
     }
   }
 
-  const sectionNames = [...new Set(pages.map((p) => p.section))]
+  // The English waitlist pages have their own layout and are written as they are.
+  const learn = learnPages(config, config.generatedUpdated || '')
+
+  const sectionNames = [...new Set([...pages, ...learn].map((p) => p.section))]
   for (const name of sectionNames) if (RESERVED_SECTIONS.has(name)) throw new Error(`Section "${name}" collides with an app route`)
   const byPath = new Map()
-  for (const p of pages) {
+  for (const p of [...pages, ...learn]) {
     if (byPath.has(p.path)) throw new Error(`Two pages claim ${p.path}`)
     byPath.set(p.path, p)
   }
@@ -354,12 +359,19 @@ export function build({
     written.push(p.path)
   }
 
+  for (const p of learn) {
+    const file = join(outDir, p.path, 'index.html')
+    mkdirSync(dirname(file), { recursive: true })
+    writeFileSync(file, p.html)
+    bytes += Buffer.byteLength(p.html)
+  }
+
   mkdirSync(outDir, { recursive: true })
-  writeFileSync(join(outDir, 'sitemap.xml'), renderSitemap(config, pages))
+  writeFileSync(join(outDir, 'sitemap.xml'), renderSitemap(config, [...pages, ...learn]))
   const staticCount = copyStatic(staticDir, outDir)
 
   const drafts = pages.filter((p) => p.draft).length
-  return { outDir, written, drafts, staticCount, sections, pages, bytes, verbs: gen?.verbs || [] }
+  return { outDir, written, drafts, staticCount, sections, pages, learn, bytes, verbs: gen?.verbs || [] }
 }
 
 /** Freezes the slugs of verbs that are not in the lock yet. Existing entries are never rewritten. */
