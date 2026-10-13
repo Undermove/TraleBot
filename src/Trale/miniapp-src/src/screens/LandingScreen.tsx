@@ -484,6 +484,9 @@ export default function LandingScreen({ botUsername }: Props) {
           <a href="/grammar/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
             Грамматика грузинского
           </a>
+          <a href="/learn/georgian/" lang="en" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Learn Georgian in English
+          </a>
           <a href="/privacy.html" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
             Конфиденциальность
           </a>

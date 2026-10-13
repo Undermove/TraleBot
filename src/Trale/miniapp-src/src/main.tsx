@@ -21,6 +21,9 @@ function applySafeAreaInsets() {
   root.style.setProperty('--safe-b', `${safeBottom}px`)
 }
 
+// The landing as plain HTML (index.html, for readers that run no scripts) gives way to the app.
+document.getElementById('static-home')?.remove()
+
 const tg = (window as any).Telegram?.WebApp
 if (tg) {
   try {

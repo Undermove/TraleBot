@@ -75,7 +75,10 @@ using (var scope = app.Services.CreateScope())
 
 app.UseMiddleware<ExceptionsMiddleware>();
 
-app.UseDefaultFiles();
+// /verbs → /verbs/ is ours to do: the built-in redirect writes an absolute address with the scheme
+// this process sees, and behind the proxy that is http — one more hop for every such link.
+app.UseTrailingSlashRedirect();
+app.UseDefaultFiles(new DefaultFilesOptions { RedirectToAppendTrailingSlash = false });
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>
