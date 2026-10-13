@@ -1330,6 +1330,45 @@ namespace Persistence.Migrations
                     b.ToTable("VocabularyEntries");
                 });
 
+            modelBuilder.Entity("Domain.Entities.WaitlistEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("Email", "Language")
+                        .IsUnique();
+
+                    b.ToTable("WaitlistEntries", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Entities.SharedQuiz", b =>
                 {
                     b.HasBaseType("Domain.Entities.Quiz");

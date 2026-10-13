@@ -114,6 +114,7 @@ public static class DependencyInjection
         services.AddScoped<VerbFamilyQuery>();
         services.AddScoped<VerbSectionQuery>();
         services.AddScoped<RecordVerbSectionVisitService>();
+        services.AddScoped<Waitlist.JoinWaitlistService>();
         services.AddScoped<FeedTreatService>();
 
         // Acquisition attribution (per ARCHITECTURE.md, no MediatR)

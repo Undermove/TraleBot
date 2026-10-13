@@ -2,13 +2,13 @@
 // is a single self-contained file: no bundle, no JS, no dependency on the mini-app.
 // Visual language mirrors the SPA landing (Minankari palette, Manrope + Noto Georgian).
 
-const FONTS_HREF =
+export const FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Georgian:wght@400..900&family=Noto+Serif+Georgian:wght@400..900&display=swap'
 
 const KILIM_SVG =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 8' preserveAspectRatio='xMidYMid meet'%3E%3Cg fill='none' stroke='%231B5FB0' stroke-width='1.2'%3E%3Cpath d='M0 4 L4 0 L8 4 L4 8 Z'/%3E%3Cpath d='M8 4 L12 0 L16 4 L12 8 Z' stroke='%23E01A3C'/%3E%3Cpath d='M16 4 L20 0 L24 4 L20 8 Z' stroke='%23F5B820'/%3E%3Cpath d='M24 4 L28 0 L32 4 L28 8 Z'/%3E%3C/g%3E%3C/svg%3E\")"
 
-const CSS = `
+export const CSS = `
 :root{--cream:#FBF6EC;--cream-deep:#F5EFE0;--tile:#FDFAEF;--edge:#E8DEC5;--ink:#15100A;--ink-soft:#3A2B1F;--ink-mid:#5A4735;--ink-hint:#7A6B52;--navy:#1B5FB0;--navy-deep:#0E3F7D;--ruby:#E01A3C;--gold:#F5B820;--gold-wash:#F9EAC1;--maxw:720px}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
