@@ -1,5 +1,5 @@
 import { cyr } from '../../verbs/types'
-import { LESSON_COUNT, LESSON_LETTERS, LESSON_WORDS, RU_TO_GEO, SOUNDS } from './data'
+import { LESSON_COUNT, LESSON_LETTERS, LESSON_WORDS, SOUNDS } from './data'
 
 // Чистая логика игр алфавита: что можно показывать к уроку N, как собрать поле, раунды, варианты.
 // Никакого React здесь нет — всё проверяется в logic.test.ts.
@@ -70,37 +70,6 @@ export function distractorsFor(letter: string, lesson: number, exclude: readonly
   return learnedLetters(lesson).filter(l => l !== letter && !exclude.includes(l) && (!g || SOUNDS[l]?.group !== g))
 }
 
-// ───────────── Смешанные слова: «мама» → «მამა» ─────────────
-
-/** Кусок слова: русская буква и грузинская, в которую она превращается (если уже выучена). */
-export interface Piece { ru: string; geo: string | null }
-
-/** Разбить русское слово на буквы и пометить, какие к уроку уже пишутся по-грузински. */
-export function mixPieces(word: string, lesson: number): Piece[] {
-  const n = clampLesson(lesson)
-  const rules = RU_TO_GEO.filter(r => r.lesson <= n)
-  const out: Piece[] = []
-  const w = word.toLowerCase()
-  for (let i = 0; i < w.length;) {
-    const rule = rules.find(r => w.startsWith(r.ru, i))
-    if (rule) { out.push({ ru: word.slice(i, i + rule.ru.length), geo: rule.geo }); i += rule.ru.length }
-    else { out.push({ ru: word[i], geo: null }); i += 1 }
-  }
-  return out
-}
-
-/** Смешанное слово целиком: «мაмა». */
-export const mixed = (word: string, lesson: number) => mixPieces(word, lesson).map(p => p.geo ?? p.ru).join('')
-
-/**
- * Смешанное слово как мост — пока в нём остаётся хоть одна русская буква. Русское слово целиком
- * грузинскими буквами («სახარ») не показываем: тогда null, и место занимает настоящее грузинское слово.
- */
-export function mixedBridge(word: string, lesson: number): string | null {
-  const m = mixed(word, lesson)
-  return [...m].every(isGeorgian) ? null : m
-}
-
 // ───────────── Лестница слов ─────────────
 
 /** Слова, которые ученик может прочитать к концу урока: настоящие грузинские, только из открытых букв. */
@@ -110,6 +79,9 @@ export const ladder = (lesson: number): Word[] => wordsUpTo(lesson).filter(w => 
 export const hasOwnLetter = (geo: string, lesson: number) => lessonLetters(lesson).some(l => geo.includes(l))
 
 // ───────────── «Превращение» ─────────────
+
+/** Кусок слова: как звучит (кириллицей) и грузинская буква. */
+export interface Piece { ru: string; geo: string | null }
 
 /** Слово по буквам: как звучит каждая (кириллицей, как в транскрипции) и сама грузинская буква. */
 export function morphPieces(geo: string): Piece[] {
@@ -157,28 +129,6 @@ export function assembleRounds(lesson: number, count = 2, rng: Rng = Math.random
   })
 }
 
-// ───────────── План урока ─────────────
-
-export type MidGame = 'morph' | 'assemble'
-
-export interface LessonGamePlan {
-  /** После какого по счёту вопроса (1-based) играть игру в середине. */
-  midAfter: number
-  mid: MidGame
-  end: 'cafe'
-}
-
-/**
- * Игры урока алфавита — ровно две, чтобы урок не стал длиннее: в середине (после 6-го вопроса, когда все
- * три буквы урока уже показаны) — «Превращение» в нечётных уроках и «Собери слово» в чётных; в конце
- * всегда «Кафе Бомборы».
- */
-export function lessonGamePlan(lesson: number, total: number): LessonGamePlan | null {
-  if (lesson < 1 || lesson > LESSON_COUNT || total < 2) return null
-  const midAfter = total >= 8 ? 6 : Math.max(1, Math.floor(total / 2))
-  return { midAfter, mid: lesson % 2 === 1 ? 'morph' : 'assemble', end: 'cafe' }
-}
-
 // ───────────── «Новое слово» ─────────────
 
 export interface WordIntroPlan {
@@ -209,4 +159,81 @@ export function wordIntroPlan(lesson: number, lemmas: readonly string[], midAfte
   const others = own.filter(w => !asked.includes(w)).sort((a, b) => Number(hasOwnLetter(b.geo, n)) - Number(hasOwnLetter(a.geo, n)))
   const featured = [...asked, ...others].slice(0, maxFeatured)
   return { before, featured, rest: own.filter(w => !featured.includes(w)) }
+}
+
+// ───────────── Новые игры: «Поймай букву», «Звук → буква», «Пары» ─────────────
+
+export interface CatchRound { target: string; bubbles: string[] }
+
+/**
+ * «Поймай букву»: в каждом раунде 3 пузыря с нужной буквой среди 8. Остальные — только уже показанные буквы
+ * (прошлые уроки и letters) и непохожие по звуку: буквы, с которыми ещё не знакомили, не всплывают.
+ */
+export function catchRounds(letters: readonly string[], lesson: number, rng: Rng = Math.random): CatchRound[] {
+  const shown = new Set([...(lesson > 1 ? learnedLetters(lesson - 1) : []), ...letters])
+  return letters.map(target => {
+    const others = distractorsFor(target, lesson).filter(l => shown.has(l))
+    const pool = others.length ? others : [...shown].filter(l => l !== target)
+    const fill = Array.from({ length: 5 }, (_, i) => pool[Math.floor(rng() * pool.length)] ?? pool[i % pool.length])
+    return { target, bubbles: shuffle([target, target, target, ...fill], rng) }
+  })
+}
+
+export interface SoundRound { letter: string; choices: string[] }
+
+/** «Звук → буква»: звучит слово на букву — какая буква первая. Буквы урока, варианты — непохожие по звуку. */
+export function soundRounds(lesson: number, rng: Rng = Math.random): SoundRound[] {
+  return shuffle(lessonLetters(lesson), rng).map(letter => ({ letter, choices: letterChoices(letter, lesson, rng, 3) }))
+}
+
+export interface PairCard { id: string; pair: string; face: string; kind: 'geo' | 'ru' }
+
+/** «Пары»: карточки буква ↔ её звук (или слово ↔ значение). Три пары, перемешаны. */
+export function pairsDeck(kind: 'letters' | 'words', lesson: number, rng: Rng = Math.random): PairCard[] {
+  const items: [string, string][] = kind === 'letters'
+    ? lessonLetters(lesson).map(l => [l, `«${SOUNDS[l]?.plain ?? l}»`])
+    : shuffle(ladder(lesson).filter(w => w.lesson === lesson || hasOwnLetter(w.geo, lesson)), rng)
+      .filter((w, i, a) => a.findIndex(x => x.ru === w.ru) === i).slice(0, 3).map(w => [w.geo, w.ru])
+  return shuffle(items.flatMap(([geo, ru], i) => [
+    { id: `g${i}`, pair: `p${i}`, face: geo, kind: 'geo' as const },
+    { id: `r${i}`, pair: `p${i}`, face: ru, kind: 'ru' as const }
+  ]), rng)
+}
+
+// ───────────── Урок как цепочка игр ─────────────
+
+export type LessonStep =
+  | { kind: 'intro'; letter: string; index: number }
+  | { kind: 'catch'; letters: string[] }
+  | { kind: 'sound' }
+  | { kind: 'pairs'; deck: 'letters' | 'words' }
+  | { kind: 'words' }
+  | { kind: 'morph' }
+  | { kind: 'assemble' }
+  | { kind: 'cafe' }
+
+/** Сколько вопросов-проверок в конце урока (как короткий экзамен). */
+export const EXAM_SIZE = 4
+
+/**
+ * Урок алфавита — цепочка коротких игр, которая открывается по шагам и усложняется, а в конце — короткая
+ * проверка из EXAM_SIZE вопросов. Новые механики появляются по одной: «Поймай букву» и «Пары» (буква — звук)
+ * с первого урока, «Звук → буква» — со второго, «Пары» слово — значение — с третьего; «Превращение»
+ * и «Собери слово» — по очереди; «Кафе» — когда настоящих названий еды и питья хватает (cafeReady).
+ */
+export function lessonSteps(lesson: number, cafeReady: (lesson: number) => boolean): LessonStep[] {
+  const n = clampLesson(lesson)
+  const ls = lessonLetters(n)
+  const steps: LessonStep[] = [
+    { kind: 'intro', letter: ls[0], index: 0 },
+    { kind: 'intro', letter: ls[1], index: 1 },
+    { kind: 'catch', letters: ls.slice(0, 2) },
+    { kind: 'intro', letter: ls[2], index: 2 },
+    n === 1 ? { kind: 'pairs', deck: 'letters' } : { kind: 'sound' },
+    { kind: 'words' },
+    { kind: n % 2 === 1 ? 'morph' : 'assemble' }
+  ]
+  if (cafeReady(n)) steps.push({ kind: 'cafe' })
+  else if (n >= 3) steps.push({ kind: 'pairs', deck: 'words' })
+  return steps
 }

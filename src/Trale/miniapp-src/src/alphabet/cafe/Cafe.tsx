@@ -3,7 +3,7 @@ import Button from '../../components/Button'
 import Mascot from '../../components/Mascot'
 import GameFrame from '../games/GameFrame'
 import { burst, flyGhost, haptic, sound } from '../games/fx'
-import { isGeorgian, type Rng } from '../games/logic'
+import { type Rng } from '../games/logic'
 import { cyr } from '../../verbs/types'
 import { useLater } from '../../verbs/games/useLater'
 import { CheckMark, GuestArt, ProductArt, WindowArt } from './art'
@@ -137,7 +137,7 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
             <div className="flex flex-col gap-1.5">
               {read.map(p => (
                 <div key={p.id} className="text-[15px]" data-testid="cafe-read">
-                  <span className="font-extrabold"><MixedText text={text(p)} /></span>
+                  <span className="font-geo font-extrabold">{text(p)}</span>
                   {isRealWord(p, lesson) && <span className="text-jewelInk-hint"> «{cyr(text(p))}»</span>}
                   <span className="text-jewelInk-mid"> — {p.ru}</span>
                 </div>
@@ -152,7 +152,7 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
 
   return (
     <GameFrame title="Кафе Бомборы" eyebrow={guided ? 'первый гость' : `гость ${n + 1}`} fraction={fraction} onExit={onExit}>
-      <div className="flex-1 flex flex-col gap-3" data-testid="cafe">
+      <div className="flex-1 min-h-0 flex flex-col gap-3 ab-short:gap-2" data-testid="cafe">
         <div className={`text-center text-[15px] font-bold leading-snug ${guided ? 'rounded-xl bg-gold-wash border-[1.5px] border-jewelInk px-3 py-2' : 'text-jewelInk-mid'}`} data-testid="cafe-howto">
           {guided ? 'Гость заказывает по-грузински. Прочитай заказ и подай нужное' : 'Смена началась: успей обслужить побольше гостей'}
         </div>
@@ -169,15 +169,15 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
           </div>
           <div className="absolute top-7 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-lg border-[1.5px] border-jewelInk bg-navy text-cream font-sans text-[14px] font-extrabold whitespace-nowrap" style={{ boxShadow: '2px 2px 0 #15100A' }} data-testid="cafe-sign">Бомбора</div>
           <div key={servedCount} className="absolute top-7 right-2 px-2 py-0.5 rounded-lg bg-cream-tile border border-jewelInk/40 text-[13px] font-extrabold tabular-nums ab-count" data-testid="cafe-served">Обслужено: {servedCount}</div>
-          <div className="absolute top-[64px] inset-x-0 flex justify-between px-3 pointer-events-none opacity-90">
+          <div className="absolute top-[64px] inset-x-0 flex justify-between px-3 pointer-events-none opacity-90 ab-short:hidden">
             <WindowArt width={84} /><WindowArt width={84} />
           </div>
 
-          <div className="relative pt-[60px] flex items-end justify-center gap-2 px-3" style={{ minHeight: 236 }}>
+          <div className="relative pt-[60px] ab-short:pt-[44px] flex items-end justify-center gap-2 px-3" style={{ minHeight: 'clamp(150px, 28vh, 236px)' }}>
             <div key={n} ref={guestEl} className="relative flex flex-col items-center ab-in" data-testid="cafe-guest" data-order={text(order)}>
               <div className="relative min-w-[132px] max-w-[220px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-2 text-center" style={{ boxShadow: '2px 2px 0 #15100A' }}>
-                <div className={`font-extrabold leading-tight break-words ${text(order).length > 8 ? 'text-[24px]' : 'text-[30px]'} ${served ? 'text-navy' : ''}`} data-testid="cafe-order">
-                  <MixedText text={text(order)} />{served && <span className="ml-1"><CheckMark size={16} /></span>}
+                <div className={`font-geo font-extrabold leading-tight break-words ${text(order).length > 8 ? 'text-[24px]' : 'text-[30px]'} ${served ? 'text-navy' : ''}`} data-testid="cafe-order">
+                  {text(order)}{served && <span className="ml-1"><CheckMark size={16} /></span>}
                 </div>
                 {served && (
                   <div className="text-[13px] font-bold text-jewelInk-mid ab-drip" data-testid="cafe-meaning">
@@ -188,13 +188,13 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
                 <span className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-cream-tile border-r-[1.5px] border-b-[1.5px] border-jewelInk" />
               </div>
               {served && fast && <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-gold border-[1.5px] border-jewelInk text-[14px] font-extrabold ab-snap" data-testid="cafe-fast">Быстро!</div>}
-              <div className="mt-2"><GuestArt look={n} mood={served ? 'happy' : 'wait'} size={66} /></div>
+              <div className="mt-2"><GuestArt look={n} mood={served ? 'happy' : 'wait'} size={56} /></div>
             </div>
           </div>
-          <div className="relative h-[70px] flex items-end justify-end pr-4">
+          <div className="relative h-[70px] ab-short:h-[52px] flex items-end justify-end pr-4">
             <div className="absolute bottom-0 inset-x-0 h-6 bg-[#D99844] border-t-[1.5px] border-jewelInk" />
             <div className={`relative ${mood === 'cheer' ? 'ab-jump' : mood === 'think' ? 'ab-wobble' : ''}`} key={mood + n}>
-              <Mascot mood={mood} size={74} />
+              <Mascot mood={mood} size={64} />
             </div>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
                   aria-label={p.ru}
                   data-testid={`shelf-${p.id}`}
                   data-hint={here ? 'yes' : 'no'}
-                  className={`relative w-full h-[74px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile flex items-center justify-center active:scale-95 transition-transform ${shake === p.id ? 'ab-shake bg-ruby-wash' : ''} ${here ? 'ring-4 ring-gold ab-pulse' : ''}`}
+                  className={`relative w-full h-[74px] ab-short:h-[56px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile flex items-center justify-center active:scale-95 transition-transform ${shake === p.id ? 'ab-shake bg-ruby-wash' : ''} ${here ? 'ring-4 ring-gold ab-pulse' : ''}`}
                   style={{ boxShadow: '3px 3px 0 #15100A' }}
                 ><ProductArt id={p.id} size={48} />{here && <Pointer />}</button>
               </div>
@@ -221,20 +221,6 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
       </div>
     </GameFrame>
   )
-}
-
-/**
- * Смешанный заказ «воდა»: грузинские буквы — грузинским шрифтом, русские — обычным. В грузинском шрифте
- * русская «в» похожа на ვ, и «воდა» читалось бы как «ვოდა».
- */
-export function MixedText({ text }: { text: string }) {
-  const runs: { geo: boolean; s: string }[] = []
-  for (const ch of text) {
-    const geo = isGeorgian(ch)
-    const last = runs[runs.length - 1]
-    if (last && last.geo === geo) last.s += ch; else runs.push({ geo, s: ch })
-  }
-  return <>{runs.map((r, i) => <span key={i} className={r.geo ? 'font-geo' : 'font-sans'}>{r.s}</span>)}</>
 }
 
 /** Стрелка у верного товара у первого гостя (и после двух промахов) — внутри плитки, чтобы не задевать соседей. */

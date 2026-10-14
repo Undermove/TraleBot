@@ -54,3 +54,6 @@
 .ab-flip-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden }
 .ab-flip-back { transform: rotateY(180deg) }
 @media (prefers-reduced-motion: reduce) { .ab-flip-inner { transition: none } }
+
+/* Экран игры — ровно окно Telegram (стабильная высота вьюпорта), без прокрутки и «резинки». */
+.ab-screen { height: var(--tg-viewport-stable-height, 100dvh); max-height: 100dvh; overflow: hidden; overscroll-behavior: none; touch-action: manipulation }

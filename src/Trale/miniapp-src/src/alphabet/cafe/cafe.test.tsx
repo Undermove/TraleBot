@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { PRODUCTS, availableProducts, isRealWord, orderText } from './products'
+import { PRODUCTS, availableProducts, cafeReady, isRealWord, orderText } from './products'
 import { FAST_MS, cafePlan, isFast, orderAt } from './engine'
 import { loadRecord, saveRecord } from './record'
 import Cafe from './Cafe'
@@ -11,33 +11,38 @@ beforeEach(() => localStorage.clear())
 
 const LESSONS = Array.from({ length: 11 }, (_, i) => i + 1)
 
+const CAFE_LESSONS = LESSONS.filter(cafeReady)
+
 describe('cafe products', () => {
-  it.each(LESSONS)('lesson %i: every order is written only with learned Georgian letters', level => {
+  it('opens the cafe only when there are at least three real food or drink words to read', () => {
+    expect(CAFE_LESSONS[0]).toBe(5)
+    expect(cafeReady(4)).toBe(false)
+    expect(CAFE_LESSONS).toEqual([5, 6, 7, 8, 9, 10, 11])
+  })
+
+  it.each(LESSONS)('lesson %i: every order is a real Georgian word made of learned letters', level => {
     const known = new Set(learnedLetters(level))
-    const shelf = availableProducts(level)
-    expect(shelf.length).toBeGreaterThanOrEqual(4)
-    for (const p of shelf) {
+    for (const p of availableProducts(level)) {
       const t = orderText(p, level)!
-      for (const ch of t) if (isGeorgian(ch)) expect(known.has(ch), `${t} at ${level}`).toBe(true)
-      expect([...t].filter(isGeorgian).length).toBeGreaterThanOrEqual(2)
+      expect(t).toBe(p.geo)
+      for (const ch of t) expect(known.has(ch), `${t} at ${level}`).toBe(true)
     }
   })
 
-  it('switches an order to the real Georgian word as soon as all its letters are learned', () => {
+  it('names a dish by its Georgian word as soon as all its letters are learned, never earlier', () => {
     const water = PRODUCTS.find(p => p.id === 'water')!
-    expect(orderText(water, 1)).toBe('воდა')
+    expect(orderText(water, 9)).toBeNull()
     expect(orderText(water, 10)).toBe('წყალი')
     const tea = PRODUCTS.find(p => p.id === 'tea')!
     expect(orderText(tea, 3)).toBeNull()
     expect(isRealWord(tea, 4)).toBe(true)
-    expect(orderText(PRODUCTS.find(p => p.id === 'khachapuri')!, 9)).toBeNull()
   })
 })
 
 describe('cafe plan', () => {
-  it.each(LESSONS)('lesson %i: 3–4 different orders from the shelf, one dish more on the shelf, the shortest first', lesson => {
+  it.each(CAFE_LESSONS)('lesson %i: 2–4 different orders from the shelf, one dish more on the shelf, the shortest first', lesson => {
     const { shelf, orders } = cafePlan(lesson, seeded(lesson))
-    expect(orders.length).toBeGreaterThanOrEqual(3)
+    expect(orders.length).toBeGreaterThanOrEqual(2)
     expect(orders.length).toBeLessThanOrEqual(4)
     expect(new Set(orders.map(o => o.id)).size).toBe(orders.length)
     expect(shelf.length).toBeGreaterThan(orders.length)
@@ -47,7 +52,7 @@ describe('cafe plan', () => {
   })
 
   it('prefers orders with the letters of this lesson', () => {
-    for (const lesson of LESSONS) {
+    for (const lesson of CAFE_LESSONS) {
       const { orders } = cafePlan(lesson, seeded(lesson * 7))
       const own = lessonLetters(lesson)
       // В одиннадцатом уроке (ჟ ჯ ჰ) блюд с этими буквами нет — там все заказы из прошлых уроков.
@@ -141,14 +146,11 @@ describe('Cafe', () => {
     expect(onDone).toHaveBeenCalled()
   })
 
-  it('writes the lesson 1 orders with ა, დ, რ inside Russian words and the sign in plain Cyrillic', () => {
-    render(<Cafe lesson={1} fraction={1} onExit={() => {}} onDone={() => {}} rng={seeded(3)} />)
+  it('writes the sign in plain Cyrillic and every order as a real Georgian word', () => {
+    render(<Cafe lesson={5} fraction={1} onExit={() => {}} onDone={() => {}} rng={seeded(3)} />)
     const order = screen.getByTestId('cafe-order').textContent!
-    expect([...order].filter(isGeorgian).every(ch => 'ადრ'.includes(ch))).toBe(true)
+    expect(PRODUCTS.map(p => p.geo)).toContain(order)
     expect(screen.getByTestId('cafe-sign').textContent).toBe('Бомбора')
     expect(screen.getByTestId('cafe-sign').className).not.toContain('font-geo')
-    // Русские буквы заказа — обычным шрифтом, грузинские — грузинским.
-    for (const span of screen.getByTestId('cafe-order').querySelectorAll('span.font-geo')) expect([...span.textContent!].every(isGeorgian)).toBe(true)
-    for (const span of screen.getByTestId('cafe-order').querySelectorAll('span.font-sans')) expect([...span.textContent!].some(isGeorgian)).toBe(false)
   })
 })

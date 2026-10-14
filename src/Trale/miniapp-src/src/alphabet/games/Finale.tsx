@@ -86,28 +86,28 @@ export default function Finale({ lesson, onNext, onVocabulary }: { lesson: numbe
   const learnedCount = before.size + arrived.size
 
   return (
-    <div className="flex flex-col items-center bg-cream px-5 text-center" data-testid="alphabet-finale"
-      style={{ minHeight: '100dvh', paddingTop: 'calc(var(--safe-t) + 20px)', paddingBottom: 'calc(var(--safe-b) + 20px)' }}>
+    <div className="ab-screen flex flex-col items-center bg-cream px-5 text-center" data-testid="alphabet-finale"
+      style={{ paddingTop: 'calc(var(--safe-t) + 12px)', paddingBottom: 'calc(var(--safe-b) + 14px)' }}>
       <div className={party ? 'ab-jump' : ''} key={party ? 'p' : 'w'}>
-        <Mascot mood="cheer" size={120} />
+        <div className="ab-short:scale-75 ab-short:-my-3"><Mascot mood="cheer" size={104} /></div>
       </div>
       <div className="mn-eyebrow text-navy mt-1">урок {lesson} пройден</div>
       <div className="mt-1 text-[24px] font-extrabold leading-tight">
         Ты знаешь уже <span key={words} className="inline-block text-ruby ab-count tabular-nums" data-testid="finale-words">{wordsLabel(words)}</span>
       </div>
 
-      <div className="mt-4 flex gap-3 h-[60px]">
+      <div className="mt-3 ab-short:mt-1 flex gap-3 h-[60px] ab-short:h-[48px]">
         {fresh.map((l, i) => (
           <div
             key={l}
             ref={el => { flying.current[i] = el }}
-            className={`w-[56px] h-[56px] rounded-xl border-[1.5px] border-jewelInk bg-gold flex items-center justify-center font-geo text-[30px] font-extrabold transition-opacity duration-200 ${arrived.has(l) ? 'opacity-0' : 'ab-bob'}`}
+            className={`w-[56px] h-[56px] ab-short:w-[46px] ab-short:h-[46px] rounded-xl border-[1.5px] border-jewelInk bg-gold flex items-center justify-center font-geo text-[30px] font-extrabold transition-opacity duration-200 ${arrived.has(l) ? 'opacity-0' : 'ab-bob'}`}
             style={{ boxShadow: '3px 3px 0 #15100A', ['--d' as any]: `${i * 0.2}s` }}
           >{l}</div>
         ))}
       </div>
 
-      <div className="mt-4 w-full max-w-[360px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-3" style={{ boxShadow: '3px 3px 0 #15100A' }}>
+      <div className="mt-3 ab-short:mt-2 w-full max-w-[360px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-3 ab-short:p-2" style={{ boxShadow: '3px 3px 0 #15100A' }}>
         <div className="flex items-baseline justify-between mb-2">
           <div className="text-[14px] font-extrabold">Мой алфавит</div>
           <div className="text-[12px] font-bold text-jewelInk-mid tabular-nums" data-testid="finale-letters">{learnedCount} из 33</div>
@@ -146,7 +146,7 @@ export default function Finale({ lesson, onNext, onVocabulary }: { lesson: numbe
         </div>
       )}
 
-      <div className="mt-auto pt-5 w-full max-w-[360px] flex flex-col gap-3">
+      <div className="mt-auto pt-3 w-full max-w-[360px] flex flex-col gap-2">
         {dict && <Button variant="ghost" onClick={() => { haptic('tap'); onVocabulary() }}>открыть словарь</Button>}
         <Button onClick={() => { haptic('tap'); onNext() }}>итог →</Button>
       </div>

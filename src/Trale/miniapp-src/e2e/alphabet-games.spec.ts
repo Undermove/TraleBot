@@ -3,9 +3,10 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { PRODUCTS, orderText } from '../src/alphabet/cafe/products'
 
-// Алфавит: знакомство с буквой через грузинское слово (стереть поверхность → обвести букву → слово с подсвеченной
-// буквой), одна игра в середине урока («Превращение» в нечётных, «Собери слово» в чётных) и «Кафе Бомборы» в конце,
-// перед праздником. Вопросы — настоящие из уроков 5 и 6.
+// Алфавит — урок как цепочка игр: знакомство с буквой (стереть поверхность → как пишется → слово), «Поймай букву»,
+// «Пары», «Звук → буква», новые слова, «Превращение» / «Собери слово», «Кафе Бомборы» (с пятого урока), короткая
+// проверка из 4 вопросов, праздник со словами в словаре. Каждый экран игры помещается в окно без прокрутки —
+// проверяем на iPhone SE (375×667) и iPhone 12 (390×844). Вопросы — настоящие из уроков.
 // SHOTS_DIR=… — сохранить скриншоты для описания PR.
 
 const SHOTS = process.env.SHOTS_DIR
@@ -41,6 +42,7 @@ async function setup(page: Page, done: number[], lesson = 5) {
   await page.route(`**/api/miniapp/modules/alphabet-progressive/lessons/${lesson}/questions`, r => r.fulfill({ json: questions(lesson) }))
   await page.route('**/api/miniapp/activity-days*', r => r.fulfill({ json: { dates: [] } }))
   await page.route('**/api/miniapp/progress/answer', r => r.fulfill({ json: { xpEarned: 1, progress: progress(done) } }))
+  await page.route('**/api/miniapp/vocabulary/alphabet-words', r => r.fulfill({ json: { words: [{ word: 'და', translation: 'и', added: true }, { word: 'არა', translation: 'нет', added: true }, { word: 'რა', translation: 'что', added: true }], added: 3 } }))
   await page.route('**/api/miniapp/progress/lesson-complete', r => r.fulfill({ json: { xpEarned: 20, progress: progress([...done, lesson]) } }))
 }
 
@@ -61,91 +63,6 @@ async function rub(page: Page, rows = 14) {
     await page.mouse.move(r % 2 ? box.x + 5 : box.x + box.width - 5, y, { steps: 12 })
   }
   await page.mouse.up()
-}
-
-const GEO: Record<string, string> = { а: 'ა', д: 'დ', р: 'რ', е: 'ე', э: 'ე', и: 'ი', с: 'ს', в: 'ვ', м: 'მ', н: 'ნ', л: 'ლ', ч: 'ჩ', х: 'ხ', о: 'ო', ш: 'შ' }
-
-/** Сцены между вопросами: знакомство с буквой — пропустить, игру в середине — пройти. */
-let wordShots = false
-/** «Новое слово»: провести по плиткам по порядку, дождаться значения, отправить в словарь; список — дальше. */
-async function playWords(page: Page) {
-  while (await page.getByTestId('word-intro').isVisible().catch(() => false)) {
-    const tiles = page.getByTestId('word-tile')
-    const n = await tiles.count()
-    for (let i = 0; i < n; i++) {
-      await tiles.nth(i).dispatchEvent('pointerdown', { pointerId: 1, isPrimary: true })
-      if (i === 0 && n > 1 && !wordShots) { await page.waitForTimeout(250); await shot(page, '13-word-tapping') }
-    }
-    await expect(page.getByTestId('word-intro')).toHaveAttribute('data-phase', 'meaning', { timeout: 4000 })
-    if (!wordShots) { await page.waitForTimeout(900); await shot(page, '14-word-meaning'); wordShots = true }
-    await page.getByRole('button', { name: 'в словарь →' }).click()
-    await page.waitForTimeout(700)
-  }
-  if (await page.getByTestId('word-list').isVisible().catch(() => false)) {
-    await page.getByRole('button', { name: 'дальше →' }).click()
-  }
-}
-
-async function playScenes(page: Page) {
-  await playWords(page)
-  if (await page.getByTestId('intro-skip').isVisible().catch(() => false)) {
-    await page.getByTestId('intro-skip').click()
-    await page.getByRole('button', { name: 'дальше →' }).click()
-  }
-  if (await page.getByText('Преврати слово в грузинское').isVisible().catch(() => false)) {
-    let first = true
-    while (await page.getByTestId('morph-choice').first().isVisible().catch(() => false)) {
-      if (first) { await shot(page, '5-morph'); first = false }
-      // Нужную букву не вычисляем — пробуем варианты: неверный только встряхивается.
-      const tile = page.locator('[data-testid^="morph-tile-"][data-turned="no"]').first()
-      const before = await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count()
-      const choices = page.getByTestId('morph-choice')
-      for (let c = 0; c < await choices.count(); c++) {
-        await choices.nth(c).click()
-        await page.waitForTimeout(120)
-        if (await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count() > before || !(await tile.count())) break
-      }
-      if (await page.getByTestId('morph-meaning').isVisible()) {
-        await page.waitForTimeout(500)
-        await shot(page, '6-morph-done')
-        await page.getByRole('button', { name: /следующее слово|дальше/ }).click()
-      }
-    }
-  }
-  if (await page.getByText('Собери грузинское слово').isVisible().catch(() => false)) {
-    for (let round = 0; round < 2; round++) {
-      if (round === 0) await shot(page, '7-assemble')
-      const slots = await page.getByTestId('assemble-slot').count()
-      // Нужную букву не вычисляем — пробуем плитки по очереди: игра сама не пускает неверную.
-      for (let s = 0; s < slots; s++) {
-        const tiles = page.getByTestId('assemble-tile')
-        const n = await tiles.count()
-        for (let t = 0; t < n; t++) {
-          const tile = tiles.nth(t)
-          if (await tile.isDisabled()) continue
-          const before = await page.locator('[data-testid="assemble-slot"] span').count()
-          await tile.click({ force: true })
-          await page.waitForTimeout(450)
-          if ((await page.locator('[data-testid="assemble-slot"] span').count()) > before) break
-        }
-      }
-      await page.waitForTimeout(500)
-      if (round === 0) await shot(page, '8-assemble-done')
-      await page.getByRole('button', { name: /следующее слово|дальше/ }).click()
-    }
-  }
-}
-
-async function answerAll(page: Page, lesson: number) {
-  const qs = questions(lesson)
-  for (let i = 0; i < Math.min(10, qs.length); i++) {
-    await playScenes(page)
-    const q = qs[i]
-    await expect(page.getByText(q.question)).toBeVisible()
-    await page.getByRole('button', { name: new RegExp(`^[a-z]\\s*${q.options[q.answerIndex].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).click()
-    await page.getByRole('button', { name: 'проверить' }).click()
-    await page.getByRole('button', { name: /дальше →|итог →/ }).click()
-  }
 }
 
 test('letter intro: wipe the snow of თოვლი, watch how it is written, write it, read the Georgian word', async ({ page }) => {
@@ -184,73 +101,179 @@ test('letter intro: wipe the snow of თოვლი, watch how it is written, w
   await page.waitForTimeout(600)
   await shot(page, '4-intro-caption')
   await page.getByRole('button', { name: 'дальше →' }).click()
-  await expect(page.getByText(/Новая буква თ/)).toBeVisible()
+  await expect(page.getByText(/новая буква · 2 из 3/)).toBeVisible()
 })
 
-test('odd lesson: Morph in the middle, then the cafe — a guided first guest, a timed shift — and the celebration', async ({ page }) => {
-  test.setTimeout(60_000)
-  await page.clock.install()
-  await setup(page, [1, 2, 3, 4])
-  await openModule(page)
-  await page.getByTestId('lesson-btn-5').click()
-  await page.getByRole('button', { name: /к практике/i }).click()
-  await answerAll(page, 5)
+/** Экран игры целиком в окне: страница не прокручивается. */
+async function fits(page: Page, where: string) {
+  const [h, inner] = await page.evaluate(() => [document.scrollingElement!.scrollHeight, window.innerHeight])
+  expect(h, `${where}: page scrolls (${h} > ${inner})`).toBeLessThanOrEqual(inner)
+}
 
-  // Кафе — последняя игра урока.
-  await expect(page.getByTestId('cafe')).toBeVisible()
-  await expect(page.getByTestId('cafe-howto')).toHaveText('Гость заказывает по-грузински. Прочитай заказ и подай нужное')
-  await expect(page.getByTestId('cafe-pointer')).toBeVisible()
-  await expect(page.getByText('Собери грузинское слово')).toHaveCount(0)
-  await page.waitForTimeout(700)
-  await shot(page, '10-cafe-guided')
+const seen = new Set<string>()
+/** Снимок — один раз на сцену и только в большом окне (для описания PR). */
+async function shotOnce(page: Page, name: string) {
+  if (seen.has(name) || (page.viewportSize()?.height ?? 0) < 800) return
+  seen.add(name); await shot(page, name)
+}
 
-  // Первый гость — без таймера; после подачи следующий заходит сам, и идёт смена.
-  await expect(page.getByTestId('cafe-timer')).toHaveCount(0)
-  await expect(page.getByTestId('cafe-sign')).toHaveText('Бомбора')
-  for (let guest = 0; guest < 3; guest++) {
-    const order = (await page.getByTestId('cafe-guest').getAttribute('data-order'))!
-    const id = PRODUCTS.find(p => orderText(p, 5) === order)!.id
-    if (guest > 0) await expect(page.getByTestId('cafe-pointer')).toHaveCount(0)
-    await page.getByTestId(`shelf-${id}`).click()
-    await expect(page.getByTestId('cafe-meaning')).toBeVisible()
-    if (guest === 1) { await page.waitForTimeout(500); await shot(page, '11-cafe-served') }
-    await expect(page.getByTestId('cafe-meaning')).toHaveCount(0, { timeout: 3000 })
-    await expect(page.getByTestId('cafe-timer')).toBeVisible()
+async function tryEach(page: Page, testId: string, solved: () => Promise<boolean>) {
+  const items = page.getByTestId(testId)
+  for (let i = 0; i < await items.count(); i++) {
+    if (await solved()) return
+    await items.nth(i).click({ force: true }).catch(() => {})
+    await page.waitForTimeout(160)
   }
-  // Смена 45 секунд — проматываем часы страницы.
-  await page.clock.runFor(46_000)
-  await expect(page.getByTestId('cafe-summary')).toBeVisible()
-  await page.waitForTimeout(500)
-  await shot(page, '12-cafe-summary')
-  await page.getByRole('button', { name: 'дальше →' }).click()
+}
 
-  await expect(page.getByTestId('alphabet-finale')).toBeVisible()
-  await page.waitForTimeout(3500)
-  await expect(page.getByTestId('finale-letters')).toHaveText('15 из 33')
-  await expect(page.getByText(/кафе/i)).toHaveCount(0)
-  await shot(page, '9-finale')
-})
+/** Пройти игры урока до проверки — каждая сцена: помещается в окно, снимок, игра. */
+async function playGames(page: Page) {
+  for (let guard = 0; guard < 40; guard++) {
+    await page.waitForTimeout(250)
+    if (await page.getByTestId('intro-skip').isVisible().catch(() => false)) {
+      await fits(page, 'letter intro')
+      await page.getByTestId('intro-skip').click()
+      await fits(page, 'letter caption')
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
+    if (await page.getByTestId('catch').isVisible().catch(() => false)) {
+      await fits(page, 'catch'); await shotOnce(page, '15-catch')
+      const targets = page.locator('[data-testid="catch-bubble"][data-target="yes"]:not([disabled])')
+      while (await targets.count()) { await targets.first().dispatchEvent('pointerdown'); await page.waitForTimeout(120) }
+      await page.waitForTimeout(600)
+      continue
+    }
+    if (await page.getByTestId('pairs').isVisible().catch(() => false)) {
+      await fits(page, 'pairs')
+      for (const pair of ['p0', 'p1', 'p2']) {
+        const cards = page.locator(`[data-testid="pair-card"][data-pair="${pair}"]`)
+        await cards.nth(0).click(); if (pair === 'p0') { await page.waitForTimeout(500); await shotOnce(page, '16-pairs') }
+        await cards.nth(1).click(); await page.waitForTimeout(450)
+      }
+      await page.waitForTimeout(1300)
+      continue
+    }
+    if (await page.getByTestId('sound-letter').isVisible().catch(() => false)) {
+      await fits(page, 'sound → letter'); await shotOnce(page, '17-sound-letter')
+      await tryEach(page, 'sound-choice', async () => (await page.locator('[data-testid="sound-choice"].bg-navy').count()) > 0)
+      await page.waitForTimeout(1400)
+      continue
+    }
+    if (await page.getByTestId('word-intro').isVisible().catch(() => false)) {
+      await fits(page, 'new word')
+      const tiles = page.getByTestId('word-tile')
+      const n = await tiles.count()
+      for (let i = 0; i < n; i++) {
+        await tiles.nth(i).dispatchEvent('pointerdown', { pointerId: 1, isPrimary: true })
+        if (i === 0 && n > 1) { await page.waitForTimeout(250); await shotOnce(page, '13-word-tapping') }
+      }
+      await expect(page.getByTestId('word-intro')).toHaveAttribute('data-phase', 'meaning', { timeout: 4000 })
+      await page.waitForTimeout(900); await shotOnce(page, '14-word-meaning')
+      await page.getByRole('button', { name: 'в словарь →' }).click()
+      await page.waitForTimeout(700)
+      continue
+    }
+    if (await page.getByTestId('word-list').isVisible().catch(() => false)) {
+      await fits(page, 'word list')
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
+    if (await page.getByText('Преврати слово в грузинское').isVisible().catch(() => false)) {
+      await fits(page, 'morph'); await shotOnce(page, '5-morph')
+      while (await page.getByTestId('morph-choice').first().isVisible().catch(() => false)) {
+        const before = await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count()
+        await tryEach(page, 'morph-choice', async () => (await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count()) > before || await page.getByTestId('morph-meaning').isVisible())
+        if (await page.getByTestId('morph-meaning').isVisible()) {
+          await page.waitForTimeout(500); await shotOnce(page, '6-morph-done')
+          await page.getByRole('button', { name: /следующее слово|дальше/ }).click()
+        }
+      }
+      continue
+    }
+    if (await page.getByText('Собери грузинское слово').isVisible().catch(() => false)) {
+      await fits(page, 'assemble'); await shotOnce(page, '7-assemble')
+      for (let round = 0; round < 2; round++) {
+        const slots = await page.getByTestId('assemble-slot').count()
+        for (let s = 0; s < slots; s++) {
+          const before = await page.locator('[data-testid="assemble-slot"] span').count()
+          await tryEach(page, 'assemble-tile', async () => (await page.locator('[data-testid="assemble-slot"] span').count()) > before)
+          await page.waitForTimeout(350)
+        }
+        await page.waitForTimeout(500)
+        if (round === 0) await shotOnce(page, '8-assemble-done')
+        await page.getByRole('button', { name: /следующее слово|дальше/ }).click()
+      }
+      continue
+    }
+    if (await page.getByTestId('cafe').isVisible().catch(() => false)) {
+      await fits(page, 'cafe')
+      await expect(page.getByTestId('cafe-howto')).toHaveText('Гость заказывает по-грузински. Прочитай заказ и подай нужное')
+      await expect(page.getByTestId('cafe-sign')).toHaveText('Бомбора')
+      await page.waitForTimeout(700); await shotOnce(page, '10-cafe-guided')
+      for (let guest = 0; guest < 3; guest++) {
+        const order = (await page.getByTestId('cafe-guest').getAttribute('data-order'))!
+        const id = PRODUCTS.find(p => p.geo === order)!.id
+        await page.getByTestId(`shelf-${id}`).click()
+        await expect(page.getByTestId('cafe-meaning')).toBeVisible()
+        if (guest === 1) { await page.waitForTimeout(400); await shotOnce(page, '11-cafe-served') }
+        await expect(page.getByTestId('cafe-meaning')).toHaveCount(0, { timeout: 3000 })
+        await expect(page.getByTestId('cafe-timer')).toBeVisible()
+        await fits(page, 'cafe shift')
+      }
+      await page.clock.runFor(46_000)
+      await expect(page.getByTestId('cafe-summary')).toBeVisible()
+      await fits(page, 'cafe summary'); await page.waitForTimeout(400); await shotOnce(page, '12-cafe-summary')
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
+    return
+  }
+}
 
-test('even lesson: «Собери слово» in the middle instead of «Превращение»; no cafe tile on the module map', async ({ page }) => {
-  test.setTimeout(60_000)
-  await setup(page, [1, 2, 3, 4, 5], 6)
-  await openModule(page)
-  await expect(page.getByTestId('cafe-tile')).toHaveCount(0)
-  await page.getByTestId('lesson-btn-6').click()
-  await page.getByRole('button', { name: /к практике/i }).click()
-  let sawAssemble = false
-  const qs = questions(6)
-  for (let i = 0; i < 7; i++) {
-    if (await page.getByText('Собери грузинское слово').isVisible().catch(() => false)) sawAssemble = true
-    expect(await page.getByText('Преврати слово в грузинское').isVisible().catch(() => false)).toBe(false)
-    await playScenes(page)
-    if (i === 6) break
-    const q = qs[i]
+/** Короткая проверка: последние 4 вопроса урока. */
+async function exam(page: Page, lesson: number) {
+  const qs = questions(lesson).slice(-4)
+  for (const q of qs) {
     await expect(page.getByText(q.question)).toBeVisible()
     await page.getByRole('button', { name: new RegExp(`^[a-z]\\s*${q.options[q.answerIndex].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).click()
     await page.getByRole('button', { name: 'проверить' }).click()
     await page.getByRole('button', { name: /дальше →|итог →/ }).click()
   }
-  expect(sawAssemble).toBe(true)
-  await expect(page.getByText(qs[6].question)).toBeVisible()
-})
+}
+
+for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
+  test.describe(`${size.width}×${size.height}`, () => {
+    test.use({ viewport: size })
+
+    test('early lesson 1: letters, catch, pairs, new words, morph, a 4-question check, words fly into the dictionary', async ({ page }) => {
+      test.setTimeout(90_000)
+      await setup(page, [], 1)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-1').click()
+      await page.getByRole('button', { name: /к практике/i }).click()
+      await playGames(page)
+      await exam(page, 1)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+      await page.waitForTimeout(4000)
+      await expect(page.getByTestId('finale-dict')).toContainText('Эти слова теперь в твоём словаре')
+      await expect(page.getByTestId('dict-count')).toHaveText('3')
+      await fits(page, 'finale')
+      await shotOnce(page, '9-finale')
+      await page.getByRole('button', { name: 'открыть словарь' }).click()
+    })
+
+    test('late lesson 10: catch, sound → letter, new words, assemble, the cafe with a guided guest and a timed shift, the check', async ({ page }) => {
+      test.setTimeout(90_000)
+      await page.clock.install()
+      await setup(page, [1, 2, 3, 4, 5, 6, 7, 8, 9], 10)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-10').click()
+      await page.getByRole('button', { name: /к практике/i }).click()
+      await playGames(page)
+      await exam(page, 10)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+      await expect(page.getByTestId('cafe-tile')).toHaveCount(0)
+    })
+  })
+}

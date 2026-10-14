@@ -3,9 +3,11 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { LESSON_LETTERS, LESSON_WORDS, SOUNDS } from './data'
 import {
-  assembleRounds, distractorsFor, hasOwnLetter, ladder, learnedLetters, lessonGamePlan, lessonLetters, letterChoices, mixed, mixedBridge, mixPieces,
-  morphPieces, morphWords, readable, soundOf, wordCount, wordIntroPlan, wordsLabel, wordsUpTo
+  assembleRounds, distractorsFor, hasOwnLetter, ladder, learnedLetters, lessonLetters, letterChoices,
+  morphPieces, morphWords, readable, soundOf, wordCount, wordIntroPlan, wordsLabel, wordsUpTo,
+  lessonSteps, catchRounds, soundRounds, pairsDeck, EXAM_SIZE
 } from './logic'
+import { cafeReady } from '../cafe/products'
 import { GEORGIAN_ALPHABET } from '../../components/AlphaIndex'
 import { seeded } from '../../verbs/testing/catalog'
 
@@ -38,34 +40,6 @@ describe('alphabet game data', () => {
 
   it('has no Latin letters anywhere a learner reads', () => {
     for (const [geo, ru] of LESSON_WORDS.flat()) expect(LATIN.test(geo + ru)).toBe(false)
-  })
-})
-
-describe('mixed words', () => {
-  it('turns only the learned Russian letters into Georgian', () => {
-    expect(mixed('мама', 1)).toBe('мაмა')
-    expect(mixed('мама', 3)).toBe('მამა')
-    expect(mixed('вода', 1)).toBe('воდა')
-    expect(mixed('банан', 6)).toBe('ბანან')
-  })
-
-  it('writes «дж» and «дз» as one Georgian letter once it is learned', () => {
-    expect(mixed('дзюдо', 9)).toBe('ძюდო')
-    expect(mixed('дзюдо', 8)).toBe('დზюდო'.replace('ზ', 'з'))
-    expect(mixed('джинсы', 11)).toBe('ჯინსы')
-    expect(mixPieces('джинсы', 11)[0]).toEqual({ ru: 'дж', geo: 'ჯ' })
-  })
-
-  it('shows a Russian word in Georgian letters only as a bridge — never wholly Georgian', () => {
-    expect(mixedBridge('вода', 1)).toBe('воდა')
-    expect(mixedBridge('банан', 6)).toBeNull()
-    expect(mixedBridge('сахар', 4)).toBeNull()
-  })
-
-  it('keeps the short letter for «к», «т», «п» as in the lessons (კინო, მეტრო, პასპორტ)', () => {
-    expect(mixed('кино', 7)).toBe('კინო')
-    expect(mixed('метро', 8)).toBe('მეტრო')
-    expect(mixed('кино', 6)).toBe('кინო')
   })
 })
 
@@ -138,7 +112,7 @@ describe('sounds and labels', () => {
       // Вопросы — настоящие из уроков.
       const file = `${(globalThis as any).process.cwd()}/../Lessons/GeorgianAlphabetProgressive/questions${lesson === 1 ? '' : lesson}.json`
       const lemmas: string[] = JSON.parse(readFileSync(file, 'utf8')).questions.slice(0, 10).map((q: any) => q.lemma)
-      const plan = lessonGamePlan(lesson, lemmas.length)!
+      const plan = { midAfter: 6 }
       const words = wordIntroPlan(lesson, lemmas, plan.midAfter)!
       const own = LESSON_WORDS[lesson - 1].map(([g]) => g)
       // Сцена — не позже игры в середине и до первого вопроса о слове урока.
@@ -160,11 +134,40 @@ describe('sounds and labels', () => {
     expect(ladder(1).map(w => w.geo)).toEqual(['და', 'არა', 'რა'])
   })
 
-  it('plans one game after the sixth question — Morph and Assemble by turns — and the cafe at the end', () => {
-    expect(lessonGamePlan(1, 10)).toEqual({ midAfter: 6, mid: 'morph', end: 'cafe' })
-    expect(lessonGamePlan(2, 10)).toEqual({ midAfter: 6, mid: 'assemble', end: 'cafe' })
-    for (const l of LESSONS) expect(lessonGamePlan(l, 10)?.end).toBe('cafe')
-    expect(lessonGamePlan(2, 4)?.midAfter).toBe(2)
-    expect(lessonGamePlan(12, 10)).toBeNull()
+})
+
+describe('lesson as a chain of games', () => {
+  const steps = (l: number) => lessonSteps(l, cafeReady).map(s => s.kind === 'pairs' ? `pairs:${s.deck}` : s.kind)
+
+  it('opens mechanics one by one and keeps the cafe for lessons with real food words', () => {
+    expect(steps(1)).toEqual(['intro', 'intro', 'catch', 'intro', 'pairs:letters', 'words', 'morph'])
+    expect(steps(2)).toEqual(['intro', 'intro', 'catch', 'intro', 'sound', 'words', 'assemble'])
+    expect(steps(3)).toEqual(['intro', 'intro', 'catch', 'intro', 'sound', 'words', 'morph', 'pairs:words'])
+    expect(steps(5)).toEqual(['intro', 'intro', 'catch', 'intro', 'sound', 'words', 'morph', 'cafe'])
+    for (const l of LESSONS) {
+      const st = lessonSteps(l, cafeReady)
+      // Каждая буква урока — знакомство раньше любой игры с ней.
+      expect(st.filter(s => s.kind === 'intro').map(s => (s as any).letter)).toEqual(lessonLetters(l))
+      expect(st.findIndex(s => s.kind === 'words')).toBeGreaterThan(st.map(s => s.kind).lastIndexOf('intro'))
+    }
+    expect(EXAM_SIZE).toBe(4)
+  })
+
+  it.each(LESSONS)('lesson %i: «Поймай букву», «Звук → буква» and «Пары» use only opened letters and real words', lesson => {
+    const known = learnedLetters(lesson)
+    for (const r of catchRounds(lessonLetters(lesson).slice(0, 2), lesson, seeded(lesson))) {
+      expect(r.bubbles.filter(b => b === r.target)).toHaveLength(3)
+      const shown = [...(lesson > 1 ? learnedLetters(lesson - 1) : []), ...lessonLetters(lesson).slice(0, 2)]
+      for (const b of r.bubbles) expect(shown).toContain(b)
+      for (const b of r.bubbles) if (b !== r.target) expect(distractorsFor(r.target, lesson).length === 0 || distractorsFor(r.target, lesson).includes(b)).toBe(true)
+    }
+    for (const r of soundRounds(lesson, seeded(lesson))) {
+      expect(r.choices).toContain(r.letter)
+      expect(r.choices).toHaveLength(3)
+      for (const c of r.choices) expect(known).toContain(c)
+    }
+    const words = pairsDeck('words', lesson, seeded(lesson)).filter(c => c.kind === 'geo').map(c => c.face)
+    for (const w of words) { expect(readable(w, lesson)).toBe(true); expect(wordsUpTo(lesson).map(x => x.geo)).toContain(w) }
+    expect(pairsDeck('letters', lesson, seeded(1))).toHaveLength(6)
   })
 })

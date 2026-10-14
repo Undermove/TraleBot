@@ -46,7 +46,9 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
 
   useLayoutEffect(() => {
     const w = box.current?.parentElement?.clientWidth ?? 0
-    if (w > 0) setSize(Math.min(350, Math.max(240, w)))
+    // Сцена квадратная и помещается в окно целиком: по ширине и по высоте (под ней подпись и кнопки).
+    const h = (typeof window !== 'undefined' ? window.innerHeight : 800) - 330
+    if (w > 0) setSize(Math.max(200, Math.min(350, w, h)))
   }, [])
 
   if (!intro) { setTimeout(onDone, 0); return null }

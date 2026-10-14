@@ -50,10 +50,11 @@ export default function GameFrame({ title, eyebrow, fraction, onExit, children }
 }) {
   const pct = Math.round(Math.max(0, Math.min(1, fraction)) * 100)
   return (
-    <div className="flex flex-col bg-cream" style={{ minHeight: '100dvh' }} data-testid="alphabet-game">
-      <div className="sticky top-0 z-30 bg-cream/95 backdrop-blur-sm" style={{ paddingTop: 'var(--safe-t)' }}>
+    // Игра целиком в окне Telegram: без прокрутки страницы, на низких экранах всё сжимается.
+    <div className="ab-screen flex flex-col bg-cream" data-testid="alphabet-game">
+      <div className="shrink-0 z-30 bg-cream/95 backdrop-blur-sm" style={{ paddingTop: 'var(--safe-t)' }}>
         <div className="mn-kilim" />
-        <div className="px-5 py-3 flex items-center gap-3">
+        <div className="px-5 py-3 ab-short:py-1.5 flex items-center gap-3">
           <button
             onClick={onExit}
             aria-label="Назад"
@@ -66,11 +67,11 @@ export default function GameFrame({ title, eyebrow, fraction, onExit, children }
           <SoundToggle />
         </div>
       </div>
-      <div className="px-5 pt-2 text-center">
+      <div className="shrink-0 px-5 pt-2 ab-short:pt-0 text-center">
         <div className="mn-eyebrow text-navy">{eyebrow}</div>
-        <h2 className="mt-1 font-sans text-[22px] font-extrabold text-jewelInk leading-tight">{title}</h2>
+        <h2 className="mt-1 font-sans text-[22px] ab-short:text-[19px] font-extrabold text-jewelInk leading-tight">{title}</h2>
       </div>
-      <div className="flex-1 flex flex-col px-5 pt-4" style={{ paddingBottom: 'calc(var(--safe-b) + 24px)' }}>
+      <div className="flex-1 min-h-0 flex flex-col px-5 pt-4 ab-short:pt-2 overflow-hidden" style={{ paddingBottom: 'calc(var(--safe-b) + 16px)' }}>
         {children}
       </div>
     </div>

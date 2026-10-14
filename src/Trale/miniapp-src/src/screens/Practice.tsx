@@ -10,7 +10,7 @@ import { progressFromDto } from '../progress'
 import { api } from '../api'
 import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
 import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
-import AlphabetInterlude, { useAlphabetLesson } from '../alphabet/AlphabetInterlude'
+import AlphabetInterlude, { ALPHABET_MODULE, alphabetExam, useAlphabetLesson } from '../alphabet/AlphabetInterlude'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeQuestion(d: any): QuizQuestion {
@@ -64,7 +64,7 @@ export default function Practice({
   const [shakeInput, setShakeInput] = useState(false)
   // Per-answer server credit: XP accumulated mid-lesson, plus the in-flight call
   // so lesson-complete on the final question never races it.
-  // Модуль «Алфавит»: знакомство с каждой новой буквой, игра в середине и в конце урока, праздник.
+  // Модуль «Алфавит»: урок — цепочка игр со знакомством с буквами и словами, короткая проверка, праздник.
   const alphabet = useAlphabetLesson(moduleId, lessonId, questions, index)
   const answerXpRef = React.useRef(0)
   const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
@@ -97,7 +97,8 @@ export default function Practice({
       setPhase('error')
       return
     }
-    const played = data.slice(0, 10).map(normalizeQuestion)
+    // Алфавит: урок — цепочка игр, а вопросы — короткая проверка в конце (последние вопросы урока).
+    const played = (moduleId === ALPHABET_MODULE ? alphabetExam(data) : data.slice(0, 10)).map(normalizeQuestion)
     setQuestions(played)
     setPhase('answering')
   }
@@ -174,7 +175,7 @@ export default function Practice({
       <AlphabetInterlude
         scene={alphabet.scene}
         lessonId={lessonId}
-        fraction={index / Math.max(1, questions.length)}
+        fraction={alphabet.progress(index, questions.length)}
         onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
         onDone={() => alphabet.sceneDone(navigate)}
         navigate={navigate}

@@ -1,69 +1,58 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import type { QuizQuestion, Screen } from '../types'
 import LetterIntro from './intro/LetterIntro'
 import Morph from './games/Morph'
 import Assemble from './games/Assemble'
+import Catch from './games/Catch'
+import SoundLetter from './games/SoundLetter'
+import Pairs from './games/Pairs'
 import Finale from './games/Finale'
 import Cafe from './cafe/Cafe'
+import { cafeReady } from './cafe/products'
 import WordIntro from './words/WordIntro'
-import { lessonGamePlan, lessonLetters, wordCount, wordIntroPlan, type MidGame, type Word } from './games/logic'
+import { EXAM_SIZE, lessonSteps, wordCount, wordIntroPlan, type LessonStep } from './games/logic'
 
-// Сцены урока алфавита между вопросами. Вопросы, их число и подсчёт верных ответов не меняются:
-// сцены не отвечают на вопросы и не влияют на то, засчитан ли урок (это по-прежнему completeLesson).
+// Урок алфавита — цепочка коротких игр (logic.lessonSteps): знакомство с буквами, «Поймай букву», «Пары»,
+// «Звук → буква», новые слова, «Превращение» / «Собери слово», «Кафе». Потом короткая проверка —
+// EXAM_SIZE последних вопросов урока с сервера: прогресс считается как раньше (completeLesson с correct/total
+// этих вопросов, урок засчитан только без ошибок). Игры на вопросы не отвечают и на зачёт не влияют.
 
 export const ALPHABET_MODULE = 'alphabet-progressive'
+
+/** Какие вопросы урока алфавита играем: последние EXAM_SIZE — короткая проверка в конце. */
+export const alphabetExam = <T,>(questions: T[]): T[] => questions.slice(-EXAM_SIZE)
 
 type Result = Extract<Screen, { kind: 'result' }>
 
 export type AlphabetScene =
-  | { kind: 'intro'; letter: string; index: number; count: number }
-  | { kind: 'words'; featured: Word[]; rest: Word[]; startCount: number }
-  | { kind: 'mid'; game: MidGame }
-  | { kind: 'end'; result: Result; perfect: boolean }
+  | { kind: 'step'; step: LessonStep; lemmas: string[] }
   | { kind: 'finale'; result: Result }
 
-type Pending = Exclude<AlphabetScene, { kind: 'intro' } | { kind: 'words' }>
-
-export function useAlphabetLesson(moduleId: string, lessonId: number, questions: QuizQuestion[], index: number) {
+export function useAlphabetLesson(moduleId: string, lessonId: number, questions: QuizQuestion[], _index: number) {
   const on = moduleId === ALPHABET_MODULE
-  const [introduced, setIntroduced] = useState<Set<string>>(new Set())
-  const [pending, setPending] = useState<Pending | null>(null)
-  const letters = on ? lessonLetters(lessonId) : []
-  const plan = on ? lessonGamePlan(lessonId, questions.length) : null
-  const [wordsShown, setWordsShown] = useState(false)
-  const words = on && questions.length ? wordIntroPlan(lessonId, questions.map(q => q.lemma ?? ''), plan?.midAfter ?? null) : null
+  const steps = useMemo(() => (on ? lessonSteps(lessonId, cafeReady) : []), [on, lessonId])
+  const [at, setAt] = useState(0)
+  const [finale, setFinale] = useState<Result | null>(null)
+  const lemmas = questions.map(q => q.lemma ?? '')
 
-  // Новая буква — перед первым вопросом о ней.
-  const lemma = questions[index]?.lemma ?? ''
-  const intro: AlphabetScene | null = on && !pending && letters.includes(lemma) && !introduced.has(lemma)
-    ? { kind: 'intro', letter: lemma, index: letters.indexOf(lemma), count: letters.length }
-    : null
-
-  // Новые слова урока — событием, когда букв на них уже хватает: до первого вопроса о слове и до игры.
-  const wordScene: AlphabetScene | null = words && !wordsShown && index >= words.before && (!pending || pending.kind === 'mid')
-    ? { kind: 'words', featured: words.featured, rest: words.rest, startCount: lessonId > 1 ? wordCount(lessonId - 1) : 0 }
-    : null
-  const current = (wordScene ?? pending ?? intro) as AlphabetScene | null
+  const scene: AlphabetScene | null = on && questions.length && at < steps.length
+    ? { kind: 'step', step: steps[at], lemmas }
+    : finale ? { kind: 'finale', result: finale } : null
 
   return {
-    scene: current,
-    /** Ответили на n-й вопрос (1-based) и идём к следующему. */
-    afterQuestion(n: number) {
-      if (plan && n === plan.midAfter) setPending({ kind: 'mid', game: plan.mid })
-    },
-    /** Урок закончен (прогресс уже отправлен): в алфавите — «Кафе Бомборы» и праздник, иначе сразу итог. */
+    scene,
+    /** Доля урока для полоски сверху: игры — первые 80%, проверка — остальное. */
+    progress: (index: number, total: number) => (on ? Math.min(at, steps.length) / Math.max(1, steps.length) * 0.8 + (at >= steps.length ? (index / Math.max(1, total)) * 0.2 : 0) : index / Math.max(1, total)),
+    afterQuestion(_n: number) { /* игры — до проверки */ },
+    /** Урок закончен (прогресс уже отправлен): засчитан — праздник, иначе сразу итог. */
     finish(result: Result, perfect: boolean, navigate: (s: Screen) => void) {
-      if (plan) setPending({ kind: 'end', result, perfect })
+      if (on && perfect) setFinale(result)
       else navigate(result)
     },
     sceneDone(navigate: (s: Screen) => void) {
-      const s = current
-      if (!s) return
-      if (s.kind === 'words') { setWordsShown(true); return }
-      if (s.kind === 'intro') { setIntroduced(new Set(introduced).add(s.letter)); return }
-      if (s.kind === 'mid') { setPending(null); return }
-      if (s.kind === 'end') { if (s.perfect) setPending({ kind: 'finale', result: s.result }); else navigate(s.result); return }
-      navigate(s.result)
+      if (!scene) return
+      if (scene.kind === 'step') { setAt(a => a + 1); return }
+      navigate(scene.result)
     }
   }
 }
@@ -76,19 +65,28 @@ export default function AlphabetInterlude({ scene, lessonId, fraction, onExit, o
   onDone: () => void
   navigate: (s: Screen) => void
 }) {
-  switch (scene.kind) {
-    case 'words':
-      return <WordIntro key="words" featured={scene.featured} rest={scene.rest} startCount={scene.startCount} fraction={fraction} onExit={onExit} onDone={onDone} />
+  if (scene.kind === 'finale')
+    return <Finale lesson={lessonId} onNext={onDone} onVocabulary={() => navigate({ kind: 'vocabulary-list' })} />
+  const step = scene.step
+  const common = { lesson: lessonId, fraction, onExit, onDone }
+  switch (step.kind) {
     case 'intro':
-      return <LetterIntro key={scene.letter} letter={scene.letter} index={scene.index} count={scene.count} fraction={fraction} onExit={onExit} onDone={onDone} />
-    case 'mid':
-      return scene.game === 'morph'
-        ? <Morph lesson={lessonId} fraction={fraction} onExit={onExit} onDone={onDone} />
-        : <Assemble lesson={lessonId} fraction={fraction} onExit={onExit} onDone={onDone} />
-    case 'end':
-      // Прогресс уже сохранён: выйти из кафе — значит сразу к итогу урока.
-      return <Cafe lesson={lessonId} fraction={1} onExit={() => navigate(scene.result)} onDone={onDone} />
-    case 'finale':
-      return <Finale lesson={lessonId} onNext={onDone} onVocabulary={() => navigate({ kind: 'vocabulary-list' })} />
+      return <LetterIntro key={step.letter} letter={step.letter} index={step.index} count={3} fraction={fraction} onExit={onExit} onDone={onDone} />
+    case 'catch':
+      return <Catch key="catch" letters={step.letters} {...common} />
+    case 'sound':
+      return <SoundLetter key="sound" {...common} />
+    case 'pairs':
+      return <Pairs key={`pairs-${step.deck}`} deck={step.deck} {...common} />
+    case 'words': {
+      const plan = wordIntroPlan(lessonId, scene.lemmas, null)
+      return <WordIntro key="words" featured={plan?.featured ?? []} rest={plan?.rest ?? []} startCount={lessonId > 1 ? wordCount(lessonId - 1) : 0} fraction={fraction} onExit={onExit} onDone={onDone} />
+    }
+    case 'morph':
+      return <Morph key="morph" {...common} />
+    case 'assemble':
+      return <Assemble key="assemble" {...common} />
+    case 'cafe':
+      return <Cafe key="cafe" {...common} />
   }
 }

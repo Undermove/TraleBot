@@ -181,23 +181,3 @@ export const VERIFIED_WORDS: readonly { geo: string; ru: string; source: string 
   { geo: 'მანდარინი', ru: 'мандарин', source: 'https://en.wiktionary.org/wiki/მანდარინი' },
   { geo: 'ხაჭაპური', ru: 'хачапури', source: 'https://en.wiktionary.org/wiki/ხაჭაპური' }
 ]
-
-/**
- * Какой грузинской буквой пишется русская буква в смешанных словах («мაмა», «ბანან») и с какого урока.
- * Пары с выдохом и без: в знакомых словах стоит короткая буква (კინო, მეტრო, პასპორტ), поэтому
- * «к», «т», «п» становятся грузинскими только после კ, ტ, პ. Две буквы подряд «дж», «дз» — одна грузинская.
- */
-export const RU_TO_GEO: readonly { ru: string; geo: string; lesson: number }[] = [
-  { ru: 'дж', geo: 'ჯ', lesson: 11 }, { ru: 'дз', geo: 'ძ', lesson: 9 },
-  { ru: 'а', geo: 'ა', lesson: 1 }, { ru: 'д', geo: 'დ', lesson: 1 }, { ru: 'р', geo: 'რ', lesson: 1 },
-  { ru: 'е', geo: 'ე', lesson: 2 }, { ru: 'э', geo: 'ე', lesson: 2 }, { ru: 'и', geo: 'ი', lesson: 2 }, { ru: 'с', geo: 'ს', lesson: 2 },
-  { ru: 'в', geo: 'ვ', lesson: 3 }, { ru: 'м', geo: 'მ', lesson: 3 }, { ru: 'н', geo: 'ნ', lesson: 3 },
-  { ru: 'л', geo: 'ლ', lesson: 4 }, { ru: 'ч', geo: 'ჩ', lesson: 4 }, { ru: 'х', geo: 'ხ', lesson: 4 },
-  { ru: 'о', geo: 'ო', lesson: 5 }, { ru: 'ш', geo: 'შ', lesson: 5 },
-  { ru: 'б', geo: 'ბ', lesson: 6 }, { ru: 'г', geo: 'გ', lesson: 6 },
-  { ru: 'к', geo: 'კ', lesson: 7 }, { ru: 'ц', geo: 'ც', lesson: 7 },
-  { ru: 'т', geo: 'ტ', lesson: 8 }, { ru: 'у', geo: 'უ', lesson: 8 }, { ru: 'ф', geo: 'ფ', lesson: 8 },
-  { ru: 'п', geo: 'პ', lesson: 9 },
-  { ru: 'з', geo: 'ზ', lesson: 10 },
-  { ru: 'ж', geo: 'ჟ', lesson: 11 }
-]

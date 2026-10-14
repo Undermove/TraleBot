@@ -3,6 +3,8 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Низкий экран (iPhone SE и Telegram с клавиатурой/шапкой): игры алфавита сжимаются.
+      screens: { 'ab-short': { raw: '(max-height: 720px)' } },
       colors: {
         // ══════ Minanka palette (active — Georgian enamel jewels) ══════
         cream: {
