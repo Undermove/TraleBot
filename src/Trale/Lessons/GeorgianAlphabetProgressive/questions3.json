@@ -1,226 +1,228 @@
 {
-  "lesson_id": "alpha-easy-2",
-  "title": "Семья и первые слова",
+  "lesson_id": "alpha-3",
+  "title": "Буквы ე, დ, ვ",
+  "ordered": true,
   "lexicon": [
-    "ბებია",
-    "ბაბუა",
-    "გოგო",
-    "ბინა",
-    "დიდი",
-    "ნავი",
-    "მაგიდა",
-    "დომინო",
+    "ე",
+    "დ",
+    "ვ",
     "დედა",
-    "გემი",
-    "ვინ"
+    "მე",
+    "ენა",
+    "ნავი",
+    "დიდი",
+    "ბებია"
   ],
   "questions": [
     {
       "id": "ab3-q01",
-      "lemma": "ბებია",
-      "question": "Прочитай: «ბებია». Что это?",
+      "lemma": "ე",
+      "question": "Новая буква ე — звук «э». Как читается «მენю»?",
       "options": [
-        "бабушка",
-        "дедушка",
-        "мама"
+        "меню",
+        "маню",
+        "миню"
       ],
       "answer_index": 0,
-      "explanation": "«ბებია» — «бэбиа», бабушка.",
+      "explanation": "ე — «э»: «меню».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q02",
-      "lemma": "ბაბუა",
-      "question": "Прочитай: «ბაბუა». Что это?",
+      "lemma": "ე",
+      "question": "Как читается «ბენзინ»?",
       "options": [
-        "бабушка",
-        "дедушка",
-        "папа"
+        "банзин",
+        "бензин",
+        "бонзин"
       ],
       "answer_index": 1,
-      "explanation": "«ბაბუა» — «бабуа», дедушка. Похоже на «бабушку», но это дедушка.",
+      "explanation": "ე — «э»: «бензин».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q03",
-      "lemma": "გოგო",
-      "question": "Прочитай: «გოგო». Что это?",
+      "lemma": "დ",
+      "question": "Новая буква დ — звук «д». Как читается «დომინო»?",
       "options": [
-        "мама",
-        "лодка",
-        "девочка"
+        "томино",
+        "бомино",
+        "домино"
       ],
       "answer_index": 2,
-      "explanation": "«გოგო» — «гого», девочка.",
+      "explanation": "დ — «д»: «домино». Всё слово уже грузинскими буквами.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q04",
-      "lemma": "ბინა",
-      "question": "Прочитай: «ბინა». Что это?",
+      "lemma": "დ",
+      "question": "Как читается «დინამო»?",
       "options": [
-        "квартира",
-        "стол",
-        "лодка"
+        "динамо",
+        "бинамо",
+        "минамо"
       ],
       "answer_index": 0,
-      "explanation": "«ბინა» — «бина», квартира.",
+      "explanation": "დ — «д»: «динамо».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q05",
-      "lemma": "დიდი",
-      "question": "Прочитай: «დიდი». Что это?",
+      "lemma": "ვ",
+      "question": "Новая буква ვ — звук «в». Как читается «ვოდა»?",
       "options": [
-        "новый",
-        "большой",
-        "маленький"
+        "бода",
+        "вода",
+        "дода"
       ],
       "answer_index": 1,
-      "explanation": "«დიდი» — «диди», большой. «დიდი ბინა» — большая квартира.",
+      "explanation": "Русское «вода» грузинскими буквами: ვ — «в».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q06",
-      "lemma": "ნავი",
-      "question": "Прочитай: «ნავი». Что это?",
+      "lemma": "ვ",
+      "question": "Как читается «ვანიль»?",
       "options": [
-        "стол",
-        "газ",
-        "лодка"
+        "баниль",
+        "маниль",
+        "ваниль"
       ],
       "answer_index": 2,
-      "explanation": "«ნავი» — «нави», лодка.",
+      "explanation": "ვ — «в»: «ваниль».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q07",
-      "lemma": "მაგიდა",
-      "question": "Как читается «მაგიდა»?",
+      "lemma": "დედა",
+      "question": "Прочитай: «დედა». Что это значит?",
       "options": [
-        "магида",
-        "мадига",
-        "магина"
+        "мама",
+        "папа",
+        "бабушка"
       ],
       "answer_index": 0,
-      "explanation": "«მაგიდა» — «магида», стол.",
+      "explanation": "«დედა» — «дэда», мама. А папа — «მამა». Вместе: «დედა და მამა».",
       "tags": [
         "word-reading",
-        "transcription"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q08",
-      "lemma": "დომინო",
-      "question": "Прочитай: «დომინო». Что это?",
+      "lemma": "მე",
+      "question": "Прочитай: «მე». Что это значит?",
       "options": [
-        "видео",
-        "домино",
-        "манго"
+        "ты",
+        "я",
+        "он"
       ],
       "answer_index": 1,
-      "explanation": "«დომინო» — «домино». Тут и переводить нечего.",
+      "explanation": "«მე» — «мэ», я.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q09",
-      "lemma": "დედა",
-      "question": "Где написано «мама»?",
+      "lemma": "ენა",
+      "question": "Прочитай: «ენა». Что это значит?",
       "options": [
-        "მამა",
-        "ბებია",
-        "დედა"
+        "вода",
+        "стекло",
+        "язык"
       ],
       "answer_index": 2,
-      "explanation": "Мама — «დედა» («дэда»). А «მამა» — это папа.",
+      "explanation": "«ენა» — «эна», язык.",
       "tags": [
-        "word-recognition"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q10",
-      "lemma": "გემი",
-      "question": "Прочитай: «გემი». Что это?",
+      "lemma": "ნავი",
+      "question": "Прочитай: «ნავი». Что это значит?",
       "options": [
-        "корабль",
         "лодка",
-        "стол"
+        "квартира",
+        "окно"
       ],
       "answer_index": 0,
-      "explanation": "«გემი» — «гэми», корабль. Лодка поменьше — «ნავი».",
+      "explanation": "«ნავი» — «нави», лодка.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q11",
-      "lemma": "ვინ",
-      "question": "Прочитай: «ვინ». Что это?",
+      "lemma": "დიდი",
+      "question": "Прочитай: «დიდი». Что это значит?",
       "options": [
-        "что",
-        "кто",
-        "где"
+        "маленький",
+        "большой",
+        "новый"
       ],
       "answer_index": 1,
-      "explanation": "«ვინ» — «вин», кто.",
+      "explanation": "«დიდი» — «диди», большой.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q12",
-      "lemma": "დიდი",
-      "question": "Послушай и выбери слово",
+      "lemma": "ბებია",
+      "question": "Прочитай: «ბებია». Что это значит?",
       "options": [
-        "დედა",
-        "დომინო",
-        "ბინა",
-        "დიდი"
+        "дедушка",
+        "мама",
+        "бабушка"
       ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «დიდი» — «диди», большой.",
+      "answer_index": 2,
+      "explanation": "«ბებია» — «бэбиа», бабушка.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/adjectives/didi.m4a",
-      "transcript": "დიდი"
+      "difficulty": 1
     }
   ]
 }

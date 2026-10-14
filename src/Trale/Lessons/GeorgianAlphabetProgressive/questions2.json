@@ -1,223 +1,207 @@
 {
-  "lesson_id": "alpha-easy-1",
-  "title": "Согласные как в русском: ბ, გ, დ, ვ, ზ",
+  "lesson_id": "alpha-2",
+  "title": "Буквы ო, ნ, ი",
+  "ordered": true,
   "lexicon": [
-    "ბ",
-    "დ",
-    "ვ",
+    "ო",
+    "ნ",
+    "ი",
     "ბანანი",
-    "მანგო",
-    "ვიდეო",
-    "ვიზა",
-    "ბენზინი",
-    "დედა",
-    "მზე",
-    "გაზი"
+    "ბინა",
+    "მინა",
+    "ია"
   ],
   "questions": [
     {
       "id": "ab2-q01",
-      "lemma": "ბ",
-      "question": "Как читается буква «ბ»?",
+      "lemma": "ო",
+      "question": "Новая буква ო — звук «о». Как читается «მოлოкო»?",
       "options": [
-        "б",
-        "д",
-        "г"
+        "молоко",
+        "мулуку",
+        "милики"
       ],
       "answer_index": 0,
-      "explanation": "«ბ» — это «б», как в слове «банан»: «ბანანი».",
+      "explanation": "ო — «о»: «молоко».",
       "tags": [
-        "letter-to-sound"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q02",
-      "lemma": "დ",
-      "question": "Какая буква читается «д»?",
+      "lemma": "ო",
+      "question": "Как читается «ბოрщ»?",
       "options": [
-        "ბ",
-        "დ",
-        "გ"
+        "бурщ",
+        "борщ",
+        "бырщ"
       ],
       "answer_index": 1,
-      "explanation": "«დ» — это «д». С неё начинается «დედა» — мама.",
+      "explanation": "ო — «о»: «борщ».",
       "tags": [
-        "sound-to-letter"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q03",
-      "lemma": "ვ",
-      "question": "Как читается буква «ვ»?",
+      "lemma": "ნ",
+      "question": "Новая буква ნ — звук «н». Как читается «лиმონ»?",
       "options": [
-        "з",
-        "б",
-        "в"
+        "лимом",
+        "лимоб",
+        "лимон"
       ],
       "answer_index": 2,
-      "explanation": "«ვ» — это «в»: «ვიზა» — виза.",
+      "explanation": "ნ — «н»: «лимон».",
       "tags": [
-        "letter-to-sound"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q04",
-      "lemma": "ბანანი",
-      "question": "Прочитай: «ბანანი». Что это?",
+      "lemma": "ნ",
+      "question": "Как читается «ბანან»?",
       "options": [
         "банан",
-        "манго",
-        "бензин"
+        "бамам",
+        "бабаб"
       ],
       "answer_index": 0,
-      "explanation": "«ბანანი» — «банани», банан. «ი» на конце — просто окончание.",
+      "explanation": "Русское «банан», записанное грузинскими буквами.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q05",
-      "lemma": "მანგო",
-      "question": "Прочитай: «მანგო». Что это?",
+      "lemma": "ი",
+      "question": "Новая буква ი — звук «и». Как читается «кინო»?",
       "options": [
-        "банан",
-        "манго",
-        "газ"
+        "кано",
+        "кино",
+        "куно"
       ],
       "answer_index": 1,
-      "explanation": "«მანგო» — «манго». Читается ровно как по-русски.",
+      "explanation": "ი — «и»: «кино».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q06",
-      "lemma": "ვიდეო",
-      "question": "Прочитай: «ვიდეო». Что это?",
+      "lemma": "ი",
+      "question": "Как читается «ნინო»?",
       "options": [
-        "виза",
-        "домино",
-        "видео"
+        "Нона",
+        "Нана",
+        "Нино"
       ],
       "answer_index": 2,
-      "explanation": "«ვიდეო» — «видэо», видео.",
+      "explanation": "«ნინო» — Нино, грузинское женское имя.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q07",
-      "lemma": "ვიზა",
-      "question": "Как читается «ვიზა»?",
+      "lemma": "ი",
+      "question": "Как читается «მანдაрინ»?",
       "options": [
-        "виза",
-        "зива",
-        "вида"
+        "мандарин",
+        "мандарон",
+        "мандарун"
       ],
       "answer_index": 0,
-      "explanation": "«ვიზა» — «виза». Как по-русски.",
+      "explanation": "ი — «и»: «мандарин».",
       "tags": [
-        "word-reading",
-        "transcription"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q08",
-      "lemma": "ბენზინი",
-      "question": "Прочитай: «ბენზინი». Что это?",
+      "lemma": "ბანანი",
+      "question": "Прочитай: «ბანანი». Что это значит?",
       "options": [
+        "квартира",
         "банан",
-        "бензин",
-        "газ"
+        "стекло"
       ],
       "answer_index": 1,
-      "explanation": "«ბენზინი» — «бэнзини», бензин.",
+      "explanation": "По-грузински банан — «ბანანი», «банани»: на конце «и».",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q09",
-      "lemma": "დედა",
-      "question": "Прочитай: «დედა». Что это?",
+      "lemma": "ბინა",
+      "question": "Прочитай: «ბინა». Что это значит?",
       "options": [
-        "папа",
-        "дедушка",
-        "мама"
+        "банан",
+        "стекло",
+        "квартира"
       ],
       "answer_index": 2,
-      "explanation": "«დედა» — «дэда», мама. А папа — «მამა». Запомни парой: «დედა და მამა» — мама и папа.",
+      "explanation": "«ბინა» — «бина», квартира.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q10",
-      "lemma": "მზე",
-      "question": "Прочитай: «მზე». Что это?",
+      "lemma": "მინა",
+      "question": "Прочитай: «მინა». Что это значит?",
       "options": [
-        "солнце",
-        "газ",
-        "видео"
+        "стекло",
+        "квартира",
+        "мама"
       ],
       "answer_index": 0,
-      "explanation": "«მზე» — «мзэ», солнце.",
+      "explanation": "«მინა» — «мина», стекло.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab2-q11",
-      "lemma": "გაზი",
-      "question": "Где написано «газ»?",
+      "lemma": "ია",
+      "question": "Прочитай: «ია». Что это значит?",
       "options": [
-        "ვიზა",
-        "გაზი",
-        "მზე"
+        "нет",
+        "фиалка",
+        "да"
       ],
       "answer_index": 1,
-      "explanation": "«Газ» — «გაზი», читается «гази».",
+      "explanation": "«ია» — «иа», фиалка. Слово из двух букв.",
       "tags": [
-        "word-recognition"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
-    },
-    {
-      "id": "ab2-q12",
-      "lemma": "დედა",
-      "question": "Послушай и выбери слово",
-      "options": [
-        "მამა",
-        "ბინა",
-        "მზე",
-        "დედა"
-      ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «დედა» — «дэда», мама.",
-      "tags": [
-        "audio",
-        "word"
-      ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/vocabulary/deda.m4a",
-      "transcript": "დედა"
     }
   ]
 }

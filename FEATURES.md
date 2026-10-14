@@ -164,12 +164,12 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
 
 ### Static audio assets (`public/audio/`)
-- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound. Not used by `alphabet-progressive` any more: isolated letter names are too unclear to tell similar letters apart, the module plays whole words instead (clips from `vocabulary/`, `cafe/`, `taxi/`, `intro/`, `doctor/`, `adjectives/`).
+- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound. Not used by `alphabet-progressive` any more: isolated letter names are too unclear to tell similar letters apart, the module plays whole words instead (`vocabulary/tsigni`, `cafe/kava`).
 - `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
 - `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
 - `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
 - `present-tense/` — 20 Georgian present-tense verb TTS clips (ka-GE Piper voice), used by `audio-choice` lesson 6 in `present-tense`.
-- `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`; `mama`, `deda`, `kata`, `dzaghli` also by `audio-choice` questions in `alphabet-progressive`.
+- `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`; `tsigni` also by an `audio-choice` question in `alphabet-progressive` L10.
 - `verb-classes/` — 15 Georgian verb TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 7 in `verb-classes`.
 - `postpositions/` — 24 Georgian postposition/location TTS clips (ka-GE Natia voice, includes combined forms), used by `audio-choice` lesson 6 in `postpositions`.
 - `cafe/` — 15 Georgian cafe/restaurant vocabulary TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `cafe`.
@@ -399,7 +399,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Launch modules (owner-approved)
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11, 10–12 questions each. Reading from lesson 1: every word in lesson N is made only of letters from lessons 1..N (loanwords like მენიუ, ბანანი, მეტრო, ტაქსი plus simple Georgian words); similar letters are told apart by word pairs (ქარი / კარი), no phonetics terms, pronunciation in Cyrillic only; 1–2 audio-choice questions per lesson on whole words; L11 = signs and menus. Guarded by `AlphabetProgressiveReadabilityTests` | ✅ |
+| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 lessons × 3 new letters (ა ბ მ · ო ნ ი · ე დ ვ · რ ს ლ · ტ კ უ · ქ თ ფ · ზ გ პ · შ ხ ჩ · ც ჟ ჯ · წ ჭ ძ · ღ ყ ჰ), 10–12 questions each, served in authored order (`"ordered": true` in the lesson file — `GeorgianQuestionsLoader` keeps the order instead of shuffling). Each letter: a «Новая буква …» question that carries its one-line explanation, then Russian words with the learned letters already Georgian («ბაнაн», «მოлოкო»; tagged `mixed-script`); the last questions of a lesson are real Georgian words made only of learned letters, with translation. No phonetics terms, pronunciation in Cyrillic only; similar letters told apart by word pairs (ქარი / კარი, პური / ფური); audio-choice only in L10–L11, on whole words. Guarded by `AlphabetProgressiveReadabilityTests` | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 8 (L6 = audio-choice; L7 = SOS-phrases: Help/I don't understand/Slowly/Repeat/Doctor; L8 = navigation: Where is?/How much?/Ambulance/Police) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |

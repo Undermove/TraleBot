@@ -185,6 +185,11 @@ public class LessonJsonValidationTests
         foreach (var q in questions.EnumerateArray())
         {
             var id = q.TryGetProperty("id", out var idEl) ? idEl.GetString() : "?";
+            // The alphabet module deliberately writes Russian words with some letters already
+            // Georgian («ბაнაн»). Such questions are tagged "mixed-script" and checked by
+            // AlphabetProgressiveReadabilityTests instead.
+            if (q.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Array
+                && tags.EnumerateArray().Any(t => t.GetString() == "mixed-script")) continue;
             foreach (var fieldName in new[] { "question", "explanation" })
             {
                 if (!q.TryGetProperty(fieldName, out var el) || el.ValueKind != JsonValueKind.String) continue;

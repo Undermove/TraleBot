@@ -5,10 +5,14 @@ using Trale.MiniApp;
 
 namespace Infrastructure.UnitTests;
 
-// The alphabet module is about reading real words from the first lesson on.
-// These checks keep it that way:
-// - every Georgian word in lesson N (theory and questions) is made only of letters
+// The alphabet module teaches letters one by one: a new letter first shows up inside
+// Russian words («ბაнაн» — банан), and real Georgian words come once all their letters
+// are learned. These checks keep it that way:
+// - every Georgian letter in lesson N (theory and questions, mixed words included) was
 //   introduced in lessons 1..N, so the learner can always read what is on screen;
+// - questions are served in the authored order, and a question never uses a letter of its
+//   own lesson before the "new-letter" question that introduces it;
+// - a question that mixes Cyrillic and Georgian inside one word is tagged "mixed-script";
 // - no linguistics jargon and no Latin transliteration — pronunciation is given
 //   in Cyrillic and explained in plain words;
 // - lessons stay short (10–12 questions, a 2–3 minute session);
@@ -47,6 +51,45 @@ public class AlphabetProgressiveReadabilityTests
                 var unknown = word.Value.Where(c => !known.Contains(c)).Distinct().ToArray();
                 if (unknown.Length > 0)
                     failures.Add($"{where}: «{word.Value}» uses {string.Join(", ", unknown)} not learned by lesson {lessonId}");
+            }
+        }
+
+        failures.ShouldBeEmpty(string.Join("\n", failures));
+    }
+
+    [TestCaseSource(nameof(LessonIds))]
+    public void Questions_follow_the_order_letters_are_introduced(int lessonId)
+    {
+        var raw = LoadLessonRoot(lessonId);
+        raw.TryGetProperty("ordered", out var ordered).ShouldBeTrue($"lesson {lessonId} must set \"ordered\": true");
+        ordered.ValueKind.ShouldBe(JsonValueKind.True);
+
+        var known = KnownLetters(lessonId - 1);
+        var introduced = LoadQuestions(lessonId)
+            .Where(q => q.GetProperty("tags").EnumerateArray().Any(t => t.GetString() == "new-letter"))
+            .Select(q => q.GetProperty("lemma").GetString()!.Single())
+            .ToHashSet();
+        introduced.ShouldBe(KnownLetters(lessonId).Except(known).ToHashSet(), ignoreOrder: true,
+            $"lesson {lessonId}: every letter of its Letters(...) block gets exactly one \"new-letter\" question");
+        var failures = new List<string>();
+        foreach (var q in LoadQuestions(lessonId))
+        {
+            var id = q.GetProperty("id").GetString();
+            var tags = q.GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ToList();
+            if (tags.Contains("new-letter")) known.Add(q.GetProperty("lemma").GetString()!.Single());
+
+            foreach (var (_, text) in QuestionTexts(q, lessonId))
+            {
+                foreach (Match word in Regex.Matches(text, "[\u0400-\u04FF\u10D0-\u10FF]+"))
+                {
+                    var unknown = word.Value.Where(c => c is >= '\u10D0' and <= '\u10FF' && !known.Contains(c)).Distinct().ToArray();
+                    if (unknown.Length > 0)
+                        failures.Add($"question {id}: «{word.Value}» uses {string.Join(", ", unknown)} before it is introduced");
+
+                    var isMixed = word.Value.Any(c => c is >= '\u10D0' and <= '\u10FF') && word.Value.Any(c => c is >= '\u0400' and <= '\u04FF');
+                    if (isMixed && !tags.Contains("mixed-script"))
+                        failures.Add($"question {id}: «{word.Value}» mixes scripts but the question is not tagged mixed-script");
+                }
             }
         }
 
@@ -122,27 +165,30 @@ public class AlphabetProgressiveReadabilityTests
         }
     }
 
-    private static IEnumerable<(string Where, string Text)> QuestionTexts(int lessonId)
+    private static IEnumerable<(string Where, string Text)> QuestionTexts(int lessonId) =>
+        LoadQuestions(lessonId).SelectMany(q => QuestionTexts(q, lessonId));
+
+    private static IEnumerable<(string Where, string Text)> QuestionTexts(JsonElement q, int lessonId)
     {
-        foreach (var q in LoadQuestions(lessonId))
+        var where = $"lesson {lessonId} question {q.GetProperty("id").GetString()}";
+        foreach (var field in new[] { "lemma", "question", "explanation", "transcript" })
         {
-            var where = $"lesson {lessonId} question {q.GetProperty("id").GetString()}";
-            foreach (var field in new[] { "lemma", "question", "explanation", "transcript" })
-            {
-                if (q.TryGetProperty(field, out var v) && v.ValueKind == JsonValueKind.String)
-                    yield return (where, v.GetString()!);
-            }
-            foreach (var option in q.GetProperty("options").EnumerateArray())
-                yield return (where, option.GetString()!);
+            if (q.TryGetProperty(field, out var v) && v.ValueKind == JsonValueKind.String)
+                yield return (where, v.GetString()!);
         }
+        foreach (var option in q.GetProperty("options").EnumerateArray())
+            yield return (where, option.GetString()!);
     }
 
-    private static List<JsonElement> LoadQuestions(int lessonId)
+    private static List<JsonElement> LoadQuestions(int lessonId) =>
+        LoadLessonRoot(lessonId).GetProperty("questions").EnumerateArray().ToList();
+
+    private static JsonElement LoadLessonRoot(int lessonId)
     {
         var fileName = lessonId == 1 ? "questions.json" : $"questions{lessonId}.json";
         var path = Path.Combine(LessonsDirectory(), fileName);
         using var doc = JsonDocument.Parse(File.ReadAllText(path));
-        return doc.RootElement.GetProperty("questions").EnumerateArray().Select(q => q.Clone()).ToList();
+        return doc.RootElement.Clone();
     }
 
     private static string LessonsDirectory()

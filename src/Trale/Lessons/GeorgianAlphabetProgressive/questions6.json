@@ -1,228 +1,227 @@
 {
-  "lesson_id": "alpha-triples-1",
-  "title": "Буквы с выдохом: ფ, თ, ქ, პ, ჰ",
+  "lesson_id": "alpha-6",
+  "title": "Буквы с выдохом: ქ, თ, ფ",
+  "ordered": true,
   "lexicon": [
-    "ტაქსი",
-    "კაფე",
-    "ფოტო",
-    "თეატრი",
-    "პასპორტი",
+    "ქ",
     "ქარი",
-    "პური",
+    "თ",
+    "ფ",
+    "ქალი",
+    "ქალაქი",
     "ფული",
-    "ფური",
-    "ჰო"
+    "თავი",
+    "საქართველო"
   ],
   "questions": [
     {
       "id": "ab6-q01",
-      "lemma": "ტაქსი",
-      "question": "Прочитай: «ტაქსი». Что это?",
+      "lemma": "ქ",
+      "question": "Новая буква ქ — «к» с выдохом, будто задуваешь спичку. Как читается «ტაქსი»?",
       "options": [
         "такси",
-        "кафе",
-        "фото"
+        "тапси",
+        "тахси"
       ],
       "answer_index": 0,
-      "explanation": "«ტაქსი» — «такси». «ტ» — т коротко, «ქ» — к с выдохом.",
+      "explanation": "ქ — «к» с выдохом: «такси». Короткая «к» без выдоха — это კ.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab6-q02",
-      "lemma": "კაფე",
-      "question": "Прочитай: «კაფე». Что это?",
-      "options": [
-        "такси",
-        "кафе",
-        "театр"
-      ],
-      "answer_index": 1,
-      "explanation": "«კაფე» — «кафэ». «ფ» звучит как п с выдохом: звука «ф» в грузинском нет.",
-      "tags": [
-        "word-reading",
-        "meaning"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q03",
-      "lemma": "ფოტო",
-      "question": "Прочитай: «ფოტო». Что это?",
-      "options": [
-        "фильм",
-        "паспорт",
-        "фото"
-      ],
-      "answer_index": 2,
-      "explanation": "«ფოტო» читается «пото», с выдохом на первой букве. Это фото.",
-      "tags": [
-        "word-reading",
-        "meaning"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q04",
-      "lemma": "თეატრი",
-      "question": "Прочитай: «თეატრი». Что это?",
-      "options": [
-        "театр",
-        "метро",
-        "кафе"
-      ],
-      "answer_index": 0,
-      "explanation": "«თეატრი» — «тэатри», театр.",
-      "tags": [
-        "word-reading",
-        "meaning"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q05",
-      "lemma": "პასპორტი",
-      "question": "Как читается «პასპორტი»?",
-      "options": [
-        "баспорти",
-        "паспорти",
-        "паспорта"
-      ],
-      "answer_index": 1,
-      "explanation": "«პასპორტი» — «паспорти», паспорт. «პ» — п коротко, без воздуха.",
-      "tags": [
-        "word-reading",
-        "transcription"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q06",
       "lemma": "ქარი",
-      "question": "Где «ветер»: «ქარი» или «კარი»?",
+      "question": "ქარი — ветер, კარი — дверь. Где «ветер»?",
       "options": [
         "კარი",
         "ქარი"
       ],
       "answer_index": 1,
-      "explanation": "«ქარი» — ветер: «ქ» с выдохом, как порыв ветра. «კარი» — дверь: «კ» коротко, как стук.",
+      "explanation": "«ქარი» — ветер: ქ с выдохом, как порыв ветра. «კარი» — дверь: კ коротко, как стук.",
       "tags": [
         "word-recognition",
-        "pair"
+        "pair",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab6-q03",
+      "lemma": "თ",
+      "question": "Новая буква თ — «т» с выдохом. Как читается «თბილისი»?",
+      "options": [
+        "Пбилиси",
+        "Кбилиси",
+        "Тбилиси"
+      ],
+      "answer_index": 2,
+      "explanation": "თ — «т»: «Тбилиси». Это название уже целиком по-грузински.",
+      "tags": [
+        "new-letter",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab6-q04",
+      "lemma": "თ",
+      "question": "Как читается «ბათუმი»?",
+      "options": [
+        "Батуми",
+        "Бакуми",
+        "Бапуми"
+      ],
+      "answer_index": 0,
+      "explanation": "თ — «т»: «Батуми».",
+      "tags": [
+        "letter-in-word",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab6-q05",
+      "lemma": "თ",
+      "question": "Как читается «ქუთაისი»?",
+      "options": [
+        "Кукаиси",
+        "Кутаиси",
+        "Купаиси"
+      ],
+      "answer_index": 1,
+      "explanation": "ქ и თ с выдохом: «Кутаиси».",
+      "tags": [
+        "letter-in-word",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab6-q06",
+      "lemma": "ფ",
+      "question": "Новая буква ფ — «п» с выдохом, в знакомых словах на её месте «ф». Как читается «ფოტო»?",
+      "options": [
+        "кото",
+        "тото",
+        "фото"
+      ],
+      "answer_index": 2,
+      "explanation": "«ფოტო» — это фото. Грузины говорят «пото»: звука «ф» в грузинском нет.",
+      "tags": [
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab6-q07",
-      "lemma": "პური",
-      "question": "Прочитай: «პური». Что это?",
+      "lemma": "ფ",
+      "question": "Как читается «კაფე»?",
       "options": [
-        "хлеб",
-        "деньги",
-        "корова"
+        "кафе",
+        "каке",
+        "кате"
       ],
       "answer_index": 0,
-      "explanation": "«პური» — «пури», хлеб. С выдохом получится «ფური» — корова.",
+      "explanation": "ფ — «ф»: «кафе». По-грузински звучит как «капэ».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab6-q08",
-      "lemma": "ფული",
-      "question": "Прочитай: «ფული». Что это?",
+      "lemma": "ქალი",
+      "question": "Прочитай: «ქალი». Что это значит?",
       "options": [
-        "хлеб",
-        "деньги",
-        "ветер"
+        "город",
+        "женщина",
+        "рыба"
       ],
       "answer_index": 1,
-      "explanation": "«ფული» — «пули» с выдохом, деньги.",
+      "explanation": "«ქალი» — «кали», женщина.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab6-q09",
-      "lemma": "ფური",
-      "question": "Где написано «корова»?",
+      "lemma": "ქალაქი",
+      "question": "Прочитай: «ქალაქი». Что это значит?",
       "options": [
-        "პური",
-        "ფული",
-        "ფური"
+        "женщина",
+        "дверь",
+        "город"
       ],
       "answer_index": 2,
-      "explanation": "Корова — «ფური»: п с выдохом. Хлеб — «პური»: п коротко, без воздуха.",
+      "explanation": "«ქალაქი» — «калаки», город.",
       "tags": [
-        "word-recognition"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab6-q10",
-      "lemma": "ჰო",
-      "question": "Прочитай: «ჰო». Что это?",
+      "lemma": "ფული",
+      "question": "Прочитай: «ფული». Что это значит?",
       "options": [
-        "ага, да",
-        "нет",
-        "привет"
+        "деньги",
+        "хлеб",
+        "ветер"
       ],
       "answer_index": 0,
-      "explanation": "«ჰო» — «хо», разговорное «ага, да». Нейтральное «да» — «კი».",
+      "explanation": "«ფული» — «пули» с выдохом, деньги.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab6-q11",
-      "lemma": "ტაქსი",
-      "question": "Послушай и выбери слово",
+      "lemma": "თავი",
+      "question": "Прочитай: «თავი». Что это значит?",
       "options": [
-        "კაფე",
-        "ფოტო",
-        "ტაქსი",
-        "თეატრი"
+        "глаз",
+        "голова",
+        "дом"
       ],
-      "answer_index": 2,
-      "explanation": "Прозвучало «ტაქსი» — «такси».",
+      "answer_index": 1,
+      "explanation": "«თავი» — «тави», голова.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/taxi/taqsi.m4a",
-      "transcript": "ტაქსი"
+      "difficulty": 1
     },
     {
       "id": "ab6-q12",
-      "lemma": "პური",
-      "question": "Послушай и выбери слово",
+      "lemma": "საქართველო",
+      "question": "Прочитай: «საქართველო». Что это значит?",
       "options": [
-        "ფული",
-        "ქალი",
-        "თავი",
-        "პური"
+        "Тбилиси",
+        "город",
+        "Грузия"
       ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «პური» — «пури», хлеб.",
+      "answer_index": 2,
+      "explanation": "«საქართველო» — «сакартвэло». Так по-грузински называется Грузия.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/cafe/puri.m4a",
-      "transcript": "პური"
+      "difficulty": 1
     }
   ]
 }

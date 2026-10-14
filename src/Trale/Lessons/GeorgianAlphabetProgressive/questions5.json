@@ -1,230 +1,228 @@
 {
-  "lesson_id": "alpha-common-2",
-  "title": "Да, нет, два, три",
+  "lesson_id": "alpha-5",
+  "title": "Буквы ტ, კ, უ",
+  "ordered": true,
   "lexicon": [
-    "კი",
-    "არა",
-    "ორი",
-    "სამი",
-    "ლომი",
-    "მარილი",
-    "ტურისტი",
-    "მუსიკა",
-    "ტრამვაი",
+    "ტ",
+    "კ",
+    "უ",
+    "კატა",
     "კარი",
-    "კატა"
+    "კი",
+    "ბაბუა",
+    "მადლობა",
+    "ტურისტი"
   ],
   "questions": [
     {
       "id": "ab5-q01",
-      "lemma": "კი",
-      "question": "Прочитай: «კი». Что это?",
+      "lemma": "ტ",
+      "question": "Новая буква ტ — звук «т», коротко, без выдоха. Как читается «მეტრო»?",
       "options": [
-        "да",
-        "нет",
-        "хорошо"
+        "метро",
+        "мебро",
+        "медро"
       ],
       "answer_index": 0,
-      "explanation": "«კი» — «ки», да. Коротко и удобно.",
+      "explanation": "ტ — «т»: «метро».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q02",
-      "lemma": "არა",
-      "question": "Прочитай: «არა». Что это?",
+      "lemma": "ტ",
+      "question": "Как читается «ტორტ»?",
       "options": [
-        "да",
-        "нет",
-        "спасибо"
+        "дорд",
+        "торт",
+        "борб"
       ],
       "answer_index": 1,
-      "explanation": "«არა» — «ара», нет.",
+      "explanation": "Обе ტ — «т»: «торт».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q03",
-      "lemma": "ორი",
-      "question": "Прочитай: «ორი». Что это?",
+      "lemma": "კ",
+      "question": "Новая буква კ — звук «к», тоже коротко. Как читается «კაკაო»?",
       "options": [
-        "три",
-        "один",
-        "два"
+        "гагао",
+        "татао",
+        "какао"
       ],
       "answer_index": 2,
-      "explanation": "«ორი» — «ори», два.",
+      "explanation": "კ — «к»: «какао».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q04",
-      "lemma": "სამი",
-      "question": "Прочитай: «სამი». Что это?",
+      "lemma": "კ",
+      "question": "Как читается «ბანკ»?",
       "options": [
-        "три",
-        "два",
-        "семь"
+        "банк",
+        "бант",
+        "банд"
       ],
       "answer_index": 0,
-      "explanation": "«სამი» — «сами», три.",
+      "explanation": "В конце კ — «к»: «банк».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q05",
-      "lemma": "ლომი",
-      "question": "Прочитай: «ლომი». Что это?",
+      "lemma": "უ",
+      "question": "Новая буква უ — звук «у». Как читается «სუп»?",
       "options": [
-        "кошка",
-        "лев",
-        "гость"
+        "сап",
+        "суп",
+        "соп"
       ],
       "answer_index": 1,
-      "explanation": "«ლომი» — «ломи», лев.",
+      "explanation": "უ — «у»: «суп».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q06",
-      "lemma": "მარილი",
-      "question": "Прочитай: «მარილი». Что это?",
+      "lemma": "უ",
+      "question": "Как читается «ავტობუს»?",
       "options": [
-        "сахар",
-        "лимон",
-        "соль"
+        "автобас",
+        "автобис",
+        "автобус"
       ],
       "answer_index": 2,
-      "explanation": "«მარილი» — «марили», соль.",
+      "explanation": "უ — «у»: «автобус». По-грузински автобус — «ავტობუსი».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q07",
-      "lemma": "ტურისტი",
-      "question": "Прочитай: «ტურისტი». Что это?",
+      "lemma": "კატა",
+      "question": "Прочитай: «კატა». Что это значит?",
       "options": [
-        "турист",
-        "студент",
-        "гость"
+        "кошка",
+        "собака",
+        "лев"
       ],
       "answer_index": 0,
-      "explanation": "«ტურისტი» — «туристи», турист.",
+      "explanation": "«კატა» — «ката», кошка.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q08",
-      "lemma": "მუსიკა",
-      "question": "Прочитай: «მუსიკა». Что это?",
+      "lemma": "კარი",
+      "question": "Прочитай: «კარი». Что это значит?",
       "options": [
-        "кино",
-        "музыка",
-        "радио"
+        "окно",
+        "дверь",
+        "дом"
       ],
       "answer_index": 1,
-      "explanation": "«მუსიკა» — «мусика», музыка.",
+      "explanation": "«კარი» — «кари», дверь.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q09",
-      "lemma": "ტრამვაი",
-      "question": "Прочитай: «ტრამვაი». Что это?",
+      "lemma": "კი",
+      "question": "Прочитай: «კი». Что это значит?",
       "options": [
-        "автобус",
-        "метро",
-        "трамвай"
+        "нет",
+        "хорошо",
+        "да"
       ],
       "answer_index": 2,
-      "explanation": "«ტრამვაი» — «трамваи», трамвай.",
+      "explanation": "«კი» — «ки», да. А нет — «არა».",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q10",
-      "lemma": "კარი",
-      "question": "Где написано «дверь»?",
+      "lemma": "ბაბუა",
+      "question": "Прочитай: «ბაბუა». Что это значит?",
       "options": [
-        "კარი",
-        "კატა",
-        "კარგი"
+        "дедушка",
+        "бабушка",
+        "папа"
       ],
       "answer_index": 0,
-      "explanation": "Дверь — «კარი», читается «кари».",
+      "explanation": "«ბაბუა» — «бабуа», дедушка. А бабушка — «ბებია».",
       "tags": [
-        "word-recognition"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q11",
-      "lemma": "კატა",
-      "question": "Послушай и выбери слово",
+      "lemma": "მადლობა",
+      "question": "Прочитай: «მადლობა». Что это значит?",
       "options": [
-        "კარი",
-        "კინო",
-        "კატა",
-        "კარგი"
+        "привет",
+        "спасибо",
+        "пока"
       ],
-      "answer_index": 2,
-      "explanation": "Прозвучало «კატა» — «ката», кошка.",
+      "answer_index": 1,
+      "explanation": "«მადლობა» — «мадлоба», спасибо.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/vocabulary/kata.m4a",
-      "transcript": "კატა"
+      "difficulty": 1
     },
     {
       "id": "ab5-q12",
-      "lemma": "არა",
-      "question": "Послушай и выбери слово",
+      "lemma": "ტურისტი",
+      "question": "Прочитай: «ტურისტი». Что это значит?",
       "options": [
-        "ორი",
-        "კი",
-        "სამი",
-        "არა"
+        "студент",
+        "гость",
+        "турист"
       ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «არა» — «ара», нет.",
+      "answer_index": 2,
+      "explanation": "«ტურისტი» — «туристи», турист.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/intro/ara.m4a",
-      "transcript": "არა"
+      "difficulty": 1
     }
   ]
 }

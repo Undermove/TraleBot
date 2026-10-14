@@ -1,227 +1,228 @@
 {
-  "lesson_id": "alpha-full-1",
-  "title": "Ш, Ж, Дж и компания: შ, ჟ, ჯ, ძ, წ, ჭ",
+  "lesson_id": "alpha-8",
+  "title": "Буквы შ, ხ, ჩ",
+  "ordered": true,
   "lexicon": [
-    "შოკოლადი",
-    "ჟურნალი",
-    "ჯინსი",
-    "ჟირაფი",
-    "შამპუნი",
-    "გამარჯობა",
-    "ძმა",
-    "ბიჭი",
-    "წიგნი",
-    "ჭიქა",
-    "ბოდიში"
+    "შ",
+    "ხ",
+    "ჩ",
+    "ჩაი",
+    "ხე",
+    "სახლი",
+    "შავი",
+    "ბავშვი",
+    "ჩემი"
   ],
   "questions": [
     {
       "id": "ab8-q01",
-      "lemma": "შოკოლადი",
-      "question": "Прочитай: «შოკოლადი». Что это?",
+      "lemma": "შ",
+      "question": "Новая буква შ — звук «ш». Как читается «შოკოლად»?",
       "options": [
         "шоколад",
-        "шампунь",
-        "журнал"
+        "соколад",
+        "чоколад"
       ],
       "answer_index": 0,
-      "explanation": "«შოკოლადი» — «шоколади», шоколад.",
+      "explanation": "შ — «ш»: «шоколад».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q02",
-      "lemma": "ჟურნალი",
-      "question": "Прочитай: «ჟურნალი». Что это?",
+      "lemma": "შ",
+      "question": "Как читается «ბაბუშკა»?",
       "options": [
-        "жираф",
-        "журнал",
-        "джинсы"
+        "бабуска",
+        "бабушка",
+        "бабучка"
       ],
       "answer_index": 1,
-      "explanation": "«ჟურნალი» — «журнали», журнал.",
+      "explanation": "შ — «ш»: «бабушка». Русское слово, по-грузински бабушка — «ბებია».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q03",
-      "lemma": "ჯინსი",
-      "question": "Прочитай: «ჯინსი». Что это?",
+      "lemma": "ხ",
+      "question": "Новая буква ხ — звук «х». Как читается «ხაчაპური»?",
       "options": [
-        "журнал",
-        "шоколад",
-        "джинсы"
+        "качапури",
+        "гачапури",
+        "хачапури"
       ],
       "answer_index": 2,
-      "explanation": "«ჯინსი» — «джинси», джинсы. «ჯ» — одна буква на звук «дж».",
+      "explanation": "ხ — «х»: «хачапури».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q04",
-      "lemma": "ჟირაფი",
-      "question": "Прочитай: «ჟირაფი». Что это?",
+      "lemma": "ხ",
+      "question": "Как читается «ხინკალი»?",
       "options": [
-        "жираф",
-        "шампунь",
-        "шоколад"
+        "хинкали",
+        "кинкали",
+        "гинкали"
       ],
       "answer_index": 0,
-      "explanation": "«ჟირაფი» — «жирапи», жираф.",
+      "explanation": "ხ — «х»: «хинкали». Это уже настоящее грузинское слово.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q05",
-      "lemma": "შამპუნი",
-      "question": "Как читается «შამპუნი»?",
+      "lemma": "ჩ",
+      "question": "Новая буква ჩ — «ч» с выдохом. Как читается «ჩებურაშკა»?",
       "options": [
-        "шамбуни",
-        "шампуни",
-        "жампуни"
+        "Шебурашка",
+        "Чебурашка",
+        "Себурашка"
       ],
       "answer_index": 1,
-      "explanation": "«შამპუნი» — «шампуни», шампунь.",
+      "explanation": "ჩ — «ч»: «Чебурашка».",
       "tags": [
-        "word-reading",
-        "transcription"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q06",
-      "lemma": "გამარჯობა",
-      "question": "Прочитай: «გამარჯობა». Что это?",
+      "lemma": "ჩ",
+      "question": "Как читается «ჩურჩხელა»?",
       "options": [
-        "спасибо",
-        "пока",
-        "привет"
+        "шуршхела",
+        "цурцхела",
+        "чурчхела"
       ],
       "answer_index": 2,
-      "explanation": "«გამარჯობა» — «гамарджоба», здравствуй. Так здороваются в любое время дня.",
+      "explanation": "Две ჩ — «ч»: «чурчхела».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q07",
-      "lemma": "ძმა",
-      "question": "Прочитай: «ძმა». Что это?",
+      "lemma": "ჩაი",
+      "question": "Прочитай: «ჩაი». Что это значит?",
       "options": [
-        "брат",
-        "сестра",
-        "мальчик"
+        "чай",
+        "кофе",
+        "вино"
       ],
       "answer_index": 0,
-      "explanation": "«ძმა» — «дзма», брат. «ძ» — дз, слитно.",
+      "explanation": "«ჩაი» — «чаи», чай.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q08",
-      "lemma": "ბიჭი",
-      "question": "Прочитай: «ბიჭი». Что это?",
+      "lemma": "ხე",
+      "question": "Прочитай: «ხე». Что это значит?",
       "options": [
-        "девочка",
-        "мальчик",
-        "брат"
+        "дом",
+        "дерево",
+        "небо"
       ],
       "answer_index": 1,
-      "explanation": "«ბიჭი» — «бичи», мальчик. А девочка — «გოგო».",
+      "explanation": "«ხე» — «хэ», дерево.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q09",
-      "lemma": "წიგნი",
-      "question": "Прочитай: «წიგნი». Что это?",
+      "lemma": "სახლი",
+      "question": "Прочитай: «სახლი». Что это значит?",
       "options": [
-        "журнал",
-        "стакан",
-        "книга"
+        "дерево",
+        "город",
+        "дом"
       ],
       "answer_index": 2,
-      "explanation": "«წიგნი» — «цигни», книга. «წ» — ц коротко и резко.",
+      "explanation": "«სახლი» — «сахли», дом.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q10",
-      "lemma": "ჭიქა",
-      "question": "Прочитай: «ჭიქა». Что это?",
+      "lemma": "შავი",
+      "question": "Прочитай: «შავი». Что это значит?",
       "options": [
-        "стакан",
-        "шоколад",
-        "брат"
+        "чёрный",
+        "белый",
+        "красный"
       ],
       "answer_index": 0,
-      "explanation": "«ჭიქა» — «чика», стакан. «ჭ» — ч коротко и резко.",
+      "explanation": "«შავი» — «шави», чёрный.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q11",
-      "lemma": "ბოდიში",
-      "question": "Прочитай: «ბოდიში». Что это?",
+      "lemma": "ბავშვი",
+      "question": "Прочитай: «ბავშვი». Что это значит?",
       "options": [
-        "спасибо",
-        "извини",
-        "привет"
+        "девочка",
+        "ребёнок",
+        "брат"
       ],
       "answer_index": 1,
-      "explanation": "«ბოდიში» — «бодиши», извини.",
+      "explanation": "«ბავშვი» — «бавшви», ребёнок.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q12",
-      "lemma": "გამარჯობა",
-      "question": "Послушай и выбери слово",
+      "lemma": "ჩემი",
+      "question": "Прочитай: «ჩემი». Что это значит?",
       "options": [
-        "მადლობა",
-        "ბოდიში",
-        "შოკოლადი",
-        "გამარჯობა"
+        "твой",
+        "наш",
+        "мой"
       ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «გამარჯობა» — «гамарджоба», здравствуй.",
+      "answer_index": 2,
+      "explanation": "«ჩემი» — «чэми», мой.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/intro/gamarjoba.m4a",
-      "transcript": "გამარჯობა"
+      "difficulty": 1
     }
   ]
 }

@@ -1,230 +1,228 @@
 {
-  "lesson_id": "alpha-full-2",
-  "title": "Последние пять букв: ჩ, ც, ხ, ღ, ყ",
+  "lesson_id": "alpha-9",
+  "title": "Буквы ც, ჟ, ჯ",
+  "ordered": true,
   "lexicon": [
-    "ჩაი",
-    "ყავა",
-    "ღვინო",
-    "ხაჭაპური",
-    "ხინკალი",
-    "ყველი",
-    "წყალი",
-    "პიცა",
+    "ც",
+    "ჟ",
+    "ჯ",
     "ცა",
-    "სახლი"
+    "გამარჯობა",
+    "ცივი",
+    "ხორცი",
+    "ბოდიში",
+    "ნახვამდის"
   ],
   "questions": [
     {
       "id": "ab9-q01",
-      "lemma": "ჩაი",
-      "question": "Прочитай: «ჩაი». Что это?",
+      "lemma": "ც",
+      "question": "Новая буква ც — «ц» с выдохом. Как читается «პიცა»?",
       "options": [
-        "чай",
-        "кофе",
-        "вино"
+        "пицца",
+        "пичча",
+        "пища"
       ],
       "answer_index": 0,
-      "explanation": "«ჩაი» — «чаи», чай. «ჩ» — ч с выдохом.",
+      "explanation": "ც — «ц»: «пицца». Так её и пишут по-грузински.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q02",
-      "lemma": "ყავა",
-      "question": "Прочитай: «ყავა». Что это?",
+      "lemma": "ც",
+      "question": "Как читается «ცირკ»?",
       "options": [
-        "чай",
-        "кофе",
-        "вода"
+        "чирк",
+        "цирк",
+        "сирк"
       ],
       "answer_index": 1,
-      "explanation": "«ყავა» — «кава», кофе. «ყ» — к глубоко в горле.",
+      "explanation": "ც — «ц»: «цирк».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q03",
-      "lemma": "ღვინო",
-      "question": "Прочитай: «ღვინო». Что это?",
+      "lemma": "ჟ",
+      "question": "Новая буква ჟ — звук «ж». Как читается «ჟურნალ»?",
       "options": [
-        "вода",
-        "сыр",
-        "вино"
+        "шурнал",
+        "зурнал",
+        "журнал"
       ],
       "answer_index": 2,
-      "explanation": "«ღვინო» — «гвино», вино. «ღ» — мягкое г горлом, похоже на картавое р.",
+      "explanation": "ჟ — «ж»: «журнал».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q04",
-      "lemma": "ხაჭაპური",
-      "question": "Прочитай: «ხაჭაპური». Что это?",
+      "lemma": "ჟ",
+      "question": "Как читается «ჟირაფ»?",
       "options": [
-        "хачапури",
-        "хинкали",
-        "чурчхела"
+        "жираф",
+        "шираф",
+        "зираф"
       ],
       "answer_index": 0,
-      "explanation": "«ხაჭაპური» — «хачапури». Уже читаешь меню!",
+      "explanation": "ჟ — «ж»: «жираф».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q05",
-      "lemma": "ხინკალი",
-      "question": "Как читается «ხინკალი»?",
+      "lemma": "ჯ",
+      "question": "Новая буква ჯ — «дж» одной буквой. Как читается «ბორჯომი»?",
       "options": [
-        "хингали",
-        "хинкали",
-        "кинкали"
+        "Борчоми",
+        "Борджоми",
+        "Боршоми"
       ],
       "answer_index": 1,
-      "explanation": "«ხინკალი» — «хинкали». «ხ» — обычное русское х.",
+      "explanation": "«ბორჯომი» — «борджоми»: тот самый Боржоми, город и минеральная вода.",
       "tags": [
-        "word-reading",
-        "transcription"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q06",
-      "lemma": "ყველი",
-      "question": "Прочитай: «ყველი». Что это?",
+      "lemma": "ჯ",
+      "question": "Как читается «ჯინსы»?",
       "options": [
-        "хлеб",
-        "мясо",
-        "сыр"
+        "чинсы",
+        "шинсы",
+        "джинсы"
       ],
       "answer_index": 2,
-      "explanation": "«ყველი» — «квэли», сыр.",
+      "explanation": "ჯ — «дж»: «джинсы». По-грузински — «ჯინსი».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q07",
-      "lemma": "წყალი",
-      "question": "Прочитай: «წყალი». Что это?",
+      "lemma": "ცა",
+      "question": "Прочитай: «ცა». Что это значит?",
       "options": [
+        "небо",
         "вода",
-        "вино",
-        "небо"
+        "день"
       ],
       "answer_index": 0,
-      "explanation": "«წყალი» — «цкали», вода. Две непростые буквы подряд, и ты справился.",
+      "explanation": "«ცა» — «ца», небо.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q08",
-      "lemma": "პიცა",
-      "question": "Прочитай: «პიცა». Что это?",
+      "lemma": "გამარჯობა",
+      "question": "Прочитай: «გამარჯობა». Что это значит?",
       "options": [
-        "цирк",
-        "пицца",
-        "хачапури"
+        "спасибо",
+        "здравствуй",
+        "до свидания"
       ],
       "answer_index": 1,
-      "explanation": "«პიცა» — «пица», пицца. «ც» — ц с выдохом.",
+      "explanation": "«გამარჯობა» — «гамарджоба», здравствуй, привет.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q09",
-      "lemma": "ცა",
-      "question": "Прочитай: «ცა». Что это?",
+      "lemma": "ცივი",
+      "question": "Прочитай: «ცივი». Что это значит?",
       "options": [
-        "дерево",
-        "ночь",
-        "небо"
+        "горячий",
+        "большой",
+        "холодный"
       ],
       "answer_index": 2,
-      "explanation": "«ცა» — «ца», небо.",
+      "explanation": "«ცივი» — «циви», холодный.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q10",
-      "lemma": "სახლი",
-      "question": "Прочитай: «სახლი». Что это?",
+      "lemma": "ხორცი",
+      "question": "Прочитай: «ხორცი». Что это значит?",
       "options": [
-        "дом",
-        "собака",
-        "дерево"
+        "мясо",
+        "рыба",
+        "сыр"
       ],
       "answer_index": 0,
-      "explanation": "«სახლი» — «сахли», дом.",
+      "explanation": "«ხორცი» — «хорци», мясо.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q11",
-      "lemma": "ჩაი",
-      "question": "Послушай и выбери слово",
+      "lemma": "ბოდიში",
+      "question": "Прочитай: «ბოდიში». Что это значит?",
       "options": [
-        "ცა",
-        "ხე",
-        "ჩაი",
-        "ყავა"
+        "спасибо",
+        "извини",
+        "привет"
       ],
-      "answer_index": 2,
-      "explanation": "Прозвучало «ჩაი» — «чаи», чай.",
+      "answer_index": 1,
+      "explanation": "«ბოდიში» — «бодиши», извини.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/cafe/chai.m4a",
-      "transcript": "ჩაი"
+      "difficulty": 1
     },
     {
       "id": "ab9-q12",
-      "lemma": "ყავა",
-      "question": "Послушай и выбери слово",
+      "lemma": "ნახვამდის",
+      "question": "Прочитай: «ნახვამდის». Что это значит?",
       "options": [
-        "ყველი",
-        "ღვინო",
-        "ჩაი",
-        "ყავა"
+        "здравствуй",
+        "спасибо",
+        "до свидания"
       ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «ყავა» — «кава», кофе.",
+      "answer_index": 2,
+      "explanation": "«ნახვამდის» — «нахвамдис», до свидания.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/cafe/kava.m4a",
-      "transcript": "ყავა"
+      "difficulty": 1
     }
   ]
 }

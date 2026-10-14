@@ -1,231 +1,235 @@
 {
-  "lesson_id": "alpha-audio-1",
-  "title": "Вывески и меню",
+  "lesson_id": "alpha-11",
+  "title": "Последние буквы: ღ, ყ, ჰ",
+  "ordered": true,
   "lexicon": [
-    "აფთიაქი",
-    "რესტორანი",
-    "ბაზარი",
-    "სასტუმრო",
-    "ტუალეტი",
-    "ბანკი",
-    "ქუჩა",
-    "ფასი",
-    "თევზი",
-    "ავტობუსი",
-    "ხორცი"
+    "ღ",
+    "ღამე",
+    "ყ",
+    "ჰ",
+    "ჰაერი",
+    "ყავა",
+    "ყველი",
+    "წყალი",
+    "ძაღლი",
+    "დღე"
   ],
   "questions": [
     {
       "id": "ab11-q01",
-      "lemma": "აფთიაქი",
-      "question": "На вывеске: «აფთიაქი». Что там?",
+      "lemma": "ღ",
+      "question": "Новая буква ღ — мягкое «г» горлом, похоже на картавое «р». Как читается «ღვინო»?",
       "options": [
-        "аптека",
-        "рынок",
-        "гостиница"
+        "гвино",
+        "двино",
+        "бвино"
       ],
       "answer_index": 0,
-      "explanation": "«აფთიაქი» — «аптиаки», аптека.",
+      "explanation": "«ღვინო» — «гвино», вино.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q02",
-      "lemma": "რესტორანი",
-      "question": "На вывеске: «რესტორანი». Что там?",
+      "lemma": "ღამე",
+      "question": "Прочитай: «ღამე». Что это значит?",
       "options": [
-        "рынок",
-        "ресторан",
-        "улица"
+        "день",
+        "ночь",
+        "вода"
       ],
       "answer_index": 1,
-      "explanation": "«რესტორანი» — «рэсторани», ресторан.",
+      "explanation": "«ღამე» — «гамэ», ночь.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q03",
-      "lemma": "ბაზარი",
-      "question": "На вывеске: «ბაზარი». Что там?",
+      "lemma": "ყ",
+      "question": "Новая буква ყ — «к» глубоко в горле. Как читается «ტყემალი»?",
       "options": [
-        "аптека",
-        "улица",
-        "рынок"
+        "тгемали",
+        "тхемали",
+        "ткемали"
       ],
       "answer_index": 2,
-      "explanation": "«ბაზარი» — «базари», рынок. Тот самый базар.",
+      "explanation": "«ტყემალი» — «ткемали»: алыча и соус из неё.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q04",
-      "lemma": "სასტუმრო",
-      "question": "На вывеске: «სასტუმრო». Что там?",
+      "lemma": "ყ",
+      "question": "Как читается «ყავა»?",
       "options": [
-        "гостиница",
-        "ресторан",
-        "гость"
+        "кава",
+        "гава",
+        "хава"
       ],
       "answer_index": 0,
-      "explanation": "«სასტუმრო» — «састумро», гостиница. Внутри спрятался «სტუმარი» — гость.",
+      "explanation": "ყ — «к»: «кава».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q05",
-      "lemma": "ტუალეტი",
-      "question": "На двери: «ტუალეტი». Что там?",
+      "lemma": "ჰ",
+      "question": "Новая буква ჰ — лёгкое «х», просто выдох. Как читается «ჰო»?",
       "options": [
-        "улица",
-        "туалет",
-        "театр"
+        "го",
+        "хо",
+        "ко"
       ],
       "answer_index": 1,
-      "explanation": "«ტუალეტი» — «туалэти», туалет.",
+      "explanation": "«ჰო» — «хо», разговорное «ага, да».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q06",
-      "lemma": "ბანკი",
-      "question": "На вывеске: «ბანკი». Что там?",
+      "lemma": "ჰაერი",
+      "question": "Прочитай: «ჰაერი». Что это значит?",
       "options": [
-        "аптека",
-        "кафе",
-        "банк"
+        "вода",
+        "ветер",
+        "воздух"
       ],
       "answer_index": 2,
-      "explanation": "«ბანკი» — «банки», банк.",
+      "explanation": "«ჰაერი» — «хаэри», воздух.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q07",
-      "lemma": "ქუჩა",
-      "question": "Прочитай: «ქუჩა». Что это?",
+      "lemma": "ყავა",
+      "question": "Прочитай: «ყავა». Что это значит?",
       "options": [
-        "улица",
-        "город",
-        "рынок"
+        "кофе",
+        "чай",
+        "вино"
       ],
       "answer_index": 0,
-      "explanation": "«ქუჩა» — «куча», улица. Это слово стоит на табличках с названиями улиц.",
+      "explanation": "«ყავა» — «кава», кофе.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q08",
-      "lemma": "ფასი",
-      "question": "На ценнике: «ფასი». Что это?",
+      "lemma": "ყველი",
+      "question": "Прочитай: «ყველი». Что это значит?",
       "options": [
-        "деньги",
-        "цена",
-        "меню"
+        "хлеб",
+        "сыр",
+        "мясо"
       ],
       "answer_index": 1,
-      "explanation": "«ფასი» — «паси», цена.",
+      "explanation": "«ყველი» — «квэли», сыр.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q09",
-      "lemma": "თევზი",
-      "question": "Читаешь меню: «თევზი». Что это?",
+      "lemma": "წყალი",
+      "question": "Прочитай: «წყალი». Что это значит?",
       "options": [
-        "мясо",
-        "сыр",
-        "рыба"
+        "вино",
+        "небо",
+        "вода"
       ],
       "answer_index": 2,
-      "explanation": "«თევზი» — «тэвзи», рыба.",
+      "explanation": "«წყალი» — «цкали», вода.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q10",
-      "lemma": "ავტობუსი",
-      "question": "На остановке: «ავტობუსი». Что это?",
+      "lemma": "ძაღლი",
+      "question": "Прочитай: «ძაღლი». Что это значит?",
       "options": [
-        "автобус",
-        "трамвай",
-        "такси"
+        "собака",
+        "кошка",
+        "лев"
       ],
       "answer_index": 0,
-      "explanation": "«ავტობუსი» — «автобуси», автобус.",
+      "explanation": "«ძაღლი» — «дзагли», собака.",
       "tags": [
         "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q11",
-      "lemma": "ქუჩა",
-      "question": "Послушай и выбери слово",
+      "lemma": "დღე",
+      "question": "Прочитай: «დღე». Что это значит?",
       "options": [
-        "ქალაქი",
-        "ქალი",
-        "ქუჩა",
-        "ფასი"
+        "ночь",
+        "день",
+        "год"
       ],
-      "answer_index": 2,
-      "explanation": "Прозвучало «ქუჩა» — «куча», улица.",
+      "answer_index": 1,
+      "explanation": "«დღე» — «дгэ», день.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/taxi/qucha.m4a",
-      "transcript": "ქუჩა"
+      "difficulty": 1
     },
     {
       "id": "ab11-q12",
-      "lemma": "ხორცი",
+      "lemma": "ყავა",
       "question": "Послушай и выбери слово",
       "options": [
-        "ხილი",
         "ყველი",
-        "თევზი",
-        "ხორცი"
+        "ღვინო",
+        "ჩაი",
+        "ყავა"
       ],
       "answer_index": 3,
-      "explanation": "Прозвучало «ხორცი» — «хорци», мясо.",
+      "explanation": "Прозвучало «ყავა» — «кава», кофе.",
       "tags": [
         "audio",
-        "word"
+        "word",
+        "mixed-script"
       ],
       "difficulty": 1,
       "question_type": "audio-choice",
-      "audio_url": "/audio/cafe/khortsi.m4a",
-      "transcript": "ხორცი"
+      "audio_url": "/audio/cafe/kava.m4a",
+      "transcript": "ყავა"
     }
   ]
 }

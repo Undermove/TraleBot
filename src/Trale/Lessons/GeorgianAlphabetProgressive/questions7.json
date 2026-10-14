@@ -1,127 +1,178 @@
 {
-  "lesson_id": "alpha-triples-2",
-  "title": "Читаем Грузию",
+  "lesson_id": "alpha-7",
+  "title": "Буквы ზ, გ, პ",
+  "ordered": true,
   "lexicon": [
-    "საქართველო",
-    "თბილისი",
-    "ბათუმი",
-    "ქალაქი",
-    "ქალი",
-    "თევზი",
+    "ზ",
+    "გ",
+    "პ",
+    "პური",
+    "მზე",
+    "გოგო",
     "პატარა",
-    "კომპიუტერი",
-    "ტელეფონი",
-    "ერთი",
-    "თავი",
-    "ბილეთი"
+    "ლამაზი",
+    "კარგი"
   ],
   "questions": [
     {
       "id": "ab7-q01",
-      "lemma": "საქართველო",
-      "question": "Прочитай: «საქართველო». Что это?",
+      "lemma": "ზ",
+      "question": "Новая буква ზ — звук «з». Как читается «ზებრა»?",
       "options": [
-        "Грузия",
-        "Тбилиси",
-        "город"
+        "зебра",
+        "себра",
+        "дебра"
       ],
       "answer_index": 0,
-      "explanation": "«საქართველო» — «сакартвэло». Так по-грузински называется Грузия.",
+      "explanation": "ზ — «з»: «зебра». Так это слово и пишут по-грузински.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab7-q02",
-      "lemma": "თბილისი",
-      "question": "Прочитай: «თბილისი». Что это?",
+      "lemma": "ზ",
+      "question": "Как читается «ბენზინ»?",
       "options": [
-        "Батуми",
-        "Тбилиси",
-        "Кутаиси"
+        "бенсин",
+        "бензин",
+        "бендин"
       ],
       "answer_index": 1,
-      "explanation": "«თბილისი» — «тбилиси». Столица.",
+      "explanation": "ზ — «з»: «бензин».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab7-q03",
-      "lemma": "ბათუმი",
-      "question": "Прочитай: «ბათუმი». Что это?",
+      "lemma": "გ",
+      "question": "Новая буква გ — звук «г». Как читается «მანგო»?",
       "options": [
-        "Тбилиси",
-        "Кутаиси",
-        "Батуми"
+        "манко",
+        "мандо",
+        "манго"
       ],
       "answer_index": 2,
-      "explanation": "«ბათუმი» — «батуми». Город у моря.",
+      "explanation": "გ — «г»: «манго».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab7-q04",
-      "lemma": "ქალაქი",
-      "question": "Прочитай: «ქალაქი». Что это?",
+      "lemma": "გ",
+      "question": "Как читается «გიტარა»?",
       "options": [
-        "город",
-        "женщина",
-        "голова"
+        "гитара",
+        "китара",
+        "битара"
       ],
       "answer_index": 0,
-      "explanation": "«ქალაქი» — «калаки», город.",
+      "explanation": "გ — «г»: «гитара».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab7-q05",
-      "lemma": "ქალი",
-      "question": "Прочитай: «ქალი». Что это?",
+      "lemma": "პ",
+      "question": "Новая буква პ — «п», коротко, без выдоха. Как читается «პასპორტ»?",
       "options": [
-        "город",
-        "женщина",
-        "рыба"
+        "баспорт",
+        "паспорт",
+        "таспорт"
       ],
       "answer_index": 1,
-      "explanation": "«ქალი» — «кали», женщина.",
+      "explanation": "პ — «п» без выдоха: «паспорт». «П» с выдохом — это ფ.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab7-q06",
-      "lemma": "თევზი",
-      "question": "Прочитай: «თევზი». Что это?",
+      "lemma": "პ",
+      "question": "Как читается «პიццა»?",
       "options": [
-        "снег",
-        "глаз",
-        "рыба"
+        "бицца",
+        "тицца",
+        "пицца"
       ],
       "answer_index": 2,
-      "explanation": "«თევზი» — «тэвзи», рыба.",
+      "explanation": "პ — «п»: «пицца».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab7-q07",
+      "lemma": "პური",
+      "question": "პური — хлеб, ფური — корова. Где «хлеб»?",
+      "options": [
+        "პური",
+        "ფური"
+      ],
+      "answer_index": 0,
+      "explanation": "«პური» — хлеб: პ коротко, без воздуха. «ფური» — корова: ფ с выдохом.",
+      "tags": [
+        "word-recognition",
+        "pair",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab7-q08",
+      "lemma": "მზე",
+      "question": "Прочитай: «მზე». Что это значит?",
+      "options": [
+        "небо",
+        "солнце",
+        "вода"
+      ],
+      "answer_index": 1,
+      "explanation": "«მზე» — «мзэ», солнце.",
+      "tags": [
+        "word-reading",
+        "meaning",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab7-q09",
+      "lemma": "გოგო",
+      "question": "Прочитай: «გოგო». Что это значит?",
+      "options": [
+        "мальчик",
+        "мама",
+        "девочка"
+      ],
+      "answer_index": 2,
+      "explanation": "«გოგო» — «гого», девочка.",
+      "tags": [
+        "word-reading",
+        "meaning",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab7-q10",
       "lemma": "პატარა",
-      "question": "Прочитай: «პატარა». Что это?",
+      "question": "Прочитай: «პატარა». Что это значит?",
       "options": [
         "маленький",
         "большой",
@@ -131,102 +182,46 @@
       "explanation": "«პატარა» — «патара», маленький. А большой — «დიდი».",
       "tags": [
         "word-reading",
-        "meaning"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q08",
-      "lemma": "კომპიუტერი",
-      "question": "Прочитай: «კომპიუტერი». Что это?",
-      "options": [
-        "телефон",
-        "компьютер",
-        "телевизор"
-      ],
-      "answer_index": 1,
-      "explanation": "«კომპიუტერი» — «компиутэри», компьютер.",
-      "tags": [
-        "word-reading",
-        "meaning"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q09",
-      "lemma": "ტელეფონი",
-      "question": "Прочитай: «ტელეფონი». Что это?",
-      "options": [
-        "телевизор",
-        "фото",
-        "телефон"
-      ],
-      "answer_index": 2,
-      "explanation": "«ტელეფონი» — телефон. «ფ» и тут звучит как п с выдохом.",
-      "tags": [
-        "word-reading",
-        "meaning"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q10",
-      "lemma": "ერთი",
-      "question": "Прочитай: «ერთი». Что это?",
-      "options": [
-        "один",
-        "два",
-        "три"
-      ],
-      "answer_index": 0,
-      "explanation": "«ერთი» — «эрти», один. Теперь знаешь до трёх: ერთი, ორი, სამი.",
-      "tags": [
-        "word-reading",
-        "meaning"
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab7-q11",
-      "lemma": "თავი",
-      "question": "Послушай и выбери слово",
+      "lemma": "ლამაზი",
+      "question": "Прочитай: «ლამაზი». Что это значит?",
       "options": [
-        "თვალი",
-        "თევზი",
-        "თავი",
-        "ქალი"
+        "маленький",
+        "красивый",
+        "хороший"
       ],
-      "answer_index": 2,
-      "explanation": "Прозвучало «თავი» — «тави», голова.",
+      "answer_index": 1,
+      "explanation": "«ლამაზი» — «ламази», красивый.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/doctor/tavi.m4a",
-      "transcript": "თავი"
+      "difficulty": 1
     },
     {
       "id": "ab7-q12",
-      "lemma": "ბილეთი",
-      "question": "Послушай и выбери слово",
+      "lemma": "კარგი",
+      "question": "Прочитай: «კარგი». Что это значит?",
       "options": [
-        "ბათუმი",
-        "პილოტი",
-        "ფილმი",
-        "ბილეთი"
+        "плохо",
+        "спасибо",
+        "хорошо"
       ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «ბილეთი» — «билэти», билет.",
+      "answer_index": 2,
+      "explanation": "«კარგი» — «карги», хорошо, хороший.",
       "tags": [
-        "audio",
-        "word"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/taxi/bileti.m4a",
-      "transcript": "ბილეთი"
+      "difficulty": 1
     }
   ]
 }

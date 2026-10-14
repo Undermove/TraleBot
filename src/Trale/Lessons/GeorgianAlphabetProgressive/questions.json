@@ -1,225 +1,184 @@
 {
-  "lesson_id": "alpha-vowels-1",
-  "title": "Гласные и первые слова",
+  "lesson_id": "alpha-1",
+  "title": "Первые буквы: ა, ბ, მ",
+  "ordered": true,
   "lexicon": [
     "ა",
-    "ე",
+    "ბ",
     "მ",
-    "მამა",
-    "მე",
-    "ენა",
-    "ია",
-    "მენიუ",
-    "მინა"
+    "მამა"
   ],
   "questions": [
     {
       "id": "ab1-q01",
       "lemma": "ა",
-      "question": "Как читается буква «ა»?",
+      "question": "Новая буква ა — звук «а». Как читается «აлфაвит»?",
       "options": [
-        "а",
-        "о",
-        "и"
+        "алфавит",
+        "элфэвит",
+        "улфувит"
       ],
       "answer_index": 0,
-      "explanation": "«ა» — это «а». Её ты будешь встречать чаще всех.",
+      "explanation": "ა читается «а». Получается «алфавит».",
       "tags": [
-        "letter-to-sound"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q02",
-      "lemma": "ე",
-      "question": "Как читается буква «ე»?",
+      "lemma": "ა",
+      "question": "Как читается «кაртა»?",
       "options": [
-        "и",
-        "э",
-        "у"
+        "кирти",
+        "карта",
+        "курту"
       ],
       "answer_index": 1,
-      "explanation": "«ე» — всегда «э», даже после согласной: «მე» читается «мэ».",
+      "explanation": "Обе ა — это «а»: «карта».",
       "tags": [
-        "letter-to-sound"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q03",
-      "lemma": "მ",
-      "question": "Какая буква читается «м»?",
+      "lemma": "ა",
+      "question": "Как читается «лაмпა»?",
       "options": [
-        "ნ",
-        "ა",
-        "მ"
+        "лумпу",
+        "лимпи",
+        "лампа"
       ],
       "answer_index": 2,
-      "explanation": "«მ» — это «м». С неё начинается «მამა».",
+      "explanation": "ა — «а»: «лампа».",
       "tags": [
-        "sound-to-letter"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q04",
-      "lemma": "მამა",
-      "question": "Прочитай: «მამა». Что это?",
+      "lemma": "ბ",
+      "question": "Новая буква ბ — звук «б». Как читается «ბაнაн»?",
       "options": [
-        "папа",
-        "мама",
-        "я"
+        "банан",
+        "ванан",
+        "данан"
       ],
       "answer_index": 0,
-      "explanation": "«მამა» читается «мама», но значит «папа». Самый известный сюрприз грузинского.",
+      "explanation": "ბ — «б», ა — «а»: «банан».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q05",
-      "lemma": "მე",
-      "question": "Прочитай: «მე». Что это?",
+      "lemma": "ბ",
+      "question": "Как читается «ბაрაнкა»?",
       "options": [
-        "папа",
-        "я",
-        "язык"
+        "варанка",
+        "баранка",
+        "таранка"
       ],
       "answer_index": 1,
-      "explanation": "«მე» — «мэ», то есть «я».",
+      "explanation": "ბ — «б»: «баранка».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q06",
-      "lemma": "ენა",
-      "question": "Прочитай: «ენა». Что это?",
+      "lemma": "ბ",
+      "question": "Как читается «ბაтуми»?",
       "options": [
-        "стекло",
-        "фиалка",
-        "язык"
+        "Ватуми",
+        "Датуми",
+        "Батуми"
       ],
       "answer_index": 2,
-      "explanation": "«ენა» — «эна», язык. И тот, что во рту, и тот, на котором говорят.",
+      "explanation": "ბ — «б»: «Батуми». Скоро прочитаешь это название целиком.",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q07",
-      "lemma": "ია",
-      "question": "Прочитай: «ია». Что это?",
+      "lemma": "მ",
+      "question": "Новая буква მ — звук «м». Как читается «მაлинა»?",
       "options": [
-        "фиалка",
-        "язык",
-        "меню"
+        "малина",
+        "налина",
+        "балина"
       ],
       "answer_index": 0,
-      "explanation": "«ია» — «иа», фиалка. Слово из двух гласных, и оно настоящее.",
+      "explanation": "მ — «м»: «малина».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q08",
-      "lemma": "მენიუ",
-      "question": "Как читается «მენიუ»?",
+      "lemma": "მ",
+      "question": "Как читается «მაрმелაд»?",
       "options": [
-        "мэнио",
-        "мэниу",
-        "мамиу"
+        "нарнелад",
+        "мармелад",
+        "бармелад"
       ],
       "answer_index": 1,
-      "explanation": "«მენიუ» — «мэниу». Узнал? Это меню.",
+      "explanation": "Обе მ — «м»: «мармелад».",
       "tags": [
-        "word-reading",
-        "transcription"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q09",
-      "lemma": "მინა",
-      "question": "Прочитай: «მინა». Что это?",
+      "lemma": "მ",
+      "question": "Как читается «მამა»?",
       "options": [
-        "папа",
-        "язык",
-        "стекло"
+        "баба",
+        "ама",
+        "мама"
       ],
       "answer_index": 2,
-      "explanation": "«მინა» — «мина», стекло.",
+      "explanation": "Все буквы уже грузинские: მ-ა-მ-ა, «мама».",
       "tags": [
-        "word-reading",
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q10",
-      "lemma": "მე",
-      "question": "Где написано «я»?",
+      "lemma": "მამა",
+      "question": "По-грузински «მამა» значит…",
       "options": [
-        "მე",
-        "ია",
-        "ენა"
+        "папа",
+        "мама",
+        "бабушка"
       ],
       "answer_index": 0,
-      "explanation": "«Я» — это «მე», читается «мэ».",
+      "explanation": "Сюрприз: по-грузински «მამა» — это папа. А как будет «мама», прочитаешь в третьем уроке.",
       "tags": [
-        "word-recognition"
+        "word-reading",
+        "meaning",
+        "mixed-script"
       ],
       "difficulty": 1
-    },
-    {
-      "id": "ab1-q11",
-      "lemma": "მენიუ",
-      "question": "Послушай и выбери слово",
-      "options": [
-        "მამა",
-        "მინა",
-        "მენიუ",
-        "ენა"
-      ],
-      "answer_index": 2,
-      "explanation": "Прозвучало «მენიუ» — «мэниу», меню.",
-      "tags": [
-        "audio",
-        "word"
-      ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/cafe/menu.m4a",
-      "transcript": "მენიუ"
-    },
-    {
-      "id": "ab1-q12",
-      "lemma": "მამა",
-      "question": "Послушай и выбери слово",
-      "options": [
-        "მინა",
-        "ენა",
-        "მე",
-        "მამა"
-      ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «მამა» — «мама», папа.",
-      "tags": [
-        "audio",
-        "word"
-      ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/vocabulary/mama.m4a",
-      "transcript": "მამა"
     }
   ]
 }
