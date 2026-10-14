@@ -8,6 +8,9 @@ import Dashboard from './screens/Dashboard'
 import ModuleMap from './screens/ModuleMap'
 import LessonTheory from './screens/LessonTheory'
 import Practice from './screens/Practice'
+import { cafeLevel } from './alphabet/cafe/products'
+// Кафе — отдельный кусок бандла: грузится, только когда в него зашли.
+const CafeScreen = React.lazy(() => import('./alphabet/cafe/CafeScreen'))
 import PracticeMistakes from './screens/PracticeMistakes'
 import Result from './screens/Result'
 import MistakesResult from './screens/MistakesResult'
@@ -265,6 +268,8 @@ export default function App() {
         } else {
           setScreen({ kind: 'module', moduleId: screen.moduleId })
         }
+      } else if (screen.kind === 'alphabet-cafe') {
+        setScreen(screen.back ?? { kind: 'module', moduleId: 'alphabet-progressive' })
       } else if (screen.kind === 'practice-mistakes') {
         setScreen({ kind: 'module', moduleId: screen.moduleId })
       } else if (screen.kind === 'mistakes-result') {
@@ -499,6 +504,15 @@ export default function App() {
           authenticated={authenticated}
           navigate={navigate}
         />
+      )
+    case 'alphabet-cafe':
+      return (
+        <React.Suspense fallback={<div className="min-h-[100dvh] bg-cream" />}>
+          <CafeScreen
+            level={Math.max(1, cafeLevel(progress.completedLessons['alphabet-progressive']))}
+            onExit={() => navigate(screen.back ?? { kind: 'module', moduleId: 'alphabet-progressive' })}
+          />
+        </React.Suspense>
       )
     case 'result':
       return (

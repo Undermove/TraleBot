@@ -10,6 +10,7 @@ import { progressFromDto } from '../progress'
 import { api } from '../api'
 import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
 import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
+import AlphabetInterlude, { useAlphabetLesson } from '../alphabet/AlphabetInterlude'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeQuestion(d: any): QuizQuestion {
@@ -63,6 +64,8 @@ export default function Practice({
   const [shakeInput, setShakeInput] = useState(false)
   // Per-answer server credit: XP accumulated mid-lesson, plus the in-flight call
   // so lesson-complete on the final question never races it.
+  // Модуль «Алфавит»: знакомство с каждой новой буквой, игра в середине и в конце урока, праздник.
+  const alphabet = useAlphabetLesson(moduleId, lessonId, questions, index)
   const answerXpRef = React.useRef(0)
   const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
 
@@ -166,6 +169,19 @@ export default function Practice({
     )
   }
 
+  if (alphabet.scene) {
+    return (
+      <AlphabetInterlude
+        scene={alphabet.scene}
+        lessonId={lessonId}
+        fraction={index / Math.max(1, questions.length)}
+        onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
+        onDone={() => alphabet.sceneDone(navigate)}
+        navigate={navigate}
+      />
+    )
+  }
+
   const current = questions[index]
   const total = questions.length
   const questionNumber = index + 1
@@ -209,9 +225,10 @@ export default function Practice({
           applyOfflineProgress(isPerfect, xpEarned)
         }
       }
-      navigate({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions, verbs: uniqueVerbs(questions) })
+      alphabet.finish({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions, verbs: uniqueVerbs(questions) }, newCorrectCount === total, navigate)
       return
     }
+    alphabet.afterQuestion(index + 1)
     setIndex((i) => i + 1)
     setPhase('answering')
   }
@@ -266,7 +283,7 @@ export default function Practice({
         applyOfflineProgress(isPerfect, xpEarned)
       }
 
-      navigate({
+      alphabet.finish({
         kind: 'result',
         moduleId,
         lessonId,
@@ -275,9 +292,10 @@ export default function Practice({
         xpEarned,
         wrongQuestions,
         verbs: uniqueVerbs(questions)
-      })
+      }, isPerfect, navigate)
       return
     }
+    alphabet.afterQuestion(index + 1)
     setIndex((i) => i + 1)
     setSelected(null)
     setTypedAnswer('')
