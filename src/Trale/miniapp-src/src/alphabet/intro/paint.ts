@@ -304,3 +304,62 @@ export function letterStrokes(mask: HTMLCanvasElement | null, size: number, cell
     return skeletonStrokes(thin(grid)).map(s => s.filter((_, i) => i % 2 === 0 || i === s.length - 1).map(p => ({ x: (p.x + 0.5) * k, y: (p.y + 0.5) * k })))
   } catch { return [] }
 }
+
+/** Штрихи буквы в координатах сцены: данные по таблице письма (strokes.ts), иначе — по скелету шрифта. */
+export function strokesFor(letter: string, size: number, mask: HTMLCanvasElement | null, data: Record<string, { strokes: [number, number][][] }>): Pt[][] {
+  const d = data[letter]
+  if (d) return d.strokes.map(st => st.map(([x, y]) => ({ x: (x / 100) * size, y: (y / 100) * size })))
+  return letterStrokes(mask, size)
+}
+
+/**
+ * Ученик ведёт пальцем по букве: засчитываем путь пера по порядку — штрих за штрихом, по направлению.
+ * Палец продвигает «курсор» по точкам пути, только если оказался рядом с одной из ближайших следующих точек:
+ * назад и вразнобой он не двигается, а небольшие срезы и неточность прощаются.
+ */
+export class PathTrace {
+  private readonly pts: { p: Pt; stroke: number }[]
+  private cursor = 0
+  constructor(strokes: Pt[][], private readonly window = 6) {
+    this.pts = strokes.flatMap((st, i) => st.map(p => ({ p, stroke: i })))
+  }
+  get total() { return this.pts.length }
+  get fraction() { return this.pts.length ? this.cursor / this.pts.length : 1 }
+  /** Какой штрих сейчас вести (0-based). */
+  get stroke() { return this.pts[Math.min(this.cursor, this.pts.length - 1)]?.stroke ?? 0 }
+  /** Следующая точка пути. */
+  get next(): Pt | null { return this.pts[this.cursor]?.p ?? null }
+
+  private at(x: number, y: number, r: number, dir: Pt): number {
+    const r2 = r * r
+    const stroke = this.stroke
+    let hit = -1
+    for (let i = this.cursor; i < Math.min(this.pts.length, this.cursor + this.window); i++) {
+      // В следующий штрих — только с его начала и только когда от текущего осталась пара точек
+      // (недотянуть самый кончик можно, перескочить на другой штрих посередине — нет).
+      const other = this.pts[i].stroke !== stroke
+      if (other && i - this.cursor > 3) break
+      const dx = this.pts[i].p.x - x, dy = this.pts[i].p.y - y
+      // Палец должен идти туда же, куда перо (не против направления); касание начала штриха — без проверки.
+      const q = this.pts[i + 1]?.stroke === this.pts[i].stroke ? this.pts[i + 1].p : this.pts[i].p
+      const o = this.pts[i + 1]?.stroke === this.pts[i].stroke ? this.pts[i].p : this.pts[i - 1]?.p ?? this.pts[i].p
+      const along = (q.x - o.x) * dir.x + (q.y - o.y) * dir.y
+      const still = dir.x === 0 && dir.y === 0
+      if (dx * dx + dy * dy <= r2 && (along >= 0 || still)) hit = i
+      if (other) break
+    }
+    if (hit >= 0) this.cursor = hit + 1
+    return hit >= 0 ? 1 : 0
+  }
+
+  /** Палец прошёл от a до b. Возвращает, сколько точек пути пройдено за это движение. */
+  advance(a: Pt, b: Pt, r: number): number {
+    const before = this.cursor
+    const len = Math.hypot(b.x - a.x, b.y - a.y)
+    const steps = Math.max(1, Math.ceil(len / (r / 2)))
+    const dir = { x: b.x - a.x, y: b.y - a.y }
+    if (len === 0) this.at(b.x, b.y, r, dir)
+    for (let s = 1; s <= steps && len > 0; s++) this.at(a.x + ((b.x - a.x) * s) / steps, a.y + ((b.y - a.y) * s) / steps, r, dir)
+    return this.cursor - before
+  }
+}

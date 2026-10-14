@@ -149,3 +149,42 @@ describe('LetterIntro', () => {
     expect(screen.getByTestId('intro-caption').textContent).toContain('с выдохом')
   })
 })
+
+describe('how a letter is written', () => {
+  it('has stroke data from the writing chart for all 33 letters, with confidence kept and points inside the scene', async () => {
+    const { STROKES } = await import('./strokes')
+    expect(new Set(Object.keys(STROKES))).toEqual(new Set(INTROS.map(i => i.letter)))
+    for (const [l, d] of Object.entries(STROKES)) {
+      expect(['high', 'medium', 'low']).toContain(d.confidence)
+      expect(d.strokes.length, l).toBeGreaterThanOrEqual(1)
+      for (const st of d.strokes) {
+        expect(st.length, l).toBeGreaterThanOrEqual(5)
+        for (const [x, y] of st) { expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(100); expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThanOrEqual(100) }
+      }
+    }
+    // Многоштриховые по таблице: დ, ლ, ღ — хвост, потом горбы; ჟ, რ, ქ, ყ, ჭ, ჯ — по два штриха.
+    for (const l of ['დ', 'ლ', 'ღ', 'ჟ', 'რ', 'ქ', 'ყ', 'ჭ', 'ჯ']) expect(STROKES[l].strokes.length, l).toBe(2)
+    expect(STROKES['ა'].strokes.length).toBe(1)
+  })
+
+  it('counts the finger only along the pen path, in order and direction, and forgives small misses', async () => {
+    const { PathTrace } = await import('./paint')
+    const line = (x0: number, x1: number, y: number) => Array.from({ length: 11 }, (_, i) => ({ x: x0 + ((x1 - x0) * i) / 10, y }))
+    // Против направления — не засчитывается.
+    const back = new PathTrace([line(0, 100, 0)])
+    back.advance({ x: 100, y: 0 }, { x: 0, y: 0 }, 8)
+    expect(back.fraction).toBeLessThan(0.2)
+    // По направлению, чуть мимо — засчитывается.
+    const fwd = new PathTrace([line(0, 100, 0)])
+    fwd.advance({ x: 0, y: 4 }, { x: 100, y: 5 }, 8)
+    expect(fwd.fraction).toBe(1)
+    // Второй штрих — только после первого и от своего начала.
+    const two = new PathTrace([line(0, 100, 0), line(0, 100, 50)])
+    two.advance({ x: 0, y: 50 }, { x: 100, y: 50 }, 8)
+    expect(two.fraction).toBe(0)
+    two.advance({ x: 0, y: 0 }, { x: 100, y: 0 }, 8)
+    expect(two.stroke).toBe(1)
+    two.advance({ x: 0, y: 50 }, { x: 100, y: 50 }, 8)
+    expect(two.fraction).toBe(1)
+  })
+})

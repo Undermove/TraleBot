@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { PRODUCTS, orderText } from '../src/alphabet/cafe/products'
+import { STROKES } from '../src/alphabet/intro/strokes'
 
 // Алфавит — урок как цепочка игр: знакомство с буквой (стереть поверхность → как пишется → слово), «Поймай букву»,
 // «Пары», «Звук → буква», новые слова, «Превращение» / «Собери слово», «Кафе Бомборы» (с пятого урока), короткая
@@ -53,6 +54,18 @@ async function openModule(page: Page) {
   await tile.click()
 }
 
+/** Написать букву пальцем: штрих за штрихом, по пути пера (как показывает «Как пишется»). */
+async function write(page: Page, letter: string) {
+  const box = (await page.getByTestId('intro-touch').boundingBox())!
+  const at = ([x, y]: [number, number]) => [box.x + (x / 100) * box.width, box.y + (y / 100) * box.height] as const
+  for (const st of STROKES[letter].strokes) {
+    await page.mouse.move(...at(st[0]))
+    await page.mouse.down()
+    for (const p of st.slice(1)) await page.mouse.move(...at(p), { steps: 3 })
+    await page.mouse.up()
+  }
+}
+
 /** Провести пальцем зигзагом по всей сцене. */
 async function rub(page: Page, rows = 14) {
   const box = (await page.getByTestId('intro-touch').boundingBox())!
@@ -92,9 +105,8 @@ test('letter intro: wipe the snow of თოვლი, watch how it is written, w
   await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 6000 })
   await expect(page.getByTestId('intro-start')).toBeVisible()
   await page.waitForTimeout(300)
-  await rub(page, 5)
   await shot(page, '3-intro-trace')
-  for (let i = 0; i < 4 && (await stage.getAttribute('data-phase')) === 'trace'; i++) await rub(page, 30)
+  await write(page, 'თ')
   await expect(page.getByTestId('intro-word')).toHaveText('თოვლი')
   await expect(page.getByTestId('intro-meaning')).toHaveText('товли — снег')
   await expect(page.getByTestId('intro-caption')).toContainText('თ — звук «т»')
@@ -319,3 +331,35 @@ for (const fx of SURFACES) {
     await page.mouse.up()
   })
 }
+
+test('«Как пишется» for a two-stroke letter: the pen draws stroke 1, lifts, numbered stroke 2; the learner writes both in order', async ({ page }) => {
+  test.setTimeout(60_000)
+  await setup(page, [], 1)
+  await openModule(page)
+  await page.getByTestId('lesson-btn-1').click()
+  await page.getByRole('button', { name: 'Начать' }).click()
+  await page.getByTestId('intro-skip').click()
+  await page.getByRole('button', { name: 'дальше →' }).click()
+  await expect(page.getByText('Расчеши шерсть медведя')).toBeVisible()
+  const stage = page.getByTestId('intro-stage')
+  await expect(stage).toHaveAttribute('data-ready', 'yes')
+  for (let i = 0; i < 6 && (await stage.getAttribute('data-phase')) === 'reveal'; i++) await rub(page)
+  await expect(stage).toHaveAttribute('data-phase', 'demo', { timeout: 5000 })
+  // Пера ждём на втором штрихе: появилась цифра 2.
+  await expect(page.getByTestId('intro-stroke-numbers').locator('text', { hasText: '2' })).toBeVisible({ timeout: 4000 })
+  await page.waitForTimeout(500)
+  await shot(page, '26-stroke-demo-two-strokes')
+  await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 6000 })
+  await expect(page.getByTestId('intro-start')).toHaveAttribute('data-stroke', '1')
+  // Второй штрих раньше первого не засчитывается.
+  const box = (await page.getByTestId('intro-touch').boundingBox())!
+  const s2 = STROKES['დ'].strokes[1]
+  await page.mouse.move(box.x + (s2[0][0] / 100) * box.width, box.y + (s2[0][1] / 100) * box.height)
+  await page.mouse.down()
+  for (const [x, y] of s2.slice(1)) await page.mouse.move(box.x + (x / 100) * box.width, box.y + (y / 100) * box.height, { steps: 2 })
+  await page.mouse.up()
+  await expect(stage).toHaveAttribute('data-phase', 'trace')
+  await expect(page.getByTestId('intro-start')).toHaveAttribute('data-stroke', '1')
+  await write(page, 'დ')
+  await expect(page.getByTestId('intro-caption')).toBeVisible({ timeout: 4000 })
+})
