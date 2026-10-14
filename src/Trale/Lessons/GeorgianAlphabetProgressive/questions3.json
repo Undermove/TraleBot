@@ -5,14 +5,12 @@
   "lexicon": [
     "ვ",
     "მ",
-    "მამა",
     "ნ",
+    "მამა",
     "მე",
     "მინდა",
     "ვინ",
-    "სამი",
-    "მე ვარ დედა",
-    "რამდენი"
+    "სად"
   ],
   "questions": [
     {
@@ -68,32 +66,14 @@
     },
     {
       "id": "ab3-q04",
-      "lemma": "მამა",
-      "question": "По-грузински «მამა» значит…",
-      "options": [
-        "папа",
-        "мама",
-        "дедушка"
-      ],
-      "answer_index": 0,
-      "explanation": "Сюрприз: по-грузински «მამა» — это папа. А мама — «დედა», её ты уже знаешь.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab3-q05",
       "lemma": "ნ",
       "question": "Новая буква ნ — звук «н». Как читается «ნоს»?",
       "options": [
-        "мос",
         "нос",
+        "мос",
         "вос"
       ],
-      "answer_index": 1,
+      "answer_index": 0,
       "explanation": "ნ — «н»: «нос».",
       "tags": [
         "new-letter",
@@ -102,15 +82,15 @@
       "difficulty": 1
     },
     {
-      "id": "ab3-q06",
+      "id": "ab3-q05",
       "lemma": "ნ",
       "question": "Как читается «бანან»?",
       "options": [
         "бамам",
-        "бавав",
-        "банан"
+        "банан",
+        "бавав"
       ],
-      "answer_index": 2,
+      "answer_index": 1,
       "explanation": "ნ — «н»: «банан».",
       "tags": [
         "letter-in-word",
@@ -119,19 +99,35 @@
       "difficulty": 1
     },
     {
+      "id": "ab3-q06",
+      "lemma": "მამა",
+      "question": "«მამა» значит «папа». Как это читается?",
+      "options": [
+        "нана",
+        "вава",
+        "мама"
+      ],
+      "answer_index": 2,
+      "explanation": "«მამა» — «мама», папа. Читается «мама», а значит «папа». А мама — «დედა».",
+      "tags": [
+        "word-intro",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
       "id": "ab3-q07",
       "lemma": "მე",
-      "question": "Прочитай: «მე». Что это значит?",
+      "question": "«მე» значит «я». Как это читается?",
       "options": [
-        "я",
-        "ты",
-        "он"
+        "мэ",
+        "нэ",
+        "вэ"
       ],
       "answer_index": 0,
       "explanation": "«მე» — «мэ», я.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
@@ -139,17 +135,16 @@
     {
       "id": "ab3-q08",
       "lemma": "მინდა",
-      "question": "Прочитай: «მინდა». Что это значит?",
+      "question": "«მინდა» значит «хочу». Как это читается?",
       "options": [
-        "есть",
-        "хочу",
-        "нет"
+        "мимда",
+        "минда",
+        "нинда"
       ],
       "answer_index": 1,
       "explanation": "«მინდა» — «минда», хочу. «არ მინდა» — не хочу.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
@@ -157,32 +152,31 @@
     {
       "id": "ab3-q09",
       "lemma": "ვინ",
-      "question": "Прочитай: «ვინ». Что это значит?",
+      "question": "«ვინ» значит «кто». Как это читается?",
       "options": [
-        "что",
-        "где",
-        "кто"
+        "мин",
+        "вим",
+        "вин"
       ],
       "answer_index": 2,
       "explanation": "«ვინ» — «вин», кто.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q10",
-      "lemma": "სამი",
-      "question": "Прочитай: «სამი». Что это значит?",
+      "lemma": "მამა",
+      "question": "Что значит «მამა»?",
       "options": [
-        "три",
-        "два",
-        "семь"
+        "папа",
+        "я",
+        "кто"
       ],
       "answer_index": 0,
-      "explanation": "«სამი» — «сами», три.",
+      "explanation": "«მამა» — папа.",
       "tags": [
         "word-reading",
         "meaning",
@@ -192,33 +186,32 @@
     },
     {
       "id": "ab3-q11",
-      "lemma": "მე ვარ დედა",
-      "question": "Прочитай: «მე ვარ დედა». Что это значит?",
+      "lemma": "მე",
+      "question": "Где написано «я»?",
       "options": [
-        "это мама",
-        "я мама",
-        "где мама"
+        "ის",
+        "მე",
+        "ეს"
       ],
       "answer_index": 1,
-      "explanation": "«ვარ» — «вар», «(я) есть». «მე ვარ დედა» — я мама.",
+      "explanation": "«я» — «მე».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab3-q12",
-      "lemma": "რამდენი",
-      "question": "Прочитай: «რამდენი». Что это значит?",
+      "lemma": "სად",
+      "question": "Что значит «სად»?",
       "options": [
+        "что",
         "кто",
-        "где",
-        "сколько"
+        "где"
       ],
       "answer_index": 2,
-      "explanation": "«რამდენი» — «рамдэни», сколько. Пригодится в магазине.",
+      "explanation": "«სად» — «сад», где.",
       "tags": [
         "word-reading",
         "meaning",

@@ -10,8 +10,7 @@
     "სახლი",
     "ჩემი",
     "ჩვენ",
-    "ახალი",
-    "ნახვამდის"
+    "მინდა"
   ],
   "questions": [
     {
@@ -119,17 +118,16 @@
     {
       "id": "ab4-q07",
       "lemma": "ჩაი",
-      "question": "Прочитай: «ჩაი». Что это значит?",
+      "question": "«ჩაი» значит «чай». Как это читается?",
       "options": [
-        "чай",
-        "вода",
-        "хлеб"
+        "чаи",
+        "шаи",
+        "хаи"
       ],
       "answer_index": 0,
       "explanation": "«ჩაი» — «чаи», чай. Почти как по-русски.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
@@ -137,17 +135,16 @@
     {
       "id": "ab4-q08",
       "lemma": "სახლი",
-      "question": "Прочитай: «სახლი». Что это значит?",
+      "question": "«სახლი» значит «дом». Как это читается?",
       "options": [
-        "хлеб",
-        "дом",
-        "семья"
+        "сакли",
+        "сахли",
+        "сагли"
       ],
       "answer_index": 1,
       "explanation": "«სახლი» — «сахли», дом.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
@@ -155,17 +152,16 @@
     {
       "id": "ab4-q09",
       "lemma": "ჩემი",
-      "question": "Прочитай: «ჩემი». Что это значит?",
+      "question": "«ჩემი» значит «мой». Как это читается?",
       "options": [
-        "твой",
-        "его",
-        "мой"
+        "шэми",
+        "хэми",
+        "чэми"
       ],
       "answer_index": 2,
       "explanation": "«ჩემი» — «чэми», мой.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
@@ -173,50 +169,48 @@
     {
       "id": "ab4-q10",
       "lemma": "ჩვენ",
-      "question": "Прочитай: «ჩვენ». Что это значит?",
+      "question": "«ჩვენ» значит «мы». Как это читается?",
       "options": [
-        "мы",
-        "вы",
-        "они"
+        "чвэн",
+        "швэн",
+        "хвэн"
       ],
       "answer_index": 0,
       "explanation": "«ჩვენ» — «чвэн», мы.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab4-q11",
-      "lemma": "ახალი",
-      "question": "Прочитай: «ახალი». Что это значит?",
+      "lemma": "სახლი",
+      "question": "Где написано «дом»?",
       "options": [
-        "старый",
-        "новый",
-        "большой"
+        "ჩაი",
+        "სახლი",
+        "ჩემი"
       ],
       "answer_index": 1,
-      "explanation": "«ახალი» — «ахали», новый.",
+      "explanation": "«дом» — «სახლი».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab4-q12",
-      "lemma": "ნახვამდის",
-      "question": "Прочитай: «ნახვამდის». Что это значит?",
+      "lemma": "მინდა",
+      "question": "Что значит «მინდა»?",
       "options": [
-        "привет",
-        "спасибо",
-        "до свидания"
+        "мой",
+        "кто",
+        "хочу"
       ],
       "answer_index": 2,
-      "explanation": "«ნახვამდის» — «нахвамдис», до свидания.",
+      "explanation": "«მინდა» — «минда», хочу. «მე მინდა ჩაი» — я хочу чай.",
       "tags": [
         "word-reading",
         "meaning",

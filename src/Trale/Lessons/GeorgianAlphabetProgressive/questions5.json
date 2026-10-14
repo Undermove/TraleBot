@@ -10,8 +10,7 @@
     "ორი",
     "ათი",
     "შენ",
-    "შენი",
-    "თავი"
+    "ჩემი"
   ],
   "questions": [
     {
@@ -33,31 +32,14 @@
     },
     {
       "id": "ab5-q02",
-      "lemma": "თ",
-      "question": "Как читается «ერთი»?",
-      "options": [
-        "эрки",
-        "эрти",
-        "эрпи"
-      ],
-      "answer_index": 1,
-      "explanation": "თ — «т»: «эрти». Что это за слово — в конце урока.",
-      "tags": [
-        "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab5-q03",
       "lemma": "ო",
       "question": "Новая буква ო — звук «о». Как читается «მოლოкო»?",
       "options": [
         "мулуку",
-        "милики",
-        "молоко"
+        "молоко",
+        "милики"
       ],
-      "answer_index": 2,
+      "answer_index": 1,
       "explanation": "ო — «о»: «молоко».",
       "tags": [
         "new-letter",
@@ -66,15 +48,15 @@
       "difficulty": 1
     },
     {
-      "id": "ab5-q04",
+      "id": "ab5-q03",
       "lemma": "ო",
       "question": "Как читается «რადიო»?",
       "options": [
-        "радио",
         "радиу",
-        "радиа"
+        "радиа",
+        "радио"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«რადიო» — радио. Так это слово и пишут по-грузински.",
       "tags": [
         "letter-in-word",
@@ -83,16 +65,16 @@
       "difficulty": 1
     },
     {
-      "id": "ab5-q05",
+      "id": "ab5-q04",
       "lemma": "შ",
       "question": "Новая буква შ — звук «ш». Как читается «შкოლა»?",
       "options": [
-        "скола",
         "школа",
+        "скола",
         "чкола"
       ],
-      "answer_index": 1,
-      "explanation": "შ — «ш»: «школа». По-грузински школа звучит «скола», это слово будет в седьмом уроке.",
+      "answer_index": 0,
+      "explanation": "შ — «ш»: «школа».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -100,16 +82,16 @@
       "difficulty": 1
     },
     {
-      "id": "ab5-q06",
+      "id": "ab5-q05",
       "lemma": "შ",
       "question": "Как читается «მაშინა»?",
       "options": [
         "масина",
-        "мачина",
-        "машина"
+        "машина",
+        "мачина"
       ],
-      "answer_index": 2,
-      "explanation": "შ — «ш»: русское «машина». По-грузински машина — другое слово, оно в следующем уроке.",
+      "answer_index": 1,
+      "explanation": "შ — «ш»: русское «машина».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -117,70 +99,84 @@
       "difficulty": 1
     },
     {
-      "id": "ab5-q07",
+      "id": "ab5-q06",
       "lemma": "ერთი",
-      "question": "Прочитай: «ერთი». Что это значит?",
+      "question": "«ერთი» значит «один». Как это читается?",
       "options": [
-        "один",
-        "два",
-        "три"
+        "эрки",
+        "эрпи",
+        "эрти"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«ერთი» — «эрти», один.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab5-q07",
+      "lemma": "ორი",
+      "question": "«ორი» значит «два». Как это читается?",
+      "options": [
+        "ори",
+        "оли",
+        "оди"
+      ],
+      "answer_index": 0,
+      "explanation": "«ორი» — «ори», два.",
+      "tags": [
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q08",
-      "lemma": "ორი",
-      "question": "Прочитай: «ორი». Что это значит?",
+      "lemma": "ათი",
+      "question": "«ათი» значит «десять». Как это читается?",
       "options": [
-        "три",
-        "два",
-        "один"
+        "аки",
+        "ати",
+        "апи"
       ],
       "answer_index": 1,
-      "explanation": "«ორი» — «ори», два. А три — «სამი».",
+      "explanation": "«ათი» — «ати», десять.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q09",
-      "lemma": "ათი",
-      "question": "Прочитай: «ათი». Что это значит?",
+      "lemma": "შენ",
+      "question": "«შენ» значит «ты». Как это читается?",
       "options": [
-        "один",
-        "два",
-        "десять"
+        "сэн",
+        "чэн",
+        "шэн"
       ],
       "answer_index": 2,
-      "explanation": "«ათი» — «ати», десять.",
+      "explanation": "«შენ» — «шэн», ты. А я — «მე».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q10",
-      "lemma": "შენ",
-      "question": "Прочитай: «შენ». Что это значит?",
+      "lemma": "ორი",
+      "question": "Что значит «ორი»?",
       "options": [
-        "ты",
-        "я",
-        "мы"
+        "два",
+        "один",
+        "десять"
       ],
       "answer_index": 0,
-      "explanation": "«შენ» — «шэн», ты. А я — «მე».",
+      "explanation": "«ორი» — два.",
       "tags": [
         "word-reading",
         "meaning",
@@ -190,33 +186,32 @@
     },
     {
       "id": "ab5-q11",
-      "lemma": "შენი",
-      "question": "Прочитай: «შენი». Что это значит?",
+      "lemma": "შენ",
+      "question": "Где написано «ты»?",
       "options": [
-        "мой",
-        "твой",
-        "наш"
+        "მე",
+        "შენ",
+        "ჩვენ"
       ],
       "answer_index": 1,
-      "explanation": "«შენი» — «шэни», твой. А мой — «ჩემი».",
+      "explanation": "«ты» — «შენ».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab5-q12",
-      "lemma": "თავი",
-      "question": "Прочитай: «თავი». Что это значит?",
+      "lemma": "ჩემი",
+      "question": "Что значит «ჩემი»?",
       "options": [
-        "рука",
-        "глаз",
-        "голова"
+        "мы",
+        "дом",
+        "мой"
       ],
       "answer_index": 2,
-      "explanation": "«თავი» — «тави», голова.",
+      "explanation": "«ჩემი» — «чэми», мой.",
       "tags": [
         "word-reading",
         "meaning",

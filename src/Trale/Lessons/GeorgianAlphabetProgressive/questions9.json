@@ -7,11 +7,11 @@
     "ღ",
     "ძ",
     "პური",
-    "ღვინო",
     "ძაღლი",
+    "ღვინო",
     "დღე",
     "ძმა",
-    "ძვირი"
+    "ქუჩა"
   ],
   "questions": [
     {
@@ -24,7 +24,7 @@
         "таспорт"
       ],
       "answer_index": 0,
-      "explanation": "პ — «п»: «паспорт». По-грузински — «პასპორტი».",
+      "explanation": "პ — «п»: «паспорт».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -58,7 +58,7 @@
         "гвино"
       ],
       "answer_index": 2,
-      "explanation": "ღ — мягкое «г»: «гвино». Что это — в конце урока.",
+      "explanation": "«ღვინო» — «гвино», по-грузински это «вино».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -75,7 +75,7 @@
         "дбэ"
       ],
       "answer_index": 0,
-      "explanation": "ღ — мягкое «г»: «дгэ». Что это — в конце урока.",
+      "explanation": "«დღე» — «дгэ», по-грузински это «день».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -109,7 +109,7 @@
         "дзма"
       ],
       "answer_index": 2,
-      "explanation": "ძ — «дз»: «дзма». Что это — в конце урока.",
+      "explanation": "«ძმა» — «дзма», по-грузински это «брат».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -119,50 +119,48 @@
     {
       "id": "ab9-q07",
       "lemma": "პური",
-      "question": "Прочитай: «პური». Что это значит?",
+      "question": "«პური» значит «хлеб». Как это читается?",
       "options": [
-        "хлеб",
-        "вода",
-        "сыр"
+        "пури",
+        "бури",
+        "тури"
       ],
       "answer_index": 0,
       "explanation": "«პური» — «пури», хлеб.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q08",
-      "lemma": "ღვინო",
-      "question": "Прочитай: «ღვინო». Что это значит?",
+      "lemma": "ძაღლი",
+      "question": "«ძაღლი» значит «собака». Как это читается?",
       "options": [
-        "вода",
-        "вино",
-        "чай"
+        "цагли",
+        "дзагли",
+        "загли"
       ],
       "answer_index": 1,
-      "explanation": "«ღვინო» — «гвино», вино.",
+      "explanation": "«ძაღლი» — «дзагли», собака. А кошка — «კატა».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q09",
-      "lemma": "ძაღლი",
-      "question": "Прочитай: «ძაღლი». Что это значит?",
+      "lemma": "ღვინო",
+      "question": "Что значит «ღვინო»?",
       "options": [
-        "кошка",
-        "лошадь",
-        "собака"
+        "хлеб",
+        "брат",
+        "вино"
       ],
       "answer_index": 2,
-      "explanation": "«ძაღლი» — «дзагли», собака. А кошка — «კატა».",
+      "explanation": "«ღვინო» — вино.",
       "tags": [
         "word-reading",
         "meaning",
@@ -173,14 +171,14 @@
     {
       "id": "ab9-q10",
       "lemma": "დღე",
-      "question": "Прочитай: «დღე». Что это значит?",
+      "question": "Что значит «დღე»?",
       "options": [
         "день",
-        "ночь",
-        "год"
+        "вино",
+        "собака"
       ],
       "answer_index": 0,
-      "explanation": "«დღე» — «дгэ», день.",
+      "explanation": "«დღე» — день.",
       "tags": [
         "word-reading",
         "meaning",
@@ -191,32 +189,31 @@
     {
       "id": "ab9-q11",
       "lemma": "ძმა",
-      "question": "Прочитай: «ძმა». Что это значит?",
+      "question": "Где написано «брат»?",
       "options": [
-        "друг",
-        "брат",
-        "муж"
+        "ძაღლი",
+        "ძმა",
+        "პური"
       ],
       "answer_index": 1,
-      "explanation": "«ძმა» — «дзма», брат.",
+      "explanation": "«брат» — «ძმა».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab9-q12",
-      "lemma": "ძვირი",
-      "question": "Прочитай: «ძვირი». Что это значит?",
+      "lemma": "ქუჩა",
+      "question": "Что значит «ქუჩა»?",
       "options": [
-        "дешёвый",
-        "старый",
-        "дорогой"
+        "деньги",
+        "кошка",
+        "улица"
       ],
       "answer_index": 2,
-      "explanation": "«ძვირი» — «дзвири», дорогой. А дешёвый — «იაფი».",
+      "explanation": "«ქუჩა» — «куча», улица.",
       "tags": [
         "word-reading",
         "meaning",

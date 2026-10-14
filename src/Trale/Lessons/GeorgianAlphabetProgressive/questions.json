@@ -72,7 +72,7 @@
         "вона"
       ],
       "answer_index": 0,
-      "explanation": "Обе грузинские буквы на месте: დ — «д», ა — «а». «Вода».",
+      "explanation": "დ — «д», ა — «а»: «вода».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -115,71 +115,68 @@
     },
     {
       "id": "ab1-q07",
-      "lemma": "დ",
-      "question": "Как читается «და»?",
+      "lemma": "და",
+      "question": "«და» значит «и». Как это читается?",
       "options": [
         "да",
         "до",
         "ду"
       ],
       "answer_index": 0,
-      "explanation": "Читается «да». А что это слово значит по-грузински — в следующем вопросе.",
+      "explanation": "«და» — «да», и. Это не русское «да»: «და» — союз «и», как в «мама и папа».",
       "tags": [
-        "letter-in-word",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q08",
-      "lemma": "და",
-      "question": "Сюрприз: «და» читается «да», но по-грузински это «и» — как в «мама и папа». Что значит «და»?",
+      "lemma": "არა",
+      "question": "«არა» значит «нет». Как это читается?",
       "options": [
-        "да",
-        "и",
-        "нет"
+        "ада",
+        "ара",
+        "ава"
       ],
       "answer_index": 1,
-      "explanation": "Да, «და» — это «и». Одно из самых частых грузинских слов.",
+      "explanation": "«არა» — «ара», нет.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q09",
-      "lemma": "არა",
-      "question": "Прочитай: «არა». Что это значит?",
+      "lemma": "რა",
+      "question": "«რა» значит «что». Как это читается?",
       "options": [
         "да",
-        "и",
-        "нет"
+        "ар",
+        "ра"
       ],
       "answer_index": 2,
-      "explanation": "«არა» — «ара», нет.",
+      "explanation": "«რა» — «ра», что.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q10",
-      "lemma": "რა",
-      "question": "Прочитай: «რა». Что это значит?",
+      "lemma": "არა",
+      "question": "Где написано «нет»?",
       "options": [
-        "что",
-        "где",
-        "кто"
+        "არა",
+        "რა",
+        "და"
       ],
       "answer_index": 0,
-      "explanation": "«რა» — «ра», что. «რა?» — «что?»",
+      "explanation": "«нет» — «არა».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1

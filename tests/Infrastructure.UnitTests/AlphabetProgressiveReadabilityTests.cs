@@ -13,6 +13,7 @@ namespace Infrastructure.UnitTests;
 // - questions are served in the authored order, and a question never uses a letter of its
 //   own lesson before the "new-letter" question that introduces it;
 // - a question that mixes Cyrillic and Georgian inside one word is tagged "mixed-script";
+// - a meaning is shown (theory or an earlier question) before a question asks for it;
 // - no linguistics jargon and no Latin transliteration — pronunciation is given
 //   in Cyrillic and explained in plain words;
 // - lessons stay short (10–12 questions, a 2–3 minute session);
@@ -94,6 +95,65 @@ public class AlphabetProgressiveReadabilityTests
         }
 
         failures.ShouldBeEmpty(string.Join("\n", failures));
+    }
+
+    // A question must never ask what the learner has not been shown. The meaning a
+    // "meaning" / "word-recognition" question asks about must appear next to the Georgian
+    // word in the text or explanation of an earlier question of this or a previous lesson
+    // (an explanation is seen only after answering, so it counts for later questions only).
+    // The theory screen does not count: the lesson-1 theory listed «და — и», and the owner
+    // still met «Что значит და?» unprepared — people skim the theory before practice.
+    [TestCaseSource(nameof(LessonIds))]
+    public void Meanings_are_shown_before_they_are_asked(int lessonId)
+    {
+        var shown = new List<string>();
+        for (var earlier = 1; earlier < lessonId; earlier++)
+            shown.AddRange(LoadQuestions(earlier).SelectMany(ShownText));
+
+        var failures = new List<string>();
+        foreach (var q in LoadQuestions(lessonId))
+        {
+            var tags = q.GetProperty("tags").EnumerateArray().Select(t => t.GetString()).ToList();
+            var options = q.GetProperty("options").EnumerateArray().Select(o => o.GetString()!).ToList();
+            var correct = options[q.GetProperty("answer_index").GetInt32()];
+            string? word = null, meaning = null;
+            if (tags.Contains("meaning"))
+            {
+                word = q.GetProperty("lemma").GetString();
+                meaning = correct;
+            }
+            else if (tags.Contains("word-recognition"))
+            {
+                word = correct;
+                var m = Regex.Match(q.GetProperty("question").GetString()!, "«([^»]+)»");
+                meaning = m.Success ? m.Groups[1].Value : null;
+            }
+
+            // A teaching question may give the knowledge in its own text and check it below
+            // («და» значит «и». …?): its own question text counts, its explanation does not.
+            var ownText = q.GetProperty("question").GetString()!;
+            if (word != null && meaning != null && !shown.Append(ownText).Any(t => ShownTogether(t, word, meaning)))
+                failures.Add($"question {q.GetProperty("id").GetString()}: asks «{word}» = «{meaning}», but that was never shown before");
+
+            shown.AddRange(ShownText(q));
+        }
+
+        failures.ShouldBeEmpty(string.Join("\n", failures));
+    }
+
+    private static IEnumerable<string> ShownText(JsonElement q)
+    {
+        foreach (var field in new[] { "question", "explanation" })
+            if (q.TryGetProperty(field, out var v) && v.ValueKind == JsonValueKind.String)
+                yield return v.GetString()!;
+    }
+
+    private static bool ShownTogether(string text, string word, string meaning)
+    {
+        // Whole words only: the meaning «и» must not be found inside «значит».
+        var words = Regex.Matches(text, $@"(?<!\p{{L}}){Regex.Escape(word)}(?!\p{{L}})").Select(m => m.Index).ToList();
+        var meanings = Regex.Matches(text, $@"(?<!\p{{L}}){Regex.Escape(meaning)}(?!\p{{L}})").Select(m => m.Index).ToList();
+        return words.Any(w => meanings.Any(m => Math.Abs(m - w) <= 60));
     }
 
     [TestCaseSource(nameof(LessonIds))]

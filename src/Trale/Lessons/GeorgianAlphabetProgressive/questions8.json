@@ -7,11 +7,10 @@
     "უ",
     "ფ",
     "ფული",
-    "ხუთი",
     "ქუჩა",
-    "იაფი",
     "კატა",
-    "გუშინ"
+    "ხუთი",
+    "კაცი"
   ],
   "questions": [
     {
@@ -75,7 +74,7 @@
         "хати"
       ],
       "answer_index": 0,
-      "explanation": "უ — «у»: «хути». Что это — в конце урока.",
+      "explanation": "«ხუთი» — «хути», по-грузински это «пять».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -119,68 +118,65 @@
     {
       "id": "ab8-q07",
       "lemma": "ფული",
-      "question": "Прочитай: «ფული». Что это значит?",
+      "question": "«ფული» значит «деньги». Как это читается?",
       "options": [
-        "деньги",
-        "цена",
-        "хлеб"
+        "пули",
+        "кули",
+        "тули"
       ],
       "answer_index": 0,
       "explanation": "«ფული» — «пули», деньги.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q08",
-      "lemma": "ხუთი",
-      "question": "Прочитай: «ხუთი». Что это значит?",
+      "lemma": "ქუჩა",
+      "question": "«ქუჩა» значит «улица». Как это читается?",
       "options": [
-        "четыре",
-        "пять",
-        "десять"
+        "кута",
+        "куча",
+        "куца"
       ],
       "answer_index": 1,
-      "explanation": "«ხუთი» — «хути», пять.",
+      "explanation": "«ქუჩა» — «куча», улица.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q09",
-      "lemma": "ქუჩა",
-      "question": "Прочитай: «ქუჩა». Что это значит?",
+      "lemma": "კატა",
+      "question": "«კატა» значит «кошка». Как это читается?",
       "options": [
-        "город",
-        "дом",
-        "улица"
+        "гата",
+        "хата",
+        "ката"
       ],
       "answer_index": 2,
-      "explanation": "«ქუჩა» — «куча», улица.",
+      "explanation": "«კატა» — «ката», кошка.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-intro",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q10",
-      "lemma": "იაფი",
-      "question": "Прочитай: «იაფი». Что это значит?",
+      "lemma": "ხუთი",
+      "question": "Что значит «ხუთი»?",
       "options": [
-        "дешёвый",
-        "дорогой",
-        "новый"
+        "пять",
+        "десять",
+        "два"
       ],
       "answer_index": 0,
-      "explanation": "«იაფი» — «иапи», дешёвый.",
+      "explanation": "«ხუთი» — пять.",
       "tags": [
         "word-reading",
         "meaning",
@@ -190,33 +186,32 @@
     },
     {
       "id": "ab8-q11",
-      "lemma": "კატა",
-      "question": "Прочитай: «კატა». Что это значит?",
+      "lemma": "ფული",
+      "question": "Где написано «деньги»?",
       "options": [
-        "собака",
-        "кошка",
-        "друг"
+        "ქუჩა",
+        "ფული",
+        "კატა"
       ],
       "answer_index": 1,
-      "explanation": "«კატა» — «ката», кошка.",
+      "explanation": "«деньги» — «ფული».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab8-q12",
-      "lemma": "გუშინ",
-      "question": "Прочитай: «გუშინ». Что это значит?",
+      "lemma": "კაცი",
+      "question": "Что значит «კაცი»?",
       "options": [
-        "завтра",
-        "сегодня",
-        "вчера"
+        "женщина",
+        "друг",
+        "мужчина"
       ],
       "answer_index": 2,
-      "explanation": "«გუშინ» — «гушин», вчера.",
+      "explanation": "«კაცი» — «каци», мужчина.",
       "tags": [
         "word-reading",
         "meaning",
