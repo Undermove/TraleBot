@@ -94,7 +94,9 @@ export default function Practice({
       setPhase('error')
       return
     }
-    const played = data.slice(0, 10).map(normalizeQuestion)
+    // Alphabet lessons are ordered (teach, then ask) — play every question, never cut the checks at the end.
+    const limit = moduleId === 'alphabet-progressive' ? data.length : 10
+    const played = data.slice(0, limit).map(normalizeQuestion)
     setQuestions(played)
     setPhase('answering')
   }
