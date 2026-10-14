@@ -57,15 +57,16 @@ describe('Assemble', () => {
 })
 
 describe('Finale', () => {
-  it('puts the lesson letters into «Мой алфавит», counts the words and invites to the cafe', async () => {
+  it('puts the lesson letters into «Мой алфавит» and counts the words', async () => {
     vi.useFakeTimers()
-    const onCafe = vi.fn()
-    render(<Finale lesson={2} onNext={() => {}} onCafe={onCafe} />)
+    const onNext = vi.fn()
+    render(<Finale lesson={2} onNext={onNext} />)
     await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
     expect(screen.getByTestId('finale-letters').textContent).toBe('6 из 33')
     expect(screen.getByTestId('finale-words').textContent).toBe('9 грузинских слов')
     expect(screen.getAllByTestId('finale-cell').filter(c => c.dataset.on === 'yes')).toHaveLength(6)
-    fireEvent.click(screen.getByText(/в кафе Бомборы/))
-    expect(onCafe).toHaveBeenCalled()
+    expect(screen.queryByText(/кафе/i)).toBeNull()
+    fireEvent.click(screen.getByText('итог →'))
+    expect(onNext).toHaveBeenCalled()
   })
 })

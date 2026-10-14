@@ -138,21 +138,22 @@ export function assembleRounds(lesson: number, count = 2, rng: Rng = Math.random
 
 // ───────────── План урока ─────────────
 
-export type GameKind = 'morph' | 'assemble'
+export type MidGame = 'morph' | 'assemble'
 
 export interface LessonGamePlan {
-  /** После какого по счёту вопроса (1-based) играть «Превращение». */
+  /** После какого по счёту вопроса (1-based) играть игру в середине. */
   midAfter: number
-  mid: GameKind
-  end: GameKind
+  mid: MidGame
+  end: 'cafe'
 }
 
 /**
- * Игры урока алфавита: «Превращение» в середине — когда все три буквы урока уже показаны внутри русских
- * слов (после 6-го вопроса), и «Собери слово» в конце — из настоящих грузинских слов.
+ * Игры урока алфавита — ровно две, чтобы урок не стал длиннее: в середине (после 6-го вопроса, когда все
+ * три буквы урока уже показаны) — «Превращение» в нечётных уроках и «Собери слово» в чётных; в конце
+ * всегда «Кафе Бомборы».
  */
 export function lessonGamePlan(lesson: number, total: number): LessonGamePlan | null {
   if (lesson < 1 || lesson > LESSON_COUNT || total < 2) return null
   const midAfter = total >= 8 ? 6 : Math.max(1, Math.floor(total / 2))
-  return { midAfter, mid: 'morph', end: 'assemble' }
+  return { midAfter, mid: lesson % 2 === 1 ? 'morph' : 'assemble', end: 'cafe' }
 }

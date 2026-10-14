@@ -6,8 +6,6 @@ export type Screen =
   | { kind: 'module'; moduleId: string }
   | { kind: 'lesson-theory'; moduleId: string; lessonId: number }
   | { kind: 'practice'; moduleId: string; lessonId: number }
-  /** «Кафе Бомборы» — игра на чтение из модуля «Алфавит»; back — куда вернуться (по умолчанию к модулю). */
-  | { kind: 'alphabet-cafe'; back?: Screen }
   | {
       kind: 'result'
       moduleId: string

@@ -24,6 +24,9 @@ const skipIntro = () => { fireEvent.click(screen.getByTestId('intro-skip')); fir
 describe('alphabet lesson scenes', () => {
   beforeEach(() => {
     localStorage.clear()
+    // Записи букв: в jsdom <audio> не играет.
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
     api.lessonQuestions.mockResolvedValue(questions as any)
     api.recordAnswer.mockResolvedValue({ xpEarned: 1, progress: {} } as any)
     api.completeLesson.mockResolvedValue({ xpEarned: 20, progress: {} } as any)
@@ -50,7 +53,7 @@ describe('alphabet lesson scenes', () => {
     expect(navigate).toHaveBeenCalledWith({ kind: 'lesson-theory', moduleId: 'alphabet-progressive', lessonId: 1 })
   })
 
-  it('after the last question sends the same result to the server, then Assemble and the celebration', async () => {
+  it('after the last question sends the same result to the server, then the cafe and the celebration', async () => {
     const navigate = vi.fn()
     render(<Practice moduleId="alphabet-progressive" lessonId={1} progress={defaultProgress} setProgress={() => {}} authenticated navigate={navigate} />)
     await waitFor(() => expect(screen.getByTestId('intro-skip')).toBeTruthy())
@@ -69,13 +72,26 @@ describe('alphabet lesson scenes', () => {
       }
       answer()
     }
-    await waitFor(() => expect(screen.getByText('Собери грузинское слово')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('Кафе Бомборы')).toBeTruthy())
     expect(api.completeLesson).toHaveBeenCalledWith({ moduleId: 'alphabet-progressive', lessonId: 1, correct: 10, total: 10 })
     expect(navigate).not.toHaveBeenCalled()
+    // Первый гость — с подсказкой.
+    expect(screen.getByTestId('cafe-howto').textContent).toContain('Гость заказывает по-грузински')
+    expect(screen.getAllByTestId('cafe-pointer')).toHaveLength(1)
 
     // Закрыть игру — уже итог урока: прогресс сохранён.
     await act(async () => { fireEvent.click(screen.getByLabelText('Назад')) })
     expect(navigate).toHaveBeenCalledWith(expect.objectContaining({ kind: 'result', correct: 10, total: 10 }))
+  })
+
+  it('in an even lesson plays «Собери слово» in the middle instead of «Превращение»', async () => {
+    const qs = ['ე', 'ე', 'ი', 'ი', 'ს', 'ს', 'ეს', 'ის'].map((lemma, i) => ({ id: `e${i}`, lemma, question: `Вопрос ${i + 1}`, options: ['верно', 'неверно'], answerIndex: 0, explanation: '' }))
+    api.lessonQuestions.mockResolvedValue(qs as any)
+    render(<Practice moduleId="alphabet-progressive" lessonId={2} progress={defaultProgress} setProgress={() => {}} authenticated navigate={() => {}} />)
+    await waitFor(() => expect(screen.getByTestId('intro-skip')).toBeTruthy())
+    for (let i = 0; i < 6; i++) { if (screen.queryByTestId('intro-skip')) skipIntro(); answer() }
+    expect(screen.getByText('Собери грузинское слово')).toBeTruthy()
+    expect(screen.queryByText('Преврати слово в грузинское')).toBeNull()
   })
 
   it('leaves other modules untouched', async () => {

@@ -3,7 +3,6 @@ import Header from '../components/Header'
 import KilimProgress from '../components/KilimProgress'
 import ModulePhraseBanner from '../components/ModulePhraseBanner'
 import { CatalogDto, ProgressState, Screen } from '../types'
-import CafeTile from '../alphabet/cafe/CafeTile'
 
 interface Props {
   catalog: CatalogDto
@@ -155,11 +154,6 @@ export default function ModuleMap({
 
         {/* Module entry phrase — shown once per session */}
         <ModulePhraseBanner moduleId={moduleId} />
-
-        {/* Алфавит: после первого урока — вход в «Кафе Бомборы» */}
-        {moduleId === 'alphabet-progressive' && (
-          <CafeTile completed={progress.completedLessons[moduleId]} onOpen={() => navigate({ kind: 'alphabet-cafe' })} />
-        )}
 
         {/* Journey path map */}
         <div className="mn-eyebrow mb-3">уроки</div>

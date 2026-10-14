@@ -1,7 +1,6 @@
 import { isGeorgian, mixed, readable } from '../games/logic'
-import { LESSON_COUNT } from '../games/data'
 
-// Товары кафе. Заказ гостя написан теми буквами, которые ученик уже знает:
+// Товары кафе (последняя игра урока алфавита). Заказ гостя написан теми буквами, которые ученик уже знает:
 // пока грузинское слово не читается целиком — русское слово с выученными буквами («воდა», «ხლეб»);
 // как только все буквы грузинского слова выучены — настоящее слово (წყალი, პური). Грузинские слова —
 // из базового словаря уроков алфавита (кроме ხაჭაპური — пример из теории десятого урока).
@@ -52,34 +51,3 @@ export const georgianLetters = (text: string) => [...text].filter(isGeorgian).le
 
 /** Все товары, которые гость может заказать на этом уровне. */
 export const availableProducts = (level: number) => PRODUCTS.filter(p => orderText(p, level) !== null)
-
-/**
- * Витрина дня — до size товаров: сначала настоящие грузинские слова, потом смешанные, где грузинских букв больше.
- * Порядок на витрине перемешан, чтобы место не подсказывало товар.
- */
-export function shelfFor(level: number, size = 6, rng: () => number = Math.random): Product[] {
-  const score = (p: Product) => (isRealWord(p, level) ? 100 : 0) + georgianLetters(orderText(p, level)!) + rng() * 0.5
-  const best = availableProducts(level).sort((a, b) => score(b) - score(a)).slice(0, size)
-  for (let i = best.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [best[i], best[j]] = [best[j], best[i]] }
-  return best
-}
-
-/** Что изменится в кафе после следующего урока: новые товары и товары, которые станут настоящими словами. */
-export function nextLessonNews(level: number): { lesson: number; added: Product[]; becameReal: Product[] } | null {
-  if (level >= LESSON_COUNT) return null
-  const now = new Set(availableProducts(level).map(p => p.id))
-  const next = availableProducts(level + 1)
-  return {
-    lesson: level + 1,
-    added: next.filter(p => !now.has(p.id)),
-    becameReal: next.filter(p => now.has(p.id) && isRealWord(p, level + 1) && !isRealWord(p, level))
-  }
-}
-
-/** Уровень кафе — сколько уроков алфавита пройдено подряд с первого. */
-export function cafeLevel(completedLessons: readonly number[] | undefined): number {
-  const done = new Set(completedLessons ?? [])
-  let n = 0
-  while (n < LESSON_COUNT && done.has(n + 1)) n++
-  return n
-}

@@ -4,7 +4,8 @@ import LetterIntro from './intro/LetterIntro'
 import Morph from './games/Morph'
 import Assemble from './games/Assemble'
 import Finale from './games/Finale'
-import { lessonGamePlan, lessonLetters } from './games/logic'
+import Cafe from './cafe/Cafe'
+import { lessonGamePlan, lessonLetters, type MidGame } from './games/logic'
 
 // Сцены урока алфавита между вопросами. Вопросы, их число и подсчёт верных ответов не меняются:
 // сцены не отвечают на вопросы и не влияют на то, засчитан ли урок (это по-прежнему completeLesson).
@@ -15,7 +16,7 @@ type Result = Extract<Screen, { kind: 'result' }>
 
 export type AlphabetScene =
   | { kind: 'intro'; letter: string; index: number; count: number }
-  | { kind: 'mid' }
+  | { kind: 'mid'; game: MidGame }
   | { kind: 'end'; result: Result; perfect: boolean }
   | { kind: 'finale'; result: Result }
 
@@ -38,9 +39,9 @@ export function useAlphabetLesson(moduleId: string, lessonId: number, questions:
     scene: (pending ?? intro) as AlphabetScene | null,
     /** Ответили на n-й вопрос (1-based) и идём к следующему. */
     afterQuestion(n: number) {
-      if (plan && n === plan.midAfter) setPending({ kind: 'mid' })
+      if (plan && n === plan.midAfter) setPending({ kind: 'mid', game: plan.mid })
     },
-    /** Урок закончен (прогресс уже отправлен): в алфавите — ещё игра и праздник, иначе сразу итог. */
+    /** Урок закончен (прогресс уже отправлен): в алфавите — «Кафе Бомборы» и праздник, иначе сразу итог. */
     finish(result: Result, perfect: boolean, navigate: (s: Screen) => void) {
       if (plan) setPending({ kind: 'end', result, perfect })
       else navigate(result)
@@ -68,10 +69,13 @@ export default function AlphabetInterlude({ scene, lessonId, fraction, onExit, o
     case 'intro':
       return <LetterIntro key={scene.letter} letter={scene.letter} index={scene.index} count={scene.count} fraction={fraction} onExit={onExit} onDone={onDone} />
     case 'mid':
-      return <Morph lesson={lessonId} fraction={fraction} onExit={onExit} onDone={onDone} />
+      return scene.game === 'morph'
+        ? <Morph lesson={lessonId} fraction={fraction} onExit={onExit} onDone={onDone} />
+        : <Assemble lesson={lessonId} fraction={fraction} onExit={onExit} onDone={onDone} />
     case 'end':
-      return <Assemble lesson={lessonId} fraction={1} onExit={() => navigate(scene.result)} onDone={onDone} />
+      // Прогресс уже сохранён: выйти из кафе — значит сразу к итогу урока.
+      return <Cafe lesson={lessonId} fraction={1} onExit={() => navigate(scene.result)} onDone={onDone} />
     case 'finale':
-      return <Finale lesson={lessonId} onNext={onDone} onCafe={() => navigate({ kind: 'alphabet-cafe', back: scene.result })} />
+      return <Finale lesson={lessonId} onNext={onDone} />
   }
 }

@@ -99,18 +99,6 @@ export function CheckMark({ size = 14 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 18 18" aria-hidden className="inline-block"><path d="M3 9 L7 13 L15 4" stroke={C.navy} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
 }
 
-const UPGRADE_ART: Record<string, React.ReactNode> = {
-  sign: (<><path d="M14 6v8M34 6v8" /><path d="M6 14h36v18H6z" fill={C.navy} /><path d="M10 18h28v10H10z" fill={C.goldW} /><path d="M15 23h18" stroke={C.ruby} strokeWidth="2.4" /></>),
-  tables: (<><path d="M6 20h36v5H6z" fill={C.brownL} /><path d="M12 25v15M36 25v15" /><path d="M18 14c0-4 12-4 12 0z" fill={C.ruby} /><path d="M24 10v-3" /></>),
-  bell: (<><path d="M24 7v4" /><path d="M12 32c2-2 3-6 3-12a9 9 0 0 1 18 0c0 6 1 10 3 12z" fill={C.gold} /><path d="M8 34h32" /><circle cx="24" cy="37" r="3" fill={C.goldD} /></>),
-  pair: (<><ellipse cx="16" cy="30" rx="12" ry="7" fill={C.cream} /><ellipse cx="16" cy="28" rx="7" ry="3.5" fill={C.ruby} /><ellipse cx="32" cy="22" rx="12" ry="7" fill={C.cream} /><ellipse cx="32" cy="20" rx="7" ry="3.5" fill={C.gold} /></>),
-  garland: (<><path d="M4 10c8 10 32 10 40 0" /><circle cx="10" cy="15" r="3.4" fill={C.ruby} /><circle cx="19" cy="18.5" r="3.4" fill={C.gold} /><circle cx="29" cy="18.5" r="3.4" fill={C.navyL} /><circle cx="38" cy="15" r="3.4" fill={C.ruby} /><path d="M14 32l3 6 6 1-4.5 4 1 6-5.5-3-5.5 3 1-6L5 39l6-1z" fill={C.goldL} transform="translate(10 -6) scale(0.8)" /></>)
-}
-
-export function UpgradeArt({ id, size = 40 }: { id: string; size?: number }) {
-  return S(size, UPGRADE_ART[id])
-}
-
 /** Окно кафе: небо и горы. */
 export function WindowArt({ width = 120 }: { width?: number }) {
   return (
@@ -121,15 +109,6 @@ export function WindowArt({ width = 120 }: { width?: number }) {
       <circle cx="96" cy="18" r="7" fill={C.gold} />
       <path d="M60 2v70M2 37h116" stroke={C.cream} strokeWidth="3" />
       <rect x="2" y="2" width="116" height="70" rx="8" />
-    </svg>
-  )
-}
-
-export function SunIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="1.6" aria-hidden>
-      <circle cx="12" cy="12" r="5" fill={C.gold} />
-      <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" />
     </svg>
   )
 }

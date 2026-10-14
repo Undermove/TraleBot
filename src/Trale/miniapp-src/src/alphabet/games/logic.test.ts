@@ -124,8 +124,10 @@ describe('sounds and labels', () => {
     expect(wordsLabel(12)).toBe('12 грузинских слов')
   })
 
-  it('plans Morph after the sixth question and Assemble at the end', () => {
-    expect(lessonGamePlan(1, 10)).toEqual({ midAfter: 6, mid: 'morph', end: 'assemble' })
+  it('plans one game after the sixth question — Morph and Assemble by turns — and the cafe at the end', () => {
+    expect(lessonGamePlan(1, 10)).toEqual({ midAfter: 6, mid: 'morph', end: 'cafe' })
+    expect(lessonGamePlan(2, 10)).toEqual({ midAfter: 6, mid: 'assemble', end: 'cafe' })
+    for (const l of LESSONS) expect(lessonGamePlan(l, 10)?.end).toBe('cafe')
     expect(lessonGamePlan(2, 4)?.midAfter).toBe(2)
     expect(lessonGamePlan(12, 10)).toBeNull()
   })

@@ -5,14 +5,13 @@ import { GEORGIAN_ALPHABET } from '../../components/AlphaIndex'
 import './alphabet.css'
 import { burst, flyGhost, haptic, reducedMotion, sound } from './fx'
 import { learnedLetters, lessonLetters, wordCount, wordsLabel } from './logic'
-import { LESSON_COUNT } from './data'
 import { useLater } from '../../verbs/games/useLater'
 
 /**
  * Праздник конца урока (только если урок засчитан): три новые буквы влетают в «Мой алфавит»,
- * счётчик слов догоняет новое число, конфетти, Бомбора прыгает. Зовёт в «Кафе Бомборы».
+ * счётчик слов догоняет новое число, конфетти, Бомбора прыгает.
  */
-export default function Finale({ lesson, onNext, onCafe }: { lesson: number; onNext: () => void; onCafe: () => void }) {
+export default function Finale({ lesson, onNext }: { lesson: number; onNext: () => void }) {
   const fresh = lessonLetters(lesson)
   const before = new Set(lesson > 1 ? learnedLetters(lesson - 1) : [])
   const from = lesson > 1 ? wordCount(lesson - 1) : 0
@@ -52,7 +51,6 @@ export default function Finale({ lesson, onNext, onCafe }: { lesson: number; onN
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const learnedCount = before.size + arrived.size
-  const last = lesson >= LESSON_COUNT
 
   return (
     <div className="flex flex-col items-center bg-cream px-5 text-center" data-testid="alphabet-finale"
@@ -99,9 +97,6 @@ export default function Finale({ lesson, onNext, onCafe }: { lesson: number; onN
       </div>
 
       <div className="mt-auto pt-5 w-full max-w-[360px] flex flex-col gap-3">
-        <Button variant="blue" onClick={() => { haptic('tap'); onCafe() }}>
-          {last ? 'в кафе Бомборы — со всеми буквами' : 'в кафе Бомборы с новыми буквами'}
-        </Button>
         <Button onClick={() => { haptic('tap'); onNext() }}>итог →</Button>
       </div>
     </div>

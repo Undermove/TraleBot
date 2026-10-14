@@ -1,16 +1,19 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from '../games/GameFrame'
-import { burst, haptic, reducedMotion, sound } from '../games/fx'
-import { introOf, wordWithLetter, type LetterIntro as Intro } from './letters'
+import { SoundIcon } from '../games/GameFrame'
+import { burst, haptic, playClip, primeClip, reducedMotion, sound } from '../games/fx'
+import { introOf, letterAudio, transcriptionOf, wordParts, type LetterIntro as Intro } from './letters'
 import { Coverage, glyphPoints, paintSurface, type Pt } from './paint'
 
 /**
  * «Знакомство с буквой» — отдельная сцена на каждую новую букву, перед первым вопросом о ней.
- * 1) Стираешь пальцем поверхность (иней, корку арбуза, песок…) — под ней проявляется буква.
+ * 1) Стираешь пальцем поверхность грузинского слова на эту букву (корку арбуза — საზამთრო, снег — თოვლი…),
+ *    под ней проявляется буква и звучит её запись.
  * 2) Обводишь букву пальцем: она заливается там, где прошёл палец. Порядок штрихов не проверяем —
  *    надёжных данных о нём нет; засчитываем, когда закрашено ~70% буквы.
- * 3) Подпись: «ა — звук „а“, как в „აрбуз“» и, для трудных букв, одна строка о звуке.
+ * 3) Подпись: слово крупно с подсвеченной буквой, «сазамтро — арбуз», «ს — звук „с“» и, для трудных букв,
+ *    одна строка о звуке.
  */
 
 type Phase = 'reveal' | 'trace' | 'done'
@@ -48,8 +51,12 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
     done: 'Новая буква'
   }
 
+  const audio = letterAudio(letter)
+  const say = () => { if (audio) void playClip(audio) }
+
   function skip() {
     haptic('tap')
+    say()
     setPhase('done')
   }
 
@@ -59,6 +66,8 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
         <div ref={box} className="w-full flex justify-center">
           <Stage key={letter} intro={intro} size={size} phase={phase}
             onProgress={setProgress}
+            onTouch={() => { if (audio) primeClip(audio) }}
+            onReveal={say}
             onRevealed={() => setPhase('trace')}
             onTraced={() => setPhase('done')}
           />
@@ -78,11 +87,22 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
 
         {phase === 'done' && (
           <div className="text-center ab-drip" data-testid="intro-caption">
-            <div className="text-[22px] font-extrabold leading-tight">
-              <span className="font-geo text-navy text-[30px]">{intro.letter}</span> — звук «{intro.sound}»
+            <div className="font-geo text-[40px] font-extrabold leading-none tracking-wide" data-testid="intro-word">
+              {wordParts(intro).map((p, i) => p.own
+                ? <span key={i} className="text-ruby underline decoration-gold decoration-[5px] underline-offset-[7px]" data-own="yes">{p.ch}</span>
+                : <span key={i} className="text-jewelInk/55">{p.ch}</span>)}
             </div>
-            <div className="mt-1 text-[17px] font-bold">как в «<span className="font-geo">{wordWithLetter(intro)}</span>»</div>
-            {intro.hint && <div className="mt-2 max-w-[320px] text-[14px] text-jewelInk-mid leading-snug">{intro.hint}</div>}
+            <div className="mt-3 text-[17px] font-bold" data-testid="intro-meaning">{transcriptionOf(intro)} — {intro.ru}</div>
+            <div className="mt-2 flex items-center justify-center gap-2 text-[20px] font-extrabold leading-tight">
+              <span><span className="font-geo text-navy text-[28px]">{intro.letter}</span> — звук «{intro.sound}»</span>
+              {audio && (
+                <button onClick={() => { haptic('tap'); say() }} aria-label="Послушать букву" data-testid="intro-listen"
+                  className="w-10 h-10 rounded-xl bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center" style={{ boxShadow: '2px 2px 0 #15100A' }}>
+                  <SoundIcon on size={18} />
+                </button>
+              )}
+            </div>
+            {intro.hint && <div className="mt-2 max-w-[320px] mx-auto text-[14px] text-jewelInk-mid leading-snug">{intro.hint}</div>}
           </div>
         )}
 
@@ -96,9 +116,14 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
   )
 }
 
-function Stage({ intro, size, phase, onProgress, onRevealed, onTraced }: {
+function Stage({ intro, size, phase, onProgress, onTouch, onReveal, onRevealed, onTraced }: {
   intro: Intro; size: number; phase: Phase
-  onProgress: (f: number) => void; onRevealed: () => void; onTraced: () => void
+  onProgress: (f: number) => void
+  /** Палец коснулся сцены — внутри жеста готовим запись буквы (iOS иначе не даст сыграть её позже). */
+  onTouch: () => void
+  /** Буква проявилась — сразу, ещё до перехода к обводке. */
+  onReveal: () => void
+  onRevealed: () => void; onTraced: () => void
 }) {
   const coverRef = useRef<HTMLCanvasElement>(null)
   const letterRef = useRef<HTMLCanvasElement>(null)
@@ -246,6 +271,8 @@ function Stage({ intro, size, phase, onProgress, onRevealed, onTraced }: {
     lastStep.current = 0
     if (coverRef.current) coverRef.current.style.opacity = '0'
     haptic('good'); sound.win(); boom()
+    // Запись буквы — чуть позже фанфары, чтобы не слились.
+    setTimeout(onReveal, 280)
     burst(letterRef.current, 'small')
     setTimeout(onRevealed, reducedMotion() ? 0 : 750)
   }
@@ -276,7 +303,7 @@ function Stage({ intro, size, phase, onProgress, onRevealed, onTraced }: {
       />
       <div
         style={{ ...canvasStyle, touchAction: 'none' }}
-        onPointerDown={e => { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); needLift.current = false; lastPt.current = null; move(e) }}
+        onPointerDown={e => { onTouch(); (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); needLift.current = false; lastPt.current = null; move(e) }}
         onPointerMove={e => { if (e.buttons || e.pointerType === 'touch') move(e) }}
         onPointerUp={() => { lastPt.current = null }}
         onPointerCancel={() => { lastPt.current = null }}
