@@ -1,346 +1,223 @@
 {
   "lesson_id": "alpha-common-1",
-  "title": "Частые согласные: რ, ს, ტ, ლ, კ",
+  "title": "Ещё пять букв: რ, ს, ტ, ლ, კ",
   "lexicon": [
     "რ",
     "ს",
-    "ტ",
     "ლ",
-    "კ"
+    "მეტრო",
+    "ავტობუსი",
+    "ტელევიზორი",
+    "ლიმონი",
+    "სტუდენტი",
+    "კარგი",
+    "მადლობა",
+    "კატა"
   ],
   "questions": [
     {
-      "id": "ac1-q1",
+      "id": "ab4-q01",
       "lemma": "რ",
-      "question": "Как звучит грузинская буква «რ»?",
+      "question": "Как читается буква «რ»?",
       "options": [
         "р",
-        "с",
-        "л"
-      ],
-      "answer_index": 0,
-      "explanation": "Буква «რ» читается как «р» — похожа на русскую «р».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q2",
-      "lemma": "ს",
-      "question": "Как звучит грузинская буква «ს»?",
-      "options": [
-        "т'",
-        "к'",
+        "л",
         "с"
       ],
-      "answer_index": 2,
-      "explanation": "Буква «ს» читается как «с» — похожа на русскую «с».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q3",
-      "lemma": "ტ",
-      "question": "Как звучит грузинская буква «ტ»?",
-      "options": [
-        "т'",
-        "с",
-        "р"
-      ],
       "answer_index": 0,
-      "explanation": "Буква «ტ» читается как «т'» — абруптивный (резкий) звук «т».",
+      "explanation": "«რ» — это «р»: «მეტრო» — метро.",
       "tags": [
         "letter-to-sound"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q4",
-      "lemma": "ლ",
-      "question": "Как звучит грузинская буква «ლ»?",
-      "options": [
-        "к'",
-        "л",
-        "р"
-      ],
-      "answer_index": 1,
-      "explanation": "Буква «ლ» читается как «л» — похожа на русскую «л».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q5",
-      "lemma": "კ",
-      "question": "Как звучит грузинская буква «კ»?",
-      "options": [
-        "с",
-        "л",
-        "к'"
-      ],
-      "answer_index": 2,
-      "explanation": "Буква «კ» читается как «к'» — абруптивный (резкий) звук «к».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q6",
-      "lemma": "რ",
-      "question": "Какая грузинская буква обозначает звук «р»?",
-      "options": [
-        "ლ",
-        "რ",
-        "ს"
-      ],
-      "answer_index": 1,
-      "explanation": "Звук «р» передаётся буквой «რ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q7",
+      "id": "ab4-q02",
       "lemma": "ს",
-      "question": "Какая грузинская буква обозначает звук «с»?",
+      "question": "Какая буква читается «с»?",
       "options": [
-        "ტ",
-        "კ",
-        "ს"
-      ],
-      "answer_index": 2,
-      "explanation": "Звук «с» передаётся буквой «ს».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q8",
-      "lemma": "ტ",
-      "question": "Какая грузинская буква обозначает абруптивный звук «т'»?",
-      "options": [
-        "ტ",
         "ლ",
+        "ს",
         "რ"
       ],
-      "answer_index": 0,
-      "explanation": "Абруптивный звук «т'» передаётся буквой «ტ».",
+      "answer_index": 1,
+      "explanation": "«ს» — это «с». Она часто стоит в конце: «ავტობუსი».",
       "tags": [
         "sound-to-letter"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q9",
+      "id": "ab4-q03",
       "lemma": "ლ",
-      "question": "Какая грузинская буква обозначает звук «л»?",
+      "question": "Как читается буква «ლ»?",
       "options": [
-        "რ",
-        "ს",
-        "ლ"
+        "р",
+        "н",
+        "л"
       ],
       "answer_index": 2,
-      "explanation": "Звук «л» передаётся буквой «ლ».",
+      "explanation": "«ლ» — это «л»: «ლიმონი» — лимон.",
       "tags": [
-        "sound-to-letter"
+        "letter-to-sound"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q10",
-      "lemma": "კ",
-      "question": "Какая грузинская буква обозначает абруптивный звук «к'»?",
+      "id": "ab4-q04",
+      "lemma": "მეტრო",
+      "question": "Прочитай: «მეტრო». Что это?",
       "options": [
-        "კ",
-        "ტ",
-        "ს"
+        "метро",
+        "банк",
+        "лимон"
       ],
       "answer_index": 0,
-      "explanation": "Абруптивный звук «к'» передаётся буквой «კ».",
+      "explanation": "«მეტრო» — «мэтро», метро.",
       "tags": [
-        "sound-to-letter"
+        "word-reading",
+        "meaning"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q11",
-      "lemma": "რ",
-      "question": "Какая буква звучит как русская «р»?",
+      "id": "ab4-q05",
+      "lemma": "ავტობუსი",
+      "question": "Как читается «ავტობუსი»?",
       "options": [
-        "ს",
-        "რ",
-        "ლ"
+        "автобаси",
+        "автобуси",
+        "автобуни"
       ],
       "answer_index": 1,
-      "explanation": "Грузинская «რ» звучит как русская «р».",
+      "explanation": "«ავტობუსი» — «автобуси», автобус.",
       "tags": [
-        "recognition"
+        "word-reading",
+        "transcription"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q12",
-      "lemma": "ლ",
-      "question": "Какая буква звучит как русская «л»?",
+      "id": "ab4-q06",
+      "lemma": "ტელევიზორი",
+      "question": "Прочитай: «ტელევიზორი». Что это?",
       "options": [
-        "ლ",
-        "რ",
-        "კ"
-      ],
-      "answer_index": 0,
-      "explanation": "Грузинская «ლ» звучит как русская «л».",
-      "tags": [
-        "recognition"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q13",
-      "lemma": "რა",
-      "question": "Как читается слог «რა»?",
-      "options": [
-        "ла",
-        "са",
-        "ра"
+        "радио",
+        "видео",
+        "телевизор"
       ],
       "answer_index": 2,
-      "explanation": "«რ» = r, «ა» = a, вместе «ра».",
+      "explanation": "«ტელევიზორი» — «тэлэвизори», телевизор. Длинное слово, а ты его прочитал.",
       "tags": [
-        "syllable-reading"
+        "word-reading",
+        "meaning"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac1-q14",
-      "lemma": "სე",
-      "question": "Как читается слог «სე»?",
+      "id": "ab4-q07",
+      "lemma": "ლიმონი",
+      "question": "Прочитай: «ლიმონი». Что это?",
       "options": [
-        "сэ",
-        "рэ",
-        "лэ"
+        "лимон",
+        "банан",
+        "манго"
       ],
       "answer_index": 0,
-      "explanation": "«ს» = s, «ე» = e, вместе «сэ».",
+      "explanation": "«ლიმონი» — «лимони», лимон.",
       "tags": [
-        "syllable-reading"
+        "word-reading",
+        "meaning"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac1-q15",
-      "lemma": "ტი",
-      "question": "Как читается слог «ტი»?",
+      "id": "ab4-q08",
+      "lemma": "სტუდენტი",
+      "question": "Прочитай: «სტუდენტი». Что это?",
       "options": [
-        "ки",
-        "ли",
-        "т'и"
+        "турист",
+        "студент",
+        "гость"
+      ],
+      "answer_index": 1,
+      "explanation": "«სტუდენტი» — «студэнти», студент. Тут две «ტ»: т короткая, без воздуха.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab4-q09",
+      "lemma": "კარგი",
+      "question": "Прочитай: «კარგი». Что это?",
+      "options": [
+        "привет",
+        "спасибо",
+        "хорошо"
       ],
       "answer_index": 2,
-      "explanation": "«ტ» = t', «ი» = i, вместе «т'и».",
+      "explanation": "«კარგი» — «карги», хорошо, хороший. Грузины говорят это постоянно.",
       "tags": [
-        "syllable-reading"
+        "word-reading",
+        "meaning"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac1-q16",
-      "lemma": "ლო",
-      "question": "Как читается слог «ლო»?",
+      "id": "ab4-q10",
+      "lemma": "მადლობა",
+      "question": "Прочитай: «მადლობა». Что это?",
       "options": [
-        "ро",
-        "ло",
-        "со"
+        "спасибо",
+        "привет",
+        "пока"
+      ],
+      "answer_index": 0,
+      "explanation": "«მადლობა» — «мадлоба», спасибо. Самое полезное слово урока.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab4-q11",
+      "lemma": "კატა",
+      "question": "Где написано «кошка»?",
+      "options": [
+        "კარი",
+        "კატა",
+        "კინო"
       ],
       "answer_index": 1,
-      "explanation": "«ლ» = l, «ო» = o, вместе «ло».",
+      "explanation": "Кошка — «კატა», читается «ката».",
       "tags": [
-        "syllable-reading"
+        "word-recognition"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac1-q17",
-      "lemma": "კუ",
-      "question": "Как читается слог «კუ»?",
+      "id": "ab4-q12",
+      "lemma": "მეტრო",
+      "question": "Послушай и выбери слово",
       "options": [
-        "су",
-        "к'у",
-        "лу"
+        "ბანკი",
+        "კინო",
+        "ლიმონი",
+        "მეტრო"
       ],
-      "answer_index": 1,
-      "explanation": "«კ» = k', «უ» = u, вместе «к'у».",
+      "answer_index": 3,
+      "explanation": "Прозвучало «მეტრო» — «мэтро», метро.",
       "tags": [
-        "syllable-reading"
+        "audio",
+        "word"
       ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac1-q18",
-      "lemma": "ტ",
-      "question": "Чем отличается грузинская «ტ» от обычного «т»?",
-      "options": [
-        "ничем не отличается",
-        "это абруптивный (резкий) звук",
-        "это мягкий звук"
-      ],
-      "answer_index": 1,
-      "explanation": "«ტ» — абруптивный согласный: произносится с резким смыканием голосовых связок.",
-      "tags": [
-        "phonetics"
-      ],
-      "difficulty": 2
-    },
-    {
-        "id": "ac1-q19",
-        "lemma": "კ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "კ",
-            "გ",
-            "ს",
-            "ტ"
-        ],
-        "answer_index": 0,
-        "explanation": "«კ» — абруптивная «к»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/k.m4a",
-        "transcript": "კანი",
-        "tags": [
-            "audio",
-            "consonant",
-            "ejective",
-            "letter-name"
-        ],
-        "difficulty": 3
-    },
-    {
-        "id": "ac1-q20",
-        "lemma": "ლ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ნ",
-            "ლ",
-            "რ",
-            "მ"
-        ],
-        "answer_index": 1,
-        "explanation": "«ლ» — согласная «л»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/l.m4a",
-        "transcript": "ლასი",
-        "tags": [
-            "audio",
-            "consonant",
-            "letter-name"
-        ],
-        "difficulty": 2
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/taxi/metro.m4a",
+      "transcript": "მეტრო"
     }
   ]
 }

@@ -1,345 +1,223 @@
 {
   "lesson_id": "alpha-easy-1",
-  "title": "Простые согласные: ბ, გ, დ, მ, ნ",
+  "title": "Согласные как в русском: ბ, გ, დ, ვ, ზ",
   "lexicon": [
     "ბ",
-    "გ",
     "დ",
-    "მ",
-    "ნ"
+    "ვ",
+    "ბანანი",
+    "მანგო",
+    "ვიდეო",
+    "ვიზა",
+    "ბენზინი",
+    "დედა",
+    "მზე",
+    "გაზი"
   ],
   "questions": [
     {
-      "id": "ae1-q1",
+      "id": "ab2-q01",
       "lemma": "ბ",
-      "question": "Как звучит грузинская буква «ბ»?",
+      "question": "Как читается буква «ბ»?",
       "options": [
         "б",
-        "г",
-        "д"
-      ],
-      "answer_index": 0,
-      "explanation": "Буква «ბ» читается как «б» — похожа на русскую «б».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q2",
-      "lemma": "გ",
-      "question": "Как звучит грузинская буква «გ»?",
-      "options": [
-        "м",
-        "н",
-        "г"
-      ],
-      "answer_index": 2,
-      "explanation": "Буква «გ» читается как «г» — похожа на русскую «г».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q3",
-      "lemma": "დ",
-      "question": "Как звучит грузинская буква «დ»?",
-      "options": [
         "д",
-        "б",
-        "н"
-      ],
-      "answer_index": 0,
-      "explanation": "Буква «დ» читается как «д» — похожа на русскую «д».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q4",
-      "lemma": "მ",
-      "question": "Как звучит грузинская буква «მ»?",
-      "options": [
-        "г",
-        "м",
-        "д"
-      ],
-      "answer_index": 1,
-      "explanation": "Буква «მ» читается как «м» — похожа на русскую «м».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q5",
-      "lemma": "ნ",
-      "question": "Как звучит грузинская буква «ნ»?",
-      "options": [
-        "б",
-        "н",
         "г"
       ],
-      "answer_index": 1,
-      "explanation": "Буква «ნ» читается как «н» — похожа на русскую «н».",
+      "answer_index": 0,
+      "explanation": "«ბ» — это «б», как в слове «банан»: «ბანანი».",
       "tags": [
         "letter-to-sound"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q6",
-      "lemma": "ბ",
-      "question": "Какая грузинская буква обозначает звук «б»?",
+      "id": "ab2-q02",
+      "lemma": "დ",
+      "question": "Какая буква читается «д»?",
       "options": [
-        "დ",
         "ბ",
+        "დ",
         "გ"
       ],
       "answer_index": 1,
-      "explanation": "Звук «б» передаётся буквой «ბ».",
+      "explanation": "«დ» — это «д». С неё начинается «დედა» — мама.",
       "tags": [
         "sound-to-letter"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q7",
-      "lemma": "გ",
-      "question": "Какая грузинская буква обозначает звук «г»?",
+      "id": "ab2-q03",
+      "lemma": "ვ",
+      "question": "Как читается буква «ვ»?",
       "options": [
-        "გ",
-        "მ",
-        "ნ"
-      ],
-      "answer_index": 0,
-      "explanation": "Звук «г» передаётся буквой «გ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q8",
-      "lemma": "დ",
-      "question": "Какая грузинская буква обозначает звук «д»?",
-      "options": [
-        "ნ",
-        "ბ",
-        "დ"
+        "з",
+        "б",
+        "в"
       ],
       "answer_index": 2,
-      "explanation": "Звук «д» передаётся буквой «დ».",
+      "explanation": "«ვ» — это «в»: «ვიზა» — виза.",
       "tags": [
-        "sound-to-letter"
+        "letter-to-sound"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q9",
-      "lemma": "მ",
-      "question": "Какая грузинская буква обозначает звук «м»?",
+      "id": "ab2-q04",
+      "lemma": "ბანანი",
+      "question": "Прочитай: «ბანანი». Что это?",
       "options": [
-        "მ",
-        "ნ",
-        "დ"
+        "банан",
+        "манго",
+        "бензин"
       ],
       "answer_index": 0,
-      "explanation": "Звук «м» передаётся буквой «მ».",
+      "explanation": "«ბანანი» — «банани», банан. «ი» на конце — просто окончание.",
       "tags": [
-        "sound-to-letter"
+        "word-reading",
+        "meaning"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q10",
-      "lemma": "ნ",
-      "question": "Какая грузинская буква обозначает звук «н»?",
+      "id": "ab2-q05",
+      "lemma": "მანგო",
+      "question": "Прочитай: «მანგო». Что это?",
       "options": [
-        "გ",
-        "ბ",
-        "ნ"
-      ],
-      "answer_index": 2,
-      "explanation": "Звук «н» передаётся буквой «ნ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q11",
-      "lemma": "ბ",
-      "question": "Какая буква звучит как русская «б»?",
-      "options": [
-        "დ",
-        "ბ",
-        "ნ"
+        "банан",
+        "манго",
+        "газ"
       ],
       "answer_index": 1,
-      "explanation": "Грузинская «ბ» звучит как русская «б».",
+      "explanation": "«მანგო» — «манго». Читается ровно как по-русски.",
       "tags": [
-        "recognition"
+        "word-reading",
+        "meaning"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q12",
-      "lemma": "მ",
-      "question": "Какая буква звучит как русская «м»?",
+      "id": "ab2-q06",
+      "lemma": "ვიდეო",
+      "question": "Прочитай: «ვიდეო». Что это?",
       "options": [
-        "მ",
-        "გ",
-        "ბ"
+        "виза",
+        "домино",
+        "видео"
       ],
-      "answer_index": 0,
-      "explanation": "Грузинская «მ» звучит как русская «м».",
+      "answer_index": 2,
+      "explanation": "«ვიდეო» — «видэо», видео.",
       "tags": [
-        "recognition"
+        "word-reading",
+        "meaning"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q13",
-      "lemma": "ბა",
-      "question": "Как читается слог «ბა»?",
+      "id": "ab2-q07",
+      "lemma": "ვიზა",
+      "question": "Как читается «ვიზა»?",
       "options": [
-        "ба",
-        "га",
-        "да"
+        "виза",
+        "зива",
+        "вида"
       ],
       "answer_index": 0,
-      "explanation": "«ბ» = b, «ა» = a, вместе «ба».",
+      "explanation": "«ვიზა» — «виза». Как по-русски.",
       "tags": [
-        "syllable-reading"
+        "word-reading",
+        "transcription"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ae1-q14",
-      "lemma": "გე",
-      "question": "Как читается слог «გე»?",
+      "id": "ab2-q08",
+      "lemma": "ბენზინი",
+      "question": "Прочитай: «ბენზინი». Что это?",
       "options": [
-        "дэ",
-        "гэ",
-        "мэ"
+        "банан",
+        "бензин",
+        "газ"
       ],
       "answer_index": 1,
-      "explanation": "«გ» = g, «ე» = e, вместе «гэ».",
+      "explanation": "«ბენზინი» — «бэнзини», бензин.",
       "tags": [
-        "syllable-reading"
+        "word-reading",
+        "meaning"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ae1-q15",
-      "lemma": "დი",
-      "question": "Как читается слог «დი»?",
+      "id": "ab2-q09",
+      "lemma": "დედა",
+      "question": "Прочитай: «დედა». Что это?",
       "options": [
-        "ни",
-        "би",
-        "ди"
+        "папа",
+        "дедушка",
+        "мама"
       ],
       "answer_index": 2,
-      "explanation": "«დ» = d, «ი» = i, вместе «ди».",
+      "explanation": "«დედა» — «дэда», мама. А папа — «მამა». Запомни парой: «დედა და მამა» — мама и папа.",
       "tags": [
-        "syllable-reading"
+        "word-reading",
+        "meaning"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ae1-q16",
-      "lemma": "მო",
-      "question": "Как читается слог «მო»?",
+      "id": "ab2-q10",
+      "lemma": "მზე",
+      "question": "Прочитай: «მზე». Что это?",
       "options": [
-        "мо",
-        "но",
-        "бо"
+        "солнце",
+        "газ",
+        "видео"
       ],
       "answer_index": 0,
-      "explanation": "«მ» = m, «ო» = o, вместе «мо».",
+      "explanation": "«მზე» — «мзэ», солнце.",
       "tags": [
-        "syllable-reading"
+        "word-reading",
+        "meaning"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ae1-q17",
-      "lemma": "ნუ",
-      "question": "Как читается слог «ნუ»?",
+      "id": "ab2-q11",
+      "lemma": "გაზი",
+      "question": "Где написано «газ»?",
       "options": [
-        "гу",
-        "ну",
-        "ду"
+        "ვიზა",
+        "გაზი",
+        "მზე"
       ],
       "answer_index": 1,
-      "explanation": "«ნ» = n, «უ» = u, вместе «ну».",
+      "explanation": "«Газ» — «გაზი», читается «гази».",
       "tags": [
-        "syllable-reading"
+        "word-recognition"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ae1-q18",
-      "lemma": "დო",
-      "question": "Как читается слог «დო»?",
+      "id": "ab2-q12",
+      "lemma": "დედა",
+      "question": "Послушай и выбери слово",
       "options": [
-        "бо",
-        "го",
-        "до"
+        "მამა",
+        "ბინა",
+        "მზე",
+        "დედა"
       ],
-      "answer_index": 2,
-      "explanation": "«დ» = d, «ო» = o, вместе «до».",
+      "answer_index": 3,
+      "explanation": "Прозвучало «დედა» — «дэда», мама.",
       "tags": [
-        "syllable-reading"
+        "audio",
+        "word"
       ],
-      "difficulty": 2
-    },
-    {
-        "id": "ae1-q19",
-        "lemma": "დ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ბ",
-            "გ",
-            "დ",
-            "ნ"
-        ],
-        "answer_index": 2,
-        "explanation": "«დ» — согласная «д»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/d.m4a",
-        "transcript": "დონი",
-        "tags": [
-            "audio",
-            "consonant",
-            "letter-name"
-        ],
-        "difficulty": 2
-    },
-    {
-        "id": "ae1-q20",
-        "lemma": "ნ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ნ",
-            "მ",
-            "ბ",
-            "გ"
-        ],
-        "answer_index": 0,
-        "explanation": "«ნ» — согласная «н»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/n.m4a",
-        "transcript": "ნარი",
-        "tags": [
-            "audio",
-            "consonant",
-            "letter-name"
-        ],
-        "difficulty": 2
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/vocabulary/deda.m4a",
+      "transcript": "დედა"
     }
   ]
 }

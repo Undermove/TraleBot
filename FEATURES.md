@@ -164,12 +164,12 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 - `dialogs.ts` — 20 daily dialogues for `DialogOfDayCard`; rotates by calendar day.
 
 ### Static audio assets (`public/audio/`)
-- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound. Used by `audio-choice` questions in L1–L7 (1–2 questions each) and L11 (20 questions, full review of all 33 letters) in `alphabet-progressive`.
+- `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound. Not used by `alphabet-progressive` any more: isolated letter names are too unclear to tell similar letters apart, the module plays whole words instead (clips from `vocabulary/`, `cafe/`, `taxi/`, `intro/`, `doctor/`, `adjectives/`).
 - `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
 - `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
 - `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
 - `present-tense/` — 20 Georgian present-tense verb TTS clips (ka-GE Piper voice), used by `audio-choice` lesson 6 in `present-tense`.
-- `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`.
+- `vocabulary/` — 20 Georgian starter vocabulary TTS clips (ka-GE voice), used by `AudioPlayer` in `WordCard.tsx` for the 20 starter words shown in `VocabularyList`; `mama`, `deda`, `kata`, `dzaghli` also by `audio-choice` questions in `alphabet-progressive`.
 - `verb-classes/` — 15 Georgian verb TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 7 in `verb-classes`.
 - `postpositions/` — 24 Georgian postposition/location TTS clips (ka-GE Natia voice, includes combined forms), used by `audio-choice` lesson 6 in `postpositions`.
 - `cafe/` — 15 Georgian cafe/restaurant vocabulary TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `cafe`.
@@ -399,7 +399,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 ### Launch modules (owner-approved)
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
-| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 (L1–L7 each end with 1–2 audio-choice questions; L11 = full audio review «Слушай и выбери» — 20 letter names ანი/ბანი/განი) | ✅ |
+| `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11, 10–12 questions each. Reading from lesson 1: every word in lesson N is made only of letters from lessons 1..N (loanwords like მენიუ, ბანანი, მეტრო, ტაქსი plus simple Georgian words); similar letters are told apart by word pairs (ქარი / კარი), no phonetics terms, pronunciation in Cyrillic only; 1–2 audio-choice questions per lesson on whole words; L11 = signs and menus. Guarded by `AlphabetProgressiveReadabilityTests` | ✅ |
 | `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
 | `intro` | `GeorgianVocabIntro` | 8 (L6 = audio-choice; L7 = SOS-phrases: Help/I don't understand/Slowly/Repeat/Doctor; L8 = navigation: Where is?/How much?/Ambulance/Police) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |

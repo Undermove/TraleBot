@@ -1,29 +1,229 @@
 {
   "lesson_id": "alpha-full-3",
-  "title": "Читаем всё — все 33 буквы",
+  "title": "Все 33: читаем всё",
   "lexicon": [
-    {"lemma": "სახლი", "ru": "дом"},
-    {"lemma": "ძაღლი", "ru": "собака"},
-    {"lemma": "წიგნი", "ru": "книга"}
+    "ძაღლი",
+    "დღე",
+    "ღამე",
+    "ჩურჩხელა",
+    "ნახვამდის",
+    "ბავშვი",
+    "ხილი",
+    "ჩემი",
+    "ცირკი",
+    "საქართველო"
   ],
   "questions": [
-    {"id": "af3_q01", "lemma": "სახლი", "question": "Прочитай «სახლი»:", "options": ["дом", "собака", "книга"], "answer_index": 0, "explanation": "სახლი — дом.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q02", "lemma": "ძაღლი", "question": "Прочитай «ძაღლი»:", "options": ["собака", "кошка", "лев"], "answer_index": 0, "explanation": "ძაღლი — собака.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q03", "lemma": "წიგნი", "question": "Прочитай «წიგნი»:", "options": ["книга", "ручка", "стол"], "answer_index": 0, "explanation": "წიგნი — книга.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q04", "lemma": "ჩაი", "question": "Прочитай «ჩაი»:", "options": ["чай", "кофе", "вода"], "answer_index": 0, "explanation": "ჩაი — чай.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q05", "lemma": "ხაჭაპური", "question": "Прочитай «ხაჭაპური»:", "options": ["хачапури", "хинкали", "лобио"], "answer_index": 0, "explanation": "ხაჭაპური — хачапури.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q06", "lemma": "ღვინო", "question": "Прочитай «ღვინო»:", "options": ["вино", "пиво", "сок"], "answer_index": 0, "explanation": "ღვინო — вино.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q07", "lemma": "ყავა", "question": "Прочитай «ყავა»:", "options": ["кофе", "чай", "молоко"], "answer_index": 0, "explanation": "ყავა — кофе.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q08", "lemma": "ჭიქა", "question": "Прочитай «ჭიქა»:", "options": ["стакан", "тарелка", "ложка"], "answer_index": 0, "explanation": "ჭიქა — стакан.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q09", "lemma": "შავი", "question": "Прочитай «შავი»:", "options": ["чёрный", "белый", "красный"], "answer_index": 0, "explanation": "შავი — чёрный.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q10", "lemma": "ცა", "question": "Прочитай «ცა»:", "options": ["небо", "земля", "вода"], "answer_index": 0, "explanation": "ცა — небо.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q11", "lemma": "გამარჯობა", "question": "Прочитай «გამარჯობა»:", "options": ["здравствуй", "до свидания", "спасибо"], "answer_index": 0, "explanation": "გამარჯობა — здравствуй.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q12", "lemma": "მადლობა", "question": "Прочитай «მადლობა»:", "options": ["спасибо", "извините", "пожалуйста"], "answer_index": 0, "explanation": "მადლობა — спасибо.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q13", "lemma": "საქართველო", "question": "Прочитай «საქართველო»:", "options": ["Грузия", "Армения", "Турция"], "answer_index": 0, "explanation": "საქართველო — Грузия.", "tags": ["reading"], "difficulty": 2},
-    {"id": "af3_q14", "lemma": "თბილისი", "question": "Прочитай «თბილისი»:", "options": ["Тбилиси", "Батуми", "Кутаиси"], "answer_index": 0, "explanation": "თბილისი — Тбилиси.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q15", "lemma": "ჟურნალი", "question": "Прочитай «ჟურნალი»:", "options": ["журнал", "газета", "книга"], "answer_index": 0, "explanation": "ჟურნალი — журнал.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q16", "lemma": "ვაშლი", "question": "Прочитай «ვაშლი»:", "options": ["яблоко", "груша", "банан"], "answer_index": 0, "explanation": "ვაშლი — яблоко.", "tags": ["reading"], "difficulty": 1},
-    {"id": "af3_q17", "lemma": "ღამე", "question": "Прочитай «ღამე»:", "options": ["ночь", "день", "утро"], "answer_index": 0, "explanation": "ღამე — ночь. Буква ღ — гортанное «гх».", "tags": ["reading"], "difficulty": 2},
-    {"id": "af3_q18", "lemma": "ხინკალი", "question": "Прочитай «ხინკალი»:", "options": ["хинкали", "хачапури", "лобио"], "answer_index": 0, "explanation": "ხინკალი — хинкали.", "tags": ["reading"], "difficulty": 1}
+    {
+      "id": "ab10-q01",
+      "lemma": "ძაღლი",
+      "question": "Прочитай: «ძაღლი». Что это?",
+      "options": [
+        "собака",
+        "кошка",
+        "лев"
+      ],
+      "answer_index": 0,
+      "explanation": "«ძაღლი» — «дзагли», собака.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q02",
+      "lemma": "დღე",
+      "question": "Прочитай: «დღე». Что это?",
+      "options": [
+        "ночь",
+        "день",
+        "год"
+      ],
+      "answer_index": 1,
+      "explanation": "«დღე» — «дгэ», день.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q03",
+      "lemma": "ღამე",
+      "question": "Прочитай: «ღამე». Что это?",
+      "options": [
+        "день",
+        "небо",
+        "ночь"
+      ],
+      "answer_index": 2,
+      "explanation": "«ღამე» — «гамэ», ночь.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q04",
+      "lemma": "ჩურჩხელა",
+      "question": "Прочитай: «ჩურჩხელა». Что это?",
+      "options": [
+        "чурчхела",
+        "хачапури",
+        "хинкали"
+      ],
+      "answer_index": 0,
+      "explanation": "«ჩურჩხელა» — «чурчхэла». Орехи в виноградном соке.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q05",
+      "lemma": "ნახვამდის",
+      "question": "Прочитай: «ნახვამდის». Что это?",
+      "options": [
+        "привет",
+        "до свидания",
+        "спасибо"
+      ],
+      "answer_index": 1,
+      "explanation": "«ნახვამდის» — «нахвамдис», до свидания.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q06",
+      "lemma": "ბავშვი",
+      "question": "Прочитай: «ბავშვი». Что это?",
+      "options": [
+        "брат",
+        "девочка",
+        "ребёнок"
+      ],
+      "answer_index": 2,
+      "explanation": "«ბავშვი» — «бавшви», ребёнок.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q07",
+      "lemma": "ხილი",
+      "question": "Прочитай: «ხილი». Что это?",
+      "options": [
+        "фрукты",
+        "сыр",
+        "мясо"
+      ],
+      "answer_index": 0,
+      "explanation": "«ხილი» — «хили», фрукты.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q08",
+      "lemma": "ჩემი",
+      "question": "Прочитай: «ჩემი». Что это?",
+      "options": [
+        "твой",
+        "мой",
+        "наш"
+      ],
+      "answer_index": 1,
+      "explanation": "«ჩემი» — «чэми», мой.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q09",
+      "lemma": "ცირკი",
+      "question": "Прочитай: «ცირკი». Что это?",
+      "options": [
+        "театр",
+        "кино",
+        "цирк"
+      ],
+      "answer_index": 2,
+      "explanation": "«ცირკი» — «цирки», цирк.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q10",
+      "lemma": "საქართველო",
+      "question": "Где написано «Грузия»?",
+      "options": [
+        "საქართველო",
+        "ქუთაისი",
+        "თბილისი"
+      ],
+      "answer_index": 0,
+      "explanation": "Грузия — «საქართველო», «сакартвэло».",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab10-q11",
+      "lemma": "ძაღლი",
+      "question": "Послушай и выбери слово",
+      "options": [
+        "დღე",
+        "ღამე",
+        "ძაღლი",
+        "ძმა"
+      ],
+      "answer_index": 2,
+      "explanation": "Прозвучало «ძაღლი» — «дзагли», собака.",
+      "tags": [
+        "audio",
+        "word"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/vocabulary/dzaghli.m4a",
+      "transcript": "ძაღლი"
+    },
+    {
+      "id": "ab10-q12",
+      "lemma": "ნახვამდის",
+      "question": "Послушай и выбери слово",
+      "options": [
+        "გამარჯობა",
+        "მადლობა",
+        "ბოდიში",
+        "ნახვამდის"
+      ],
+      "answer_index": 3,
+      "explanation": "Прозвучало «ნახვამდის» — «нахвамдис», до свидания.",
+      "tags": [
+        "audio",
+        "word"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro/nakhvamdis.m4a",
+      "transcript": "ნახვამდის"
+    }
   ]
 }
