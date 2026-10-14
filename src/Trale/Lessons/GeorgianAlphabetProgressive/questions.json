@@ -1,25 +1,27 @@
 {
   "lesson_id": "alpha-1",
-  "title": "Первые буквы: ა, ბ, მ",
+  "title": "Первые буквы: ა, დ, რ",
   "ordered": true,
   "lexicon": [
     "ა",
-    "ბ",
-    "მ",
-    "მამა"
+    "დ",
+    "რ",
+    "და",
+    "არა",
+    "რა"
   ],
   "questions": [
     {
       "id": "ab1-q01",
       "lemma": "ა",
-      "question": "Новая буква ა — звук «а». Как читается «აлфაвит»?",
+      "question": "Новая буква ა — звук «а». Как читается «мაмა»?",
       "options": [
-        "алфавит",
-        "элфэвит",
-        "улфувит"
+        "мама",
+        "мэмэ",
+        "муму"
       ],
       "answer_index": 0,
-      "explanation": "ა читается «а». Получается «алфавит».",
+      "explanation": "ა — это «а»: «мама».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -29,14 +31,14 @@
     {
       "id": "ab1-q02",
       "lemma": "ა",
-      "question": "Как читается «кაртა»?",
+      "question": "Как читается «кაшა»?",
       "options": [
-        "кирти",
-        "карта",
-        "курту"
+        "куша",
+        "каша",
+        "киша"
       ],
       "answer_index": 1,
-      "explanation": "Обе ა — это «а»: «карта».",
+      "explanation": "ა — «а»: «каша».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -45,32 +47,15 @@
     },
     {
       "id": "ab1-q03",
-      "lemma": "ა",
-      "question": "Как читается «лაмпა»?",
+      "lemma": "დ",
+      "question": "Новая буква დ — звук «д». Как читается «დом»?",
       "options": [
-        "лумпу",
-        "лимпи",
-        "лампа"
+        "том",
+        "ком",
+        "дом"
       ],
       "answer_index": 2,
-      "explanation": "ა — «а»: «лампа».",
-      "tags": [
-        "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab1-q04",
-      "lemma": "ბ",
-      "question": "Новая буква ბ — звук «б». Как читается «ბაнაн»?",
-      "options": [
-        "банан",
-        "ванан",
-        "данан"
-      ],
-      "answer_index": 0,
-      "explanation": "ბ — «б», ა — «а»: «банан».",
+      "explanation": "დ — «д»: «дом».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -78,16 +63,16 @@
       "difficulty": 1
     },
     {
-      "id": "ab1-q05",
-      "lemma": "ბ",
-      "question": "Как читается «ბაрაнкა»?",
+      "id": "ab1-q04",
+      "lemma": "დ",
+      "question": "Как читается «воდა»?",
       "options": [
-        "варанка",
-        "баранка",
-        "таранка"
+        "вода",
+        "вота",
+        "вона"
       ],
-      "answer_index": 1,
-      "explanation": "ბ — «б»: «баранка».",
+      "answer_index": 0,
+      "explanation": "Обе грузинские буквы на месте: დ — «д», ა — «а». «Вода».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -95,16 +80,33 @@
       "difficulty": 1
     },
     {
-      "id": "ab1-q06",
-      "lemma": "ბ",
-      "question": "Как читается «ბაтуми»?",
+      "id": "ab1-q05",
+      "lemma": "რ",
+      "question": "Новая буква რ — звук «р». Как читается «რыбა»?",
       "options": [
-        "Ватуми",
-        "Датуми",
-        "Батуми"
+        "лыба",
+        "рыба",
+        "дыба"
+      ],
+      "answer_index": 1,
+      "explanation": "რ — «р»: «рыба».",
+      "tags": [
+        "new-letter",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab1-q06",
+      "lemma": "რ",
+      "question": "Как читается «რადио»?",
+      "options": [
+        "ладио",
+        "вадио",
+        "радио"
       ],
       "answer_index": 2,
-      "explanation": "ბ — «б»: «Батуми». Скоро прочитаешь это название целиком.",
+      "explanation": "რ — «р», დ — «д»: «радио».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -113,66 +115,68 @@
     },
     {
       "id": "ab1-q07",
-      "lemma": "მ",
-      "question": "Новая буква მ — звук «м». Как читается «მაлинა»?",
+      "lemma": "დ",
+      "question": "Как читается «და»?",
       "options": [
-        "малина",
-        "налина",
-        "балина"
+        "да",
+        "до",
+        "ду"
       ],
       "answer_index": 0,
-      "explanation": "მ — «м»: «малина».",
+      "explanation": "Читается «да». А что это слово значит по-грузински — в следующем вопросе.",
       "tags": [
-        "new-letter",
+        "letter-in-word",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q08",
-      "lemma": "მ",
-      "question": "Как читается «მაрმелაд»?",
+      "lemma": "და",
+      "question": "По-грузински «და» значит…",
       "options": [
-        "нарнелад",
-        "мармелад",
-        "бармелад"
+        "да",
+        "и",
+        "нет"
       ],
       "answer_index": 1,
-      "explanation": "Обе მ — «м»: «мармелад».",
+      "explanation": "«და» читается «да», но значит «и»: «мама и папа». Это одно из самых частых грузинских слов.",
       "tags": [
-        "letter-in-word",
+        "word-reading",
+        "meaning",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q09",
-      "lemma": "მ",
-      "question": "Как читается «მამა»?",
+      "lemma": "არა",
+      "question": "Прочитай: «არა». Что это значит?",
       "options": [
-        "баба",
-        "ама",
-        "мама"
+        "да",
+        "и",
+        "нет"
       ],
       "answer_index": 2,
-      "explanation": "Все буквы уже грузинские: მ-ა-მ-ა, «мама».",
+      "explanation": "«არა» — «ара», нет.",
       "tags": [
-        "letter-in-word",
+        "word-reading",
+        "meaning",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab1-q10",
-      "lemma": "მამა",
-      "question": "По-грузински «მამა» значит…",
+      "lemma": "რა",
+      "question": "Прочитай: «რა». Что это значит?",
       "options": [
-        "папа",
-        "мама",
-        "бабушка"
+        "что",
+        "где",
+        "кто"
       ],
       "answer_index": 0,
-      "explanation": "Сюрприз: по-грузински «მამა» — это папа. А как будет «мама», прочитаешь в третьем уроке.",
+      "explanation": "«რა» — «ра», что. «რა?» — «что?»",
       "tags": [
         "word-reading",
         "meaning",

@@ -1,31 +1,30 @@
 {
   "lesson_id": "alpha-11",
-  "title": "Последние буквы: ღ, ყ, ჰ",
+  "title": "Последние буквы: ჟ, ჯ, ჰ",
   "ordered": true,
   "lexicon": [
-    "ღ",
-    "ღამე",
-    "ყ",
+    "ჟ",
+    "ჯ",
     "ჰ",
+    "გამარჯობა",
+    "ოჯახი",
     "ჰაერი",
-    "ყავა",
-    "ყველი",
-    "წყალი",
-    "ძაღლი",
-    "დღე"
+    "ჰო",
+    "მადლობა",
+    "წყალი"
   ],
   "questions": [
     {
       "id": "ab11-q01",
-      "lemma": "ღ",
-      "question": "Новая буква ღ — мягкое «г» горлом, похоже на картавое «р». Как читается «ღვინო»?",
+      "lemma": "ჟ",
+      "question": "Новая буква ჟ — звук «ж». Как читается «ჟურნალ»?",
       "options": [
-        "гвино",
-        "двино",
-        "бвино"
+        "журнал",
+        "шурнал",
+        "зурнал"
       ],
       "answer_index": 0,
-      "explanation": "«ღვინო» — «гвино», вино.",
+      "explanation": "ჟ — «ж»: «журнал». По-грузински — «ჟურნალი».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -34,33 +33,32 @@
     },
     {
       "id": "ab11-q02",
-      "lemma": "ღამე",
-      "question": "Прочитай: «ღამე». Что это значит?",
+      "lemma": "ჟ",
+      "question": "Как читается «ჟირაფ»?",
       "options": [
-        "день",
-        "ночь",
-        "вода"
+        "шираф",
+        "жираф",
+        "зираф"
       ],
       "answer_index": 1,
-      "explanation": "«ღამე» — «гамэ», ночь.",
+      "explanation": "ჟ — «ж»: «жираф».",
       "tags": [
-        "word-reading",
-        "meaning",
+        "letter-in-word",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q03",
-      "lemma": "ყ",
-      "question": "Новая буква ყ — «к» глубоко в горле. Как читается «ტყემალი»?",
+      "lemma": "ჯ",
+      "question": "Новая буква ჯ — «дж», одной буквой. Как читается «ჯინსы»?",
       "options": [
-        "тгемали",
-        "тхемали",
-        "ткемали"
+        "чинсы",
+        "шинсы",
+        "джинсы"
       ],
       "answer_index": 2,
-      "explanation": "«ტყემალი» — «ткемали»: алыча и соус из неё.",
+      "explanation": "ჯ — «дж»: «джинсы».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -69,15 +67,15 @@
     },
     {
       "id": "ab11-q04",
-      "lemma": "ყ",
-      "question": "Как читается «ყავა»?",
+      "lemma": "ჯ",
+      "question": "Как читается «გამარჯობა»?",
       "options": [
-        "кава",
-        "гава",
-        "хава"
+        "гамарджоба",
+        "гамарчоба",
+        "гамаршоба"
       ],
       "answer_index": 0,
-      "explanation": "ყ — «к»: «кава».",
+      "explanation": "ჯ — «дж»: «гамарджоба». Ты наверняка уже слышал это слово.",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -94,7 +92,7 @@
         "ко"
       ],
       "answer_index": 1,
-      "explanation": "«ჰო» — «хо», разговорное «ага, да».",
+      "explanation": "«ჰო» — «хо».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -103,6 +101,59 @@
     },
     {
       "id": "ab11-q06",
+      "lemma": "ჰ",
+      "question": "Как читается «ჰაერი»?",
+      "options": [
+        "гаэри",
+        "каэри",
+        "хаэри"
+      ],
+      "answer_index": 2,
+      "explanation": "ჰ — лёгкое «х»: «хаэри».",
+      "tags": [
+        "letter-in-word",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab11-q07",
+      "lemma": "გამარჯობა",
+      "question": "Прочитай: «გამარჯობა». Что это значит?",
+      "options": [
+        "здравствуй",
+        "спасибо",
+        "до свидания"
+      ],
+      "answer_index": 0,
+      "explanation": "«გამარჯობა» — «гамарджоба», здравствуй, привет.",
+      "tags": [
+        "word-reading",
+        "meaning",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab11-q08",
+      "lemma": "ოჯახი",
+      "question": "Прочитай: «ოჯახი». Что это значит?",
+      "options": [
+        "дом",
+        "семья",
+        "друг"
+      ],
+      "answer_index": 1,
+      "explanation": "«ოჯახი» — «оджахи», семья.",
+      "tags": [
+        "word-reading",
+        "meaning",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab11-q09",
       "lemma": "ჰაერი",
       "question": "Прочитай: «ჰაერი». Что это значит?",
       "options": [
@@ -120,70 +171,16 @@
       "difficulty": 1
     },
     {
-      "id": "ab11-q07",
-      "lemma": "ყავა",
-      "question": "Прочитай: «ყავა». Что это значит?",
-      "options": [
-        "кофе",
-        "чай",
-        "вино"
-      ],
-      "answer_index": 0,
-      "explanation": "«ყავა» — «кава», кофе.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab11-q08",
-      "lemma": "ყველი",
-      "question": "Прочитай: «ყველი». Что это значит?",
-      "options": [
-        "хлеб",
-        "сыр",
-        "мясо"
-      ],
-      "answer_index": 1,
-      "explanation": "«ყველი» — «квэли», сыр.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab11-q09",
-      "lemma": "წყალი",
-      "question": "Прочитай: «წყალი». Что это значит?",
-      "options": [
-        "вино",
-        "небо",
-        "вода"
-      ],
-      "answer_index": 2,
-      "explanation": "«წყალი» — «цкали», вода.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab11-q10",
-      "lemma": "ძაღლი",
-      "question": "Прочитай: «ძაღლი». Что это значит?",
+      "lemma": "ჰო",
+      "question": "Прочитай: «ჰო». Что это значит?",
       "options": [
-        "собака",
-        "кошка",
-        "лев"
+        "ага, да",
+        "нет",
+        "привет"
       ],
       "answer_index": 0,
-      "explanation": "«ძაღლი» — «дзагли», собака.",
+      "explanation": "«ჰო» — «хо», разговорное «ага». Нейтральное «да» — «კი».",
       "tags": [
         "word-reading",
         "meaning",
@@ -193,34 +190,34 @@
     },
     {
       "id": "ab11-q11",
-      "lemma": "დღე",
-      "question": "Прочитай: «დღე». Что это значит?",
+      "lemma": "მადლობა",
+      "question": "Где написано «спасибо»?",
       "options": [
-        "ночь",
-        "день",
-        "год"
+        "გამარჯობა",
+        "მადლობა",
+        "ნახვამდის"
       ],
       "answer_index": 1,
-      "explanation": "«დღე» — «дгэ», день.",
+      "explanation": "Спасибо — «მადლობა». «გამარჯობა» — привет, «ნახვამდის» — до свидания.",
       "tags": [
-        "word-reading",
-        "meaning",
+        "word-recognition",
+        "pair",
         "mixed-script"
       ],
       "difficulty": 1
     },
     {
       "id": "ab11-q12",
-      "lemma": "ყავა",
+      "lemma": "წყალი",
       "question": "Послушай и выбери слово",
       "options": [
-        "ყველი",
         "ღვინო",
-        "ჩაი",
-        "ყავა"
+        "ყავა",
+        "ყველი",
+        "წყალი"
       ],
       "answer_index": 3,
-      "explanation": "Прозвучало «ყავა» — «кава», кофе.",
+      "explanation": "Прозвучало «წყალი» — «цкали», вода.",
       "tags": [
         "audio",
         "word",
@@ -228,8 +225,8 @@
       ],
       "difficulty": 1,
       "question_type": "audio-choice",
-      "audio_url": "/audio/cafe/kava.m4a",
-      "transcript": "ყავა"
+      "audio_url": "/audio/cafe/wqali.m4a",
+      "transcript": "წყალი"
     }
   ]
 }
