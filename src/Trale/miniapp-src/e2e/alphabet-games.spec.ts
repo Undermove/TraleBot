@@ -70,7 +70,7 @@ test('letter intro: wipe the snow of თოვლი, watch how it is written, w
   await setup(page, [1, 2, 3, 4])
   await openModule(page)
   await page.getByTestId('lesson-btn-5').click()
-  await page.getByRole('button', { name: /к практике/i }).click()
+  await page.getByRole('button', { name: 'Начать' }).click()
 
   const stage = page.getByTestId('intro-stage')
   await expect(stage).toHaveAttribute('data-ready', 'yes')
@@ -140,7 +140,12 @@ async function playGames(page: Page) {
     if (await page.getByTestId('catch').isVisible().catch(() => false)) {
       await fits(page, 'catch'); await shotOnce(page, '15-catch')
       const targets = page.locator('[data-testid="catch-bubble"][data-target="yes"]:not([disabled])')
-      while (await targets.count()) { await targets.first().dispatchEvent('pointerdown'); await page.waitForTimeout(120) }
+      let firstPop = true
+      while (await targets.count()) {
+        await targets.first().dispatchEvent('pointerdown')
+        if (firstPop) { firstPop = false; await page.waitForTimeout(110); await shotOnce(page, '18-catch-pop') }
+        await page.waitForTimeout(120)
+      }
       await page.waitForTimeout(600)
       continue
     }
@@ -251,7 +256,7 @@ for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
       await setup(page, [], 1)
       await openModule(page)
       await page.getByTestId('lesson-btn-1').click()
-      await page.getByRole('button', { name: /к практике/i }).click()
+      await page.getByRole('button', { name: 'Начать' }).click()
       await playGames(page)
       await exam(page, 1)
       await expect(page.getByTestId('alphabet-finale')).toBeVisible()
@@ -269,11 +274,48 @@ for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
       await setup(page, [1, 2, 3, 4, 5, 6, 7, 8, 9], 10)
       await openModule(page)
       await page.getByTestId('lesson-btn-10').click()
-      await page.getByRole('button', { name: /к практике/i }).click()
+      await page.getByRole('button', { name: 'Начать' }).click()
       await playGames(page)
       await exam(page, 10)
       await expect(page.getByTestId('alphabet-finale')).toBeVisible()
       await expect(page.getByTestId('cafe-tile')).toHaveCount(0)
     })
+  })
+}
+
+// Поверхности знакомства с буквой: у каждой своя физика. Снимки — посреди движения пальца.
+const SURFACES: { lesson: number; skip: number; name: string; title: string }[] = [
+  { lesson: 5, skip: 0, name: '20-fx-snow', title: 'Смахни снег' },
+  { lesson: 1, skip: 1, name: '21-fx-fur', title: 'Расчеши шерсть медведя' },
+  { lesson: 2, skip: 0, name: '22-fx-lightning', title: 'Разгони грозовые тучи' },
+  { lesson: 4, skip: 0, name: '23-fx-peel', title: 'Сними кожуру с лимона' },
+  { lesson: 10, skip: 1, name: '24-fx-coffee-foam', title: 'Размешай пенку на кофе' },
+  { lesson: 8, skip: 0, name: '25-fx-leaves', title: 'Раздвинь ветки в лесу' }
+]
+
+for (const fx of SURFACES) {
+  test(`surface effect mid-action: ${fx.title}`, async ({ page }) => {
+    await setup(page, Array.from({ length: fx.lesson - 1 }, (_, i) => i + 1), fx.lesson)
+    await openModule(page)
+    await page.getByTestId(`lesson-btn-${fx.lesson}`).click()
+    await expect(page.getByTestId('lesson-opener')).toBeVisible()
+    await fits(page, 'lesson opener')
+    if (fx.lesson === 2) { await page.waitForTimeout(900); await shot(page, '19-lesson-opener') }
+    await page.getByRole('button', { name: 'Начать' }).click()
+    for (let i = 0; i < fx.skip; i++) {
+      await page.getByTestId('intro-skip').click()
+      await page.getByRole('button', { name: 'дальше →' }).click()
+    }
+    await expect(page.getByText(fx.title)).toBeVisible()
+    await expect(page.getByTestId('intro-stage')).toHaveAttribute('data-ready', 'yes')
+    await page.waitForTimeout(300)
+    const box = (await page.getByTestId('intro-touch').boundingBox())!
+    // Один проход через середину и полпрохода обратно — буква ещё не открылась, частицы в разгаре.
+    await page.mouse.move(box.x + 20, box.y + box.height * 0.45)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width - 20, box.y + box.height * 0.5, { steps: 16 })
+    await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.62, { steps: 8 })
+    await shot(page, fx.name)
+    await page.mouse.up()
   })
 }

@@ -57,3 +57,17 @@
 
 /* Экран игры — ровно окно Telegram (стабильная высота вьюпорта), без прокрутки и «резинки». */
 .ab-screen { height: var(--tg-viewport-stable-height, 100dvh); max-height: 100dvh; overflow: hidden; overscroll-behavior: none; touch-action: manipulation }
+
+/* Пузырь лопается: раздувается и исчезает, от него — кольцо и капли. */
+@keyframes ab-pop-bubble { 0% { transform: scale(1); opacity: 1 } 45% { transform: scale(1.28, 1.18); opacity: 1 } 100% { transform: scale(1.5); opacity: 0 } }
+@keyframes ab-pop-ring { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.9 } 100% { transform: translate(-50%, -50%) scale(1.9); opacity: 0 } }
+@keyframes ab-pop-drop { 0% { transform: translate(-50%, -50%); opacity: 1 } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))); opacity: 0 } }
+.ab-pop-bubble { animation: ab-pop-bubble 240ms ease-out forwards }
+.ab-pop-ring { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; border-radius: 9999px; border: 3px solid #3A7FCC; pointer-events: none; animation: ab-pop-ring 380ms ease-out forwards }
+.ab-pop-drop { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; border-radius: 9999px; background: #9CC7EE; border: 1px solid #15100A; pointer-events: none; animation: ab-pop-drop 420ms cubic-bezier(0.2, 0.7, 0.4, 1) forwards }
+@media (prefers-reduced-motion: reduce) { .ab-pop-bubble, .ab-pop-ring, .ab-pop-drop { animation: none; opacity: 0 } }
+
+/* Карточки начала урока раздаются по одной. */
+@keyframes ab-deal { 0% { transform: translateY(40px) rotate(-12deg) scale(0.7); opacity: 0 } 70% { transform: translateY(-6px) rotate(3deg) scale(1.04); opacity: 1 } 100% { transform: none; opacity: 1 } }
+.ab-deal { animation: ab-deal 460ms cubic-bezier(0.2, 0.8, 0.3, 1.2) both }
+@media (prefers-reduced-motion: reduce) { .ab-deal { animation: none } }

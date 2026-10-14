@@ -3,6 +3,7 @@ import Header from '../components/Header'
 import Button from '../components/Button'
 import RevealKaniOverlay from '../components/RevealKaniOverlay'
 import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
+import LessonOpener from '../alphabet/opener/LessonOpener'
 
 interface Props {
   catalog: CatalogDto
@@ -54,6 +55,21 @@ export default function LessonTheory({
         />
         <div className="p-5 text-jewelInk-mid">Урок не найден.</div>
       </div>
+    )
+  }
+
+  // Алфавит: вместо стены теории — короткое начало урока; теория — по «подробнее».
+  if (moduleId === 'alphabet-progressive') {
+    return (
+      <>
+        <LessonOpener
+          lessonId={lessonId}
+          onBack={() => navigate({ kind: 'module', moduleId })}
+          onStart={() => navigate({ kind: 'practice', moduleId, lessonId })}
+          details={theory.blocks.filter(b => b.type !== 'letters').map((b, i) => <TheoryBlock key={i} block={b} />)}
+        />
+        {showReveal && <RevealKaniOverlay onClose={() => setShowReveal(false)} />}
+      </>
     )
   }
 

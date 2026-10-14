@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import GameFrame from './GameFrame'
-import { burst, haptic, sound } from './fx'
+import { haptic, sound } from './fx'
 import { catchRounds, shuffle, type CatchRound, type Rng } from './logic'
 import { useLater } from '../../verbs/games/useLater'
 
@@ -40,7 +40,7 @@ export default function Catch({ letters, lesson, fraction, onExit, onDone, rng =
       haptic('bad'); sound.miss(); setShake(i); later(() => setShake(null), 380)
       return
     }
-    haptic('pop'); sound.pop(popped.size); burst(els.current[i], 'small'); setHinted(true)
+    haptic('pop'); sound.surface('pop'); sound.pop(popped.size); setHinted(true)
     const next = new Set(popped).add(i)
     setPopped(next)
     if (round.bubbles.every((b, k) => b !== round.target || next.has(k))) {
@@ -62,6 +62,15 @@ export default function Catch({ letters, lesson, fraction, onExit, onDone, rng =
         <div className="relative flex-1 min-h-[220px] rounded-2xl border-[1.5px] border-jewelInk/25 bg-navy-wash/40 overflow-hidden" key={ri}>
           {round.bubbles.map((b, i) => (
             <div key={i} className="absolute" style={{ left: `${spots[ri][i].x}%`, top: `${spots[ri][i].y}%`, transform: 'translate(-50%, -50%)' }}>
+              {popped.has(i) && (
+                <>
+                  <span className="ab-pop-ring" aria-hidden />
+                  {Array.from({ length: 7 }, (_, k) => {
+                    const ang = (k / 7) * Math.PI * 2
+                    return <span key={k} className="ab-pop-drop" aria-hidden style={{ ['--dx' as any]: `${Math.cos(ang) * 44}px`, ['--dy' as any]: `${Math.sin(ang) * 44 + 10}px` }} />
+                  })}
+                </>
+              )}
               <button
                 ref={el => { els.current[i] = el }}
                 aria-label={b}
@@ -70,7 +79,7 @@ export default function Catch({ letters, lesson, fraction, onExit, onDone, rng =
                 disabled={popped.has(i)}
                 onPointerDown={() => tap(i)}
                 className={`w-[62px] h-[62px] ab-short:w-[54px] ab-short:h-[54px] rounded-full border-[1.5px] border-jewelInk font-geo text-[30px] font-extrabold flex items-center justify-center ${
-                  popped.has(i) ? 'ab-poof' : 'ab-bob'} ${shake === i ? 'ab-shake' : ''} ${guide && b === round.target ? 'ring-4 ring-gold ab-pulse' : ''}`}
+                  popped.has(i) ? 'ab-pop-bubble pointer-events-none' : 'ab-bob'} ${shake === i ? 'ab-shake' : ''} ${guide && b === round.target ? 'ring-4 ring-gold ab-pulse' : ''}`}
                 style={{ background: 'radial-gradient(circle at 35% 30%, #FFFFFF, #C9DBF0 70%)', ['--d' as any]: `${spots[ri][i].d}s` }}
               >{b}</button>
             </div>

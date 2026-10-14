@@ -73,7 +73,7 @@ test('spotlight highlights the real element; tapping it (not a CTA) opens the le
 
   // There is no separate CTA — the user taps the REAL highlighted element.
   await page.getByTestId('dashboard-suggestion').click()
-  await expect(page.getByRole('button', { name: 'к практике →' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^(к практике →|Начать)$/ })).toBeVisible()
 })
 
 test('no spotlight is shown when me() returns no hint', async ({ page }) => {

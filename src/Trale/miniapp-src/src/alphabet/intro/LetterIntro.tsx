@@ -146,6 +146,39 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
   const paintRef = useRef<HTMLCanvasElement>(null)
   const glyph = useRef<{ points: Pt[]; mask: HTMLCanvasElement | null; strokes: Pt[][] }>({ points: [], mask: null, strokes: [] })
   const [pen, setPen] = useState<Pt | null>(null)
+  const fxCanvas = useRef<HTMLCanvasElement>(null)
+  const fxRef = useRef<{ world: import('./effects').Fx; feel: (typeof import('./effects'))['FEEL'][import('./effects').Engine] } | null>(null)
+  const fxRaf = useRef(0)
+
+  // Эффекты поверхностей — отдельный кусок бандла; без них (или при «уменьшить движение») — простое стирание.
+  useEffect(() => {
+    if (reducedMotion()) return
+    let alive = true
+    void import('./effects').then(m => {
+      const spec = m.EFFECTS[intro.letter]
+      if (!alive || !spec) return
+      fxRef.current = { world: new m.Fx(spec, intro.surface.crumbs, size), feel: m.FEEL[spec.engine] }
+    }).catch(() => { /* без эффектов */ })
+    return () => { alive = false; cancelAnimationFrame(fxRaf.current) }
+  }, [intro.letter, size]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function runFx() {
+    if (fxRaf.current) return
+    const tick = () => {
+      const fx = fxRef.current, c = fxCanvas.current
+      const ctx = ctxOf(c)
+      if (!fx || !ctx) { fxRaf.current = 0; return }
+      fx.world.step(ctx, (x, y, r) => {
+        const cover = ctxOf(coverRef.current)
+        if (!cover || phaseRef.current !== 'reveal') return
+        cover.globalCompositeOperation = 'destination-out'
+        cover.beginPath(); cover.arc(x, y, r, 0, Math.PI * 2); cover.fill()
+        cover.globalCompositeOperation = 'source-over'
+      })
+      fxRaf.current = fx.world.busy ? requestAnimationFrame(tick) : 0
+    }
+    fxRaf.current = requestAnimationFrame(tick)
+  }
   const reveal = useRef<Coverage>(new Coverage([]))
   const trace = useRef<Coverage>(new Coverage([]))
   const lastPt = useRef<Pt | null>(null)
@@ -176,7 +209,7 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
     const wait: Promise<unknown> = fonts?.load ? fonts.load(`800 100px "Noto Sans Georgian"`, intro.letter).catch(() => null) : Promise.resolve()
     void wait.then(() => {
       if (!alive) return
-      for (const c of [coverRef.current, letterRef.current, paintRef.current]) if (c) { c.width = size * dpr; c.height = size * dpr }
+      for (const c of [coverRef.current, letterRef.current, paintRef.current, fxCanvas.current]) if (c) { c.width = size * dpr; c.height = size * dpr }
       const cover = ctxOf(coverRef.current)
       if (cover) paintSurface(cover, size, size, intro.surface.cover, intro.letter.charCodeAt(0))
       const g = glyphPoints(intro.letter, size)
@@ -312,7 +345,14 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
       reveal.current.stroke(prev, p, ERASE_R)
       const f = reveal.current.fraction
       onProgress(f)
-      if (now - lastFx.current > 70) { lastFx.current = now; sound.scratch(); crumbs(p.x, p.y) }
+      const fx = fxRef.current
+      if (fx) {
+        // Своя физика поверхности: корка завитками, шерсть прядями, пузыри лопаются…
+        const beat = fx.world.stroke(prev, p, ERASE_R)
+        const feel = fx.feel
+        if ((feel.every === 0 ? beat : now - lastFx.current > feel.every)) { lastFx.current = now; sound.surface(feel.sound); haptic(feel.haptic) }
+        runFx()
+      } else if (now - lastFx.current > 70) { lastFx.current = now; sound.scratch(); crumbs(p.x, p.y) }
       const step = Math.floor((f / REVEAL_AT) * 5)
       if (step > lastStep.current) { lastStep.current = step; haptic('soft') }
       if (f >= REVEAL_AT) finishReveal()
@@ -371,6 +411,7 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
         style={{ ...canvasStyle, transition: 'opacity 450ms ease-out' }}
         data-testid="intro-cover"
       />
+      <canvas ref={fxCanvas} style={{ ...canvasStyle, pointerEvents: 'none' }} data-testid="intro-fx" />
       {phase === 'demo' && pen && (
         <div className="absolute pointer-events-none" style={{ left: pen.x - 11, top: pen.y - 11, width: 22, height: 22, borderRadius: 11, background: '#F5B820', border: '2px solid #15100A', boxShadow: '0 0 0 4px rgba(245,184,32,0.35)' }} data-testid="intro-pen" />
       )}

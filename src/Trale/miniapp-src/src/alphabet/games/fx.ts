@@ -211,6 +211,26 @@ export const sound = {
   scratch: () => hiss(70, 2200 + Math.random() * 1600, 0.045),
   /** Палец ведёт по букве — мягкий мелок. */
   chalk: () => hiss(60, 900 + Math.random() * 400, 0.035),
+  /** Звук поверхности под пальцем (intro/effects.ts). */
+  surface: (kind: string) => {
+    const r = Math.random()
+    switch (kind) {
+      case 'peel': hiss(120, 1600 + r * 500, 0.06); tone(420, 260, 90, 'triangle', 0.05); break
+      case 'fur': hiss(80, 1100 + r * 300, 0.035); break
+      case 'pop': tone(up(700, Math.floor(r * 6)), 1300, 60, 'triangle', 0.16); hiss(30, 4000, 0.03); break
+      case 'crackle': for (let i = 0; i < 4; i++) setTimeout(() => hiss(25, 3500 + Math.random() * 2500, 0.08), i * 35); tone(90, 50, 260, 'sawtooth', 0.05); break
+      case 'whoosh': hiss(180, 700 + r * 500, 0.045); break
+      case 'crunch': hiss(50, 2600 + r * 1500, 0.07); tone(180, 120, 40, 'square', 0.04); break
+      case 'snow': hiss(110, 3200 + r * 1200, 0.035); break
+      case 'shine': tone(1800, 2600, 160, 'sine', 0.06); tone(2700, 3600, 120, 'sine', 0.03, 50); break
+      case 'grain': hiss(40, 5000 + r * 2000, 0.03); break
+      case 'squish': tone(160, 90, 160, 'sine', 0.12); break
+      case 'ripple': tone(380 + r * 80, 240, 220, 'sine', 0.08); break
+      case 'swirl': hiss(160, 900 + r * 300, 0.04); tone(300, 360, 140, 'sine', 0.03); break
+      case 'drip': tone(900, 1500, 70, 'sine', 0.08); break
+      default: hiss(70, 2200 + r * 1600, 0.045)
+    }
+  },
   /** Тик счётчика. */
   tick: (step = 0) => tone(up(880, step % 12), up(880, step % 12), 40, 'sine', 0.07)
 }
