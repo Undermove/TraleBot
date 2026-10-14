@@ -961,6 +961,44 @@ public class MiniAppController : Controller
         };
     }
 
+    public class AlphabetWordsRequest
+    {
+        public int LessonId { get; set; }
+    }
+
+    /// <summary>
+    /// After a counted alphabet lesson: puts the lesson's Georgian words into the learner's dictionary
+    /// (<see cref="Application.MiniApp.Commands.AddAlphabetLessonWords"/>). Which words and translations —
+    /// the server's own list; the client only names the lesson. No translator, no limits, no paywall.
+    /// Calling it again adds nothing.
+    /// </summary>
+    [HttpPost("vocabulary/alphabet-words")]
+    public async Task<IActionResult> AddAlphabetLessonWords([FromBody] AlphabetWordsRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var result = await _mediator.Send(new Application.MiniApp.Commands.AddAlphabetLessonWords
+        {
+            UserId = user.Id,
+            LessonId = request.LessonId
+        }, ct);
+
+        return result switch
+        {
+            Application.MiniApp.Commands.AddAlphabetLessonWordsResult.Success s => Ok(new
+            {
+                words = s.Words.Select(w => new { word = w.Word, translation = w.Translation, added = w.Added }),
+                added = s.AddedCount
+            }),
+            Application.MiniApp.Commands.AddAlphabetLessonWordsResult.LessonNotCompleted => Conflict(new { error = "lesson_not_completed" }),
+            _ => NotFound(new { error = "unknown_lesson" })
+        };
+    }
+
     [HttpDelete("vocabulary/{id}")]
     public async Task<IActionResult> DeleteVocabularyEntry(Guid id, CancellationToken ct)
     {

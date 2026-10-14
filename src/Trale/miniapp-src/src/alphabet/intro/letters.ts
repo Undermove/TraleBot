@@ -150,15 +150,3 @@ export const transcriptionOf = (i: LetterIntro) => cyr(i.word)
 
 /** Слово по буквам с пометкой, где новая буква — чтобы подсветить её в подписи. */
 export const wordParts = (i: LetterIntro) => [...i.word].map(ch => ({ ch, own: ch === i.letter }))
-
-/**
- * Записи букв (их грузинские названия: ანი, ბანი…) в public/audio/alphabet. Имена файлов — латиницей,
- * это только адреса, ученик их не видит.
- */
-const AUDIO_FILE: Record<string, string> = {
-  ა: 'a', ბ: 'b', გ: 'g', დ: 'd', ე: 'e', ვ: 'v', ზ: 'z', თ: 'th', ი: 'i', კ: 'k', ლ: 'l',
-  მ: 'm', ნ: 'n', ო: 'o', პ: 'p', ჟ: 'zh', რ: 'r', ს: 's', ტ: 't', უ: 'u', ფ: 'f', ქ: 'q',
-  ღ: 'gh', ყ: 'ky', შ: 'sh', ჩ: 'ch', ც: 'ts', ძ: 'dz', წ: 'tsw', ჭ: 'tch', ხ: 'kh', ჯ: 'j', ჰ: 'h'
-}
-
-export const letterAudio = (letter: string): string | null => (AUDIO_FILE[letter] ? `/audio/alphabet/${AUDIO_FILE[letter]}.m4a` : null)

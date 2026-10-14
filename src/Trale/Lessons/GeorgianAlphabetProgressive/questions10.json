@@ -34,14 +34,14 @@
     {
       "id": "ab10-q02",
       "lemma": "ზ",
-      "question": "Как читается «როზა»?",
+      "question": "Как читается «ზღვა»?",
       "options": [
-        "роса",
-        "роза",
-        "рода"
+        "сгва",
+        "згва",
+        "дгва"
       ],
       "answer_index": 1,
-      "explanation": "ზ — «з»: русское «роза».",
+      "explanation": "ზ — «з»: «згва». Это грузинское слово — «море».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -117,26 +117,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab10-q07",
-      "lemma": "წყალი",
-      "question": "«წყალი» значит «вода». Как это читается?",
-      "options": [
-        "цкали",
-        "чкали",
-        "скали"
-      ],
-      "answer_index": 0,
-      "explanation": "«წყალი» — «цкали», вода.",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab10-q08",
       "lemma": "ლამაზი",
-      "question": "«ლამაზი» значит «красивый». Как это читается?",
+      "question": "Как читается «ლამაზი»?",
       "options": [
         "ламаси",
         "ламази",
@@ -145,7 +128,7 @@
       "answer_index": 1,
       "explanation": "«ლამაზი» — «ламази», красивый.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

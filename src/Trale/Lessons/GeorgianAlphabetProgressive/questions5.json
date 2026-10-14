@@ -84,14 +84,14 @@
     {
       "id": "ab5-q05",
       "lemma": "შ",
-      "question": "Как читается «მაშინა»?",
+      "question": "Как читается «შვილი»?",
       "options": [
-        "масина",
-        "машина",
-        "мачина"
+        "свили",
+        "швили",
+        "чвили"
       ],
       "answer_index": 1,
-      "explanation": "შ — «ш»: русское «машина».",
+      "explanation": "შ — «ш»: «швили». Это грузинское слово — «ребёнок».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -99,26 +99,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab5-q06",
-      "lemma": "ერთი",
-      "question": "«ერთი» значит «один». Как это читается?",
-      "options": [
-        "эрки",
-        "эрпи",
-        "эрти"
-      ],
-      "answer_index": 2,
-      "explanation": "«ერთი» — «эрти», один.",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab5-q07",
       "lemma": "ორი",
-      "question": "«ორი» значит «два». Как это читается?",
+      "question": "Как читается «ორი»?",
       "options": [
         "ори",
         "оли",
@@ -127,7 +110,7 @@
       "answer_index": 0,
       "explanation": "«ორი» — «ори», два.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -135,7 +118,7 @@
     {
       "id": "ab5-q08",
       "lemma": "ათი",
-      "question": "«ათი» значит «десять». Как это читается?",
+      "question": "Как читается «ათი»?",
       "options": [
         "аки",
         "ати",
@@ -144,7 +127,7 @@
       "answer_index": 1,
       "explanation": "«ათი» — «ати», десять.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -152,7 +135,7 @@
     {
       "id": "ab5-q09",
       "lemma": "შენ",
-      "question": "«შენ» значит «ты». Как это читается?",
+      "question": "Как читается «შენ»?",
       "options": [
         "сэн",
         "чэн",
@@ -161,7 +144,7 @@
       "answer_index": 2,
       "explanation": "«შენ» — «шэн», ты. А я — «მე».",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

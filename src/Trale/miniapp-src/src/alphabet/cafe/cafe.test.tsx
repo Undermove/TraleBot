@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { PRODUCTS, availableProducts, isRealWord, orderText } from './products'
-import { TIP_MS, cafePlan, orderAt, tipFor } from './engine'
+import { FAST_MS, cafePlan, isFast, orderAt } from './engine'
+import { loadRecord, saveRecord } from './record'
 import Cafe from './Cafe'
 import { learnedLetters, isGeorgian, lessonLetters } from '../games/logic'
 import { seeded } from '../../verbs/testing/catalog'
@@ -57,11 +58,18 @@ describe('cafe plan', () => {
 })
 
 describe('cafe shift', () => {
-  it('pays speed tips only for fast serving', () => {
-    expect(tipFor(0)).toBe(4)
-    expect(tipFor(4000)).toBe(2)
-    expect(tipFor(TIP_MS)).toBe(0)
-    expect(tipFor(60_000)).toBe(0)
+  it('calls a serve fast only when it is quick', () => {
+    expect(isFast(0)).toBe(true)
+    expect(isFast(FAST_MS - 1)).toBe(true)
+    expect(isFast(FAST_MS)).toBe(false)
+  })
+
+  it('keeps a record per lesson and survives broken storage', () => {
+    expect(saveRecord(3, 4)).toEqual({ best: 4, isNew: true })
+    expect(saveRecord(3, 2)).toEqual({ best: 4, isNew: false })
+    expect(loadRecord(4)).toBe(0)
+    localStorage.setItem('alphabet_cafe_best_5', 'oops')
+    expect(loadRecord(5)).toBe(0)
   })
 
   it('after the planned orders keeps bringing guests from the shelf, never the same dish twice in a row', () => {
@@ -115,9 +123,10 @@ describe('Cafe', () => {
     fireEvent.click(screen.getByTestId('shelf-bread'))
     fireEvent.click(screen.getByTestId('shelf-cheese'))
     expect(screen.getByTestId('shelf-water').dataset.hint).toBe('yes')
-    // Подал сразу — чаевые.
+    // Подал быстро — «Быстро!», счётчик растёт.
     await act(async () => { fireEvent.click(screen.getByTestId('shelf-water')) })
-    expect(screen.getByTestId('cafe-tip').textContent).toMatch(/\+\d чаевые/)
+    expect(screen.getByTestId('cafe-fast').textContent).toBe('Быстро!')
+    expect(screen.getByTestId('cafe-served').textContent).toBe('Обслужено: 2')
     await step(1100)
     expect(screen.getByTestId('cafe-guest')).toBeTruthy()
 
@@ -125,7 +134,9 @@ describe('Cafe', () => {
     await step(46_000)
     expect(screen.getByTestId('cafe-summary').textContent).toContain('ჩაი')
     expect(screen.getAllByTestId('cafe-read')).toHaveLength(2)
-    expect(Number(screen.getByTestId('cafe-summary').textContent!.match(/\d+/)![0])).toBeGreaterThan(0)
+    expect(screen.getByTestId('cafe-served-total').textContent).toBe('Обслужено: 2')
+    expect(screen.getByTestId('cafe-record-new').textContent).toBe('Новый рекорд!')
+    expect(screen.queryByText(/монет|чаев/)).toBeNull()
     fireEvent.click(screen.getByText('дальше →'))
     expect(onDone).toHaveBeenCalled()
   })

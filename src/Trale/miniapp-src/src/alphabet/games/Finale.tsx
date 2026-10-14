@@ -6,12 +6,16 @@ import './alphabet.css'
 import { burst, flyGhost, haptic, reducedMotion, sound } from './fx'
 import { learnedLetters, lessonLetters, wordCount, wordsLabel } from './logic'
 import { useLater } from '../../verbs/games/useLater'
+import { api } from '../../api'
+import { DictChip } from '../words/WordIntro'
 
 /**
  * Праздник конца урока (только если урок засчитан): три новые буквы влетают в «Мой алфавит»,
- * счётчик слов догоняет новое число, конфетти, Бомбора прыгает.
+ * счётчик слов догоняет новое число, конфетти, Бомбора прыгает. Слова урока по-настоящему ложатся
+ * в «Словарь» (сервер сам решает, какие, — POST vocabulary/alphabet-words): они по одному влетают
+ * в чип «Словарь», и есть кнопка открыть словарь. Не вышло (нет сети, нет входа) — праздник без этой части.
  */
-export default function Finale({ lesson, onNext }: { lesson: number; onNext: () => void }) {
+export default function Finale({ lesson, onNext, onVocabulary }: { lesson: number; onNext: () => void; onVocabulary: () => void }) {
   const fresh = lessonLetters(lesson)
   const before = new Set(lesson > 1 ? learnedLetters(lesson - 1) : [])
   const from = lesson > 1 ? wordCount(lesson - 1) : 0
@@ -22,6 +26,35 @@ export default function Finale({ lesson, onNext }: { lesson: number; onNext: () 
   const flying = useRef<(HTMLDivElement | null)[]>([])
   const cells = useRef<Record<string, HTMLDivElement | null>>({})
   const later = useLater()
+  const [dict, setDict] = useState<{ word: string; translation: string }[] | null>(null)
+  const [inDict, setInDict] = useState(0)
+  const chip = useRef<HTMLDivElement>(null)
+  const dictWords = useRef<(HTMLSpanElement | null)[]>([])
+
+  useEffect(() => {
+    let alive = true
+    Promise.resolve().then(() => api.addAlphabetWords(lesson))
+      .then(r => { if (alive && r?.words?.length) setDict(r.words) })
+      .catch(() => { /* праздник и без словаря */ })
+    return () => { alive = false }
+  }, [lesson])
+
+  // Слова влетают в «Словарь» по одному, ~0,3 с на слово — после того, как прилетели буквы.
+  useEffect(() => {
+    if (!dict || !party) return
+    let alive = true
+    const quick = reducedMotion()
+    void (async () => {
+      for (let i = 0; i < dict.length && alive; i++) {
+        void flyGhost(dictWords.current[i], chip.current, dict[i].word, 420, 'font-geo text-[16px]')
+        await new Promise(r => setTimeout(r, quick ? 0 : 300))
+        if (!alive) return
+        haptic('tap'); sound.snap(i)
+        setInDict(i + 1)
+      }
+    })()
+    return () => { alive = false }
+  }, [dict, party]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let alive = true
@@ -96,7 +129,25 @@ export default function Finale({ lesson, onNext }: { lesson: number; onNext: () 
         </div>
       </div>
 
+      {dict && (
+        <div className="mt-3 w-full max-w-[360px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-3 text-left" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="finale-dict">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="text-[14px] font-extrabold leading-tight">Эти слова теперь в твоём словаре</div>
+            <DictChip count={inDict} innerRef={chip} />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {dict.map((w, i) => (
+              <span key={w.word} ref={el => { dictWords.current[i] = el }} data-testid="finale-dict-word" data-in={i < inDict ? 'yes' : 'no'}
+                className={`px-2 py-0.5 rounded-lg border text-[13px] transition-opacity duration-200 ${i < inDict ? 'opacity-40 border-jewelInk/20' : 'border-jewelInk/40'}`}>
+                <span className="font-geo font-extrabold">{w.word}</span> <span className="text-jewelInk-mid">{w.translation}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-auto pt-5 w-full max-w-[360px] flex flex-col gap-3">
+        {dict && <Button variant="ghost" onClick={() => { haptic('tap'); onVocabulary() }}>открыть словарь</Button>}
         <Button onClick={() => { haptic('tap'); onNext() }}>итог →</Button>
       </div>
     </div>

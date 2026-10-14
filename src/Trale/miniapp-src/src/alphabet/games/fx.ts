@@ -149,18 +149,6 @@ function clip(url: string): HTMLAudioElement | null {
   } catch { return null }
 }
 
-/**
- * Подготовить запись внутри касания: тихо запустить и сразу остановить. После этого iOS разрешает
- * играть этот <audio> и без касания — например, когда буква проявилась от движения пальца.
- */
-export function primeClip(url: string) {
-  const el = clip(url)
-  if (!el || (el as any).__primed) return
-  ;(el as any).__primed = true
-  el.muted = true
-  safePlay(el).then(() => { el.pause(); el.currentTime = 0 }).catch(() => {}).finally(() => { el.muted = false })
-}
-
 /** Сыграть запись (уважает выключатель звука). */
 export function playClip(url: string): Promise<void> {
   if (muted) return Promise.resolve()

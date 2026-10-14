@@ -29,14 +29,10 @@ export function cafePlan(lesson: number, rng: Rng = Math.random, maxOrders = 4):
 
 /** Сколько длится смена после первого гостя. */
 export const SHIFT_MS = 45_000
-/** За сколько надо подать, чтобы получить хоть какие-то чаевые. */
-export const TIP_MS = 8_000
+/** Подал быстрее этого — «Быстро!». */
+export const FAST_MS = 4_000
 
-/** Монетки за заказ: длиннее слово — больше монет. */
-export const priceOf = (text: string) => 2 + georgianLetters(text)
-
-/** Чаевые за скорость: подал сразу — 4 монетки, через TIP_MS и дольше — ноль. */
-export const tipFor = (waitedMs: number) => Math.max(0, Math.round(4 * (1 - waitedMs / TIP_MS)))
+export const isFast = (waitedMs: number) => waitedMs < FAST_MS
 
 /**
  * Заказ n-го гостя (0 — первый, с подсказкой): сначала заказы из плана, потом случайные с витрины,

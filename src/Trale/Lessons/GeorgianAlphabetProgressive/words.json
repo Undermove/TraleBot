@@ -1,0 +1,336 @@
+{
+  "about": "Базовый словарь уроков алфавита (alphabet-progressive): грузинские слова урока и их перевод из теории уроков (MiniAppContentProvider.cs, «Грузинские слова урока»). Единственный источник для сервера: после засчитанного урока эти слова попадают в словарь ученика (POST /api/miniapp/vocabulary/alphabet-words). Мини-апп держит копию в src/alphabet/games/data.ts — тесты сверяют обе с теорией.",
+  "lessons": [
+    {
+      "lesson": 1,
+      "words": [
+        {
+          "word": "და",
+          "translation": "и"
+        },
+        {
+          "word": "არა",
+          "translation": "нет"
+        },
+        {
+          "word": "რა",
+          "translation": "что"
+        }
+      ]
+    },
+    {
+      "lesson": 2,
+      "words": [
+        {
+          "word": "სად",
+          "translation": "где"
+        },
+        {
+          "word": "ეს",
+          "translation": "это"
+        },
+        {
+          "word": "ის",
+          "translation": "он, она"
+        },
+        {
+          "word": "არის",
+          "translation": "есть"
+        },
+        {
+          "word": "დედა",
+          "translation": "мама"
+        },
+        {
+          "word": "დიდი",
+          "translation": "большой"
+        }
+      ]
+    },
+    {
+      "lesson": 3,
+      "words": [
+        {
+          "word": "მამა",
+          "translation": "папа"
+        },
+        {
+          "word": "მე",
+          "translation": "я"
+        },
+        {
+          "word": "მინდა",
+          "translation": "хочу"
+        },
+        {
+          "word": "ვინ",
+          "translation": "кто"
+        },
+        {
+          "word": "სამი",
+          "translation": "три"
+        },
+        {
+          "word": "ვარ",
+          "translation": "(я) есть"
+        },
+        {
+          "word": "რამდენი",
+          "translation": "сколько"
+        }
+      ]
+    },
+    {
+      "lesson": 4,
+      "words": [
+        {
+          "word": "ჩაი",
+          "translation": "чай"
+        },
+        {
+          "word": "სახლი",
+          "translation": "дом"
+        },
+        {
+          "word": "ჩემი",
+          "translation": "мой"
+        },
+        {
+          "word": "ჩვენ",
+          "translation": "мы"
+        },
+        {
+          "word": "ახალი",
+          "translation": "новый"
+        },
+        {
+          "word": "ნახვამდის",
+          "translation": "до свидания"
+        },
+        {
+          "word": "ხვალ",
+          "translation": "завтра"
+        }
+      ]
+    },
+    {
+      "lesson": 5,
+      "words": [
+        {
+          "word": "ერთი",
+          "translation": "один"
+        },
+        {
+          "word": "ორი",
+          "translation": "два"
+        },
+        {
+          "word": "ათი",
+          "translation": "десять"
+        },
+        {
+          "word": "შენ",
+          "translation": "ты"
+        },
+        {
+          "word": "შენი",
+          "translation": "твой"
+        },
+        {
+          "word": "თავი",
+          "translation": "голова"
+        },
+        {
+          "word": "რადიო",
+          "translation": "радио"
+        }
+      ]
+    },
+    {
+      "lesson": 6,
+      "words": [
+        {
+          "word": "მანქანა",
+          "translation": "машина"
+        },
+        {
+          "word": "ქალი",
+          "translation": "женщина"
+        },
+        {
+          "word": "ბავშვი",
+          "translation": "ребёнок"
+        },
+        {
+          "word": "მეგობარი",
+          "translation": "друг"
+        },
+        {
+          "word": "მადლობა",
+          "translation": "спасибо"
+        },
+        {
+          "word": "საქართველო",
+          "translation": "Грузия"
+        },
+        {
+          "word": "ქალაქი",
+          "translation": "город"
+        },
+        {
+          "word": "ექიმი",
+          "translation": "врач"
+        }
+      ]
+    },
+    {
+      "lesson": 7,
+      "words": [
+        {
+          "word": "კი",
+          "translation": "да"
+        },
+        {
+          "word": "კარგი",
+          "translation": "хорошо"
+        },
+        {
+          "word": "კაცი",
+          "translation": "мужчина"
+        },
+        {
+          "word": "წიგნი",
+          "translation": "книга"
+        },
+        {
+          "word": "სკოლა",
+          "translation": "школа"
+        },
+        {
+          "word": "ცივი",
+          "translation": "холодный"
+        },
+        {
+          "word": "კინო",
+          "translation": "кино"
+        }
+      ]
+    },
+    {
+      "lesson": 8,
+      "words": [
+        {
+          "word": "ფული",
+          "translation": "деньги"
+        },
+        {
+          "word": "ხუთი",
+          "translation": "пять"
+        },
+        {
+          "word": "ქუჩა",
+          "translation": "улица"
+        },
+        {
+          "word": "იაფი",
+          "translation": "дешёвый"
+        },
+        {
+          "word": "კატა",
+          "translation": "кошка"
+        },
+        {
+          "word": "გუშინ",
+          "translation": "вчера"
+        },
+        {
+          "word": "მეტრო",
+          "translation": "метро"
+        },
+        {
+          "word": "კაფე",
+          "translation": "кафе"
+        }
+      ]
+    },
+    {
+      "lesson": 9,
+      "words": [
+        {
+          "word": "პური",
+          "translation": "хлеб"
+        },
+        {
+          "word": "ღვინო",
+          "translation": "вино"
+        },
+        {
+          "word": "ძაღლი",
+          "translation": "собака"
+        },
+        {
+          "word": "დღე",
+          "translation": "день"
+        },
+        {
+          "word": "ძმა",
+          "translation": "брат"
+        },
+        {
+          "word": "ძვირი",
+          "translation": "дорогой"
+        }
+      ]
+    },
+    {
+      "lesson": 10,
+      "words": [
+        {
+          "word": "ყავა",
+          "translation": "кофе"
+        },
+        {
+          "word": "წყალი",
+          "translation": "вода"
+        },
+        {
+          "word": "ყველი",
+          "translation": "сыр"
+        },
+        {
+          "word": "ლამაზი",
+          "translation": "красивый"
+        },
+        {
+          "word": "ჭიქა",
+          "translation": "стакан"
+        },
+        {
+          "word": "ჭამს",
+          "translation": "ест"
+        }
+      ]
+    },
+    {
+      "lesson": 11,
+      "words": [
+        {
+          "word": "გამარჯობა",
+          "translation": "здравствуй"
+        },
+        {
+          "word": "ოჯახი",
+          "translation": "семья"
+        },
+        {
+          "word": "ჰაერი",
+          "translation": "воздух"
+        },
+        {
+          "word": "ჰო",
+          "translation": "ага"
+        }
+      ]
+    }
+  ]
+}

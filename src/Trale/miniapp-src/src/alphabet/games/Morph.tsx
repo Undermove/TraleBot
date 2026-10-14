@@ -2,13 +2,15 @@ import React, { useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from './GameFrame'
 import { burst, haptic, sound } from './fx'
-import { letterChoices, mixPieces, morphWords, type Rng } from './logic'
+import { letterChoices, morphPieces, morphWords, type Rng, type Word } from './logic'
+import { cyr } from '../../verbs/types'
 import { useLater } from '../../verbs/games/useLater'
 
 /**
- * «Превращение»: русское слово крупными буквами. Подсвечена буква, у которой уже есть грузинская пара;
- * тапаешь нужную грузинскую — русская буква стекает вниз, грузинская капает на её место.
- * Две ошибки подряд — Бомбора подсвечивает верную плитку. В конце слово почти целиком грузинское.
+ * «Превращение»: настоящее грузинское слово, написанное кириллицей, как оно звучит («дэда»). Подсвечен
+ * звук; тапаешь нужную грузинскую букву — кириллица стекает вниз, грузинская буква капает на её место.
+ * Две ошибки подряд — подсвечиваем верную плитку. В конце слово целиком грузинское (დედა) и что оно значит.
+ * Слова — только из букв, открытых к этому уроку (logic.morphWords).
  */
 export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.random, words: given }: {
   lesson: number
@@ -17,11 +19,11 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
   onDone: () => void
   rng?: Rng
   /** Для тестов: какие слова превращать. */
-  words?: string[]
+  words?: Word[]
 }) {
   const words = useMemo(() => given ?? morphWords(lesson, 2, rng), [lesson]) // eslint-disable-line react-hooks/exhaustive-deps
   const [wi, setWi] = useState(0)
-  const pieces = useMemo(() => mixPieces(words[wi] ?? '', lesson), [words, wi, lesson])
+  const pieces = useMemo(() => morphPieces(words[wi]?.geo ?? ''), [words, wi])
   const [turned, setTurned] = useState<Set<number>>(new Set())
   const [misses, setMisses] = useState(0)
   const [shake, setShake] = useState<string | null>(null)
@@ -103,8 +105,7 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
         <div className="text-center min-h-[44px]">
           {done ? (
             <div className="ab-drip">
-              <div className="font-geo text-[15px] font-bold text-jewelInk-mid">почти целиком по-грузински</div>
-              <div className="text-[18px] font-extrabold">читается «{words[wi]}»</div>
+              <div className="text-[18px] font-extrabold" data-testid="morph-meaning">«{cyr(words[wi].geo)}» — {words[wi].ru}</div>
             </div>
           ) : (
             <div className="text-[15px] font-bold text-jewelInk-mid">

@@ -116,7 +116,7 @@
     {
       "id": "ab1-q07",
       "lemma": "და",
-      "question": "«და» значит «и». Как это читается?",
+      "question": "Как читается «და»?",
       "options": [
         "да",
         "до",
@@ -125,7 +125,7 @@
       "answer_index": 0,
       "explanation": "«და» — «да», и. Это не русское «да»: «და» — союз «и», как в «мама и папа».",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -133,7 +133,7 @@
     {
       "id": "ab1-q08",
       "lemma": "არა",
-      "question": "«არა» значит «нет». Как это читается?",
+      "question": "Как читается «არა»?",
       "options": [
         "ада",
         "ара",
@@ -142,7 +142,7 @@
       "answer_index": 1,
       "explanation": "«არა» — «ара», нет.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -150,7 +150,7 @@
     {
       "id": "ab1-q09",
       "lemma": "რა",
-      "question": "«რა» значит «что». Как это читается?",
+      "question": "Как читается «რა»?",
       "options": [
         "да",
         "ар",
@@ -159,7 +159,7 @@
       "answer_index": 2,
       "explanation": "«რა» — «ра», что.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

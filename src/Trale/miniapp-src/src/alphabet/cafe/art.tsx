@@ -85,16 +85,6 @@ export function GuestArt({ look, mood, size = 64 }: { look: number; mood: 'wait'
   ))
 }
 
-export function CoinIcon({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={INK} strokeWidth="1.6" aria-hidden className="inline-block align-[-0.2em]">
-      <circle cx="12" cy="12" r="9" fill={C.gold} />
-      <circle cx="12" cy="12" r="5.6" fill={C.goldL} stroke={C.goldD} />
-      <path d="M10 9.5c2-1 4 0 3 2s-3 1-3 3 2 2 4 1" stroke={C.goldD} strokeWidth="1.4" />
-    </svg>
-  )
-}
-
 export function CheckMark({ size = 14 }: { size?: number }) {
   return <svg width={size} height={size} viewBox="0 0 18 18" aria-hidden className="inline-block"><path d="M3 9 L7 13 L15 4" stroke={C.navy} strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>
 }

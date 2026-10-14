@@ -115,26 +115,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab2-q07",
-      "lemma": "სად",
-      "question": "«სად» значит «где». Как это читается?",
-      "options": [
-        "сад",
-        "зад",
-        "шад"
-      ],
-      "answer_index": 0,
-      "explanation": "«სად» — «сад», где. Читается как «сад», а значит «где?». Запомнить легко: где же сад?",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab2-q08",
       "lemma": "ეს",
-      "question": "«ეს» значит «это». Как это читается?",
+      "question": "Как читается «ეს»?",
       "options": [
         "ис",
         "эс",
@@ -143,7 +126,7 @@
       "answer_index": 1,
       "explanation": "«ეს» — «эс», это.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -151,7 +134,7 @@
     {
       "id": "ab2-q09",
       "lemma": "ის",
-      "question": "«ის» значит «он, она». Как это читается?",
+      "question": "Как читается «ის»?",
       "options": [
         "эс",
         "ид",
@@ -160,7 +143,7 @@
       "answer_index": 2,
       "explanation": "«ის» — «ис», он, она. В грузинском «он» и «она» — одно слово.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -168,7 +151,7 @@
     {
       "id": "ab2-q10",
       "lemma": "დედა",
-      "question": "«დედა» значит «мама». Как это читается?",
+      "question": "Как читается «დედა»?",
       "options": [
         "дэда",
         "дада",
@@ -177,7 +160,7 @@
       "answer_index": 0,
       "explanation": "«დედა» — «дэда», мама.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

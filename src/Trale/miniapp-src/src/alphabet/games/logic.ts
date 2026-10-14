@@ -1,4 +1,5 @@
-import { LESSON_COUNT, LESSON_LETTERS, LESSON_WORDS, RU_TO_GEO, RU_WORDS, SOUNDS } from './data'
+import { cyr } from '../../verbs/types'
+import { LESSON_COUNT, LESSON_LETTERS, LESSON_WORDS, RU_TO_GEO, SOUNDS } from './data'
 
 // Чистая логика игр алфавита: что можно показывать к уроку N, как собрать поле, раунды, варианты.
 // Никакого React здесь нет — всё проверяется в logic.test.ts.
@@ -91,20 +92,40 @@ export function mixPieces(word: string, lesson: number): Piece[] {
 /** Смешанное слово целиком: «мაмა». */
 export const mixed = (word: string, lesson: number) => mixPieces(word, lesson).map(p => p.geo ?? p.ru).join('')
 
+/**
+ * Смешанное слово как мост — пока в нём остаётся хоть одна русская буква. Русское слово целиком
+ * грузинскими буквами («სახარ») не показываем: тогда null, и место занимает настоящее грузинское слово.
+ */
+export function mixedBridge(word: string, lesson: number): string | null {
+  const m = mixed(word, lesson)
+  return [...m].every(isGeorgian) ? null : m
+}
+
+// ───────────── Лестница слов ─────────────
+
+/** Слова, которые ученик может прочитать к концу урока: настоящие грузинские, только из открытых букв. */
+export const ladder = (lesson: number): Word[] => wordsUpTo(lesson).filter(w => readable(w.geo, lesson))
+
+/** Есть ли в слове новая буква этого урока. */
+export const hasOwnLetter = (geo: string, lesson: number) => lessonLetters(lesson).some(l => geo.includes(l))
+
 // ───────────── «Превращение» ─────────────
 
-/** Русские слова для урока: в каждом есть буква этого урока и хотя бы две буквы, которые станут грузинскими. */
-export function morphWords(lesson: number, count = 2, rng: Rng = Math.random): string[] {
-  const own = new Set(lessonLetters(lesson))
-  const fits = RU_WORDS.filter(w => {
-    const ps = mixPieces(w, lesson)
-    return ps.some(p => p.geo && own.has(p.geo)) && ps.filter(p => p.geo).length >= 2 && ps.length <= 8
-  })
-  // Сначала — слова, которые станут грузинскими почти целиком: так красивее финал.
-  const score = (w: string) => { const ps = mixPieces(w, lesson); return ps.filter(p => p.geo).length / ps.length }
-  const ranked = shuffle(fits, rng).sort((a, b) => score(b) - score(a))
-  const top = ranked.slice(0, Math.max(count, Math.min(ranked.length, count * 3)))
-  return shuffle(top, rng).slice(0, count)
+/** Слово по буквам: как звучит каждая (кириллицей, как в транскрипции) и сама грузинская буква. */
+export function morphPieces(geo: string): Piece[] {
+  return [...geo].map(ch => ({ ru: cyr(ch), geo: ch }))
+}
+
+/**
+ * Настоящие грузинские слова для «Превращения»: из открытых к уроку букв, 2–7 букв, сначала свои слова
+ * урока и с новой буквой урока. На экране слово сначала написано кириллицей («дэда») — буквы по одной
+ * становятся грузинскими (დედა), в конце — что оно значит.
+ */
+export function morphWords(lesson: number, count = 2, rng: Rng = Math.random): Word[] {
+  const n = clampLesson(lesson)
+  const ok = (w: Word) => { const len = [...w.geo].length; return len >= 2 && len <= 7 && !w.geo.includes(' ') }
+  const score = (w: Word) => (w.lesson === n ? 2 : 0) + (hasOwnLetter(w.geo, n) ? 1 : 0)
+  return shuffle(ladder(n).filter(ok), rng).sort((a, b) => score(b) - score(a)).slice(0, count)
 }
 
 /** Варианты для одной буквы: верная и до трёх других выученных, непохожих по звуку; свои буквы урока — первыми. */
@@ -124,8 +145,8 @@ export interface AssembleRound { word: Word; letters: string[]; tiles: string[] 
 export function assembleRounds(lesson: number, count = 2, rng: Rng = Math.random): AssembleRound[] {
   const n = clampLesson(lesson)
   const ok = (w: Word) => { const len = [...w.geo].length; return len >= 2 && len <= 8 && !w.geo.includes(' ') }
-  const own = shuffle(wordsUpTo(n).filter(w => w.lesson === n && ok(w)), rng)
-  const older = shuffle(wordsUpTo(n).filter(w => w.lesson !== n && ok(w)), rng)
+  const own = shuffle(ladder(n).filter(w => w.lesson === n && ok(w)), rng).sort((a, b) => Number(hasOwnLetter(b.geo, n)) - Number(hasOwnLetter(a.geo, n)))
+  const older = shuffle(ladder(n).filter(w => w.lesson !== n && ok(w)), rng)
   // Короткое слово первым — разогрев, потом подлиннее.
   const chosen = [...own, ...older].slice(0, count).sort((a, b) => [...a.geo].length - [...b.geo].length)
   return chosen.map(word => {
@@ -156,4 +177,36 @@ export function lessonGamePlan(lesson: number, total: number): LessonGamePlan | 
   if (lesson < 1 || lesson > LESSON_COUNT || total < 2) return null
   const midAfter = total >= 8 ? 6 : Math.max(1, Math.floor(total / 2))
   return { midAfter, mid: lesson % 2 === 1 ? 'morph' : 'assemble', end: 'cafe' }
+}
+
+// ───────────── «Новое слово» ─────────────
+
+export interface WordIntroPlan {
+  /** Перед каким вопросом (0-based) показать знакомство со словами урока. */
+  before: number
+  /** Слова, с которыми знакомим отдельной сценой (2–3): сначала те, о которых спросят в уроке. */
+  featured: Word[]
+  /** Остальные слова урока — коротким списком «ещё слова, которые ты теперь можешь прочитать». */
+  rest: Word[]
+}
+
+/**
+ * Когда и с какими словами урока знакомить. Слово урока читается, только когда открыты все его буквы,
+ * поэтому сцена идёт после знакомства со всеми буквами урока, но до первого вопроса о слове урока
+ * и до игры в середине урока (игры тоже берут слова урока).
+ */
+export function wordIntroPlan(lesson: number, lemmas: readonly string[], midAfter: number | null, maxFeatured = 3): WordIntroPlan | null {
+  const n = clampLesson(lesson)
+  const own = wordsUpTo(n).filter(w => w.lesson === n)
+  if (own.length === 0) return null
+  const ownGeo = new Set(own.map(w => w.geo))
+  const letters = lessonLetters(n)
+  const lastLetter = Math.max(-1, ...letters.map(l => lemmas.indexOf(l)))
+  const firstAsked = lemmas.findIndex(l => ownGeo.has(l))
+  const limits = [firstAsked >= 0 ? firstAsked : lemmas.length, midAfter ?? lemmas.length]
+  const before = Math.max(lastLetter + 1, Math.min(...limits))
+  const asked = [...new Set(lemmas.filter(l => ownGeo.has(l)))].map(g => own.find(w => w.geo === g)!)
+  const others = own.filter(w => !asked.includes(w)).sort((a, b) => Number(hasOwnLetter(b.geo, n)) - Number(hasOwnLetter(a.geo, n)))
+  const featured = [...asked, ...others].slice(0, maxFeatured)
+  return { before, featured, rest: own.filter(w => !featured.includes(w)) }
 }

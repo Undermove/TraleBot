@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 // @ts-ignore — тесты идут в Node, а типов Node в мини-аппе нет
 import { existsSync } from 'node:fs'
 import LetterIntro from './LetterIntro'
-import { INTROS, introOf, letterAudio, transcriptionOf } from './letters'
+import { INTROS, introOf, transcriptionOf } from './letters'
+import { WORD_AUDIO } from '../games/data'
 import { Coverage } from './paint'
 import { LESSON_LETTERS, SOUNDS } from '../games/data'
 import { isGeorgian } from '../games/logic'
@@ -48,14 +49,14 @@ describe('letter intros', () => {
     for (const l of ['ქ', 'კ', 'თ', 'ტ', 'ფ', 'პ', 'ჩ', 'ჭ', 'ც', 'წ', 'ღ', 'ყ', 'ჰ']) expect(introOf(l)!.hint, l).toBeTruthy()
   })
 
-  it('has a recording for every letter in public/audio/alphabet', () => {
+  it('has a recording of every intro word (not of the letter name) in public/audio', () => {
     const cwd = (globalThis as any).process.cwd()
     for (const i of INTROS) {
-      const url = letterAudio(i.letter)
-      expect(url, i.letter).toBeTruthy()
-      expect(existsSync(`${cwd}/public${url}`), url!).toBe(true)
+      const url = WORD_AUDIO[i.word]
+      expect(url, i.word).toBeTruthy()
+      expect(url.startsWith('/audio/alphabet/'), url).toBe(false)
+      expect(existsSync(`${cwd}/public${url}`), url).toBe(true)
     }
-    expect(new Set(INTROS.map(i => letterAudio(i.letter))).size).toBe(33)
   })
 })
 
@@ -86,6 +87,7 @@ describe('LetterIntro', () => {
     })
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
   })
+  afterEach(() => vi.useRealTimers())
 
   it('starts with the surface of the Georgian word and shows the word with the letter after it', () => {
     const onDone = vi.fn()
@@ -103,17 +105,41 @@ describe('LetterIntro', () => {
     expect(onDone).toHaveBeenCalled()
   })
 
-  it('plays the recording of the letter when it appears and on «послушать», but not when the sound is off', () => {
-    render(<LetterIntro letter="ა" index={0} count={3} fraction={0} onExit={() => {}} onDone={() => {}} />)
-    fireEvent.click(screen.getByTestId('intro-skip'))
-    expect(played.some(u => u.endsWith('/audio/alphabet/a.m4a'))).toBe(true)
-    const n = played.length
+  it('plays the word once when the letter appears — not again while writing it — and again only on «послушать»', async () => {
+    vi.useFakeTimers()
+    render(<LetterIntro letter="ს" index={0} count={3} fraction={0} onExit={() => {}} onDone={() => {}} />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(50) })
+    const touch = () => screen.getByTestId('intro-touch')
+    // Без холста буква «проявляется» с первого касания (покрывать нечего).
+    fireEvent.pointerDown(touch(), { pointerId: 1, clientX: 10, clientY: 10, buttons: 1 })
+    expect(played).toHaveLength(0)
+    await act(async () => { await vi.advanceTimersByTimeAsync(800) })
+    expect(played.filter(u => u.endsWith('/audio/alphabet-words/sazamtro.m4a'))).toHaveLength(1)
+    expect(screen.getByTestId('intro-stage').dataset.phase).toBe('demo')
+    expect(screen.getByText('Как пишется')).toBeTruthy()
+    await act(async () => { await vi.advanceTimersByTimeAsync(800) })
+    expect(screen.getByTestId('intro-stage').dataset.phase).toBe('trace')
+    expect(screen.getByText('Теперь ты')).toBeTruthy()
+    // «ещё раз показать» — снова перо, без звука.
+    fireEvent.click(screen.getByTestId('intro-replay'))
+    await act(async () => { await vi.advanceTimersByTimeAsync(800) })
+    fireEvent.pointerDown(touch(), { pointerId: 2, clientX: 20, clientY: 20, buttons: 1 })
+    await act(async () => { await vi.advanceTimersByTimeAsync(800) })
+    expect(screen.getByTestId('intro-caption')).toBeTruthy()
+    expect(played).toHaveLength(1)
     fireEvent.click(screen.getByTestId('intro-listen'))
-    expect(played.length).toBe(n + 1)
+    expect(played).toHaveLength(2)
     setMuted(true)
     fireEvent.click(screen.getByTestId('intro-listen'))
-    expect(played.length).toBe(n + 1)
+    expect(played).toHaveLength(2)
     setMuted(false)
+  })
+
+  it('skipping plays the word once too', () => {
+    render(<LetterIntro letter="ქ" index={0} count={3} fraction={0} onExit={() => {}} onDone={() => {}} />)
+    fireEvent.click(screen.getByTestId('intro-skip'))
+    expect(played).toHaveLength(1)
+    expect(played[0].endsWith('/audio/alphabet-words/kva.m4a')).toBe(true)
   })
 
   it('highlights every place of the letter in the word and shows the one-line hint for a look-alike letter', () => {

@@ -1,9 +1,12 @@
-import { isGeorgian, mixed, readable } from '../games/logic'
+import { isGeorgian, mixedBridge, readable } from '../games/logic'
 
 // Товары кафе (последняя игра урока алфавита). Заказ гостя написан теми буквами, которые ученик уже знает:
 // пока грузинское слово не читается целиком — русское слово с выученными буквами («воდა», «ხლეб»);
-// как только все буквы грузинского слова выучены — настоящее слово (წყალი, პური). Грузинские слова —
-// из базового словаря уроков алфавита (кроме ხაჭაპური — пример из теории десятого урока).
+// как только все буквы грузинского слова выучены — настоящее слово (წყალი, პური). Русское слово целиком
+// грузинскими буквами не пишется никогда: если русская запись стала бы полностью грузинской, а настоящее
+// слово ещё не читается (или его нет), блюдо в этом уроке не заказывают. Грузинские слова — из базового
+// словаря уроков; ლიმონი, ბანანი, მანდარინი, ხაჭაპური — сверены со словарём (data.VERIFIED_WORDS) и звучат
+// почти как по-русски, так что понятны без отдельного знакомства.
 
 export interface Product {
   id: string
@@ -18,9 +21,9 @@ export const PRODUCTS: readonly Product[] = [
   { id: 'porridge', ru: 'каша' },
   { id: 'fish', ru: 'рыба' },
   { id: 'cheese', ru: 'сыр', geo: 'ყველი' },
-  { id: 'banana', ru: 'банан' },
-  { id: 'mandarin', ru: 'мандарин' },
-  { id: 'lemon', ru: 'лимон' },
+  { id: 'banana', ru: 'банан', geo: 'ბანანი' },
+  { id: 'mandarin', ru: 'мандарин', geo: 'მანდარინი' },
+  { id: 'lemon', ru: 'лимон', geo: 'ლიმონი' },
   { id: 'tea', ru: 'чай', geo: 'ჩაი' },
   { id: 'bread', ru: 'хлеб', geo: 'პური' },
   { id: 'milk', ru: 'молоко' },
@@ -39,8 +42,8 @@ export function orderText(p: Product, level: number): string | null {
   if (level < 1) return null
   if (p.geo && readable(p.geo, level)) return p.geo
   if (GEO_ONLY.has(p.id)) return null
-  const m = mixed(p.ru, level)
-  return [...m].filter(isGeorgian).length >= 2 ? m : null
+  const m = mixedBridge(p.ru, level)
+  return m && [...m].filter(isGeorgian).length >= 2 ? m : null
 }
 
 /** Заказ — целиком грузинское слово (а не смешанное). */

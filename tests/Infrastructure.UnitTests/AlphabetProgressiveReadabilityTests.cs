@@ -97,15 +97,21 @@ public class AlphabetProgressiveReadabilityTests
         failures.ShouldBeEmpty(string.Join("\n", failures));
     }
 
-    // A question must never ask what the learner has not been shown. The meaning a
-    // "meaning" / "word-recognition" question asks about must appear next to the Georgian
-    // word in the text or explanation of an earlier question of this or a previous lesson
-    // (an explanation is seen only after answering, so it counts for later questions only).
-    // The theory screen does not count: the lesson-1 theory listed «და — и», and the owner
-    // still met «Что значит და?» unprepared — people skim the theory before practice.
+    // A question must never ask what the learner has not been shown. The words of a lesson
+    // (words.json — the lesson's base vocabulary) are introduced in the mini-app by the «Новое
+    // слово» scene before the first question or game that uses them, so their meanings count
+    // as shown from their own lesson on (the mini-app's AlphabetInterlude tests check the scene
+    // comes first). Any other meaning must appear next to the Georgian word in the text or
+    // explanation of an earlier question of this or a previous lesson (an explanation is seen
+    // only after answering, so it counts for later questions only). The theory screen does not
+    // count: people skim it before practice.
     [TestCaseSource(nameof(LessonIds))]
     public void Meanings_are_shown_before_they_are_asked(int lessonId)
     {
+        var introduced = LessonWords()
+            .Where(l => l.Lesson <= lessonId)
+            .SelectMany(l => l.Words)
+            .ToList();
         var shown = new List<string>();
         for (var earlier = 1; earlier < lessonId; earlier++)
             shown.AddRange(LoadQuestions(earlier).SelectMany(ShownText));
@@ -132,13 +138,53 @@ public class AlphabetProgressiveReadabilityTests
             // A teaching question may give the knowledge in its own text and check it below
             // («და» значит «и». …?): its own question text counts, its explanation does not.
             var ownText = q.GetProperty("question").GetString()!;
-            if (word != null && meaning != null && !shown.Append(ownText).Any(t => ShownTogether(t, word, meaning)))
+            var byScene = introduced.Any(w => w.Word == word && w.Translation == meaning);
+            if (word != null && meaning != null && !byScene && !shown.Append(ownText).Any(t => ShownTogether(t, word, meaning)))
                 failures.Add($"question {q.GetProperty("id").GetString()}: asks «{word}» = «{meaning}», but that was never shown before");
 
             shown.AddRange(ShownText(q));
         }
 
         failures.ShouldBeEmpty(string.Join("\n", failures));
+    }
+
+    // No question teaches a meaning inline any more: «X значит Y. Как это читается?» was a passing
+    // line; a new word is now an event of its own (the «Новое слово» scene in the mini-app).
+    [TestCaseSource(nameof(LessonIds))]
+    public void Questions_do_not_teach_word_meanings_inline(int lessonId)
+    {
+        var inline = LoadQuestions(lessonId)
+            .Where(q => Regex.IsMatch(q.GetProperty("question").GetString()!, "» значит «"))
+            .Select(q => q.GetProperty("id").GetString())
+            .ToList();
+        inline.ShouldBeEmpty();
+    }
+
+    // Every word of the lesson vocabulary (what the mini-app adds to the dictionary and plays with)
+    // is made only of letters learned by its lesson.
+    [TestCaseSource(nameof(LessonIds))]
+    public void Lesson_words_use_only_letters_learned_by_their_lesson(int lessonId)
+    {
+        var known = KnownLetters(lessonId);
+        var words = LessonWords().Single(l => l.Lesson == lessonId).Words;
+        words.ShouldNotBeEmpty();
+        foreach (var w in words)
+            w.Word.Where(c => !known.Contains(c)).ShouldBeEmpty($"lesson {lessonId}: «{w.Word}»");
+    }
+
+    private sealed record LessonWord(string Word, string Translation);
+    private sealed record LessonWordsOfLesson(int Lesson, List<LessonWord> Words);
+
+    private static List<LessonWordsOfLesson> LessonWords()
+    {
+        using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(LessonsDirectory(), "words.json")));
+        return doc.RootElement.GetProperty("lessons").EnumerateArray()
+            .Select(l => new LessonWordsOfLesson(
+                l.GetProperty("lesson").GetInt32(),
+                l.GetProperty("words").EnumerateArray()
+                    .Select(w => new LessonWord(w.GetProperty("word").GetString()!, w.GetProperty("translation").GetString()!))
+                    .ToList()))
+            .ToList();
     }
 
     private static IEnumerable<string> ShownText(JsonElement q)

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 // @ts-ignore — тесты идут в Node, а типов Node в мини-аппе нет
 import { readFileSync } from 'node:fs'
-import { LESSON_LETTERS, LESSON_WORDS, RU_WORDS, SOUNDS } from './data'
+import { LESSON_LETTERS, LESSON_WORDS, SOUNDS } from './data'
 import {
-  assembleRounds, distractorsFor, learnedLetters, lessonGamePlan, lessonLetters, letterChoices, mixed, mixPieces,
-  morphWords, readable, soundOf, wordCount, wordsLabel, wordsUpTo
+  assembleRounds, distractorsFor, hasOwnLetter, ladder, learnedLetters, lessonGamePlan, lessonLetters, letterChoices, mixed, mixedBridge, mixPieces,
+  morphPieces, morphWords, readable, soundOf, wordCount, wordIntroPlan, wordsLabel, wordsUpTo
 } from './logic'
 import { GEORGIAN_ALPHABET } from '../../components/AlphaIndex'
 import { seeded } from '../../verbs/testing/catalog'
@@ -38,7 +38,6 @@ describe('alphabet game data', () => {
 
   it('has no Latin letters anywhere a learner reads', () => {
     for (const [geo, ru] of LESSON_WORDS.flat()) expect(LATIN.test(geo + ru)).toBe(false)
-    for (const w of RU_WORDS) expect(LATIN.test(w)).toBe(false)
   })
 })
 
@@ -57,6 +56,12 @@ describe('mixed words', () => {
     expect(mixPieces('джинсы', 11)[0]).toEqual({ ru: 'дж', geo: 'ჯ' })
   })
 
+  it('shows a Russian word in Georgian letters only as a bridge — never wholly Georgian', () => {
+    expect(mixedBridge('вода', 1)).toBe('воდა')
+    expect(mixedBridge('банан', 6)).toBeNull()
+    expect(mixedBridge('сахар', 4)).toBeNull()
+  })
+
   it('keeps the short letter for «к», «т», «п» as in the lessons (კინო, მეტრო, პასპორტ)', () => {
     expect(mixed('кино', 7)).toBe('კინო')
     expect(mixed('метро', 8)).toBe('მეტრო')
@@ -65,16 +70,20 @@ describe('mixed words', () => {
 })
 
 describe('Morph rounds', () => {
-  it.each(LESSONS)('lesson %i: every word has a letter of this lesson and at least two letters to turn', lesson => {
+  it.each(LESSONS)('lesson %i: real Georgian words only from opened letters, the lesson own words first', lesson => {
     const words = morphWords(lesson, 2, seeded(lesson))
     expect(words).toHaveLength(2)
-    const own = new Set(lessonLetters(lesson))
+    const known = wordsUpTo(lesson).map(w => w.geo)
     for (const w of words) {
-      const ps = mixPieces(w, lesson)
-      expect(ps.some(p => p.geo && own.has(p.geo))).toBe(true)
-      expect(ps.filter(p => p.geo).length).toBeGreaterThanOrEqual(2)
-      for (const p of ps) if (p.geo) expect(learnedLetters(lesson)).toContain(p.geo)
+      expect(known).toContain(w.geo)
+      expect(readable(w.geo, lesson)).toBe(true)
+      expect(morphPieces(w.geo).map(p => p.geo).join('')).toBe(w.geo)
     }
+    expect(words.some(w => w.lesson === lesson || hasOwnLetter(w.geo, lesson))).toBe(true)
+  })
+
+  it('starts from the Cyrillic sound of the word: «дэда» → დედა', () => {
+    expect(morphPieces('დედა').map(p => p.ru).join('')).toBe('дэда')
   })
 
   it('never offers a similar-sounding letter as a wrong choice', () => {
@@ -122,6 +131,33 @@ describe('sounds and labels', () => {
     expect(wordsLabel(9)).toBe('9 грузинских слов')
     expect(wordsLabel(21)).toBe('21 грузинское слово')
     expect(wordsLabel(12)).toBe('12 грузинских слов')
+  })
+
+  it('introduces the lesson words after the letters, before the first question about a word and before the mid-lesson game', () => {
+    for (const lesson of LESSONS) {
+      // Вопросы — настоящие из уроков.
+      const file = `${(globalThis as any).process.cwd()}/../Lessons/GeorgianAlphabetProgressive/questions${lesson === 1 ? '' : lesson}.json`
+      const lemmas: string[] = JSON.parse(readFileSync(file, 'utf8')).questions.slice(0, 10).map((q: any) => q.lemma)
+      const plan = lessonGamePlan(lesson, lemmas.length)!
+      const words = wordIntroPlan(lesson, lemmas, plan.midAfter)!
+      const own = LESSON_WORDS[lesson - 1].map(([g]) => g)
+      // Сцена — не позже игры в середине и до первого вопроса о слове урока.
+      expect(words.before, `lesson ${lesson}`).toBeLessThanOrEqual(plan.midAfter)
+      const firstAsked = lemmas.findIndex(l => own.includes(l))
+      if (firstAsked >= 0) expect(words.before).toBeLessThanOrEqual(firstAsked)
+      // Все буквы урока уже показаны.
+      for (const l of lessonLetters(lesson)) expect(lemmas.indexOf(l), `${l} in lesson ${lesson}`).toBeLessThan(words.before)
+      // Каждое слово урока — либо своей сценой, либо в списке; о чём спрашивают — сценой, если влезает.
+      expect([...words.featured, ...words.rest].map(w => w.geo).sort()).toEqual([...own].sort())
+      expect(words.featured.length).toBeLessThanOrEqual(3)
+      const asked = [...new Set(lemmas.filter(l => own.includes(l)))]
+      expect(words.featured.map(w => w.geo)).toEqual(expect.arrayContaining(asked.slice(0, 3)))
+    }
+  })
+
+  it('every lesson word is buildable from the letters opened by its lesson', () => {
+    for (const lesson of LESSONS) for (const w of ladder(lesson)) expect(readable(w.geo, lesson)).toBe(true)
+    expect(ladder(1).map(w => w.geo)).toEqual(['და', 'არა', 'რა'])
   })
 
   it('plans one game after the sixth question — Morph and Assemble by turns — and the cafe at the end', () => {

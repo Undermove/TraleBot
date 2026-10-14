@@ -99,26 +99,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab3-q06",
-      "lemma": "მამა",
-      "question": "«მამა» значит «папа». Как это читается?",
-      "options": [
-        "нана",
-        "вава",
-        "мама"
-      ],
-      "answer_index": 2,
-      "explanation": "«მამა» — «мама», папа. Читается «мама», а значит «папа». А мама — «დედა».",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab3-q07",
       "lemma": "მე",
-      "question": "«მე» значит «я». Как это читается?",
+      "question": "Как читается «მე»?",
       "options": [
         "мэ",
         "нэ",
@@ -127,7 +110,7 @@
       "answer_index": 0,
       "explanation": "«მე» — «мэ», я.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -135,7 +118,7 @@
     {
       "id": "ab3-q08",
       "lemma": "მინდა",
-      "question": "«მინდა» значит «хочу». Как это читается?",
+      "question": "Как читается «მინდა»?",
       "options": [
         "мимда",
         "минда",
@@ -144,7 +127,7 @@
       "answer_index": 1,
       "explanation": "«მინდა» — «минда», хочу. «არ მინდა» — не хочу.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -152,7 +135,7 @@
     {
       "id": "ab3-q09",
       "lemma": "ვინ",
-      "question": "«ვინ» значит «кто». Как это читается?",
+      "question": "Как читается «ვინ»?",
       "options": [
         "мин",
         "вим",
@@ -161,7 +144,7 @@
       "answer_index": 2,
       "explanation": "«ვინ» — «вин», кто.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

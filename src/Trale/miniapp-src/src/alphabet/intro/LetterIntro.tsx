@@ -2,24 +2,28 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from '../games/GameFrame'
 import { SoundIcon } from '../games/GameFrame'
-import { burst, haptic, playClip, primeClip, reducedMotion, sound } from '../games/fx'
-import { introOf, letterAudio, transcriptionOf, wordParts, type LetterIntro as Intro } from './letters'
-import { Coverage, glyphPoints, paintSurface, type Pt } from './paint'
+import { burst, haptic, playClip, reducedMotion, sound } from '../games/fx'
+import { WORD_AUDIO } from '../games/data'
+import { introOf, transcriptionOf, wordParts, type LetterIntro as Intro } from './letters'
+import { Coverage, glyphPoints, letterStrokes, paintSurface, type Pt } from './paint'
 
 /**
  * «Знакомство с буквой» — отдельная сцена на каждую новую букву, перед первым вопросом о ней.
  * 1) Стираешь пальцем поверхность грузинского слова на эту букву (корку арбуза — საზამთრო, снег — თოვლი…),
- *    под ней проявляется буква и звучит её запись.
- * 2) Обводишь букву пальцем: она заливается там, где прошёл палец. Порядок штрихов не проверяем —
- *    надёжных данных о нём нет; засчитываем, когда закрашено ~70% буквы.
+ *    под ней проявляется буква и звучит запись этого слова — ровно один раз; дальше — только по кнопке.
+ * 2) «Как пишется»: перо само выводит букву (точка ведёт линию, начало отмечено), потом «Теперь ты» —
+ *    ведёшь пальцем по бледной букве от зелёной точки по стрелке. Путь пера — по форме шрифта
+ *    (paint.letterStrokes), это приближение, а не канонический порядок штрихов. Засчитываем, когда
+ *    закрашено ~60% буквы; «ещё раз» показывает перо снова.
  * 3) Подпись: слово крупно с подсвеченной буквой, «сазамтро — арбуз», «ს — звук „с“» и, для трудных букв,
  *    одна строка о звуке.
  */
 
-type Phase = 'reveal' | 'trace' | 'done'
+type Phase = 'reveal' | 'demo' | 'trace' | 'done'
 
 const REVEAL_AT = 0.6
-const TRACE_AT = 0.7
+const TRACE_AT = 0.6
+const DEMO_MS = 2200
 const ERASE_R = 26
 const TRACE_R = 19
 
@@ -37,6 +41,8 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
   const [progress, setProgress] = useState(0)
   const [size, setSize] = useState(300)
   const box = useRef<HTMLDivElement>(null)
+  const said = useRef(false)
+  const [replay, setReplay] = useState(0)
 
   useLayoutEffect(() => {
     const w = box.current?.parentElement?.clientWidth ?? 0
@@ -47,16 +53,18 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
 
   const titles: Record<Phase, string> = {
     reveal: intro.action,
-    trace: 'Обведи букву пальцем',
+    demo: 'Как пишется',
+    trace: 'Теперь ты',
     done: 'Новая буква'
   }
 
-  const audio = letterAudio(letter)
-  const say = () => { if (audio) void playClip(audio) }
+  const audio = WORD_AUDIO[intro.word]
+  /** Слово звучит один раз — когда буква проявилась (или сцену пропустили). Повтор — только кнопкой. */
+  const sayOnce = () => { if (said.current) return; said.current = true; if (audio) void playClip(audio) }
 
   function skip() {
     haptic('tap')
-    say()
+    sayOnce()
     setPhase('done')
   }
 
@@ -64,26 +72,27 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
     <GameFrame title={titles[phase]} eyebrow={`новая буква · ${index + 1} из ${count}`} fraction={fraction} onExit={onExit}>
       <div className="flex-1 flex flex-col items-center gap-4">
         <div ref={box} className="w-full flex justify-center">
-          <Stage key={letter} intro={intro} size={size} phase={phase}
+          <Stage key={letter} intro={intro} size={size} phase={phase} replay={replay}
             onProgress={setProgress}
-            onTouch={() => { if (audio) primeClip(audio) }}
-            onReveal={say}
-            onRevealed={() => setPhase('trace')}
+            onReveal={sayOnce}
+            onRevealed={() => setPhase('demo')}
+            onDemoDone={() => setPhase('trace')}
             onTraced={() => setPhase('done')}
           />
         </div>
 
-        {phase !== 'done' && (
+        {phase !== 'done' && phase !== 'demo' && (
           <div className="w-full max-w-[330px]">
             <div className="h-2.5 rounded-full bg-cream-deep border border-jewelInk/30 overflow-hidden">
               <div className={`h-full transition-[width] duration-150 ${phase === 'reveal' ? 'bg-gold' : 'bg-navy'}`}
                 data-testid="intro-progress" style={{ width: `${Math.min(100, Math.round((progress / (phase === 'reveal' ? REVEAL_AT : TRACE_AT)) * 100))}%` }} />
             </div>
             <div className="mt-2 text-center text-[13px] font-bold text-jewelInk-hint">
-              {phase === 'reveal' ? 'Води пальцем по картинке — под ней что-то есть' : 'Веди пальцем по букве, пока она не закрасится'}
+              {phase === 'reveal' ? 'Води пальцем по картинке — под ней что-то есть' : 'Веди пальцем от зелёной точки по стрелке'}
             </div>
           </div>
         )}
+        {phase === 'demo' && <div className="text-center text-[13px] font-bold text-jewelInk-hint" data-testid="intro-demo-hint">Смотри, как ведёт перо — потом повторишь</div>}
 
         {phase === 'done' && (
           <div className="text-center ab-drip" data-testid="intro-caption">
@@ -96,7 +105,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
             <div className="mt-2 flex items-center justify-center gap-2 text-[20px] font-extrabold leading-tight">
               <span><span className="font-geo text-navy text-[28px]">{intro.letter}</span> — звук «{intro.sound}»</span>
               {audio && (
-                <button onClick={() => { haptic('tap'); say() }} aria-label="Послушать букву" data-testid="intro-listen"
+                <button onClick={() => { haptic('tap'); void playClip(audio) }} aria-label="Послушать слово" data-testid="intro-listen"
                   className="w-10 h-10 rounded-xl bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center" style={{ boxShadow: '2px 2px 0 #15100A' }}>
                   <SoundIcon on size={18} />
                 </button>
@@ -107,6 +116,9 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
         )}
 
         <div className="mt-auto w-full max-w-[340px] flex flex-col gap-2">
+          {phase === 'trace' && (
+            <button onClick={() => { haptic('tap'); setReplay(r => r + 1); setPhase('demo') }} className="h-10 text-[14px] font-bold text-navy underline underline-offset-4" data-testid="intro-replay">ещё раз показать</button>
+          )}
           {phase === 'done'
             ? <Button onClick={() => { haptic('tap'); onDone() }}>дальше →</Button>
             : <button onClick={skip} className="h-11 text-[14px] font-bold text-jewelInk-hint underline underline-offset-4" data-testid="intro-skip">пропустить</button>}
@@ -116,19 +128,22 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
   )
 }
 
-function Stage({ intro, size, phase, onProgress, onTouch, onReveal, onRevealed, onTraced }: {
+function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, onDemoDone, onTraced }: {
   intro: Intro; size: number; phase: Phase
+  /** Счётчик «ещё раз» — перезапускает показ пера. */
+  replay: number
   onProgress: (f: number) => void
-  /** Палец коснулся сцены — внутри жеста готовим запись буквы (iOS иначе не даст сыграть её позже). */
-  onTouch: () => void
-  /** Буква проявилась — сразу, ещё до перехода к обводке. */
+  /** Буква проявилась — сразу, ещё до перехода к письму. */
   onReveal: () => void
-  onRevealed: () => void; onTraced: () => void
+  onRevealed: () => void
+  onDemoDone: () => void
+  onTraced: () => void
 }) {
   const coverRef = useRef<HTMLCanvasElement>(null)
   const letterRef = useRef<HTMLCanvasElement>(null)
   const paintRef = useRef<HTMLCanvasElement>(null)
-  const glyph = useRef<{ points: Pt[]; mask: HTMLCanvasElement | null }>({ points: [], mask: null })
+  const glyph = useRef<{ points: Pt[]; mask: HTMLCanvasElement | null; strokes: Pt[][] }>({ points: [], mask: null, strokes: [] })
+  const [pen, setPen] = useState<Pt | null>(null)
   const reveal = useRef<Coverage>(new Coverage([]))
   const trace = useRef<Coverage>(new Coverage([]))
   const lastPt = useRef<Pt | null>(null)
@@ -162,7 +177,8 @@ function Stage({ intro, size, phase, onProgress, onTouch, onReveal, onRevealed, 
       for (const c of [coverRef.current, letterRef.current, paintRef.current]) if (c) { c.width = size * dpr; c.height = size * dpr }
       const cover = ctxOf(coverRef.current)
       if (cover) paintSurface(cover, size, size, intro.surface.cover, intro.letter.charCodeAt(0))
-      glyph.current = glyphPoints(intro.letter, size)
+      const g = glyphPoints(intro.letter, size)
+      glyph.current = { ...g, strokes: letterStrokes(g.mask, size) }
       reveal.current = new Coverage(glyph.current.points.filter((_, i) => i % 2 === 0))
       trace.current = new Coverage(glyph.current.points)
       drawLetter(1)
@@ -186,9 +202,61 @@ function Stage({ intro, size, phase, onProgress, onTouch, onReveal, onRevealed, 
   }
 
   useEffect(() => {
-    if (phase === 'trace') { drawLetter(0.3); lastPt.current = null; onProgress(0) }
-    if (phase === 'done') fillAll()
+    if (phase === 'trace') {
+      ctxOf(paintRef.current)?.clearRect(0, 0, size, size)
+      drawLetter(0.25); lastPt.current = null; onProgress(0)
+      trace.current = new Coverage(glyph.current.points)
+    }
+    if (phase === 'done') { setPen(null); fillAll() }
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // «Как пишется»: перо само ведёт линию по буквам-штрихам, чернила остаются позади.
+  useEffect(() => {
+    if (phase !== 'demo') return
+    phaseRef.current = 'demo'
+    ctxOf(paintRef.current)?.clearRect(0, 0, size, size)
+    drawLetter(0.18); setPen(null)
+    const segs: { a: Pt; b: Pt; len: number; lift: boolean }[] = []
+    for (const st of glyph.current.strokes)
+      for (let i = 1; i < st.length; i++) {
+        const len = Math.hypot(st[i].x - st[i - 1].x, st[i].y - st[i - 1].y)
+        if (len > 0.01) segs.push({ a: st[i - 1], b: st[i], len, lift: false })
+      }
+    const total = segs.reduce((n, sg) => n + sg.len, 0)
+    if (total === 0 || reducedMotion()) { const t = setTimeout(onDemoDone, reducedMotion() ? 0 : 300); return () => clearTimeout(t) }
+    let raf = 0, si = 0, done = 0, ticks = 0
+    const start = performance.now()
+    const frame = (now: number) => {
+      const want = Math.min(total, ((now - start) / DEMO_MS) * total)
+      const ctx = ctxOf(paintRef.current)
+      let at: Pt | null = null
+      while (si < segs.length && done < want) {
+        const sg = segs[si]
+        const from = done, to = Math.min(want, from + sg.len)
+        const t0 = 0, t1 = (to - from) / Math.max(0.001, sg.len)
+        const p0 = { x: sg.a.x + (sg.b.x - sg.a.x) * t0, y: sg.a.y + (sg.b.y - sg.a.y) * t0 }
+        const p1 = { x: sg.a.x + (sg.b.x - sg.a.x) * t1, y: sg.a.y + (sg.b.y - sg.a.y) * t1 }
+        if (ctx) {
+          ctx.strokeStyle = intro.surface.ink; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = TRACE_R * 1.7
+          ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x + 0.01, p1.y); ctx.stroke()
+        }
+        at = p1
+        if (t1 >= 0.999 || sg.len - (to - from) < 0.01) { done = from + sg.len; si++ } else { segs[si] = { ...sg, a: p1, len: sg.len - (to - from) }; done = to }
+      }
+      if (ctx && glyph.current.mask) {
+        ctx.globalCompositeOperation = 'destination-in'
+        ctx.drawImage(glyph.current.mask, 0, 0, size, size)
+        ctx.globalCompositeOperation = 'source-over'
+      }
+      if (at) setPen(at)
+      const step = Math.floor((want / total) * 8)
+      if (step > ticks) { ticks = step; haptic('soft'); sound.chalk() }
+      if (want >= total) { setPen(null); raf = window.setTimeout(onDemoDone, 450) as unknown as number; return }
+      raf = requestAnimationFrame(frame)
+    }
+    raf = requestAnimationFrame(frame)
+    return () => { cancelAnimationFrame(raf); clearTimeout(raf) }
+  }, [phase, replay]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function fillAll() {
     const ctx = ctxOf(paintRef.current)
@@ -226,7 +294,7 @@ function Stage({ intro, size, phase, onProgress, onTouch, onReveal, onRevealed, 
   }
 
   function move(e: React.PointerEvent) {
-    if (phaseRef.current === 'done' || needLift.current) return
+    if (phaseRef.current === 'done' || phaseRef.current === 'demo' || needLift.current) return
     const p = at(e)
     const prev = lastPt.current ?? p
     lastPt.current = p
@@ -266,7 +334,7 @@ function Stage({ intro, size, phase, onProgress, onTouch, onReveal, onRevealed, 
   }
 
   function finishReveal() {
-    phaseRef.current = 'trace'
+    phaseRef.current = 'demo'
     needLift.current = true
     lastStep.current = 0
     if (coverRef.current) coverRef.current.style.opacity = '0'
@@ -301,14 +369,36 @@ function Stage({ intro, size, phase, onProgress, onTouch, onReveal, onRevealed, 
         style={{ ...canvasStyle, transition: 'opacity 450ms ease-out' }}
         data-testid="intro-cover"
       />
+      {phase === 'demo' && pen && (
+        <div className="absolute pointer-events-none" style={{ left: pen.x - 11, top: pen.y - 11, width: 22, height: 22, borderRadius: 11, background: '#F5B820', border: '2px solid #15100A', boxShadow: '0 0 0 4px rgba(245,184,32,0.35)' }} data-testid="intro-pen" />
+      )}
+      {phase === 'trace' && <StartMark strokes={glyph.current.strokes} size={size} />}
       <div
         style={{ ...canvasStyle, touchAction: 'none' }}
-        onPointerDown={e => { onTouch(); (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); needLift.current = false; lastPt.current = null; move(e) }}
+        onPointerDown={e => { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); needLift.current = false; lastPt.current = null; move(e) }}
         onPointerMove={e => { if (e.buttons || e.pointerType === 'touch') move(e) }}
         onPointerUp={() => { lastPt.current = null }}
         onPointerCancel={() => { lastPt.current = null }}
         data-testid="intro-touch"
       />
     </div>
+  )
+}
+
+/** Откуда начинать и куда вести: зелёная точка в начале первого штриха и стрелка по его направлению. */
+function StartMark({ strokes, size }: { strokes: Pt[][]; size: number }) {
+  const first = strokes[0]
+  if (!first || first.length < 2) return null
+  const a = first[0], b = first[Math.min(first.length - 1, 6)]
+  const ang = Math.atan2(b.y - a.y, b.x - a.x)
+  const L = 34, tip = { x: a.x + Math.cos(ang) * L, y: a.y + Math.sin(ang) * L }
+  const wing = (d: number) => ({ x: tip.x - Math.cos(ang + d) * 10, y: tip.y - Math.sin(ang + d) * 10 })
+  const w1 = wing(0.5), w2 = wing(-0.5)
+  return (
+    <svg width={size} height={size} className="absolute inset-0 pointer-events-none" aria-hidden data-testid="intro-start">
+      <path d={`M${a.x} ${a.y} L${tip.x} ${tip.y} M${w1.x} ${w1.y} L${tip.x} ${tip.y} L${w2.x} ${w2.y}`} stroke="#15100A" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d={`M${a.x} ${a.y} L${tip.x} ${tip.y} M${w1.x} ${w1.y} L${tip.x} ${tip.y} L${w2.x} ${w2.y}`} stroke="#F5B820" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <circle cx={a.x} cy={a.y} r="10" fill="#3E9A5A" stroke="#15100A" strokeWidth="2" />
+    </svg>
   )
 }

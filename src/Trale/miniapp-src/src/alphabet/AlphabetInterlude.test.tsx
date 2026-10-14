@@ -20,6 +20,14 @@ function answer() {
   fireEvent.click(screen.getByText(/дальше →|итог →/))
 }
 const skipIntro = () => { fireEvent.click(screen.getByTestId('intro-skip')); fireEvent.click(screen.getByText('дальше →')) }
+/** «Новое слово»: пропустить каждое слово сцены и отправить его в словарь. */
+async function skipWords() {
+  while (screen.queryByTestId('word-skip')) {
+    fireEvent.click(screen.getByTestId('word-skip'))
+    await act(async () => { fireEvent.click(screen.getByText('в словарь →')) })
+  }
+  if (screen.queryByTestId('word-list')) fireEvent.click(screen.getByText('дальше →'))
+}
 
 describe('alphabet lesson scenes', () => {
   beforeEach(() => {
@@ -47,7 +55,11 @@ describe('alphabet lesson scenes', () => {
     expect(screen.getByText(/новая буква · 3 из 3/)).toBeTruthy()
     skipIntro(); answer(); answer()
 
-    // После шестого вопроса — «Превращение».
+    // После шестого вопроса — сначала новые слова урока (их уже можно прочитать), потом «Превращение» с ними.
+    expect(screen.getByText('Тебе хватает букв, чтобы прочитать новое слово!')).toBeTruthy()
+    expect(screen.getByText(/новое слово · 1 из 3/)).toBeTruthy()
+    expect(screen.getAllByTestId('word-tile').map(t => t.textContent).join('')).toBe('და')
+    await skipWords()
     expect(screen.getByText('Преврати слово в грузинское')).toBeTruthy()
     fireEvent.click(screen.getByLabelText('Назад'))
     expect(navigate).toHaveBeenCalledWith({ kind: 'lesson-theory', moduleId: 'alphabet-progressive', lessonId: 1 })
@@ -59,14 +71,15 @@ describe('alphabet lesson scenes', () => {
     await waitFor(() => expect(screen.getByTestId('intro-skip')).toBeTruthy())
     for (let i = 0; i < questions.length; i++) {
       if (screen.queryByTestId('intro-skip')) skipIntro()
+      if (screen.queryByTestId('word-skip')) await skipWords()
       if (screen.queryByText('Преврати слово в грузинское')) {
         // Пройти «Превращение» нечестно быстро: каждый раз жмём верную плитку.
-        while (!screen.queryByText(/читается/) || screen.queryAllByTestId('morph-choice').length) {
+        while (screen.queryAllByTestId('morph-choice').length) {
           const ask = screen.getByText(/Какая грузинская буква/).textContent!
           const ru = ask.match(/«(.+?)»/)![1]
           const geo = { а: 'ა', д: 'დ', р: 'რ' }[ru.toLowerCase() as 'а']
           fireEvent.click(screen.getAllByTestId('morph-choice').find(b => b.getAttribute('aria-label') === geo)!)
-          if (screen.queryByText(/читается/)) fireEvent.click(screen.getByText(/следующее слово →|дальше →/))
+          if (screen.queryByTestId('morph-meaning')) fireEvent.click(screen.getByText(/следующее слово →|дальше →/))
           if (!screen.queryByText('Преврати слово в грузинское')) break
         }
       }
@@ -90,6 +103,7 @@ describe('alphabet lesson scenes', () => {
     render(<Practice moduleId="alphabet-progressive" lessonId={2} progress={defaultProgress} setProgress={() => {}} authenticated navigate={() => {}} />)
     await waitFor(() => expect(screen.getByTestId('intro-skip')).toBeTruthy())
     for (let i = 0; i < 6; i++) { if (screen.queryByTestId('intro-skip')) skipIntro(); answer() }
+    await skipWords()
     expect(screen.getByText('Собери грузинское слово')).toBeTruthy()
     expect(screen.queryByText('Преврати слово в грузинское')).toBeNull()
   })

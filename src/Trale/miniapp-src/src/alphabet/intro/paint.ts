@@ -202,3 +202,105 @@ export class Coverage {
 
   get fraction(): number { return this.points.length === 0 ? 1 : this.count / this.points.length }
 }
+
+// ───────────── «Как пишется»: путь пера по букве ─────────────
+
+/**
+ * Утончение (Чжан — Суэн): из залитой буквы на сетке остаётся линия толщиной в клетку — «скелет».
+ * grid[y][x] = 1 внутри буквы. Возвращает новую сетку.
+ */
+export function thin(grid: number[][]): number[][] {
+  const h = grid.length, w = grid[0]?.length ?? 0
+  const g = grid.map(r => [...r])
+  const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < w && y < h ? g[y][x] : 0)
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const pass of [0, 1]) {
+      const del: [number, number][] = []
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        if (!g[y][x]) continue
+        const p = [at(x, y - 1), at(x + 1, y - 1), at(x + 1, y), at(x + 1, y + 1), at(x, y + 1), at(x - 1, y + 1), at(x - 1, y), at(x - 1, y - 1)]
+        const b = p.reduce((s, v) => s + v, 0)
+        if (b < 2 || b > 6) continue
+        let a = 0
+        for (let i = 0; i < 8; i++) if (!p[i] && p[(i + 1) % 8]) a++
+        if (a !== 1) continue
+        if (pass === 0 ? p[0] * p[2] * p[4] || p[2] * p[4] * p[6] : p[0] * p[2] * p[6] || p[0] * p[4] * p[6]) continue
+        del.push([x, y])
+      }
+      for (const [x, y] of del) g[y][x] = 0
+      if (del.length) changed = true
+    }
+  }
+  return g
+}
+
+/**
+ * Порядок обхода скелета — как вело бы перо: начинаем с конца линии, который выше и левее, идём
+ * по соседним клеткам, на развилке — туда, где поворот меньше; линия кончилась — перо поднимается и
+ * переносится к ближайшей непройденной клетке. Это приближение по форме шрифта, а не канонический
+ * порядок штрихов: надёжного источника о направлении письма каждой буквы у нас нет.
+ * Возвращает штрихи — списки клеток (x, y).
+ */
+export function skeletonStrokes(skel: number[][]): Pt[][] {
+  const h = skel.length, w = skel[0]?.length ?? 0
+  const left = new Set<number>()
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (skel[y][x]) left.add(y * w + x)
+  const nbrs = (k: number) => {
+    const x = k % w, y = Math.floor(k / w), out: number[] = []
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue
+      const nx = x + dx, ny = y + dy
+      if (nx >= 0 && ny >= 0 && nx < w && ny < h && skel[ny][nx]) out.push(ny * w + nx)
+    }
+    return out
+  }
+  const pt = (k: number): Pt => ({ x: k % w, y: Math.floor(k / w) })
+  const strokes: Pt[][] = []
+  let last: Pt | null = null
+  while (left.size) {
+    const cells = [...left]
+    const ends = cells.filter(k => nbrs(k).filter(n => left.has(n)).length <= 1)
+    const pool = ends.length ? ends : cells
+    // Первый штрих — с верхне-левого конца; следующие — с ближайшего к месту, где перо оторвалось.
+    const start = pool.reduce((best, k) => {
+      const p = pt(k), q = pt(best)
+      const score = (a: Pt) => (last ? Math.hypot(a.x - last.x, a.y - last.y) : a.x + a.y * 1.2)
+      return score(p) < score(q) ? k : best
+    })
+    const stroke: Pt[] = []
+    let cur: number | undefined = start
+    let dir: Pt = { x: 0, y: 0 }
+    while (cur !== undefined) {
+      left.delete(cur)
+      const p = pt(cur)
+      if (stroke.length) { const q = stroke[stroke.length - 1]; dir = { x: p.x - q.x, y: p.y - q.y } }
+      stroke.push(p)
+      const next: number[] = nbrs(cur).filter(n => left.has(n))
+      cur = next.sort((a, b) => {
+        const turn = (k: number) => { const n = pt(k); return -((n.x - p.x) * dir.x + (n.y - p.y) * dir.y) }
+        return turn(a) - turn(b)
+      })[0]
+    }
+    if (stroke.length >= 3) strokes.push(stroke)
+    last = stroke[stroke.length - 1]
+  }
+  return strokes
+}
+
+/** Путь пера по букве в координатах сцены: растр маски → скелет → штрихи. Без холста — пусто. */
+export function letterStrokes(mask: HTMLCanvasElement | null, size: number, cells = 64): Pt[][] {
+  try {
+    if (!mask) return []
+    const c = document.createElement('canvas')
+    c.width = cells; c.height = cells
+    const ctx = c.getContext('2d')
+    if (!ctx) return []
+    ctx.drawImage(mask, 0, 0, cells, cells)
+    const data = ctx.getImageData(0, 0, cells, cells).data
+    const grid = Array.from({ length: cells }, (_, y) => Array.from({ length: cells }, (_, x) => (data[(y * cells + x) * 4 + 3] > 110 ? 1 : 0)))
+    const k = size / cells
+    return skeletonStrokes(thin(grid)).map(s => s.filter((_, i) => i % 2 === 0 || i === s.length - 1).map(p => ({ x: (p.x + 0.5) * k, y: (p.y + 0.5) * k })))
+  } catch { return [] }
+}

@@ -50,14 +50,14 @@
     {
       "id": "ab7-q03",
       "lemma": "ც",
-      "question": "Новая буква ც — «ц», с лёгким выдохом. Как читается «ცენა»?",
+      "question": "Новая буква ც — «ц», с лёгким выдохом. Как читается «ცხენი»?",
       "options": [
-        "сена",
-        "чена",
-        "цена"
+        "схэни",
+        "чхэни",
+        "цхэни"
       ],
       "answer_index": 2,
-      "explanation": "ც — «ц»: «цена».",
+      "explanation": "ც — «ц»: «цхэни». Это грузинское слово — «лошадь».",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -99,26 +99,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab7-q06",
-      "lemma": "კი",
-      "question": "«კი» значит «да». Как это читается?",
-      "options": [
-        "ги",
-        "хи",
-        "ки"
-      ],
-      "answer_index": 2,
-      "explanation": "«კი» — «ки», да. А «нет» — «არა».",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab7-q07",
       "lemma": "კარგი",
-      "question": "«კარგი» значит «хорошо». Как это читается?",
+      "question": "Как читается «კარგი»?",
       "options": [
         "карги",
         "гарги",
@@ -127,7 +110,7 @@
       "answer_index": 0,
       "explanation": "«კარგი» — «карги», хорошо. Так говорят и «хороший».",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -135,7 +118,7 @@
     {
       "id": "ab7-q08",
       "lemma": "კაცი",
-      "question": "«კაცი» значит «мужчина». Как это читается?",
+      "question": "Как читается «კაცი»?",
       "options": [
         "качи",
         "каци",
@@ -144,7 +127,7 @@
       "answer_index": 1,
       "explanation": "«კაცი» — «каци», мужчина. А женщина — «ქალი».",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

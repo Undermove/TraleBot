@@ -16,14 +16,14 @@
     {
       "id": "ab6-q01",
       "lemma": "ბ",
-      "question": "Новая буква ბ — звук «б». Как читается «ბანან»?",
+      "question": "Новая буква ბ — звук «б». Как читается «ბანანი»?",
       "options": [
-        "банан",
-        "ванан",
-        "данан"
+        "банани",
+        "ванани",
+        "данани"
       ],
       "answer_index": 0,
-      "explanation": "ბ — «б»: «банан».",
+      "explanation": "ბ — «б»: «банани», банан по-грузински.",
       "tags": [
         "new-letter",
         "mixed-script"
@@ -33,14 +33,14 @@
     {
       "id": "ab6-q02",
       "lemma": "ბ",
-      "question": "Как читается «ბარ»?",
+      "question": "Как читается «ბარი»?",
       "options": [
-        "вар",
-        "бар",
-        "дар"
+        "вари",
+        "бари",
+        "дари"
       ],
       "answer_index": 1,
-      "explanation": "ბ — «б»: «бар».",
+      "explanation": "ბ — «б»: «бари», бар по-грузински.",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -74,7 +74,7 @@
         "нора"
       ],
       "answer_index": 0,
-      "explanation": "გ — «г»: «гора».",
+      "explanation": "გ — «г»: «гора». По-грузински «გორა» — холм.",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -99,26 +99,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab6-q06",
-      "lemma": "მანქანა",
-      "question": "«მანქანა» значит «машина». Как это читается?",
-      "options": [
-        "мангана",
-        "манхана",
-        "манкана"
-      ],
-      "answer_index": 2,
-      "explanation": "«მანქანა» — «манкана», машина.",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab6-q07",
       "lemma": "ქალი",
-      "question": "«ქალი» значит «женщина». Как это читается?",
+      "question": "Как читается «ქალი»?",
       "options": [
         "кали",
         "гали",
@@ -127,7 +110,7 @@
       "answer_index": 0,
       "explanation": "«ქალი» — «кали», женщина.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -135,7 +118,7 @@
     {
       "id": "ab6-q08",
       "lemma": "მეგობარი",
-      "question": "«მეგობარი» значит «друг». Как это читается?",
+      "question": "Как читается «მეგობარი»?",
       "options": [
         "мэкобари",
         "мэгобари",
@@ -144,7 +127,7 @@
       "answer_index": 1,
       "explanation": "«მეგობარი» — «мэгобари», друг.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -152,7 +135,7 @@
     {
       "id": "ab6-q09",
       "lemma": "მადლობა",
-      "question": "«მადლობა» значит «спасибо». Как это читается?",
+      "question": "Как читается «მადლობა»?",
       "options": [
         "мадлова",
         "мадлода",
@@ -161,7 +144,7 @@
       "answer_index": 2,
       "explanation": "«მადლობა» — «мадлоба», спасибо. «დიდი მადლობა» — большое спасибо.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

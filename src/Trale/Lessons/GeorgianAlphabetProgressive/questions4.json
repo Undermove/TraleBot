@@ -101,14 +101,14 @@
     {
       "id": "ab4-q06",
       "lemma": "ხ",
-      "question": "Как читается «სახარ»?",
+      "question": "Как читается «ხელი»?",
       "options": [
-        "сакар",
-        "сагар",
-        "сахар"
+        "кэли",
+        "хэли",
+        "гэли"
       ],
-      "answer_index": 2,
-      "explanation": "ხ — «х»: «сахар». Всё слово грузинскими буквами.",
+      "answer_index": 1,
+      "explanation": "ხ — «х»: «хэли». Это грузинское слово — «рука».",
       "tags": [
         "letter-in-word",
         "mixed-script"
@@ -116,26 +116,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab4-q07",
-      "lemma": "ჩაი",
-      "question": "«ჩაი» значит «чай». Как это читается?",
-      "options": [
-        "чаи",
-        "шаи",
-        "хаи"
-      ],
-      "answer_index": 0,
-      "explanation": "«ჩაი» — «чаи», чай. Почти как по-русски.",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab4-q08",
       "lemma": "სახლი",
-      "question": "«სახლი» значит «дом». Как это читается?",
+      "question": "Как читается «სახლი»?",
       "options": [
         "сакли",
         "сахли",
@@ -144,7 +127,7 @@
       "answer_index": 1,
       "explanation": "«სახლი» — «сахли», дом.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -152,7 +135,7 @@
     {
       "id": "ab4-q09",
       "lemma": "ჩემი",
-      "question": "«ჩემი» значит «мой». Как это читается?",
+      "question": "Как читается «ჩემი»?",
       "options": [
         "шэми",
         "хэми",
@@ -161,7 +144,7 @@
       "answer_index": 2,
       "explanation": "«ჩემი» — «чэми», мой.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -169,7 +152,7 @@
     {
       "id": "ab4-q10",
       "lemma": "ჩვენ",
-      "question": "«ჩვენ» значит «мы». Как это читается?",
+      "question": "Как читается «ჩვენ»?",
       "options": [
         "чвэн",
         "швэн",
@@ -178,7 +161,7 @@
       "answer_index": 0,
       "explanation": "«ჩვენ» — «чвэн», мы.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

@@ -116,26 +116,9 @@
       "difficulty": 1
     },
     {
-      "id": "ab8-q07",
-      "lemma": "ფული",
-      "question": "«ფული» значит «деньги». Как это читается?",
-      "options": [
-        "пули",
-        "кули",
-        "тули"
-      ],
-      "answer_index": 0,
-      "explanation": "«ფული» — «пули», деньги.",
-      "tags": [
-        "word-intro",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
       "id": "ab8-q08",
       "lemma": "ქუჩა",
-      "question": "«ქუჩა» значит «улица». Как это читается?",
+      "question": "Как читается «ქუჩა»?",
       "options": [
         "кута",
         "куча",
@@ -144,7 +127,7 @@
       "answer_index": 1,
       "explanation": "«ქუჩა» — «куча», улица.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1
@@ -152,7 +135,7 @@
     {
       "id": "ab8-q09",
       "lemma": "კატა",
-      "question": "«კატა» значит «кошка». Как это читается?",
+      "question": "Как читается «კატა»?",
       "options": [
         "гата",
         "хата",
@@ -161,7 +144,7 @@
       "answer_index": 2,
       "explanation": "«კატა» — «ката», кошка.",
       "tags": [
-        "word-intro",
+        "word-reading",
         "mixed-script"
       ],
       "difficulty": 1

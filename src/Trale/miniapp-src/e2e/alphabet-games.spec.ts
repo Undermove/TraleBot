@@ -66,7 +66,28 @@ async function rub(page: Page, rows = 14) {
 const GEO: Record<string, string> = { а: 'ა', д: 'დ', р: 'რ', е: 'ე', э: 'ე', и: 'ი', с: 'ს', в: 'ვ', м: 'მ', н: 'ნ', л: 'ლ', ч: 'ჩ', х: 'ხ', о: 'ო', ш: 'შ' }
 
 /** Сцены между вопросами: знакомство с буквой — пропустить, игру в середине — пройти. */
+let wordShots = false
+/** «Новое слово»: провести по плиткам по порядку, дождаться значения, отправить в словарь; список — дальше. */
+async function playWords(page: Page) {
+  while (await page.getByTestId('word-intro').isVisible().catch(() => false)) {
+    const tiles = page.getByTestId('word-tile')
+    const n = await tiles.count()
+    for (let i = 0; i < n; i++) {
+      await tiles.nth(i).dispatchEvent('pointerdown', { pointerId: 1, isPrimary: true })
+      if (i === 0 && n > 1 && !wordShots) { await page.waitForTimeout(250); await shot(page, '13-word-tapping') }
+    }
+    await expect(page.getByTestId('word-intro')).toHaveAttribute('data-phase', 'meaning', { timeout: 4000 })
+    if (!wordShots) { await page.waitForTimeout(900); await shot(page, '14-word-meaning'); wordShots = true }
+    await page.getByRole('button', { name: 'в словарь →' }).click()
+    await page.waitForTimeout(700)
+  }
+  if (await page.getByTestId('word-list').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'дальше →' }).click()
+  }
+}
+
 async function playScenes(page: Page) {
+  await playWords(page)
   if (await page.getByTestId('intro-skip').isVisible().catch(() => false)) {
     await page.getByTestId('intro-skip').click()
     await page.getByRole('button', { name: 'дальше →' }).click()
@@ -75,10 +96,16 @@ async function playScenes(page: Page) {
     let first = true
     while (await page.getByTestId('morph-choice').first().isVisible().catch(() => false)) {
       if (first) { await shot(page, '5-morph'); first = false }
-      const ru = (await page.getByText(/Какая грузинская буква/).textContent())!.match(/«(.+?)»/)![1].toLowerCase()
-      await page.getByTestId('morph-choice').and(page.getByLabel(GEO[ru], { exact: true })).click()
-      await page.waitForTimeout(120)
-      if (await page.getByText(/читается/).isVisible()) {
+      // Нужную букву не вычисляем — пробуем варианты: неверный только встряхивается.
+      const tile = page.locator('[data-testid^="morph-tile-"][data-turned="no"]').first()
+      const before = await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count()
+      const choices = page.getByTestId('morph-choice')
+      for (let c = 0; c < await choices.count(); c++) {
+        await choices.nth(c).click()
+        await page.waitForTimeout(120)
+        if (await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count() > before || !(await tile.count())) break
+      }
+      if (await page.getByTestId('morph-meaning').isVisible()) {
         await page.waitForTimeout(500)
         await shot(page, '6-morph-done')
         await page.getByRole('button', { name: /следующее слово|дальше/ }).click()
@@ -121,7 +148,8 @@ async function answerAll(page: Page, lesson: number) {
   }
 }
 
-test('letter intro: wipe the snow of თოვლი, trace the letter, read the Georgian word', async ({ page }) => {
+test('letter intro: wipe the snow of თოვლი, watch how it is written, write it, read the Georgian word', async ({ page }) => {
+  test.setTimeout(60_000)
   await setup(page, [1, 2, 3, 4])
   await openModule(page)
   await page.getByTestId('lesson-btn-5').click()
@@ -135,8 +163,17 @@ test('letter intro: wipe the snow of თოვლი, trace the letter, read the
   await rub(page, 4)
   await shot(page, '2-intro-wiping')
   for (let i = 0; i < 4 && (await stage.getAttribute('data-phase')) === 'reveal'; i++) await rub(page)
-  await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 5000 })
-  await expect(page.getByText('Обведи букву пальцем')).toBeVisible()
+  await expect(stage).toHaveAttribute('data-phase', /demo|trace/, { timeout: 5000 })
+  await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 6000 })
+  await expect(page.getByText('Теперь ты')).toBeVisible()
+  // «ещё раз показать» — перо снова выводит букву.
+  await page.getByTestId('intro-replay').click()
+  await expect(page.getByText('Как пишется')).toBeVisible()
+  await expect(page.getByTestId('intro-pen')).toBeVisible()
+  await page.waitForTimeout(1100)
+  await shot(page, '2b-intro-demo')
+  await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 6000 })
+  await expect(page.getByTestId('intro-start')).toBeVisible()
   await page.waitForTimeout(300)
   await rub(page, 5)
   await shot(page, '3-intro-trace')
@@ -195,6 +232,7 @@ test('odd lesson: Morph in the middle, then the cafe — a guided first guest, a
 })
 
 test('even lesson: «Собери слово» in the middle instead of «Превращение»; no cafe tile on the module map', async ({ page }) => {
+  test.setTimeout(60_000)
   await setup(page, [1, 2, 3, 4, 5], 6)
   await openModule(page)
   await expect(page.getByTestId('cafe-tile')).toHaveCount(0)

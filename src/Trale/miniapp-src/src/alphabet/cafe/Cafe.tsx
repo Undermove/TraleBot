@@ -2,20 +2,21 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import Mascot from '../../components/Mascot'
 import GameFrame from '../games/GameFrame'
-import { burst, flyGhost, haptic, reducedMotion, sound } from '../games/fx'
+import { burst, flyGhost, haptic, sound } from '../games/fx'
 import { isGeorgian, type Rng } from '../games/logic'
 import { cyr } from '../../verbs/types'
 import { useLater } from '../../verbs/games/useLater'
-import { CheckMark, CoinIcon, GuestArt, ProductArt, WindowArt } from './art'
-import { SHIFT_MS, cafePlan, orderAt, priceOf, tipFor, type CafePlan } from './engine'
+import { CheckMark, GuestArt, ProductArt, WindowArt } from './art'
+import { SHIFT_MS, cafePlan, isFast, orderAt, type CafePlan } from './engine'
+import { saveRecord } from './record'
 import { isRealWord, orderText, type Product } from './products'
 
 /**
  * «Кафе Бомборы» — последняя игра урока алфавита, перед праздником. Гости заказывают словами из выученных
  * букв («воდა», к десятому уроку — «წყალი»), ученик читает заказ и тапает нужное на витрине без подписей.
  * Первый гость — с подсказкой и без спешки: одна строка, что делать, и стрелка у верного блюда. Потом —
- * смена на время (полоска сверху): гости идут один за другим, за скорость — чаевые; смена кончилась —
- * короткий итог, что прочитал.
+ * смена на время (полоска сверху): гости идут один за другим, счётчик «Обслужено», за скорость — «Быстро!»; смена кончилась —
+ * короткий итог: сколько обслужил, рекорд этого урока на устройстве и что прочитал.
  */
 
 /** Сколько показываем значение заказа, прежде чем зайдёт следующий гость. */
@@ -40,19 +41,21 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
   const [order, setOrder] = useState<Product>(() => orderAt(plan, 0, null, rng))
   const [arrivedAt, setArrivedAt] = useState(0)
   const [served, setServed] = useState(false)
-  const [tip, setTip] = useState<number | null>(null)
+  const [fast, setFast] = useState(false)
   const [misses, setMisses] = useState(0)
   const [shake, setShake] = useState<string | null>(null)
-  const [coins, setCoins] = useState(0)
+  const [servedCount, setServedCount] = useState(0)
+  const [record, setRecord] = useState<{ best: number; isNew: boolean } | null>(null)
   const [read, setRead] = useState<Product[]>([])
   const [mood, setMood] = useState<'happy' | 'cheer' | 'think'>('happy')
   const [elapsed, setElapsed] = useState(0)
   const elapsedRef = useRef(0)
   const stageRef = useRef<Stage>('guided')
   const servedRef = useRef(false)
+  /** Сколько гостей обслужено — для итога смены (таймер читает его вне рендера). */
+  const servedRef2 = useRef(0)
   const productEls = useRef<Record<string, HTMLButtonElement | null>>({})
   const guestEl = useRef<HTMLDivElement>(null)
-  const coinsEl = useRef<HTMLDivElement>(null)
   const later = useLater()
   stageRef.current = stage
   servedRef.current = served
@@ -79,8 +82,10 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
   function finish() {
     if (stageRef.current === 'summary') return
     stageRef.current = 'summary'
-    haptic('good'); sound.win()
     setStage('summary')
+    const r = saveRecord(lesson, servedRef2.current)
+    setRecord(r)
+    if (r.isNew) { haptic('good'); sound.win() } else haptic('soft')
   }
 
   function nextGuest() {
@@ -88,7 +93,7 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
     setN(k)
     setOrder(orderAt(plan, k, order, rng))
     setArrivedAt(elapsedRef.current)
-    setServed(false); setTip(null); setMisses(0); setMood('happy')
+    setServed(false); setFast(false); setMisses(0); setMood('happy')
     haptic('soft')
   }
 
@@ -100,14 +105,13 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
       later(() => { setShake(null); setMood('happy') }, 450)
       return
     }
-    const bonus = guided ? 0 : tipFor(elapsedRef.current - arrivedAt)
+    const quick = !guided && isFast(elapsedRef.current - arrivedAt)
     haptic('good'); sound.pop(Math.min(n, 12))
-    setServed(true); setMood('cheer'); setTip(bonus)
+    setServed(true); setMood('cheer'); setFast(quick)
+    servedRef2.current += 1; setServedCount(servedRef2.current)
     setRead(r => (r.some(x => x.id === order.id) ? r : [...r, order]))
     void flyGhost(productEls.current[p.id], guestEl.current, productEls.current[p.id]?.innerHTML ?? '', 300, 'ab-product-ghost').then(() => {
-      burst(guestEl.current, bonus >= 3 ? 'big' : 'small')
-      setCoins(c => c + priceOf(text(order)) + bonus)
-      flyCoins(guestEl.current, coinsEl.current, 2 + Math.min(3, bonus))
+      burst(guestEl.current, quick ? 'big' : 'small')
     })
     // Значение заказа видно секунду, потом заходит следующий гость (или смена закрывается).
     later(() => {
@@ -124,7 +128,10 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
       <GameFrame title="Кафе Бомборы" eyebrow="смена закрыта" fraction={fraction} onExit={onExit}>
         <div className="flex-1 flex flex-col items-center gap-4 text-center" data-testid="cafe-summary">
           <div className="ab-jump"><Mascot mood="cheer" size={110} /></div>
-          <div className="text-[30px] font-extrabold tabular-nums flex items-center gap-2"><CoinIcon size={28} />{coins}</div>
+          <div className="text-[22px] font-extrabold" data-testid="cafe-served-total">Обслужено: <span className="tabular-nums">{servedCount}</span></div>
+          {record?.isNew
+            ? <div className="px-3 py-1 rounded-full bg-ruby text-cream text-[15px] font-extrabold border-[1.5px] border-jewelInk ab-snap" data-testid="cafe-record-new">Новый рекорд!</div>
+            : <div className="text-[15px] font-bold text-jewelInk-mid" data-testid="cafe-record">Твой рекорд в этом уроке: <span className="tabular-nums">{record?.best ?? servedCount}</span></div>}
           <div className="w-full max-w-[360px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-3 text-left" style={{ boxShadow: '3px 3px 0 #15100A' }}>
             <div className="text-[14px] font-extrabold mb-2">Ты прочитал</div>
             <div className="flex flex-col gap-1.5">
@@ -161,13 +168,13 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
             {Array.from({ length: 12 }, (_, i) => <div key={i} className={`flex-1 ${i % 2 ? 'bg-cream' : 'bg-ruby'} border-b-[1.5px] border-jewelInk`} style={{ borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }} />)}
           </div>
           <div className="absolute top-7 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-lg border-[1.5px] border-jewelInk bg-navy text-cream font-sans text-[14px] font-extrabold whitespace-nowrap" style={{ boxShadow: '2px 2px 0 #15100A' }} data-testid="cafe-sign">Бомбора</div>
-          <div ref={coinsEl} key={coins} className="absolute top-7 right-2 px-2 py-0.5 rounded-lg bg-cream-tile border border-jewelInk/40 text-[15px] font-extrabold tabular-nums flex items-center gap-1 ab-count" data-testid="cafe-coins"><CoinIcon size={16} />{coins}</div>
+          <div key={servedCount} className="absolute top-7 right-2 px-2 py-0.5 rounded-lg bg-cream-tile border border-jewelInk/40 text-[13px] font-extrabold tabular-nums ab-count" data-testid="cafe-served">Обслужено: {servedCount}</div>
           <div className="absolute top-[64px] inset-x-0 flex justify-between px-3 pointer-events-none opacity-90">
             <WindowArt width={84} /><WindowArt width={84} />
           </div>
 
           <div className="relative pt-[60px] flex items-end justify-center gap-2 px-3" style={{ minHeight: 236 }}>
-            <div key={n} ref={guestEl} className="flex flex-col items-center ab-in" data-testid="cafe-guest" data-order={text(order)}>
+            <div key={n} ref={guestEl} className="relative flex flex-col items-center ab-in" data-testid="cafe-guest" data-order={text(order)}>
               <div className="relative min-w-[132px] max-w-[220px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-2 text-center" style={{ boxShadow: '2px 2px 0 #15100A' }}>
                 <div className={`font-extrabold leading-tight break-words ${text(order).length > 8 ? 'text-[24px]' : 'text-[30px]'} ${served ? 'text-navy' : ''}`} data-testid="cafe-order">
                   <MixedText text={text(order)} />{served && <span className="ml-1"><CheckMark size={16} /></span>}
@@ -175,11 +182,12 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
                 {served && (
                   <div className="text-[13px] font-bold text-jewelInk-mid ab-drip" data-testid="cafe-meaning">
                     {isRealWord(order, lesson) ? `«${cyr(text(order))}» — ` : ''}{order.ru}
-                    {!!tip && <span className="ml-1 text-gold-deep font-extrabold" data-testid="cafe-tip">+{tip} чаевые</span>}
+          
                   </div>
                 )}
                 <span className="absolute -bottom-[7px] left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-cream-tile border-r-[1.5px] border-b-[1.5px] border-jewelInk" />
               </div>
+              {served && fast && <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-gold border-[1.5px] border-jewelInk text-[14px] font-extrabold ab-snap" data-testid="cafe-fast">Быстро!</div>}
               <div className="mt-2"><GuestArt look={n} mood={served ? 'happy' : 'wait'} size={66} /></div>
             </div>
           </div>
@@ -238,21 +246,4 @@ function Pointer() {
       </svg>
     </div>
   )
-}
-
-/** Монетки летят от гостя к счётчику. */
-function flyCoins(from: Element | null, to: Element | null, n: number) {
-  if (!from || !to || reducedMotion()) return
-  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect()
-  for (let i = 0; i < n; i++) {
-    const el = document.createElement('div')
-    el.className = 'ab-coin-fly'
-    el.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#F5B820" stroke="#15100A" stroke-width="1.6"/><circle cx="12" cy="12" r="5.6" fill="#FCD76D" stroke="#C68F10" stroke-width="1.6"/></svg>'
-    const x = a.left + a.width / 2 + (Math.random() - 0.5) * 30, y = a.top + a.height / 3
-    Object.assign(el.style, { left: `${x}px`, top: `${y}px`, animationDelay: `${i * 60}ms` })
-    el.style.setProperty('--dx', `${b.left + b.width / 2 - x}px`)
-    el.style.setProperty('--dy', `${b.top + b.height / 2 - y}px`)
-    document.body.appendChild(el)
-    setTimeout(() => { el.remove(); if (i === n - 1) { haptic('tap'); sound.tick(i) } }, 760 + i * 60)
-  }
 }
