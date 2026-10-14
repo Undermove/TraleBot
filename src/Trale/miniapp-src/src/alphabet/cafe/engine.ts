@@ -1,14 +1,15 @@
 import { lessonLetters, shuffle, type Rng } from '../games/logic'
 import { availableProducts, georgianLetters, isRealWord, orderText, type Product } from './products'
 
-// «Кафе Бомборы» — последняя игра урока алфавита. Никакого таймера: гости приходят по одному,
-// заказ написан буквами, выученными к концу урока, ученик подаёт нужное с витрины без подписей.
+// «Кафе Бомборы» — последняя игра урока алфавита. Первый гость — с подсказкой и без спешки, потом смена
+// на время: гости идут один за другим, пока не кончится смена. Заказ написан буквами, выученными к концу
+// урока, ученик подаёт нужное с витрины без подписей.
 // Здесь только чистые функции; экран — Cafe.tsx.
 
 export interface CafePlan {
   /** Витрина: до шести товаров, порядок перемешан, чтобы место не подсказывало. */
   shelf: Product[]
-  /** Заказы гостей по порядку; первый — самый короткий, его показываем с подсказкой. */
+  /** Первые заказы по порядку; первый — самый короткий, его показываем с подсказкой. Дальше — случайные с витрины. */
   orders: Product[]
 }
 
@@ -26,5 +27,24 @@ export function cafePlan(lesson: number, rng: Rng = Math.random, maxOrders = 4):
   return { shelf: shuffle(best, rng), orders }
 }
 
-/** Монетки за заказ — просто для удовольствия: длиннее слово — больше монет. */
+/** Сколько длится смена после первого гостя. */
+export const SHIFT_MS = 45_000
+/** За сколько надо подать, чтобы получить хоть какие-то чаевые. */
+export const TIP_MS = 8_000
+
+/** Монетки за заказ: длиннее слово — больше монет. */
 export const priceOf = (text: string) => 2 + georgianLetters(text)
+
+/** Чаевые за скорость: подал сразу — 4 монетки, через TIP_MS и дольше — ноль. */
+export const tipFor = (waitedMs: number) => Math.max(0, Math.round(4 * (1 - waitedMs / TIP_MS)))
+
+/**
+ * Заказ n-го гостя (0 — первый, с подсказкой): сначала заказы из плана, потом случайные с витрины,
+ * но не то же блюдо, что у предыдущего гостя.
+ */
+export function orderAt(plan: CafePlan, n: number, prev: Product | null, rng: Rng = Math.random): Product {
+  if (n < plan.orders.length) return plan.orders[n]
+  const pool = plan.shelf.filter(p => p.id !== prev?.id)
+  const from = pool.length ? pool : plan.shelf
+  return from[Math.floor(rng() * from.length)]
+}

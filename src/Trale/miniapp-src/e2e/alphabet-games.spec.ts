@@ -150,7 +150,9 @@ test('letter intro: wipe the snow of თოვლი, trace the letter, read the
   await expect(page.getByText(/Новая буква თ/)).toBeVisible()
 })
 
-test('odd lesson: Morph in the middle, then the cafe with a guided first order and the celebration', async ({ page }) => {
+test('odd lesson: Morph in the middle, then the cafe — a guided first guest, a timed shift — and the celebration', async ({ page }) => {
+  test.setTimeout(60_000)
+  await page.clock.install()
   await setup(page, [1, 2, 3, 4])
   await openModule(page)
   await page.getByTestId('lesson-btn-5').click()
@@ -165,18 +167,21 @@ test('odd lesson: Morph in the middle, then the cafe with a guided first order a
   await page.waitForTimeout(700)
   await shot(page, '10-cafe-guided')
 
-  for (let guest = 0; ; guest++) {
+  // Первый гость — без таймера; после подачи следующий заходит сам, и идёт смена.
+  await expect(page.getByTestId('cafe-timer')).toHaveCount(0)
+  await expect(page.getByTestId('cafe-sign')).toHaveText('Бомбора')
+  for (let guest = 0; guest < 3; guest++) {
     const order = (await page.getByTestId('cafe-guest').getAttribute('data-order'))!
     const id = PRODUCTS.find(p => orderText(p, 5) === order)!.id
     if (guest > 0) await expect(page.getByTestId('cafe-pointer')).toHaveCount(0)
     await page.getByTestId(`shelf-${id}`).click()
     await expect(page.getByTestId('cafe-meaning')).toBeVisible()
-    if (guest === 0) { await page.waitForTimeout(900); await shot(page, '11-cafe-served') }
-    const next = page.getByRole('button', { name: /следующий гость|дальше/ })
-    const last = (await next.textContent())!.includes('дальше')
-    await next.click()
-    if (last) break
+    if (guest === 1) { await page.waitForTimeout(500); await shot(page, '11-cafe-served') }
+    await expect(page.getByTestId('cafe-meaning')).toHaveCount(0, { timeout: 3000 })
+    await expect(page.getByTestId('cafe-timer')).toBeVisible()
   }
+  // Смена 45 секунд — проматываем часы страницы.
+  await page.clock.runFor(46_000)
   await expect(page.getByTestId('cafe-summary')).toBeVisible()
   await page.waitForTimeout(500)
   await shot(page, '12-cafe-summary')

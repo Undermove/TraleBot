@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { PRODUCTS, availableProducts, isRealWord, orderText } from './products'
-import { cafePlan } from './engine'
+import { TIP_MS, cafePlan, orderAt, tipFor } from './engine'
 import Cafe from './Cafe'
 import { learnedLetters, isGeorgian, lessonLetters } from '../games/logic'
 import { seeded } from '../../verbs/testing/catalog'
@@ -56,50 +56,88 @@ describe('cafe plan', () => {
   })
 })
 
+describe('cafe shift', () => {
+  it('pays speed tips only for fast serving', () => {
+    expect(tipFor(0)).toBe(4)
+    expect(tipFor(4000)).toBe(2)
+    expect(tipFor(TIP_MS)).toBe(0)
+    expect(tipFor(60_000)).toBe(0)
+  })
+
+  it('after the planned orders keeps bringing guests from the shelf, never the same dish twice in a row', () => {
+    const plan = cafePlan(10, seeded(4))
+    let prev = null as (typeof plan.shelf)[number] | null
+    for (let n = 0; n < 30; n++) {
+      const o = orderAt(plan, n, prev, seeded(n))
+      if (n < plan.orders.length) expect(o).toBe(plan.orders[n])
+      else { expect(plan.shelf).toContain(o); expect(o.id).not.toBe(prev?.id) }
+      prev = o
+    }
+  })
+})
+
 describe('Cafe', () => {
   const plan = {
     shelf: ['tea', 'bread', 'water', 'cheese'].map(id => PRODUCTS.find(p => p.id === id)!),
     orders: ['tea', 'water'].map(id => PRODUCTS.find(p => p.id === id)!)
   }
+  afterEach(() => vi.useRealTimers())
 
-  it('guides the first order: one line what to do and a pointer on the right dish, then plays without hints', async () => {
+  it('guides the first guest without a timer, then runs a timed shift with automatic guests and tips', async () => {
+    vi.useFakeTimers()
+    let t = 0
+    const step = async (ms: number) => { await act(async () => { for (let i = 0; i < ms / 100; i++) { t += 100; await vi.advanceTimersByTimeAsync(100) } }) }
     const onDone = vi.fn()
-    render(<Cafe lesson={10} fraction={1} onExit={() => {}} onDone={onDone} plan={plan} />)
+    render(<Cafe lesson={10} fraction={1} onExit={() => {}} onDone={onDone} plan={plan} now={() => t} rng={seeded(2)} />)
+
+    // Первый гость: строка, что делать, стрелка у верного блюда, таймера нет — и он не идёт.
     expect(screen.getByTestId('cafe-howto').textContent).toBe('Гость заказывает по-грузински. Прочитай заказ и подай нужное')
     expect(screen.getByTestId('cafe-order').textContent).toBe('ჩაი')
     expect(screen.getByTestId('shelf-tea').dataset.hint).toBe('yes')
     expect(screen.getAllByTestId('cafe-pointer')).toHaveLength(1)
+    expect(screen.queryByTestId('cafe-timer')).toBeNull()
+    await step(60_000)
+    expect(screen.getByTestId('cafe-order').textContent).toBe('ჩაი')
 
-    // Не то блюдо — гость ждёт дальше, ничего не засчитано.
+    // Не то блюдо — гость ждёт дальше.
     fireEvent.click(screen.getByTestId('shelf-bread'))
-    expect(screen.queryByText('следующий гость →')).toBeNull()
-
+    expect(screen.queryByTestId('cafe-meaning')).toBeNull()
     await act(async () => { fireEvent.click(screen.getByTestId('shelf-tea')) })
     expect(screen.getByTestId('cafe-meaning').textContent).toBe('«чаи» — чай')
-    fireEvent.click(screen.getByText('следующий гость →'))
+    expect(screen.queryByText(/следующий гость/)).toBeNull()
 
-    // Второй гость — без пальца и без подсветки.
+    // Через секунду сам заходит следующий гость, и пошла смена.
+    await step(1100)
     expect(screen.getByTestId('cafe-order').textContent).toBe('წყალი')
+    expect(screen.getByTestId('cafe-timer')).toBeTruthy()
     expect(screen.queryByTestId('cafe-pointer')).toBeNull()
-    expect(screen.getByTestId('shelf-water').dataset.hint).toBe('no')
     // Две ошибки — подсказываем.
     fireEvent.click(screen.getByTestId('shelf-bread'))
     fireEvent.click(screen.getByTestId('shelf-cheese'))
     expect(screen.getByTestId('shelf-water').dataset.hint).toBe('yes')
-
+    // Подал сразу — чаевые.
     await act(async () => { fireEvent.click(screen.getByTestId('shelf-water')) })
-    fireEvent.click(screen.getByText('дальше →'))
+    expect(screen.getByTestId('cafe-tip').textContent).toMatch(/\+\d чаевые/)
+    await step(1100)
+    expect(screen.getByTestId('cafe-guest')).toBeTruthy()
+
+    // Время смены вышло — итог: что прочитал.
+    await step(46_000)
     expect(screen.getByTestId('cafe-summary').textContent).toContain('ჩაი')
     expect(screen.getAllByTestId('cafe-read')).toHaveLength(2)
+    expect(Number(screen.getByTestId('cafe-summary').textContent!.match(/\d+/)![0])).toBeGreaterThan(0)
     fireEvent.click(screen.getByText('дальше →'))
     expect(onDone).toHaveBeenCalled()
   })
 
-  it('writes the lesson 1 orders with ა, დ, რ inside Russian words and has no timer', () => {
+  it('writes the lesson 1 orders with ა, დ, რ inside Russian words and the sign in plain Cyrillic', () => {
     render(<Cafe lesson={1} fraction={1} onExit={() => {}} onDone={() => {}} rng={seeded(3)} />)
     const order = screen.getByTestId('cafe-order').textContent!
     expect([...order].filter(isGeorgian).every(ch => 'ადრ'.includes(ch))).toBe(true)
-    expect(screen.getByTestId('cafe-sign').textContent).toBe('бомбоრა')
-    expect(screen.queryByTestId('cafe-timer')).toBeNull()
+    expect(screen.getByTestId('cafe-sign').textContent).toBe('Бомбора')
+    expect(screen.getByTestId('cafe-sign').className).not.toContain('font-geo')
+    // Русские буквы заказа — обычным шрифтом, грузинские — грузинским.
+    for (const span of screen.getByTestId('cafe-order').querySelectorAll('span.font-geo')) expect([...span.textContent!].every(isGeorgian)).toBe(true)
+    for (const span of screen.getByTestId('cafe-order').querySelectorAll('span.font-sans')) expect([...span.textContent!].some(isGeorgian)).toBe(false)
   })
 })
