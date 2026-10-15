@@ -18,7 +18,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Persistence;
 using Telegram.Bot;
-using Testcontainers.PostgreSql;
 
 namespace IntegrationTests.Logging;
 
@@ -46,18 +45,16 @@ public class NoSecretsInLogsTests
         "FAKEFAKEFAKEFAKE0123456789"
     ];
 
-    private PostgreSqlContainer _postgres = null!;
     private TraleTestApplication _app = null!;
+    private string _connectionString = null!;
     private readonly LogCapture _log = new();
     private readonly TelegramApiStub _telegram = new();
 
     [OneTimeSetUp]
     public async Task StartApplication()
     {
-        _postgres = new PostgreSqlBuilder().WithAutoRemove(true).WithImage("postgres:16.1").Build();
-        await _postgres.StartAsync();
-
-        _app = new TraleTestApplication(_postgres.GetConnectionString(), services =>
+        _connectionString = await TestDatabase.CreateAsync();
+        _app = new TraleTestApplication(_connectionString, services =>
         {
             // Every level of every category, whatever appsettings say.
             services.AddLogging(logging =>
@@ -104,7 +101,7 @@ public class NoSecretsInLogsTests
     public async Task StopApplication()
     {
         await _app.DisposeAsync();
-        await _postgres.DisposeAsync();
+        await TestDatabase.DropAsync(_connectionString);
     }
 
     [SetUp]
