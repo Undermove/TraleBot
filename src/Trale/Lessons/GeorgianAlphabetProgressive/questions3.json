@@ -6,11 +6,7 @@
     "ვ",
     "მ",
     "ნ",
-    "მამა",
-    "მე",
-    "მინდა",
-    "ვინ",
-    "სად"
+    "მამა"
   ],
   "questions": [
     {
@@ -94,110 +90,6 @@
       "explanation": "ნ — «н»: «банан».",
       "tags": [
         "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab3-q07",
-      "lemma": "მე",
-      "question": "Как читается «მე»?",
-      "options": [
-        "мэ",
-        "нэ",
-        "вэ"
-      ],
-      "answer_index": 0,
-      "explanation": "«მე» — «мэ», я.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab3-q08",
-      "lemma": "მინდა",
-      "question": "Как читается «მინდა»?",
-      "options": [
-        "мимда",
-        "минда",
-        "нинда"
-      ],
-      "answer_index": 1,
-      "explanation": "«მინდა» — «минда», хочу. «არ მინდა» — не хочу.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab3-q09",
-      "lemma": "ვინ",
-      "question": "Как читается «ვინ»?",
-      "options": [
-        "мин",
-        "вим",
-        "вин"
-      ],
-      "answer_index": 2,
-      "explanation": "«ვინ» — «вин», кто.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab3-q10",
-      "lemma": "მამა",
-      "question": "Что значит «მამა»?",
-      "options": [
-        "папа",
-        "я",
-        "кто"
-      ],
-      "answer_index": 0,
-      "explanation": "«მამა» — папа.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab3-q11",
-      "lemma": "მე",
-      "question": "Где написано «я»?",
-      "options": [
-        "ის",
-        "მე",
-        "ეს"
-      ],
-      "answer_index": 1,
-      "explanation": "«я» — «მე».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab3-q12",
-      "lemma": "სად",
-      "question": "Что значит «სად»?",
-      "options": [
-        "что",
-        "кто",
-        "где"
-      ],
-      "answer_index": 2,
-      "explanation": "«სად» — «сад», где.",
-      "tags": [
-        "word-reading",
-        "meaning",
         "mixed-script"
       ],
       "difficulty": 1

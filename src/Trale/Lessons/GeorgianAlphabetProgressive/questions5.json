@@ -5,12 +5,7 @@
   "lexicon": [
     "თ",
     "ო",
-    "შ",
-    "ერთი",
-    "ორი",
-    "ათი",
-    "შენ",
-    "ჩემი"
+    "შ"
   ],
   "questions": [
     {
@@ -94,110 +89,6 @@
       "explanation": "შ — «ш»: «швили». Это грузинское слово — «ребёнок».",
       "tags": [
         "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab5-q07",
-      "lemma": "ორი",
-      "question": "Как читается «ორი»?",
-      "options": [
-        "ори",
-        "оли",
-        "оди"
-      ],
-      "answer_index": 0,
-      "explanation": "«ორი» — «ори», два.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab5-q08",
-      "lemma": "ათი",
-      "question": "Как читается «ათი»?",
-      "options": [
-        "аки",
-        "ати",
-        "апи"
-      ],
-      "answer_index": 1,
-      "explanation": "«ათი» — «ати», десять.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab5-q09",
-      "lemma": "შენ",
-      "question": "Как читается «შენ»?",
-      "options": [
-        "сэн",
-        "чэн",
-        "шэн"
-      ],
-      "answer_index": 2,
-      "explanation": "«შენ» — «шэн», ты. А я — «მე».",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab5-q10",
-      "lemma": "ორი",
-      "question": "Что значит «ორი»?",
-      "options": [
-        "два",
-        "один",
-        "десять"
-      ],
-      "answer_index": 0,
-      "explanation": "«ორი» — два.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab5-q11",
-      "lemma": "შენ",
-      "question": "Где написано «ты»?",
-      "options": [
-        "მე",
-        "შენ",
-        "ჩვენ"
-      ],
-      "answer_index": 1,
-      "explanation": "«ты» — «შენ».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab5-q12",
-      "lemma": "ჩემი",
-      "question": "Что значит «ჩემი»?",
-      "options": [
-        "мы",
-        "дом",
-        "мой"
-      ],
-      "answer_index": 2,
-      "explanation": "«ჩემი» — «чэми», мой.",
-      "tags": [
-        "word-reading",
-        "meaning",
         "mixed-script"
       ],
       "difficulty": 1

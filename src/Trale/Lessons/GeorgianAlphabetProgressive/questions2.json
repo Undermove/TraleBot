@@ -5,11 +5,7 @@
   "lexicon": [
     "ე",
     "ი",
-    "ს",
-    "სად",
-    "ეს",
-    "ის",
-    "დედა"
+    "ს"
   ],
   "questions": [
     {
@@ -110,92 +106,6 @@
       "explanation": "ს — «с»: «суп».",
       "tags": [
         "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab2-q08",
-      "lemma": "ეს",
-      "question": "Как читается «ეს»?",
-      "options": [
-        "ис",
-        "эс",
-        "эд"
-      ],
-      "answer_index": 1,
-      "explanation": "«ეს» — «эс», это.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab2-q09",
-      "lemma": "ის",
-      "question": "Как читается «ის»?",
-      "options": [
-        "эс",
-        "ид",
-        "ис"
-      ],
-      "answer_index": 2,
-      "explanation": "«ის» — «ис», он, она. В грузинском «он» и «она» — одно слово.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab2-q10",
-      "lemma": "დედა",
-      "question": "Как читается «დედა»?",
-      "options": [
-        "дэда",
-        "дада",
-        "дэра"
-      ],
-      "answer_index": 0,
-      "explanation": "«დედა» — «дэда», мама.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab2-q11",
-      "lemma": "ეს",
-      "question": "Что значит «ეს»?",
-      "options": [
-        "где",
-        "это",
-        "и"
-      ],
-      "answer_index": 1,
-      "explanation": "«ეს» — это.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab2-q12",
-      "lemma": "დედა",
-      "question": "Где написано «мама»?",
-      "options": [
-        "სად",
-        "ეს",
-        "დედა"
-      ],
-      "answer_index": 2,
-      "explanation": "«мама» — «დედა».",
-      "tags": [
-        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1

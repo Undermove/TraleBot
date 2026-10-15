@@ -332,5 +332,404 @@
         }
       ]
     }
-  ]
+  ],
+  "wordLessons": [
+    {
+      "id": 12,
+      "after": 1,
+      "words": [
+        {
+          "word": "და",
+          "translation": "и"
+        },
+        {
+          "word": "არა",
+          "translation": "нет"
+        },
+        {
+          "word": "რა",
+          "translation": "что"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "after": 2,
+      "words": [
+        {
+          "word": "სად",
+          "translation": "где"
+        },
+        {
+          "word": "ეს",
+          "translation": "это"
+        },
+        {
+          "word": "ის",
+          "translation": "он, она"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "after": 2,
+      "words": [
+        {
+          "word": "არის",
+          "translation": "есть"
+        },
+        {
+          "word": "დედა",
+          "translation": "мама"
+        },
+        {
+          "word": "დიდი",
+          "translation": "большой"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "after": 3,
+      "words": [
+        {
+          "word": "მამა",
+          "translation": "папа"
+        },
+        {
+          "word": "მე",
+          "translation": "я"
+        },
+        {
+          "word": "მინდა",
+          "translation": "хочу"
+        },
+        {
+          "word": "ვინ",
+          "translation": "кто"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "after": 3,
+      "words": [
+        {
+          "word": "სამი",
+          "translation": "три"
+        },
+        {
+          "word": "ვარ",
+          "translation": "(я) есть"
+        },
+        {
+          "word": "რამდენი",
+          "translation": "сколько"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "after": 4,
+      "words": [
+        {
+          "word": "ჩაი",
+          "translation": "чай"
+        },
+        {
+          "word": "სახლი",
+          "translation": "дом"
+        },
+        {
+          "word": "ჩემი",
+          "translation": "мой"
+        },
+        {
+          "word": "ჩვენ",
+          "translation": "мы"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "after": 4,
+      "words": [
+        {
+          "word": "ახალი",
+          "translation": "новый"
+        },
+        {
+          "word": "ნახვამდის",
+          "translation": "до свидания"
+        },
+        {
+          "word": "ხვალ",
+          "translation": "завтра"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "after": 5,
+      "words": [
+        {
+          "word": "ერთი",
+          "translation": "один"
+        },
+        {
+          "word": "ორი",
+          "translation": "два"
+        },
+        {
+          "word": "ათი",
+          "translation": "десять"
+        },
+        {
+          "word": "შენ",
+          "translation": "ты"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "after": 5,
+      "words": [
+        {
+          "word": "შენი",
+          "translation": "твой"
+        },
+        {
+          "word": "თავი",
+          "translation": "голова"
+        },
+        {
+          "word": "რადიო",
+          "translation": "радио"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "after": 6,
+      "words": [
+        {
+          "word": "მანქანა",
+          "translation": "машина"
+        },
+        {
+          "word": "ქალი",
+          "translation": "женщина"
+        },
+        {
+          "word": "ბავშვი",
+          "translation": "ребёнок"
+        },
+        {
+          "word": "მეგობარი",
+          "translation": "друг"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "after": 6,
+      "words": [
+        {
+          "word": "მადლობა",
+          "translation": "спасибо"
+        },
+        {
+          "word": "საქართველო",
+          "translation": "Грузия"
+        },
+        {
+          "word": "ქალაქი",
+          "translation": "город"
+        },
+        {
+          "word": "ექიმი",
+          "translation": "врач"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "after": 7,
+      "words": [
+        {
+          "word": "კი",
+          "translation": "да"
+        },
+        {
+          "word": "კარგი",
+          "translation": "хорошо"
+        },
+        {
+          "word": "კაცი",
+          "translation": "мужчина"
+        },
+        {
+          "word": "წიგნი",
+          "translation": "книга"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "after": 7,
+      "words": [
+        {
+          "word": "სკოლა",
+          "translation": "школа"
+        },
+        {
+          "word": "ცივი",
+          "translation": "холодный"
+        },
+        {
+          "word": "კინო",
+          "translation": "кино"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "after": 8,
+      "words": [
+        {
+          "word": "ფული",
+          "translation": "деньги"
+        },
+        {
+          "word": "ხუთი",
+          "translation": "пять"
+        },
+        {
+          "word": "ქუჩა",
+          "translation": "улица"
+        },
+        {
+          "word": "იაფი",
+          "translation": "дешёвый"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "after": 8,
+      "words": [
+        {
+          "word": "კატა",
+          "translation": "кошка"
+        },
+        {
+          "word": "გუშინ",
+          "translation": "вчера"
+        },
+        {
+          "word": "მეტრო",
+          "translation": "метро"
+        },
+        {
+          "word": "კაფე",
+          "translation": "кафе"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "after": 9,
+      "words": [
+        {
+          "word": "პური",
+          "translation": "хлеб"
+        },
+        {
+          "word": "ღვინო",
+          "translation": "вино"
+        },
+        {
+          "word": "ძაღლი",
+          "translation": "собака"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "after": 9,
+      "words": [
+        {
+          "word": "დღე",
+          "translation": "день"
+        },
+        {
+          "word": "ძმა",
+          "translation": "брат"
+        },
+        {
+          "word": "ძვირი",
+          "translation": "дорогой"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "after": 10,
+      "words": [
+        {
+          "word": "ყავა",
+          "translation": "кофе"
+        },
+        {
+          "word": "წყალი",
+          "translation": "вода"
+        },
+        {
+          "word": "ყველი",
+          "translation": "сыр"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "after": 10,
+      "words": [
+        {
+          "word": "ლამაზი",
+          "translation": "красивый"
+        },
+        {
+          "word": "ჭიქა",
+          "translation": "стакан"
+        },
+        {
+          "word": "ჭამს",
+          "translation": "ест"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "after": 11,
+      "words": [
+        {
+          "word": "გამარჯობა",
+          "translation": "здравствуй"
+        },
+        {
+          "word": "ოჯახი",
+          "translation": "семья"
+        },
+        {
+          "word": "ჰაერი",
+          "translation": "воздух"
+        },
+        {
+          "word": "ჰო",
+          "translation": "ага"
+        }
+      ]
+    }
+  ],
+  "aboutWordLessons": "Уроки слов: после каждого урока букв (id 1..11) — уроки по 2–4 слова этого урока букв, id 12 и дальше по порядку. Порядок в модуле: урок букв, затем его уроки слов. Сгенерировано scripts/alphabet-words/gen_word_lessons.py."
 }

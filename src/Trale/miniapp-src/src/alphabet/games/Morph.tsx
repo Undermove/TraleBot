@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from './GameFrame'
 import { burst, haptic, sound } from './fx'
-import { letterChoices, morphPieces, morphWords, type Rng, type Word } from './logic'
+import { letterChoices, morphPieces, morphWords, type Rng, type Word, type WordPool } from './logic'
 import { cyr } from '../../verbs/types'
 import { useLater } from '../../verbs/games/useLater'
 
@@ -12,8 +12,10 @@ import { useLater } from '../../verbs/games/useLater'
  * Две ошибки подряд — подсвечиваем верную плитку. В конце слово целиком грузинское (დედა) и что оно значит.
  * Слова — только из букв, открытых к этому уроку (logic.morphWords).
  */
-export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.random, words: given }: {
+export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.random, words: given, pool }: {
   lesson: number
+  /** Слова урока слов и уже знакомые слова. */
+  pool?: WordPool
   fraction: number
   onExit: () => void
   onDone: () => void
@@ -21,7 +23,7 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
   /** Для тестов: какие слова превращать. */
   words?: Word[]
 }) {
-  const words = useMemo(() => given ?? morphWords(lesson, 2, rng), [lesson]) // eslint-disable-line react-hooks/exhaustive-deps
+  const words = useMemo(() => given ?? morphWords(lesson, 2, rng, pool), [lesson]) // eslint-disable-line react-hooks/exhaustive-deps
   const [wi, setWi] = useState(0)
   const pieces = useMemo(() => morphPieces(words[wi]?.geo ?? ''), [words, wi])
   const [turned, setTurned] = useState<Set<number>>(new Set())

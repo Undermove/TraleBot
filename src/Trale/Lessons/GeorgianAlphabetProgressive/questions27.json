@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w27",
+  "title": "Слова: პური, ღვინო, ძაღლი",
+  "ordered": true,
+  "lexicon": [
+    "პური",
+    "ღვინო",
+    "ძაღლი"
+  ],
+  "questions": [
+    {
+      "id": "abw27-q01",
+      "lemma": "პური",
+      "question": "Как читается «პური»?",
+      "options": [
+        "сами",
+        "вар",
+        "п’ури"
+      ],
+      "answer_index": 2,
+      "explanation": "«პური» — «п’ури», хлеб.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw27-q02",
+      "lemma": "ღვინო",
+      "question": "Что значит «ღვინო»?",
+      "options": [
+        "хорошо",
+        "вино",
+        "врач"
+      ],
+      "answer_index": 1,
+      "explanation": "«ღვინო» — «гхвино», вино.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw27-q03",
+      "lemma": "ძაღლი",
+      "question": "Где написано «собака»?",
+      "options": [
+        "ხუთი",
+        "ძაღლი",
+        "ის"
+      ],
+      "answer_index": 1,
+      "explanation": "«ძაღლი» — «дзагхли», собака.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw27-q04",
+      "lemma": "პური",
+      "question": "Что значит «პური»?",
+      "options": [
+        "кино",
+        "хлеб",
+        "Грузия"
+      ],
+      "answer_index": 1,
+      "explanation": "«პური» — «п’ури», хлеб.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

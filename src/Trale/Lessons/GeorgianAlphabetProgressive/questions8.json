@@ -6,11 +6,7 @@
     "ტ",
     "უ",
     "ფ",
-    "ფული",
-    "ქუჩა",
-    "კატა",
-    "ხუთი",
-    "კაცი"
+    "ხუთი"
   ],
   "questions": [
     {
@@ -111,93 +107,6 @@
       "explanation": "«კაფე» — кафе, и по-грузински тоже.",
       "tags": [
         "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab8-q08",
-      "lemma": "ქუჩა",
-      "question": "Как читается «ქუჩა»?",
-      "options": [
-        "кута",
-        "куча",
-        "куца"
-      ],
-      "answer_index": 1,
-      "explanation": "«ქუჩა» — «куча», улица.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab8-q09",
-      "lemma": "კატა",
-      "question": "Как читается «კატა»?",
-      "options": [
-        "гата",
-        "хата",
-        "ката"
-      ],
-      "answer_index": 2,
-      "explanation": "«კატა» — «ката», кошка.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab8-q10",
-      "lemma": "ხუთი",
-      "question": "Что значит «ხუთი»?",
-      "options": [
-        "пять",
-        "десять",
-        "два"
-      ],
-      "answer_index": 0,
-      "explanation": "«ხუთი» — пять.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab8-q11",
-      "lemma": "ფული",
-      "question": "Где написано «деньги»?",
-      "options": [
-        "ქუჩა",
-        "ფული",
-        "კატა"
-      ],
-      "answer_index": 1,
-      "explanation": "«деньги» — «ფული».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab8-q12",
-      "lemma": "კაცი",
-      "question": "Что значит «კაცი»?",
-      "options": [
-        "женщина",
-        "друг",
-        "мужчина"
-      ],
-      "answer_index": 2,
-      "explanation": "«კაცი» — «каци», мужчина.",
-      "tags": [
-        "word-reading",
-        "meaning",
         "mixed-script"
       ],
       "difficulty": 1

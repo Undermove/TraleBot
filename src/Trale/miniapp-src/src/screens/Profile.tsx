@@ -85,12 +85,13 @@ export default function Profile({ catalog, progress, isPro, isOwner = false, tel
     return tg?.initDataUnsafe?.user?.first_name as string | undefined
   }, [])
 
-  // alphabetDone: every lesson in the alphabet-progressive module is completed
+  // alphabetDone: every letters lesson of the alphabet-progressive module is completed (ids 1..11;
+  // the words lessons after them, ids 12+, do not decide whether the alphabet is learned)
   const alphabetDone = useMemo(() => {
     const alphabetModule = catalog.modules.find((m) => m.id === 'alphabet-progressive')
     if (!alphabetModule || alphabetModule.lessons.length === 0) return false
     const completedIds = progress.completedLessons['alphabet-progressive'] ?? []
-    return alphabetModule.lessons.every((l) => completedIds.includes(l.id))
+    return alphabetModule.lessons.filter((l) => l.id <= 11).every((l) => completedIds.includes(l.id))
   }, [catalog, progress.completedLessons])
 
   // Trigger 33/33 reveal animation once

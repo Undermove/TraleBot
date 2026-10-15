@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from './GameFrame'
 import { burst, flyGhost, haptic, sound } from './fx'
-import { assembleRounds, type AssembleRound, type Rng } from './logic'
+import { assembleRounds, type AssembleRound, type Rng, type WordPool } from './logic'
 import { cyr } from '../../verbs/types'
 import { useLater } from '../../verbs/games/useLater'
 
@@ -26,15 +26,16 @@ function scatter(n: number, rng: Rng) {
  * Тапаешь по порядку — буква перелетает в ячейку и встаёт со щелчком. Собрал — слово подпрыгивает,
  * конфетти, перевод. Лишние буквы на столе — выученные и непохожие по звуку.
  */
-export default function Assemble({ lesson, fraction, onExit, onDone, rng = Math.random, rounds: given }: {
+export default function Assemble({ lesson, fraction, onExit, onDone, rng = Math.random, rounds: given, pool }: {
   lesson: number
+  pool?: WordPool
   fraction: number
   onExit: () => void
   onDone: () => void
   rng?: Rng
   rounds?: AssembleRound[]
 }) {
-  const rounds = useMemo(() => given ?? assembleRounds(lesson, 2, rng), [lesson]) // eslint-disable-line react-hooks/exhaustive-deps
+  const rounds = useMemo(() => given ?? assembleRounds(lesson, 2, rng, pool), [lesson]) // eslint-disable-line react-hooks/exhaustive-deps
   const [ri, setRi] = useState(0)
   const round = rounds[ri]
   const spots = useMemo(() => scatter(round?.tiles.length ?? 0, rng), [ri]) // eslint-disable-line react-hooks/exhaustive-deps

@@ -13,7 +13,8 @@ public static class ModuleRegistry
 {
     private static readonly FrozenDictionary<string, ModuleDefinition> Modules = new Dictionary<string, ModuleDefinition>
     {
-        ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 11),
+        // 1..11 — уроки букв, 12..31 — уроки слов (scripts/alphabet-words/gen_word_lessons.py).
+        ["alphabet-progressive"] = new("alphabet-progressive", "Lessons/GeorgianAlphabetProgressive", 31),
         ["numbers"] = new("numbers", "Lessons/GeorgianNumbers", 5),
         ["verb-classes"] = new("verb-classes", "Lessons/GeorgianVerbClasses", 7),
         ["version-vowels"] = new("version-vowels", "Lessons/GeorgianVersionVowels", 6),

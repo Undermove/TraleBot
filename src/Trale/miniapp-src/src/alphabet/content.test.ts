@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 // @ts-ignore — тесты идут в Node, а типов Node в мини-аппе нет
 import { readFileSync } from 'node:fs'
 import { LESSON_WORDS, VERIFIED_WORDS } from './games/data'
-import { assembleRounds, isGeorgian, lessonLetters, learnedLetters, morphWords, readable, wordIntroPlan } from './games/logic'
+import { assembleRounds, isGeorgian, lessonLetters, learnedLetters, morphWords, readable } from './games/logic'
 import { availableProducts, orderText } from './cafe/products'
 import { cafePlan } from './cafe/engine'
 import { INTROS } from './intro/letters'
@@ -63,7 +63,6 @@ describe('alphabet content: only opened letters', () => {
       ...morphWords(lesson, 5, seeded(lesson)).map(w => w.geo),
       ...assembleRounds(lesson, 2, seeded(lesson)).flatMap(r => [r.word.geo, ...r.tiles]),
       ...availableProducts(lesson).map(p => orderText(p, lesson)!),
-      ...(wordIntroPlan(lesson, [], null)?.featured ?? []).map(w => w.geo)
     ]
     for (const t of texts) for (const ch of t) if (isGeorgian(ch)) expect(known.has(ch), `${ch} in «${t}», lesson ${lesson}`).toBe(true)
   })
@@ -80,5 +79,51 @@ describe('one word list for the games and the dictionary', () => {
     const server = JSON.parse(readFileSync(`${root}/Lessons/GeorgianAlphabetProgressive/words.json`, 'utf8'))
     const fromServer = server.lessons.map((l: any) => l.words.map((w: any) => [w.word, w.translation]))
     expect(fromServer).toEqual(LESSON_WORDS.map(ws => ws.map(([g, r]) => [g, r])))
+  })
+})
+
+describe('words lessons', () => {
+  it('every word of the base vocabulary is taught in exactly one words lesson of 2–4 words, right after its letters lesson', async () => {
+    const { WORD_LESSONS } = await import('./games/data')
+    const { ALPHABET_LESSONS } = await import('./lessons')
+    const taught = WORD_LESSONS.flatMap(l => l.words.map(([g]) => g))
+    expect(taught.sort()).toEqual(LESSON_WORDS.flat().map(([g]) => g).sort())
+    for (const l of WORD_LESSONS) { expect(l.words.length).toBeGreaterThanOrEqual(2); expect(l.words.length).toBeLessThanOrEqual(4) }
+    // Порядок: урок букв N, затем его уроки слов; уроки букв сохраняют id 1..11.
+    expect(ALPHABET_LESSONS.filter(l => l.kind === 'letters').map(l => l.id)).toEqual(LESSONS)
+    ALPHABET_LESSONS.forEach((l, i) => { if (l.kind === 'words') expect(ALPHABET_LESSONS[i - 1].stage).toBe(l.stage) })
+    const server = JSON.parse(readFileSync(`${root}/Lessons/GeorgianAlphabetProgressive/words.json`, 'utf8'))
+    expect(server.wordLessons.map((l: any) => [l.id, l.after, l.words.map((w: any) => [w.word, w.translation])]))
+      .toEqual(WORD_LESSONS.map(l => [l.id, l.after, l.words.map(([g, r]) => [g, r])]))
+  })
+})
+
+describe('«Разговор»: Georgian lines only from reviewed content', () => {
+  it('every line exists word for word in the cited repo file, every answer is a base word', async () => {
+    const { DIALOGUES } = await import('./games/dialogues')
+    const base = new Set(LESSON_WORDS.flat().map(([g]) => g))
+    for (const d of DIALOGUES) {
+      expect(base.has(d.answer), d.answer).toBe(true)
+      if (!d.line) continue
+      // Одно слово базового словаря (с «!» или «?») — источник сам словарь; иначе — фраза из файла уроков.
+      const single = d.line.replace(/[!?]/g, '')
+      if (base.has(single)) continue
+      expect(d.source, d.line).toBeTruthy()
+      const file = d.source!.split(' ')[0].replace(/,$/, '')
+      const text: string = readFileSync(`${root}/../../${file}`, 'utf8')
+      expect(text.includes(d.line), `${d.line} in ${file}`).toBe(true)
+    }
+  })
+
+  it('a dialogue line uses only letters opened by the lesson where it is played', async () => {
+    const { dialogueRounds } = await import('./games/dialogues')
+    const { ALPHABET_LESSONS, wordsUpToLesson } = await import('./lessons')
+    for (const l of ALPHABET_LESSONS) {
+      if (l.kind !== 'words') continue
+      for (const r of dialogueRounds(l.stage, l.words, wordsUpToLesson(l.id), seeded(l.id))) {
+        if (r.frame.line) expect(readable(r.frame.line, l.stage), r.frame.line).toBe(true)
+        for (const c of r.choices) expect(wordsUpToLesson(l.id).map(w => w.geo)).toContain(c)
+      }
+    }
   })
 })

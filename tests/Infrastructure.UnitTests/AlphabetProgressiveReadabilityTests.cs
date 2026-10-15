@@ -36,7 +36,10 @@ public class AlphabetProgressiveReadabilityTests
     [Test]
     public void Catalog_and_registry_agree_on_lesson_count()
     {
-        Module.Lessons.Select(l => l.Id).ShouldBe(LessonIds());
+        Module.Lessons.Select(l => l.Id).ShouldBe(LessonIds(), ignoreOrder: true);
+        // Уроки букв сохраняют свои id 1..11 (прогресс людей не теряется) и идут по порядку, уроки слов — после своего урока букв.
+        Module.Lessons.Where(l => l.Id <= LearningAlphabetLetterLessons).Select(l => l.Id).ShouldBe(Enumerable.Range(1, LearningAlphabetLetterLessons));
+        Module.Lessons[0].Id.ShouldBe(1);
     }
 
     [TestCaseSource(nameof(LessonIds))]
@@ -65,7 +68,8 @@ public class AlphabetProgressiveReadabilityTests
         raw.TryGetProperty("ordered", out var ordered).ShouldBeTrue($"lesson {lessonId} must set \"ordered\": true");
         ordered.ValueKind.ShouldBe(JsonValueKind.True);
 
-        var known = KnownLetters(lessonId - 1);
+        var pos = Position(lessonId);
+        var known = pos > 0 ? KnownLetters(Module.Lessons[pos - 1].Id) : new HashSet<char>();
         var introduced = LoadQuestions(lessonId)
             .Where(q => q.GetProperty("tags").EnumerateArray().Any(t => t.GetString() == "new-letter"))
             .Select(q => q.GetProperty("lemma").GetString()!.Single())
@@ -109,12 +113,12 @@ public class AlphabetProgressiveReadabilityTests
     public void Meanings_are_shown_before_they_are_asked(int lessonId)
     {
         var introduced = LessonWords()
-            .Where(l => l.Lesson <= lessonId)
+            .Where(l => Position(l.Lesson) <= Position(lessonId))
             .SelectMany(l => l.Words)
             .ToList();
         var shown = new List<string>();
-        for (var earlier = 1; earlier < lessonId; earlier++)
-            shown.AddRange(LoadQuestions(earlier).SelectMany(ShownText));
+        foreach (var earlier in Module.Lessons.Take(Position(lessonId)))
+            shown.AddRange(LoadQuestions(earlier.Id).SelectMany(ShownText));
 
         var failures = new List<string>();
         foreach (var q in LoadQuestions(lessonId))
@@ -162,12 +166,15 @@ public class AlphabetProgressiveReadabilityTests
 
     // Every word of the lesson vocabulary (what the mini-app adds to the dictionary and plays with)
     // is made only of letters learned by its lesson.
+    private const int LearningAlphabetLetterLessons = 11;
+
     [TestCaseSource(nameof(LessonIds))]
     public void Lesson_words_use_only_letters_learned_by_their_lesson(int lessonId)
     {
         var known = KnownLetters(lessonId);
-        var words = LessonWords().Single(l => l.Lesson == lessonId).Words;
-        words.ShouldNotBeEmpty();
+        var words = LessonWords().SingleOrDefault(l => l.Lesson == lessonId)?.Words ?? new List<LessonWord>();
+        if (lessonId > LearningAlphabetLetterLessons) words.ShouldNotBeEmpty();
+        else words.ShouldBeEmpty("a letters lesson teaches letters; its words come in the words lessons after it");
         foreach (var w in words)
             w.Word.Where(c => !known.Contains(c)).ShouldBeEmpty($"lesson {lessonId}: «{w.Word}»");
     }
@@ -178,9 +185,9 @@ public class AlphabetProgressiveReadabilityTests
     private static List<LessonWordsOfLesson> LessonWords()
     {
         using var doc = JsonDocument.Parse(File.ReadAllText(Path.Combine(LessonsDirectory(), "words.json")));
-        return doc.RootElement.GetProperty("lessons").EnumerateArray()
+        return doc.RootElement.GetProperty("wordLessons").EnumerateArray()
             .Select(l => new LessonWordsOfLesson(
-                l.GetProperty("lesson").GetInt32(),
+                l.GetProperty("id").GetInt32(),
                 l.GetProperty("words").EnumerateArray()
                     .Select(w => new LessonWord(w.GetProperty("word").GetString()!, w.GetProperty("translation").GetString()!))
                     .ToList()))
@@ -218,8 +225,10 @@ public class AlphabetProgressiveReadabilityTests
     [TestCaseSource(nameof(LessonIds))]
     public void Lesson_is_short_and_options_are_distinct(int lessonId)
     {
+        // Урок — цепочка игр; вопросы — короткая проверка в конце: в уроке букв по 1–2 вопроса на букву,
+        // в уроке слов — 4.
         var questions = LoadQuestions(lessonId);
-        questions.Count.ShouldBeInRange(10, 12, $"lesson {lessonId} should be a 2–3 minute session");
+        questions.Count.ShouldBeInRange(lessonId > LearningAlphabetLetterLessons ? 4 : 5, lessonId > LearningAlphabetLetterLessons ? 4 : 8, $"lesson {lessonId}");
 
         foreach (var q in questions)
         {
@@ -239,9 +248,13 @@ public class AlphabetProgressiveReadabilityTests
         }
     }
 
+    // Порядок в модуле — не по id: после урока букв идут его уроки слов (id 12+). Выучено к уроку —
+    // буквы всех уроков, стоящих в модуле не позже него.
+    private static int Position(int lessonId) => Module.Lessons.FindIndex(l => l.Id == lessonId);
+
     private static HashSet<char> KnownLetters(int lessonId) =>
         Module.Lessons
-            .Where(l => l.Id <= lessonId)
+            .Where((l, i) => lessonId > 0 && i <= Position(lessonId))
             .SelectMany(l => l.Theory.Blocks)
             .Where(b => b.Type == "letters")
             .SelectMany(b => b.Letters)

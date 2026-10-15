@@ -853,7 +853,7 @@ function computeHero(
       suggestion = {
         eyebrow: 'молодец! ещё?',
         title: nextLesson.title,
-        subtitle: `${nextModule.title} · урок ${nextLesson.id}`,
+        subtitle: `${nextModule.title} · урок ${nextModule.lessons.findIndex((l) => l.id === nextLesson!.id) + 1}`,
         screen: {
           kind: 'lesson-theory',
           moduleId: nextModule.id,
@@ -864,7 +864,7 @@ function computeHero(
       suggestion = {
         eyebrow: satiety === 'hungry' || satiety === 'sleeping' ? 'начать урок' : 'следующий урок',
         title: nextLesson.title,
-        subtitle: `${nextModule.title} · урок ${nextLesson.id}`,
+        subtitle: `${nextModule.title} · урок ${nextModule.lessons.findIndex((l) => l.id === nextLesson!.id) + 1}`,
         screen: {
           kind: 'lesson-theory',
           moduleId: nextModule.id,

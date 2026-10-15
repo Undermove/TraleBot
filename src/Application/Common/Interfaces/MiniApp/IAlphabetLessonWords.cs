@@ -7,8 +7,13 @@ namespace Application.Common.Interfaces.MiniApp;
 /// </summary>
 public interface IAlphabetLessonWords
 {
-    /// <summary>The words of one lesson (1-based); empty for an unknown lesson.</summary>
+    /// <summary>The words a lesson teaches: a words lesson (id 12+) — its 2–4 words; a letters lesson (1..11) — none.</summary>
     IReadOnlyList<AlphabetWord> WordsOf(int lessonId);
+
+    /// <summary>The words lessons in module order: id, the letters lesson they follow, their words.</summary>
+    IReadOnlyList<AlphabetWordLesson> WordLessons { get; }
 }
+
+public record AlphabetWordLesson(int Id, int After, IReadOnlyList<AlphabetWord> Words);
 
 public record AlphabetWord(string Word, string Translation);

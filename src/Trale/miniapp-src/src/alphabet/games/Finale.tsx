@@ -4,22 +4,27 @@ import Mascot from '../../components/Mascot'
 import { GEORGIAN_ALPHABET } from '../../components/AlphaIndex'
 import './alphabet.css'
 import { burst, flyGhost, haptic, reducedMotion, sound } from './fx'
-import { learnedLetters, lessonLetters, wordCount, wordsLabel } from './logic'
+import { learnedLetters, lessonLetters, wordsLabel } from './logic'
+import { lessonInfo, positionOf, wordsUpToLesson } from '../lessons'
 import { useLater } from '../../verbs/games/useLater'
 import { api } from '../../api'
 import { DictChip } from '../words/WordIntro'
 
 /**
- * Праздник конца урока (только если урок засчитан): три новые буквы влетают в «Мой алфавит»,
- * счётчик слов догоняет новое число, конфетти, Бомбора прыгает. Слова урока по-настоящему ложатся
- * в «Словарь» (сервер сам решает, какие, — POST vocabulary/alphabet-words): они по одному влетают
- * в чип «Словарь», и есть кнопка открыть словарь. Не вышло (нет сети, нет входа) — праздник без этой части.
+ * Праздник конца урока (только если урок засчитан).
+ * Урок букв: три новые буквы влетают в «Мой алфавит», конфетти, Бомбора прыгает.
+ * Урок слов: счётчик слов догоняет новое число; слова урока по-настоящему ложатся в «Словарь» (сервер сам
+ * решает, какие, — POST vocabulary/alphabet-words) и по одному влетают в чип «Словарь», есть кнопка открыть
+ * словарь. Не вышло (нет сети, нет входа) — праздник без этой части.
  */
-export default function Finale({ lesson, onNext, onVocabulary }: { lesson: number; onNext: () => void; onVocabulary: () => void }) {
-  const fresh = lessonLetters(lesson)
-  const before = new Set(lesson > 1 ? learnedLetters(lesson - 1) : [])
-  const from = lesson > 1 ? wordCount(lesson - 1) : 0
-  const to = wordCount(lesson)
+export default function Finale({ lessonId, onNext, onVocabulary }: { lessonId: number; onNext: () => void; onVocabulary: () => void }) {
+  const info = lessonInfo(lessonId)
+  const lesson = lessonId
+  const wordsLesson = info.kind === 'words'
+  const fresh = wordsLesson ? [] : lessonLetters(info.stage)
+  const before = new Set(wordsLesson ? learnedLetters(info.stage) : info.stage > 1 ? learnedLetters(info.stage - 1) : [])
+  const to = wordsUpToLesson(lessonId).length
+  const from = wordsLesson ? to - info.words.length : to
   const [arrived, setArrived] = useState<Set<string>>(new Set())
   const [words, setWords] = useState(from)
   const [party, setParty] = useState(false)
@@ -33,6 +38,7 @@ export default function Finale({ lesson, onNext, onVocabulary }: { lesson: numbe
 
   useEffect(() => {
     let alive = true
+    if (!wordsLesson) return
     Promise.resolve().then(() => api.addAlphabetWords(lesson))
       .then(r => { if (alive && r?.words?.length) setDict(r.words) })
       .catch(() => { /* праздник и без словаря */ })
@@ -91,12 +97,14 @@ export default function Finale({ lesson, onNext, onVocabulary }: { lesson: numbe
       <div className={party ? 'ab-jump' : ''} key={party ? 'p' : 'w'}>
         <div className="ab-short:scale-75 ab-short:-my-3"><Mascot mood="cheer" size={104} /></div>
       </div>
-      <div className="mn-eyebrow text-navy mt-1">урок {lesson} пройден</div>
+      <div className="mn-eyebrow text-navy mt-1">урок {positionOf(lessonId)} пройден</div>
       <div className="mt-1 text-[24px] font-extrabold leading-tight">
-        Ты знаешь уже <span key={words} className="inline-block text-ruby ab-count tabular-nums" data-testid="finale-words">{wordsLabel(words)}</span>
+        {wordsLesson
+          ? <>Ты знаешь уже <span key={words} className="inline-block text-ruby ab-count tabular-nums" data-testid="finale-words">{wordsLabel(words)}</span></>
+          : <>Ещё <span className="text-ruby">три буквы</span> твои</>}
       </div>
 
-      <div className="mt-3 ab-short:mt-1 flex gap-3 h-[60px] ab-short:h-[48px]">
+      <div className={`mt-3 ab-short:mt-1 flex gap-3 h-[60px] ab-short:h-[48px] ${wordsLesson ? 'hidden' : ''}`}>
         {fresh.map((l, i) => (
           <div
             key={l}

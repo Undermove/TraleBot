@@ -36,7 +36,8 @@ export default function Result({
 
   // Find next lesson for "Next Lesson" button — only on 100%
   const module = catalog.modules.find((m) => m.id === moduleId)
-  const nextLesson = module?.lessons.find((l) => l.id === lessonId + 1) ?? null
+  // Следующий — по порядку в модуле, а не id + 1 (в «Алфавите» после урока букв идут его уроки слов с id 12+).
+  const nextLesson = module ? module.lessons[module.lessons.findIndex((l) => l.id === lessonId) + 1] ?? null : null
   const isGreat = isPerfect
   const isOK = pct >= 80 && !isGreat
 

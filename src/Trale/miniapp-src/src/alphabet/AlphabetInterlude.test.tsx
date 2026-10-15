@@ -26,7 +26,6 @@ async function skipWords() {
     fireEvent.click(screen.getByTestId('word-skip'))
     await act(async () => { fireEvent.click(screen.getByText('в словарь →')) })
   }
-  if (screen.queryByTestId('word-list')) fireEvent.click(screen.getByText('дальше →'))
 }
 
 describe('alphabet lesson as a chain of games', () => {
@@ -41,7 +40,7 @@ describe('alphabet lesson as a chain of games', () => {
     api.addAlphabetWords.mockResolvedValue({ words: [], added: 0 } as any)
   })
 
-  it('lesson 1: letters, «Поймай букву», «Пары», new words, «Превращение», then a 4-question check that counts the lesson', async () => {
+  it('letters lesson 1: three letters with letter games, then a check of one question per letter that counts the lesson', async () => {
     const navigate = vi.fn()
     render(<Practice moduleId="alphabet-progressive" lessonId={1} progress={defaultProgress} setProgress={() => {}} authenticated navigate={navigate} />)
 
@@ -53,12 +52,12 @@ describe('alphabet lesson as a chain of games', () => {
     // «Поймай букву»: лопаем только нужные пузыри; в первом раунде они подсвечены.
     expect(screen.getByText('Поймай букву')).toBeTruthy()
     for (let round = 0; round < 2; round++) {
-      await waitFor(() => expect(screen.getByText(new RegExp(`поймай букву · ${round + 1} из 2`))).toBeTruthy(), { timeout: 2000 })
+      await waitFor(() => expect(screen.getByText(new RegExp(`поймай букву · ${round + 1} из 2`))).toBeTruthy(), { timeout: 3000 })
       const targets = screen.getAllByTestId('catch-bubble').filter(b => b.dataset.target === 'yes')
       if (round === 0) expect(targets.every(b => b.className.includes('ring-gold'))).toBe(true)
       for (const b of targets) fireEvent.pointerDown(b)
     }
-    await waitFor(() => expect(screen.getByText(/новая буква · 3 из 3/)).toBeTruthy(), { timeout: 3000 })
+    await waitFor(() => expect(screen.getByText(/новая буква · 3 из 3/)).toBeTruthy(), { timeout: 4000 })
     skipIntro()
 
     // «Пары»: буква ↔ её звук.
@@ -70,27 +69,30 @@ describe('alphabet lesson as a chain of games', () => {
       await new Promise(r => setTimeout(r, 300))
     }
 
-    // Новые слова урока — до любых вопросов о них.
-    await waitFor(() => expect(screen.getByText('Тебе хватает букв, чтобы прочитать новое слово!')).toBeTruthy(), { timeout: 3000 })
-    await skipWords()
-
-    // «Превращение»: из звучания в грузинские буквы.
-    expect(screen.getByText('Преврати слово в грузинское')).toBeTruthy()
-    const geo: Record<string, string> = { а: 'ა', д: 'დ', р: 'რ' }
-    while (screen.queryAllByTestId('morph-choice').length) {
-      const ru = screen.getByText(/Какая грузинская буква/).textContent!.match(/«(.+?)»/)![1]
-      fireEvent.click(screen.getAllByTestId('morph-choice').find(b => b.getAttribute('aria-label') === geo[ru])!)
-      if (screen.queryByTestId('morph-meaning')) fireEvent.click(screen.getByText(/следующее слово →|дальше →/))
-    }
-    if (screen.queryByTestId('morph-meaning')) fireEvent.click(screen.getByText(/дальше →/))
-
-    // Проверка: последние 4 вопроса урока; прогресс — как раньше, по ним.
-    await waitFor(() => expect(screen.getByText('Вопрос 7')).toBeTruthy())
-    for (let i = 0; i < 4; i++) answer()
-    await waitFor(() => expect(api.completeLesson).toHaveBeenCalledWith({ moduleId: 'alphabet-progressive', lessonId: 1, correct: 4, total: 4 }))
+    // Проверка: последний вопрос о каждой букве урока; прогресс — как раньше, по ним.
+    await waitFor(() => expect(screen.getByText('Вопрос 2')).toBeTruthy(), { timeout: 3000 })
+    for (let i = 0; i < 3; i++) answer()
+    await waitFor(() => expect(api.completeLesson).toHaveBeenCalledWith({ moduleId: 'alphabet-progressive', lessonId: 1, correct: 3, total: 3 }))
     await waitFor(() => expect(screen.getByTestId('alphabet-finale')).toBeTruthy())
-    expect(api.addAlphabetWords).toHaveBeenCalledWith(1)
-  }, 15_000)
+    expect(api.addAlphabetWords).not.toHaveBeenCalled()
+  }, 20_000)
+
+  it('words lesson 12: every new word gets its own scene (no «ещё слова» list), then word games and a 4-question check', async () => {
+    const wordQs = ['და', 'არა', 'რა', 'და'].map((lemma, i) => ({ id: `w${i}`, lemma, question: `Слово ${i + 1}`, options: ['верно', 'неверно'], answerIndex: 0, explanation: '' }))
+    api.lessonQuestions.mockResolvedValue(wordQs as any)
+    render(<Practice moduleId="alphabet-progressive" lessonId={12} progress={defaultProgress} setProgress={() => {}} authenticated navigate={() => {}} />)
+    await waitFor(() => expect(screen.getByText('Тебе хватает букв, чтобы прочитать новое слово!')).toBeTruthy())
+    const seen: string[] = []
+    while (screen.queryByTestId('word-skip')) {
+      seen.push(screen.getAllByTestId('word-tile').map(t => t.textContent).join(''))
+      fireEvent.click(screen.getByTestId('word-skip'))
+      await act(async () => { fireEvent.click(screen.getByText('в словарь →')) })
+    }
+    expect(seen).toEqual(['და', 'არა', 'რა'])
+    expect(screen.queryByTestId('word-list')).toBeNull()
+    // Дальше — игры со словами (первая в первом уроке слов — «Пары» слово ↔ значение).
+    expect(screen.getByTestId('pairs')).toBeTruthy()
+  }, 20_000)
 
   it('leaving a game goes back to the lesson theory', async () => {
     const navigate = vi.fn()

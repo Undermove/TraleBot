@@ -10,12 +10,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.MiniApp.Commands;
 
 /// <summary>
-/// After a counted alphabet lesson its Georgian words go into the learner's dictionary, the same entries
-/// a translated word makes — but straight from the lesson's own list (<see cref="IAlphabetLessonWords"/>):
-/// no translator, no subscription check, nothing counted against any limit. Words of earlier counted
-/// alphabet lessons the learner does not have yet are added too, so the dictionary matches «ты знаешь уже
-/// N слов» of the lesson's celebration. A word the learner already has (same word, Georgian) is left as is,
-/// so calling it again changes nothing. A lesson that is not counted adds nothing.
+/// After a counted alphabet words lesson (id 12+) its Georgian words go into the learner's dictionary, the same
+/// entries a translated word makes — but straight from the lesson's own list (<see cref="IAlphabetLessonWords"/>):
+/// no translator, no subscription check, nothing counted against any limit. Words of other counted words
+/// lessons the learner does not have yet are added too. A letters lesson (1..11) teaches no words: it answers
+/// with an empty list. A word the learner already has (same word, Georgian) is left as is, so calling it again
+/// changes nothing. A lesson that is not counted adds nothing.
 /// </summary>
 public class AddAlphabetLessonWords : IRequest<AddAlphabetLessonWordsResult>
 {
@@ -30,7 +30,8 @@ public class AddAlphabetLessonWords : IRequest<AddAlphabetLessonWordsResult>
         public async Task<AddAlphabetLessonWordsResult> Handle(AddAlphabetLessonWords request, CancellationToken ct)
         {
             var own = lessonWords.WordsOf(request.LessonId);
-            if (own.Count == 0)
+            var letters = request.LessonId is >= 1 and <= LearningConstants.Modules.AlphabetLetterLessons;
+            if (own.Count == 0 && !letters)
             {
                 return new AddAlphabetLessonWordsResult.UnknownLesson();
             }
@@ -43,8 +44,10 @@ public class AddAlphabetLessonWords : IRequest<AddAlphabetLessonWordsResult>
                 return new AddAlphabetLessonWordsResult.LessonNotCompleted();
             }
 
-            var wanted = counted.Where(l => l <= request.LessonId)
-                .SelectMany(lessonWords.WordsOf)
+            // Слова всех засчитанных уроков слов (этот — тоже), которых у человека ещё нет.
+            var wanted = lessonWords.WordLessons
+                .Where(l => counted.Contains(l.Id))
+                .SelectMany(l => l.Words)
                 .DistinctBy(w => w.Word)
                 .ToList();
             var keys = wanted.Select(w => w.Word.Trim().ToLowerInvariant()).ToList();

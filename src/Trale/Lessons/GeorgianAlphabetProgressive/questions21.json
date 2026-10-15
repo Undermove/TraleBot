@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w21",
+  "title": "Слова: მანქანა, ქალი, ბავშვი, მეგობარი",
+  "ordered": true,
+  "lexicon": [
+    "მანქანა",
+    "ქალი",
+    "ბავშვი",
+    "მეგობარი"
+  ],
+  "questions": [
+    {
+      "id": "abw21-q01",
+      "lemma": "მანქანა",
+      "question": "Как читается «მანქანა»?",
+      "options": [
+        "чвэн",
+        "манкана",
+        "вар"
+      ],
+      "answer_index": 1,
+      "explanation": "«მანქანა» — «манкана», машина.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw21-q02",
+      "lemma": "ქალი",
+      "question": "Что значит «ქალი»?",
+      "options": [
+        "радио",
+        "твой",
+        "женщина"
+      ],
+      "answer_index": 2,
+      "explanation": "«ქალი» — «кали», женщина.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw21-q03",
+      "lemma": "ბავშვი",
+      "question": "Где написано «ребёнок»?",
+      "options": [
+        "მეგობარი",
+        "შენ",
+        "ბავშვი"
+      ],
+      "answer_index": 2,
+      "explanation": "«ბავშვი» — «бавшви», ребёнок.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw21-q04",
+      "lemma": "მეგობარი",
+      "question": "Что значит «მეგობარი»?",
+      "options": [
+        "друг",
+        "женщина",
+        "мой"
+      ],
+      "answer_index": 0,
+      "explanation": "«მეგობარი» — «мэгобари», друг.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w20",
+  "title": "Слова: შენი, თავი, რადიო",
+  "ordered": true,
+  "lexicon": [
+    "შენი",
+    "თავი",
+    "რადიო"
+  ],
+  "questions": [
+    {
+      "id": "abw20-q01",
+      "lemma": "შენი",
+      "question": "Как читается «შენი»?",
+      "options": [
+        "чвэн",
+        "чаи",
+        "шэни"
+      ],
+      "answer_index": 2,
+      "explanation": "«შენი» — «шэни», твой.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw20-q02",
+      "lemma": "თავი",
+      "question": "Что значит «თავი»?",
+      "options": [
+        "голова",
+        "два",
+        "он, она"
+      ],
+      "answer_index": 0,
+      "explanation": "«თავი» — «тави», голова.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw20-q03",
+      "lemma": "რადიო",
+      "question": "Где написано «радио»?",
+      "options": [
+        "რადიო",
+        "რა",
+        "მინდა"
+      ],
+      "answer_index": 0,
+      "explanation": "«რადიო» — «радио», радио.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw20-q04",
+      "lemma": "შენი",
+      "question": "Что значит «შენი»?",
+      "options": [
+        "мама",
+        "твой",
+        "есть"
+      ],
+      "answer_index": 1,
+      "explanation": "«შენი» — «шэни», твой.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

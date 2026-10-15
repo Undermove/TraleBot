@@ -32,6 +32,12 @@ public static class LearningConstants
     {
         /// <summary>Until this module is finished a beginner is not asked to type Georgian.</summary>
         public const string Alphabet = "alphabet-progressive";
+
+        /// <summary>
+        /// Уроки букв алфавита — id 1..11 (в них все 33 буквы). После каждого урока букв идут уроки слов
+        /// с id 12 и дальше; «алфавит пройден» — значит пройдены все уроки букв.
+        /// </summary>
+        public const int AlphabetLetterLessons = 11;
     }
 
     public static class Levels

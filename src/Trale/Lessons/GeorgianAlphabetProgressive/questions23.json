@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w23",
+  "title": "Слова: კი, კარგი, კაცი, წიგნი",
+  "ordered": true,
+  "lexicon": [
+    "კი",
+    "კარგი",
+    "კაცი",
+    "წიგნი"
+  ],
+  "questions": [
+    {
+      "id": "abw23-q01",
+      "lemma": "კი",
+      "question": "Как читается «კი»?",
+      "options": [
+        "к’и",
+        "мэ",
+        "тави"
+      ],
+      "answer_index": 0,
+      "explanation": "«კი» — «к’и», да.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw23-q02",
+      "lemma": "კარგი",
+      "question": "Что значит «კარგი»?",
+      "options": [
+        "твой",
+        "папа",
+        "хорошо"
+      ],
+      "answer_index": 2,
+      "explanation": "«კარგი» — «к’арги», хорошо.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw23-q03",
+      "lemma": "კაცი",
+      "question": "Где написано «мужчина»?",
+      "options": [
+        "წიგნი",
+        "კაცი",
+        "კარგი"
+      ],
+      "answer_index": 1,
+      "explanation": "«კაცი» — «к’аци», мужчина.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw23-q04",
+      "lemma": "წიგნი",
+      "question": "Что значит «წიგნი»?",
+      "options": [
+        "книга",
+        "мой",
+        "это"
+      ],
+      "answer_index": 0,
+      "explanation": "«წიგნი» — «ц’игни», книга.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

@@ -9,12 +9,12 @@ using Application.Common.Interfaces.MiniApp;
 namespace Trale.MiniApp;
 
 /// <summary>
-/// The alphabet lessons' base vocabulary from <c>Lessons/GeorgianAlphabetProgressive/words.json</c>
-/// (copied next to the binaries), read once.
+/// The alphabet words lessons from <c>Lessons/GeorgianAlphabetProgressive/words.json</c> (section
+/// <c>wordLessons</c>, copied next to the binaries), read once.
 /// </summary>
 public class AlphabetLessonWords : IAlphabetLessonWords
 {
-    private readonly Lazy<Dictionary<int, IReadOnlyList<AlphabetWord>>> _lessons;
+    private readonly Lazy<IReadOnlyList<AlphabetWordLesson>> _lessons;
 
     public AlphabetLessonWords() : this(Path.Combine(AppContext.BaseDirectory, "Lessons", "GeorgianAlphabetProgressive", "words.json"))
     {
@@ -22,28 +22,34 @@ public class AlphabetLessonWords : IAlphabetLessonWords
 
     public AlphabetLessonWords(string path)
     {
-        _lessons = new Lazy<Dictionary<int, IReadOnlyList<AlphabetWord>>>(() => Parse(File.ReadAllText(path)));
+        _lessons = new Lazy<IReadOnlyList<AlphabetWordLesson>>(() => Parse(File.ReadAllText(path)));
     }
 
-    public IReadOnlyList<AlphabetWord> WordsOf(int lessonId) =>
-        _lessons.Value.TryGetValue(lessonId, out var words) ? words : Array.Empty<AlphabetWord>();
+    /// <summary>Читает words.json рядом с бинарниками — для каталога уроков (без DI).</summary>
+    public static AlphabetLessonWords Default { get; } = new();
 
-    public static Dictionary<int, IReadOnlyList<AlphabetWord>> Parse(string json)
+    public IReadOnlyList<AlphabetWordLesson> WordLessons => _lessons.Value;
+
+    public IReadOnlyList<AlphabetWord> WordsOf(int lessonId) =>
+        _lessons.Value.FirstOrDefault(l => l.Id == lessonId)?.Words ?? Array.Empty<AlphabetWord>();
+
+    public static IReadOnlyList<AlphabetWordLesson> Parse(string json)
     {
         var file = JsonSerializer.Deserialize<WordsFile>(json) ?? throw new InvalidOperationException("words.json is empty");
-        return file.Lessons.ToDictionary(
-            l => l.Lesson,
-            l => (IReadOnlyList<AlphabetWord>)l.Words.Select(w => new AlphabetWord(w.Word, w.Translation)).ToList());
+        return file.WordLessons
+            .Select(l => new AlphabetWordLesson(l.Id, l.After, l.Words.Select(w => new AlphabetWord(w.Word, w.Translation)).ToList()))
+            .ToList();
     }
 
     private sealed class WordsFile
     {
-        [JsonPropertyName("lessons")] public List<LessonWords> Lessons { get; set; } = [];
+        [JsonPropertyName("wordLessons")] public List<WordLesson> WordLessons { get; set; } = [];
     }
 
-    private sealed class LessonWords
+    private sealed class WordLesson
     {
-        [JsonPropertyName("lesson")] public int Lesson { get; set; }
+        [JsonPropertyName("id")] public int Id { get; set; }
+        [JsonPropertyName("after")] public int After { get; set; }
         [JsonPropertyName("words")] public List<WordItem> Words { get; set; } = [];
     }
 

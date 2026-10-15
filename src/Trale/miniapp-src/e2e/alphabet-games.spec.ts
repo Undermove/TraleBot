@@ -3,6 +3,8 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { PRODUCTS, orderText } from '../src/alphabet/cafe/products'
 import { HANDWRITING } from '../src/alphabet/intro/handwriting'
+import { ALPHABET_LESSONS, lessonInfo } from '../src/alphabet/lessons'
+import { lessonLetters } from '../src/alphabet/games/logic'
 import { sample } from '../src/alphabet/intro/pathMath'
 
 // Алфавит — урок как цепочка игр: знакомство с буквой (стереть поверхность → как пишется → слово), «Поймай букву»,
@@ -23,7 +25,8 @@ const catalog = {
   botUsername: 'TraleBot', miniAppEnabled: true,
   modules: [{
     id: 'alphabet-progressive', title: 'Алфавит', emoji: '', description: '33 буквы',
-    lessons: Array.from({ length: 11 }, (_, i) => ({ id: i + 1, title: `Урок ${i + 1}`, short: `L${i + 1}`, theory: { title: `Урок ${i + 1}`, goal: 'g', blocks: [] } }))
+    // Уроки по порядку модуля: урок букв, за ним его уроки слов (id 12+).
+    lessons: ALPHABET_LESSONS.map(l => ({ id: l.id, title: `Урок ${l.id}`, short: `L${l.id}`, theory: { title: `Урок ${l.id}`, goal: 'g', blocks: [] } }))
   }]
 }
 const progress = (done: number[]) => ({ xp: 100, streak: 1, lastPlayedAtUtc: null, completedLessons: { 'alphabet-progressive': done }, xpSpent: 0, totalTreatsGiven: 0, lastFedAtUtc: null, lastTreatIndex: null })
@@ -151,7 +154,7 @@ async function playGames(page: Page) {
       continue
     }
     if (await page.getByTestId('catch').isVisible().catch(() => false)) {
-      await fits(page, 'catch'); await shotOnce(page, '15-catch')
+      await fits(page, 'catch'); await page.waitForTimeout(600); await shotOnce(page, '15-catch')
       const targets = page.locator('[data-testid="catch-bubble"][data-target="yes"]:not([disabled])')
       let firstPop = true
       while (await targets.count()) {
@@ -224,6 +227,20 @@ async function playGames(page: Page) {
       }
       continue
     }
+    if (await page.getByTestId('dialogue').isVisible().catch(() => false)) {
+      await fits(page, 'dialogue')
+      let first = true
+      while (await page.getByTestId('dialogue-choice').first().isVisible().catch(() => false)) {
+        if (first) { await page.waitForTimeout(300); await shotOnce(page, '29-dialogue') }
+        const before = await page.getByTestId('dialogue-meaning').count()
+        await tryEach(page, 'dialogue-choice', async () => (await page.getByTestId('dialogue-meaning').count()) > before)
+        if (first) { await page.waitForTimeout(500); await shotOnce(page, '30-dialogue-answered'); first = false }
+        await page.waitForTimeout(1500)
+        if (await page.getByRole('button', { name: 'дальше →' }).isVisible().catch(() => false)) break
+      }
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
     if (await page.getByTestId('cafe').isVisible().catch(() => false)) {
       await fits(page, 'cafe')
       await expect(page.getByTestId('cafe-howto')).toHaveText('Гость заказывает по-грузински. Прочитай заказ и подай нужное')
@@ -249,9 +266,17 @@ async function playGames(page: Page) {
   }
 }
 
-/** Короткая проверка: последние 4 вопроса урока. */
+/** Какие вопросы урок играет как проверку — как AlphabetInterlude.alphabetExam (тот модуль с React и CSS сюда не импортировать). */
+function examOf(lesson: number) {
+  const all = questions(lesson)
+  const info = lessonInfo(lesson)
+  if (info.kind === 'words') return all.slice(-4)
+  return lessonLetters(info.stage).map(l => all.filter((q: any) => q.lemma === l).pop()).filter(Boolean)
+}
+
+/** Короткая проверка: вопросы, которые урок играет. */
 async function exam(page: Page, lesson: number) {
-  const qs = questions(lesson).slice(-4)
+  const qs = examOf(lesson)
   for (const q of qs) {
     await expect(page.getByText(q.question)).toBeVisible()
     await page.getByRole('button', { name: new RegExp(`^[a-z]\\s*${q.options[q.answerIndex].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).click()
@@ -264,7 +289,7 @@ for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
   test.describe(`${size.width}×${size.height}`, () => {
     test.use({ viewport: size })
 
-    test('early lesson 1: letters, catch, pairs, new words, morph, a 4-question check, words fly into the dictionary', async ({ page }) => {
+    test('letters lesson 1: letters, catch, pairs, the check of one question per letter, letters fly into «Мой алфавит»', async ({ page }) => {
       test.setTimeout(90_000)
       await setup(page, [], 1)
       await openModule(page)
@@ -272,6 +297,23 @@ for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
       await page.getByRole('button', { name: 'Начать' }).click()
       await playGames(page)
       await exam(page, 1)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+      await page.waitForTimeout(3000)
+      await expect(page.getByTestId('finale-letters')).toHaveText('3 из 33')
+      await fits(page, 'finale')
+    })
+
+    test('words lesson 12 (after ა დ რ): each word its own scene, word games, the check, words fly into the dictionary', async ({ page }) => {
+      test.setTimeout(90_000)
+      await setup(page, [1], 12)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-12').click()
+      await expect(page.getByText('Сегодня 3 новых слова')).toBeVisible()
+      await page.waitForTimeout(1000)
+      await shotOnce(page, '28-words-lesson-opener')
+      await page.getByRole('button', { name: 'Начать' }).click()
+      await playGames(page)
+      await exam(page, 12)
       await expect(page.getByTestId('alphabet-finale')).toBeVisible()
       await page.waitForTimeout(4000)
       await expect(page.getByTestId('finale-dict')).toContainText('Эти слова теперь в твоём словаре')
@@ -281,15 +323,27 @@ for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
       await page.getByRole('button', { name: 'открыть словарь' }).click()
     })
 
-    test('late lesson 10: catch, sound → letter, new words, assemble, the cafe with a guided guest and a timed shift, the check', async ({ page }) => {
+    test('late words lesson 23 (after კ ც წ): a dialogue with Bombora among the word games', async ({ page }) => {
       test.setTimeout(90_000)
       await page.clock.install()
-      await setup(page, [1, 2, 3, 4, 5, 6, 7, 8, 9], 10)
+      await setup(page, [1, 2, 3, 4, 5, 6, 7], 23)
       await openModule(page)
-      await page.getByTestId('lesson-btn-10').click()
+      await page.getByTestId('lesson-btn-23').click()
       await page.getByRole('button', { name: 'Начать' }).click()
       await playGames(page)
-      await exam(page, 10)
+      await exam(page, 23)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+    })
+
+    test('late words lesson 29 (ყავა, წყალი, ყველი): the cafe with a guided guest and a timed shift', async ({ page }) => {
+      test.setTimeout(90_000)
+      await page.clock.install()
+      await setup(page, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 29)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-29').click()
+      await page.getByRole('button', { name: 'Начать' }).click()
+      await playGames(page)
+      await exam(page, 29)
       await expect(page.getByTestId('alphabet-finale')).toBeVisible()
       await expect(page.getByTestId('cafe-tile')).toHaveCount(0)
     })

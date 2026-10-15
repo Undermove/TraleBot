@@ -318,6 +318,6 @@ public class VerbSectionQuery(
             return false;
         }
 
-        return miniApp == null || progressCalculator.CompletedLessons(miniApp, LearningConstants.Modules.Alphabet) < alphabetLessons;
+        return miniApp == null || progressCalculator.CompletedLessons(miniApp, LearningConstants.Modules.Alphabet, alphabetLessons) < alphabetLessons;
     }
 }

@@ -6,11 +6,8 @@
     "ჟ",
     "ჯ",
     "ჰ",
-    "ოჯახი",
     "გამარჯობა",
-    "მადლობა",
-    "ჰაერი",
-    "წყალი"
+    "ჰაერი"
   ],
   "questions": [
     {
@@ -114,98 +111,6 @@
         "mixed-script"
       ],
       "difficulty": 1
-    },
-    {
-      "id": "ab11-q08",
-      "lemma": "გამარჯობა",
-      "question": "Что значит «გამარჯობა»?",
-      "options": [
-        "спасибо",
-        "здравствуй",
-        "семья"
-      ],
-      "answer_index": 1,
-      "explanation": "«გამარჯობა» — здравствуй.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab11-q09",
-      "lemma": "მადლობა",
-      "question": "Где написано «спасибо»?",
-      "options": [
-        "გამარჯობა",
-        "ოჯახი",
-        "მადლობა"
-      ],
-      "answer_index": 2,
-      "explanation": "«спасибо» — «მადლობა».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab11-q10",
-      "lemma": "ჰაერი",
-      "question": "Что значит «ჰაერი»?",
-      "options": [
-        "воздух",
-        "вода",
-        "семья"
-      ],
-      "answer_index": 0,
-      "explanation": "«ჰაერი» — воздух.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab11-q11",
-      "lemma": "ოჯახი",
-      "question": "Где написано «семья»?",
-      "options": [
-        "ძმა",
-        "ოჯახი",
-        "სახლი"
-      ],
-      "answer_index": 1,
-      "explanation": "«семья» — «ოჯახი».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab11-q12",
-      "lemma": "წყალი",
-      "question": "Послушай и выбери слово",
-      "options": [
-        "ღვინო",
-        "ყავა",
-        "ყველი",
-        "წყალი"
-      ],
-      "answer_index": 3,
-      "explanation": "Прозвучало «წყალი» — «цкали», вода.",
-      "tags": [
-        "audio",
-        "word",
-        "mixed-script"
-      ],
-      "difficulty": 1,
-      "question_type": "audio-choice",
-      "audio_url": "/audio/cafe/wqali.m4a",
-      "transcript": "წყალი"
     }
   ]
 }

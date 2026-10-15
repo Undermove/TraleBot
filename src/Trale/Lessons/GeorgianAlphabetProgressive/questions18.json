@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w18",
+  "title": "Слова: ახალი, ნახვამდის, ხვალ",
+  "ordered": true,
+  "lexicon": [
+    "ახალი",
+    "ნახვამდის",
+    "ხვალ"
+  ],
+  "questions": [
+    {
+      "id": "abw18-q01",
+      "lemma": "ახალი",
+      "question": "Как читается «ახალი»?",
+      "options": [
+        "ара",
+        "диди",
+        "ахали"
+      ],
+      "answer_index": 2,
+      "explanation": "«ახალი» — «ахали», новый.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw18-q02",
+      "lemma": "ნახვამდის",
+      "question": "Что значит «ნახვამდის»?",
+      "options": [
+        "до свидания",
+        "нет",
+        "я"
+      ],
+      "answer_index": 0,
+      "explanation": "«ნახვამდის» — «нахвамдис», до свидания.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw18-q03",
+      "lemma": "ხვალ",
+      "question": "Где написано «завтра»?",
+      "options": [
+        "ხვალ",
+        "არა",
+        "ის"
+      ],
+      "answer_index": 0,
+      "explanation": "«ხვალ» — «хвал», завтра.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw18-q04",
+      "lemma": "ახალი",
+      "question": "Что значит «ახალი»?",
+      "options": [
+        "новый",
+        "три",
+        "есть"
+      ],
+      "answer_index": 0,
+      "explanation": "«ახალი» — «ахали», новый.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

@@ -286,7 +286,7 @@ export default function ModuleMap({
                         isCurrent ? 'text-jewelInk' : 'text-jewelInk/60'
                       }`}
                     >
-                      {lesson.id}
+                      {idx + 1}
                     </span>
                   )}
                 </button>

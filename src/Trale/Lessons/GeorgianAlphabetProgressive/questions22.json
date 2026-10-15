@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w22",
+  "title": "Слова: მადლობა, საქართველო, ქალაქი, ექიმი",
+  "ordered": true,
+  "lexicon": [
+    "მადლობა",
+    "საქართველო",
+    "ქალაქი",
+    "ექიმი"
+  ],
+  "questions": [
+    {
+      "id": "abw22-q01",
+      "lemma": "მადლობა",
+      "question": "Как читается «მადლობა»?",
+      "options": [
+        "мадлоба",
+        "ори",
+        "нахвамдис"
+      ],
+      "answer_index": 0,
+      "explanation": "«მადლობა» — «мадлоба», спасибо.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw22-q02",
+      "lemma": "საქართველო",
+      "question": "Что значит «საქართველო»?",
+      "options": [
+        "женщина",
+        "Грузия",
+        "(я) есть"
+      ],
+      "answer_index": 1,
+      "explanation": "«საქართველო» — «сакартвэло», Грузия.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw22-q03",
+      "lemma": "ქალაქი",
+      "question": "Где написано «город»?",
+      "options": [
+        "ჩაი",
+        "ქალაქი",
+        "მადლობა"
+      ],
+      "answer_index": 1,
+      "explanation": "«ქალაქი» — «калаки», город.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw22-q04",
+      "lemma": "ექიმი",
+      "question": "Что значит «ექიმი»?",
+      "options": [
+        "врач",
+        "(я) есть",
+        "есть"
+      ],
+      "answer_index": 0,
+      "explanation": "«ექიმი» — «экими», врач.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

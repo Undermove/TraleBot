@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w16",
+  "title": "Слова: სამი, ვარ, რამდენი",
+  "ordered": true,
+  "lexicon": [
+    "სამი",
+    "ვარ",
+    "რამდენი"
+  ],
+  "questions": [
+    {
+      "id": "abw16-q01",
+      "lemma": "სამი",
+      "question": "Как читается «სამი»?",
+      "options": [
+        "диди",
+        "мэ",
+        "сами"
+      ],
+      "answer_index": 2,
+      "explanation": "«სამი» — «сами», три.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw16-q02",
+      "lemma": "ვარ",
+      "question": "Что значит «ვარ»?",
+      "options": [
+        "кто",
+        "(я) есть",
+        "где"
+      ],
+      "answer_index": 1,
+      "explanation": "«ვარ» — «вар», (я) есть.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw16-q03",
+      "lemma": "რამდენი",
+      "question": "Где написано «сколько»?",
+      "options": [
+        "დიდი",
+        "რამდენი",
+        "სამი"
+      ],
+      "answer_index": 1,
+      "explanation": "«რამდენი» — «рамдэни», сколько.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw16-q04",
+      "lemma": "სამი",
+      "question": "Что значит «სამი»?",
+      "options": [
+        "три",
+        "мама",
+        "большой"
+      ],
+      "answer_index": 0,
+      "explanation": "«სამი» — «сами», три.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

@@ -98,7 +98,7 @@ export default function Practice({
       return
     }
     // Алфавит: урок — цепочка игр, а вопросы — короткая проверка в конце (последние вопросы урока).
-    const played = (moduleId === ALPHABET_MODULE ? alphabetExam(data) : data.slice(0, 10)).map(normalizeQuestion)
+    const played = (moduleId === ALPHABET_MODULE ? alphabetExam(data, lessonId) : data.slice(0, 10)).map(normalizeQuestion)
     setQuestions(played)
     setPhase('answering')
   }

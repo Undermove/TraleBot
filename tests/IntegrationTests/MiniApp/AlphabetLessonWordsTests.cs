@@ -59,12 +59,13 @@ public class AlphabetLessonWordsTests : TestBase
     }
 
     [Test]
-    public async Task A_counted_lesson_puts_its_words_into_the_dictionary_once()
+    public async Task A_counted_words_lesson_puts_its_words_into_the_dictionary_once()
     {
-        (await Post("progress/lesson-complete", new { moduleId = "alphabet-progressive", lessonId = 1, correct = 10, total = 10 }))
+        // Урок слов 12 идёт после урока букв 1: და, არა, რა.
+        (await Post("progress/lesson-complete", new { moduleId = "alphabet-progressive", lessonId = 12, correct = 4, total = 4 }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var response = await Post("vocabulary/alphabet-words", new { lessonId = 1 });
+        var response = await Post("vocabulary/alphabet-words", new { lessonId = 12 });
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = JsonNode.Parse(await response.Content.ReadAsStringAsync())!;
         body["added"]!.GetValue<int>().Should().Be(3);
@@ -74,7 +75,7 @@ public class AlphabetLessonWordsTests : TestBase
         entries.Select(e => (e.Word, e.Definition)).Should().BeEquivalentTo(new[] { ("და", "и"), ("არა", "нет"), ("რა", "что") });
         entries.Should().OnlyContain(e => e.Language == Language.Georgian);
 
-        var again = JsonNode.Parse(await (await Post("vocabulary/alphabet-words", new { lessonId = 1 })).Content.ReadAsStringAsync())!;
+        var again = JsonNode.Parse(await (await Post("vocabulary/alphabet-words", new { lessonId = 12 })).Content.ReadAsStringAsync())!;
         again["added"]!.GetValue<int>().Should().Be(0);
         (await Dictionary()).Should().HaveCount(3);
     }
@@ -82,10 +83,10 @@ public class AlphabetLessonWordsTests : TestBase
     [Test]
     public async Task A_lesson_that_did_not_count_adds_nothing()
     {
-        (await Post("progress/lesson-complete", new { moduleId = "alphabet-progressive", lessonId = 1, correct = 7, total = 10 }))
+        (await Post("progress/lesson-complete", new { moduleId = "alphabet-progressive", lessonId = 12, correct = 3, total = 4 }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
-        (await Post("vocabulary/alphabet-words", new { lessonId = 1 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await Post("vocabulary/alphabet-words", new { lessonId = 12 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await Post("vocabulary/alphabet-words", new { lessonId = 99 })).StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await Dictionary()).Should().BeEmpty();
     }
@@ -100,13 +101,16 @@ public class AlphabetLessonWordsTests : TestBase
             .Single(m => m.GetProperty("id").GetString() == "alphabet-progressive")
             .GetProperty("lessons").EnumerateArray().ToList();
 
-        lessons.Should().HaveCount(11);
+        // Порядок: урок букв, за ним его уроки слов; у уроков букв id 1..11 — прогресс людей не меняется.
+        lessons.Should().HaveCount(31);
+        lessons.Select(l => l.GetProperty("id").GetInt32()).Where(id => id <= 11).Should().Equal(Enumerable.Range(1, 11));
         var total = 0;
-        foreach (var lesson in lessons)
+        foreach (var lesson in lessons.Where(l => l.GetProperty("id").GetInt32() <= 11))
         {
             var id = lesson.GetProperty("id").GetInt32();
             var items = TheoryWords(lesson);
-            var listed = words.WordsOf(id);
+            var listed = words.WordLessons.Where(w => w.After == id).SelectMany(w => w.Words).ToList();
+            words.WordLessons.Where(w => w.After == id).Should().OnlyContain(w => w.Words.Count >= 2 && w.Words.Count <= 4, "every new word gets its own scene: at most 4 per lesson");
             listed.Should().NotBeEmpty($"lesson {id} has words in its theory");
             listed.Should().HaveCount(items.Count, $"lesson {id}: every word of the theory, nothing else");
             foreach (var w in listed)

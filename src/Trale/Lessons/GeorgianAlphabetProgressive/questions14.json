@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w14",
+  "title": "Слова: არის, დედა, დიდი",
+  "ordered": true,
+  "lexicon": [
+    "არის",
+    "დედა",
+    "დიდი"
+  ],
+  "questions": [
+    {
+      "id": "abw14-q01",
+      "lemma": "არის",
+      "question": "Как читается «არის»?",
+      "options": [
+        "ра",
+        "арис",
+        "да"
+      ],
+      "answer_index": 1,
+      "explanation": "«არის» — «арис», есть.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw14-q02",
+      "lemma": "დედა",
+      "question": "Что значит «დედა»?",
+      "options": [
+        "нет",
+        "есть",
+        "мама"
+      ],
+      "answer_index": 2,
+      "explanation": "«დედა» — «дэда», мама.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw14-q03",
+      "lemma": "დიდი",
+      "question": "Где написано «большой»?",
+      "options": [
+        "ეს",
+        "სად",
+        "დიდი"
+      ],
+      "answer_index": 2,
+      "explanation": "«დიდი» — «диди», большой.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw14-q04",
+      "lemma": "არის",
+      "question": "Что значит «არის»?",
+      "options": [
+        "большой",
+        "он, она",
+        "есть"
+      ],
+      "answer_index": 2,
+      "explanation": "«არის» — «арис», есть.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

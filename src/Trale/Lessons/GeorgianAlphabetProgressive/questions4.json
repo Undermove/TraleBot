@@ -5,12 +5,7 @@
   "lexicon": [
     "ლ",
     "ჩ",
-    "ხ",
-    "ჩაი",
-    "სახლი",
-    "ჩემი",
-    "ჩვენ",
-    "მინდა"
+    "ხ"
   ],
   "questions": [
     {
@@ -111,92 +106,6 @@
       "explanation": "ხ — «х»: «хэли». Это грузинское слово — «рука».",
       "tags": [
         "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab4-q08",
-      "lemma": "სახლი",
-      "question": "Как читается «სახლი»?",
-      "options": [
-        "сакли",
-        "сахли",
-        "сагли"
-      ],
-      "answer_index": 1,
-      "explanation": "«სახლი» — «сахли», дом.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab4-q09",
-      "lemma": "ჩემი",
-      "question": "Как читается «ჩემი»?",
-      "options": [
-        "шэми",
-        "хэми",
-        "чэми"
-      ],
-      "answer_index": 2,
-      "explanation": "«ჩემი» — «чэми», мой.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab4-q10",
-      "lemma": "ჩვენ",
-      "question": "Как читается «ჩვენ»?",
-      "options": [
-        "чвэн",
-        "швэн",
-        "хвэн"
-      ],
-      "answer_index": 0,
-      "explanation": "«ჩვენ» — «чвэн», мы.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab4-q11",
-      "lemma": "სახლი",
-      "question": "Где написано «дом»?",
-      "options": [
-        "ჩაი",
-        "სახლი",
-        "ჩემი"
-      ],
-      "answer_index": 1,
-      "explanation": "«дом» — «სახლი».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab4-q12",
-      "lemma": "მინდა",
-      "question": "Что значит «მინდა»?",
-      "options": [
-        "мой",
-        "кто",
-        "хочу"
-      ],
-      "answer_index": 2,
-      "explanation": "«მინდა» — «минда», хочу. «მე მინდა ჩაი» — я хочу чай.",
-      "tags": [
-        "word-reading",
-        "meaning",
         "mixed-script"
       ],
       "difficulty": 1

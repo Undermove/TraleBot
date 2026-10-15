@@ -7,10 +7,7 @@
     "ც",
     "წ",
     "კი",
-    "კარგი",
-    "კაცი",
-    "წიგნი",
-    "მეგობარი"
+    "წიგნი"
   ],
   "questions": [
     {
@@ -94,110 +91,6 @@
       "explanation": "«წიგნი» — «цигни», по-грузински это «книга».",
       "tags": [
         "new-letter",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q07",
-      "lemma": "კარგი",
-      "question": "Как читается «კარგი»?",
-      "options": [
-        "карги",
-        "гарги",
-        "харги"
-      ],
-      "answer_index": 0,
-      "explanation": "«კარგი» — «карги», хорошо. Так говорят и «хороший».",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q08",
-      "lemma": "კაცი",
-      "question": "Как читается «კაცი»?",
-      "options": [
-        "качи",
-        "каци",
-        "каси"
-      ],
-      "answer_index": 1,
-      "explanation": "«კაცი» — «каци», мужчина. А женщина — «ქალი».",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q09",
-      "lemma": "წიგნი",
-      "question": "Что значит «წიგნი»?",
-      "options": [
-        "мужчина",
-        "да",
-        "книга"
-      ],
-      "answer_index": 2,
-      "explanation": "«წიგნი» — книга.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q10",
-      "lemma": "კი",
-      "question": "Где написано «да»?",
-      "options": [
-        "კი",
-        "არა",
-        "და"
-      ],
-      "answer_index": 0,
-      "explanation": "«Да» — «კი». «არა» — нет, «და» — и.",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q11",
-      "lemma": "მეგობარი",
-      "question": "Что значит «მეგობარი»?",
-      "options": [
-        "женщина",
-        "друг",
-        "машина"
-      ],
-      "answer_index": 1,
-      "explanation": "«მეგობარი» — «мэгобари», друг.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab7-q12",
-      "lemma": "კარგი",
-      "question": "Где написано «хорошо»?",
-      "options": [
-        "კაცი",
-        "კი",
-        "კარგი"
-      ],
-      "answer_index": 2,
-      "explanation": "«хорошо» — «კარგი».",
-      "tags": [
-        "word-recognition",
         "mixed-script"
       ],
       "difficulty": 1

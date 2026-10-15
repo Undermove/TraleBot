@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w12",
+  "title": "Слова: და, არა, რა",
+  "ordered": true,
+  "lexicon": [
+    "და",
+    "არა",
+    "რა"
+  ],
+  "questions": [
+    {
+      "id": "abw12-q01",
+      "lemma": "და",
+      "question": "Как читается «და»?",
+      "options": [
+        "да",
+        "ра",
+        "ара"
+      ],
+      "answer_index": 0,
+      "explanation": "«და» — «да», и.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw12-q02",
+      "lemma": "არა",
+      "question": "Что значит «არა»?",
+      "options": [
+        "и",
+        "нет",
+        "что"
+      ],
+      "answer_index": 1,
+      "explanation": "«არა» — «ара», нет.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw12-q03",
+      "lemma": "რა",
+      "question": "Где написано «что»?",
+      "options": [
+        "რა",
+        "არა",
+        "და"
+      ],
+      "answer_index": 0,
+      "explanation": "«რა» — «ра», что.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw12-q04",
+      "lemma": "და",
+      "question": "Что значит «და»?",
+      "options": [
+        "нет",
+        "и",
+        "что"
+      ],
+      "answer_index": 1,
+      "explanation": "«და» — «да», и.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

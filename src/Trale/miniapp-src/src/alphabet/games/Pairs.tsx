@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import GameFrame from './GameFrame'
 import { burst, haptic, sound } from './fx'
-import { pairsDeck, type PairCard, type Rng } from './logic'
+import { pairsDeck, type PairCard, type Rng, type WordPool } from './logic'
 import { useLater } from '../../verbs/games/useLater'
 
 /**
@@ -9,16 +9,17 @@ import { useLater } from '../../verbs/games/useLater'
  * открытыми, если это пара, иначе переворачиваются обратно. Первый ход — с подсказкой: после первой
  * открытой карточки её пара светится.
  */
-export default function Pairs({ deck: kind, lesson, fraction, onExit, onDone, rng = Math.random, cards: given }: {
+export default function Pairs({ deck: kind, lesson, fraction, onExit, onDone, rng = Math.random, cards: given, pool }: {
   deck: 'letters' | 'words'
   lesson: number
+  pool?: WordPool
   fraction: number
   onExit: () => void
   onDone: () => void
   rng?: Rng
   cards?: PairCard[]
 }) {
-  const cards = useMemo(() => given ?? pairsDeck(kind, lesson, rng), []) // eslint-disable-line react-hooks/exhaustive-deps
+  const cards = useMemo(() => given ?? pairsDeck(kind, lesson, rng, pool), []) // eslint-disable-line react-hooks/exhaustive-deps
   const [open, setOpen] = useState<string[]>([])
   const [matched, setMatched] = useState<Set<string>>(new Set())
   const [moves, setMoves] = useState(0)

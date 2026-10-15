@@ -162,7 +162,9 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
         // first time. The Profile "My Alphabet" widget unions those across completed
         // lessons to derive learned-letter progress — so every one of the 33 Georgian
         // letters has to appear in exactly one lesson's Letters(...) block here.
-        return new ModuleDto
+        // After each letters lesson come its words lessons (ids 12+, words.json → wordLessons): no Letters(...)
+        // block there, so the letter count above is unchanged.
+        return WithWordLessons(new ModuleDto
         {
             Id = "alphabet-progressive",
             Title = "Алфавит",
@@ -278,7 +280,42 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                         Example("გამარჯობა!", "здравствуй!")
                     })
             }
-        };
+        });
+    }
+
+    // Грузинская транскрипция кириллицей — как в мини-аппе (verbs/types.cyr). Буквы — кодами, чтобы проверка
+    // «целиком грузинскими буквами — только настоящие слова» (alphabet/content.test.ts) не видела здесь «слова».
+    private static readonly Dictionary<char, string> Cyr = "\u10D0\u10D1\u10D2\u10D3\u10D4\u10D5\u10D6\u10D7\u10D8\u10D9\u10DA\u10DB\u10DC\u10DD\u10DE\u10DF\u10E0\u10E1\u10E2\u10E3\u10E4\u10E5\u10E6\u10E7\u10E8\u10E9\u10EA\u10EB\u10EC\u10ED\u10EE\u10EF\u10F0"
+        .Zip(new[] { "а", "б", "г", "д", "э", "в", "з", "т", "и", "к’", "л", "м", "н", "о", "п’", "ж", "р", "с", "т’", "у", "п", "к", "гх", "къ", "ш", "ч", "ц", "дз", "ц’", "ч’", "х", "дж", "х" })
+        .ToDictionary(p => p.First, p => p.Second);
+
+    private static string CyrOf(string word) => string.Concat(word.Select(c => Cyr.TryGetValue(c, out var r) ? r : c.ToString()));
+
+    /// <summary>
+    /// Уроки слов после уроков букв: «Слова: და, არა, რა». Каждое слово урок покажет отдельной сценой
+    /// «Новое слово»; здесь — только каталог и короткая теория для «подробнее».
+    /// </summary>
+    private static ModuleDto WithWordLessons(ModuleDto module)
+    {
+        var lessons = new List<LessonDto>();
+        foreach (var letters in module.Lessons)
+        {
+            lessons.Add(letters);
+            foreach (var wl in AlphabetLessonWords.Default.WordLessons.Where(w => w.After == letters.Id))
+            {
+                var list = string.Join(", ", wl.Words.Select(w => w.Word));
+                lessons.Add(Lesson(wl.Id, $"Слова: {list}", list, $"Новые слова: {list}",
+                    "Прочитаешь новые слова целиком и запомнишь, что они значат.",
+                    new List<TheoryBlockDto>
+                    {
+                        Paragraph("Слова урока — каждое покажем отдельно:"),
+                        List(wl.Words.Select(w => $"{w.Word} — {w.Translation} (читается «{CyrOf(w.Word)}»)").ToArray())
+                    }));
+            }
+        }
+
+        module.Lessons = lessons;
+        return module;
     }
 
     private static ModuleDto BuildNumbersModule()

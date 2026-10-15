@@ -15,7 +15,8 @@ import { PRODUCTS } from '../cafe/products'
  * урок останавливается: «Тебе хватает букв, чтобы прочитать новое слово!». Слово лежит плитками
  * из уже знакомых букв; ведёшь пальцем или тапаешь по ним по порядку — каждая загорается с тиком.
  * Последняя — слово схлопывается, под ним кириллицей «как звучит» (и запись, если она есть),
- * карточка переворачивается значением, слово улетает в «Словарь». 2–3 слова так, остальные — списком.
+ * карточка переворачивается значением, слово улетает в «Словарь». Так — каждое новое слово урока
+ * (в уроке слов их 2–4), без «остальных списком».
  */
 
 type Phase = 'tap' | 'read' | 'meaning'
@@ -36,9 +37,9 @@ export function DictChip({ count, innerRef }: { count: number; innerRef?: React.
   )
 }
 
-export default function WordIntro({ featured, rest, startCount, fraction, onExit, onDone }: {
+export default function WordIntro({ featured, startCount, fraction, onExit, onDone }: {
+  /** Все новые слова урока — каждое своей сценой. */
   featured: Word[]
-  rest: Word[]
   /** Сколько слов в «Словаре» до этого урока (для счётчика на чипе). */
   startCount: number
   fraction: number
@@ -50,7 +51,6 @@ export default function WordIntro({ featured, rest, startCount, fraction, onExit
   const [phase, setPhase] = useState<Phase>('tap')
   const [shake, setShake] = useState<number | null>(null)
   const [count, setCount] = useState(startCount)
-  const [list, setList] = useState(featured.length === 0)
   const chip = useRef<HTMLDivElement>(null)
   const wordEl = useRef<HTMLDivElement>(null)
   const later = useLater()
@@ -90,7 +90,6 @@ export default function WordIntro({ featured, rest, startCount, fraction, onExit
     haptic('snap'); sound.snap(4)
     setCount(c => c + 1)
     if (wi + 1 < featured.length) { setWi(wi + 1); setLit(0); setPhase('tap') }
-    else if (rest.length > 0) { setList(true); later(() => { setCount(c => c + rest.length); haptic('pop') }, 350) }
     else onDone()
   }
 
@@ -100,28 +99,6 @@ export default function WordIntro({ featured, rest, startCount, fraction, onExit
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
     const i = Number(el?.closest('[data-tile]')?.getAttribute('data-tile'))
     if (Number.isInteger(i) && i === lit) light(i)
-  }
-
-  if (list) {
-    return (
-      <GameFrame title="Ещё слова" eyebrow="новые слова урока" fraction={fraction} onExit={onExit}>
-        <div className="flex-1 flex flex-col gap-4" data-testid="word-list">
-          <div className="flex justify-end"><DictChip count={count} innerRef={chip} /></div>
-          <div className="rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-3" style={{ boxShadow: '3px 3px 0 #15100A' }}>
-            <div className="text-[15px] font-extrabold mb-2">Ещё слова, которые ты теперь можешь прочитать</div>
-            <div className="flex flex-col gap-2">
-              {rest.map((w, i) => (
-                <div key={w.geo} className="flex items-baseline gap-2 ab-drip" style={{ animationDelay: `${i * 90}ms` }} data-testid="word-list-item">
-                  <span className="font-geo text-[22px] font-extrabold">{w.geo}</span>
-                  <span className="text-[15px] text-jewelInk-mid">{cyr(w.geo)} — {w.ru}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="mt-auto w-full max-w-[340px] mx-auto"><Button onClick={() => { haptic('tap'); onDone() }}>дальше →</Button></div>
-        </div>
-      </GameFrame>
-    )
   }
 
   const joined = phase !== 'tap'

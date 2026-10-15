@@ -109,7 +109,7 @@ public class MiniAppController : Controller
         CancellationToken ct)
     {
         // Legacy "alphabet" module uses the in-memory letter generator (7 auto-chunked lessons).
-        // "alphabet-progressive" has its own 10 curated lesson JSONs in Lessons/GeorgianAlphabetProgressive
+        // "alphabet-progressive" has its own curated lesson JSONs in Lessons/GeorgianAlphabetProgressive (11 letter lessons + word lessons 12+)
         // and flows through the generic ModuleRegistry path below — keeping the two in sync is
         // why lessons 8–10 used to 404.
         if (moduleId == "alphabet")
@@ -1583,7 +1583,8 @@ public class MiniAppController : Controller
             : Ok(new { state = VerbLearningDto(outcome.State), xpEarned = outcome.XpEarned, progress = outcome.Progress });
     }
 
-    private static int AlphabetLessons => ModuleRegistry.Get(LearningConstants.Modules.Alphabet)?.MaxLessons ?? 0;
+    /// <summary>«Алфавит пройден» — пройдены уроки букв (1..11); уроки слов (12+) на это не влияют.</summary>
+    private static int AlphabetLessons => LearningConstants.Modules.AlphabetLetterLessons;
 
     private static object VerbLearningDto(VerbLearningState s) => new
     {

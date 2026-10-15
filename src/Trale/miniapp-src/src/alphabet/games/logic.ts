@@ -93,11 +93,22 @@ export function morphPieces(geo: string): Piece[] {
  * урока и с новой буквой урока. На экране слово сначала написано кириллицей («дэда») — буквы по одной
  * становятся грузинскими (დედა), в конце — что оно значит.
  */
-export function morphWords(lesson: number, count = 2, rng: Rng = Math.random): Word[] {
+/**
+ * Какие слова может взять игра урока слов: own — слова этого урока (первыми), known — все слова, с которыми
+ * уже познакомили к этому уроку. Без pool — все слова, читаемые к стадии lesson (для тестов и старых вызовов).
+ */
+export interface WordPool { own: Word[]; known: Word[] }
+
+const poolOf = (lesson: number, pool?: WordPool): WordPool => pool ?? { own: ladder(lesson).filter(w => w.lesson === clampLesson(lesson)), known: ladder(lesson) }
+
+export function morphWords(lesson: number, count = 2, rng: Rng = Math.random, pool?: WordPool): Word[] {
   const n = clampLesson(lesson)
+  const { own, known } = poolOf(n, pool)
   const ok = (w: Word) => { const len = [...w.geo].length; return len >= 2 && len <= 7 && !w.geo.includes(' ') }
-  const score = (w: Word) => (w.lesson === n ? 2 : 0) + (hasOwnLetter(w.geo, n) ? 1 : 0)
-  return shuffle(ladder(n).filter(ok), rng).sort((a, b) => score(b) - score(a)).slice(0, count)
+  const isOwn = (w: Word) => own.some(o => o.geo === w.geo)
+  const score = (w: Word) => (isOwn(w) ? 2 : 0) + (hasOwnLetter(w.geo, n) ? 1 : 0)
+  const all = [...own, ...known.filter(w => !isOwn(w))]
+  return shuffle(all.filter(ok), rng).sort((a, b) => score(b) - score(a)).slice(0, count)
 }
 
 /** Варианты для одной буквы: верная и до трёх других выученных, непохожих по звуку; свои буквы урока — первыми. */
@@ -114,11 +125,12 @@ export function letterChoices(answer: string, lesson: number, rng: Rng = Math.ra
 export interface AssembleRound { word: Word; letters: string[]; tiles: string[] }
 
 /** Слова для сборки: свои слова урока (2–8 букв), если их мало — из прошлых уроков. */
-export function assembleRounds(lesson: number, count = 2, rng: Rng = Math.random): AssembleRound[] {
+export function assembleRounds(lesson: number, count = 2, rng: Rng = Math.random, pool?: WordPool): AssembleRound[] {
   const n = clampLesson(lesson)
+  const p = poolOf(n, pool)
   const ok = (w: Word) => { const len = [...w.geo].length; return len >= 2 && len <= 8 && !w.geo.includes(' ') }
-  const own = shuffle(ladder(n).filter(w => w.lesson === n && ok(w)), rng).sort((a, b) => Number(hasOwnLetter(b.geo, n)) - Number(hasOwnLetter(a.geo, n)))
-  const older = shuffle(ladder(n).filter(w => w.lesson !== n && ok(w)), rng)
+  const own = shuffle(p.own.filter(ok), rng).sort((a, b) => Number(hasOwnLetter(b.geo, n)) - Number(hasOwnLetter(a.geo, n)))
+  const older = shuffle(p.known.filter(w => !p.own.some(o => o.geo === w.geo) && ok(w)), rng)
   // Короткое слово первым — разогрев, потом подлиннее.
   const chosen = [...own, ...older].slice(0, count).sort((a, b) => [...a.geo].length - [...b.geo].length)
   return chosen.map(word => {
@@ -127,38 +139,6 @@ export function assembleRounds(lesson: number, count = 2, rng: Rng = Math.random
     const extra = spare.slice(0, letters.length <= 3 ? 1 : 2)
     return { word, letters, tiles: shuffle([...letters, ...extra], rng) }
   })
-}
-
-// ───────────── «Новое слово» ─────────────
-
-export interface WordIntroPlan {
-  /** Перед каким вопросом (0-based) показать знакомство со словами урока. */
-  before: number
-  /** Слова, с которыми знакомим отдельной сценой (2–3): сначала те, о которых спросят в уроке. */
-  featured: Word[]
-  /** Остальные слова урока — коротким списком «ещё слова, которые ты теперь можешь прочитать». */
-  rest: Word[]
-}
-
-/**
- * Когда и с какими словами урока знакомить. Слово урока читается, только когда открыты все его буквы,
- * поэтому сцена идёт после знакомства со всеми буквами урока, но до первого вопроса о слове урока
- * и до игры в середине урока (игры тоже берут слова урока).
- */
-export function wordIntroPlan(lesson: number, lemmas: readonly string[], midAfter: number | null, maxFeatured = 3): WordIntroPlan | null {
-  const n = clampLesson(lesson)
-  const own = wordsUpTo(n).filter(w => w.lesson === n)
-  if (own.length === 0) return null
-  const ownGeo = new Set(own.map(w => w.geo))
-  const letters = lessonLetters(n)
-  const lastLetter = Math.max(-1, ...letters.map(l => lemmas.indexOf(l)))
-  const firstAsked = lemmas.findIndex(l => ownGeo.has(l))
-  const limits = [firstAsked >= 0 ? firstAsked : lemmas.length, midAfter ?? lemmas.length]
-  const before = Math.max(lastLetter + 1, Math.min(...limits))
-  const asked = [...new Set(lemmas.filter(l => ownGeo.has(l)))].map(g => own.find(w => w.geo === g)!)
-  const others = own.filter(w => !asked.includes(w)).sort((a, b) => Number(hasOwnLetter(b.geo, n)) - Number(hasOwnLetter(a.geo, n)))
-  const featured = [...asked, ...others].slice(0, maxFeatured)
-  return { before, featured, rest: own.filter(w => !featured.includes(w)) }
 }
 
 // ───────────── Новые игры: «Поймай букву», «Звук → буква», «Пары» ─────────────
@@ -189,10 +169,11 @@ export function soundRounds(lesson: number, rng: Rng = Math.random): SoundRound[
 export interface PairCard { id: string; pair: string; face: string; kind: 'geo' | 'ru' }
 
 /** «Пары»: карточки буква ↔ её звук (или слово ↔ значение). Три пары, перемешаны. */
-export function pairsDeck(kind: 'letters' | 'words', lesson: number, rng: Rng = Math.random): PairCard[] {
+export function pairsDeck(kind: 'letters' | 'words', lesson: number, rng: Rng = Math.random, pool?: WordPool): PairCard[] {
+  const p = poolOf(lesson, pool)
   const items: [string, string][] = kind === 'letters'
     ? lessonLetters(lesson).map(l => [l, `«${SOUNDS[l]?.plain ?? l}»`])
-    : shuffle(ladder(lesson).filter(w => w.lesson === lesson || hasOwnLetter(w.geo, lesson)), rng)
+    : [...shuffle(p.own, rng), ...shuffle(p.known.filter(w => !p.own.some(o => o.geo === w.geo)), rng)]
       .filter((w, i, a) => a.findIndex(x => x.ru === w.ru) === i).slice(0, 3).map(w => [w.geo, w.ru])
   return shuffle(items.flatMap(([geo, ru], i) => [
     { id: `g${i}`, pair: `p${i}`, face: geo, kind: 'geo' as const },
@@ -210,30 +191,43 @@ export type LessonStep =
   | { kind: 'words' }
   | { kind: 'morph' }
   | { kind: 'assemble' }
+  | { kind: 'dialogue' }
   | { kind: 'cafe' }
 
-/** Сколько вопросов-проверок в конце урока (как короткий экзамен). */
+/** Сколько вопросов-проверок в конце урока слов (короткий экзамен); в уроке букв — по вопросу на букву. */
 export const EXAM_SIZE = 4
 
+export type WordGame = 'morph' | 'assemble' | 'pairs' | 'dialogue' | 'cafe'
+
 /**
- * Урок алфавита — цепочка коротких игр, которая открывается по шагам и усложняется, а в конце — короткая
- * проверка из EXAM_SIZE вопросов. Новые механики появляются по одной: «Поймай букву» и «Пары» (буква — звук)
- * с первого урока, «Звук → буква» — со второго, «Пары» слово — значение — с третьего; «Превращение»
- * и «Собери слово» — по очереди; «Кафе» — когда настоящих названий еды и питья хватает (cafeReady).
+ * Урок — цепочка коротких игр, в конце — короткая проверка.
+ * Урок букв: знакомство с буквой, ещё одна, «Поймай букву», третья буква, «Пары» буква — звук (первый урок)
+ * или «Звук → буква» (дальше).
+ * Урок слов: каждое новое слово — своя сцена «Новое слово», потом 2–3 игры со словами; набор меняется от урока
+ * к уроку (index — номер урока слов по порядку), берутся только игры, которым хватает слов (available).
  */
-export function lessonSteps(lesson: number, cafeReady: (lesson: number) => boolean): LessonStep[] {
-  const n = clampLesson(lesson)
-  const ls = lessonLetters(n)
-  const steps: LessonStep[] = [
-    { kind: 'intro', letter: ls[0], index: 0 },
-    { kind: 'intro', letter: ls[1], index: 1 },
-    { kind: 'catch', letters: ls.slice(0, 2) },
-    { kind: 'intro', letter: ls[2], index: 2 },
-    n === 1 ? { kind: 'pairs', deck: 'letters' } : { kind: 'sound' },
-    { kind: 'words' },
-    { kind: n % 2 === 1 ? 'morph' : 'assemble' }
+export function lessonSteps(lesson: { kind: 'letters' | 'words'; stage: number }, index: number, available: (g: WordGame) => boolean): LessonStep[] {
+  const n = clampLesson(lesson.stage)
+  if (lesson.kind === 'letters') {
+    const ls = lessonLetters(n)
+    return [
+      { kind: 'intro', letter: ls[0], index: 0 },
+      { kind: 'intro', letter: ls[1], index: 1 },
+      { kind: 'catch', letters: ls.slice(0, 2) },
+      { kind: 'intro', letter: ls[2], index: 2 },
+      n === 1 ? { kind: 'pairs', deck: 'letters' } : { kind: 'sound' }
+    ]
+  }
+  const ROTATION: WordGame[][] = [
+    ['pairs', 'morph', 'dialogue'],
+    ['assemble', 'dialogue', 'cafe'],
+    ['morph', 'cafe', 'pairs'],
+    ['dialogue', 'assemble', 'pairs'],
+    ['cafe', 'morph', 'dialogue']
   ]
-  if (cafeReady(n)) steps.push({ kind: 'cafe' })
-  else if (n >= 3) steps.push({ kind: 'pairs', deck: 'words' })
+  const order = [...ROTATION[index % ROTATION.length], 'pairs', 'assemble', 'morph', 'dialogue'] as WordGame[]
+  const games = [...new Set(order)].filter(available).slice(0, 3)
+  const steps: LessonStep[] = [{ kind: 'words' }]
+  for (const g of games) steps.push(g === 'pairs' ? { kind: 'pairs', deck: 'words' } : { kind: g })
   return steps
 }

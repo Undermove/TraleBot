@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w24",
+  "title": "Слова: სკოლა, ცივი, კინო",
+  "ordered": true,
+  "lexicon": [
+    "სკოლა",
+    "ცივი",
+    "კინო"
+  ],
+  "questions": [
+    {
+      "id": "abw24-q01",
+      "lemma": "სკოლა",
+      "question": "Как читается «სკოლა»?",
+      "options": [
+        "к’аци",
+        "ск’ола",
+        "к’и"
+      ],
+      "answer_index": 1,
+      "explanation": "«სკოლა» — «ск’ола», школа.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw24-q02",
+      "lemma": "ცივი",
+      "question": "Что значит «ცივი»?",
+      "options": [
+        "холодный",
+        "врач",
+        "голова"
+      ],
+      "answer_index": 0,
+      "explanation": "«ცივი» — «циви», холодный.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw24-q03",
+      "lemma": "კინო",
+      "question": "Где написано «кино»?",
+      "options": [
+        "კინო",
+        "ცივი",
+        "ქალი"
+      ],
+      "answer_index": 0,
+      "explanation": "«კინო» — «к’ино», кино.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw24-q04",
+      "lemma": "სკოლა",
+      "question": "Что значит «სკოლა»?",
+      "options": [
+        "школа",
+        "женщина",
+        "три"
+      ],
+      "answer_index": 0,
+      "explanation": "«სკოლა» — «ск’ола», школа.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

@@ -17,14 +17,16 @@ namespace Application.UnitTests.Tests;
 /// </summary>
 public class AddAlphabetLessonWordsCommandTests : CommandTestsBase
 {
+    // Урок слов 12 — после урока букв 1, урок слов 13 — после урока букв 2.
     private sealed class Words : IAlphabetLessonWords
     {
-        public IReadOnlyList<AlphabetWord> WordsOf(int lessonId) => lessonId switch
-        {
-            1 => [new("და", "и"), new("არა", "нет"), new("რა", "что")],
-            2 => [new("სად", "где"), new("დედა", "мама")],
-            _ => []
-        };
+        public IReadOnlyList<AlphabetWordLesson> WordLessons { get; } =
+        [
+            new(12, 1, [new("და", "и"), new("არა", "нет"), new("რა", "что")]),
+            new(13, 2, [new("სად", "где"), new("დედა", "мама")])
+        ];
+
+        public IReadOnlyList<AlphabetWord> WordsOf(int lessonId) => WordLessons.FirstOrDefault(l => l.Id == lessonId)?.Words ?? [];
     }
 
     private User _user = null!;
@@ -61,9 +63,9 @@ public class AddAlphabetLessonWordsCommandTests : CommandTestsBase
     [Test]
     public async Task Adds_the_words_of_a_counted_lesson_as_Georgian_entries_with_the_lesson_translation()
     {
-        await Completed("""{"alphabet-progressive":[1]}""");
+        await Completed("""{"alphabet-progressive":[1,12]}""");
 
-        var result = (await Add(1)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
+        var result = (await Add(12)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
 
         result.AddedCount.ShouldBe(3);
         result.Words.Select(w => (w.Word, w.Translation, w.Added)).ShouldBe([("და", "и", true), ("არა", "нет", true), ("რა", "что", true)]);
@@ -77,9 +79,9 @@ public class AddAlphabetLessonWordsCommandTests : CommandTestsBase
     [Test]
     public async Task Adds_nothing_for_a_lesson_that_is_not_counted()
     {
-        await Completed("""{"alphabet-progressive":[2],"numbers":[1]}""");
+        await Completed("""{"alphabet-progressive":[13],"numbers":[12]}""");
 
-        (await Add(1)).ShouldBeOfType<AddAlphabetLessonWordsResult.LessonNotCompleted>();
+        (await Add(12)).ShouldBeOfType<AddAlphabetLessonWordsResult.LessonNotCompleted>();
 
         (await Dictionary()).ShouldBeEmpty();
     }
@@ -87,7 +89,7 @@ public class AddAlphabetLessonWordsCommandTests : CommandTestsBase
     [Test]
     public async Task Adds_nothing_without_any_progress_and_answers_unknown_for_a_lesson_without_words()
     {
-        (await Add(1)).ShouldBeOfType<AddAlphabetLessonWordsResult.LessonNotCompleted>();
+        (await Add(12)).ShouldBeOfType<AddAlphabetLessonWordsResult.LessonNotCompleted>();
         (await Add(42)).ShouldBeOfType<AddAlphabetLessonWordsResult.UnknownLesson>();
         (await Dictionary()).ShouldBeEmpty();
     }
@@ -95,30 +97,42 @@ public class AddAlphabetLessonWordsCommandTests : CommandTestsBase
     [Test]
     public async Task Keeps_a_word_the_learner_already_has_and_adds_nothing_the_second_time()
     {
-        await Completed("""{"alphabet-progressive":[1]}""");
+        await Completed("""{"alphabet-progressive":[1,12]}""");
         Context.VocabularyEntries.Add(Create.VocabularyEntry().WithWord("და").WithDefinition("и, а").WithLanguage(Language.Georgian).WithUser(_user).Build());
         await Context.SaveChangesAsync();
 
-        var first = (await Add(1)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
+        var first = (await Add(12)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
         first.AddedCount.ShouldBe(2);
         first.Words.Single(w => w.Word == "და").Added.ShouldBeFalse();
         (await Dictionary()).Single(e => e.Word == "და").Definition.ShouldBe("и, а");
 
-        var again = (await Add(1)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
+        var again = (await Add(12)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
         again.AddedCount.ShouldBe(0);
         (await Dictionary()).Count.ShouldBe(3);
         _achievements.Verify(a => a.AssignAchievements(It.IsAny<VocabularyCountTrigger>(), _user.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
-    public async Task Also_adds_the_missing_words_of_earlier_counted_lessons_but_answers_with_this_lesson_words()
+    public async Task Also_adds_the_missing_words_of_other_counted_words_lessons_but_answers_with_this_lesson_words()
     {
-        await Completed("""{"alphabet-progressive":[1,2]}""");
+        await Completed("""{"alphabet-progressive":[1,2,12,13]}""");
 
-        var result = (await Add(2)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
+        var result = (await Add(13)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
 
         result.AddedCount.ShouldBe(5);
         result.Words.Select(w => w.Word).ShouldBe(["სად", "დედა"]);
         (await Dictionary()).Count.ShouldBe(5);
+    }
+
+    [Test]
+    public async Task A_letters_lesson_teaches_no_words_and_adds_nothing()
+    {
+        await Completed("""{"alphabet-progressive":[1]}""");
+
+        var result = (await Add(1)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
+
+        result.Words.ShouldBeEmpty();
+        (await Dictionary()).ShouldBeEmpty();
+        _achievements.Verify(a => a.AssignAchievements(It.IsAny<VocabularyCountTrigger>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

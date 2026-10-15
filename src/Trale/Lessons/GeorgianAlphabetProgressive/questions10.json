@@ -6,8 +6,6 @@
     "ზ",
     "ყ",
     "ჭ",
-    "წყალი",
-    "ლამაზი",
     "ყავა",
     "ყველი",
     "ჭიქა",
@@ -112,94 +110,6 @@
       "explanation": "«ჭიქა» — «чика», по-грузински это «стакан».",
       "tags": [
         "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab10-q08",
-      "lemma": "ლამაზი",
-      "question": "Как читается «ლამაზი»?",
-      "options": [
-        "ламаси",
-        "ламази",
-        "ламади"
-      ],
-      "answer_index": 1,
-      "explanation": "«ლამაზი» — «ламази», красивый.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab10-q09",
-      "lemma": "ყავა",
-      "question": "Что значит «ყავა»?",
-      "options": [
-        "вода",
-        "сыр",
-        "кофе"
-      ],
-      "answer_index": 2,
-      "explanation": "«ყავა» — кофе.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab10-q10",
-      "lemma": "ყველი",
-      "question": "Где написано «сыр»?",
-      "options": [
-        "ყველი",
-        "ყავა",
-        "წყალი"
-      ],
-      "answer_index": 0,
-      "explanation": "«сыр» — «ყველი».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab10-q11",
-      "lemma": "ჭიქა",
-      "question": "Что значит «ჭიქა»?",
-      "options": [
-        "кофе",
-        "стакан",
-        "красивый"
-      ],
-      "answer_index": 1,
-      "explanation": "«ჭიქა» — стакан.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab10-q12",
-      "lemma": "პური",
-      "question": "Что значит «პური»?",
-      "options": [
-        "вода",
-        "вино",
-        "хлеб"
-      ],
-      "answer_index": 2,
-      "explanation": "«პური» — «пури», хлеб.",
-      "tags": [
-        "word-reading",
-        "meaning",
         "mixed-script"
       ],
       "difficulty": 1

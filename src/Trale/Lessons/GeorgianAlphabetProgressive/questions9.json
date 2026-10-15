@@ -6,12 +6,9 @@
     "პ",
     "ღ",
     "ძ",
-    "პური",
-    "ძაღლი",
     "ღვინო",
     "დღე",
-    "ძმა",
-    "ქუჩა"
+    "ძმა"
   ],
   "questions": [
     {
@@ -112,94 +109,6 @@
       "explanation": "«ძმა» — «дзма», по-грузински это «брат».",
       "tags": [
         "letter-in-word",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab9-q08",
-      "lemma": "ძაღლი",
-      "question": "Как читается «ძაღლი»?",
-      "options": [
-        "цагли",
-        "дзагли",
-        "загли"
-      ],
-      "answer_index": 1,
-      "explanation": "«ძაღლი» — «дзагли», собака. А кошка — «კატა».",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab9-q09",
-      "lemma": "ღვინო",
-      "question": "Что значит «ღვინო»?",
-      "options": [
-        "хлеб",
-        "брат",
-        "вино"
-      ],
-      "answer_index": 2,
-      "explanation": "«ღვინო» — вино.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab9-q10",
-      "lemma": "დღე",
-      "question": "Что значит «დღე»?",
-      "options": [
-        "день",
-        "вино",
-        "собака"
-      ],
-      "answer_index": 0,
-      "explanation": "«დღე» — день.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab9-q11",
-      "lemma": "ძმა",
-      "question": "Где написано «брат»?",
-      "options": [
-        "ძაღლი",
-        "ძმა",
-        "პური"
-      ],
-      "answer_index": 1,
-      "explanation": "«брат» — «ძმა».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab9-q12",
-      "lemma": "ქუჩა",
-      "question": "Что значит «ქუჩა»?",
-      "options": [
-        "деньги",
-        "кошка",
-        "улица"
-      ],
-      "answer_index": 2,
-      "explanation": "«ქუჩა» — «куча», улица.",
-      "tags": [
-        "word-reading",
-        "meaning",
         "mixed-script"
       ],
       "difficulty": 1

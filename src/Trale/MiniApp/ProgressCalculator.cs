@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces.MiniApp;
@@ -83,6 +84,11 @@ public class ProgressCalculator : IProgressCalculator
 
     public int CompletedLessons(MiniAppUserProgress progress, string moduleId) =>
         ParseCompletedLessons(progress.CompletedLessonsJson).TryGetValue(moduleId, out var lessons) ? lessons.Count : 0;
+
+    public int CompletedLessons(MiniAppUserProgress progress, string moduleId, int upToId) =>
+        ParseCompletedLessons(progress.CompletedLessonsJson).TryGetValue(moduleId, out var lessons)
+            ? lessons.Distinct().Count(id => id >= 1 && id <= upToId)
+            : 0;
 
     // Marks "the user trained now": streak, LastPlayedAtUtc and the heatmap day.
     private static void RegisterActivity(MiniAppUserProgress progress)

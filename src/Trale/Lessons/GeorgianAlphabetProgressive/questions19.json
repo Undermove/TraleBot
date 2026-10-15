@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w19",
+  "title": "Слова: ერთი, ორი, ათი, შენ",
+  "ordered": true,
+  "lexicon": [
+    "ერთი",
+    "ორი",
+    "ათი",
+    "შენ"
+  ],
+  "questions": [
+    {
+      "id": "abw19-q01",
+      "lemma": "ერთი",
+      "question": "Как читается «ერთი»?",
+      "options": [
+        "дэда",
+        "хвал",
+        "эрти"
+      ],
+      "answer_index": 2,
+      "explanation": "«ერთი» — «эрти», один.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw19-q02",
+      "lemma": "ორი",
+      "question": "Что значит «ორი»?",
+      "options": [
+        "хочу",
+        "нет",
+        "два"
+      ],
+      "answer_index": 2,
+      "explanation": "«ორი» — «ори», два.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw19-q03",
+      "lemma": "ათი",
+      "question": "Где написано «десять»?",
+      "options": [
+        "მამა",
+        "შენ",
+        "ათი"
+      ],
+      "answer_index": 2,
+      "explanation": "«ათი» — «ати», десять.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw19-q04",
+      "lemma": "შენ",
+      "question": "Что значит «შენ»?",
+      "options": [
+        "мы",
+        "мама",
+        "ты"
+      ],
+      "answer_index": 2,
+      "explanation": "«შენ» — «шэн», ты.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

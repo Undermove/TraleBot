@@ -56,17 +56,27 @@ describe('Assemble', () => {
 })
 
 describe('Finale', () => {
-  it('puts the lesson letters into «Мой алфавит», counts the words and flies the lesson words into the dictionary', async () => {
+  it('after a letters lesson: the three letters fly into «Мой алфавит», no dictionary call', async () => {
+    vi.useFakeTimers()
+    const add = vi.spyOn(api, 'addAlphabetWords')
+    render(<Finale lessonId={2} onNext={() => {}} onVocabulary={() => {}} />)
+    await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
+    expect(screen.getByTestId('finale-letters').textContent).toBe('6 из 33')
+    expect(screen.getAllByTestId('finale-cell').filter(c => c.dataset.on === 'yes')).toHaveLength(6)
+    expect(add).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('finale-dict')).toBeNull()
+  })
+
+  it('after a words lesson: counts the words and flies them into the dictionary', async () => {
     vi.useFakeTimers()
     const add = vi.spyOn(api, 'addAlphabetWords').mockResolvedValue({ words: [{ word: 'სად', translation: 'где', added: true }, { word: 'ეს', translation: 'это', added: true }], added: 2 })
     const onNext = vi.fn(), onVocabulary = vi.fn()
-    render(<Finale lesson={2} onNext={onNext} onVocabulary={onVocabulary} />)
+    // Урок 13 — слова после урока букв 2: სად, ეს, ის.
+    render(<Finale lessonId={13} onNext={onNext} onVocabulary={onVocabulary} />)
     await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
     await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
-    expect(add).toHaveBeenCalledWith(2)
-    expect(screen.getByTestId('finale-letters').textContent).toBe('6 из 33')
-    expect(screen.getByTestId('finale-words').textContent).toBe('9 грузинских слов')
-    expect(screen.getAllByTestId('finale-cell').filter(c => c.dataset.on === 'yes')).toHaveLength(6)
+    expect(add).toHaveBeenCalledWith(13)
+    expect(screen.getByTestId('finale-words').textContent).toBe('6 грузинских слов')
     expect(screen.getByTestId('finale-dict').textContent).toContain('Эти слова теперь в твоём словаре')
     expect(screen.getByTestId('dict-count').textContent).toBe('2')
     expect(screen.getAllByTestId('finale-dict-word').every(w => w.dataset.in === 'yes')).toBe(true)
@@ -79,7 +89,7 @@ describe('Finale', () => {
   it('still celebrates when the words could not be added', async () => {
     vi.useFakeTimers()
     vi.spyOn(api, 'addAlphabetWords').mockRejectedValue(new Error('offline'))
-    render(<Finale lesson={1} onNext={() => {}} onVocabulary={() => {}} />)
+    render(<Finale lessonId={12} onNext={() => {}} onVocabulary={() => {}} />)
     await act(async () => { await vi.advanceTimersByTimeAsync(3000) })
     expect(screen.queryByTestId('finale-dict')).toBeNull()
     expect(screen.getByText('итог →')).toBeTruthy()

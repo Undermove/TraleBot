@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w30",
+  "title": "Слова: ლამაზი, ჭიქა, ჭამს",
+  "ordered": true,
+  "lexicon": [
+    "ლამაზი",
+    "ჭიქა",
+    "ჭამს"
+  ],
+  "questions": [
+    {
+      "id": "abw30-q01",
+      "lemma": "ლამაზი",
+      "question": "Как читается «ლამაზი»?",
+      "options": [
+        "ламази",
+        "вар",
+        "циви"
+      ],
+      "answer_index": 0,
+      "explanation": "«ლამაზი» — «ламази», красивый.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw30-q02",
+      "lemma": "ჭიქა",
+      "question": "Что значит «ჭიქა»?",
+      "options": [
+        "хорошо",
+        "стакан",
+        "мужчина"
+      ],
+      "answer_index": 1,
+      "explanation": "«ჭიქა» — «ч’ика», стакан.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw30-q03",
+      "lemma": "ჭამს",
+      "question": "Где написано «ест»?",
+      "options": [
+        "ჭამს",
+        "ექიმი",
+        "ძმა"
+      ],
+      "answer_index": 0,
+      "explanation": "«ჭამს» — «ч’амс», ест.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw30-q04",
+      "lemma": "ლამაზი",
+      "question": "Что значит «ლამაზი»?",
+      "options": [
+        "красивый",
+        "он, она",
+        "дешёвый"
+      ],
+      "answer_index": 0,
+      "explanation": "«ლამაზი» — «ламази», красивый.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

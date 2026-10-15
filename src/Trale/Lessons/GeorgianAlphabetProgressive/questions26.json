@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w26",
+  "title": "Слова: კატა, გუშინ, მეტრო, კაფე",
+  "ordered": true,
+  "lexicon": [
+    "კატა",
+    "გუშინ",
+    "მეტრო",
+    "კაფე"
+  ],
+  "questions": [
+    {
+      "id": "abw26-q01",
+      "lemma": "კატა",
+      "question": "Как читается «კატა»?",
+      "options": [
+        "иапи",
+        "экими",
+        "к’ат’а"
+      ],
+      "answer_index": 2,
+      "explanation": "«კატა» — «к’ат’а», кошка.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw26-q02",
+      "lemma": "გუშინ",
+      "question": "Что значит «გუშინ»?",
+      "options": [
+        "город",
+        "вчера",
+        "кошка"
+      ],
+      "answer_index": 1,
+      "explanation": "«გუშინ» — «гушин», вчера.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw26-q03",
+      "lemma": "მეტრო",
+      "question": "Где написано «метро»?",
+      "options": [
+        "ქალი",
+        "მეტრო",
+        "თავი"
+      ],
+      "answer_index": 1,
+      "explanation": "«მეტრო» — «мэт’ро», метро.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw26-q04",
+      "lemma": "კაფე",
+      "question": "Что значит «კაფე»?",
+      "options": [
+        "да",
+        "кафе",
+        "дешёвый"
+      ],
+      "answer_index": 1,
+      "explanation": "«კაფე» — «к’апэ», кафе.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

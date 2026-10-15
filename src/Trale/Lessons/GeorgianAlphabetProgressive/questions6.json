@@ -5,12 +5,7 @@
   "lexicon": [
     "ბ",
     "გ",
-    "ქ",
-    "მანქანა",
-    "ქალი",
-    "მეგობარი",
-    "მადლობა",
-    "ერთი"
+    "ქ"
   ],
   "questions": [
     {
@@ -94,110 +89,6 @@
       "explanation": "ქ — «к»: «такси». Первую букву этого слова выучишь позже.",
       "tags": [
         "new-letter",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q07",
-      "lemma": "ქალი",
-      "question": "Как читается «ქალი»?",
-      "options": [
-        "кали",
-        "гали",
-        "хали"
-      ],
-      "answer_index": 0,
-      "explanation": "«ქალი» — «кали», женщина.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q08",
-      "lemma": "მეგობარი",
-      "question": "Как читается «მეგობარი»?",
-      "options": [
-        "мэкобари",
-        "мэгобари",
-        "мэговари"
-      ],
-      "answer_index": 1,
-      "explanation": "«მეგობარი» — «мэгобари», друг.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q09",
-      "lemma": "მადლობა",
-      "question": "Как читается «მადლობა»?",
-      "options": [
-        "мадлова",
-        "мадлода",
-        "мадлоба"
-      ],
-      "answer_index": 2,
-      "explanation": "«მადლობა» — «мадлоба», спасибо. «დიდი მადლობა» — большое спасибо.",
-      "tags": [
-        "word-reading",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q10",
-      "lemma": "მადლობა",
-      "question": "Где написано «спасибо»?",
-      "options": [
-        "მადლობა",
-        "მანქანა",
-        "მეგობარი"
-      ],
-      "answer_index": 0,
-      "explanation": "«спасибо» — «მადლობა».",
-      "tags": [
-        "word-recognition",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q11",
-      "lemma": "ქალი",
-      "question": "Что значит «ქალი»?",
-      "options": [
-        "друг",
-        "женщина",
-        "машина"
-      ],
-      "answer_index": 1,
-      "explanation": "«ქალი» — женщина.",
-      "tags": [
-        "word-reading",
-        "meaning",
-        "mixed-script"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ab6-q12",
-      "lemma": "ერთი",
-      "question": "Что значит «ერთი»?",
-      "options": [
-        "два",
-        "ты",
-        "один"
-      ],
-      "answer_index": 2,
-      "explanation": "«ერთი» — «эрти», один.",
-      "tags": [
-        "word-reading",
-        "meaning",
         "mixed-script"
       ],
       "difficulty": 1

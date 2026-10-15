@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { LESSON_LETTERS, LESSON_WORDS, SOUNDS } from './data'
 import {
   assembleRounds, distractorsFor, hasOwnLetter, ladder, learnedLetters, lessonLetters, letterChoices,
-  morphPieces, morphWords, readable, soundOf, wordCount, wordIntroPlan, wordsLabel, wordsUpTo,
+  morphPieces, morphWords, readable, soundOf, wordCount, wordsLabel, wordsUpTo,
   lessonSteps, catchRounds, soundRounds, pairsDeck, EXAM_SIZE
 } from './logic'
 import { cafeReady } from '../cafe/products'
@@ -107,28 +107,6 @@ describe('sounds and labels', () => {
     expect(wordsLabel(12)).toBe('12 грузинских слов')
   })
 
-  it('introduces the lesson words after the letters, before the first question about a word and before the mid-lesson game', () => {
-    for (const lesson of LESSONS) {
-      // Вопросы — настоящие из уроков.
-      const file = `${(globalThis as any).process.cwd()}/../Lessons/GeorgianAlphabetProgressive/questions${lesson === 1 ? '' : lesson}.json`
-      const lemmas: string[] = JSON.parse(readFileSync(file, 'utf8')).questions.slice(0, 10).map((q: any) => q.lemma)
-      const plan = { midAfter: 6 }
-      const words = wordIntroPlan(lesson, lemmas, plan.midAfter)!
-      const own = LESSON_WORDS[lesson - 1].map(([g]) => g)
-      // Сцена — не позже игры в середине и до первого вопроса о слове урока.
-      expect(words.before, `lesson ${lesson}`).toBeLessThanOrEqual(plan.midAfter)
-      const firstAsked = lemmas.findIndex(l => own.includes(l))
-      if (firstAsked >= 0) expect(words.before).toBeLessThanOrEqual(firstAsked)
-      // Все буквы урока уже показаны.
-      for (const l of lessonLetters(lesson)) expect(lemmas.indexOf(l), `${l} in lesson ${lesson}`).toBeLessThan(words.before)
-      // Каждое слово урока — либо своей сценой, либо в списке; о чём спрашивают — сценой, если влезает.
-      expect([...words.featured, ...words.rest].map(w => w.geo).sort()).toEqual([...own].sort())
-      expect(words.featured.length).toBeLessThanOrEqual(3)
-      const asked = [...new Set(lemmas.filter(l => own.includes(l)))]
-      expect(words.featured.map(w => w.geo)).toEqual(expect.arrayContaining(asked.slice(0, 3)))
-    }
-  })
-
   it('every lesson word is buildable from the letters opened by its lesson', () => {
     for (const lesson of LESSONS) for (const w of ladder(lesson)) expect(readable(w.geo, lesson)).toBe(true)
     expect(ladder(1).map(w => w.geo)).toEqual(['და', 'არა', 'რა'])
@@ -137,19 +115,25 @@ describe('sounds and labels', () => {
 })
 
 describe('lesson as a chain of games', () => {
-  const steps = (l: number) => lessonSteps(l, cafeReady).map(s => s.kind === 'pairs' ? `pairs:${s.deck}` : s.kind)
+  const letters = (l: number) => lessonSteps({ kind: 'letters', stage: l }, 0, () => true).map(s => s.kind === 'pairs' ? `pairs:${s.deck}` : s.kind)
 
-  it('opens mechanics one by one and keeps the cafe for lessons with real food words', () => {
-    expect(steps(1)).toEqual(['intro', 'intro', 'catch', 'intro', 'pairs:letters', 'words', 'morph'])
-    expect(steps(2)).toEqual(['intro', 'intro', 'catch', 'intro', 'sound', 'words', 'assemble'])
-    expect(steps(3)).toEqual(['intro', 'intro', 'catch', 'intro', 'sound', 'words', 'morph', 'pairs:words'])
-    expect(steps(5)).toEqual(['intro', 'intro', 'catch', 'intro', 'sound', 'words', 'morph', 'cafe'])
+  it('a letters lesson: three letter intros with letter games between them', () => {
+    expect(letters(1)).toEqual(['intro', 'intro', 'catch', 'intro', 'pairs:letters'])
+    expect(letters(2)).toEqual(['intro', 'intro', 'catch', 'intro', 'sound'])
     for (const l of LESSONS) {
-      const st = lessonSteps(l, cafeReady)
-      // Каждая буква урока — знакомство раньше любой игры с ней.
+      const st = lessonSteps({ kind: 'letters', stage: l }, 0, () => true)
       expect(st.filter(s => s.kind === 'intro').map(s => (s as any).letter)).toEqual(lessonLetters(l))
-      expect(st.findIndex(s => s.kind === 'words')).toBeGreaterThan(st.map(s => s.kind).lastIndexOf('intro'))
+      expect(st.some(s => s.kind === 'words')).toBe(false)
     }
+  })
+
+  it('a words lesson: the new words first, then 2–3 word games that change from lesson to lesson', () => {
+    const games = (i: number) => lessonSteps({ kind: 'words', stage: 6 }, i, () => true).map(s => s.kind === 'pairs' ? `pairs:${s.deck}` : s.kind)
+    expect(games(0)).toEqual(['words', 'pairs:words', 'morph', 'dialogue'])
+    expect(games(1)).toEqual(['words', 'assemble', 'dialogue', 'cafe'])
+    expect(new Set([0, 1, 2, 3, 4].map(i => games(i).join())).size).toBe(5)
+    // Игре не хватает слов — её место занимает другая.
+    expect(lessonSteps({ kind: 'words', stage: 1 }, 1, g => g !== 'cafe' && g !== 'dialogue').map(s => s.kind)).toEqual(['words', 'assemble', 'pairs', 'morph'])
     expect(EXAM_SIZE).toBe(4)
   })
 

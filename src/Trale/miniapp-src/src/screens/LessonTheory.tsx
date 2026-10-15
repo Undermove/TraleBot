@@ -78,7 +78,7 @@ export default function LessonTheory({
       <Header
         progress={progress}
         onBack={() => navigate({ kind: 'module', moduleId })}
-        eyebrow={`урок ${lessonId} из ${module.lessons.length}`}
+        eyebrow={`урок ${module.lessons.findIndex((l) => l.id === lessonId) + 1} из ${module.lessons.length}`}
         title={module.title}
       />
       <div className="mn-kilim" />
