@@ -1,10 +1,11 @@
 {
   "lesson_id": "intro-20",
-  "title": "Я студент",
+  "title": "Студент, врач, учитель",
   "lexicon": [
     "მე ვარ სტუდენტი",
-    "სტუდენტი",
     "ექიმი",
+    "ის არის მასწავლებელი",
+    "სტუდენტი",
     "მასწავლებელი"
   ],
   "questions": [
@@ -13,8 +14,8 @@
       "question": "Как переводится «მე ვარ სტუდენტი»?",
       "options": [
         "я студент",
-        "я из Грузии",
-        "хорошо, спасибо"
+        "это мой друг",
+        "врач"
       ],
       "answer_index": 0,
       "explanation": "«მე ვარ სტუდენტი» — я студент.",
@@ -25,11 +26,43 @@
       "id": "intro20-q1"
     },
     {
+      "lemma": "ექიმი",
+      "question": "Как переводится «ექიმი»?",
+      "options": [
+        "в Кутаиси",
+        "откуда ты?",
+        "врач"
+      ],
+      "answer_index": 2,
+      "explanation": "«ექიმი» — врач.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro20-q2"
+    },
+    {
+      "lemma": "ის არის მასწავლებელი",
+      "question": "Как переводится «ის არის მასწავლებელი»?",
+      "options": [
+        "Приятно! Тебе нравится Грузия?",
+        "он/она учитель",
+        "хорошо, спасибо"
+      ],
+      "answer_index": 1,
+      "explanation": "«ის არის მასწავლებელი» — он/она учитель.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro20-q3"
+    },
+    {
       "lemma": "სტუდენტი",
       "question": "Как переводится «სტუდენტი»?",
       "options": [
-        "учитель",
         "врач",
+        "учитель",
         "студент"
       ],
       "answer_index": 2,
@@ -38,30 +71,14 @@
         "meaning"
       ],
       "difficulty": 1,
-      "id": "intro20-q2"
-    },
-    {
-      "lemma": "ექიმი",
-      "question": "Как переводится «ექიმი»?",
-      "options": [
-        "врач",
-        "учитель",
-        "студент"
-      ],
-      "answer_index": 0,
-      "explanation": "«ექიმი» — врач.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro20-q3"
+      "id": "intro20-q4"
     },
     {
       "lemma": "მასწავლებელი",
       "question": "Как переводится «მასწავლებელი»?",
       "options": [
-        "врач",
         "студент",
+        "врач",
         "учитель"
       ],
       "answer_index": 2,
@@ -70,33 +87,65 @@
         "meaning"
       ],
       "difficulty": 1,
-      "id": "intro20-q4"
+      "id": "intro20-q5"
     },
     {
       "lemma": "მე ვარ სტუდენტი",
       "question": "Как сказать «я студент»?",
       "options": [
-        "გამარჯობა! მე მქვია ნინო. შენ?",
-        "ბოდიში",
-        "მე ვარ სტუდენტი"
+        "მადლობა",
+        "მე ვარ სტუდენტი",
+        "ვცხოვრობ ბათუმში"
       ],
-      "answer_index": 2,
+      "answer_index": 1,
       "explanation": "«я студент» — «მე ვარ სტუდენტი».",
       "tags": [
         "reverse"
       ],
       "difficulty": 1,
-      "id": "intro20-q5"
+      "id": "intro20-q6"
+    },
+    {
+      "lemma": "ექიმი",
+      "question": "Как сказать «врач»?",
+      "options": [
+        "საფრანგეთიდან",
+        "ექიმი",
+        "როგორ ხარ?"
+      ],
+      "answer_index": 1,
+      "explanation": "«врач» — «ექიმი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro20-q7"
+    },
+    {
+      "lemma": "ის არის მასწავლებელი",
+      "question": "Как сказать «он/она учитель»?",
+      "options": [
+        "ბოდიში",
+        "ის არის მასწავლებელი",
+        "გამარჯობა"
+      ],
+      "answer_index": 1,
+      "explanation": "«он/она учитель» — «ის არის მასწავლებელი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro20-q8"
     },
     {
       "lemma": "მე ვარ სტუდენტი",
       "question": "Послушай и выбери, что сказали",
       "options": [
-        "მე ვარ სტუდენტი",
-        "ქუთაისში",
-        "ვინ არის ეს?"
+        "გაგიმარჯოს",
+        "მე ვარ ესპანეთიდან",
+        "მე ვარ სტუდენტი"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«მე ვარ სტუდენტი» — я студент.",
       "tags": [
         "audio"
@@ -105,7 +154,26 @@
       "question_type": "audio-choice",
       "audio_url": "/audio/intro-story/studenti.m4a",
       "transcript": "მე ვარ სტუდენტი",
-      "id": "intro20-q6"
+      "id": "intro20-q9"
+    },
+    {
+      "lemma": "ექიმი",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გაგიმარჯოს",
+        "ექიმი",
+        "არა"
+      ],
+      "answer_index": 1,
+      "explanation": "«ექიმი» — врач.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/eqimi.m4a",
+      "transcript": "ექიმი",
+      "id": "intro20-q10"
     }
   ]
 }

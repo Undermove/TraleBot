@@ -135,7 +135,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
 
   if (phase === 'intro') return (
     <GameFrame title="Таксист спрашивает" eyebrow={`такси · урок ${lesson.id}`} fraction={fraction} onExit={onExit}>
-      <GameIntro title="Такси по Батуми"
+      <GameIntro title="Такси по Батуми" hero
         text={mode === 'where'
           ? 'Таксист попался болтливый. Отвечай, пока едете до поворота: за хороший разговор — скидка. Он обязательно спросит, где ты живёшь.'
           : 'Опять болтливый таксист. Теперь он спросит, кем ты работаешь. Отвечай до поворота — скидка растёт.'}

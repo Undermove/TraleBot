@@ -5,7 +5,7 @@ import { cyr } from '../verbs/types'
 import { haptic, isMuted, playClip } from '../alphabet/games/fx'
 import { INTRO_AUDIO, INTRO_WORD_AUDIO } from './audio'
 import { WORD_AUDIO } from '../alphabet/games/data'
-import type { Phrase, Rng } from './story'
+import { HERO, myName, type Phrase, type Rng } from './story'
 import './intro.css'
 
 // Общие детали сцен «Знакомства»: человечки, реплики, кнопки-реплики, карточка правила, экран итога сцены.
@@ -97,6 +97,13 @@ export function Bubble({ children, tone = 'plain', className = '', style }: {
   )
 }
 
+/** Размер шрифта реплики по длине: короткие — крупно, длинные фразы — мельче, чтобы влезли в кнопку. */
+export function replySize(geo: string, compact?: boolean): number {
+  const n = geo.length
+  const base = n > 26 ? 13 : n > 18 ? 15 : 17
+  return compact ? base - 2 : base
+}
+
 /** Кнопка-реплика: грузинская фраза крупно, под ней кириллица или перевод. */
 export function Reply({ geo, hint, onClick, state = 'idle', disabled, testId, compact }: {
   geo: string; hint?: string; onClick: () => void; state?: 'idle' | 'good' | 'bad' | 'dim'; disabled?: boolean; testId?: string; compact?: boolean
@@ -107,11 +114,12 @@ export function Reply({ geo, hint, onClick, state = 'idle', disabled, testId, co
       data-testid={testId}
       disabled={disabled}
       onClick={() => { haptic('tap'); onClick() }}
-      className={`min-h-[44px] w-full rounded-2xl border-[1.5px] border-jewelInk ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} text-center transition-transform active:translate-x-[2px] active:translate-y-[2px] ${bg} ${state === 'dim' ? 'opacity-40' : ''}`}
+      className={`min-h-[44px] w-full min-w-0 rounded-2xl border-[1.5px] border-jewelInk ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} text-center transition-transform active:translate-x-[2px] active:translate-y-[2px] ${bg} ${state === 'dim' ? 'opacity-40' : ''}`}
       style={{ boxShadow: '3px 3px 0 #15100A' }}
     >
-      <span className="block font-geo font-bold leading-tight" style={{ fontSize: compact ? 15 : 17 }}>{geo}</span>
-      <span className="block text-[11px] font-semibold text-jewelInk-hint">{hint ?? cyr(geo)}</span>
+      {/* Длинная реплика — мельче и переносится по словам, но никогда не вылезает за кнопку. */}
+      <span className="block font-geo font-bold leading-tight break-words [overflow-wrap:anywhere]" style={{ fontSize: replySize(geo, compact) }}>{geo}</span>
+      {(hint ?? cyr(geo)) !== '' && <span className="block text-[11px] font-semibold text-jewelInk-hint leading-tight break-words [overflow-wrap:anywhere]">{hint ?? cyr(geo)}</span>}
     </button>
   )
 }
@@ -135,15 +143,30 @@ export function RuleCard({ title, children }: { title: string; children: React.R
   )
 }
 
-/** Экран начала игры: что за игра и как в неё играть. */
-export function GameIntro({ title, text, chips, onStart, mood = 'guide' }: {
-  title: string; text: string; chips?: { geo: string; ru: string }[]; onStart: () => void; mood?: 'guide' | 'cheer' | 'happy' | 'think'
+/** Карточка «Ты»: кто ты в истории — чтобы ответы о себе были известны заранее. */
+export function HeroCard() {
+  const me = myName()
+  return (
+    <div className="w-full max-w-[320px] flex items-center gap-2.5 rounded-2xl border-[1.5px] border-jewelInk bg-gold-wash px-3 py-2 text-left" style={{ boxShadow: '2px 2px 0 #15100A' }} data-testid="hero-card">
+      <Face look={{ coat: '#1B5FB0', skin: '#F2C9A0', hair: '#5A3A22' }} size={40} />
+      <div className="min-w-0 text-[13px] leading-snug">
+        <div className="font-extrabold">Ты — {me.ru} (<span className="font-geo">{me.geo}</span>)</div>
+        <div className="text-jewelInk-soft">{HERO.job.ru} (<span className="font-geo font-bold">{HERO.job.geo}</span>), живёшь в Батуми (<span className="font-geo font-bold">{HERO.city.in}</span>). Откуда ты — выбери сам.</div>
+      </div>
+    </div>
+  )
+}
+
+/** Экран начала игры: что за игра и как в неё играть. hero — показать карточку «Ты». */
+export function GameIntro({ title, text, chips, onStart, mood = 'guide', hero }: {
+  title: string; text: string; chips?: { geo: string; ru: string }[]; onStart: () => void; mood?: 'guide' | 'cheer' | 'happy' | 'think'; hero?: boolean
 }) {
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3" data-testid="game-intro">
       <div className="ab-short:hidden"><Mascot mood={mood} size={84} /></div>
       <div className="text-[21px] font-extrabold leading-tight">{title}</div>
       <p className="text-[14px] leading-snug text-jewelInk-soft max-w-[32ch]">{text}</p>
+      {hero && <HeroCard />}
       {chips && (
         <div className="flex flex-wrap justify-center gap-1.5">
           {chips.map(c => (

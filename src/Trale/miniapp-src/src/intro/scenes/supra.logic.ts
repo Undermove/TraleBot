@@ -1,4 +1,4 @@
-import { JOBS, NAMES, pick, shuffle, type GeoName, type Rng } from '../story'
+import { HERO, JOBS, NAMES, pick, shuffle, type GeoName, type Rng } from '../story'
 import {
   ABROAD, BATUMI, P, TBILISI, andYou, hello, her, iAmCalled, iAmCountry, iAmFrom, iAmJob, iLiveCity, iLiveIn, no, ok, onlyKnown,
   type Exchange, type Line
@@ -42,15 +42,16 @@ function talk(theme: Theme, guest: string, me: GeoName, rng: Rng): Exchange[] {
       { her: [her(nameLine(guest))], opts: [ok(P('sasiamovnoa'), 2), no(P('vin_aris'), 'Гость: «Кто это? Это я, только что же сказал!»')] }
     ]
     case 'from': return [
-      { her: [her(P('saidan'))], opts: [ok(iAmFrom(country), 2), no(iAmCountry(country), `Гость: «Ты целая ${country.ru}?» Не хватает -დან — «из».`)] }
+      { her: [her(P('saidan'))], opts: [ok(iAmFrom(country), 2), ...ABROAD.filter(c => c !== country).map(c => ok(iAmFrom(c), 2)), no(iAmCountry(country), `Гость: «Ты целая ${country.ru}?» Не хватает -დან — «из».`)] }
     ]
     case 'live': return [
       { her: [her(P('tbilisshi')), her(andYou())], opts: [ok(iLiveIn(BATUMI), 2), no(iLiveCity(BATUMI), 'Гостья: «Живу Батуми?» Нужно -ში: ბათუმში.'), no(iLiveIn(TBILISI), 'Гостья: «Это я живу в Тбилиси. А ты?»')] }
     ]
     case 'job': {
-      const job = pick(JOBS, rng)
+      // Ты — студент (HERO), это сказано на карточке «Ты» перед супрой.
+      const other = pick(JOBS.filter(j => j !== HERO.job), rng)
       return [
-        { her: [her(P('ra_profesia'))], opts: [ok(iAmJob(job), 2), no(P('vmushaob'), 'Гость: «Работаешь — а кем?» Скажи «я — …».')] }
+        { her: [her(P('ra_profesia'))], opts: [ok(iAmJob(HERO.job), 2), no(iAmJob(other), `Гость: «${other.ru[0].toUpperCase() + other.ru.slice(1)}? Ты же студент, приехал учиться!»`), no(P('vmushaob'), 'Гость: «Работаешь — а кем?» Скажи «я — …».')] }
       ]
     }
     case 'family': return [

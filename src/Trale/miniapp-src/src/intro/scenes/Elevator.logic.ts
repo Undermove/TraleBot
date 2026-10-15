@@ -48,6 +48,12 @@ const g = (id: string) => phrase(id).geo
 const known = (lessonId: number, ids: string[]) => ids.filter(id => knows(lessonId, id))
 
 /** Как правильно ответить на приветствие соседа. */
+/** Время суток поездки — по тому, как сосед здоровается (показываем на табло лифта). */
+export function rideTime(ride: Ride): 'morning' | 'day' | 'evening' {
+  const line = ride.ex.find(e => e.kind === 'greet')?.line
+  return line === 'dila' ? 'morning' : line === 'saghamo' ? 'evening' : 'day'
+}
+
 export function greetAnswer(lessonId: number, line: string): string {
   return line === 'gamarjoba' && knows(lessonId, 'gagimarjos') ? 'gagimarjos' : line
 }
@@ -65,6 +71,7 @@ export function judgeEx(lessonId: number, mode: ElevMode, ex: Ex, id: string): V
       }
       if (id === 'nakhvamdis') return { res: 'miss', hint: 'Вы только вошли в лифт, а ты уже прощаешься.' }
       if (id === 'kargad_madloba' || id === 'kargad_shen') return { res: 'miss', hint: 'Сосед ещё не спрашивал, как дела. Сначала поздоровайся.' }
+      if (id === 'dila' || id === 'saghamo') return { res: 'miss', hint: `Сосед сказал ${g(line)} — ответь тем же. Время суток видно на табло.` }
       return { res: 'miss', hint: 'Сосед поздоровался — ответь на приветствие.' }
     }
     case 'rogor': {
@@ -114,7 +121,11 @@ function options(lessonId: number, ex: Omit<Ex, 'options'>, rng: Rng): string[] 
   switch (ex.kind) {
     case 'greet': {
       const want = greetAnswer(lessonId, ex.line ?? 'gamarjoba')
-      const near = want === 'gamarjoba' ? pick(known(lessonId, ['dila', 'saghamo']).concat(['gamarjoba']).filter(x => x !== want), rng) ?? 'nakhvamdis' : 'gamarjoba'
+      // Отвечают тем же приветствием. Утреннее и вечернее среди вариантов — только когда сосед сказал
+      // именно его (тогда გამარჯობა — «почти»); на გამარჯობა других приветствий в кнопках нет.
+      const near = want === 'dila' || want === 'saghamo' ? 'gamarjoba'
+        : want === 'gagimarjos' ? 'gamarjoba'
+        : pick(known(lessonId, ['kargad_madloba', 'nakhvamdis']), rng) ?? 'nakhvamdis'
       const far = pick(known(lessonId, ['nakhvamdis', 'kargad_madloba']).filter(x => x !== near), rng)
       ids = [want, near, far]
       break

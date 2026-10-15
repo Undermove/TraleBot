@@ -188,7 +188,7 @@ export default function Chat({ lesson, step, fraction, onExit, onDone, rng = Mat
 
   const intro = script === 'act2'
     ? <NameStart onStart={n => start(n)} />
-    : <GameIntro title="Нино пишет" text="Соседка Нино пишет тебе в мессенджер. Отвечай репликами, которые знаешь: чем теплее разговор, тем интереснее конец." onStart={() => start()} />
+    : <GameIntro title="Нино пишет" text="Соседка Нино пишет тебе в мессенджер. Отвечай репликами, которые знаешь: чем теплее разговор, тем интереснее конец." hero onStart={() => start()} />
 
   if (phase === 'end') {
     const e = ending(warmth)

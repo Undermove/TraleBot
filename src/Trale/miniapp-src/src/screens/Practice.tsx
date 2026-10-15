@@ -72,6 +72,13 @@ export default function Practice({
   const alphabetFlow = useAlphabetLesson(moduleId, lessonId, questions, index)
   // Ход урока с играми — у того модуля, что включён; у остальных модулей оба ничего не делают.
   const alphabet = intro.on ? intro : alphabetFlow
+  // После проверки объяснение может оказаться под нижней кнопкой (длинная карточка, длинные варианты) —
+  // прокручиваем к нему.
+  useEffect(() => {
+    if (phase !== 'checked') return
+    const t = setTimeout(() => document.querySelector('[data-feedback]')?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }), 60)
+    return () => clearTimeout(t)
+  }, [phase])
   const answerXpRef = React.useRef(0)
   const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
 
@@ -442,14 +449,14 @@ export default function Practice({
 
             {/* Feedback banner */}
             {phase === 'checked' && (
-              <FeedbackBanner
+              <div data-feedback><FeedbackBanner
                 isCorrect={isCorrect}
                 body={
                   isCorrect
                     ? (current.explanation || 'Хорошо запомнил — так держать.')
                     : `правильно: ${correctAnswer}`
                 }
-              />
+              /></div>
             )}
           </div>
         ) : (
@@ -521,7 +528,7 @@ export default function Practice({
             </div>
 
             {phase === 'checked' && (
-              <FeedbackBanner
+              <div data-feedback><FeedbackBanner
                 isCorrect={isCorrect}
                 topMargin="mt-6"
                 body={
@@ -545,7 +552,7 @@ export default function Practice({
                         ? 'Хорошо запомнил — так держать.'
                         : 'Запомни правильный вариант и идём дальше.')
                 }
-              />
+              /></div>
             )}
           </>
         )}

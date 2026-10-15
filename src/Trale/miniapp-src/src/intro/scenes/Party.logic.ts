@@ -1,4 +1,4 @@
-import { JOBS, NAME_LIST, knows, phrase, shuffle, type Rng, type Word } from '../story'
+import { HERO, JOBS, NAME_LIST, knows, phrase, shuffle, type Rng, type Word } from '../story'
 import { randomLook, type Look } from '../ui'
 
 // «Вечеринка на крыше» — чистая логика: кто приходит, что говорит, какие реплики у тебя в ответ, какой бейдж
@@ -32,25 +32,26 @@ export const HOST = 'ნინო'
 
 export function planParty(lessonId: number, mode: PartyMode, me: string, rng: Rng = Math.random): PartyPlan {
   const pool = shuffle(NAME_LIST.filter(n => n !== me && (mode !== 'who' || n !== HOST)), rng)
-  const size = mode === 'full' ? 4 : mode === 'who' ? 4 : 6
-  const jobs = mode === 'jobs' ? shuffle([...JOBS, ...JOBS], rng) : []
+  // Немного гостей: игра учит понимать на слух, как человек представился, а не тренирует память.
+  const size = mode === 'full' ? 4 : mode === 'who' ? 3 : mode === 'jobs' ? 3 : 4
+  const jobs = mode === 'jobs' ? shuffle([...JOBS], rng) : []
   const guests: Guest[] = Array.from({ length: size }, (_, id) => ({
     id,
     name: pool[id % pool.length],
     look: randomLook(rng),
     job: mode === 'jobs' ? jobs[id] : JOBS[Math.floor(rng() * JOBS.length)],
     ...(mode === 'who' && id === 0 ? { friend: true } : {}),
-    ...(mode === 'names' && (id === 1 || id === 4) ? { asksFirst: true } : {})
+    ...(mode === 'names' && (id === 1 || id === 3) ? { asksFirst: true } : {})
   }))
-  const waves = mode === 'full' ? [[0, 1], [2, 3]] : mode === 'who' ? [[1, 2, 3]] : [[0, 1, 2], [3, 4, 5]]
+  const waves = mode === 'who' ? [[1, 2]] : mode === 'jobs' ? [[0, 1, 2]] : [[0, 1], [2, 3]]
   let questions: number[] = []
   if (mode === 'who') {
     // Каждого по разу и друга дважды; не подряд про одного и того же, первый вопрос — не про друга.
     for (let k = 0; k < 20; k++) {
-      questions = shuffle([0, 0, 1, 2, 3], rng)
+      questions = shuffle([0, 0, 1, 2], rng)
       if (questions[0] !== 0 && questions.every((q, i) => i === 0 || q !== questions[i - 1])) break
     }
-    if (questions[0] === 0 || questions.some((q, i) => i > 0 && q === questions[i - 1])) questions = [1, 0, 2, 0, 3]
+    if (questions[0] === 0 || questions.some((q, i) => i > 0 && q === questions[i - 1])) questions = [1, 0, 2, 0]
   }
   const spare = mode === 'names' ? pool[size % pool.length] ?? null : null
   return { guests, waves, questions, spare: spare && !guests.some(g => g.name === spare) ? spare : null }
@@ -174,5 +175,11 @@ export const happiness = (misses: number, repeats: number) => Math.max(0, 100 - 
 /** Своя профессия в конце режима «профессии»: любая из трёх верна, «я из Грузии» — нет. */
 export function myJobOptions(lessonId: number, rng: Rng = Math.random): Option[] {
   const wrong = knows(lessonId, 'sakartvelodan') ? [{ geo: phrase('sakartvelodan').geo, ok: false, why: 'Это «откуда ты», а спрашивают, кем ты работаешь.' }] : []
-  return shuffle([...JOBS.map(j => ({ geo: `მე ვარ ${j.geo}`, ok: true })), ...wrong], rng)
+  // Ты в истории — студент (HERO, карточка «Ты» на старте игры).
+  const others = JOBS.filter(j => j.geo !== HERO.job.geo).slice(0, wrong.length ? 1 : 2)
+  return shuffle([
+    { geo: `მე ვარ ${HERO.job.geo}`, ok: true },
+    ...others.map(j => ({ geo: `მე ვარ ${j.geo}`, ok: false, why: `Ты же ${HERO.job.ru}, приехал учиться в Батуми.` })),
+    ...wrong
+  ], rng)
 }

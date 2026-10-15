@@ -1,4 +1,4 @@
-import { CITIES, COUNTRIES, JOBS, NAMES, knows, phrase, pick, shuffle, type City, type Country, type GeoName, type Rng, type Word } from '../story'
+import { CITIES, COUNTRIES, HERO, JOBS, NAMES, knows, phrase, pick, shuffle, type City, type Country, type GeoName, type Rng, type Word } from '../story'
 
 // Разговоры «Знакомства» как данные: реплики собеседника и варианты ответа. Общие для чата с Нино,
 // такси и супры. Весь грузинский — фразы из story.json или словарик по разрешённым шаблонам
@@ -132,9 +132,8 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
       ] },
       howAreYou(me, no(P('ara'), 'Нино растерялась: «Нет» — не ответ на «как дела».')),
       { her: [her(P('saidan'))], opts: [
-        ok(iAmFrom(country), 2, [her(P('mogcons'))]),
-        no(iAmCountry(country), `Нино: «Ты целая ${country.ru}?» Не хватает -დან — «из».`),
-        no(iAmFrom(GEORGIA), 'Нино: «Из Грузии? Ты же только что переехал!»')
+        ...ABROAD.map(c => ok(iAmFrom(c), 2, [her(P('mogcons'))])),
+        no(iAmCountry(country), `Нино: «Ты целая ${country.ru}?» Не хватает -დან — «из».`)
       ] },
       { her: [note('Нино спросила, нравится ли тебе Грузия')], opts: [
         ok(P('ki'), 2),
@@ -149,7 +148,8 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
       bye()
     ]; break
     case 'act4': {
-      const job = pick(JOBS, rng)
+      // Ты — студент (HERO): так сказано на карточке «Ты». Нино отвечает своей профессией.
+      const job = HERO.job
       const other = pick(JOBS.filter(j => j !== job), rng)
       list = [
         { her: [her(P('saghamo'))], opts: [
@@ -165,7 +165,7 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
         { her: [her(P('ra_profesia'))], opts: [
           ok(iAmJob(job), 2, [her(iAmJob(other))]),
           no(P('vmushaob'), 'Нино: «Работаешь — молодец. А кем?»'),
-          no(P('batumshi'), 'Нино: «Где живёшь, я уже знаю. Кем ты работаешь?»')
+          no(iAmJob(other), `Нино: «${other.ru[0].toUpperCase() + other.ru.slice(1)}? Ты же писал, что приехал учиться!»`)
         ] },
         { her: [note('Нино прислала фото моря'), her(P('mogcons'))], opts: [
           ok(P('lamazia'), 2), ok(P('ki'), 1),

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import GameFrame from '../../alphabet/games/GameFrame'
+import { rideTime } from './Elevator.logic'
 import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import { knows, phrase, plural } from '../story'
@@ -204,6 +205,9 @@ export default function Elevator({ lesson, step, fraction, onExit, onDone, rng =
           <Pill testId="elevator-ride">{s.ri + 1}/{s.rides.length}</Pill>
           <Meter value={s.max ? s.likes / s.max : 0} tone="sage" label="Соседи тебя любят" />
           <Pill testId="elevator-likes">симпатия {s.likes}</Pill>
+        </div>
+        <div className="shrink-0 -mt-1 text-center text-[12px] font-bold text-jewelInk-soft" data-testid="elevator-time">
+          {{ morning: 'Утро, 8:10 — соседи едут на работу', day: 'День, 14:00', evening: 'Вечер, 20:30 — все возвращаются домой' }[rideTime(r)]} · на приветствие отвечай тем же
         </div>
 
         <div className="relative flex-1 min-h-[180px] ab-short:min-h-[150px] flex gap-2">

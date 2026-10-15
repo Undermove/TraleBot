@@ -92,10 +92,10 @@ function endRule(mode: PartyMode, me: string) {
 }
 
 const INTRO_TEXT: Record<PartyMode, string> = {
-  names: 'Соседи позвали на крышу. Гости приходят по одному и называют себя. У тебя стопка бейджей — прилепи каждому его имя. Только гости не стоят на месте!',
-  full: 'Знакомься как следует: поздоровайся в ответ, назови себя, скажи «приятно познакомиться». Потом — бейджи.',
-  who: 'Ты пришёл с другом. Знакомься с гостями и запоминай, кто есть кто: Нино будет показывать на людей и спрашивать, кто это.',
-  jobs: 'Гости рассказывают, кем работают. Запомни и разведи их по углам крыши: студенты, врачи, учителя.'
+  names: 'Учимся понимать, как человек представился: «მე მქვია …» — «меня зовут …». Гости приходят по двое и называют себя — ответь каждому и прилепи бейдж с его именем.',
+  full: 'Учимся знакомиться как следует: поздоровайся в ответ, назови себя, скажи «приятно познакомиться». Потом бейджи с именами.',
+  who: 'Учимся спрашивать и отвечать «кто это?»: ты пришёл с другом, к вам подходят двое гостей. Нино показывает на людей и спрашивает «ვინ არის ეს?».',
+  jobs: 'Учимся понимать «მე ვარ …» — «я …»: три гостя говорят, кем работают. Разведи их по углам крыши.'
 }
 
 export default function Party({ lesson, step, fraction, onExit, onDone, rng = Math.random }: SceneProps<StepOf<'party'>>) {
@@ -174,9 +174,12 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     const next: Phase = mode === 'who' ? 'quiz' : mode === 'jobs' ? 'sort' : 'badge'
     const movers = roof.filter(id => !(mode === 'jobs' && sorted[id]))
     setSpeech(null); setPhase('mingle'); setBusy(true)
-    setTip('Гости перемешались. Кто есть кто?')
-    setSlots(mingle(movers, places, rng))
-    sound.surface('whoosh')
+    // Перемешиваются гости только в «кто это?» — там это и есть игра; в остальных все стоят, где пришли.
+    if (mode === 'who') {
+      setTip('Гости перемешались. Кто есть кто?')
+      setSlots(mingle(movers, places, rng))
+      sound.surface('whoosh')
+    }
     later(() => {
       setBusy(false); setPhase(next)
       if (next === 'badge') {
@@ -363,7 +366,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     return (
       <GameFrame title="Вечеринка на крыше" eyebrow="соседи зовут в гости" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="party-scene">
-          <GameIntro title="Вечеринка на крыше" text={INTRO_TEXT[mode]} chips={chips} onStart={begin} mood="happy" />
+          <GameIntro title="Вечеринка на крыше" text={INTRO_TEXT[mode]} chips={chips} onStart={begin} mood="happy" hero={mode === 'jobs'} />
         </div>
       </GameFrame>
     )

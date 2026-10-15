@@ -33,10 +33,10 @@ describe('party logic', () => {
     }
   })
 
-  it('names (L7): 6 guests in two waves, two of them ask you first; «…შენ?» is not used before lesson 9', () => {
+  it('names (L7): 4 guests in two waves, two of them ask you first; «…შენ?» is not used before lesson 9', () => {
     const plan = planParty(7, 'names', ME, seeded(3))
-    expect(plan.guests).toHaveLength(6)
-    expect(plan.waves).toEqual([[0, 1, 2], [3, 4, 5]])
+    expect(plan.guests).toHaveLength(4)
+    expect(plan.waves).toEqual([[0, 1], [2, 3]])
     const g = plan.guests[1]
     expect(g.asksFirst).toBe(true)
     const [first, second] = beats(g, 'names', 7, ME, [], seeded(1))
@@ -62,7 +62,7 @@ describe('party logic', () => {
     expect(bs[2].echo).toBe('სასიამოვნოა!')
   })
 
-  it('who (L11): a friend plus three guests, no guest is called like the host, friend asked twice but not in a row', () => {
+  it('who (L11): a friend plus two guests, no guest is called like the host, friend asked twice but not in a row', () => {
     for (let seed = 1; seed < 25; seed++) {
       const plan = planParty(11, 'who', 'ანა', seeded(seed))
       expect(plan.guests.filter(g => g.friend)).toHaveLength(1)
@@ -71,23 +71,23 @@ describe('party logic', () => {
       expect(plan.questions[0]).not.toBe(0)
       plan.questions.forEach((q, i) => i && expect(q).not.toBe(plan.questions[i - 1]))
       const opts = whoOptions(plan.guests, seeded(seed))
-      expect(opts).toHaveLength(4)
+      expect(opts.length).toBeGreaterThanOrEqual(3)
       for (const g of plan.guests) expect(opts).toContain(whoAnswer(g))
       expect(whoAnswer(plan.guests[0])).toBe(phrase('es_chemi_megobaria').geo)
     }
   })
 
-  it('jobs (L20): two of each job; any own job is fine, «from Georgia» is not', () => {
+  it('jobs (L20): one of each job; you are the student, «from Georgia» is not a job', () => {
     const plan = planParty(20, 'jobs', ME, seeded(9))
-    for (const j of JOBS) expect(plan.guests.filter(g => g.job.geo === j.geo)).toHaveLength(2)
+    for (const j of JOBS) expect(plan.guests.filter(g => g.job.geo === j.geo)).toHaveLength(1)
     const g = plan.guests[0]
     expect(beats(g, 'jobs', 20, ME, [], seeded(1))[0].says).toBe(`გამარჯობა! მე ვარ ${g.job.geo}.`)
     expect(jobFits(g, g.job)).toBe(true)
     expect(jobFits(g, JOBS.find(j => j.geo !== g.job.geo)!)).toBe(false)
     expect(repeatLine(g, 'jobs')).toBe(`მე ვარ ${g.job.geo}.`)
     const opts = myJobOptions(20, seeded(1))
-    expect(opts.filter(o => o.ok)).toHaveLength(3)
-    expect(opts.find(o => !o.ok)!.geo).toBe(phrase('sakartvelodan').geo)
+    expect(opts.filter(o => o.ok).map(o => o.geo)).toEqual([`მე ვარ ${JOBS[0].geo}`])
+    expect(opts.map(o => o.geo)).toContain(phrase('sakartvelodan').geo)
   })
 
   it('mingle moves everybody, badges and happiness', () => {

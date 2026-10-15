@@ -111,8 +111,16 @@ describe('magnets: belt engine', () => {
   })
 })
 
-describe('Magnets scene', () => {
+describe('Magnets scene (автомат с краном)', () => {
   afterEach(() => vi.useRealTimers())
+
+  /** Тыкаем капсулу нужного окончания: кран сам подъедет, схватит и бросит в ответ. */
+  async function answerRound() {
+    const want = screen.getByTestId('endings-answer').dataset.tool!
+    const cap = screen.getAllByTestId(`capsule-${want}`)[0]
+    fireEvent.click(cap)
+    await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
+  }
 
   async function play(set: MagnetSet) {
     vi.useFakeTimers()
@@ -120,28 +128,30 @@ describe('Magnets scene', () => {
     const lesson = introLesson(set === 'from' ? 14 : set === 'in' ? 18 : 24)
     render(<Magnets lesson={lesson} step={{ kind: 'magnets', set }} fraction={0.5} onExit={() => {}} onDone={onDone} rng={seeded(2)} now={() => Date.now()} />)
     fireEvent.click(screen.getByText('Начать'))
-    for (let k = 0; k < 2000 && !screen.queryByTestId('game-end'); k++) {
-      await act(async () => { await vi.advanceTimersByTimeAsync(100) })
-      const order = screen.queryByTestId('magnets-order')
-      if (!order) continue
-      const key = order.dataset.key
-      const tile = screen.queryAllByTestId('belt-tile').find(t => t.dataset.key === key)
-      if (!tile) continue
-      const tool = key && COUNTRIES.some(c => c.base === key) ? 'დან' : 'ში'
-      const mag = screen.getByTestId(`magnet-${tool}`)
-      if (mag.getAttribute('aria-pressed') !== 'true') fireEvent.click(mag)
-      fireEvent.click(tile)
-    }
+    for (let k = 0; k < 20 && !screen.queryByTestId('game-end'); k++) await answerRound()
     expect(screen.getByTestId('game-end')).toBeInTheDocument()
     expect(screen.getByTestId('rule-card')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
   }
 
-  it('from: plays the shift to the end', () => play('from'))
-  it('both: plays the shift to the end', () => play('both'))
+  it('from: plays every round to the end', () => play('from'))
+  it('both: plays every round to the end', () => play('both'))
 
-  it('name: prints the name, applies ი, saves it, then the name belt can be finished early', async () => {
+  it('a wrong capsule bounces back and the round stays', async () => {
+    vi.useFakeTimers()
+    render(<Magnets lesson={introLesson(18)} step={{ kind: 'magnets', set: 'in' }} fraction={0.5} onExit={() => {}} onDone={() => {}} rng={seeded(3)} now={() => Date.now()} />)
+    fireEvent.click(screen.getByText('Начать'))
+    expect(screen.getByTestId('endings-round').textContent).toContain('1 /')
+    fireEvent.click(screen.getAllByTestId('capsule-დან')[0])
+    await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
+    expect(screen.getByTestId('endings-round').textContent).toContain('1 /')
+    expect(screen.getByText(/-დან — это «из»/)).toBeInTheDocument()
+    await answerRound()
+    expect(screen.getByTestId('endings-round').textContent).toContain('2 /')
+  })
+
+  it('name: prints the name, applies ი, saves it, then foreign names to the end', async () => {
     vi.useFakeTimers()
     const onDone = vi.fn()
     render(<Magnets lesson={introLesson(8)} step={{ kind: 'magnets', set: 'name' }} fraction={0.5} onExit={() => {}} onDone={onDone} rng={seeded(4)} now={() => Date.now()} />)
@@ -157,16 +167,7 @@ describe('Magnets scene', () => {
     expect(screen.getByTestId('my-line').textContent).toContain('მე მქვია კარლოსი')
     expect(localStorage.getItem('intro_name')).toBe('Карлос')
     fireEvent.click(screen.getByText('Дальше: чужие имена'))
-    // Пять промахов подряд — и появляется «Закончить смену».
-    for (let k = 0; k < 5; k++) {
-      await act(async () => { await vi.advanceTimersByTimeAsync(300) })
-      const tile = screen.getAllByTestId('belt-tile')[0]
-      const want = tile.textContent?.includes('Карлос') || tile.textContent?.includes('Давид') || tile.textContent?.includes('Максим') || tile.textContent?.includes('Антон') || tile.textContent?.includes('Том') ? 'none' : 'ი'
-      const mag = screen.getByTestId(`magnet-${want}`)
-      if (mag.getAttribute('aria-pressed') !== 'true') fireEvent.click(mag)
-      fireEvent.click(tile)
-    }
-    fireEvent.click(screen.getByTestId('magnets-finish'))
+    for (let k = 0; k < 20 && !screen.queryByTestId('game-end'); k++) await answerRound()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
   })

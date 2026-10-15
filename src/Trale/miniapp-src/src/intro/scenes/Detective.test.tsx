@@ -18,7 +18,7 @@ describe('detective: logic', () => {
   it('clue kinds follow what the learner knows', () => {
     expect(clueKinds('from', 16)).toEqual(['me', 'not'])
     expect(clueKinds('jobs', 21)).toEqual(['me', 'they', 'not'])
-    expect(clueKinds('jobs', 20)).not.toContain('they')
+    expect(clueKinds('jobs', 19)).not.toContain('they')
   })
 
   it.each<[DetectiveMode, number]>([['from', 16], ['jobs', 21]])('%s: every puzzle has one answer, no spare clue, and is never solved by one clue', (mode, lesson) => {

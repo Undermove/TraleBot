@@ -1,4 +1,4 @@
-import { CITIES, JOBS, pick, shuffle, type City, type GeoName, type Rng } from '../story'
+import { CITIES, HERO, JOBS, pick, shuffle, type City, type GeoName, type Rng } from '../story'
 import {
   ABROAD, BATUMI, P, her, iAmCalled, iAmCountry, iAmFrom, iAmJob, iLiveCity, iLiveIn, no, note, ok, onlyKnown, toCity,
   type Exchange
@@ -32,7 +32,7 @@ export function taxiTurns(mode: TaxiMode, dest: City, me: GeoName, lessonId: num
     no(P('ra_gkvia'), 'Таксист хохочет: «Я первый спросил!»')
   ] }
   const from: Exchange = { her: [her(P('saidan'))], opts: [
-    ok(iAmFrom(country), 2),
+    ...ABROAD.map(c => ok(iAmFrom(c), 2)),
     no(iAmCountry(country), `Таксист: «Ты целая ${country.ru}?» Не хватает -დან — «из».`)
   ] }
   const live: Exchange = { her: [note('Таксист спрашивает, где ты живёшь')], opts: [
@@ -45,11 +45,13 @@ export function taxiTurns(mode: TaxiMode, dest: City, me: GeoName, lessonId: num
     ok(P('kargad_madloba'), 1),
     no(P('nakhvamdis'), 'Таксист: «Рано прощаешься, ещё полдороги!»')
   ] }
-  const job = pick(JOBS, rng)
+  // Ты — студент (HERO), это видно на карточке «Ты» перед поездкой.
+  const job = HERO.job
+  const other = pick(JOBS.filter(j => j !== job), rng)
   const work: Exchange = { her: [her(P('ra_profesia'))], opts: [
     ok(iAmJob(job), 2, [note('Таксист кивает: «Хорошая работа!»')]),
     no(P('vmushaob'), 'Таксист: «Работаешь — молодец. А кем?» Скажи «я — …».'),
-    no(iLiveIn(BATUMI), 'Таксист: «Где живёшь, я знаю. Кем работаешь?»')
+    no(iAmJob(other), `Таксист: «${other.ru[0].toUpperCase() + other.ru.slice(1)}? Ты же говорил, что студент!»`)
   ] }
   const bye: Exchange = { her: [note('Приехали!'), her(P('nakhvamdis'))], opts: [
     ok(P('nakhvamdis'), 1), ok(P('madloba'), 2),

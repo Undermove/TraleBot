@@ -209,7 +209,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
 
   if (phase === 'intro') return (
     <GameFrame title="Супра" eyebrow={`финал · урок ${lesson.id}`} fraction={fraction} onExit={onExit}>
-      <GameIntro title="Большой вечер у соседей"
+      <GameIntro title="Большой вечер у соседей" hero
         text="Длинный стол, шесть гостей и тамада. Гости по очереди заговорят с тобой — отвечай, пока они ждут. Тамада поднимает тосты: поймай момент и подними бокал."
         chips={[{ geo: 'გაუმარჯოს!', ru: 'за здоровье!' }, { geo: 'გაუმარჯოს საქართველოს!', ru: 'да здравствует Грузия!' }]}
         mood="cheer" onStart={start} />
