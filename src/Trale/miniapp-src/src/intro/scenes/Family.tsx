@@ -96,7 +96,7 @@ function Board({ tree, filled, looks, ownerLook, ownerRu, onFrame, glow, bad, fo
               ${done ? 'border-jewelInk bg-cream-tile zn-pop' : 'border-dashed border-jewelInk-soft bg-cream-deep'}
               ${glow === r ? 'ring-4 ring-gold' : ''} ${focus === r ? 'ring-4 ring-navy' : ''} ${bad === r ? 'zn-shake bg-ruby-wash' : ''}`}>
             {done ? <Person look={looks[r]} height={46} mood={focus === r ? 'wow' : 'smile'} /> : <Silhouette female={info.female} age={info.age} />}
-            <div className={`w-full border-t-[1.5px] text-[10px] font-extrabold leading-[14px] text-center truncate ${done ? 'border-jewelInk bg-[#D6E9D9]' : 'border-transparent text-transparent'}`}>
+            <div className={`w-full border-t-[1.5px] text-[9px] font-extrabold leading-[11px] py-[1px] text-center whitespace-normal ${done ? 'border-jewelInk bg-[#D6E9D9]' : 'border-transparent text-transparent'}`}>
               {done && labels ? info.label : '\u00A0'}
             </div>
           </button>

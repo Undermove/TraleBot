@@ -201,7 +201,7 @@ function Board({ puzzle, last, onSolved }: { puzzle: Puzzle; last: boolean; onSo
             <div className="w-[92px] flex items-center gap-1 min-w-0">
               <Face look={p.look} size={30} mood={done ? 'wow' : 'smile'} />
               <span className="min-w-0 leading-tight">
-                <span className="block font-geo text-[12px] font-bold truncate">{p.name}</span>
+                <span className="block font-geo font-bold leading-tight [overflow-wrap:anywhere]" style={{ fontSize: p.name.length > 6 ? 10 : 12 }}>{p.name}</span>
                 <span className="block text-[10px] font-semibold text-jewelInk-hint truncate">{p.ru}</span>
               </span>
             </div>

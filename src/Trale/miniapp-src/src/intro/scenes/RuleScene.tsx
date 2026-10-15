@@ -163,7 +163,7 @@ export default function RuleScene({ step, fraction, onExit, onDone, rng = Math.r
               className={`min-h-[92px] rounded-2xl border-[1.5px] border-jewelInk px-2 py-3 ${open.includes(k) ? 'bg-cream-tile zn-pop' : 'bg-navy text-cream'}`} style={{ boxShadow: '3px 3px 0 #15100A' }}>
               {open.includes(k) ? (
                 <>
-                  <div className="font-geo font-extrabold text-[18px] leading-tight"><Marked {...e} /></div>
+                  <div className="font-geo font-extrabold leading-tight [overflow-wrap:anywhere]" style={{ fontSize: e.geo.length > 12 ? 14 : e.geo.length > 9 ? 16 : 18 }}><Marked {...e} /></div>
                   <div className="text-[11px] font-semibold text-jewelInk-hint">{cyr(e.geo)}</div>
                   <div className="mt-1 text-[13px] font-bold text-navy">{e.ru}</div>
                 </>
