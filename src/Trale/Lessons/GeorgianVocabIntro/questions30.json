@@ -1,0 +1,206 @@
+{
+  "lesson_id": "intro-30",
+  "title": "Семейный альбом",
+  "lexicon": [
+    "დედა",
+    "მამა",
+    "ოჯახი",
+    "ძმა",
+    "მყავს",
+    "მაქვს"
+  ],
+  "questions": [
+    {
+      "lemma": "დედა",
+      "question": "Как переводится «დედა»?",
+      "options": [
+        "брат",
+        "мама",
+        "я из Испании"
+      ],
+      "answer_index": 1,
+      "explanation": "«დედა» — мама.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q1"
+    },
+    {
+      "lemma": "მამა",
+      "question": "Как переводится «მამა»?",
+      "options": [
+        "он/она учитель",
+        "у меня есть один брат и одна сестра",
+        "папа"
+      ],
+      "answer_index": 2,
+      "explanation": "«მამა» — папа.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q2"
+    },
+    {
+      "lemma": "ოჯახი",
+      "question": "Как переводится «ოჯახი»?",
+      "options": [
+        "семья",
+        "в Кутаиси",
+        "Грузия очень красивая"
+      ],
+      "answer_index": 0,
+      "explanation": "«ოჯახი» — семья.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q3"
+    },
+    {
+      "lemma": "ძმა",
+      "question": "Как переводится «ძმა»?",
+      "options": [
+        "хорошо, спасибо",
+        "брат",
+        "я студент"
+      ],
+      "answer_index": 1,
+      "explanation": "«ძმა» — брат.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q4"
+    },
+    {
+      "lemma": "დედა",
+      "question": "Как сказать «мама»?",
+      "options": [
+        "კი",
+        "დედა",
+        "როგორ ხარ?"
+      ],
+      "answer_index": 1,
+      "explanation": "«мама» — «დედა».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q5"
+    },
+    {
+      "lemma": "მამა",
+      "question": "Как сказать «папа»?",
+      "options": [
+        "ცოლი",
+        "ოჯახი",
+        "მამა"
+      ],
+      "answer_index": 2,
+      "explanation": "«папа» — «მამა».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q6"
+    },
+    {
+      "lemma": "ოჯახი",
+      "question": "Как сказать «семья»?",
+      "options": [
+        "ქალიშვილი",
+        "ოჯახი",
+        "მე ვარ ესპანეთიდან"
+      ],
+      "answer_index": 1,
+      "explanation": "«семья» — «ოჯახი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q7"
+    },
+    {
+      "lemma": "ძმა",
+      "question": "Как сказать «брат»?",
+      "options": [
+        "საღამო მშვიდობისა",
+        "გამარჯობა! მე მქვია ნინო. შენ?",
+        "ძმა"
+      ],
+      "answer_index": 2,
+      "explanation": "«брат» — «ძმა».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q8"
+    },
+    {
+      "lemma": "მყავს",
+      "question": "Как сказать «у меня есть собака»?",
+      "options": [
+        "მე მაქვს ძაღლი",
+        "მე მყავს ძაღლი",
+        "მე ვარ ძაღლი"
+      ],
+      "answer_index": 1,
+      "explanation": "ძაღლი — живое: მყავს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q9"
+    },
+    {
+      "lemma": "მყავს",
+      "question": "Как сказать «у меня есть жена»?",
+      "options": [
+        "მე ვარ ცოლი",
+        "მე მაქვს ცოლი",
+        "მე მყავს ცოლი"
+      ],
+      "answer_index": 2,
+      "explanation": "ცოლი — живое: მყავს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q10"
+    },
+    {
+      "lemma": "მაქვს",
+      "question": "Как сказать «у меня есть кофе»?",
+      "options": [
+        "მე მაქვს ყავა",
+        "მე მყავს ყავა",
+        "მე ვარ ყავა"
+      ],
+      "answer_index": 0,
+      "explanation": "ყავა — вещь: მაქვს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q11"
+    },
+    {
+      "lemma": "მაქვს",
+      "question": "Как сказать «у меня есть дом»?",
+      "options": [
+        "მე მყავს სახლი",
+        "მე მაქვს სახლი",
+        "მე ვარ სახლი"
+      ],
+      "answer_index": 1,
+      "explanation": "სახლი — вещь: მაქვს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro30-q12"
+    }
+  ]
+}

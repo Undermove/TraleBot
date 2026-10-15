@@ -1,0 +1,196 @@
+import React from 'react'
+import Button from '../components/Button'
+import Mascot from '../components/Mascot'
+import { cyr } from '../verbs/types'
+import { haptic, isMuted, playClip } from '../alphabet/games/fx'
+import { INTRO_AUDIO, INTRO_WORD_AUDIO } from './audio'
+import { WORD_AUDIO } from '../alphabet/games/data'
+import type { Phrase, Rng } from './story'
+import './intro.css'
+
+// Общие детали сцен «Знакомства»: человечки, реплики, кнопки-реплики, карточка правила, экран итога сцены.
+// Цвета — палитра мини-аппа (Minankari), обводка и тень — как у остальных игр.
+
+export const INK = '#15100A'
+
+// ── Человечки ─────────────────────────────────────────────────────────────────────────────────────
+
+export interface Look { coat: string; skin: string; hair: string; bag?: boolean; long?: boolean; age?: 'kid' | 'adult' | 'old' }
+const COATS = ['#1B5FB0', '#E01A3C', '#4E8A5B', '#C68F10', '#7A4E9A', '#D4563B', '#2F7F86', '#3A2B1F']
+const SKIN = ['#F2C9A0', '#E0AC7E', '#C68A5E', '#F6D7BC']
+const HAIR = ['#2A1F18', '#5A3A22', '#9A6A3A', '#15100A', '#B5A68B']
+
+export function randomLook(rng: Rng = Math.random, extra: Partial<Look> = {}): Look {
+  const p = <T,>(a: T[]) => a[Math.floor(rng() * a.length)]
+  return { coat: p(COATS), skin: p(SKIN), hair: p(HAIR), long: rng() < 0.5, ...extra }
+}
+
+export type Mood = 'smile' | 'sad' | 'huh' | 'wow'
+
+/** Человечек в полный рост (46×92 в своих единицах; размер задаёт height). */
+export function Person({ look, mood = 'smile', height = 92, className = '', style }: {
+  look: Look; mood?: Mood; height?: number; className?: string; style?: React.CSSProperties
+}) {
+  const old = look.age === 'old', kid = look.age === 'kid'
+  const hair = old ? '#E8DEC5' : look.hair
+  return (
+    <svg viewBox="0 0 46 92" height={height} width={height / 2} className={className} style={style} aria-hidden>
+      <g transform={kid ? 'translate(5 22) scale(0.78)' : undefined}>
+        {look.long && <path d="M8 20 Q6 40 11 46 L35 46 Q40 40 38 20Z" fill={hair} stroke={INK} strokeWidth="1.5" />}
+        <rect x="9" y="38" width="28" height="40" rx="12" fill={look.coat} stroke={INK} strokeWidth="1.5" />
+        <rect x="13" y="74" width="7" height="16" rx="3" fill="#3A2B1F" stroke={INK} strokeWidth="1.5" />
+        <rect x="26" y="74" width="7" height="16" rx="3" fill="#3A2B1F" stroke={INK} strokeWidth="1.5" />
+        <circle cx="23" cy="22" r="14" fill={look.skin} stroke={INK} strokeWidth="1.5" />
+        <path d="M9 20 Q11 6 23 7 Q35 6 37 20 Q31 13 23 14 Q15 13 9 20Z" fill={hair} stroke={INK} strokeWidth="1.5" />
+        {old && <path d="M14 24 h8 M24 24 h8" stroke={INK} strokeWidth="1.2" />}
+        <circle cx="18" cy="23" r="1.7" fill={INK} /><circle cx="28" cy="23" r="1.7" fill={INK} />
+        {mood === 'sad' && <path d="M18 31 Q23 27 28 31" stroke={INK} strokeWidth="1.5" fill="none" />}
+        {mood === 'huh' && <circle cx="23" cy="30" r="2" fill={INK} />}
+        {mood === 'wow' && <ellipse cx="23" cy="30.5" rx="2.6" ry="3.2" fill={INK} />}
+        {mood === 'smile' && <path d="M17 29 Q23 34 29 29" stroke={INK} strokeWidth="1.5" fill="none" />}
+        {look.bag && <rect x="33" y="58" width="12" height="13" rx="2" fill="#F5B820" stroke={INK} strokeWidth="1.5" />}
+      </g>
+    </svg>
+  )
+}
+
+/** Лицо человечка в кружке — для чатов и бейджей. */
+export function Face({ look, size = 40, mood = 'smile' }: { look: Look; size?: number; mood?: Mood }) {
+  return (
+    <div className="shrink-0 rounded-full border-[1.5px] border-jewelInk overflow-hidden bg-cream-deep flex items-start justify-center" style={{ width: size, height: size }}>
+      <Person look={look} mood={mood} height={size * 2.1} style={{ marginTop: -size * 0.06 }} />
+    </div>
+  )
+}
+
+// ── Грузинский текст ──────────────────────────────────────────────────────────────────────────────
+
+/** Грузинская строка и под ней — как звучит, кириллицей. */
+export function Geo({ text, size = 18, sub = true, className = '' }: { text: string; size?: number; sub?: boolean; className?: string }) {
+  return (
+    <span className={`inline-flex flex-col items-center leading-tight ${className}`}>
+      <span className="font-geo font-bold" style={{ fontSize: size }}>{text}</span>
+      {sub && <span className="text-[11px] font-semibold text-jewelInk-hint">{cyr(text)}</span>}
+    </span>
+  )
+}
+
+/**
+ * Играет запись, если она есть: фразу (объект или id из story.json) или отдельное слово по грузинскому
+ * тексту — формы словарика «Знакомства» и слова алфавита.
+ */
+export function say(p: Phrase | string) {
+  const key = typeof p === 'string' ? p : p.id
+  const url = INTRO_AUDIO[key] ?? INTRO_WORD_AUDIO[key] ?? WORD_AUDIO[key]
+  if (url && !isMuted()) playClip(url).catch(() => {})
+}
+
+/** Пузырь реплики над героем. */
+export function Bubble({ children, tone = 'plain', className = '', style }: {
+  children: React.ReactNode; tone?: 'plain' | 'good' | 'bad' | 'think'; className?: string; style?: React.CSSProperties
+}) {
+  const bg = tone === 'good' ? 'bg-[#D6E9D9]' : tone === 'bad' ? 'bg-ruby-wash' : tone === 'think' ? 'bg-gold-wash' : 'bg-cream-tile'
+  return (
+    <div className={`zn-pop rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 text-center ${bg} ${className}`} style={{ boxShadow: '2px 2px 0 #15100A', ...style }}>
+      {children}
+    </div>
+  )
+}
+
+/** Кнопка-реплика: грузинская фраза крупно, под ней кириллица или перевод. */
+export function Reply({ geo, hint, onClick, state = 'idle', disabled, testId, compact }: {
+  geo: string; hint?: string; onClick: () => void; state?: 'idle' | 'good' | 'bad' | 'dim'; disabled?: boolean; testId?: string; compact?: boolean
+}) {
+  const bg = state === 'good' ? 'bg-[#D6E9D9]' : state === 'bad' ? 'bg-ruby-wash zn-shake' : 'bg-cream-tile'
+  return (
+    <button
+      data-testid={testId}
+      disabled={disabled}
+      onClick={() => { haptic('tap'); onClick() }}
+      className={`min-h-[44px] w-full rounded-2xl border-[1.5px] border-jewelInk ${compact ? 'px-2 py-1.5' : 'px-3 py-2'} text-center transition-transform active:translate-x-[2px] active:translate-y-[2px] ${bg} ${state === 'dim' ? 'opacity-40' : ''}`}
+      style={{ boxShadow: '3px 3px 0 #15100A' }}
+    >
+      <span className="block font-geo font-bold leading-tight" style={{ fontSize: compact ? 15 : 17 }}>{geo}</span>
+      <span className="block text-[11px] font-semibold text-jewelInk-hint">{hint ?? cyr(geo)}</span>
+    </button>
+  )
+}
+
+/** Подсказка Бомборы под игрой. */
+export function Tip({ children }: { children?: React.ReactNode }) {
+  return (
+    <div className="min-h-[40px] rounded-xl border-[1.5px] border-dashed border-jewelInk-faint bg-gold-wash/70 px-3 py-2 text-[13px] leading-snug text-jewelInk-soft" aria-live="polite">
+      {children}
+    </div>
+  )
+}
+
+/** Карточка правила — то, что человек «нашёл» и что ложится в коллекцию. */
+export function RuleCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="zn-pop text-left rounded-2xl border-[1.5px] border-jewelInk bg-navy-wash px-4 py-3" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="rule-card">
+      <div className="text-[11px] font-extrabold tracking-[0.08em] uppercase text-navy">{title}</div>
+      <div className="mt-1 text-[15px] leading-snug text-jewelInk">{children}</div>
+    </div>
+  )
+}
+
+/** Экран начала игры: что за игра и как в неё играть. */
+export function GameIntro({ title, text, chips, onStart, mood = 'guide' }: {
+  title: string; text: string; chips?: { geo: string; ru: string }[]; onStart: () => void; mood?: 'guide' | 'cheer' | 'happy' | 'think'
+}) {
+  return (
+    <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3" data-testid="game-intro">
+      <div className="ab-short:hidden"><Mascot mood={mood} size={84} /></div>
+      <div className="text-[21px] font-extrabold leading-tight">{title}</div>
+      <p className="text-[14px] leading-snug text-jewelInk-soft max-w-[32ch]">{text}</p>
+      {chips && (
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {chips.map(c => (
+            <span key={c.geo} className="rounded-lg border-[1.5px] border-jewelInk bg-cream-tile px-2 py-0.5 text-[12px]">
+              <b className="font-geo">{c.geo}</b> — {c.ru}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="w-full max-w-[280px] mt-1"><Button onClick={() => { haptic('pop'); onStart() }}>Начать</Button></div>
+    </div>
+  )
+}
+
+/** Итог игры: короткая фраза, что получилось, необязательная карточка правила и «дальше». */
+export function GameEnd({ title, text, rule, onNext, onAgain, testId = 'game-end' }: {
+  title: string; text?: string; rule?: React.ReactNode; onNext: () => void; onAgain?: () => void; testId?: string
+}) {
+  return (
+    <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3 zn-pop" data-testid={testId}>
+      <div className="ab-short:hidden"><Mascot mood="cheer" size={80} /></div>
+      <div className="text-[22px] font-extrabold leading-tight">{title}</div>
+      {text && <p className="text-[14px] leading-snug text-jewelInk-soft max-w-[32ch]">{text}</p>}
+      {rule}
+      <div className="w-full max-w-[280px] flex flex-col gap-2 mt-1">
+        <Button onClick={() => { haptic('pop'); onNext() }}>Дальше</Button>
+        {onAgain && <Button variant="ghost" onClick={onAgain}>Ещё раз</Button>}
+      </div>
+    </div>
+  )
+}
+
+/** Полоска «терпения» или таймера. */
+export function Meter({ value, tone = 'gold', label }: { value: number; tone?: 'gold' | 'sage' | 'ruby' | 'navy'; label?: string }) {
+  const color = { gold: '#F5B820', sage: '#4E8A5B', ruby: '#E01A3C', navy: '#1B5FB0' }[tone]
+  return (
+    <div className="flex-1 h-2.5 rounded-full border-[1.5px] border-jewelInk bg-cream-tile overflow-hidden" aria-label={label} role="meter" aria-valuenow={Math.round(value * 100)} aria-valuemin={0} aria-valuemax={100}>
+      <div className="h-full transition-[width] duration-200" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%`, background: color }} />
+    </div>
+  )
+}
+
+/** Счётчик-плашка в углу игры. */
+export function Pill({ children, testId }: { children: React.ReactNode; testId?: string }) {
+  return (
+    <span data-testid={testId} className="shrink-0 rounded-full border-[1.5px] border-jewelInk bg-cream-tile px-2.5 py-0.5 text-[12px] font-extrabold tabular-nums whitespace-nowrap">
+      {children}
+    </span>
+  )
+}

@@ -1,0 +1,107 @@
+{
+  "lesson_id": "intro-25",
+  "title": "Мама — это დედა",
+  "lexicon": [
+    "დედა",
+    "მამა",
+    "ოჯახი"
+  ],
+  "questions": [
+    {
+      "lemma": "დედა",
+      "question": "Как переводится «დედა»?",
+      "options": [
+        "как тебя зовут?",
+        "мама",
+        "я работаю"
+      ],
+      "answer_index": 1,
+      "explanation": "«დედა» — мама.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro25-q1"
+    },
+    {
+      "lemma": "მამა",
+      "question": "Как переводится «მამა»?",
+      "options": [
+        "папа",
+        "нет",
+        "врач"
+      ],
+      "answer_index": 0,
+      "explanation": "«მამა» — папа.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro25-q2"
+    },
+    {
+      "lemma": "ოჯახი",
+      "question": "Как переводится «ოჯახი»?",
+      "options": [
+        "спасибо",
+        "приятно познакомиться",
+        "семья"
+      ],
+      "answer_index": 2,
+      "explanation": "«ოჯახი» — семья.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro25-q3"
+    },
+    {
+      "lemma": "დედა",
+      "question": "Как сказать «мама»?",
+      "options": [
+        "სასიამოვნოა! საქართველო მოგწონს?",
+        "რა გქვია?",
+        "დედა"
+      ],
+      "answer_index": 2,
+      "explanation": "«мама» — «დედა».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro25-q4"
+    },
+    {
+      "lemma": "მამა",
+      "question": "Как сказать «папа»?",
+      "options": [
+        "ოჯახი",
+        "სასიამოვნოა",
+        "მამა"
+      ],
+      "answer_index": 2,
+      "explanation": "«папа» — «მამა».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro25-q5"
+    },
+    {
+      "lemma": "ოჯახი",
+      "question": "Как сказать «семья»?",
+      "options": [
+        "ოჯახი",
+        "საღამო მშვიდობისა",
+        "ის არის მასწავლებელი"
+      ],
+      "answer_index": 0,
+      "explanation": "«семья» — «ოჯახი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro25-q6"
+    }
+  ]
+}

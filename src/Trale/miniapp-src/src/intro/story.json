@@ -1,0 +1,1418 @@
+{
+  "_comment": "Модуль «Знакомство» как одна история. Источник правды и для мини-аппа (сцены, игры), и для бэкенда: tools/intro_story.py собирает из этого файла теорию уроков (MiniAppContentProvider.cs, BuildIntroModule) и вопросы проверки (Lessons/GeorgianVocabIntro/questions{N}.json, кроме урока 1). Каждая грузинская фраза — с источником: урок или теория TraleBot (верный ответ, не вариант-ловушка) либо открытая страница Викисловаря.",
+  "phrases": {
+    "gamarjoba": {
+      "geo": "გამარჯობა",
+      "ru": "здравствуй",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 1: «გამარჯობა — здравствуй»"
+    },
+    "gagimarjos": {
+      "geo": "გაგიმარჯოს",
+      "ru": "здравствуй и ты (ответ)",
+      "src": "https://en.wiktionary.org/wiki/გაგიმარჯოს — «often serves as the answer for გამარჯობა»"
+    },
+    "nakhvamdis": {
+      "geo": "ნახვამდის",
+      "ru": "до свидания",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 1: «ნახვამდის — до свидания»"
+    },
+    "dila": {
+      "geo": "დილა მშვიდობისა",
+      "ru": "доброе утро",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 1: «დილა მშვიდობისა — доброе утро»",
+      "words": [
+        [
+          "დილა",
+          "утро"
+        ],
+        [
+          "მშვიდობისა",
+          "мирного"
+        ]
+      ]
+    },
+    "saghamo": {
+      "geo": "საღამო მშვიდობისა",
+      "ru": "добрый вечер",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 1: «საღამო მშვიდობისა — добрый вечер»",
+      "words": [
+        [
+          "საღამო",
+          "вечер"
+        ],
+        [
+          "მშვიდობისა",
+          "мирного"
+        ]
+      ]
+    },
+    "rogor": {
+      "geo": "როგორ ხარ?",
+      "ru": "как дела?",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 1: «როგორ ხარ? — как дела?»",
+      "words": [
+        [
+          "როგორ",
+          "как"
+        ],
+        [
+          "ხარ",
+          "ты есть"
+        ]
+      ]
+    },
+    "kargad_madloba": {
+      "geo": "კარგად, მადლობა",
+      "ru": "хорошо, спасибо",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 1: «კარგად, მადლობა — хорошо, спасибо»",
+      "words": [
+        [
+          "კარგად",
+          "хорошо"
+        ],
+        [
+          "მადლობა",
+          "спасибо"
+        ]
+      ]
+    },
+    "kargad_shen": {
+      "geo": "კარგად, შენ?",
+      "ru": "хорошо, а ты?",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 1: Example(«კარგად, შენ?», «Хорошо, а ты?»)",
+      "words": [
+        [
+          "კარგად",
+          "хорошо"
+        ],
+        [
+          "შენ",
+          "ты"
+        ]
+      ]
+    },
+    "madloba": {
+      "geo": "მადლობა",
+      "ru": "спасибо",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 6: «მადლობა / გმადლობთ — спасибо»"
+    },
+    "bodishi": {
+      "geo": "ბოდიში",
+      "ru": "извините",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 6: «ბოდიში — извините»"
+    },
+    "ki": {
+      "geo": "კი",
+      "ru": "да",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 6: «კი / არა — да / нет»"
+    },
+    "ara": {
+      "geo": "არა",
+      "ru": "нет",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 6: «კი / არა — да / нет»"
+    },
+    "ar_vici": {
+      "geo": "არ ვიცი",
+      "ru": "не знаю",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 6: «არ ვიცი — не знаю»"
+    },
+    "me_mkvia": {
+      "geo": "მე მქვია…",
+      "ru": "меня зовут…",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 2: «მე მქვია... — меня зовут...»",
+      "words": [
+        [
+          "მე",
+          "я"
+        ],
+        [
+          "მქვია",
+          "меня зовут"
+        ]
+      ]
+    },
+    "me_mkvia_nino": {
+      "geo": "გამარჯობა! მე მქვია ნინო. შენ?",
+      "ru": "Привет! Меня зовут Нино. А тебя?",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 5: Example(«— გამარჯობა! მე მქვია ნინო. შენ?»)"
+    },
+    "me_mkvia_karlosi": {
+      "geo": "მე მქვია კარლოსი",
+      "ru": "меня зовут Карлос",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 5: Example(«— მე მქვია კარლოსი. მე ვარ ესპანეთიდან.»)"
+    },
+    "ra_gkvia": {
+      "geo": "რა გქვია?",
+      "ru": "как тебя зовут?",
+      "src": "Lessons/GeorgianPronouns/questions4.json pron4_q17: «რა გქვია? — Как тебя зовут?»",
+      "words": [
+        [
+          "რა",
+          "что"
+        ],
+        [
+          "გქვია",
+          "тебя зовут"
+        ]
+      ]
+    },
+    "sasiamovnoa": {
+      "geo": "სასიამოვნოა",
+      "ru": "приятно познакомиться",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 6: «სასიამოვნოა — приятно познакомиться»"
+    },
+    "vin_aris": {
+      "geo": "ვინ არის ეს?",
+      "ru": "кто это?",
+      "src": "Lessons/GeorgianPronouns/questions4.json pron4_q08: «ვინ არის ეს? — Кто это?»",
+      "words": [
+        [
+          "ვინ",
+          "кто"
+        ],
+        [
+          "არის",
+          "есть"
+        ],
+        [
+          "ეს",
+          "это"
+        ]
+      ]
+    },
+    "es_chemi_megobaria": {
+      "geo": "ეს ჩემი მეგობარია",
+      "ru": "это мой друг",
+      "src": "Lessons/GeorgianPronouns/questions5.json pron5_q02: «ეს ჩემი მეგობარია — Это мой друг»",
+      "words": [
+        [
+          "ეს",
+          "это"
+        ],
+        [
+          "ჩემი",
+          "мой"
+        ],
+        [
+          "მეგობარია",
+          "друг (есть)"
+        ]
+      ]
+    },
+    "saidan": {
+      "geo": "საიდან ხარ?",
+      "ru": "откуда ты?",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 2: «საიდან ხარ? — откуда ты?»",
+      "words": [
+        [
+          "საიდან",
+          "откуда"
+        ],
+        [
+          "ხარ",
+          "ты есть"
+        ]
+      ]
+    },
+    "sakartvelodan": {
+      "geo": "მე ვარ საქართველოდან",
+      "ru": "я из Грузии",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 2: Example(«მე მქვია ანა. მე ვარ საქართველოდან.»)",
+      "words": [
+        [
+          "მე",
+          "я"
+        ],
+        [
+          "ვარ",
+          "есть"
+        ],
+        [
+          "საქართველოდან",
+          "из Грузии"
+        ]
+      ]
+    },
+    "espanetidan": {
+      "geo": "მე ვარ ესპანეთიდან",
+      "ru": "я из Испании",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 2: «მე ვარ ესპანეთიდან — я из Испании»",
+      "words": [
+        [
+          "მე",
+          "я"
+        ],
+        [
+          "ვარ",
+          "есть"
+        ],
+        [
+          "ესპანეთიდან",
+          "из Испании"
+        ]
+      ]
+    },
+    "safrangetidan": {
+      "geo": "საფრანგეთიდან",
+      "ru": "из Франции",
+      "src": "Lessons/GeorgianPostpositions/questions5.json postp5_q13: «Из Франции — საფრანგეთიდან»"
+    },
+    "tbilisshi": {
+      "geo": "მე ვცხოვრობ თბილისში",
+      "ru": "я живу в Тбилиси",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 4: Example(«მე ვცხოვრობ თბილისში»)",
+      "words": [
+        [
+          "მე",
+          "я"
+        ],
+        [
+          "ვცხოვრობ",
+          "живу"
+        ],
+        [
+          "თბილისში",
+          "в Тбилиси"
+        ]
+      ]
+    },
+    "batumshi": {
+      "geo": "ვცხოვრობ ბათუმში",
+      "ru": "живу в Батуми",
+      "src": "Lessons/GeorgianVocabIntro/questions5.json intro5-q9: «ვცხოვრობ ბათუმში — я живу в Батуми»",
+      "words": [
+        [
+          "ვცხოვრობ",
+          "живу"
+        ],
+        [
+          "ბათუმში",
+          "в Батуми"
+        ]
+      ]
+    },
+    "kutaisshi": {
+      "geo": "ქუთაისში",
+      "ru": "в Кутаиси",
+      "src": "Lessons/GeorgianVocabTaxi/questions7.json taxi7: собранная фраза с «ქუთაისში»"
+    },
+    "studenti": {
+      "geo": "მე ვარ სტუდენტი",
+      "ru": "я студент",
+      "src": "Lessons/GeorgianPronouns/questions.json pron1_q07: «მე ვარ სტუდენტი — Я студент»",
+      "words": [
+        [
+          "მე",
+          "я"
+        ],
+        [
+          "ვარ",
+          "есть"
+        ],
+        [
+          "სტუდენტი",
+          "студент"
+        ]
+      ]
+    },
+    "eqimi": {
+      "geo": "ექიმი",
+      "ru": "врач",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 7: «ექიმი — Врач»"
+    },
+    "mascavlebeli": {
+      "geo": "ის არის მასწავლებელი",
+      "ru": "он/она учитель",
+      "src": "Lessons/GeorgianPronouns/questions.json pron1_q09: «ის არის მასწავლებელი — Он/она учитель»",
+      "words": [
+        [
+          "ის",
+          "он/она"
+        ],
+        [
+          "არის",
+          "есть"
+        ],
+        [
+          "მასწავლებელი",
+          "учитель"
+        ]
+      ]
+    },
+    "vmushaob": {
+      "geo": "ვმუშაობ",
+      "ru": "я работаю",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 4: «ვმუშაობ — я работаю»"
+    },
+    "ra_profesia": {
+      "geo": "შენ რა პროფესია გაქვს?",
+      "ru": "какая у тебя профессия?",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 2: Example(«შენ რა პროფესია გაქვს?»)",
+      "words": [
+        [
+          "შენ",
+          "ты"
+        ],
+        [
+          "რა",
+          "какая"
+        ],
+        [
+          "პროფესია",
+          "профессия"
+        ],
+        [
+          "გაქვს",
+          "у тебя есть"
+        ]
+      ]
+    },
+    "deda": {
+      "geo": "დედა",
+      "ru": "мама",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «დედა — мама»"
+    },
+    "mama": {
+      "geo": "მამა",
+      "ru": "папа",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «მამა — папа»"
+    },
+    "dzma": {
+      "geo": "ძმა",
+      "ru": "брат",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «ძმა — брат»"
+    },
+    "da": {
+      "geo": "და",
+      "ru": "сестра",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «და — сестра»"
+    },
+    "vazhi": {
+      "geo": "ვაჟი",
+      "ru": "сын",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «ვაჟი — сын»"
+    },
+    "kalishvili": {
+      "geo": "ქალიშვილი",
+      "ru": "дочь",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «ქალიშვილი — дочь»"
+    },
+    "kmari": {
+      "geo": "ქმარი",
+      "ru": "муж",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «ქმარი — муж»"
+    },
+    "coli": {
+      "geo": "ცოლი",
+      "ru": "жена",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «ცოლი — жена»"
+    },
+    "ojakhi": {
+      "geo": "ოჯახი",
+      "ru": "семья",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: «ოჯახი — семья»"
+    },
+    "myavs_dzma_da": {
+      "geo": "მე მყავს ერთი ძმა და ერთი და",
+      "ru": "у меня есть один брат и одна сестра",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: Example(«მე მყავს ერთი ძმა და ერთი და»)",
+      "words": [
+        [
+          "მე",
+          "я"
+        ],
+        [
+          "მყავს",
+          "у меня есть (о людях)"
+        ],
+        [
+          "ერთი",
+          "один"
+        ],
+        [
+          "ძმა",
+          "брат"
+        ],
+        [
+          "და",
+          "и"
+        ],
+        [
+          "ერთი",
+          "одна"
+        ],
+        [
+          "და",
+          "сестра"
+        ]
+      ]
+    },
+    "myavs_da": {
+      "geo": "მე მყავს და",
+      "ru": "у меня есть сестра",
+      "src": "Lessons/GeorgianVocabIntro/questions5.json intro5-q16: «მე მყავს და — у меня есть сестра»"
+    },
+    "myavs_dzaghli": {
+      "geo": "მე მყავს ძაღლი",
+      "ru": "у меня есть собака",
+      "src": "Lessons/GeorgianVerbClasses/questions6.json vc6_q02: «მე მყავს ძაღლი — У меня есть собака»"
+    },
+    "makvs_manqana": {
+      "geo": "მე მაქვს მანქანა",
+      "ru": "у меня есть машина",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 3: Example(«მე მაქვს მანქანა»)",
+      "words": [
+        [
+          "მე",
+          "я"
+        ],
+        [
+          "მაქვს",
+          "у меня есть (о вещах)"
+        ],
+        [
+          "მანქანა",
+          "машина"
+        ]
+      ]
+    },
+    "miyvars_sakartvelo": {
+      "geo": "მიყვარს საქართველო",
+      "ru": "я люблю Грузию",
+      "src": "Lessons/GeorgianVocabIntro/questions5.json intro5-q15: «მიყვარს საქართველო — я люблю Грузию»",
+      "words": [
+        [
+          "მიყვარს",
+          "я люблю"
+        ],
+        [
+          "საქართველო",
+          "Грузия"
+        ]
+      ]
+    },
+    "mogcons": {
+      "geo": "სასიამოვნოა! საქართველო მოგწონს?",
+      "ru": "Приятно! Тебе нравится Грузия?",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 5: Example(«— სასიამოვნოა! საქართველო მოგწონს?»)"
+    },
+    "lamazia": {
+      "geo": "საქართველო ძალიან ლამაზია",
+      "ru": "Грузия очень красивая",
+      "src": "MiniAppContentProvider.cs, Знакомство, урок 4: Example(«საქართველო ძალიან ლამაზია»)",
+      "words": [
+        [
+          "საქართველო",
+          "Грузия"
+        ],
+        [
+          "ძალიან",
+          "очень"
+        ],
+        [
+          "ლამაზია",
+          "красивая"
+        ]
+      ]
+    },
+    "gaumarjos": {
+      "geo": "გაუმარჯოს!",
+      "ru": "за здоровье! (тост)",
+      "src": "https://en.wiktionary.org/wiki/გაუმარჯოს — «cheers», «long live»"
+    },
+    "gaumarjos_sakartvelos": {
+      "geo": "გაუმარჯოს საქართველოს!",
+      "ru": "да здравствует Грузия!",
+      "src": "https://en.wiktionary.org/wiki/გაუმარჯოს — пример «გაუმარჯოს საქართველოს! — Long live Georgia!»"
+    }
+  },
+  "acts": [
+    {
+      "id": 1,
+      "title": "Двор",
+      "story": "Ты переехал в Батуми. Первые встречи у подъезда."
+    },
+    {
+      "id": 2,
+      "title": "Как тебя зовут",
+      "story": "Имена, вопросы и первое правило о себе."
+    },
+    {
+      "id": 3,
+      "title": "Откуда ты",
+      "story": "Страны и окончание -დან."
+    },
+    {
+      "id": 4,
+      "title": "Где живёшь, кем работаешь",
+      "story": "Города, окончание -ში и профессии."
+    },
+    {
+      "id": 5,
+      "title": "Семья",
+      "story": "Мама, папа, брат и два разных «иметь»."
+    },
+    {
+      "id": 6,
+      "title": "Супра",
+      "story": "Большой вечер у соседей: всё вместе."
+    }
+  ],
+  "lessons": [
+    {
+      "id": 1,
+      "act": 1,
+      "title": "Привет и пока",
+      "goal": "Здороваться и прощаться во дворе.",
+      "new": [
+        "gamarjoba",
+        "nakhvamdis"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "yard",
+          "mode": "hello"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "act": 1,
+      "title": "Утро и вечер",
+      "goal": "Здороваться по времени суток.",
+      "new": [
+        "dila",
+        "saghamo"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "rule",
+          "rule": "time"
+        },
+        {
+          "kind": "yard",
+          "mode": "day"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "act": 1,
+      "title": "Как дела?",
+      "goal": "Спросить, как дела, и ответить.",
+      "new": [
+        "rogor",
+        "kargad_madloba"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "elevator",
+          "mode": "howareyou"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "act": 1,
+      "title": "А у тебя?",
+      "goal": "Ответить и спросить в ответ.",
+      "new": [
+        "kargad_shen"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "rule",
+          "rule": "echo"
+        },
+        {
+          "kind": "elevator",
+          "mode": "echo"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "act": 1,
+      "title": "Спасибо и извините",
+      "goal": "Быть вежливым в тесном дворе.",
+      "new": [
+        "madloba",
+        "bodishi",
+        "ki",
+        "ara"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "elevator",
+          "mode": "polite"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "act": 1,
+      "title": "Целый день во дворе",
+      "goal": "Повторить первый акт.",
+      "new": [
+        "gagimarjos"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "yard",
+          "mode": "full"
+        },
+        {
+          "kind": "elevator",
+          "mode": "mix"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "act": 2,
+      "title": "Меня зовут",
+      "goal": "Назвать своё имя.",
+      "new": [
+        "me_mkvia",
+        "me_mkvia_karlosi"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "party",
+          "mode": "names"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "act": 2,
+      "title": "Твоё имя по-грузински",
+      "goal": "Записать своё имя и понять, откуда берётся ი.",
+      "new": [],
+      "steps": [
+        {
+          "kind": "rule",
+          "rule": "name"
+        },
+        {
+          "kind": "magnets",
+          "set": "name"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "act": 2,
+      "title": "А тебя?",
+      "goal": "Спросить имя.",
+      "new": [
+        "ra_gkvia",
+        "me_mkvia_nino"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "border",
+          "mode": "names"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "act": 2,
+      "title": "Приятно познакомиться",
+      "goal": "Познакомиться по всем правилам.",
+      "new": [
+        "sasiamovnoa"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "party",
+          "mode": "full"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "act": 2,
+      "title": "Кто это?",
+      "goal": "Спросить, кто это, и представить друга.",
+      "new": [
+        "vin_aris",
+        "es_chemi_megobaria"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "party",
+          "mode": "who"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "act": 2,
+      "title": "Знакомство в чате",
+      "goal": "Повторить второй акт.",
+      "new": [],
+      "steps": [
+        {
+          "kind": "chat",
+          "script": "act2"
+        },
+        {
+          "kind": "border",
+          "mode": "names"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "act": 3,
+      "title": "Откуда ты?",
+      "goal": "Спросить, откуда человек, и понять ответ.",
+      "new": [
+        "saidan",
+        "sakartvelodan",
+        "espanetidan"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "border",
+          "mode": "listen"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "act": 3,
+      "title": "Из Испании, из Франции",
+      "goal": "Сказать «из» любой страны.",
+      "new": [
+        "safrangetidan"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "rule",
+          "rule": "from"
+        },
+        {
+          "kind": "magnets",
+          "set": "from"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "act": 3,
+      "title": "Смена на границе",
+      "goal": "Самому спросить имя и страну.",
+      "new": [],
+      "steps": [
+        {
+          "kind": "border",
+          "mode": "ask"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "act": 3,
+      "title": "Кто откуда",
+      "goal": "Понять на слух, кто откуда.",
+      "new": [],
+      "steps": [
+        {
+          "kind": "detective",
+          "mode": "from"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "act": 3,
+      "title": "Соседка Нино",
+      "goal": "Повторить третий акт.",
+      "new": [
+        "mogcons"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "chat",
+          "script": "act3"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "act": 4,
+      "title": "Я живу в Тбилиси",
+      "goal": "Сказать, где живёшь.",
+      "new": [
+        "tbilisshi",
+        "batumshi"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "rule",
+          "rule": "in"
+        },
+        {
+          "kind": "magnets",
+          "set": "in"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "act": 4,
+      "title": "Таксист спрашивает",
+      "goal": "Поговорить с таксистом о себе.",
+      "new": [
+        "kutaisshi"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "taxi",
+          "mode": "where"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "act": 4,
+      "title": "Я студент",
+      "goal": "Сказать, кто ты.",
+      "new": [
+        "studenti"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "party",
+          "mode": "jobs"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "act": 4,
+      "title": "Врач, учитель",
+      "goal": "Понять, кто кем работает.",
+      "new": [
+        "eqimi",
+        "mascavlebeli"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "detective",
+          "mode": "jobs"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "act": 4,
+      "title": "Я работаю",
+      "goal": "Рассказать о работе.",
+      "new": [
+        "vmushaob",
+        "ra_profesia"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "taxi",
+          "mode": "work"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "act": 4,
+      "title": "Нино пишет снова",
+      "goal": "Разговор о городе и работе.",
+      "new": [
+        "lamazia"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "chat",
+          "script": "act4"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "act": 4,
+      "title": "Большая смена",
+      "goal": "Повторить четвёртый акт.",
+      "new": [],
+      "steps": [
+        {
+          "kind": "border",
+          "mode": "full"
+        },
+        {
+          "kind": "magnets",
+          "set": "both"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "act": 5,
+      "title": "Мама — это დედა",
+      "goal": "Мама и папа по-грузински.",
+      "new": [
+        "deda",
+        "mama",
+        "ojakhi"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "family",
+          "mode": "parents"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "act": 5,
+      "title": "Брат и сестра",
+      "goal": "Брат и сестра, и ловушка «და».",
+      "new": [
+        "dzma",
+        "da"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "rule",
+          "rule": "da"
+        },
+        {
+          "kind": "family",
+          "mode": "siblings"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "act": 5,
+      "title": "У меня есть брат",
+      "goal": "Сказать, кто у тебя есть.",
+      "new": [
+        "myavs_dzma_da",
+        "myavs_da",
+        "myavs_dzaghli"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "rule",
+          "rule": "have"
+        },
+        {
+          "kind": "havesort",
+          "mode": "people"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "act": 5,
+      "title": "У меня есть машина",
+      "goal": "Отличить «есть» для людей и для вещей.",
+      "new": [
+        "makvs_manqana"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "havesort",
+          "mode": "full"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "act": 5,
+      "title": "Муж и жена, сын и дочь",
+      "goal": "Вся семья целиком.",
+      "new": [
+        "kmari",
+        "coli",
+        "vazhi",
+        "kalishvili"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "family",
+          "mode": "full"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "act": 5,
+      "title": "Семейный альбом",
+      "goal": "Повторить пятый акт.",
+      "new": [],
+      "steps": [
+        {
+          "kind": "family",
+          "mode": "album"
+        },
+        {
+          "kind": "havesort",
+          "mode": "full"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "act": 6,
+      "title": "Мне нравится Грузия",
+      "goal": "Сказать, что тебе нравится.",
+      "new": [
+        "miyvars_sakartvelo",
+        "ar_vici"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "chat",
+          "script": "act6"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "act": 6,
+      "title": "Расскажи о себе",
+      "goal": "Собрать рассказ о себе.",
+      "new": [],
+      "steps": [
+        {
+          "kind": "aboutme"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "act": 6,
+      "title": "Супра",
+      "goal": "Вечер у соседей: с каждым гостем свой разговор.",
+      "new": [
+        "gaumarjos",
+        "gaumarjos_sakartvelos"
+      ],
+      "steps": [
+        {
+          "kind": "phrase"
+        },
+        {
+          "kind": "supra"
+        }
+      ]
+    }
+  ],
+  "vocab": {
+    "_comment": "Отдельные слова для игр (имена, страны, города, люди и вещи) с источником. Грузинское в коде сцен берётся только отсюда и из phrases.",
+    "names": {
+      "ნინო": "Нино",
+      "ანა": "Ана",
+      "გიორგი": "Гиорги",
+      "კარლოსი": "Карлос",
+      "ლუკა": "Лука",
+      "მარიამი": "Мариам",
+      "თამარი": "Тамари",
+      "დავითი": "Давити",
+      "_src": "ნინო, ანა, გიორგი — Lessons/* (Pronouns, Cases, VerbClasses); კარლოსი — MiniAppContentProvider.cs, Знакомство, урок 5; ლუკა, მარიამი, თამარი, დავითი — en.wiktionary.org (Georgian given name)"
+    },
+    "countries": [
+      {
+        "base": "საქართველო",
+        "from": "საქართველოდან",
+        "ru": "Грузия",
+        "ruFrom": "из Грузии",
+        "flag": "ge",
+        "src": "MiniAppContentProvider.cs, Знакомство, урок 2: «მე ვარ საქართველოდან»"
+      },
+      {
+        "base": "ესპანეთი",
+        "from": "ესპანეთიდან",
+        "ru": "Испания",
+        "ruFrom": "из Испании",
+        "flag": "es",
+        "src": "MiniAppContentProvider.cs, Знакомство, урок 2: «მე ვარ ესპანეთიდან»"
+      },
+      {
+        "base": "საფრანგეთი",
+        "from": "საფრანგეთიდან",
+        "ru": "Франция",
+        "ruFrom": "из Франции",
+        "flag": "fr",
+        "src": "Lessons/GeorgianPostpositions/questions5.json postp5_q13: «საფრანგეთიდან»"
+      }
+    ],
+    "cities": [
+      {
+        "base": "თბილისი",
+        "in": "თბილისში",
+        "ru": "Тбилиси",
+        "src": "MiniAppContentProvider.cs, Знакомство, урок 4: «მე ვცხოვრობ თბილისში»"
+      },
+      {
+        "base": "ბათუმი",
+        "in": "ბათუმში",
+        "ru": "Батуми",
+        "src": "Lessons/GeorgianVocabIntro/questions5.json intro5-q9: «ვცხოვრობ ბათუმში»"
+      },
+      {
+        "base": "ქუთაისი",
+        "in": "ქუთაისში",
+        "ru": "Кутаиси",
+        "src": "Lessons/GeorgianVocabTaxi/questions7.json: «ქუთაისში»"
+      }
+    ],
+    "jobs": [
+      {
+        "geo": "სტუდენტი",
+        "ru": "студент",
+        "src": "Lessons/GeorgianPronouns/questions.json pron1_q07"
+      },
+      {
+        "geo": "ექიმი",
+        "ru": "врач",
+        "src": "MiniAppContentProvider.cs, Знакомство, урок 7"
+      },
+      {
+        "geo": "მასწავლებელი",
+        "ru": "учитель",
+        "src": "Lessons/GeorgianPronouns/questions.json pron1_q09"
+      }
+    ],
+    "alive": [
+      {
+        "geo": "დედა",
+        "ru": "мама",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "მამა",
+        "ru": "папа",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "ძმა",
+        "ru": "брат",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "და",
+        "ru": "сестра",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "ქმარი",
+        "ru": "муж",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "ცოლი",
+        "ru": "жена",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "ვაჟი",
+        "ru": "сын",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "ქალიშვილი",
+        "ru": "дочь",
+        "src": "Знакомство, урок 3"
+      },
+      {
+        "geo": "მეგობარი",
+        "ru": "друг",
+        "src": "alphabet/games/data.ts LESSON_WORDS (слова алфавита, проверены по MiniAppContentProvider.cs)"
+      },
+      {
+        "geo": "ძაღლი",
+        "ru": "собака",
+        "src": "Lessons/GeorgianVerbClasses/questions6.json vc6_q02"
+      },
+      {
+        "geo": "კატა",
+        "ru": "кошка",
+        "src": "alphabet/games/data.ts LESSON_WORDS (слова алфавита, проверены по MiniAppContentProvider.cs)"
+      },
+      {
+        "geo": "ბავშვი",
+        "ru": "ребёнок",
+        "src": "alphabet/games/data.ts LESSON_WORDS (слова алфавита, проверены по MiniAppContentProvider.cs)"
+      }
+    ],
+    "things": [
+      {
+        "geo": "მანქანა",
+        "ru": "машина",
+        "src": "Знакомство, урок 3: «მე მაქვს მანქანა»"
+      },
+      {
+        "geo": "წიგნი",
+        "ru": "книга",
+        "src": "Lessons/GeorgianPronouns/questions2.json pron2_q04"
+      },
+      {
+        "geo": "სახლი",
+        "ru": "дом",
+        "src": "Lessons/GeorgianPronouns/questions3.json pron3_q07"
+      },
+      {
+        "geo": "ხაჭაპური",
+        "ru": "хачапури",
+        "src": "Lessons/GeorgianPronouns/questions5.json pron5_q13"
+      },
+      {
+        "geo": "ფული",
+        "ru": "деньги",
+        "src": "Lessons/GeorgianVerbClasses/questions6.json vc6_q07"
+      },
+      {
+        "geo": "ყავა",
+        "ru": "кофе",
+        "src": "alphabet/games/data.ts LESSON_WORDS (слова алфавита, проверены по MiniAppContentProvider.cs)"
+      },
+      {
+        "geo": "ჩაი",
+        "ru": "чай",
+        "src": "alphabet/games/data.ts LESSON_WORDS (слова алфавита, проверены по MiniAppContentProvider.cs)"
+      }
+    ],
+    "people": [
+      {
+        "geo": "ქალი",
+        "ru": "женщина",
+        "src": "alphabet/games/data.ts LESSON_WORDS (слова алфавита, проверены по MiniAppContentProvider.cs)"
+      },
+      {
+        "geo": "კაცი",
+        "ru": "мужчина",
+        "src": "alphabet/games/data.ts LESSON_WORDS (слова алфавита, проверены по MiniAppContentProvider.cs)"
+      }
+    ],
+    "small": [
+      {
+        "geo": "ერთი",
+        "ru": "один",
+        "src": "Знакомство, урок 3: «მე მყავს ერთი ძმა და ერთი და»"
+      },
+      {
+        "geo": "ეს",
+        "ru": "это",
+        "src": "Lessons/GeorgianPronouns/questions4.json pron4_q08"
+      },
+      {
+        "geo": "ჩემი",
+        "ru": "мой",
+        "src": "Lessons/GeorgianPronouns/questions5.json pron5_q02"
+      },
+      {
+        "geo": "შენ",
+        "ru": "ты",
+        "src": "Знакомство, урок 1"
+      },
+      {
+        "geo": "მე",
+        "ru": "я",
+        "src": "Знакомство, урок 2"
+      },
+      {
+        "geo": "ვარ",
+        "ru": "(я) есть",
+        "src": "Знакомство, урок 2"
+      },
+      {
+        "geo": "არის",
+        "ru": "есть",
+        "src": "Lessons/GeorgianPronouns/questions4.json pron4_q08"
+      },
+      {
+        "geo": "ის",
+        "ru": "он/она",
+        "src": "Lessons/GeorgianPronouns/questions.json pron1_q09"
+      }
+    ]
+  }
+}

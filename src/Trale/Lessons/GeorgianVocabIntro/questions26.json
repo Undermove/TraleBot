@@ -1,0 +1,107 @@
+{
+  "lesson_id": "intro-26",
+  "title": "Брат и сестра",
+  "lexicon": [
+    "ძმა",
+    "და",
+    "დედა"
+  ],
+  "questions": [
+    {
+      "lemma": "ძმა",
+      "question": "Как переводится «ძმა»?",
+      "options": [
+        "брат",
+        "как тебя зовут?",
+        "нет"
+      ],
+      "answer_index": 0,
+      "explanation": "«ძმა» — брат.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro26-q1"
+    },
+    {
+      "lemma": "და",
+      "question": "Как переводится «და»?",
+      "options": [
+        "брат",
+        "он/она учитель",
+        "сестра"
+      ],
+      "answer_index": 2,
+      "explanation": "«და» — сестра.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro26-q2"
+    },
+    {
+      "lemma": "დედა",
+      "question": "Как переводится «დედა»?",
+      "options": [
+        "мама",
+        "кто это?",
+        "я работаю"
+      ],
+      "answer_index": 0,
+      "explanation": "«დედა» — мама.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro26-q3"
+    },
+    {
+      "lemma": "ძმა",
+      "question": "Как сказать «брат»?",
+      "options": [
+        "ნახვამდის",
+        "გამარჯობა",
+        "ძმა"
+      ],
+      "answer_index": 2,
+      "explanation": "«брат» — «ძმა».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro26-q4"
+    },
+    {
+      "lemma": "და",
+      "question": "Как сказать «сестра»?",
+      "options": [
+        "მამა",
+        "ბოდიში",
+        "და"
+      ],
+      "answer_index": 2,
+      "explanation": "«сестра» — «და».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro26-q5"
+    },
+    {
+      "lemma": "და",
+      "question": "Что значит первое «და» во фразе «ერთი ძმა და ერთი და»?",
+      "options": [
+        "сестра",
+        "и",
+        "брат"
+      ],
+      "answer_index": 1,
+      "explanation": "Между словами და — «и», а после «одна» — сестра.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro26-q6"
+    }
+  ]
+}

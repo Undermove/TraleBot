@@ -11,6 +11,8 @@ import { api } from '../api'
 import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
 import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
 import AlphabetInterlude, { ALPHABET_MODULE, alphabetExam, useAlphabetLesson } from '../alphabet/AlphabetInterlude'
+import IntroInterlude, { useIntroLesson } from '../intro/IntroInterlude'
+import { INTRO_MODULE, introExam } from '../intro/story'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeQuestion(d: any): QuizQuestion {
@@ -65,7 +67,11 @@ export default function Practice({
   // Per-answer server credit: XP accumulated mid-lesson, plus the in-flight call
   // so lesson-complete on the final question never races it.
   // Модуль «Алфавит»: урок — цепочка игр со знакомством с буквами и словами, короткая проверка, праздник.
-  const alphabet = useAlphabetLesson(moduleId, lessonId, questions, index)
+  // Модуль «Знакомство»: урок — цепочка сцен истории (новая фраза, правило, игра), короткая проверка, праздник.
+  const intro = useIntroLesson(moduleId, lessonId, questions)
+  const alphabetFlow = useAlphabetLesson(moduleId, lessonId, questions, index)
+  // Ход урока с играми — у того модуля, что включён; у остальных модулей оба ничего не делают.
+  const alphabet = intro.on ? intro : alphabetFlow
   const answerXpRef = React.useRef(0)
   const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
 
@@ -98,7 +104,7 @@ export default function Practice({
       return
     }
     // Алфавит: урок — цепочка игр, а вопросы — короткая проверка в конце (последние вопросы урока).
-    const played = (moduleId === ALPHABET_MODULE ? alphabetExam(data, lessonId) : data.slice(0, 10)).map(normalizeQuestion)
+    const played = (moduleId === ALPHABET_MODULE ? alphabetExam(data, lessonId) : moduleId === INTRO_MODULE ? introExam(data) : data.slice(0, 10)).map(normalizeQuestion)
     setQuestions(played)
     setPhase('answering')
   }
@@ -170,14 +176,26 @@ export default function Practice({
     )
   }
 
-  if (alphabet.scene) {
+  if (intro.scene) {
+    return (
+      <IntroInterlude
+        scene={intro.scene}
+        lessonId={lessonId}
+        fraction={intro.progress(index, questions.length)}
+        onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
+        onDone={() => intro.sceneDone(navigate)}
+      />
+    )
+  }
+
+  if (alphabetFlow.scene) {
     return (
       <AlphabetInterlude
-        scene={alphabet.scene}
+        scene={alphabetFlow.scene}
         lessonId={lessonId}
-        fraction={alphabet.progress(index, questions.length)}
+        fraction={alphabetFlow.progress(index, questions.length)}
         onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
-        onDone={() => alphabet.sceneDone(navigate)}
+        onDone={() => alphabetFlow.sceneDone(navigate)}
         navigate={navigate}
       />
     )

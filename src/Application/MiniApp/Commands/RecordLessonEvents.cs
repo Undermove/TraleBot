@@ -23,7 +23,10 @@ public partial class RecordLessonEvents : IRequest<int>
         "opener", "letter-intro", "how-to-write", "catch", "sound-letter", "pairs", "new-word", "morph",
         "assemble", "dialogue", "cafe", "check", "finale", "lesson",
         // Знакомство с приложением (ModuleId "onboarding").
-        "greeting", "first-word", "tour", "celebration"
+        "greeting", "first-word", "tour", "celebration",
+        // «Знакомство» (ModuleId "intro").
+        "new-phrase", "rule", "yard", "elevator", "party", "magnets", "border", "detective", "chat", "taxi",
+        "family", "havesort", "aboutme", "supra"
     };
 
     public static readonly IReadOnlySet<string> Events = new HashSet<string>

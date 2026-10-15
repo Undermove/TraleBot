@@ -73,9 +73,14 @@ reportCampaignOpenFromUrl()
 // ?alphabet-lab=… — стенд сцен алфавита для проверки вёрстки (e2e/alphabet-fit.spec.ts); отдельный кусок бандла.
 const AlphabetLab = React.lazy(() => import('./alphabet/lab/Lab'))
 const lab = new URLSearchParams(window.location.search).has('alphabet-lab')
+// ?intro-lab — стенд сцен «Знакомства» (intro/IntroLab.tsx).
+const IntroLab = React.lazy(() => import('./intro/IntroLab'))
+const introLab = new URLSearchParams(window.location.search).has('intro-lab')
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    {lab ? <React.Suspense fallback={null}><AlphabetLab /></React.Suspense> : <App />}
+    {lab ? <React.Suspense fallback={null}><AlphabetLab /></React.Suspense>
+      : introLab ? <React.Suspense fallback={null}><IntroLab /></React.Suspense>
+      : <App />}
   </React.StrictMode>
 )

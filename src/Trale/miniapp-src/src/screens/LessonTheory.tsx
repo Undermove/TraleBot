@@ -4,6 +4,8 @@ import Button from '../components/Button'
 import RevealKaniOverlay from '../components/RevealKaniOverlay'
 import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
 import LessonOpener from '../alphabet/opener/LessonOpener'
+import IntroOpener from '../intro/IntroOpener'
+import { INTRO_MODULE } from '../intro/story'
 import { lessonFlow } from '../analytics/lessonEvents'
 
 interface Props {
@@ -29,7 +31,7 @@ export default function LessonTheory({
 
   // Аналитика: стартовый экран урока алфавита — шаг 0 его хода.
   useEffect(() => {
-    if (moduleId === 'alphabet-progressive' && theory) lessonFlow.open(moduleId, lessonId)
+    if ((moduleId === 'alphabet-progressive' || moduleId === INTRO_MODULE) && theory) lessonFlow.open(moduleId, lessonId)
   }, [moduleId, lessonId, !!theory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -61,6 +63,18 @@ export default function LessonTheory({
         />
         <div className="p-5 text-jewelInk-mid">Урок не найден.</div>
       </div>
+    )
+  }
+
+  // «Знакомство»: начало урока истории — акт, план сцен, «Начать»; теория — по «подробнее».
+  if (moduleId === INTRO_MODULE) {
+    return (
+      <IntroOpener
+        lessonId={lessonId}
+        onBack={() => { lessonFlow.exit(); navigate({ kind: 'module', moduleId }) }}
+        onStart={() => { lessonFlow.done(); navigate({ kind: 'practice', moduleId, lessonId }) }}
+        details={theory.blocks.map((b, i) => <TheoryBlock key={i} block={b} />)}
+      />
     )
   }
 

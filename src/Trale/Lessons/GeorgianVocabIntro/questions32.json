@@ -1,0 +1,140 @@
+{
+  "lesson_id": "intro-32",
+  "title": "Расскажи о себе",
+  "lexicon": [
+    "მიყვარს საქართველო",
+    "არ ვიცი",
+    "ქალიშვილი",
+    "ვაჟი"
+  ],
+  "questions": [
+    {
+      "lemma": "მიყვარს საქართველო",
+      "question": "Как переводится «მიყვარს საქართველო»?",
+      "options": [
+        "как тебя зовут?",
+        "семья",
+        "я люблю Грузию"
+      ],
+      "answer_index": 2,
+      "explanation": "«მიყვარს საქართველო» — я люблю Грузию.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q1"
+    },
+    {
+      "lemma": "არ ვიცი",
+      "question": "Как переводится «არ ვიცი»?",
+      "options": [
+        "извините",
+        "Привет! Меня зовут Нино. А тебя?",
+        "не знаю"
+      ],
+      "answer_index": 2,
+      "explanation": "«არ ვიცი» — не знаю.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q2"
+    },
+    {
+      "lemma": "ქალიშვილი",
+      "question": "Как переводится «ქალიშვილი»?",
+      "options": [
+        "дочь",
+        "жена",
+        "семья"
+      ],
+      "answer_index": 0,
+      "explanation": "«ქალიშვილი» — дочь.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q3"
+    },
+    {
+      "lemma": "ვაჟი",
+      "question": "Как переводится «ვაჟი»?",
+      "options": [
+        "сын",
+        "я живу в Тбилиси",
+        "спасибо"
+      ],
+      "answer_index": 0,
+      "explanation": "«ვაჟი» — сын.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q4"
+    },
+    {
+      "lemma": "მიყვარს საქართველო",
+      "question": "Как сказать «я люблю Грузию»?",
+      "options": [
+        "დილა მშვიდობისა",
+        "მიყვარს საქართველო",
+        "მე მქვია"
+      ],
+      "answer_index": 1,
+      "explanation": "«я люблю Грузию» — «მიყვარს საქართველო».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q5"
+    },
+    {
+      "lemma": "არ ვიცი",
+      "question": "Как сказать «не знаю»?",
+      "options": [
+        "საიდან ხარ?",
+        "არ ვიცი",
+        "მიყვარს საქართველო"
+      ],
+      "answer_index": 1,
+      "explanation": "«не знаю» — «არ ვიცი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q6"
+    },
+    {
+      "lemma": "ქალიშვილი",
+      "question": "Как сказать «дочь»?",
+      "options": [
+        "ექიმი",
+        "ქალიშვილი",
+        "მე ვარ სტუდენტი"
+      ],
+      "answer_index": 1,
+      "explanation": "«дочь» — «ქალიშვილი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q7"
+    },
+    {
+      "lemma": "ვაჟი",
+      "question": "Как сказать «сын»?",
+      "options": [
+        "ვაჟი",
+        "მე მქვია კარლოსი",
+        "ცოლი"
+      ],
+      "answer_index": 0,
+      "explanation": "«сын» — «ვაჟი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro32-q8"
+    }
+  ]
+}
