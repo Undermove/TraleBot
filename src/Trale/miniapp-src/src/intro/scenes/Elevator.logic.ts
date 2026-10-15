@@ -311,7 +311,7 @@ export function elevAnswer(s: ElevState, id: string): { s: ElevState; verdict: V
   const correct = s.correct + 1
   const hintsOff = s.hints && correct >= HINTS_OFF_AFTER
   const done = exI >= r.ex.length
-  const tip = hintsOff ? 'Русские подсказки под кнопками убраны — дальше сам.' : verdict.hint || (done ? 'Всё сказано — едем без пауз.' : '')
+  const tip = hintsOff ? 'Подсказки под кнопками убраны — дальше сам.' : verdict.hint || (done ? 'Всё сказано — едем без пауз.' : '')
   return {
     s: {
       ...s, exI, correct, hints: s.hints && !hintsOff, tip, exMisses: 0,

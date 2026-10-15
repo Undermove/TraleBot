@@ -224,7 +224,7 @@ export function yardAnswer(s: YardState, id: string): { s: YardState; verdict: V
   const gain = verdict.res === 'soft' ? 1 : (combo >= 3 ? 2 : 1) + (verdict.res === 'bonus' ? 1 : 0)
   const correct = n.correct + 1
   const hintsOff = n.hints && correct >= HINTS_OFF_AFTER
-  const tip = hintsOff ? 'Русские подсказки под кнопками убраны — дальше сам. Ты справишься.'
+  const tip = hintsOff ? 'Подсказки под кнопками убраны — дальше сам. Ты справишься.'
     : verdict.hint || (combo >= 3 ? `Серия ${combo}: соседи улыбаются вдвойне.` : '')
   n = {
     ...n, combo, best: Math.max(n.best, combo), smiles: n.smiles + gain, correct, hints: n.hints && !hintsOff, tip,

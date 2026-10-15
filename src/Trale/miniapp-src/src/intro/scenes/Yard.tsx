@@ -187,7 +187,8 @@ export default function Yard({ lesson, step, fraction, onExit, onDone, rng = Mat
     haptic('good'); sound.pop(Math.min(n.combo, 12))
     floater(`+${n.smiles - prev.smiles}`, personEl.current, '#4E8A5B')
     if (verdict.res === 'bonus' || n.combo >= 3) burst(personEl.current, 'small')
-    if (verdict.react) later(() => say(verdict.react!), 500)
+    // Сосед отвечает той же фразой — запись уже прозвучала, второй раз не играем.
+    if (verdict.react && verdict.react !== id) later(() => say(verdict.react!), 500)
   }
 
   const title = INTRO[mode].title
@@ -260,7 +261,7 @@ export default function Yard({ lesson, step, fraction, onExit, onDone, rng = Mat
 
         <div className="shrink-0 grid grid-cols-2 gap-2" data-testid="yard-replies">
           {panel.map(id => (
-            <Reply key={id} testId={`reply-${id}`} geo={phrase(id).geo} hint={s.hints ? phrase(id).ru : undefined} compact={panel.length > 2}
+            <Reply key={id} testId={`reply-${id}`} geo={phrase(id).geo} hint={s.hints ? phrase(id).ru : ''} compact={panel.length > 2}
               state={bad === id ? 'bad' : ready ? 'idle' : 'dim'}
               onClick={() => answer(id)} />
           ))}

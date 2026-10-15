@@ -151,7 +151,8 @@ export default function Elevator({ lesson, step, fraction, onExit, onDone, rng =
     say(id)
     haptic('good'); sound.pop(n.correct)
     floater(verdict.res === 'bonus' ? '+2' : '+1', npc.current, '#4E8A5B')
-    if (verdict.react) later(() => say(verdict.react!), 450)
+    // Сосед отвечает той же фразой — запись уже прозвучала, второй раз не играем.
+    if (verdict.react && verdict.react !== id) later(() => say(verdict.react!), 450)
   }
 
   const title = INTRO[mode].title
@@ -243,7 +244,7 @@ export default function Elevator({ lesson, step, fraction, onExit, onDone, rng =
 
         <div className="shrink-0 flex flex-col gap-1.5" data-testid="elevator-replies">
           {shown.options.map(id => (
-            <Reply key={`${s.ri}-${s.exI}-${id}`} testId={`reply-${id}`} compact geo={phrase(id).geo} hint={s.hints ? phrase(id).ru : undefined}
+            <Reply key={`${s.ri}-${s.exI}-${id}`} testId={`reply-${id}`} compact geo={phrase(id).geo} hint={s.hints ? phrase(id).ru : ''}
               state={bad === id ? 'bad' : ex ? 'idle' : 'dim'} onClick={() => answer(id)} />
           ))}
         </div>
