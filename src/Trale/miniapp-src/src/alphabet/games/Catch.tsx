@@ -115,7 +115,7 @@ export default function Catch({ letters, lesson, fraction, onExit, onDone, rng =
     const c = canvas.current
     const ctx = c?.getContext?.('2d')
     if (!c || !ctx) return
-    const dpr = Math.min(2, window.devicePixelRatio || 1)
+    const dpr = Math.min(3, window.devicePixelRatio || 1)
     if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr) }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)

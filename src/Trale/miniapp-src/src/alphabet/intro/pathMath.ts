@@ -59,3 +59,18 @@ export function sample(d: string, step: number): P[] {
 }
 
 export const lengthOf = (d: string) => { const l = polyline(d).len; return l[l.length - 1] ?? 0 }
+
+/** Полилиния по готовым точкам (медианы штрихов) с накопленной длиной. */
+export function lineOf(points: readonly (readonly [number, number])[]): { pts: P[]; len: number[] } {
+  const pts = points.map(([x, y]) => ({ x, y }))
+  const len = [0]
+  for (let i = 1; i < pts.length; i++) len.push(len[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y))
+  return { pts, len }
+}
+
+/** Равномерная выборка точек по полилинии: точка каждые step единиц. */
+export function sampleLine(line: { pts: P[]; len: number[] }, step: number): P[] {
+  const L = line.len[line.len.length - 1] ?? 0
+  const n = Math.max(2, Math.round(L / step) + 1)
+  return Array.from({ length: n }, (_, i) => pointAt(line, i / (n - 1)))
+}

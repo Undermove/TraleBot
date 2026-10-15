@@ -2,10 +2,10 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { PRODUCTS, orderText } from '../src/alphabet/cafe/products'
-import { HANDWRITING } from '../src/alphabet/intro/handwriting'
+import { MEDIANS } from '../src/alphabet/intro/medians'
 import { ALPHABET_LESSONS, lessonInfo } from '../src/alphabet/lessons'
 import { lessonLetters } from '../src/alphabet/games/logic'
-import { sample } from '../src/alphabet/intro/pathMath'
+import { lineOf, sampleLine } from '../src/alphabet/intro/pathMath'
 
 // Алфавит — урок как цепочка игр: знакомство с буквой (стереть поверхность → как пишется → слово), «Поймай букву»,
 // «Пары», «Звук → буква», новые слова, «Превращение» / «Собери слово», «Кафе Бомборы» (с пятого урока), короткая
@@ -62,7 +62,7 @@ async function openModule(page: Page) {
 async function write(page: Page, letter: string) {
   const box = (await page.getByTestId('intro-touch').boundingBox())!
   const at = ([x, y]: [number, number]) => [box.x + (x / 100) * box.width, box.y + (y / 100) * box.height] as const
-  for (const st of HANDWRITING[letter].strokes.map(d => sample(d, 3).map(p => [p.x, p.y] as [number, number]))) {
+  for (const st of MEDIANS[letter].strokes.map(m => sampleLine(lineOf(m), 3).map(p => [p.x, p.y] as [number, number]))) {
     await page.mouse.move(...at(st[0]))
     await page.mouse.down()
     for (const p of st.slice(1)) await page.mouse.move(...at(p), { steps: 2 })
@@ -408,7 +408,7 @@ test('«Как пишется» for a two-stroke letter: the pen draws stroke 1,
   await expect(page.getByTestId('intro-start')).toHaveAttribute('data-stroke', '1')
   // Второй штрих раньше первого не засчитывается.
   const box = (await page.getByTestId('intro-touch').boundingBox())!
-  const s2 = sample(HANDWRITING['დ'].strokes[1], 3).map(p => [p.x, p.y] as [number, number])
+  const s2 = sampleLine(lineOf(MEDIANS['დ'].strokes[1]), 3).map(p => [p.x, p.y] as [number, number])
   await page.mouse.move(box.x + (s2[0][0] / 100) * box.width, box.y + (s2[0][1] / 100) * box.height)
   await page.mouse.down()
   for (const [x, y] of s2.slice(1)) await page.mouse.move(box.x + (x / 100) * box.width, box.y + (y / 100) * box.height, { steps: 2 })
@@ -417,4 +417,22 @@ test('«Как пишется» for a two-stroke letter: the pen draws stroke 1,
   await expect(page.getByTestId('intro-start')).toHaveAttribute('data-stroke', '1')
   await write(page, 'დ')
   await expect(page.getByTestId('intro-caption')).toBeVisible({ timeout: 4000 })
+})
+
+test('«Как пишется» for ჩ: the pen reveals the crisp glyph through the stroke mask', async ({ page }) => {
+  test.setTimeout(60_000)
+  await setup(page, [1, 2, 3], 4)
+  await openModule(page)
+  await page.getByTestId('lesson-btn-4').click()
+  await page.getByRole('button', { name: 'Начать' }).click()
+  await page.getByTestId('intro-skip').click()
+  await page.getByRole('button', { name: 'дальше →' }).click()
+  const stage = page.getByTestId('intro-stage')
+  await expect(stage).toHaveAttribute('data-ready', 'yes')
+  for (let i = 0; i < 6 && (await stage.getAttribute('data-phase')) === 'reveal'; i++) await rub(page)
+  await expect(stage).toHaveAttribute('data-phase', 'demo', { timeout: 5000 })
+  await shot(page, '31-reveal-ch')
+  await page.waitForTimeout(1500)
+  await shot(page, '32-demo-ch')
+  await expect(page.getByTestId('intro-writing')).toBeVisible()
 })

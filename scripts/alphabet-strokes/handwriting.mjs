@@ -1,4 +1,4 @@
-// Рукописные буквы для «Как пишется»: из векторной таблицы письма мхедрули (Mkhedruli.svg, Wikimedia Commons,
+// ИССЛЕДОВАНИЕ (в приложении не используется — там глиф + медианы, см. medians.mjs). Рукописные буквы: из векторной таблицы письма мхедрули (Mkhedruli.svg, Wikimedia Commons,
 // User:Jaqeli / User:Carnby, общественное достояние) получаем у каждой буквы плавные осевые линии штрихов
 // в порядке и направлении письма — кубические кривые Безье в синтаксисе SVG path.
 //
@@ -177,7 +177,7 @@ const result = await page.evaluate(({ INPUT, ROWS, MANUAL }) => {
 
 await browser.close()
 
-const ts = `// Рукописные буквы для «Как пишется»: у каждой буквы — штрихи в порядке письма, каждый — одна плавная линия
+const ts = `// ИССЛЕДОВАНИЕ (в приложении не используется — там глиф + медианы, см. medians.mjs). Рукописные буквы: у каждой буквы — штрихи в порядке письма, каждый — одна плавная линия
 // (кубические Безье, SVG path) в боксе 0..100: верх строчных y=30, строка y=70. Буква на этом шаге рисуется
 // только из этих линий (бледная подложка, перо, проверка пальца), поэтому перо всегда идёт ровно по букве.
 // Форма и направление — по таблице письма мхедрули «მხედრულით წერის მიმართულება» (User:Jaqeli, 2013;
@@ -192,7 +192,7 @@ export const HANDWRITING: Record<string, Handwriting> = {
 ${result.map(l => `  '${l.letter}': { confidence: '${meta[l.letter].confidence}', strokes: ${JSON.stringify(l.paths)} }`).join(',\n')}
 }
 `
-writeFileSync(resolve(here, '../../src/Trale/miniapp-src/src/alphabet/intro/handwriting.ts'), ts)
+writeFileSync(resolve(here, 'handwriting.out.ts'), ts)
 
 const g0 = result[0]
 writeFileSync(resolve(here, 'grid-sheet.html'), `<html><meta charset="utf-8"><style>body{margin:4px;font:11px sans-serif;width:1060px;background:#fff}.c{display:inline-block;margin:2px;text-align:center}</style><body>` + result.map(l => {

@@ -6,18 +6,20 @@ import { burst, haptic, playClip, reducedMotion, sound } from '../games/fx'
 import { WORD_AUDIO } from '../games/data'
 import { introOf, transcriptionOf, wordParts, type LetterIntro as Intro } from './letters'
 import { Coverage, PathTrace, glyphPoints, paintSurface, type Pt } from './paint'
-import { HANDWRITING } from './handwriting'
-import { lengthOf, pointAt, polyline, sample } from './pathMath'
+import { GLYPHS } from './glyphs'
+import { MEDIANS, MEDIAN_MASK } from './medians'
+import { lineOf, pointAt, sampleLine } from './pathMath'
 
 /**
  * «Знакомство с буквой» — отдельная сцена на каждую новую букву, перед первым вопросом о ней.
  * 1) Стираешь пальцем поверхность грузинского слова на эту букву (корку арбуза — საზამთრო, снег — თოვლი…),
  *    под ней проявляется буква и звучит запись этого слова — ровно один раз; дальше — только по кнопке.
- * 2) «Как пишется»: буква на этом шаге — рукописная и нарисована только из своих штрихов (handwriting.ts:
- *    плавные линии по таблице письма мхедрули). Перо выводит её штрих за штрихом с постоянной скоростью
- *    (чернила — тот же путь, поэтому всегда ровно по букве), у начала штриха — номер. Потом «Теперь ты»:
- *    ведёшь пальцем по бледной букве от точки текущего штриха по стрелке; засчитываем путь по порядку
- *    и направлению, прощая неточность (paint.PathTrace, ~80% пути). «ещё раз» показывает перо снова.
+ * 2) «Как пишется» (как hanzi-writer): буква — всегда векторный глиф (glyphs.ts), бледный — подсказка. Перо идёт
+ *    по медианам штрихов (medians.ts: порядок и направление по таблице письма мхедрули), а за ним через маску
+ *    из толстой линии вдоль медианы проявляется тот же глиф в полную силу — поэтому «чернила» всегда точно
+ *    буква, а не кривая линия. У начала штриха — номер. Потом «Теперь ты»: след пальца — такая же маска,
+ *    открывающая глиф; засчитываем путь по порядку и направлению, прощая неточность (paint.PathTrace, ~80%
+ *    пути). «ещё раз» показывает перо снова.
  * 3) Подпись: слово крупно с подсвеченной буквой, «сазамтро — арбуз», «ს — звук „с“» и, для трудных букв,
  *    одна строка о звуке.
  */
@@ -94,7 +96,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
                 data-testid="intro-progress" style={{ width: `${Math.min(100, Math.round((progress / (phase === 'reveal' ? REVEAL_AT : TRACE_AT)) * 100))}%` }} />
             </div>
             <div className="mt-2 text-center text-[13px] font-bold text-jewelInk-hint">
-              {phase === 'reveal' ? 'Води пальцем по картинке — под ней что-то есть' : (HANDWRITING[letter]?.strokes.length ?? 1) > 1 ? 'Веди от зелёной точки по стрелке — штрих за штрихом' : 'Веди пальцем от зелёной точки по стрелке'}
+              {phase === 'reveal' ? 'Води пальцем по картинке — под ней что-то есть' : (MEDIANS[letter]?.strokes.length ?? 1) > 1 ? 'Веди от зелёной точки по стрелке — штрих за штрихом' : 'Веди пальцем от зелёной точки по стрелке'}
             </div>
           </div>
         )}
@@ -146,14 +148,15 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
   onTraced: () => void
 }) {
   const coverRef = useRef<HTMLCanvasElement>(null)
-  const letterRef = useRef<HTMLCanvasElement>(null)
-  const paintRef = useRef<HTMLCanvasElement>(null)
+  const letterRef = useRef<SVGSVGElement>(null)
   const glyph = useRef<{ points: Pt[]; mask: HTMLCanvasElement | null; strokes: Pt[][] }>({ points: [], mask: null, strokes: [] })
   const [pen, setPen] = useState<Pt | null>(null)
   // Рукописная буква: штрихи (SVG path, бокс 0..100), их полилинии и выборка точек в пикселях сцены.
-  const hw = HANDWRITING[intro.letter]
-  const lines = useMemo(() => (hw?.strokes ?? []).map(d => polyline(d)), [hw])
-  const strokesPx = useMemo(() => (hw?.strokes ?? []).map(d => sample(d, 2.5).map(p => ({ x: (p.x / 100) * size, y: (p.y / 100) * size }))), [hw, size])
+  const outline = GLYPHS[intro.letter] ?? ''
+  const med = MEDIANS[intro.letter]
+  const lines = useMemo(() => (med?.strokes ?? []).map(st => lineOf(st)), [med])
+  const strokesPx = useMemo(() => lines.map(l => sampleLine(l, 2.5).map(p => ({ x: (p.x / 100) * size, y: (p.y / 100) * size }))), [lines, size])
+  const maskId = `ab-mask-${intro.letter.charCodeAt(0)}`
   const [inked, setInked] = useState<number[]>([])
   const [trail, setTrail] = useState<Pt[][]>([])
   const path = useRef<PathTrace>(new PathTrace([]))
@@ -216,38 +219,16 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
     try { const x = c?.getContext('2d') ?? null; x?.setTransform(dpr, 0, 0, dpr, 0, 0); return x } catch { return null }
   }
 
-  // Нарисовать поверхность и букву, когда шрифт загрузился (иначе контур посчитается по запасному шрифту).
+  // Поверхность — на холсте с учётом плотности пикселей экрана (до 3×); буква — вектор (SVG), от шрифта не зависит.
   useEffect(() => {
-    let alive = true
-    const fonts = (document as any).fonts
-    const wait: Promise<unknown> = fonts?.load ? fonts.load(`800 100px "Noto Sans Georgian"`, intro.letter).catch(() => null) : Promise.resolve()
-    void wait.then(() => {
-      if (!alive) return
-      for (const c of [coverRef.current, letterRef.current, paintRef.current, fxCanvas.current]) if (c) { c.width = size * dpr; c.height = size * dpr }
-      const cover = ctxOf(coverRef.current)
-      if (cover) paintSurface(cover, size, size, intro.surface.cover, intro.letter.charCodeAt(0))
-      const g = glyphPoints(intro.letter, size)
-      glyph.current = { ...g, strokes: [] }
-      reveal.current = new Coverage(glyph.current.points.filter((_, i) => i % 2 === 0))
-      drawLetter(1)
-      setReady(true)
-    })
-    return () => { alive = false }
+    for (const c of [coverRef.current, fxCanvas.current]) if (c) { c.width = Math.round(size * dpr); c.height = Math.round(size * dpr) }
+    const cover = ctxOf(coverRef.current)
+    if (cover) paintSurface(cover, size, size, intro.surface.cover, intro.letter.charCodeAt(0))
+    const g = glyphPoints(outline, size)
+    glyph.current = { ...g, strokes: [] }
+    reveal.current = new Coverage(glyph.current.points.filter((_, i) => i % 2 === 0))
+    setReady(true)
   }, [intro.letter, size]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** Буква на холсте: в фазе стирания — полностью, в фазе обводки — бледной подсказкой. */
-  function drawLetter(alpha: number) {
-    const ctx = ctxOf(letterRef.current)
-    if (!ctx || !glyph.current.mask) return
-    ctx.clearRect(0, 0, size, size)
-    ctx.globalAlpha = alpha
-    ctx.drawImage(glyph.current.mask, 0, 0, size, size)
-    ctx.globalCompositeOperation = 'source-in'
-    ctx.fillStyle = intro.surface.ink
-    ctx.fillRect(0, 0, size, size)
-    ctx.globalCompositeOperation = 'source-over'
-    ctx.globalAlpha = 1
-  }
 
   useEffect(() => {
     if (phase === 'trace') {
@@ -265,7 +246,7 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
     if (phase !== 'demo') return
     phaseRef.current = 'demo'
     setPen(null); setInked(lines.map(() => 0)); setDemoStroke(0); demoStrokeRef.current = 0
-    const lens = (hw?.strokes ?? []).map(lengthOf)
+    const lens = lines.map(l => l.len[l.len.length - 1] ?? 0)
     const total = lens.reduce((a, b) => a + b, 0)
     if (total === 0 || reducedMotion() || !glyph.current.mask) {
       setInked(lines.map(() => 1))
@@ -391,8 +372,9 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
       data-testid="intro-stage" data-phase={phase} data-ready={ready ? 'yes' : 'no'}
     >
       <div ref={boomRef} style={{ ...canvasStyle, opacity: phase === 'reveal' ? 1 : 0, transition: 'opacity 350ms ease-out' }}>
-        <canvas ref={letterRef} style={canvasStyle} aria-label={intro.letter} role="img" />
-        <canvas ref={paintRef} style={canvasStyle} />
+        <svg ref={letterRef} viewBox="0 0 100 100" width={size} height={size} style={canvasStyle} aria-label={intro.letter} role="img" data-testid="intro-glyph">
+          <path d={outline} fill={intro.surface.ink} />
+        </svg>
       </div>
       <canvas
         ref={coverRef}
@@ -403,11 +385,23 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
       {phase === 'demo' && pen && (
         <div className="absolute pointer-events-none" style={{ zIndex: 5, left: pen.x - 11, top: pen.y - 11, width: 22, height: 22, borderRadius: 11, background: '#F5B820', border: '2px solid #15100A', boxShadow: '0 0 0 4px rgba(245,184,32,0.35)' }} data-testid="intro-pen" />
       )}
-      {phase !== 'reveal' && hw && (
-        <svg viewBox="0 0 100 100" width={size} height={size} className={`absolute inset-0 pointer-events-none ${phase === 'done' ? 'ab-boom' : ''}`} data-testid="intro-handwriting">
-          {hw.strokes.map((d, i) => <path key={`g${i}`} d={d} fill="none" stroke={intro.surface.ink} strokeOpacity={phase === 'done' ? 0 : 0.2} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />)}
-          {hw.strokes.map((d, i) => (inked[i] ?? 0) > 0.001 && <path key={`i${i}`} d={d} pathLength={1} strokeDasharray={`${Math.min(1, inked[i])} 2`} fill="none" stroke={intro.surface.ink} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" data-testid="intro-ink" />)}
-          {trail.map((t, i) => t.length > 0 && <polyline key={`t${i}`} points={t.map(p => `${(p.x / size) * 100},${(p.y / size) * 100}`).join(' ')} fill="none" stroke={intro.surface.ink} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />)}
+      {phase !== 'reveal' && outline && (
+        <svg viewBox="0 0 100 100" width={size} height={size} className={`absolute inset-0 pointer-events-none ${phase === 'done' ? 'ab-boom' : ''}`} data-testid="intro-writing">
+          <defs>
+            {/* Маска: толстые линии вдоль медиан (демо) и след пальца (ученик) — открывают глиф. */}
+            <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+              {phase === 'done'
+                ? <rect x="0" y="0" width="100" height="100" fill="#fff" />
+                : <>
+                  {(med?.strokes ?? []).map((st, i) => (inked[i] ?? 0) > 0.001 && (
+                    <path key={`m${i}`} d={'M' + st.map(p => p.join(' ')).join(' L')} pathLength={1} strokeDasharray={`${Math.min(1, inked[i])} 2`} fill="none" stroke="#fff" strokeWidth={MEDIAN_MASK} strokeLinecap="round" strokeLinejoin="round" data-testid="intro-ink" />
+                  ))}
+                  {trail.map((t, i) => t.length > 0 && <polyline key={`t${i}`} points={t.map(p => `${(p.x / size) * 100},${(p.y / size) * 100}`).join(' ')} fill="none" stroke="#fff" strokeWidth={MEDIAN_MASK * 0.85} strokeLinecap="round" strokeLinejoin="round" />)}
+                </>}
+            </mask>
+          </defs>
+          <path d={outline} fill={intro.surface.ink} fillOpacity={phase === 'done' ? 0 : 0.2} />
+          <path d={outline} fill={intro.surface.ink} mask={`url(#${maskId})`} />
         </svg>
       )}
       {phase === 'demo' && <StrokeNumbers strokes={strokesPx} upTo={demoStroke} size={size} />}

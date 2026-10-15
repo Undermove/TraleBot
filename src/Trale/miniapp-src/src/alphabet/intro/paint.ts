@@ -150,19 +150,19 @@ export function paintSurface(ctx: Ctx, w: number, h: number, cover: { base: stri
 export interface Pt { x: number; y: number }
 
 /**
- * Точки внутри буквы: рисуем букву на невидимом холсте и берём сетку с шагом step.
- * Без холста (jsdom) — пустой список, и экран просто даёт пройти дальше.
+ * Точки внутри буквы: рисуем контур буквы (glyphs.ts, вектор Noto Sans Georgian 800 в боксе 0..100) на невидимом
+ * холсте и берём сетку с шагом step. Без холста (jsdom) — пустой список, и экран просто даёт пройти дальше.
  */
-export function glyphPoints(letter: string, size: number, step = 7, font = '800 {px}px "Noto Sans Georgian", sans-serif'): { points: Pt[]; mask: HTMLCanvasElement | null } {
+export function glyphPoints(outline: string, size: number, step = 7): { points: Pt[]; mask: HTMLCanvasElement | null } {
   try {
     const c = document.createElement('canvas')
     c.width = size; c.height = size
     const ctx = c.getContext('2d')
-    if (!ctx) return { points: [], mask: null }
+    if (!ctx || typeof Path2D === 'undefined') return { points: [], mask: null }
     ctx.fillStyle = '#000'
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    ctx.font = font.replace('{px}', String(Math.round(size * 0.62)))
-    ctx.fillText(letter, size / 2, size * 0.5)
+    ctx.setTransform(size / 100, 0, 0, size / 100, 0, 0)
+    ctx.fill(new Path2D(outline))
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     const data = ctx.getImageData(0, 0, size, size).data
     const points: Pt[] = []
     for (let y = step / 2; y < size; y += step)
