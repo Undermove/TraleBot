@@ -5,6 +5,7 @@ import { burst, haptic, sound } from './fx'
 import { letterChoices, morphPieces, morphWords, type Rng, type Word, type WordPool } from './logic'
 import { cyr } from '../../verbs/types'
 import { useLater } from '../../verbs/games/useLater'
+import { useRowFit } from './fit'
 
 /**
  * «Превращение»: настоящее грузинское слово, написанное кириллицей, как оно звучит («дэда»). Подсвечен
@@ -31,8 +32,11 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
   const [shake, setShake] = useState<string | null>(null)
   const [streak, setStreak] = useState(0)
   const wordRef = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLDivElement>(null)
   const tiles = useRef<(HTMLSpanElement | null)[]>([])
   const later = useLater()
+  // Буквы слова — по ширине экрана; длинное слово — мельче или в две строки.
+  const fit = useRowFit(box, pieces.length, 26, 48, 4)
 
   const pos = pieces.findIndex((p, i) => p.geo && !turned.has(i))
   const done = pos < 0
@@ -66,7 +70,6 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
   }
 
   const total = pieces.filter(p => p.geo).length
-  const big = pieces.length > 6 ? 'text-[34px] w-[38px]' : 'text-[42px] w-[48px]'
 
   return (
     <GameFrame title="Преврати слово в грузинское" eyebrow={`превращение · слово ${wi + 1} из ${words.length}`} fraction={fraction} onExit={onExit}>
@@ -75,9 +78,10 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
           ref={wordRef}
           key={wi + (done ? '-done' : '')}
           data-testid="morph-word"
-          className={`rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-5 w-full flex justify-center gap-1 ${done ? 'ab-boom bg-navy-wash' : ''}`}
+          className={`rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-5 w-full flex justify-center ${done ? 'ab-boom bg-navy-wash' : ''}`}
           style={{ boxShadow: '4px 4px 0 #15100A' }}
         >
+          <div ref={box} className="w-full flex flex-wrap justify-center" style={{ gap: 4, maxWidth: fit.perRow * fit.size + (fit.perRow - 1) * 4 + 1 }}>
           {pieces.map((p, i) => {
             const isTurned = turned.has(i)
             const isNext = i === pos
@@ -87,7 +91,8 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
                 ref={el => { tiles.current[i] = el }}
                 data-testid={`morph-tile-${i}`}
                 data-turned={isTurned ? 'yes' : 'no'}
-                className={`relative inline-flex h-[64px] items-end justify-center font-extrabold leading-none ${big} ${
+                style={{ width: fit.size, height: Math.round(fit.size * 1.35), fontSize: Math.round(fit.size * 0.88) }}
+                className={`relative inline-flex shrink-0 items-end justify-center font-extrabold leading-none ${
                   isNext ? 'rounded-lg bg-gold-wash ab-pulse' : ''} ${shake && isNext ? 'ab-shake' : ''}`}
               >
                 {isTurned ? (
@@ -102,6 +107,7 @@ export default function Morph({ lesson, fraction, onExit, onDone, rng = Math.ran
               </span>
             )
           })}
+          </div>
         </div>
 
         <div className="text-center min-h-[44px]">

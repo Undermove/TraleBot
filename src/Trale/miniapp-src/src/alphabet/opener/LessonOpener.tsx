@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import Mascot from '../../components/Mascot'
 import '../games/alphabet.css'
 import { BackIcon } from '../games/GameFrame'
 import { haptic, sound } from '../games/fx'
+import { useRowFit } from '../games/fit'
 import { lessonLetters, wordsLabel } from '../games/logic'
 import { LESSON_TOTAL, lessonInfo, nextWordsLesson, positionOf } from '../lessons'
 
@@ -28,6 +29,8 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
   const words = after ? after.words.map(w => w.geo) : []
   const [wiggle, setWiggle] = useState<number | null>(null)
   const [more, setMore] = useState(false)
+  const cardsBox = useRef<HTMLDivElement>(null)
+  const card = useRowFit(cardsBox, letters.length, 56, 92, 12).size
 
   // Карточки раздаются по одной (анимация ab-deal с задержкой) — с тихим щелчком на каждую.
   useEffect(() => {
@@ -52,7 +55,7 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
           {isWords ? `Сегодня ${wordsLabel(letters.length).replace('грузинских ', 'новых ').replace('грузинское ', 'новое ')}` : `Сегодня ${letters.length} новые буквы`}
         </h1>
 
-        <div className="mt-5 ab-short:mt-3 flex gap-3 justify-center" data-testid="opener-cards">
+        <div ref={cardsBox} className="mt-5 ab-short:mt-3 w-full flex gap-3 justify-center" data-testid="opener-cards">
           {letters.map((l, i) => (
             <button
               key={l}
@@ -62,8 +65,8 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
               className="ab-deal"
               style={{ animationDelay: `${200 + i * 170}ms` }}
             >
-              <div className={`relative ${letters.length > 3 ? 'w-[72px] h-[100px]' : 'w-[92px] h-[124px] ab-short:w-[80px] ab-short:h-[108px]'} rounded-2xl border-[1.5px] border-jewelInk overflow-hidden ${wiggle === i ? 'ab-wobble' : 'ab-bob'}`}
-                style={{ boxShadow: '4px 4px 0 #15100A', ['--d' as any]: `${i * 0.35}s`, ['--r' as any]: `${(i - 1) * 4}deg`, background: '#1B5FB0' }}>
+              <div className={`relative rounded-2xl border-[1.5px] border-jewelInk overflow-hidden ${wiggle === i ? 'ab-wobble' : 'ab-bob'}`}
+                style={{ width: card, height: Math.round(card * 1.35), boxShadow: '4px 4px 0 #15100A', ['--d' as any]: `${i * 0.35}s`, ['--r' as any]: `${(i - 1) * 4}deg`, background: '#1B5FB0' }}>
               <div className="absolute inset-1.5 rounded-xl border border-cream/40" style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(253,250,239,0.16) 0 6px, transparent 6px 12px), repeating-linear-gradient(-45deg, rgba(245,184,32,0.18) 0 6px, transparent 6px 12px)' }} />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="w-11 h-11 rounded-full bg-gold border-[1.5px] border-jewelInk flex items-center justify-center text-[24px] font-extrabold text-jewelInk">{i + 1}</span>
@@ -77,7 +80,7 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
         {words.length > 0 && (
           <div className="mt-5 ab-short:mt-3 w-full max-w-[340px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-2.5" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="opener-words">
             <div className="text-[14px] font-bold text-jewelInk-mid">А в следующем уроке прочитаешь</div>
-            <div className="mt-1 font-geo text-[24px] font-extrabold text-navy leading-snug">{words.join(' · ')}</div>
+            <div className="mt-1 font-geo text-[22px] font-extrabold text-navy leading-snug break-words">{words.join(' · ')}</div>
           </div>
         )}
 

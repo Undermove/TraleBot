@@ -6,6 +6,7 @@ import { burst, flyGhost, haptic, playClip, sound } from '../games/fx'
 import { WORD_AUDIO } from '../games/data'
 import type { Word } from '../games/logic'
 import { cyr } from '../../verbs/types'
+import { useRowFit } from '../games/fit'
 import { useLater } from '../../verbs/games/useLater'
 import { ProductArt } from '../cafe/art'
 import { PRODUCTS } from '../cafe/products'
@@ -53,6 +54,7 @@ export default function WordIntro({ featured, startCount, fraction, onExit, onDo
   const [count, setCount] = useState(startCount)
   const chip = useRef<HTMLDivElement>(null)
   const wordEl = useRef<HTMLDivElement>(null)
+  const box = useRef<HTMLDivElement>(null)
   const later = useLater()
   const word = featured[wi]
   const letters = word ? [...word.geo] : []
@@ -102,19 +104,25 @@ export default function WordIntro({ featured, startCount, fraction, onExit, onDo
   }
 
   const joined = phase !== 'tap'
+  // Плитки по ширине экрана: длинное слово (საქართველო) — плитки мельче, а если и так не влезает — в две строки.
+  const fit = useRowFit(box, letters.length, 30, 56, joined ? 0 : 6)
+  // Две строки плиток на низком экране — плитки ниже, чтобы кнопки внизу оставались на экране.
+  const tileH = Math.round(fit.size * (fit.perRow < letters.length ? 1.05 : 1.25))
+  const font = Math.round(fit.size * 0.66)
   return (
     <GameFrame title="Новое слово" eyebrow={`новое слово · ${wi + 1} из ${featured.length}`} fraction={fraction} onExit={onExit}>
-      <div className="flex-1 flex flex-col items-center gap-4" data-testid="word-intro" data-phase={phase}>
+      <div className="flex-1 min-h-0 flex flex-col items-center gap-3 ab-short:gap-2" data-testid="word-intro" data-phase={phase}>
         <div className="w-full flex items-center justify-between gap-3">
           <div className="text-[14px] font-bold text-jewelInk-mid leading-snug">Тебе хватает букв, чтобы прочитать новое слово!</div>
           <DictChip count={count} innerRef={chip} />
         </div>
 
+        <div ref={box} className="w-full flex justify-center">
         <div
           ref={wordEl}
           key={wi + (joined ? '-j' : '')}
-          className={`flex justify-center select-none ${joined ? 'gap-0 ab-boom' : 'gap-2'}`}
-          style={{ touchAction: 'none' }}
+          className={`flex flex-wrap justify-center select-none ${joined ? 'ab-boom' : ''}`}
+          style={{ touchAction: 'none', gap: joined ? 0 : 6, maxWidth: fit.perRow * fit.size + (fit.perRow - 1) * (joined ? 0 : 6) + 1 }}
           onPointerMove={swipe}
           data-testid="word-tiles"
         >
@@ -128,20 +136,21 @@ export default function WordIntro({ featured, startCount, fraction, onExit, onDo
                 data-on={on ? 'yes' : 'no'}
                 aria-label={l}
                 onPointerDown={e => { (e.target as HTMLElement).releasePointerCapture?.(e.pointerId); light(i) }}
-                className={`font-geo font-extrabold flex items-center justify-center transition-all duration-200 ${letters.length > 6 ? 'text-[30px] h-[58px]' : 'text-[38px] h-[68px]'} ${joined ? 'w-auto px-0' : letters.length > 6 ? 'w-[42px]' : 'w-[54px]'} ${
+                className={`shrink-0 font-geo font-extrabold flex items-center justify-center transition-all duration-200 ${
                   joined ? 'bg-transparent text-navy' : on ? 'rounded-xl border-[1.5px] border-jewelInk bg-navy text-cream ab-snap' : 'rounded-xl border-[1.5px] border-jewelInk bg-cream-tile'} ${
                   !joined && i === lit ? 'ab-pulse' : ''} ${shake === i ? 'ab-shake' : ''}`}
-                style={!joined ? { boxShadow: '3px 3px 0 #15100A' } : undefined}
+                style={{ width: joined ? undefined : fit.size, height: tileH, fontSize: font, ...(!joined ? { boxShadow: '3px 3px 0 #15100A' } : {}) }}
               >{l}</button>
             )
           })}
+        </div>
         </div>
 
         <div className="h-7 text-[20px] font-extrabold text-jewelInk-mid" data-testid="word-sound">
           {joined && <span className="ab-drip inline-block">«{cyr(word.geo)}»</span>}
         </div>
 
-        <div className="ab-flip w-full max-w-[300px] h-[150px]" data-flipped={phase === 'meaning' ? 'yes' : 'no'}>
+        <div className="ab-flip w-full max-w-[300px] h-[150px] ab-short:h-[110px] shrink min-h-[90px]" data-flipped={phase === 'meaning' ? 'yes' : 'no'}>
           <div className="ab-flip-inner">
             <div className="ab-flip-face rounded-2xl border-[1.5px] border-jewelInk bg-cream-deep flex items-center justify-center text-[15px] font-bold text-jewelInk-hint" style={{ boxShadow: '3px 3px 0 #15100A' }}>
               {phase === 'tap' ? 'Веди пальцем по буквам слева направо' : 'что это значит?'}
@@ -153,7 +162,7 @@ export default function WordIntro({ featured, startCount, fraction, onExit, onDo
           </div>
         </div>
 
-        <div className="mt-auto w-full max-w-[340px] flex flex-col gap-2">
+        <div className="mt-auto shrink-0 w-full max-w-[340px] flex flex-col gap-2">
           {phase === 'meaning'
             ? <Button onClick={() => void toDictionary()}>в словарь →</Button>
             : <button onClick={skip} className="h-11 text-[14px] font-bold text-jewelInk-hint underline underline-offset-4" data-testid="word-skip">пропустить</button>}

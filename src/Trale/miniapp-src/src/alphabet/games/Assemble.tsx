@@ -5,16 +5,20 @@ import { burst, flyGhost, haptic, sound } from './fx'
 import { assembleRounds, type AssembleRound, type Rng, type WordPool } from './logic'
 import { cyr } from '../../verbs/types'
 import { useLater } from '../../verbs/games/useLater'
+import { useRowFit } from './fit'
 
 /** Где лежит плитка на столе: сетка с небольшим разбросом и наклоном, чтобы было похоже на рассыпанные буквы. */
-function scatter(n: number, rng: Rng) {
-  const cols = n <= 4 ? n : Math.ceil(n / 2)
+/** Сколько колонок на столе: до 4 плиток — в ряд, дальше — в 2 ряда (плитки мельчают по ширине). */
+const colsFor = (n: number) => (n <= 4 ? n : Math.ceil(n / 2))
+
+function scatter(n: number, rng: Rng, half: number) {
+  const cols = colsFor(n)
   return Array.from({ length: n }, (_, i) => {
     const row = Math.floor(i / cols), col = i % cols
     const rowCount = Math.ceil(n / cols)
     return {
-      left: `calc(${((col + 0.5) / cols) * 100}% - 32px + ${Math.round((rng() - 0.5) * 14)}px)`,
-      top: `calc(${(row + 0.5) * (100 / rowCount)}% - 32px)`,
+      left: `calc(${((col + 0.5) / cols) * 100}% - ${half}px + ${Math.round((rng() - 0.5) * 8)}px)`,
+      top: `calc(${(row + 0.5) * (100 / rowCount)}% - ${half}px)`,
       r: `${Math.round((rng() - 0.5) * 24)}deg`,
       d: `${(rng() * 1.6).toFixed(2)}s`
     }
@@ -38,7 +42,12 @@ export default function Assemble({ lesson, fraction, onExit, onDone, rng = Math.
   const rounds = useMemo(() => given ?? assembleRounds(lesson, 2, rng, pool), [lesson]) // eslint-disable-line react-hooks/exhaustive-deps
   const [ri, setRi] = useState(0)
   const round = rounds[ri]
-  const spots = useMemo(() => scatter(round?.tiles.length ?? 0, rng), [ri]) // eslint-disable-line react-hooks/exhaustive-deps
+  const field = useRef<HTMLDivElement>(null)
+  const slotsBox = useRef<HTMLDivElement>(null)
+  // Плитки и ячейки — по ширине экрана (длинные слова — мельче, ячейки при нехватке места переносятся).
+  const tile = useRowFit(field, colsFor(round?.tiles.length ?? 1), 30, 64, 8).size
+  const slot = useRowFit(slotsBox, round?.letters.length ?? 1, 26, 48, 6)
+  const spots = useMemo(() => scatter(round?.tiles.length ?? 0, rng, tile / 2), [ri, tile]) // eslint-disable-line react-hooks/exhaustive-deps
   const [used, setUsed] = useState<Set<number>>(new Set())
   const [landed, setLanded] = useState(0)
   const [shake, setShake] = useState<number | null>(null)
@@ -82,7 +91,6 @@ export default function Assemble({ lesson, fraction, onExit, onDone, rng = Math.
   }
 
   const hintTile = misses >= 2 ? round.tiles.findIndex((t, i) => t === need && !used.has(i)) : -1
-  const slotSize = round.letters.length > 6 ? 'w-[38px] h-[50px] text-[26px]' : 'w-[48px] h-[58px] text-[32px]'
 
   return (
     <GameFrame title="Собери грузинское слово" eyebrow={`собери слово · ${ri + 1} из ${rounds.length}`} fraction={fraction} onExit={onExit}>
@@ -92,29 +100,31 @@ export default function Assemble({ lesson, fraction, onExit, onDone, rng = Math.
           <div className="text-[14px] font-bold text-jewelInk-mid">звучит «{cyr(round.word.geo)}»</div>
         </div>
 
-        <div ref={wordEl} key={ri + (complete ? '-done' : '')} className={`flex justify-center gap-1.5 ${complete ? 'ab-boom' : ''}`} data-testid="assemble-slots">
+        <div ref={slotsBox} className="w-full flex justify-center">
+        <div ref={wordEl} key={ri + (complete ? '-done' : '')} className={`flex flex-wrap justify-center ${complete ? 'ab-boom' : ''}`} style={{ gap: 6, maxWidth: slot.perRow * slot.size + (slot.perRow - 1) * 6 + 1 }} data-testid="assemble-slots">
           {round.letters.map((l, i) => (
             <div
               key={i}
               ref={el => { slotEls.current[i] = el }}
               data-testid="assemble-slot"
-              className={`${slotSize} rounded-xl border-[1.5px] flex items-center justify-center font-geo font-extrabold ${
+              className={`shrink-0 rounded-xl border-[1.5px] flex items-center justify-center font-geo font-extrabold ${
                 i < landed ? (complete ? 'bg-navy text-cream border-jewelInk' : 'bg-cream-tile border-jewelInk') : 'border-dashed border-jewelInk/40 bg-cream-deep'
               } ${i === placed && !complete ? 'ab-pulse' : ''}`}
-              style={i < landed ? { boxShadow: '2px 2px 0 #15100A' } : undefined}
+              style={{ width: slot.size, height: Math.round(slot.size * 1.2), fontSize: Math.round(slot.size * 0.66), ...(i < landed ? { boxShadow: '2px 2px 0 #15100A' } : {}) }}
             >
               {i < landed && <span className="ab-snap">{l}</span>}
             </div>
           ))}
         </div>
+        </div>
 
         {complete ? (
           <div className="text-center ab-drip">
-            <div className="font-geo text-[40px] font-extrabold text-navy leading-none">{round.word.geo}</div>
+            <div className="font-geo font-extrabold text-navy leading-none break-all" style={{ fontSize: `clamp(26px, ${Math.floor(300 / Math.max(4, [...round.word.geo].length))}px, 40px)` }}>{round.word.geo}</div>
             <div className="mt-1 text-[16px] font-bold">«{cyr(round.word.geo)}» — {round.word.ru}</div>
           </div>
         ) : (
-          <div className="relative w-full rounded-2xl border-[1.5px] border-jewelInk/25 bg-cream-deep/60" style={{ height: round.tiles.length > 4 ? 220 : 150 }}>
+          <div ref={field} className="relative w-full rounded-2xl border-[1.5px] border-jewelInk/25 bg-cream-deep/60" style={{ height: Math.ceil(round.tiles.length / colsFor(round.tiles.length)) * (tile + 18) + 20 }}>
             {round.tiles.map((t, i) => (
               <button
                 key={`${ri}-${i}`}
@@ -123,9 +133,9 @@ export default function Assemble({ lesson, fraction, onExit, onDone, rng = Math.
                 data-testid="assemble-tile"
                 disabled={used.has(i)}
                 onClick={() => tap(i)}
-                className={`absolute w-[64px] h-[64px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile font-geo text-[32px] font-extrabold ${
+                className={`absolute rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile font-geo font-extrabold ${
                   used.has(i) ? 'ab-poof' : 'ab-bob'} ${shake === i ? 'bg-ruby-wash' : ''} ${i === hintTile ? 'ring-4 ring-gold' : ''}`}
-                style={{ left: spots[i]?.left, top: spots[i]?.top, boxShadow: '3px 3px 0 #15100A', ['--r' as any]: spots[i]?.r, ['--d' as any]: spots[i]?.d }}
+                style={{ width: tile, height: tile, fontSize: Math.round(tile / 2), left: spots[i]?.left, top: spots[i]?.top, boxShadow: '3px 3px 0 #15100A', ['--r' as any]: spots[i]?.r, ['--d' as any]: spots[i]?.d }}
               >
                 <span className={`block ${shake === i ? 'ab-shake' : ''}`}>{t}</span>
               </button>

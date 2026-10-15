@@ -70,8 +70,12 @@ if (tg) {
 // rewrites the address.
 reportCampaignOpenFromUrl()
 
+// ?alphabet-lab=… — стенд сцен алфавита для проверки вёрстки (e2e/alphabet-fit.spec.ts); отдельный кусок бандла.
+const AlphabetLab = React.lazy(() => import('./alphabet/lab/Lab'))
+const lab = new URLSearchParams(window.location.search).has('alphabet-lab')
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    {lab ? <React.Suspense fallback={null}><AlphabetLab /></React.Suspense> : <App />}
   </React.StrictMode>
 )

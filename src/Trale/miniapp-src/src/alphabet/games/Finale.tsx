@@ -115,7 +115,7 @@ export default function Finale({ lessonId, onNext, onVocabulary }: { lessonId: n
         ))}
       </div>
 
-      <div className="mt-3 ab-short:mt-2 w-full max-w-[360px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-3 ab-short:p-2" style={{ boxShadow: '3px 3px 0 #15100A' }}>
+      <div className={`${wordsLesson ? 'hidden' : ''} mt-3 ab-short:mt-2 w-full max-w-[360px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-3 ab-short:p-2`} style={{ boxShadow: '3px 3px 0 #15100A' }}>
         <div className="flex items-baseline justify-between mb-2">
           <div className="text-[14px] font-extrabold">Мой алфавит</div>
           <div className="text-[12px] font-bold text-jewelInk-mid tabular-nums" data-testid="finale-letters">{learnedCount} из 33</div>

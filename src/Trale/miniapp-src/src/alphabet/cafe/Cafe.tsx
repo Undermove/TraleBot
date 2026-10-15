@@ -150,6 +150,8 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
     )
   }
 
+  // Узкий телефон: вывеска уходит влево, чтобы не наезжать на счётчик «Обслужено».
+  const narrow = window.innerWidth < 380
   return (
     <GameFrame title="Кафе Бомборы" eyebrow={guided ? 'первый гость' : `гость ${n + 1}`} fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-3 ab-short:gap-2" data-testid="cafe">
@@ -167,7 +169,7 @@ export default function Cafe({ lesson, fraction, onExit, onDone, rng = Math.rand
           <div className="h-5 flex">
             {Array.from({ length: 12 }, (_, i) => <div key={i} className={`flex-1 ${i % 2 ? 'bg-cream' : 'bg-ruby'} border-b-[1.5px] border-jewelInk`} style={{ borderBottomLeftRadius: 10, borderBottomRightRadius: 10 }} />)}
           </div>
-          <div className="absolute top-7 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-lg border-[1.5px] border-jewelInk bg-navy text-cream font-sans text-[14px] font-extrabold whitespace-nowrap" style={{ boxShadow: '2px 2px 0 #15100A' }} data-testid="cafe-sign">Бомбора</div>
+          <div className={`absolute top-7 ${narrow ? 'left-3' : 'left-1/2 -translate-x-1/2'} px-3 py-0.5 rounded-lg border-[1.5px] border-jewelInk bg-navy text-cream font-sans text-[14px] font-extrabold whitespace-nowrap`} style={{ boxShadow: '2px 2px 0 #15100A' }} data-testid="cafe-sign">Бомбора</div>
           <div key={servedCount} className="absolute top-7 right-2 px-2 py-0.5 rounded-lg bg-cream-tile border border-jewelInk/40 text-[13px] font-extrabold tabular-nums ab-count" data-testid="cafe-served">Обслужено: {servedCount}</div>
           <div className="absolute top-[64px] inset-x-0 flex justify-between px-3 pointer-events-none opacity-90 ab-short:hidden">
             <WindowArt width={84} /><WindowArt width={84} />

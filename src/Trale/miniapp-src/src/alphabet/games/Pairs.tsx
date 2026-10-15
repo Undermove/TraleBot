@@ -63,7 +63,8 @@ export default function Pairs({ deck: kind, lesson, fraction, onExit, onDone, rn
                 <div className="ab-flip-inner">
                   <div className="ab-flip-face rounded-2xl border-[1.5px] border-jewelInk bg-ruby flex items-center justify-center" style={{ boxShadow: '3px 3px 0 #15100A', backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.12) 0 8px, transparent 8px 16px)' }} />
                   <div className={`ab-flip-face ab-flip-back rounded-2xl border-[1.5px] border-jewelInk flex items-center justify-center px-1 ${matched.has(c.pair) ? 'bg-navy text-cream' : 'bg-cream-tile'}`} style={{ boxShadow: '3px 3px 0 #15100A' }}>
-                    <span className={c.kind === 'geo' ? 'font-geo text-[30px] font-extrabold' : 'text-[17px] font-extrabold leading-tight'}>{c.face}</span>
+                    <span className={`text-center leading-tight ${c.kind === 'geo' ? 'font-geo font-extrabold whitespace-nowrap' : 'font-extrabold break-words hyphens-auto'}`}
+                      style={{ fontSize: c.kind === 'geo' ? Math.max(11, Math.min(30, Math.floor(150 / Math.max(1, [...c.face].length)))) : Math.max(12, Math.min(17, Math.floor(150 / Math.max(1, c.face.length)))) }}>{c.face}</span>
                   </div>
                 </div>
               </button>

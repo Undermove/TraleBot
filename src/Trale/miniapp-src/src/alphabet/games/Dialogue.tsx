@@ -39,6 +39,9 @@ export default function Dialogue({ stage, own, known, fraction, onExit, onDone, 
   if (!round) { later(onDone, 0); return null }
   const hint = !answered && (ri === 0 || misses >= 2)
   const done = answered && ri + 1 >= rounds.length
+  // Варианты ответа целиком, без переноса посреди слова: короткие — в три колонки, длиннее — в две, самые длинные — столбиком.
+  const longest = Math.max(...round.choices.map(c => [...c].length))
+  const cols = longest <= 5 ? 3 : longest <= 8 ? 2 : 1
 
   function pick(geo: string) {
     if (answered) return
@@ -72,7 +75,7 @@ export default function Dialogue({ stage, own, known, fraction, onExit, onDone, 
           <div className="flex items-end gap-2">
             <div className="shrink-0"><Mascot mood={answered ? 'cheer' : 'happy'} size={52} /></div>
             <Bubble side="left">
-              {round.frame.line && <div className="font-geo text-[22px] font-extrabold leading-tight" data-testid="dialogue-line">{round.frame.line}</div>}
+              {round.frame.line && <div className="font-geo text-[22px] font-extrabold leading-tight break-words" data-testid="dialogue-line">{round.frame.line}</div>}
               {round.frame.lineRu && <div className="text-[12px] text-jewelInk-hint">{round.frame.lineRu}</div>}
               {!round.frame.line && <div className="text-[15px] font-bold">…</div>}
               {picture(round.answer.geo) && <div className="mt-1"><ProductArt id={picture(round.answer.geo)!} size={40} /></div>}
@@ -81,20 +84,21 @@ export default function Dialogue({ stage, own, known, fraction, onExit, onDone, 
           <div className="flex justify-end">
             <div ref={reply} className={`min-w-[120px] min-h-[52px] rounded-2xl rounded-br-md border-[1.5px] px-3 py-2 text-right ${answered ? 'border-jewelInk bg-navy text-cream ab-snap' : 'border-dashed border-jewelInk/35 bg-cream-deep'}`} data-testid="dialogue-reply">
               {answered && <>
-                <div className="font-geo text-[22px] font-extrabold leading-tight">{round.answer.geo}</div>
+                <div className="font-geo font-extrabold leading-tight break-all" style={{ fontSize: Math.max(15, Math.min(22, Math.floor(170 / Math.max(1, [...round.answer.geo].length)))) }}>{round.answer.geo}</div>
                 <div className="text-[12px] opacity-80" data-testid="dialogue-meaning">«{cyr(round.answer.geo)}» — {round.answer.ru}</div>
               </>}
             </div>
           </div>
         </div>
         {!done && (
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className={`grid gap-2.5 ${cols === 3 ? 'grid-cols-3' : cols === 2 ? 'grid-cols-2' : 'grid-cols-1'}`} data-testid="dialogue-choices">
             {round.choices.map(geo => (
               <button key={`${ri}-${geo}`} ref={el => { chips.current[geo] = el }} onClick={() => pick(geo)} aria-label={geo} data-testid="dialogue-choice"
                 disabled={answered}
-                className={`h-[64px] ab-short:h-[54px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile font-geo text-[20px] font-extrabold px-1 active:scale-95 transition-transform ${
+                style={{ boxShadow: '3px 3px 0 #15100A' }}
+                className={`min-w-0 ${cols === 1 ? 'h-[52px] ab-short:h-[46px]' : 'h-[64px] ab-short:h-[54px]'} rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile font-geo text-[20px] font-extrabold px-1 whitespace-nowrap leading-tight active:scale-95 transition-transform ${
                   shake === geo ? 'ab-shake bg-ruby-wash' : ''} ${hint && geo === round.answer.geo ? 'ring-4 ring-gold ab-pulse' : ''} ${answered && geo !== round.answer.geo ? 'opacity-30' : ''}`}
-                style={{ boxShadow: '3px 3px 0 #15100A' }}>{geo}</button>
+                >{geo}</button>
             ))}
           </div>
         )}

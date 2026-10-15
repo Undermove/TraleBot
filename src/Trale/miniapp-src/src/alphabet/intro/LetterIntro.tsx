@@ -104,7 +104,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
 
         {phase === 'done' && (
           <div className="text-center ab-drip" data-testid="intro-caption">
-            <div className="font-geo text-[40px] font-extrabold leading-none tracking-wide" data-testid="intro-word">
+            <div className="font-geo font-extrabold leading-none tracking-wide break-all" style={{ fontSize: Math.min(40, Math.floor(300 / Math.max(1, [...intro.word].length))) }} data-testid="intro-word">
               {wordParts(intro).map((p, i) => p.own
                 ? <span key={i} className="text-ruby underline decoration-gold decoration-[5px] underline-offset-[7px]" data-own="yes">{p.ch}</span>
                 : <span key={i} className="text-jewelInk/55">{p.ch}</span>)}
