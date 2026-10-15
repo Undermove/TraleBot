@@ -1,21 +1,23 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from '../games/GameFrame'
 import { SoundIcon } from '../games/GameFrame'
 import { burst, haptic, playClip, reducedMotion, sound } from '../games/fx'
 import { WORD_AUDIO } from '../games/data'
 import { introOf, transcriptionOf, wordParts, type LetterIntro as Intro } from './letters'
-import { Coverage, PathTrace, glyphPoints, paintSurface, strokesFor, type Pt } from './paint'
-import { STROKES } from './strokes'
+import { Coverage, PathTrace, glyphPoints, paintSurface, type Pt } from './paint'
+import { HANDWRITING } from './handwriting'
+import { lengthOf, pointAt, polyline, sample } from './pathMath'
 
 /**
  * «Знакомство с буквой» — отдельная сцена на каждую новую букву, перед первым вопросом о ней.
  * 1) Стираешь пальцем поверхность грузинского слова на эту букву (корку арбуза — საზამთრო, снег — თოვლი…),
  *    под ней проявляется буква и звучит запись этого слова — ровно один раз; дальше — только по кнопке.
- * 2) «Как пишется»: перо само выводит букву штрих за штрихом, начало каждого штриха — пронумерованная точка;
- *    потом «Теперь ты» — ведёшь пальцем по бледной букве от точки текущего штриха по стрелке. Порядок
- *    и направление штрихов — по таблице письма мхедрули с Wikimedia Commons (strokes.ts); засчитываем путь
- *    по порядку и прощаем неточность (paint.PathTrace, ~80% пути). «ещё раз» показывает перо снова.
+ * 2) «Как пишется»: буква на этом шаге — рукописная и нарисована только из своих штрихов (handwriting.ts:
+ *    плавные линии по таблице письма мхедрули). Перо выводит её штрих за штрихом с постоянной скоростью
+ *    (чернила — тот же путь, поэтому всегда ровно по букве), у начала штриха — номер. Потом «Теперь ты»:
+ *    ведёшь пальцем по бледной букве от точки текущего штриха по стрелке; засчитываем путь по порядку
+ *    и направлению, прощая неточность (paint.PathTrace, ~80% пути). «ещё раз» показывает перо снова.
  * 3) Подпись: слово крупно с подсвеченной буквой, «сазамтро — арбуз», «ს — звук „с“» и, для трудных букв,
  *    одна строка о звуке.
  */
@@ -92,7 +94,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
                 data-testid="intro-progress" style={{ width: `${Math.min(100, Math.round((progress / (phase === 'reveal' ? REVEAL_AT : TRACE_AT)) * 100))}%` }} />
             </div>
             <div className="mt-2 text-center text-[13px] font-bold text-jewelInk-hint">
-              {phase === 'reveal' ? 'Води пальцем по картинке — под ней что-то есть' : (STROKES[letter]?.strokes.length ?? 1) > 1 ? 'Веди от зелёной точки по стрелке — штрих за штрихом' : 'Веди пальцем от зелёной точки по стрелке'}
+              {phase === 'reveal' ? 'Води пальцем по картинке — под ней что-то есть' : (HANDWRITING[letter]?.strokes.length ?? 1) > 1 ? 'Веди от зелёной точки по стрелке — штрих за штрихом' : 'Веди пальцем от зелёной точки по стрелке'}
             </div>
           </div>
         )}
@@ -148,6 +150,12 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
   const paintRef = useRef<HTMLCanvasElement>(null)
   const glyph = useRef<{ points: Pt[]; mask: HTMLCanvasElement | null; strokes: Pt[][] }>({ points: [], mask: null, strokes: [] })
   const [pen, setPen] = useState<Pt | null>(null)
+  // Рукописная буква: штрихи (SVG path, бокс 0..100), их полилинии и выборка точек в пикселях сцены.
+  const hw = HANDWRITING[intro.letter]
+  const lines = useMemo(() => (hw?.strokes ?? []).map(d => polyline(d)), [hw])
+  const strokesPx = useMemo(() => (hw?.strokes ?? []).map(d => sample(d, 2.5).map(p => ({ x: (p.x / 100) * size, y: (p.y / 100) * size }))), [hw, size])
+  const [inked, setInked] = useState<number[]>([])
+  const [trail, setTrail] = useState<Pt[][]>([])
   const path = useRef<PathTrace>(new PathTrace([]))
   const [curStroke, setCurStroke] = useState(0)
   const curStrokeRef = useRef(0)
@@ -219,7 +227,7 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
       const cover = ctxOf(coverRef.current)
       if (cover) paintSurface(cover, size, size, intro.surface.cover, intro.letter.charCodeAt(0))
       const g = glyphPoints(intro.letter, size)
-      glyph.current = { ...g, strokes: strokesFor(intro.letter, size, g.mask, STROKES) }
+      glyph.current = { ...g, strokes: [] }
       reveal.current = new Coverage(glyph.current.points.filter((_, i) => i % 2 === 0))
       drawLetter(1)
       setReady(true)
@@ -243,82 +251,53 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
 
   useEffect(() => {
     if (phase === 'trace') {
-      ctxOf(paintRef.current)?.clearRect(0, 0, size, size)
-      drawLetter(0.25); lastPt.current = null; onProgress(0)
-      path.current = new PathTrace(glyph.current.strokes)
-      setCurStroke(0)
+      lastPt.current = null; onProgress(0); setTrail([]); setInked([])
+      path.current = new PathTrace(strokesPx)
+      setCurStroke(0); curStrokeRef.current = 0
     }
-    if (phase === 'done') { setPen(null); fillAll() }
+    if (phase === 'done') { setPen(null); setTrail([]); setInked(lines.map(() => 1)) }
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // «Как пишется»: перо само ведёт линию по буквам-штрихам, чернила остаются позади.
+  // «Как пишется»: перо ведёт каждый штрих с постоянной скоростью (плавный разгон и торможение в начале и конце
+  // штриха), между штрихами — короткий подъём пера. Чернила — тот же путь (stroke-dashoffset), перо — точка
+  // на этом пути, так что линия и перо всегда на букве.
   useEffect(() => {
     if (phase !== 'demo') return
     phaseRef.current = 'demo'
-    ctxOf(paintRef.current)?.clearRect(0, 0, size, size)
-    drawLetter(0.18); setPen(null)
-    // Между штрихами перо поднимается: короткая пауза, без чернил, перо прыгает к началу следующего.
-    const segs: { a: Pt; b: Pt; len: number; lift: boolean; stroke: number }[] = []
-    const strokes = glyph.current.strokes
-    const inkLen = strokes.reduce((n, st) => n + st.reduce((m, p, i) => m + (i ? Math.hypot(p.x - st[i - 1].x, p.y - st[i - 1].y) : 0), 0), 0)
-    const liftLen = inkLen * (LIFT_MS / DEMO_MS)
-    strokes.forEach((st, k) => {
-      if (k > 0) segs.push({ a: strokes[k - 1][strokes[k - 1].length - 1], b: st[0], len: liftLen, lift: true, stroke: k })
-      for (let i = 1; i < st.length; i++) {
-        const len = Math.hypot(st[i].x - st[i - 1].x, st[i].y - st[i - 1].y)
-        if (len > 0.01) segs.push({ a: st[i - 1], b: st[i], len, lift: false, stroke: k })
-      }
-    })
-    const total = segs.reduce((n, sg) => n + sg.len, 0)
-    const ms = DEMO_MS + LIFT_MS * Math.max(0, strokes.length - 1)
-    setDemoStroke(0)
-    if (total === 0 || reducedMotion() || !glyph.current.mask) { const t = setTimeout(onDemoDone, reducedMotion() ? 0 : 300); return () => clearTimeout(t) }
-    let raf = 0, si = 0, done = 0, ticks = 0
-    const start = performance.now()
+    setPen(null); setInked(lines.map(() => 0)); setDemoStroke(0); demoStrokeRef.current = 0
+    const lens = (hw?.strokes ?? []).map(lengthOf)
+    const total = lens.reduce((a, b) => a + b, 0)
+    if (total === 0 || reducedMotion() || !glyph.current.mask) {
+      setInked(lines.map(() => 1))
+      const t = setTimeout(onDemoDone, reducedMotion() ? 0 : 300); return () => clearTimeout(t)
+    }
+    const durs = lens.map(l => Math.max(450, (l / total) * DEMO_MS))
+    const starts: number[] = []
+    durs.reduce((t, d, k) => { starts.push(t); return t + d + (k < durs.length - 1 ? LIFT_MS : 0) }, 0)
+    const end = starts[starts.length - 1] + durs[durs.length - 1]
+    const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2) * 0.35 + t * 0.65
+    let raf = 0, ticks = 0
+    const t0 = performance.now()
     const frame = (now: number) => {
-      const want = Math.min(total, ((now - start) / ms) * total)
-      const ctx = ctxOf(paintRef.current)
-      let at: Pt | null = null
-      while (si < segs.length && done < want) {
-        const sg = segs[si]
-        const from = done, to = Math.min(want, from + sg.len)
-        const t0 = 0, t1 = (to - from) / Math.max(0.001, sg.len)
-        const p0 = { x: sg.a.x + (sg.b.x - sg.a.x) * t0, y: sg.a.y + (sg.b.y - sg.a.y) * t0 }
-        const p1 = { x: sg.a.x + (sg.b.x - sg.a.x) * t1, y: sg.a.y + (sg.b.y - sg.a.y) * t1 }
-        if (ctx && !sg.lift) {
-          ctx.strokeStyle = intro.surface.ink; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = TRACE_R * 1.7
-          ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x + 0.01, p1.y); ctx.stroke()
-        }
-        at = sg.lift ? null : p1
-        if (sg.stroke !== demoStrokeRef.current) { demoStrokeRef.current = sg.stroke; setDemoStroke(sg.stroke); haptic('tap') }
-        if (t1 >= 0.999 || sg.len - (to - from) < 0.01) { done = from + sg.len; si++ } else { segs[si] = { ...sg, a: p1, len: sg.len - (to - from) }; done = to }
-      }
-      if (ctx && glyph.current.mask) {
-        ctx.globalCompositeOperation = 'destination-in'
-        ctx.drawImage(glyph.current.mask, 0, 0, size, size)
-        ctx.globalCompositeOperation = 'source-over'
-      }
-      setPen(at)
-      const step = Math.floor((want / total) * 8)
+      const el = now - t0
+      const prog = durs.map((d, k) => Math.max(0, Math.min(1, (el - starts[k]) / d)))
+      setInked(prog.map(ease))
+      const k = prog.findIndex(p => p < 1)
+      const cur = k < 0 ? prog.length - 1 : k
+      const inLift = k > 0 && el < starts[k]
+      if (cur !== demoStrokeRef.current && !inLift) { demoStrokeRef.current = cur; setDemoStroke(cur); haptic('tap') }
+      if (!inLift && k >= 0) {
+        const q = pointAt(lines[cur], ease(prog[cur]))
+        setPen({ x: (q.x / 100) * size, y: (q.y / 100) * size })
+      } else setPen(null)
+      const step = Math.floor((el / end) * 10)
       if (step > ticks) { ticks = step; haptic('soft'); sound.chalk() }
-      if (want >= total) { setPen(null); raf = window.setTimeout(onDemoDone, 450) as unknown as number; return }
+      if (el >= end) { setPen(null); raf = window.setTimeout(onDemoDone, 450) as unknown as number; return }
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame)
     return () => { cancelAnimationFrame(raf); clearTimeout(raf) }
   }, [phase, replay]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  function fillAll() {
-    const ctx = ctxOf(paintRef.current)
-    if (!ctx || !glyph.current.mask) return
-    ctx.clearRect(0, 0, size, size)
-    ctx.drawImage(glyph.current.mask, 0, 0, size, size)
-    ctx.globalCompositeOperation = 'source-in'
-    ctx.fillStyle = intro.surface.ink
-    ctx.fillRect(0, 0, size, size)
-    ctx.globalCompositeOperation = 'source-over'
-    if (coverRef.current) coverRef.current.style.opacity = '0'
-  }
 
   function crumbs(x: number, y: number) {
     if (reducedMotion()) return
@@ -372,16 +351,8 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
       if (step > lastStep.current) { lastStep.current = step; haptic('soft') }
       if (f >= REVEAL_AT) finishReveal()
     } else {
-      const ctx = ctxOf(paintRef.current)
-      if (ctx && glyph.current.mask) {
-        ctx.strokeStyle = intro.surface.ink
-        ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = TRACE_R * 2
-        ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(p.x + 0.01, p.y); ctx.stroke()
-        // Краска остаётся только внутри буквы.
-        ctx.globalCompositeOperation = 'destination-in'
-        ctx.drawImage(glyph.current.mask, 0, 0, size, size)
-        ctx.globalCompositeOperation = 'source-over'
-      }
+      // Чернила ученика — его след пальцем (новое касание — новая линия).
+      setTrail(t => (prev === p || t.length === 0 ? [...t, [p]] : [...t.slice(0, -1), [...t[t.length - 1], p]]))
       // Без холста (jsdom) буквы нет — засчитываем сразу.
       if (!glyph.current.mask) { finishTrace(); return }
       const fresh = path.current.advance(prev, p, TRACE_R * 1.5)
@@ -407,7 +378,6 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
 
   function finishTrace() {
     phaseRef.current = 'done'
-    fillAll()
     haptic('good'); sound.win(); boom()
     burst(letterRef.current, 'big')
     setTimeout(onTraced, reducedMotion() ? 0 : 500)
@@ -420,7 +390,7 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
       style={{ width: size, height: size, background: intro.surface.under, boxShadow: '4px 4px 0 #15100A', touchAction: 'none' }}
       data-testid="intro-stage" data-phase={phase} data-ready={ready ? 'yes' : 'no'}
     >
-      <div ref={boomRef} style={{ ...canvasStyle }}>
+      <div ref={boomRef} style={{ ...canvasStyle, opacity: phase === 'reveal' ? 1 : 0, transition: 'opacity 350ms ease-out' }}>
         <canvas ref={letterRef} style={canvasStyle} aria-label={intro.letter} role="img" />
         <canvas ref={paintRef} style={canvasStyle} />
       </div>
@@ -431,10 +401,17 @@ function Stage({ intro, size, phase, replay, onProgress, onReveal, onRevealed, o
       />
       <canvas ref={fxCanvas} style={{ ...canvasStyle, pointerEvents: 'none' }} data-testid="intro-fx" />
       {phase === 'demo' && pen && (
-        <div className="absolute pointer-events-none" style={{ left: pen.x - 11, top: pen.y - 11, width: 22, height: 22, borderRadius: 11, background: '#F5B820', border: '2px solid #15100A', boxShadow: '0 0 0 4px rgba(245,184,32,0.35)' }} data-testid="intro-pen" />
+        <div className="absolute pointer-events-none" style={{ zIndex: 5, left: pen.x - 11, top: pen.y - 11, width: 22, height: 22, borderRadius: 11, background: '#F5B820', border: '2px solid #15100A', boxShadow: '0 0 0 4px rgba(245,184,32,0.35)' }} data-testid="intro-pen" />
       )}
-      {phase === 'demo' && <StrokeNumbers strokes={glyph.current.strokes} upTo={demoStroke} size={size} />}
-      {phase === 'trace' && <StartMark strokes={glyph.current.strokes} current={curStroke} size={size} />}
+      {phase !== 'reveal' && hw && (
+        <svg viewBox="0 0 100 100" width={size} height={size} className={`absolute inset-0 pointer-events-none ${phase === 'done' ? 'ab-boom' : ''}`} data-testid="intro-handwriting">
+          {hw.strokes.map((d, i) => <path key={`g${i}`} d={d} fill="none" stroke={intro.surface.ink} strokeOpacity={phase === 'done' ? 0 : 0.2} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />)}
+          {hw.strokes.map((d, i) => (inked[i] ?? 0) > 0.001 && <path key={`i${i}`} d={d} pathLength={1} strokeDasharray={`${Math.min(1, inked[i])} 2`} fill="none" stroke={intro.surface.ink} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" data-testid="intro-ink" />)}
+          {trail.map((t, i) => t.length > 0 && <polyline key={`t${i}`} points={t.map(p => `${(p.x / size) * 100},${(p.y / size) * 100}`).join(' ')} fill="none" stroke={intro.surface.ink} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />)}
+        </svg>
+      )}
+      {phase === 'demo' && <StrokeNumbers strokes={strokesPx} upTo={demoStroke} size={size} />}
+      {phase === 'trace' && <StartMark strokes={strokesPx} current={curStroke} size={size} />}
       <div
         style={{ ...canvasStyle, touchAction: 'none' }}
         onPointerDown={e => { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); needLift.current = false; lastPt.current = null; move(e) }}

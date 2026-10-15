@@ -151,20 +151,31 @@ describe('LetterIntro', () => {
 })
 
 describe('how a letter is written', () => {
-  it('has stroke data from the writing chart for all 33 letters, with confidence kept and points inside the scene', async () => {
-    const { STROKES } = await import('./strokes')
-    expect(new Set(Object.keys(STROKES))).toEqual(new Set(INTROS.map(i => i.letter)))
-    for (const [l, d] of Object.entries(STROKES)) {
-      expect(['high', 'medium', 'low']).toContain(d.confidence)
-      expect(d.strokes.length, l).toBeGreaterThanOrEqual(1)
-      for (const st of d.strokes) {
-        expect(st.length, l).toBeGreaterThanOrEqual(5)
-        for (const [x, y] of st) { expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(100); expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThanOrEqual(100) }
+  it('has a handwritten form for all 33 letters: smooth strokes in writing order, in the scene box, confidence kept', async () => {
+    const { HANDWRITING } = await import('./handwriting')
+    const { parsePath, sample, lengthOf } = await import('./pathMath')
+    expect(new Set(Object.keys(HANDWRITING))).toEqual(new Set(INTROS.map(i => i.letter)))
+    for (const [l, h] of Object.entries(HANDWRITING)) {
+      expect(['high', 'medium', 'low']).toContain(h.confidence)
+      for (const d of h.strokes) {
+        expect(d.startsWith('M'), l).toBe(true)
+        expect(parsePath(d).length, l).toBeGreaterThanOrEqual(1)
+        expect(lengthOf(d), l).toBeGreaterThan(5)
+        for (const p of sample(d, 2)) { expect(p.x).toBeGreaterThanOrEqual(0); expect(p.x).toBeLessThanOrEqual(100); expect(p.y).toBeGreaterThanOrEqual(0); expect(p.y).toBeLessThanOrEqual(100) }
+        // Плавно: резких изломов нет — кроме задуманных стыков (у ვ, კ, ფ, უ, ჰ в середине), не больше двух на штрих.
+        const pts = sample(d, 1.5)
+        let kinks = 0
+        for (let i = 2; i < pts.length; i++) {
+          const a = Math.atan2(pts[i - 1].y - pts[i - 2].y, pts[i - 1].x - pts[i - 2].x), b = Math.atan2(pts[i].y - pts[i - 1].y, pts[i].x - pts[i - 1].x)
+          const turn = Math.abs(((b - a + 3 * Math.PI) % (2 * Math.PI)) - Math.PI)
+          if (turn > 1.2 && turn < 2.6) kinks++
+        }
+        expect(kinks, `${l}: ${d.slice(0, 40)}`).toBeLessThanOrEqual(2)
       }
     }
-    // Многоштриховые по таблице: დ, ლ, ღ — хвост, потом горбы; ჟ, რ, ქ, ყ, ჭ, ჯ — по два штриха.
-    for (const l of ['დ', 'ლ', 'ღ', 'ჟ', 'რ', 'ქ', 'ყ', 'ჭ', 'ჯ']) expect(STROKES[l].strokes.length, l).toBe(2)
-    expect(STROKES['ა'].strokes.length).toBe(1)
+    // Многоштриховые по таблице: დ, ლ, ღ — хвост, потом горбы; რ, ქ, ყ, ჭ, ჯ — по два штриха.
+    for (const l of ['დ', 'ლ', 'ღ', 'რ', 'ქ', 'ყ', 'ჭ', 'ჯ']) expect(HANDWRITING[l].strokes.length, l).toBe(2)
+    expect(HANDWRITING['ა'].strokes.length).toBe(1)
   })
 
   it('counts the finger only along the pen path, in order and direction, and forgives small misses', async () => {

@@ -37,14 +37,20 @@
 - **Рукописная форма и шрифт:** таблица показывает рукописные формы, а точки подогнаны под Helvetica. Сильнее всего они расходятся у ზ (в рукописи нижняя часть похожа на «b»), ტ (узелок), ჟ, ჩ, კ. Порядок и направление сохранены, а путь проходит по контуру Helvetica.
 - **Возвраты:** у ო, რ, ღ, ლ, უ, შ, ხ путь в середине возвращается по уже проведённой линии. Это осознанное решение, чтобы обойтись одним штрихом, как в таблице. Точки разворота при выборке сохраняются.
 
-## В мини-аппе (TraleBot)
+## В мини-аппе (TraleBot): рукописные буквы
 
-Буква на сцене знакомства рисуется шрифтом Noto Sans Georgian 800, а не Helvetica, поэтому точки подогнаны заново:
-`gen.py --emit-input` выдаёт сглаженные штрихи (порядок и направление из `keypoints.py`), `refit.mjs` переносит их
-из рамки глифа Helvetica в рамку глифа Noto, притягивает к оси штриха Noto и пишет
-`src/Trale/miniapp-src/src/alphabet/intro/strokes.ts` и `contact-sheet.html` / `contact-sheet.png` для проверки глазом.
-Концы штрихов, которые у Noto оказались вне буквы, обрезаются (ჟ — 2 точки крючка, რ — 1 точка у флажка).
+Шаг «Как пишется» рисует букву только из её штрихов — рукописная форма, а не шрифт, поэтому перо и чернила
+всегда на букве. Формы взяты с векторной таблицы `Mkhedruli.svg` (Commons, PD; копия лежит здесь):
+`manual.mjs` — опорные точки каждого штриха в порядке письма (по стрелкам таблицы, а где таблица молчит —
+по Levan Chaganava, «Georgian Calligraphy Workbook», таблица «წერის მიმართულება»:
+https://chaganava.com/georgian-calligraphy-workbook-ka ); `handwriting.mjs` притягивает точки к оси штриха буквы
+таблицы, сглаживает (Катмулл — Ром → кубические Безье) и пишет `src/alphabet/intro/handwriting.ts`
+и лист проверки `handwriting-sheet.html` / `handwriting-sheet.png`.
+
+Второй источник по 11 буквам с уверенностью medium/low: согласен с таблицей — მ პ ჟ ტ უ შ ძ (у ჟ — один штрих,
+как у Chaganava; в таблице у ჟ тоже нет «2»); расходятся или таблица неполна — ნ წ ხ ჩ, взят Chaganava
+(см. комментарии в `manual.mjs`).
 
     cd src/Trale/miniapp-src
     python3 ../../../scripts/alphabet-strokes/gen.py --emit-input /tmp/strokes-raw.json
-    node ../../../scripts/alphabet-strokes/refit.mjs /tmp/strokes-raw.json
+    node ../../../scripts/alphabet-strokes/handwriting.mjs /tmp/strokes-raw.json

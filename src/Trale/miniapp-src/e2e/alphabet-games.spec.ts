@@ -2,7 +2,8 @@ import { test, expect, type Page } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { PRODUCTS, orderText } from '../src/alphabet/cafe/products'
-import { STROKES } from '../src/alphabet/intro/strokes'
+import { HANDWRITING } from '../src/alphabet/intro/handwriting'
+import { sample } from '../src/alphabet/intro/pathMath'
 
 // Алфавит — урок как цепочка игр: знакомство с буквой (стереть поверхность → как пишется → слово), «Поймай букву»,
 // «Пары», «Звук → буква», новые слова, «Превращение» / «Собери слово», «Кафе Бомборы» (с пятого урока), короткая
@@ -58,10 +59,10 @@ async function openModule(page: Page) {
 async function write(page: Page, letter: string) {
   const box = (await page.getByTestId('intro-touch').boundingBox())!
   const at = ([x, y]: [number, number]) => [box.x + (x / 100) * box.width, box.y + (y / 100) * box.height] as const
-  for (const st of STROKES[letter].strokes) {
+  for (const st of HANDWRITING[letter].strokes.map(d => sample(d, 3).map(p => [p.x, p.y] as [number, number]))) {
     await page.mouse.move(...at(st[0]))
     await page.mouse.down()
-    for (const p of st.slice(1)) await page.mouse.move(...at(p), { steps: 3 })
+    for (const p of st.slice(1)) await page.mouse.move(...at(p), { steps: 2 })
     await page.mouse.up()
   }
 }
@@ -353,7 +354,7 @@ test('«Как пишется» for a two-stroke letter: the pen draws stroke 1,
   await expect(page.getByTestId('intro-start')).toHaveAttribute('data-stroke', '1')
   // Второй штрих раньше первого не засчитывается.
   const box = (await page.getByTestId('intro-touch').boundingBox())!
-  const s2 = STROKES['დ'].strokes[1]
+  const s2 = sample(HANDWRITING['დ'].strokes[1], 3).map(p => [p.x, p.y] as [number, number])
   await page.mouse.move(box.x + (s2[0][0] / 100) * box.width, box.y + (s2[0][1] / 100) * box.height)
   await page.mouse.down()
   for (const [x, y] of s2.slice(1)) await page.mouse.move(box.x + (x / 100) * box.width, box.y + (y / 100) * box.height, { steps: 2 })
