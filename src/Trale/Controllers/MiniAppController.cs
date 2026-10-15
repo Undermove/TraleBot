@@ -999,6 +999,48 @@ public class MiniAppController : Controller
         };
     }
 
+    public class LessonEventsRequest
+    {
+        public List<LessonEventDto>? Events { get; set; }
+    }
+
+    public class LessonEventDto
+    {
+        public string? ModuleId { get; set; }
+        public int LessonId { get; set; }
+        public int Step { get; set; }
+        public string? StepKind { get; set; }
+        public string? Event { get; set; }
+        public int? Value { get; set; }
+    }
+
+    /// <summary>
+    /// Lesson-flow events from the mini-app, a small batch at a time (<see cref="Application.MiniApp.Commands.RecordLessonEvents"/>):
+    /// to see where people drop off inside a lesson. Unknown kinds are dropped silently, past the per-day cap
+    /// nothing is stored; always 204 for a signed-in learner.
+    /// </summary>
+    [HttpPost("events")]
+    public async Task<IActionResult> RecordLessonEvents([FromBody] LessonEventsRequest? request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var items = (request?.Events ?? [])
+            .Take(Application.MiniApp.Commands.RecordLessonEvents.MaxBatch)
+            .Where(e => e != null)
+            .Select(e => new Application.MiniApp.Commands.LessonEventInput(e.ModuleId, e.LessonId, e.Step, e.StepKind, e.Event, e.Value))
+            .ToList();
+        if (items.Count > 0)
+        {
+            await _mediator.Send(new Application.MiniApp.Commands.RecordLessonEvents { UserId = user.Id, Items = items }, ct);
+        }
+
+        return NoContent();
+    }
+
     [HttpDelete("vocabulary/{id}")]
     public async Task<IActionResult> DeleteVocabularyEntry(Guid id, CancellationToken ct)
     {

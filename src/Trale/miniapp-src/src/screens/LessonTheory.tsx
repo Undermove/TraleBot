@@ -4,6 +4,7 @@ import Button from '../components/Button'
 import RevealKaniOverlay from '../components/RevealKaniOverlay'
 import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
 import LessonOpener from '../alphabet/opener/LessonOpener'
+import { lessonFlow } from '../analytics/lessonEvents'
 
 interface Props {
   catalog: CatalogDto
@@ -25,6 +26,11 @@ export default function LessonTheory({
   const theory = lesson?.theory
 
   const [showReveal, setShowReveal] = useState(false)
+
+  // Аналитика: стартовый экран урока алфавита — шаг 0 его хода.
+  useEffect(() => {
+    if (moduleId === 'alphabet-progressive' && theory) lessonFlow.open(moduleId, lessonId)
+  }, [moduleId, lessonId, !!theory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!theory) return
@@ -64,8 +70,8 @@ export default function LessonTheory({
       <>
         <LessonOpener
           lessonId={lessonId}
-          onBack={() => navigate({ kind: 'module', moduleId })}
-          onStart={() => navigate({ kind: 'practice', moduleId, lessonId })}
+          onBack={() => { lessonFlow.exit(); navigate({ kind: 'module', moduleId }) }}
+          onStart={() => { lessonFlow.done(); navigate({ kind: 'practice', moduleId, lessonId }) }}
           details={theory.blocks.filter(b => b.type !== 'letters').map((b, i) => <TheoryBlock key={i} block={b} />)}
         />
         {showReveal && <RevealKaniOverlay onClose={() => setShowReveal(false)} />}

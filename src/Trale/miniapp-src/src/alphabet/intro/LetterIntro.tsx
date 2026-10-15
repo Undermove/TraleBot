@@ -1,3 +1,4 @@
+import { lessonFlow } from '../../analytics/lessonEvents'
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from '../games/GameFrame'
@@ -71,6 +72,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
   const sayOnce = () => { if (said.current) return; said.current = true; if (audio) void playClip(audio) }
 
   function skip() {
+    lessonFlow.skip()
     haptic('tap')
     sayOnce()
     setPhase('done')

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import type { QuizQuestion, Screen } from '../types'
 import LetterIntro from './intro/LetterIntro'
 import Morph from './games/Morph'
@@ -14,6 +14,13 @@ import WordIntro from './words/WordIntro'
 import { EXAM_SIZE, assembleRounds, lessonLetters, lessonSteps, morphWords, pairsDeck, type LessonStep, type WordGame } from './games/logic'
 import { dialogueReady } from './games/dialogues'
 import { ALPHABET_LESSONS, lessonInfo, wordsUpToLesson } from './lessons'
+import { lessonFlow, type StepKind } from '../analytics/lessonEvents'
+
+/** Как шаг урока называется в аналитике (LessonEvents.StepKind). */
+export const STEP_KIND: Record<LessonStep['kind'], StepKind> = {
+  intro: 'letter-intro', catch: 'catch', sound: 'sound-letter', pairs: 'pairs', words: 'new-word',
+  morph: 'morph', assemble: 'assemble', dialogue: 'dialogue', cafe: 'cafe'
+}
 
 // Урок алфавита — цепочка коротких игр (logic.lessonSteps), потом короткая проверка — вопросы урока с сервера
 // (alphabetExam). Прогресс считается как раньше: completeLesson с correct/total этих вопросов, урок засчитан
@@ -70,6 +77,18 @@ export function useAlphabetLesson(moduleId: string, lessonId: number, questions:
     ? { kind: 'step', step: steps[at] }
     : finale ? { kind: 'finale', result: finale } : null
 
+  // Аналитика хода урока: шаг 0 — стартовый экран, дальше игры, проверка, праздник.
+  const loaded = questions.length > 0
+  const stage = !on || !loaded ? null : at < steps.length ? `step-${at}` : finale ? 'finale' : 'check'
+  useEffect(() => {
+    if (!stage) return
+    if (stage === 'finale') lessonFlow.step(moduleId, lessonId, steps.length + 2, 'finale')
+    else if (stage === 'check') lessonFlow.step(moduleId, lessonId, steps.length + 1, 'check')
+    else lessonFlow.step(moduleId, lessonId, at + 1, STEP_KIND[steps[at].kind])
+  }, [stage]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Ушёл из урока посреди (назад, другой экран) — «выход»; закончил — ничего.
+  useEffect(() => () => { if (on) lessonFlow.exit() }, [on])
+
   return {
     scene,
     /** Доля урока для полоски сверху: игры — первые 80%, проверка — остальное. */
@@ -77,12 +96,13 @@ export function useAlphabetLesson(moduleId: string, lessonId: number, questions:
     afterQuestion(_n: number) { /* игры — до проверки */ },
     /** Урок закончен (прогресс уже отправлен): засчитан — праздник, иначе сразу итог. */
     finish(result: Result, perfect: boolean, navigate: (s: Screen) => void) {
+      if (on) { lessonFlow.done(result.correct); lessonFlow.end(perfect ? 'lesson_complete' : 'lesson_fail', result.correct) }
       if (on && perfect) setFinale(result)
       else navigate(result)
     },
     sceneDone(navigate: (s: Screen) => void) {
       if (!scene) return
-      if (scene.kind === 'step') { setAt(a => a + 1); return }
+      if (scene.kind === 'step') { lessonFlow.done(); setAt(a => a + 1); return }
       navigate(scene.result)
     }
   }

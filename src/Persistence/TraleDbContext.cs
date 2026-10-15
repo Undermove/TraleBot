@@ -38,6 +38,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<UserVerb> UserVerbs { get; set; } = null!;
     public DbSet<VerbSession> VerbSessions { get; set; } = null!;
     public DbSet<VerbSectionVisit> VerbSectionVisits { get; set; } = null!;
+    public DbSet<LessonEvent> LessonEvents { get; set; } = null!;
     public DbSet<WaitlistEntry> WaitlistEntries { get; set; } = null!;
     public DbSet<TranslationCacheEntry> TranslationCache { get; set; } = null!;
     public DbSet<BroadcastCampaign> BroadcastCampaigns { get; set; } = null!;
@@ -184,6 +185,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new UserVerbConfiguration());
         modelBuilder.ApplyConfiguration(new VerbSessionConfiguration());
         modelBuilder.ApplyConfiguration(new VerbSectionVisitConfiguration());
+        modelBuilder.ApplyConfiguration(new LessonEventConfiguration());
         modelBuilder.ApplyConfiguration(new TranslationCacheEntryConfiguration());
         modelBuilder.ApplyConfiguration(new QueuedTranslationConfiguration());
         modelBuilder.ApplyConfiguration(new VocabularyEntryConfiguration());

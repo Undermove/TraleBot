@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { api as mocked } from '../api'
 import Practice from '../screens/Practice'
 import { defaultProgress } from '../progress'
+import { __setLessonEventSender, flushLessonEvents, type LessonEventDto } from '../analytics/lessonEvents'
 
 vi.mock('../api', () => ({
   api: { lessonQuestions: vi.fn(), recordAnswer: vi.fn(), completeLesson: vi.fn(), addAlphabetWords: vi.fn() },
@@ -28,8 +29,13 @@ async function skipWords() {
   }
 }
 
+let sent: LessonEventDto[] = []
+const trail = () => { flushLessonEvents(); return sent.map(e => `${e.step}:${e.stepKind}:${e.event}${e.value != null ? '=' + e.value : ''}`) }
+
 describe('alphabet lesson as a chain of games', () => {
   beforeEach(() => {
+    sent = []
+    __setLessonEventSender(events => { sent.push(...events) })
     localStorage.clear()
     // Записи слов: в jsdom <audio> не играет.
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
@@ -75,6 +81,17 @@ describe('alphabet lesson as a chain of games', () => {
     await waitFor(() => expect(api.completeLesson).toHaveBeenCalledWith({ moduleId: 'alphabet-progressive', lessonId: 1, correct: 3, total: 3 }))
     await waitFor(() => expect(screen.getByTestId('alphabet-finale')).toBeTruthy())
     expect(api.addAlphabetWords).not.toHaveBeenCalled()
+
+    // Аналитика хода урока: каждый шаг начат и пройден, «пропустить» в знакомстве с буквой, проверка, засчитан.
+    expect(trail()).toEqual([
+      '1:letter-intro:step_start', '1:letter-intro:step_skip', '1:letter-intro:step_done',
+      '2:letter-intro:step_start', '2:letter-intro:step_skip', '2:letter-intro:step_done',
+      '3:catch:step_start', '3:catch:step_done',
+      '4:letter-intro:step_start', '4:letter-intro:step_skip', '4:letter-intro:step_done',
+      '5:pairs:step_start', '5:pairs:step_done',
+      '6:check:step_start', '6:check:step_done=3', '6:check:lesson_complete=3',
+      '7:finale:step_start'
+    ])
   }, 20_000)
 
   it('words lesson 12: every new word gets its own scene (no «ещё слова» list), then word games and a 4-question check', async () => {
@@ -96,10 +113,13 @@ describe('alphabet lesson as a chain of games', () => {
 
   it('leaving a game goes back to the lesson theory', async () => {
     const navigate = vi.fn()
-    render(<Practice moduleId="alphabet-progressive" lessonId={1} progress={defaultProgress} setProgress={() => {}} authenticated navigate={navigate} />)
+    const { unmount } = render(<Practice moduleId="alphabet-progressive" lessonId={1} progress={defaultProgress} setProgress={() => {}} authenticated navigate={navigate} />)
     await waitFor(() => expect(screen.getByTestId('intro-skip')).toBeTruthy())
     fireEvent.click(screen.getByLabelText('Назад'))
     expect(navigate).toHaveBeenCalledWith({ kind: 'lesson-theory', moduleId: 'alphabet-progressive', lessonId: 1 })
+    unmount()
+    // Ушёл посреди урока — «выход» на том шаге, где был.
+    expect(trail()).toEqual(['1:letter-intro:step_start', '1:letter-intro:lesson_exit'])
   })
 
   it('leaves other modules untouched', async () => {

@@ -1,3 +1,4 @@
+import { lessonFlow } from '../../analytics/lessonEvents'
 import React, { useRef, useState } from 'react'
 import Button from '../../components/Button'
 import GameFrame from '../games/GameFrame'
@@ -81,6 +82,7 @@ export default function WordIntro({ featured, startCount, fraction, onExit, onDo
   }
 
   function skip() {
+    lessonFlow.skip()
     haptic('tap')
     if (audio) void playClip(audio)
     setLit(letters.length); setPhase('meaning')
