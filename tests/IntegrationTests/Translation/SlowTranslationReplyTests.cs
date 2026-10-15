@@ -233,7 +233,9 @@ public class SlowTranslationReplyTests : TranslationPipelineTestBase
 
         await Post("я танцую");
 
-        var replies = await WaitForReplies(1);
+        // The notice may come first or not at all, depending on how fast the failure is (100 ms here).
+        await Until(() => Replies().Any(r => r.Text == OldAnswer), "the old translation in the chat");
+        var replies = Replies();
         replies.Last().Text.Should().Be(OldAnswer);
         replies.Select(r => r.Text).Should().NotContain(TelegramDialogProcessor.ErrorText);
         Log.Paths.Last().Should().EndWith("generator-failed>legacy");

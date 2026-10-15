@@ -15,7 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Persistence;
 using Telegram.Bot;
-using Testcontainers.PostgreSql;
 
 namespace IntegrationTests.Translation;
 
@@ -27,7 +26,7 @@ namespace IntegrationTests.Translation;
 /// </summary>
 public abstract class TranslationPipelineTestBase
 {
-    private PostgreSqlContainer _postgres = null!;
+    private string _connectionString = null!;
     protected WebApplicationFactory<Program> App = null!;
 
     protected const string BotToken = "1234567:test-bot-token";
@@ -42,13 +41,8 @@ public abstract class TranslationPipelineTestBase
     [OneTimeSetUp]
     public async Task StartApplication()
     {
-        _postgres = new PostgreSqlBuilder().WithAutoRemove(true).WithImage("postgres:16.1").Build();
-        await _postgres.StartAsync();
-
+        _connectionString = await TestDatabase.CreateAsync();
         App = StartInstance();
-
-        using var scope = App.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<TraleDbContext>().Database.MigrateAsync();
     }
 
     /// <summary>
@@ -57,7 +51,7 @@ public abstract class TranslationPipelineTestBase
     /// </summary>
     protected WebApplicationFactory<Program> StartInstance()
     {
-        var app = new TraleTestApplication(_postgres.GetConnectionString()).WithWebHostBuilder(builder =>
+        var app = new TraleTestApplication(_connectionString).WithWebHostBuilder(builder =>
             builder.ConfigureTestServices(services =>
             {
                 services.AddSingleton<Microsoft.Extensions.Logging.ILoggerProvider>(Log);
@@ -109,7 +103,7 @@ public abstract class TranslationPipelineTestBase
     public async Task StopApplication()
     {
         await App.DisposeAsync();
-        await _postgres.DisposeAsync();
+        await TestDatabase.DropAsync(_connectionString);
     }
 
     [SetUp]

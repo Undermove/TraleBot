@@ -25,28 +25,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Restore Nuget cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.nuget/packages
-          key: nugetcache-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            nugetcache-
-
-      - name: Install dependencies
-        run: dotnet restore
-
-      - name: Test with the dotnet CLI
-        run: dotnet test
-
+      # No tests here: they run on every pull request ("Run tests", test.yml), and main changes only
+      # through pull requests. Running them again after the merge only delayed the rollout by ~10 minutes.
       - name: Build and push
         uses: docker/build-push-action@v3
         with:

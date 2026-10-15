@@ -25,7 +25,8 @@ public class FeatureCatalogCoverageTests
         while (dir is not null)
         {
             if (File.Exists(Path.Combine(dir.FullName, "FEATURES.md"))
-                && Directory.Exists(Path.Combine(dir.FullName, ".git")))
+                // .git is a directory in a clone and a file in a git worktree.
+                && Path.Exists(Path.Combine(dir.FullName, ".git")))
             {
                 return dir.FullName;
             }

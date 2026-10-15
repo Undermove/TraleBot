@@ -250,10 +250,11 @@ public class VerbSectionTests : TestBase
             await Play(lemma, DateTime.UtcNow.AddMinutes(-30));
         }
 
-        var counter = new QueryCounter();
+        QueryCounter? counter = null;
         var section = await InScope(async sp =>
         {
             var db = sp.GetRequiredService<TraleDbContext>();
+            counter = new QueryCounter(db);
             using var listener = System.Diagnostics.DiagnosticListener.AllListeners.Subscribe(counter);
             var user = await db.Users.Include(u => u.Settings).SingleAsync(u => u.Id == _user.Id);
             counter.Reset();
@@ -261,7 +262,7 @@ public class VerbSectionTests : TestBase
         });
 
         section.MyVerbs.Should().HaveCount(12);
-        counter.Count.Should().BeInRange(1, 7, "the section is one cheap call: no query per verb");
+        counter!.Count.Should().BeInRange(1, 7, "the section is one cheap call: no query per verb");
     }
 
     // ── Where people came from ───────────────────────────────────────────────
@@ -395,7 +396,11 @@ public class VerbSectionTests : TestBase
     public void Only_the_verbs_payload_leads_to_the_section(string? payload, bool expected) =>
         Infrastructure.Telegram.BotCommands.StartCommand.IsVerbsSectionPayload(payload).Should().Be(expected);
 
-    private sealed class QueryCounter : IObserver<System.Diagnostics.DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
+    /// <summary>
+    /// Queries of one DbContext. The listener is process-wide, and other fixtures run their queries at
+    /// the same time, hence the filter by context.
+    /// </summary>
+    private sealed class QueryCounter(DbContext context) : IObserver<System.Diagnostics.DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
     {
         private int _count;
         public int Count => _count;
@@ -406,7 +411,12 @@ public class VerbSectionTests : TestBase
         }
         public void OnNext(KeyValuePair<string, object?> e)
         {
-            if (e.Key == Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.CommandExecuted.Name) Interlocked.Increment(ref _count);
+            if (e.Key == Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.CommandExecuted.Name
+                && e.Value is Microsoft.EntityFrameworkCore.Diagnostics.CommandEventData data
+                && data.Context == context)
+            {
+                Interlocked.Increment(ref _count);
+            }
         }
         public void OnCompleted() { }
         public void OnError(Exception error) { }
