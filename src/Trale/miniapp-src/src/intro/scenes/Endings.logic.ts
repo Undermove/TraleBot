@@ -94,8 +94,10 @@ export function pile(set: MagnetSet, rng: Rng, seed = 0): Capsule[] {
   const list: Tool[] = shuffle([...tools, ...tools, ...tools], rng).slice(0, 6)
   // Хотя бы по одной каждого, чтобы выбор был всегда.
   for (const t of tools) if (!list.includes(t)) list[0] = t
-  const slots = shuffle([0.1, 0.24, 0.38, 0.52, 0.66, 0.17, 0.45, 0.6], rng)
-  return list.map((tool, i) => ({ id: seed * 10 + i, tool, x: slots[i], row: i < 5 ? 0 : 1 }))
+  // Нижний ряд — пять мест без наложений, шестая капсула лежит сверху, между двумя.
+  const bottom = shuffle([0.1, 0.25, 0.4, 0.55, 0.7], rng)
+  const top = shuffle([0.175, 0.325, 0.475, 0.625], rng)
+  return list.map((tool, i) => ({ id: seed * 10 + i, tool, x: i < 5 ? bottom[i] : top[0], row: i < 5 ? 0 : 1 }))
 }
 
 /** Какую капсулу схватит кран в точке x (доля ширины): ближайшую в пределах захвата, верхний слой первым. */
@@ -110,7 +112,7 @@ export const clampClaw = (x: number) => Math.max(0.06, Math.min(0.74, x))
 
 /** Свободное место на дне стекла — туда падает отскочившая капсула. */
 export function freeSpot(caps: Capsule[], rng: Rng): number {
-  const spots = [0.1, 0.17, 0.24, 0.31, 0.38, 0.45, 0.52, 0.59, 0.66, 0.73]
-  const free = spots.filter(x => caps.every(c => Math.abs(c.x - x) > 0.09))
+  const spots = [0.1, 0.25, 0.4, 0.55, 0.7]
+  const free = spots.filter(x => caps.every(c => c.row > 0 || Math.abs(c.x - x) > 0.1))
   return free.length ? free[Math.floor(rng() * free.length)] : spots[Math.floor(rng() * spots.length)]
 }

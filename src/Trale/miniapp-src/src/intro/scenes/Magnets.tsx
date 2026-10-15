@@ -26,7 +26,7 @@ const TICK_MS = 50
 
 type Phase = 'intro' | 'me' | 'belt' | 'end'
 
-const TITLE: Record<MagnetSet, string> = { name: 'Имя по-грузински', from: 'Магниты: откуда', in: 'Магниты: где', both: 'Магниты: большая смена' }
+const TITLE: Record<MagnetSet, string> = { name: 'Имя по-грузински', from: 'Автомат: откуда', in: 'Автомат: где', both: 'Автомат: где и откуда' }
 
 export default function Magnets({ step, fraction, onExit, onDone, rng = Math.random, now = Date.now }: SceneProps<StepOf<'magnets'>>) {
   const set = step.set
@@ -38,7 +38,7 @@ export default function Magnets({ step, fraction, onExit, onDone, rng = Math.ran
   const end = (b: EndingsResult) => { setResult(b); setPhase('end'); sound.win() }
 
   return (
-    <GameFrame title={title} eyebrow="мастерская" fraction={fraction} onExit={onExit}>
+    <GameFrame title={title} eyebrow="автомат окончаний" fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col" data-testid="magnets-scene">
         {phase === 'intro' && (
           <GameIntro

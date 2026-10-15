@@ -9,7 +9,7 @@ import { ACTS, INTRO_TOTAL, actOf, introLesson, newPhrases, type IntroStep } fro
 /** Как сцена называется в плане урока на стартовом экране. */
 export const STEP_TITLE: Record<IntroStep['kind'], string> = {
   phrase: 'Новые фразы', rule: 'Находка правила', yard: 'Дворик', elevator: 'Лифт', party: 'Вечеринка',
-  magnets: 'Магниты', border: 'Паспортный контроль', detective: 'Кто есть кто', chat: 'Чат с Нино', taxi: 'Такси',
+  magnets: 'Автомат окончаний', border: 'Паспортный контроль', detective: 'Кто есть кто', chat: 'Чат с Нино', taxi: 'Такси',
   family: 'Семейный альбом', havesort: 'Живое или вещь', aboutme: 'Обо мне', supra: 'Супра'
 }
 
