@@ -4,8 +4,6 @@
   "lexicon": [
     "მე მქვია",
     "მე მქვია კარლოსი",
-    "გაგიმარჯოს",
-    "არა",
     "კარლოსი",
     "ნინო"
   ],
@@ -30,49 +28,17 @@
       "lemma": "მე მქვია კარლოსი",
       "question": "Как переводится «მე მქვია კარლოსი»?",
       "options": [
+        "да",
         "меня зовут Карлос",
-        "спасибо",
-        "меня зовут…"
+        "как дела?"
       ],
-      "answer_index": 0,
+      "answer_index": 1,
       "explanation": "«მე მქვია კარლოსი» — меня зовут Карлос.",
       "tags": [
         "meaning"
       ],
       "difficulty": 1,
       "id": "intro8-q2"
-    },
-    {
-      "lemma": "გაგიმარჯოს",
-      "question": "Как переводится «გაგიმარჯოს»?",
-      "options": [
-        "извините",
-        "меня зовут…",
-        "здравствуй и ты (ответ)"
-      ],
-      "answer_index": 2,
-      "explanation": "«გაგიმარჯოს» — здравствуй и ты (ответ).",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro8-q3"
-    },
-    {
-      "lemma": "არა",
-      "question": "Как переводится «არა»?",
-      "options": [
-        "меня зовут…",
-        "хорошо, а ты?",
-        "нет"
-      ],
-      "answer_index": 2,
-      "explanation": "«არა» — нет.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro8-q4"
     },
     {
       "lemma": "მე მქვია",
@@ -88,87 +54,93 @@
         "reverse"
       ],
       "difficulty": 1,
-      "id": "intro8-q5"
+      "id": "intro8-q3"
     },
     {
       "lemma": "მე მქვია კარლოსი",
       "question": "Как сказать «меня зовут Карлос»?",
       "options": [
-        "კი",
-        "მე მქვია კარლოსი",
-        "როგორ ხარ?"
+        "ბოდიში",
+        "გაგიმარჯოს",
+        "მე მქვია კარლოსი"
       ],
-      "answer_index": 1,
+      "answer_index": 2,
       "explanation": "«меня зовут Карлос» — «მე მქვია კარლოსი».",
       "tags": [
         "reverse"
       ],
       "difficulty": 1,
-      "id": "intro8-q6"
+      "id": "intro8-q4"
     },
     {
-      "lemma": "გაგიმარჯოს",
-      "question": "Как сказать «здравствуй и ты (ответ)»?",
+      "lemma": "მე მქვია",
+      "question": "Послушай и выбери, что сказали",
       "options": [
+        "მე მქვია",
+        "მადლობა",
+        "მე მქვია კარლოსი"
+      ],
+      "answer_index": 0,
+      "explanation": "«მე მქვია» — меня зовут….",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/me_mkvia.m4a",
+      "transcript": "მე მქვია",
+      "id": "intro8-q5"
+    },
+    {
+      "lemma": "მე მქვია კარლოსი",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "მე მქვია",
         "მე მქვია კარლოსი",
-        "გაგიმარჯოს",
         "გამარჯობა"
       ],
       "answer_index": 1,
-      "explanation": "«здравствуй и ты (ответ)» — «გაგიმარჯოს».",
+      "explanation": "«მე მქვია კარლოსი» — меня зовут Карлос.",
       "tags": [
-        "reverse"
+        "audio"
       ],
       "difficulty": 1,
-      "id": "intro8-q7"
-    },
-    {
-      "lemma": "არა",
-      "question": "Как сказать «нет»?",
-      "options": [
-        "როგორ ხარ?",
-        "კარგად, შენ?",
-        "არა"
-      ],
-      "answer_index": 2,
-      "explanation": "«нет» — «არა».",
-      "tags": [
-        "reverse"
-      ],
-      "difficulty": 1,
-      "id": "intro8-q8"
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/me_mkvia_karlosi.m4a",
+      "transcript": "მე მქვია კარლოსი",
+      "id": "intro8-q6"
     },
     {
       "lemma": "კარლოსი",
-      "question": "Как грузины скажут имя «Карлос»?",
+      "question": "Как Карлос скажет по-грузински «меня зовут Карлос»?",
       "options": [
-        "კარლოსი",
-        "კარლოს",
-        "კარლოსო"
+        "ნახვამდის, კარლოს",
+        "მე მქვია კარლოსი",
+        "მე მქვია კარლოს"
       ],
-      "answer_index": 0,
+      "answer_index": 1,
       "explanation": "Имя на согласную договаривают гласной ი: კარლოსი.",
       "tags": [
         "rule"
       ],
       "difficulty": 1,
-      "id": "intro8-q9"
+      "id": "intro8-q7"
     },
     {
       "lemma": "ნინო",
-      "question": "Нужна ли ი в конце имени «Нино»?",
+      "question": "Как Нино скажет «меня зовут Нино»?",
       "options": [
-        "нет: имя кончается на гласную",
-        "да, как у всех имён",
-        "да, если это женское имя"
+        "მე მქვია ნინოი",
+        "ნახვამდის, ნინო",
+        "მე მქვია ნინო"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "Имя на гласную остаётся как есть: ნინო.",
       "tags": [
         "rule"
       ],
       "difficulty": 1,
-      "id": "intro8-q10"
+      "id": "intro8-q8"
     }
   ]
 }

@@ -28,11 +28,11 @@
       "lemma": "ის არის მასწავლებელი",
       "question": "Как переводится «ის არის მასწავლებელი»?",
       "options": [
-        "извините",
-        "из Франции",
-        "он/она учитель"
+        "живу в Батуми",
+        "он/она учитель",
+        "я из Грузии"
       ],
-      "answer_index": 2,
+      "answer_index": 1,
       "explanation": "«ის არის მასწავლებელი» — он/она учитель.",
       "tags": [
         "meaning"
@@ -45,10 +45,10 @@
       "question": "Как переводится «სტუდენტი»?",
       "options": [
         "врач",
-        "учитель",
-        "студент"
+        "студент",
+        "учитель"
       ],
-      "answer_index": 2,
+      "answer_index": 1,
       "explanation": "«სტუდენტი» — студент.",
       "tags": [
         "meaning"
@@ -57,36 +57,20 @@
       "id": "intro21-q3"
     },
     {
-      "lemma": "ექიმი",
-      "question": "Как переводится «ექიმი»?",
-      "options": [
-        "учитель",
-        "студент",
-        "врач"
-      ],
-      "answer_index": 2,
-      "explanation": "«ექიმი» — врач.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro21-q4"
-    },
-    {
       "lemma": "მასწავლებელი",
       "question": "Как переводится «მასწავლებელი»?",
       "options": [
         "студент",
-        "врач",
-        "учитель"
+        "учитель",
+        "врач"
       ],
-      "answer_index": 2,
+      "answer_index": 1,
       "explanation": "«მასწავლებელი» — учитель.",
       "tags": [
         "meaning"
       ],
       "difficulty": 1,
-      "id": "intro21-q5"
+      "id": "intro21-q4"
     },
     {
       "lemma": "ექიმი",
@@ -102,23 +86,61 @@
         "reverse"
       ],
       "difficulty": 1,
-      "id": "intro21-q6"
+      "id": "intro21-q5"
     },
     {
       "lemma": "ის არის მასწავლებელი",
       "question": "Как сказать «он/она учитель»?",
       "options": [
-        "ვცხოვრობ ბათუმში",
-        "ის არის მასწავლებელი",
-        "მე ვარ საქართველოდან"
+        "ნახვამდის",
+        "ბოდიში",
+        "ის არის მასწავლებელი"
       ],
-      "answer_index": 1,
+      "answer_index": 2,
       "explanation": "«он/она учитель» — «ის არის მასწავლებელი».",
       "tags": [
         "reverse"
       ],
       "difficulty": 1,
+      "id": "intro21-q6"
+    },
+    {
+      "lemma": "ექიმი",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ბოდიში",
+        "საფრანგეთიდან",
+        "ექიმი"
+      ],
+      "answer_index": 2,
+      "explanation": "«ექიმი» — врач.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/eqimi.m4a",
+      "transcript": "ექიმი",
       "id": "intro21-q7"
+    },
+    {
+      "lemma": "ის არის მასწავლებელი",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ის არის მასწავლებელი",
+        "ვცხოვრობ ბათუმში",
+        "ბოდიში"
+      ],
+      "answer_index": 0,
+      "explanation": "«ის არის მასწავლებელი» — он/она учитель.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/mascavlebeli.m4a",
+      "transcript": "ის არის მასწავლებელი",
+      "id": "intro21-q8"
     }
   ]
 }

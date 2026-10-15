@@ -4,7 +4,7 @@
   "lexicon": [
     "როგორ ხარ?",
     "კარგად, მადლობა",
-    "გამარჯობა"
+    "ნახვამდის"
   ],
   "questions": [
     {
@@ -28,8 +28,8 @@
       "question": "Как переводится «კარგად, მადლობა»?",
       "options": [
         "хорошо, спасибо",
-        "добрый вечер",
-        "здравствуй"
+        "как дела?",
+        "добрый вечер"
       ],
       "answer_index": 0,
       "explanation": "«კარგად, მადლობა» — хорошо, спасибо.",
@@ -38,22 +38,6 @@
       ],
       "difficulty": 1,
       "id": "intro3-q2"
-    },
-    {
-      "lemma": "გამარჯობა",
-      "question": "Как переводится «გამარჯობა»?",
-      "options": [
-        "до свидания",
-        "хорошо, спасибо",
-        "здравствуй"
-      ],
-      "answer_index": 2,
-      "explanation": "«გამარჯობა» — здравствуй.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro3-q3"
     },
     {
       "lemma": "როგორ ხარ?",
@@ -69,23 +53,61 @@
         "reverse"
       ],
       "difficulty": 1,
-      "id": "intro3-q4"
+      "id": "intro3-q3"
     },
     {
       "lemma": "კარგად, მადლობა",
       "question": "Как сказать «хорошо, спасибо»?",
       "options": [
+        "დილა მშვიდობისა",
         "კარგად, მადლობა",
-        "როგორ ხარ?",
-        "საღამო მშვიდობისა"
+        "გამარჯობა"
       ],
-      "answer_index": 0,
+      "answer_index": 1,
       "explanation": "«хорошо, спасибо» — «კარგად, მადლობა».",
       "tags": [
         "reverse"
       ],
       "difficulty": 1,
+      "id": "intro3-q4"
+    },
+    {
+      "lemma": "როგორ ხარ?",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "როგორ ხარ?",
+        "საღამო მშვიდობისა",
+        "გამარჯობა"
+      ],
+      "answer_index": 0,
+      "explanation": "«როგორ ხარ?» — как дела?.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/rogor.m4a",
+      "transcript": "როგორ ხარ?",
       "id": "intro3-q5"
+    },
+    {
+      "lemma": "კარგად, მადლობა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "კარგად, მადლობა",
+        "ნახვამდის",
+        "დილა მშვიდობისა"
+      ],
+      "answer_index": 0,
+      "explanation": "«კარგად, მადლობა» — хорошо, спасибо.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/kargad_madloba.m4a",
+      "transcript": "კარგად, მადლობა",
+      "id": "intro3-q6"
     },
     {
       "lemma": "კარგად, მადლობა",
@@ -101,7 +123,23 @@
         "context"
       ],
       "difficulty": 1,
-      "id": "intro3-q6"
+      "id": "intro3-q7"
+    },
+    {
+      "lemma": "ნახვამდის",
+      "question": "Ты уходишь от соседа. Что сказать на прощание?",
+      "options": [
+        "ნახვამდის",
+        "გამარჯობა",
+        "როგორ ხარ?"
+      ],
+      "answer_index": 0,
+      "explanation": "«ნახვამდის» — до свидания.",
+      "tags": [
+        "context"
+      ],
+      "difficulty": 1,
+      "id": "intro3-leave"
     }
   ]
 }

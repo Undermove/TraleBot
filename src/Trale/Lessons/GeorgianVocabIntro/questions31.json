@@ -3,8 +3,7 @@
   "title": "Мне нравится Грузия",
   "lexicon": [
     "მიყვარს საქართველო",
-    "არ ვიცი",
-    "ქალიშვილი"
+    "არ ვიცი"
   ],
   "questions": [
     {
@@ -28,8 +27,8 @@
       "question": "Как переводится «არ ვიცი»?",
       "options": [
         "не знаю",
-        "мама",
-        "у меня есть собака"
+        "у меня есть сестра",
+        "я работаю"
       ],
       "answer_index": 0,
       "explanation": "«არ ვიცი» — не знаю.",
@@ -38,22 +37,6 @@
       ],
       "difficulty": 1,
       "id": "intro31-q2"
-    },
-    {
-      "lemma": "ქალიშვილი",
-      "question": "Как переводится «ქალიშვილი»?",
-      "options": [
-        "дочь",
-        "откуда ты?",
-        "как дела?"
-      ],
-      "answer_index": 0,
-      "explanation": "«ქალიშვილი» — дочь.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro31-q3"
     },
     {
       "lemma": "მიყვარს საქართველო",
@@ -69,15 +52,15 @@
         "reverse"
       ],
       "difficulty": 1,
-      "id": "intro31-q4"
+      "id": "intro31-q3"
     },
     {
       "lemma": "არ ვიცი",
       "question": "Как сказать «не знаю»?",
       "options": [
         "არ ვიცი",
-        "მე მყავს და",
-        "ვმუშაობ"
+        "დედა",
+        "მე ვცხოვრობ თბილისში"
       ],
       "answer_index": 0,
       "explanation": "«не знаю» — «არ ვიცი».",
@@ -85,23 +68,77 @@
         "reverse"
       ],
       "difficulty": 1,
+      "id": "intro31-q4"
+    },
+    {
+      "lemma": "მიყვარს საქართველო",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "მიყვარს საქართველო",
+        "დედა",
+        "მე მყავს ძაღლი"
+      ],
+      "answer_index": 0,
+      "explanation": "«მიყვარს საქართველო» — я люблю Грузию.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/miyvars_sakartvelo.m4a",
+      "transcript": "მიყვარს საქართველო",
       "id": "intro31-q5"
+    },
+    {
+      "lemma": "არ ვიცი",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "არ ვიცი",
+        "რა გქვია?",
+        "ექიმი"
+      ],
+      "answer_index": 0,
+      "explanation": "«არ ვიცი» — не знаю.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/ar_vici.m4a",
+      "transcript": "არ ვიცი",
+      "id": "intro31-q6"
     },
     {
       "lemma": "არ ვიცი",
       "question": "Нино спросила то, чего ты не знаешь. Что ответить?",
       "options": [
-        "არ ვიცი",
         "მადლობა",
+        "არ ვიცი",
         "კი"
       ],
-      "answer_index": 0,
+      "answer_index": 1,
       "explanation": "«არ ვიცი» — не знаю.",
       "tags": [
         "context"
       ],
       "difficulty": 1,
-      "id": "intro31-q6"
+      "id": "intro31-q7"
+    },
+    {
+      "lemma": "მიყვარს საქართველო",
+      "question": "Скажи Нино, что ты любишь Грузию.",
+      "options": [
+        "სასიამოვნოა! საქართველო მოგწონს?",
+        "საქართველო ძალიან ლამაზია",
+        "მიყვარს საქართველო"
+      ],
+      "answer_index": 2,
+      "explanation": "«მიყვარს საქართველო» — я люблю Грузию.",
+      "tags": [
+        "context"
+      ],
+      "difficulty": 1,
+      "id": "intro31-q8"
     }
   ]
 }

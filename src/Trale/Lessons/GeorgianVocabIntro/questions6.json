@@ -3,9 +3,8 @@
   "title": "Целый день во дворе",
   "lexicon": [
     "გაგიმარჯოს",
-    "გამარჯობა",
     "ნახვამდის",
-    "დილა მშვიდობისა"
+    "გამარჯობა"
   ],
   "questions": [
     {
@@ -25,27 +24,11 @@
       "id": "intro6-q1"
     },
     {
-      "lemma": "გამარჯობა",
-      "question": "Как переводится «გამარჯობა»?",
-      "options": [
-        "извините",
-        "до свидания",
-        "здравствуй"
-      ],
-      "answer_index": 2,
-      "explanation": "«გამარჯობა» — здравствуй.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro6-q2"
-    },
-    {
       "lemma": "ნახვამდის",
       "question": "Как переводится «ნახვამდის»?",
       "options": [
-        "здравствуй и ты (ответ)",
-        "хорошо, а ты?",
+        "здравствуй",
+        "как дела?",
         "до свидания"
       ],
       "answer_index": 2,
@@ -54,23 +37,7 @@
         "meaning"
       ],
       "difficulty": 1,
-      "id": "intro6-q3"
-    },
-    {
-      "lemma": "დილა მშვიდობისა",
-      "question": "Как переводится «დილა მშვიდობისა»?",
-      "options": [
-        "здравствуй",
-        "как дела?",
-        "доброе утро"
-      ],
-      "answer_index": 2,
-      "explanation": "«დილა მშვიდობისა» — доброе утро.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro6-q4"
+      "id": "intro6-q2"
     },
     {
       "lemma": "გაგიმარჯოს",
@@ -86,17 +53,55 @@
         "reverse"
       ],
       "difficulty": 1,
+      "id": "intro6-q3"
+    },
+    {
+      "lemma": "გაგიმარჯოს",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გაგიმარჯოს",
+        "ბოდიში",
+        "კარგად, მადლობა"
+      ],
+      "answer_index": 0,
+      "explanation": "«გაგიმარჯოს» — здравствуй и ты (ответ).",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/gagimarjos.m4a",
+      "transcript": "გაგიმარჯოს",
+      "id": "intro6-q4"
+    },
+    {
+      "lemma": "გამარჯობა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გაგიმარჯოს",
+        "კარგად, შენ?",
+        "გამარჯობა"
+      ],
+      "answer_index": 2,
+      "explanation": "«გამარჯობა» — здравствуй.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/gamarjoba.m4a",
+      "transcript": "გამარჯობა",
       "id": "intro6-q5"
     },
     {
       "lemma": "გაგიმარჯოს",
       "question": "Сосед первым сказал тебе «გამარჯობა!». Как ответить?",
       "options": [
+        "ბოდიში",
         "ნახვამდის",
-        "გაგიმარჯოს",
-        "ბოდიში"
+        "გაგიმარჯოს"
       ],
-      "answer_index": 1,
+      "answer_index": 2,
       "explanation": "«გაგიმარჯოს» — здравствуй и ты (ответ).",
       "tags": [
         "context"

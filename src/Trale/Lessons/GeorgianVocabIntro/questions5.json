@@ -28,8 +28,8 @@
       "lemma": "ბოდიში",
       "question": "Как переводится «ბოდიში»?",
       "options": [
-        "спасибо",
         "хорошо, спасибо",
+        "до свидания",
         "извините"
       ],
       "answer_index": 2,
@@ -44,8 +44,8 @@
       "lemma": "კი",
       "question": "Как переводится «კი»?",
       "options": [
-        "нет",
-        "добрый вечер",
+        "хорошо, спасибо",
+        "извините",
         "да"
       ],
       "answer_index": 2,
@@ -60,11 +60,11 @@
       "lemma": "არა",
       "question": "Как переводится «არა»?",
       "options": [
-        "хорошо, спасибо",
-        "извините",
-        "нет"
+        "добрый вечер",
+        "нет",
+        "хорошо, а ты?"
       ],
-      "answer_index": 2,
+      "answer_index": 1,
       "explanation": "«არა» — нет.",
       "tags": [
         "meaning"
@@ -92,8 +92,8 @@
       "lemma": "ბოდიში",
       "question": "Как сказать «извините»?",
       "options": [
-        "კარგად, მადლობა",
-        "ნახვამდის",
+        "არა",
+        "საღამო მშვიდობისა",
         "ბოდიში"
       ],
       "answer_index": 2,
@@ -108,11 +108,11 @@
       "lemma": "კი",
       "question": "Как сказать «да»?",
       "options": [
+        "კარგად, მადლობა",
         "კი",
-        "როგორ ხარ?",
-        "კარგად, შენ?"
+        "ნახვამდის"
       ],
-      "answer_index": 0,
+      "answer_index": 1,
       "explanation": "«да» — «კი».",
       "tags": [
         "reverse"
@@ -124,9 +124,9 @@
       "lemma": "არა",
       "question": "Как сказать «нет»?",
       "options": [
-        "კარგად, მადლობა",
+        "როგორ ხარ?",
         "არა",
-        "ნახვამდის"
+        "კარგად, მადლობა"
       ],
       "answer_index": 1,
       "explanation": "«нет» — «არა».",
@@ -137,36 +137,90 @@
       "id": "intro5-q8"
     },
     {
+      "lemma": "მადლობა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ბოდიში",
+        "კარგად, მადლობა",
+        "მადლობა"
+      ],
+      "answer_index": 2,
+      "explanation": "«მადლობა» — спасибо.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/madloba.m4a",
+      "transcript": "მადლობა",
+      "id": "intro5-q9"
+    },
+    {
+      "lemma": "ბოდიში",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ბოდიში",
+        "როგორ ხარ?",
+        "კარგად, შენ?"
+      ],
+      "answer_index": 0,
+      "explanation": "«ბოდიში» — извините.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/bodishi.m4a",
+      "transcript": "ბოდიში",
+      "id": "intro5-q10"
+    },
+    {
       "lemma": "ბოდიში",
       "question": "В тесном лифте ты наступил соседу на ногу. Что сказать?",
       "options": [
+        "ბოდიში",
         "კი",
-        "მადლობა",
-        "ბოდიში"
+        "მადლობა"
       ],
-      "answer_index": 2,
+      "answer_index": 0,
       "explanation": "«ბოდიში» — извините.",
       "tags": [
         "context"
       ],
       "difficulty": 1,
-      "id": "intro5-q9"
+      "id": "intro5-q11"
     },
     {
       "lemma": "მადლობა",
       "question": "Соседка придержала тебе дверь. Что сказать?",
       "options": [
-        "მადლობა",
         "არა",
-        "ბოდიში"
+        "ბოდიში",
+        "მადლობა"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«მადლობა» — спасибо.",
       "tags": [
         "context"
       ],
       "difficulty": 1,
-      "id": "intro5-q10"
+      "id": "intro5-q12"
+    },
+    {
+      "lemma": "კი",
+      "question": "Сосед спрашивает, нажать ли тебе кнопку. Тебе нужно. Что ответить?",
+      "options": [
+        "კი",
+        "ბოდიში",
+        "არა"
+      ],
+      "answer_index": 0,
+      "explanation": "«კი» — да.",
+      "tags": [
+        "context"
+      ],
+      "difficulty": 1,
+      "id": "intro5-q13"
     }
   ]
 }

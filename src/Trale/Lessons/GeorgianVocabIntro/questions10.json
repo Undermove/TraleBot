@@ -3,9 +3,8 @@
   "title": "Приятно познакомиться",
   "lexicon": [
     "სასიამოვნოა",
-    "მე მქვია",
     "მე მქვია კარლოსი",
-    "რა გქვია?"
+    "მე მქვია"
   ],
   "questions": [
     {
@@ -25,52 +24,20 @@
       "id": "intro10-q1"
     },
     {
-      "lemma": "მე მქვია",
-      "question": "Как переводится «მე მქვია»?",
-      "options": [
-        "меня зовут…",
-        "меня зовут Карлос",
-        "Привет! Меня зовут Нино. А тебя?"
-      ],
-      "answer_index": 0,
-      "explanation": "«მე მქვია» — меня зовут….",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro10-q2"
-    },
-    {
       "lemma": "მე მქვია კარლოსი",
       "question": "Как переводится «მე მქვია კარლოსი»?",
       "options": [
-        "здравствуй",
         "меня зовут Карлос",
-        "Привет! Меня зовут Нино. А тебя?"
+        "хорошо, а ты?",
+        "нет"
       ],
-      "answer_index": 1,
+      "answer_index": 0,
       "explanation": "«მე მქვია კარლოსი» — меня зовут Карлос.",
       "tags": [
         "meaning"
       ],
       "difficulty": 1,
-      "id": "intro10-q3"
-    },
-    {
-      "lemma": "რა გქვია?",
-      "question": "Как переводится «რა გქვია?»?",
-      "options": [
-        "как тебя зовут?",
-        "хорошо, а ты?",
-        "нет"
-      ],
-      "answer_index": 0,
-      "explanation": "«რა გქვია?» — как тебя зовут?.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro10-q4"
+      "id": "intro10-q2"
     },
     {
       "lemma": "სასიამოვნოა",
@@ -86,17 +53,55 @@
         "reverse"
       ],
       "difficulty": 1,
+      "id": "intro10-q3"
+    },
+    {
+      "lemma": "სასიამოვნოა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "მე მქვია კარლოსი",
+        "სასიამოვნოა",
+        "რა გქვია?"
+      ],
+      "answer_index": 1,
+      "explanation": "«სასიამოვნოა» — приятно познакомиться.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/sasiamovnoa.m4a",
+      "transcript": "სასიამოვნოა",
+      "id": "intro10-q4"
+    },
+    {
+      "lemma": "მე მქვია",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გამარჯობა",
+        "მე მქვია",
+        "გამარჯობა! მე მქვია ნინო. შენ?"
+      ],
+      "answer_index": 1,
+      "explanation": "«მე მქვია» — меня зовут….",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/me_mkvia.m4a",
+      "transcript": "მე მქვია",
       "id": "intro10-q5"
     },
     {
       "lemma": "სასიამოვნოა",
       "question": "Вы только что познакомились. Что сказать?",
       "options": [
-        "ბოდიში",
+        "სასიამოვნოა",
         "ნახვამდის",
-        "სასიამოვნოა"
+        "ბოდიში"
       ],
-      "answer_index": 2,
+      "answer_index": 0,
       "explanation": "«სასიამოვნოა» — приятно познакомиться.",
       "tags": [
         "context"

@@ -27,11 +27,11 @@
       "lemma": "მამა",
       "question": "Как переводится «მამა»?",
       "options": [
-        "папа",
-        "нет",
-        "врач"
+        "семья",
+        "приятно познакомиться",
+        "папа"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«მამა» — папа.",
       "tags": [
         "meaning"
@@ -43,11 +43,11 @@
       "lemma": "ოჯახი",
       "question": "Как переводится «ოჯახი»?",
       "options": [
-        "спасибо",
+        "семья",
         "приятно познакомиться",
-        "семья"
+        "папа"
       ],
-      "answer_index": 2,
+      "answer_index": 0,
       "explanation": "«ოჯახი» — семья.",
       "tags": [
         "meaning"
@@ -75,7 +75,7 @@
       "lemma": "მამა",
       "question": "Как сказать «папа»?",
       "options": [
-        "ოჯახი",
+        "მადლობა",
         "სასიამოვნოა",
         "მამა"
       ],
@@ -91,17 +91,55 @@
       "lemma": "ოჯახი",
       "question": "Как сказать «семья»?",
       "options": [
-        "ოჯახი",
-        "საღამო მშვიდობისა",
-        "ის არის მასწავლებელი"
+        "ბოდიში",
+        "კარგად, შენ?",
+        "ოჯახი"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«семья» — «ოჯახი».",
       "tags": [
         "reverse"
       ],
       "difficulty": 1,
       "id": "intro25-q6"
+    },
+    {
+      "lemma": "დედა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "დედა",
+        "არა",
+        "ექიმი"
+      ],
+      "answer_index": 0,
+      "explanation": "«დედა» — мама.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/deda.m4a",
+      "transcript": "დედა",
+      "id": "intro25-q7"
+    },
+    {
+      "lemma": "მამა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "მამა",
+        "საღამო მშვიდობისა",
+        "ის არის მასწავლებელი"
+      ],
+      "answer_index": 0,
+      "explanation": "«მამა» — папа.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/mama.m4a",
+      "transcript": "მამა",
+      "id": "intro25-q8"
     }
   ]
 }

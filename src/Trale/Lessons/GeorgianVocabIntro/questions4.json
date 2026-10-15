@@ -3,9 +3,8 @@
   "title": "А у тебя?",
   "lexicon": [
     "კარგად, შენ?",
-    "გამარჯობა",
     "ნახვამდის",
-    "დილა მშვიდობისა"
+    "გამარჯობა"
   ],
   "questions": [
     {
@@ -25,52 +24,20 @@
       "id": "intro4-q1"
     },
     {
-      "lemma": "გამარჯობა",
-      "question": "Как переводится «გამარჯობა»?",
-      "options": [
-        "хорошо, а ты?",
-        "доброе утро",
-        "здравствуй"
-      ],
-      "answer_index": 2,
-      "explanation": "«გამარჯობა» — здравствуй.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro4-q2"
-    },
-    {
       "lemma": "ნახვამდის",
       "question": "Как переводится «ნახვამდის»?",
       "options": [
-        "до свидания",
-        "как дела?",
-        "хорошо, а ты?"
+        "здравствуй",
+        "хорошо, спасибо",
+        "до свидания"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«ნახვამდის» — до свидания.",
       "tags": [
         "meaning"
       ],
       "difficulty": 1,
-      "id": "intro4-q3"
-    },
-    {
-      "lemma": "დილა მშვიდობისა",
-      "question": "Как переводится «დილა მშვიდობისა»?",
-      "options": [
-        "здравствуй",
-        "хорошо, спасибо",
-        "доброе утро"
-      ],
-      "answer_index": 2,
-      "explanation": "«დილა მშვიდობისა» — доброе утро.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro4-q4"
+      "id": "intro4-q2"
     },
     {
       "lemma": "კარგად, შენ?",
@@ -86,17 +53,55 @@
         "reverse"
       ],
       "difficulty": 1,
+      "id": "intro4-q3"
+    },
+    {
+      "lemma": "კარგად, შენ?",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გამარჯობა",
+        "დილა მშვიდობისა",
+        "კარგად, შენ?"
+      ],
+      "answer_index": 2,
+      "explanation": "«კარგად, შენ?» — хорошо, а ты?.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/kargad_shen.m4a",
+      "transcript": "კარგად, შენ?",
+      "id": "intro4-q4"
+    },
+    {
+      "lemma": "გამარჯობა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გამარჯობა",
+        "როგორ ხარ?",
+        "კარგად, შენ?"
+      ],
+      "answer_index": 0,
+      "explanation": "«გამარჯობა» — здравствуй.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/gamarjoba.m4a",
+      "transcript": "გამარჯობა",
       "id": "intro4-q5"
     },
     {
       "lemma": "კარგად, შენ?",
       "question": "Сосед спросил «როგორ ხარ?». Как ответить и спросить в ответ?",
       "options": [
-        "კარგად, შენ?",
         "ნახვამდის",
-        "როგორ ხარ?"
+        "როგორ ხარ?",
+        "კარგად, შენ?"
       ],
-      "answer_index": 0,
+      "answer_index": 2,
       "explanation": "«კარგად, შენ?» — хорошо, а ты?.",
       "tags": [
         "context"

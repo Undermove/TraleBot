@@ -3,8 +3,7 @@
   "title": "Брат и сестра",
   "lexicon": [
     "ძმა",
-    "და",
-    "დედა"
+    "და"
   ],
   "questions": [
     {
@@ -27,8 +26,8 @@
       "lemma": "და",
       "question": "Как переводится «და»?",
       "options": [
-        "брат",
-        "он/она учитель",
+        "папа",
+        "извините",
         "сестра"
       ],
       "answer_index": 2,
@@ -38,22 +37,6 @@
       ],
       "difficulty": 1,
       "id": "intro26-q2"
-    },
-    {
-      "lemma": "დედა",
-      "question": "Как переводится «დედა»?",
-      "options": [
-        "мама",
-        "кто это?",
-        "я работаю"
-      ],
-      "answer_index": 0,
-      "explanation": "«დედა» — мама.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 1,
-      "id": "intro26-q3"
     },
     {
       "lemma": "ძმა",
@@ -69,39 +52,77 @@
         "reverse"
       ],
       "difficulty": 1,
-      "id": "intro26-q4"
+      "id": "intro26-q3"
     },
     {
       "lemma": "და",
       "question": "Как сказать «сестра»?",
       "options": [
-        "მამა",
-        "ბოდიში",
-        "და"
+        "და",
+        "ვცხოვრობ ბათუმში",
+        "დედა"
       ],
-      "answer_index": 2,
+      "answer_index": 0,
       "explanation": "«сестра» — «და».",
       "tags": [
         "reverse"
       ],
       "difficulty": 1,
+      "id": "intro26-q4"
+    },
+    {
+      "lemma": "ძმა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "და",
+        "ის არის მასწავლებელი",
+        "ძმა"
+      ],
+      "answer_index": 2,
+      "explanation": "«ძმა» — брат.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/dzma.m4a",
+      "transcript": "ძმა",
       "id": "intro26-q5"
     },
     {
       "lemma": "და",
-      "question": "Что значит первое «და» во фразе «ერთი ძმა და ერთი და»?",
+      "question": "Послушай и выбери, что сказали",
       "options": [
-        "сестра",
-        "и",
-        "брат"
+        "გამარჯობა",
+        "და",
+        "ვმუშაობ"
       ],
       "answer_index": 1,
-      "explanation": "Между словами და — «и», а после «одна» — сестра.",
+      "explanation": "«და» — сестра.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/da.m4a",
+      "transcript": "და",
+      "id": "intro26-q6"
+    },
+    {
+      "lemma": "და",
+      "question": "Как сказать «у меня есть сестра»?",
+      "options": [
+        "მე მყავს და",
+        "მე მყავს ძმა",
+        "მე მაქვს მანქანა"
+      ],
+      "answer_index": 0,
+      "explanation": "და — сестра; о живых — მყავს.",
       "tags": [
         "rule"
       ],
       "difficulty": 1,
-      "id": "intro26-q6"
+      "id": "intro26-q7"
     }
   ]
 }

@@ -2036,7 +2036,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
 
     private static ModuleDto BuildIntroModule()
     {
-        // «Знакомство» — история в шести актах. Уроки 2+ собираются из
+        // «Знакомство» — история в шести актах. Все уроки собираются из
         // src/Trale/miniapp-src/src/intro/story.json скриптом tools/intro_story.py — правьте story.json.
         return new ModuleDto
         {
@@ -2046,20 +2046,13 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
             Description = "გამარჯობა, მე მქვია, საიდან ხარ",
             Lessons = new List<LessonDto>
             {
-                Lesson(1, "Приветствия", "გამარჯობა, ნახვამდის, როგორ ხარ",
-                    "Приветствия",
-                    "Здороваться и прощаться по-грузински.",
+                Lesson(1, "Привет и пока", "გამარჯობა, ნახვამდის",
+                    "Привет и пока",
+                    "Здороваться и прощаться во дворе.",
                     new List<TheoryBlockDto>
                     {
-                        List(
-                            "გამარჯობა — здравствуй",
-                            "ნახვამდის — до свидания",
-                            "დილა მშვიდობისა — доброе утро",
-                            "საღამო მშვიდობისა — добрый вечер",
-                            "როგორ ხარ? — как дела?",
-                            "კარგად, მადლობა — хорошо, спасибо"),
-                        Example("გამარჯობა, როგორ ხარ?", "Здравствуй, как дела?"),
-                        Example("კარგად, შენ?", "Хорошо, а ты?")
+                        List("გამარჯობა — здравствуй", "ნახვამდის — до свидания"),
+                        Paragraph("Игра «Дворик»: соседи выходят и приходят, поздоровайся по времени суток.")
                     }),
                 Lesson(2, "Утро и вечер", "დილა მშვიდობისა, საღამო მშვიდობისა",
                     "Утро и вечер",

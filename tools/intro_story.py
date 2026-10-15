@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Модуль «Знакомство»: собирает из src/Trale/miniapp-src/src/intro/story.json
-  - теорию уроков 2..N в MiniAppContentProvider.cs (BuildIntroModule; урок 1 остаётся как был),
-  - вопросы проверки Lessons/GeorgianVocabIntro/questions{N}.json для уроков 2..N (questions.json урока 1 не трогаем).
+  - теорию всех уроков в MiniAppContentProvider.cs (BuildIntroModule),
+  - вопросы проверки Lessons/GeorgianVocabIntro/questions.json (урок 1) и questions{N}.json (уроки 2..N).
 
 Запуск из корня репозитория: python3 tools/intro_story.py
 Скрипт детерминированный (свой генератор случайных чисел), повторный запуск даёт те же файлы.
@@ -137,42 +137,103 @@ def lesson_cs(lesson):
 
 
 # ── Вопросы проверки ──────────────────────────────────────────────────────────────────────────────
+# Только то, что урок показал: перевод, «как сказать», «послушай и выбери» (запись фразы), ситуация
+# и применение правила урока. Никаких корней, этимологии и «буквально означает». Ловушки — только
+# из уже знакомых фраз (или неверная форма того же слова, когда проверяется правило).
+
+AUDIO_DIR = ROOT / "src/Trale/miniapp-src/public/audio/intro-story"
+
+# Ситуации: (вопрос, верная фраза, ловушки). Ловушки берутся, только если человек их уже знает.
+SITUATIONS = {
+    1: [("Сосед выходит из подъезда на работу. Что ему сказать?", "nakhvamdis", ["gamarjoba"]),
+        ("Соседка вернулась домой и идёт мимо тебя. Как поздороваться?", "gamarjoba", ["nakhvamdis"])],
+    2: [("Восемь утра, ты выходишь из подъезда. Как поздороваться с соседкой?", "dila", ["saghamo", "nakhvamdis"]),
+        ("Вечер, сосед возвращается с работы. Как поздороваться?", "saghamo", ["dila", "nakhvamdis"])],
+    3: [("Сосед спросил «როგორ ხარ?». Что ответить?", "kargad_madloba", ["gamarjoba", "nakhvamdis"]),
+        ("Ты уходишь от соседа. Что сказать на прощание?", "nakhvamdis", ["gamarjoba", "rogor"], "intro3-leave")],
+    4: [("Сосед спросил «როგორ ხარ?». Как ответить и спросить в ответ?", "kargad_shen", ["rogor", "nakhvamdis"])],
+    5: [("В тесном лифте ты наступил соседу на ногу. Что сказать?", "bodishi", ["madloba", "ki"]),
+        ("Соседка придержала тебе дверь. Что сказать?", "madloba", ["bodishi", "ara"]),
+        ("Сосед спрашивает, нажать ли тебе кнопку. Тебе нужно. Что ответить?", "ki", ["ara", "bodishi"])],
+    6: [("Сосед первым сказал тебе «გამარჯობა!». Как ответить?", "gagimarjos", ["nakhvamdis", "bodishi"])],
+    7: [("Тебя спросили, как тебя зовут. Как начать ответ?", "me_mkvia", ["nakhvamdis", "rogor"])],
+    9: [("Ты хочешь узнать имя человека. Что спросить?", "ra_gkvia", ["rogor", "nakhvamdis"])],
+    10: [("Вы только что познакомились. Что сказать?", "sasiamovnoa", ["nakhvamdis", "bodishi"])],
+    11: [("Нино показывает на человека на фото. Как спросить, кто это?", "vin_aris", ["ra_gkvia", "rogor"]),
+         ("Ты знакомишь Нино со своим другом. Что сказать?", "es_chemi_megobaria", ["vin_aris", "sasiamovnoa"])],
+    13: [("Ты хочешь узнать, откуда человек. Что спросить?", "saidan", ["ra_gkvia", "rogor"])],
+    17: [("Нино спрашивает, нравится ли тебе Грузия. Ответь «да».", "ki", ["ara", "bodishi"])],
+    22: [("Ты хочешь узнать, кем работает человек. Что спросить?", "ra_profesia", ["saidan", "ra_gkvia"])],
+    31: [("Нино спросила то, чего ты не знаешь. Что ответить?", "ar_vici", ["ki", "madloba"]),
+         ("Скажи Нино, что ты любишь Грузию.", "miyvars_sakartvelo", ["lamazia", "mogcons"])],
+    33: [("Тамада поднял тост. Что сказать?", "gaumarjos", ["nakhvamdis", "bodishi"]),
+         ("Тост за Грузию. Что сказать?", "gaumarjos_sakartvelos", ["gaumarjos", "miyvars_sakartvelo"])],
+}
+
+
+# Уроки без новых фраз проверяют то, что в них играли.
+REVIEW = {
+    8: ["me_mkvia", "me_mkvia_karlosi"],
+    12: ["me_mkvia_nino", "ra_gkvia", "sasiamovnoa", "vin_aris"],
+    15: ["saidan", "espanetidan", "sakartvelodan", "ra_gkvia"],
+    16: ["saidan", "espanetidan", "sakartvelodan", "safrangetidan"],
+    24: ["tbilisshi", "batumshi", "studenti", "saidan"],
+    30: ["myavs_dzma_da", "myavs_da", "makvs_manqana", "deda", "mama"],
+    32: ["me_mkvia", "sakartvelodan", "batumshi", "studenti", "miyvars_sakartvelo"],
+}
+MAX_LISTEN = 2
+
 
 def questions(lesson):
     rng = Rng(lesson["id"] * 7919)
-    k = known(lesson["id"])
-    targets = lesson["new"] or review_pool(lesson)[:4]
-    others = [pid for pid in k]
+    lid = lesson["id"]
+    k = known(lid)
+    targets = lesson["new"] or REVIEW.get(lesson["id"]) or review_pool(lesson)[:4]
     qs = []
+    # В первом уроке знакомы всего две фразы — там вопросы на два варианта.
+    need = 2 if len(k) >= 3 else 1
 
     def distract(pid, field, n=2):
-        pool = [o for o in others if o != pid and P[o][field] != P[pid][field] and clean(P[o]["geo"]) != clean(P[pid]["geo"])]
+        pool = [o for o in k if o != pid and P[o][field] != P[pid][field] and clean(P[o]["geo"]) != clean(P[pid]["geo"])]
         return rng.shuffle(pool)[:n]
 
-    def add(q):
-        q["id"] = f'intro{lesson["id"]}-q{len(qs) + 1}'
+    def mcq(lemma, question, right, wrong, explanation, tag, extra=None, qid=None):
+        if tag != "audio" and any(q["question"] == question for q in qs):
+            return
+        if tag == "audio" and sum(1 for q in qs if q["tags"][0] == "audio") >= MAX_LISTEN:
+            return
+        opts = rng.shuffle([right] + wrong)
+        q = {"lemma": lemma, "question": question, "options": opts, "answer_index": opts.index(right),
+             "explanation": explanation, "tags": [tag], "difficulty": 1}
+        if extra:
+            q.update(extra)
+        if qid:
+            q["_id"] = qid
         qs.append(q)
 
-    def mcq(lemma, question, right, wrong, explanation, tag):
-        opts = rng.shuffle([right] + wrong)
-        add({"lemma": lemma, "question": question, "options": opts, "answer_index": opts.index(right),
-             "explanation": explanation, "tags": [tag], "difficulty": 1})
-
-    for pid in targets:
-        p = P[pid]
-        geo = clean(p["geo"])
-        ds = distract(pid, "ru")
-        if len(ds) >= 2:
+    def meaning(pid):
+        p = P[pid]; geo = clean(p["geo"]); ds = distract(pid, "ru")
+        if len(ds) >= need:
             mcq(geo, f"Как переводится «{geo}»?", p["ru"], [P[d]["ru"] for d in ds], f"«{geo}» — {p['ru']}.", "meaning")
-        ds = distract(pid, "geo")
-        if len(ds) >= 2:
+
+    def reverse(pid):
+        p = P[pid]; geo = clean(p["geo"]); ds = distract(pid, "geo")
+        if len(ds) >= need:
             mcq(geo, f"Как сказать «{p['ru']}»?", geo, [clean(P[d]["geo"]) for d in ds], f"«{p['ru']}» — «{geo}».", "reverse")
 
-    # Вопросы на правило и словарик урока.
-    lid = lesson["id"]
+    def listen(pid):
+        p = P[pid]; geo = clean(p["geo"]); ds = distract(pid, "geo")
+        if len(ds) >= need and (AUDIO_DIR / f"{pid}.m4a").exists():
+            mcq(geo, "Послушай и выбери, что сказали", geo, [clean(P[d]["geo"]) for d in ds], f"«{geo}» — {p['ru']}.", "audio",
+                {"question_type": "audio-choice", "audio_url": f"/audio/intro-story/{pid}.m4a", "transcript": geo})
+
+    for pid in targets:
+        meaning(pid); reverse(pid); listen(pid)
+
+    # Правило урока — на применение, а не на теорию.
     if lid == 8:
-        mcq("კარლოსი", "Как грузины скажут имя «Карлос»?", "კარლოსი", ["კარლოს", "კარლოსო"], "Имя на согласную договаривают гласной ი: კარლოსი.", "rule")
-        mcq("ნინო", "Нужна ли ი в конце имени «Нино»?", "нет: имя кончается на гласную", ["да, как у всех имён", "да, если это женское имя"], "Имя на гласную остаётся как есть: ნინო.", "rule")
+        mcq("კარლოსი", "Как Карлос скажет по-грузински «меня зовут Карлос»?", "მე მქვია კარლოსი", ["მე მქვია კარლოს", "ნახვამდის, კარლოს"], "Имя на согласную договаривают гласной ი: კარლოსი.", "rule")
+        mcq("ნინო", "Как Нино скажет «меня зовут Нино»?", "მე მქვია ნინო", ["მე მქვია ნინოი", "ნახვამდის, ნინო"], "Имя на гласную остаётся как есть: ნინო.", "rule")
     if lid in (14, 15, 24):
         for c in rng.shuffle(V["countries"])[:2]:
             mcq(c["from"], f"Как сказать «{c['ruFrom']}»?", c["from"], [c["base"], rng.shuffle([o["from"] for o in V["countries"] if o is not c])[0]], f"-დან — «из»: {c['base']} → {c['from']}.", "rule")
@@ -181,66 +242,49 @@ def questions(lesson):
             mcq(c["in"], f"Как сказать «в {c['ru']}»?", c["in"], [c["base"], rng.shuffle([o["in"] for o in V["cities"] if o is not c])[0]], f"-ში — «в», последняя ი уходит: {c['base']} → {c['in']}.", "rule")
     if lid in (20, 21):
         for j in V["jobs"]:
-            others_j = [o["ru"] for o in V["jobs"] if o is not j]
-            mcq(j["geo"], f"Как переводится «{j['geo']}»?", j["ru"], others_j, f"«{j['geo']}» — {j['ru']}.", "meaning")
+            mcq(j["geo"], f"Как переводится «{j['geo']}»?", j["ru"], [o["ru"] for o in V["jobs"] if o is not j], f"«{j['geo']}» — {j['ru']}.", "meaning")
     if lid in (27, 28, 30):
         for w in rng.shuffle(V["alive"])[:2] + rng.shuffle(V["things"])[:2]:
             alive = w in V["alive"]
             right = f"მე {'მყავს' if alive else 'მაქვს'} {w['geo']}"
             wrong = f"მე {'მაქვს' if alive else 'მყავს'} {w['geo']}"
-            lemma = "მყავს" if alive else "მაქვს"
-            mcq(lemma, f"Как сказать «у меня есть {w['ru']}»?", right, [wrong, f"მე ვარ {w['geo']}"],
+            mcq("მყავს" if alive else "მაქვს", f"Как сказать «у меня есть {w['ru']}»?", right, [wrong],
                 f"{w['geo']} — {'живое: მყავს' if alive else 'вещь: მაქვს'}.", "rule")
     if lid == 26:
-        mcq("და", "Что значит первое «და» во фразе «ერთი ძმა და ერთი და»?", "и", ["сестра", "брат"], "Между словами და — «и», а после «одна» — сестра.", "rule")
-    # Ситуации — чтобы проверка была не только переводом.
-    situations = {
-        1: [("ნახვამდის", "Сосед уходит на работу. Что ему сказать?", "nakhvamdis", ["gamarjoba"])],
-        2: [("დილა მშვიდობისა", "Восемь утра, ты выходишь из подъезда. Как поздороваться с соседкой?", "dila", ["saghamo", "nakhvamdis"]),
-            ("საღამო მშვიდობისა", "Вечер, сосед возвращается с работы. Как поздороваться?", "saghamo", ["dila", "nakhvamdis"])],
-        3: [("კარგად, მადლობა", "Сосед спросил «როგორ ხარ?». Что ответить?", "kargad_madloba", ["gamarjoba", "nakhvamdis"])],
-        4: [("კარგად, შენ?", "Сосед спросил «როგორ ხარ?». Как ответить и спросить в ответ?", "kargad_shen", ["rogor", "nakhvamdis"])],
-        5: [("ბოდიში", "В тесном лифте ты наступил соседу на ногу. Что сказать?", "bodishi", ["madloba", "ki"]),
-            ("მადლობა", "Соседка придержала тебе дверь. Что сказать?", "madloba", ["bodishi", "ara"])],
-        6: [("გაგიმარჯოს", "Сосед первым сказал тебе «გამარჯობა!». Как ответить?", "gagimarjos", ["nakhvamdis", "bodishi"])],
-        9: [("რა გქვია?", "Ты хочешь узнать имя человека. Что спросить?", "ra_gkvia", ["rogor", "nakhvamdis"])],
-        10: [("სასიამოვნოა", "Вы только что познакомились. Что сказать?", "sasiamovnoa", ["nakhvamdis", "bodishi"])],
-        13: [("საიდან ხარ?", "Ты хочешь узнать, откуда человек. Что спросить?", "saidan", ["ra_gkvia", "rogor"])],
-        31: [("არ ვიცი", "Нино спросила то, чего ты не знаешь. Что ответить?", "ar_vici", ["ki", "madloba"])],
-        33: [("გაუმარჯოს!", "Тамада поднял тост. Что сказать?", "gaumarjos", ["nakhvamdis", "bodishi"])],
-    }
-    for lemma, q, right, wrong in situations.get(lid, []):
+        mcq("და", "Как сказать «у меня есть сестра»?", "მე მყავს და", ["მე მყავს ძმა", "მე მაქვს მანქანა"], "და — сестра; о живых — მყავს.", "rule")
+
+    for item in SITUATIONS.get(lid, []):
+        q, right, wrong = item[0], item[1], item[2]
+        qid = item[3] if len(item) > 3 else None
         w = [clean(P[x]["geo"]) for x in wrong if x in k]
         if len(w) < 2:
-            w += [clean(P[x]["geo"]) for x in rng.shuffle([o for o in k if o != right and clean(P[o]["geo"]) not in w])][: 2 - len(w)]
-        mcq(clean(P[right]["geo"]), q, clean(P[right]["geo"]), w[:2], f"«{clean(P[right]['geo'])}» — {P[right]['ru']}.", "context")
-    # Мало вопросов (урок с одной-двумя фразами) — добираем переводом уже знакомых фраз.
+            w += [clean(P[x]["geo"]) for x in rng.shuffle([o for o in k if o != right and clean(P[o]["geo"]) not in w and clean(P[o]["geo"]) != clean(P[right]["geo"])])][: 2 - len(w)]
+        if len(w) < need:
+            continue
+        mcq(clean(P[right]["geo"]), q, clean(P[right]["geo"]), w[:2], f"«{clean(P[right]['geo'])}» — {P[right]['ru']}.", "context", qid=qid)
+
+    # Урок с одной фразой: добираем «послушай» и перевод фраз своего акта.
     for pid in review_pool(lesson):
         if len(qs) >= 6:
             break
-        if pid in targets:
-            continue
-        p = P[pid]
-        geo = clean(p["geo"])
-        ds = distract(pid, "ru")
-        if len(ds) >= 2:
-            mcq(geo, f"Как переводится «{geo}»?", p["ru"], [P[d]["ru"] for d in ds], f"«{geo}» — {p['ru']}.", "meaning")
-    # Проверка — последние вопросы: пусть там будут правило и ситуации, а перевод — раньше.
-    qs.sort(key=lambda q: {"meaning": 0, "reverse": 1, "rule": 2, "context": 3}[q["tags"][0]])
+        if pid not in targets:
+            listen(pid) if len(qs) % 2 == 0 else meaning(pid)
+
+    # Проверка — последние вопросы: там ситуации, правило и «послушай»; перевод — раньше.
+    qs.sort(key=lambda q: {"meaning": 0, "reverse": 1, "audio": 2, "rule": 3, "context": 4}[q["tags"][0]])
     for i, q in enumerate(qs):
-        q["id"] = f'intro{lid}-q{i + 1}'
+        fixed = q.pop("_id", None)
+        q["id"] = fixed or f"intro{lid}-q{i + 1}"
     return qs
 
 
 def write_questions():
     for lesson in L:
-        if lesson["id"] == 1:
-            continue
         qs = questions(lesson)
         assert len(qs) >= 5, (lesson["id"], len(qs))
         lexicon = list(dict.fromkeys(q["lemma"] for q in qs))
         out = {"lesson_id": f'intro-{lesson["id"]}', "title": lesson["title"], "lexicon": lexicon, "questions": qs}
-        (LESSONS_DIR / f'questions{lesson["id"]}.json').write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        (LESSONS_DIR / ("questions.json" if lesson["id"] == 1 else f'questions{lesson["id"]}.json')).write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def write_theory():
@@ -248,14 +292,11 @@ def write_theory():
     start = src.index("    private static ModuleDto BuildIntroModule()")
     end = src.index("    private static ModuleDto BuildEmergencyModule()")
     old = src[start:end]
-    l1_start = old.index('                Lesson(1, "Приветствия"')
-    l1_end = old.index("                Lesson(2, ")
-    lesson1 = old[l1_start:l1_end].rstrip().rstrip(",")
-    lessons = [lesson1] + [lesson_cs(l) for l in L if l["id"] != 1]
+    lessons = [lesson_cs(l) for l in L]
     new = (
         "    private static ModuleDto BuildIntroModule()\n"
         "    {\n"
-        "        // «Знакомство» — история в шести актах. Уроки 2+ собираются из\n"
+        "        // «Знакомство» — история в шести актах. Все уроки собираются из\n"
         "        // src/Trale/miniapp-src/src/intro/story.json скриптом tools/intro_story.py — правьте story.json.\n"
         "        return new ModuleDto\n"
         "        {\n"
