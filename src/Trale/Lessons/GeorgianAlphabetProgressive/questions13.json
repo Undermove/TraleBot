@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w13",
+  "title": "Слова: სად, ეს, ის",
+  "ordered": true,
+  "lexicon": [
+    "სად",
+    "ეს",
+    "ის"
+  ],
+  "questions": [
+    {
+      "id": "abw13-q01",
+      "lemma": "სად",
+      "question": "Как читается «სად»?",
+      "options": [
+        "ара",
+        "сад",
+        "да"
+      ],
+      "answer_index": 1,
+      "explanation": "«სად» — «сад», где.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw13-q02",
+      "lemma": "ეს",
+      "question": "Что значит «ეს»?",
+      "options": [
+        "где",
+        "и",
+        "это"
+      ],
+      "answer_index": 2,
+      "explanation": "«ეს» — «эс», это.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw13-q03",
+      "lemma": "ის",
+      "question": "Где написано «он, она»?",
+      "options": [
+        "სად",
+        "და",
+        "ის"
+      ],
+      "answer_index": 2,
+      "explanation": "«ის» — «ис», он, она.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw13-q04",
+      "lemma": "სად",
+      "question": "Что значит «სად»?",
+      "options": [
+        "это",
+        "что",
+        "где"
+      ],
+      "answer_index": 2,
+      "explanation": "«სად» — «сад», где.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

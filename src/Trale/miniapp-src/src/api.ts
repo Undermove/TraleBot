@@ -159,6 +159,13 @@ export const api = {
       body: JSON.stringify(payload)
     }),
 
+  /** Слова засчитанного урока алфавита — в «Словарь». Какие слова — решает сервер; повторный вызов ничего не добавляет. */
+  addAlphabetWords: (lessonId: number) =>
+    request<{ words: { word: string; translation: string; added: boolean }[]; added: number }>('/api/miniapp/vocabulary/alphabet-words', {
+      method: 'POST',
+      body: JSON.stringify({ lessonId })
+    }),
+
   recordAnswer: (payload: { correct: boolean }) =>
     request<LessonCompleteResponse>('/api/miniapp/progress/answer', {
       method: 'POST',

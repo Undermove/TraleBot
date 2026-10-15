@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w17",
+  "title": "Слова: ჩაი, სახლი, ჩემი, ჩვენ",
+  "ordered": true,
+  "lexicon": [
+    "ჩაი",
+    "სახლი",
+    "ჩემი",
+    "ჩვენ"
+  ],
+  "questions": [
+    {
+      "id": "abw17-q01",
+      "lemma": "ჩაი",
+      "question": "Как читается «ჩაი»?",
+      "options": [
+        "чаи",
+        "дэда",
+        "арис"
+      ],
+      "answer_index": 0,
+      "explanation": "«ჩაი» — «чаи», чай.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw17-q02",
+      "lemma": "სახლი",
+      "question": "Что значит «სახლი»?",
+      "options": [
+        "дом",
+        "папа",
+        "есть"
+      ],
+      "answer_index": 0,
+      "explanation": "«სახლი» — «сахли», дом.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw17-q03",
+      "lemma": "ჩემი",
+      "question": "Где написано «мой»?",
+      "options": [
+        "არა",
+        "ჩემი",
+        "სახლი"
+      ],
+      "answer_index": 1,
+      "explanation": "«ჩემი» — «чэми», мой.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw17-q04",
+      "lemma": "ჩვენ",
+      "question": "Что значит «ჩვენ»?",
+      "options": [
+        "и",
+        "мы",
+        "я"
+      ],
+      "answer_index": 1,
+      "explanation": "«ჩვენ» — «чвэн», мы.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

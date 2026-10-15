@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w15",
+  "title": "Слова: მამა, მე, მინდა, ვინ",
+  "ordered": true,
+  "lexicon": [
+    "მამა",
+    "მე",
+    "მინდა",
+    "ვინ"
+  ],
+  "questions": [
+    {
+      "id": "abw15-q01",
+      "lemma": "მამა",
+      "question": "Как читается «მამა»?",
+      "options": [
+        "эс",
+        "вин",
+        "мама"
+      ],
+      "answer_index": 2,
+      "explanation": "«მამა» — «мама», папа.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw15-q02",
+      "lemma": "მე",
+      "question": "Что значит «მე»?",
+      "options": [
+        "папа",
+        "и",
+        "я"
+      ],
+      "answer_index": 2,
+      "explanation": "«მე» — «мэ», я.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw15-q03",
+      "lemma": "მინდა",
+      "question": "Где написано «хочу»?",
+      "options": [
+        "მინდა",
+        "რა",
+        "ეს"
+      ],
+      "answer_index": 0,
+      "explanation": "«მინდა» — «минда», хочу.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw15-q04",
+      "lemma": "ვინ",
+      "question": "Что значит «ვინ»?",
+      "options": [
+        "большой",
+        "кто",
+        "он, она"
+      ],
+      "answer_index": 1,
+      "explanation": "«ვინ» — «вин», кто.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

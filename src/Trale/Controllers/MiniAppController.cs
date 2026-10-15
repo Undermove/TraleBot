@@ -109,7 +109,7 @@ public class MiniAppController : Controller
         CancellationToken ct)
     {
         // Legacy "alphabet" module uses the in-memory letter generator (7 auto-chunked lessons).
-        // "alphabet-progressive" has its own 10 curated lesson JSONs in Lessons/GeorgianAlphabetProgressive
+        // "alphabet-progressive" has its own curated lesson JSONs in Lessons/GeorgianAlphabetProgressive (11 letter lessons + word lessons 12+)
         // and flows through the generic ModuleRegistry path below — keeping the two in sync is
         // why lessons 8–10 used to 404.
         if (moduleId == "alphabet")
@@ -961,6 +961,86 @@ public class MiniAppController : Controller
         };
     }
 
+    public class AlphabetWordsRequest
+    {
+        public int LessonId { get; set; }
+    }
+
+    /// <summary>
+    /// After a counted alphabet lesson: puts the lesson's Georgian words into the learner's dictionary
+    /// (<see cref="Application.MiniApp.Commands.AddAlphabetLessonWords"/>). Which words and translations —
+    /// the server's own list; the client only names the lesson. No translator, no limits, no paywall.
+    /// Calling it again adds nothing.
+    /// </summary>
+    [HttpPost("vocabulary/alphabet-words")]
+    public async Task<IActionResult> AddAlphabetLessonWords([FromBody] AlphabetWordsRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var result = await _mediator.Send(new Application.MiniApp.Commands.AddAlphabetLessonWords
+        {
+            UserId = user.Id,
+            LessonId = request.LessonId
+        }, ct);
+
+        return result switch
+        {
+            Application.MiniApp.Commands.AddAlphabetLessonWordsResult.Success s => Ok(new
+            {
+                words = s.Words.Select(w => new { word = w.Word, translation = w.Translation, added = w.Added }),
+                added = s.AddedCount
+            }),
+            Application.MiniApp.Commands.AddAlphabetLessonWordsResult.LessonNotCompleted => Conflict(new { error = "lesson_not_completed" }),
+            _ => NotFound(new { error = "unknown_lesson" })
+        };
+    }
+
+    public class LessonEventsRequest
+    {
+        public List<LessonEventDto>? Events { get; set; }
+    }
+
+    public class LessonEventDto
+    {
+        public string? ModuleId { get; set; }
+        public int LessonId { get; set; }
+        public int Step { get; set; }
+        public string? StepKind { get; set; }
+        public string? Event { get; set; }
+        public int? Value { get; set; }
+    }
+
+    /// <summary>
+    /// Lesson-flow events from the mini-app, a small batch at a time (<see cref="Application.MiniApp.Commands.RecordLessonEvents"/>):
+    /// to see where people drop off inside a lesson. Unknown kinds are dropped silently, past the per-day cap
+    /// nothing is stored; always 204 for a signed-in learner.
+    /// </summary>
+    [HttpPost("events")]
+    public async Task<IActionResult> RecordLessonEvents([FromBody] LessonEventsRequest? request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var items = (request?.Events ?? [])
+            .Take(Application.MiniApp.Commands.RecordLessonEvents.MaxBatch)
+            .Where(e => e != null)
+            .Select(e => new Application.MiniApp.Commands.LessonEventInput(e.ModuleId, e.LessonId, e.Step, e.StepKind, e.Event, e.Value))
+            .ToList();
+        if (items.Count > 0)
+        {
+            await _mediator.Send(new Application.MiniApp.Commands.RecordLessonEvents { UserId = user.Id, Items = items }, ct);
+        }
+
+        return NoContent();
+    }
+
     [HttpDelete("vocabulary/{id}")]
     public async Task<IActionResult> DeleteVocabularyEntry(Guid id, CancellationToken ct)
     {
@@ -1545,7 +1625,8 @@ public class MiniAppController : Controller
             : Ok(new { state = VerbLearningDto(outcome.State), xpEarned = outcome.XpEarned, progress = outcome.Progress });
     }
 
-    private static int AlphabetLessons => ModuleRegistry.Get(LearningConstants.Modules.Alphabet)?.MaxLessons ?? 0;
+    /// <summary>«Алфавит пройден» — пройдены уроки букв (1..11); уроки слов (12+) на это не влияют.</summary>
+    private static int AlphabetLessons => LearningConstants.Modules.AlphabetLetterLessons;
 
     private static object VerbLearningDto(VerbLearningState s) => new
     {

@@ -1,331 +1,97 @@
 {
-  "lesson_id": "alpha-common-2",
-  "title": "Читаем слова: 15 букв",
+  "lesson_id": "alpha-5",
+  "title": "Буквы თ, ო, შ",
+  "ordered": true,
   "lexicon": [
-    "სალამი",
-    "კარგი",
-    "მარილი",
-    "ლომი",
-    "კისერი",
-    "სიმინდი",
-    "ბალი",
-    "ტანი",
-    "ნისლი",
-    "კალამი",
-    "კუდი",
-    "სტუმარი"
+    "თ",
+    "ო",
+    "შ"
   ],
   "questions": [
     {
-      "id": "ac2-q1",
-      "lemma": "სალამი",
-      "question": "Как читается слово «სალამი»?",
+      "id": "ab5-q01",
+      "lemma": "თ",
+      "question": "Новая буква თ — «т», с лёгким выдохом. Как читается «თбილისი»?",
       "options": [
-        "салами",
-        "калами",
-        "малари"
+        "Тбилиси",
+        "Пбилиси",
+        "Кбилиси"
       ],
       "answer_index": 0,
-      "explanation": "«სალამი» читается «салами» — салями по-грузински.",
+      "explanation": "თ — «т»: «Тбилиси».",
       "tags": [
-        "word-reading"
+        "new-letter",
+        "mixed-script"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac2-q2",
-      "lemma": "კარგი",
-      "question": "Как читается слово «კარგი»?",
+      "id": "ab5-q02",
+      "lemma": "ო",
+      "question": "Новая буква ო — звук «о». Как читается «მოლოкო»?",
       "options": [
-        "карги",
-        "ларги",
-        "марги"
-      ],
-      "answer_index": 0,
-      "explanation": "«კარგი» читается «к'арги» и означает «хороший».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q3",
-      "lemma": "მარილი",
-      "question": "Как читается слово «მარილი»?",
-      "options": [
-        "малими",
-        "марили",
-        "нарили"
+        "мулуку",
+        "молоко",
+        "милики"
       ],
       "answer_index": 1,
-      "explanation": "«მარილი» читается «марили» и означает «соль».",
+      "explanation": "ო — «о»: «молоко».",
       "tags": [
-        "word-reading"
+        "new-letter",
+        "mixed-script"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac2-q4",
-      "lemma": "ლომი",
-      "question": "Как читается слово «ლომი»?",
+      "id": "ab5-q03",
+      "lemma": "ო",
+      "question": "Как читается «რადიო»?",
       "options": [
-        "роми",
-        "номи",
-        "ломи"
+        "радиу",
+        "радиа",
+        "радио"
       ],
       "answer_index": 2,
-      "explanation": "«ლომი» читается «ломи» и означает «лев».",
+      "explanation": "«რადიო» — радио. Так это слово и пишут по-грузински.",
       "tags": [
-        "word-reading"
+        "letter-in-word",
+        "mixed-script"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac2-q5",
-      "lemma": "კისერი",
-      "question": "Как читается слово «კისერი»?",
+      "id": "ab5-q04",
+      "lemma": "შ",
+      "question": "Новая буква შ — звук «ш». Как читается «შкოლა»?",
       "options": [
-        "кисэри",
-        "лисэри",
-        "мисэри"
+        "школа",
+        "скола",
+        "чкола"
       ],
       "answer_index": 0,
-      "explanation": "«კისერი» читается «к'исэри» и означает «шея».",
+      "explanation": "შ — «ш»: «школа».",
       "tags": [
-        "word-reading"
+        "new-letter",
+        "mixed-script"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "ac2-q6",
-      "lemma": "სიმინდი",
-      "question": "Как читается слово «სიმინდი»?",
+      "id": "ab5-q05",
+      "lemma": "შ",
+      "question": "Как читается «შვილი»?",
       "options": [
-        "симинди",
-        "синимди",
-        "симимди"
-      ],
-      "answer_index": 0,
-      "explanation": "«სიმინდი» читается «симинди» и означает «кукуруза».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 3
-    },
-    {
-      "id": "ac2-q7",
-      "lemma": "კარგი",
-      "question": "Что означает «კარგი»?",
-      "options": [
-        "плохой",
-        "хороший",
-        "большой"
+        "свили",
+        "швили",
+        "чвили"
       ],
       "answer_index": 1,
-      "explanation": "«კარგი» (k'argi) означает «хороший» или «хорошо».",
+      "explanation": "შ — «ш»: «швили». Это грузинское слово — «ребёнок».",
       "tags": [
-        "meaning"
+        "letter-in-word",
+        "mixed-script"
       ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q8",
-      "lemma": "მარილი",
-      "question": "Что означает «მარილი»?",
-      "options": [
-        "сахар",
-        "перец",
-        "соль"
-      ],
-      "answer_index": 2,
-      "explanation": "«მარილი» (marili) означает «соль».",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q9",
-      "lemma": "ლომი",
-      "question": "Что означает «ლომი»?",
-      "options": [
-        "лев",
-        "медведь",
-        "кот"
-      ],
-      "answer_index": 0,
-      "explanation": "«ლომი» (lomi) означает «лев».",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q10",
-      "lemma": "კისერი",
-      "question": "Что означает «კისერი»?",
-      "options": [
-        "голова",
-        "рука",
-        "шея"
-      ],
-      "answer_index": 2,
-      "explanation": "«კისერი» (k'iseri) означает «шея».",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q11",
-      "lemma": "სიმინდი",
-      "question": "Что означает «სიმინდი»?",
-      "options": [
-        "кукуруза",
-        "пшеница",
-        "рис"
-      ],
-      "answer_index": 0,
-      "explanation": "«სიმინდი» (simindi) означает «кукуруза».",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q12",
-      "lemma": "ბალი",
-      "question": "Как читается слово «ბალი»?",
-      "options": [
-        "мали",
-        "бали",
-        "дали"
-      ],
-      "answer_index": 1,
-      "explanation": "«ბალი» читается «бали» и означает «вишня».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q13",
-      "lemma": "ტანი",
-      "question": "Как читается слово «ტანი»?",
-      "options": [
-        "т'ани",
-        "рани",
-        "сани"
-      ],
-      "answer_index": 0,
-      "explanation": "«ტანი» читается «т'ани» и означает «тело».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q14",
-      "lemma": "ნისლი",
-      "question": "Как читается слово «ნისლი»?",
-      "options": [
-        "нисли",
-        "мисли",
-        "рисли"
-      ],
-      "answer_index": 0,
-      "explanation": "«ნისლი» читается «нисли» и означает «туман».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q15",
-      "lemma": "კალამი",
-      "question": "Что означает «კალამი»?",
-      "options": [
-        "ручка",
-        "книга",
-        "стул"
-      ],
-      "answer_index": 0,
-      "explanation": "«კალამი» (k'alami) означает «ручка» (для письма).",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q16",
-      "lemma": "კუდი",
-      "question": "Как читается слово «კუდი»?",
-      "options": [
-        "куди",
-        "гуди",
-        "суди"
-      ],
-      "answer_index": 0,
-      "explanation": "«კუდი» читается «к'уди» и означает «хвост».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac2-q17",
-      "lemma": "სტუმარი",
-      "question": "Как читается слово «სტუმარი»?",
-      "options": [
-        "ст'умари",
-        "стумани",
-        "ск'умари"
-      ],
-      "answer_index": 0,
-      "explanation": "«სტუმარი» читается «ст'умари» и означает «гость».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 3
-    },
-    {
-      "id": "ac2-q18",
-      "lemma": "სტუმარი",
-      "question": "Что означает «სტუმარი»?",
-      "options": [
-        "друг",
-        "гость",
-        "сосед"
-      ],
-      "answer_index": 1,
-      "explanation": "«სტუმარი» (st'umari) означает «гость».",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-        "id": "ac2-q19",
-        "lemma": "ტ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ტ",
-            "თ",
-            "ს",
-            "კ"
-        ],
-        "answer_index": 0,
-        "explanation": "«ტ» — абруптивная «т»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/t.m4a",
-        "transcript": "ტარი",
-        "tags": [
-            "audio",
-            "consonant",
-            "ejective",
-            "letter-name"
-        ],
-        "difficulty": 3
+      "difficulty": 1
     }
   ]
 }

@@ -1,0 +1,438 @@
+import { test, expect, type Page } from '@playwright/test'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+import { PRODUCTS, orderText } from '../src/alphabet/cafe/products'
+import { MEDIANS } from '../src/alphabet/intro/medians'
+import { ALPHABET_LESSONS, lessonInfo } from '../src/alphabet/lessons'
+import { lessonLetters } from '../src/alphabet/games/logic'
+import { lineOf, sampleLine } from '../src/alphabet/intro/pathMath'
+
+// Алфавит — урок как цепочка игр: знакомство с буквой (стереть поверхность → как пишется → слово), «Поймай букву»,
+// «Пары», «Звук → буква», новые слова, «Превращение» / «Собери слово», «Кафе Бомборы» (с пятого урока), короткая
+// проверка из 4 вопросов, праздник со словами в словаре. Каждый экран игры помещается в окно без прокрутки —
+// проверяем на iPhone SE (375×667) и iPhone 12 (390×844). Вопросы — настоящие из уроков.
+// SHOTS_DIR=… — сохранить скриншоты для описания PR.
+
+const SHOTS = process.env.SHOTS_DIR
+const shot = async (page: Page, name: string) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png` }) }
+
+const lessonFile = (n: number) => JSON.parse(readFileSync(resolve(process.cwd(), `../Lessons/GeorgianAlphabetProgressive/questions${n === 1 ? '' : n}.json`), 'utf8'))
+const questions = (n: number) => lessonFile(n).questions.map((q: any) => ({
+  id: q.id, lemma: q.lemma, question: q.question, options: q.options, answerIndex: q.answer_index, explanation: q.explanation
+}))
+
+const catalog = {
+  botUsername: 'TraleBot', miniAppEnabled: true,
+  modules: [{
+    id: 'alphabet-progressive', title: 'Алфавит', emoji: '', description: '33 буквы',
+    // Уроки по порядку модуля: урок букв, за ним его уроки слов (id 12+).
+    lessons: ALPHABET_LESSONS.map(l => ({ id: l.id, title: `Урок ${l.id}`, short: `L${l.id}`, theory: { title: `Урок ${l.id}`, goal: 'g', blocks: [] } }))
+  }]
+}
+const progress = (done: number[]) => ({ xp: 100, streak: 1, lastPlayedAtUtc: null, completedLessons: { 'alphabet-progressive': done }, xpSpent: 0, totalTreatsGiven: 0, lastFedAtUtc: null, lastTreatIndex: null })
+
+async function setup(page: Page, done: number[], lesson = 5) {
+  await page.addInitScript(() => {
+    ;(window as any).Telegram = { WebApp: {
+      initData: 'user=%7B%22id%22%3A123456%7D',
+      BackButton: { show: () => {}, hide: () => {}, onClick: () => {}, offClick: () => {} },
+      MainButton: { show: () => {}, hide: () => {} },
+      HapticFeedback: { impactOccurred: () => {}, notificationOccurred: () => {} },
+      openTelegramLink: () => {}
+    } }
+    try { localStorage.setItem('bombora_kani_reveal_shown', '1') } catch {}
+  })
+  await page.route('**/api/miniapp/content', r => r.fulfill({ json: catalog }))
+  await page.route('**/api/miniapp/me', r => r.fulfill({ json: { authenticated: true, isPro: true, isTrialActive: false, trialDaysLeft: 0, level: 'beginner', vocabularyCount: 0, progress: progress(done) } }))
+  await page.route(`**/api/miniapp/modules/alphabet-progressive/lessons/${lesson}/questions`, r => r.fulfill({ json: questions(lesson) }))
+  await page.route('**/api/miniapp/activity-days*', r => r.fulfill({ json: { dates: [] } }))
+  await page.route('**/api/miniapp/progress/answer', r => r.fulfill({ json: { xpEarned: 1, progress: progress(done) } }))
+  await page.route('**/api/miniapp/vocabulary/alphabet-words', r => r.fulfill({ json: { words: [{ word: 'და', translation: 'и', added: true }, { word: 'არა', translation: 'нет', added: true }, { word: 'რა', translation: 'что', added: true }], added: 3 } }))
+  await page.route('**/api/miniapp/progress/lesson-complete', r => r.fulfill({ json: { xpEarned: 20, progress: progress([...done, lesson]) } }))
+}
+
+async function openModule(page: Page) {
+  await page.goto('/?playwright=1')
+  const tile = page.locator('[data-testid="module-tile-alphabet-progressive"]')
+  await expect(tile).toBeVisible({ timeout: 15_000 })
+  await tile.click()
+}
+
+/** Написать букву пальцем: штрих за штрихом, по пути пера (как показывает «Как пишется»). */
+async function write(page: Page, letter: string) {
+  const box = (await page.getByTestId('intro-touch').boundingBox())!
+  const at = ([x, y]: [number, number]) => [box.x + (x / 100) * box.width, box.y + (y / 100) * box.height] as const
+  for (const st of MEDIANS[letter].strokes.map(m => sampleLine(lineOf(m), 3).map(p => [p.x, p.y] as [number, number]))) {
+    await page.mouse.move(...at(st[0]))
+    await page.mouse.down()
+    for (const p of st.slice(1)) await page.mouse.move(...at(p), { steps: 2 })
+    await page.mouse.up()
+  }
+}
+
+/** Провести пальцем зигзагом по всей сцене. */
+async function rub(page: Page, rows = 14) {
+  const box = (await page.getByTestId('intro-touch').boundingBox())!
+  await page.mouse.move(box.x + 5, box.y + 5)
+  await page.mouse.down()
+  for (let r = 0; r <= rows; r++) {
+    const y = box.y + (box.height * r) / rows
+    await page.mouse.move(r % 2 ? box.x + 5 : box.x + box.width - 5, y, { steps: 12 })
+  }
+  await page.mouse.up()
+}
+
+test('letter intro: wipe the snow of თოვლი, watch how it is written, write it, read the Georgian word', async ({ page }) => {
+  test.setTimeout(60_000)
+  await setup(page, [1, 2, 3, 4])
+  await openModule(page)
+  await page.getByTestId('lesson-btn-5').click()
+  await page.getByRole('button', { name: 'Начать' }).click()
+
+  const stage = page.getByTestId('intro-stage')
+  await expect(stage).toHaveAttribute('data-ready', 'yes')
+  await expect(page.getByText('Смахни снег')).toBeVisible()
+  await shot(page, '1-intro-surface')
+
+  await rub(page, 4)
+  await shot(page, '2-intro-wiping')
+  for (let i = 0; i < 4 && (await stage.getAttribute('data-phase')) === 'reveal'; i++) await rub(page)
+  await expect(stage).toHaveAttribute('data-phase', /demo|trace/, { timeout: 5000 })
+  await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 6000 })
+  await expect(page.getByText('Теперь ты')).toBeVisible()
+  // «ещё раз показать» — перо снова выводит букву.
+  await page.getByTestId('intro-replay').click()
+  await expect(page.getByText('Как пишется')).toBeVisible()
+  await expect(page.getByTestId('intro-pen')).toBeVisible()
+  await page.waitForTimeout(1100)
+  await shot(page, '2b-intro-demo')
+  await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 6000 })
+  await expect(page.getByTestId('intro-start')).toBeVisible()
+  await page.waitForTimeout(300)
+  await shot(page, '3-intro-trace')
+  await write(page, 'თ')
+  await expect(page.getByTestId('intro-word')).toHaveText('თოვლი')
+  await expect(page.getByTestId('intro-meaning')).toHaveText('товли — снег')
+  await expect(page.getByTestId('intro-caption')).toContainText('თ — звук «т»')
+  await page.waitForTimeout(600)
+  await shot(page, '4-intro-caption')
+  await page.getByRole('button', { name: 'дальше →' }).click()
+  await expect(page.getByText(/новая буква · 2 из 3/)).toBeVisible()
+})
+
+/** Экран игры целиком в окне: страница не прокручивается. */
+async function fits(page: Page, where: string) {
+  const [h, inner] = await page.evaluate(() => [document.scrollingElement!.scrollHeight, window.innerHeight])
+  expect(h, `${where}: page scrolls (${h} > ${inner})`).toBeLessThanOrEqual(inner)
+}
+
+const seen = new Set<string>()
+/** Снимок — один раз на сцену и только в большом окне (для описания PR). */
+async function shotOnce(page: Page, name: string) {
+  if (seen.has(name) || (page.viewportSize()?.height ?? 0) < 800) return
+  seen.add(name); await shot(page, name)
+}
+
+async function tryEach(page: Page, testId: string, solved: () => Promise<boolean>) {
+  const items = page.getByTestId(testId)
+  for (let i = 0; i < await items.count(); i++) {
+    if (await solved()) return
+    await items.nth(i).click({ force: true }).catch(() => {})
+    await page.waitForTimeout(160)
+  }
+}
+
+/** Пройти игры урока до проверки — каждая сцена: помещается в окно, снимок, игра. */
+async function playGames(page: Page) {
+  for (let guard = 0; guard < 40; guard++) {
+    await page.waitForTimeout(250)
+    if (await page.getByTestId('intro-skip').isVisible().catch(() => false)) {
+      await fits(page, 'letter intro')
+      await page.getByTestId('intro-skip').click()
+      await fits(page, 'letter caption')
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
+    if (await page.getByTestId('catch').isVisible().catch(() => false)) {
+      await fits(page, 'catch'); await page.waitForTimeout(600); await shotOnce(page, '15-catch')
+      const targets = page.locator('[data-testid="catch-bubble"][data-target="yes"]:not([disabled])')
+      let firstPop = true
+      while (await targets.count()) {
+        await targets.first().dispatchEvent('pointerdown')
+        if (firstPop) { firstPop = false; await page.waitForTimeout(110); await shotOnce(page, '18-catch-pop') }
+        await page.waitForTimeout(120)
+      }
+      await page.waitForTimeout(600)
+      continue
+    }
+    if (await page.getByTestId('pairs').isVisible().catch(() => false)) {
+      await fits(page, 'pairs')
+      for (const pair of ['p0', 'p1', 'p2']) {
+        const cards = page.locator(`[data-testid="pair-card"][data-pair="${pair}"]`)
+        await cards.nth(0).click(); if (pair === 'p0') { await page.waitForTimeout(500); await shotOnce(page, '16-pairs') }
+        await cards.nth(1).click(); await page.waitForTimeout(450)
+      }
+      await page.waitForTimeout(1300)
+      continue
+    }
+    if (await page.getByTestId('sound-letter').isVisible().catch(() => false)) {
+      await fits(page, 'sound → letter'); await shotOnce(page, '17-sound-letter')
+      await tryEach(page, 'sound-choice', async () => (await page.locator('[data-testid="sound-choice"].bg-navy').count()) > 0)
+      await page.waitForTimeout(1400)
+      continue
+    }
+    if (await page.getByTestId('word-intro').isVisible().catch(() => false)) {
+      await fits(page, 'new word')
+      const tiles = page.getByTestId('word-tile')
+      const n = await tiles.count()
+      for (let i = 0; i < n; i++) {
+        await tiles.nth(i).dispatchEvent('pointerdown', { pointerId: 1, isPrimary: true })
+        if (i === 0 && n > 1) { await page.waitForTimeout(250); await shotOnce(page, '13-word-tapping') }
+      }
+      await expect(page.getByTestId('word-intro')).toHaveAttribute('data-phase', 'meaning', { timeout: 4000 })
+      await page.waitForTimeout(900); await shotOnce(page, '14-word-meaning')
+      await page.getByRole('button', { name: 'в словарь →' }).click()
+      await page.waitForTimeout(700)
+      continue
+    }
+    if (await page.getByTestId('word-list').isVisible().catch(() => false)) {
+      await fits(page, 'word list')
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
+    if (await page.getByText('Преврати слово в грузинское').isVisible().catch(() => false)) {
+      await fits(page, 'morph'); await shotOnce(page, '5-morph')
+      while (await page.getByTestId('morph-choice').first().isVisible().catch(() => false)) {
+        const before = await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count()
+        await tryEach(page, 'morph-choice', async () => (await page.locator('[data-testid^="morph-tile-"][data-turned="yes"]').count()) > before || await page.getByTestId('morph-meaning').isVisible())
+        if (await page.getByTestId('morph-meaning').isVisible()) {
+          await page.waitForTimeout(500); await shotOnce(page, '6-morph-done')
+          await page.getByRole('button', { name: /следующее слово|дальше/ }).click()
+        }
+      }
+      continue
+    }
+    if (await page.getByText('Собери грузинское слово').isVisible().catch(() => false)) {
+      await fits(page, 'assemble'); await shotOnce(page, '7-assemble')
+      for (let round = 0; round < 2; round++) {
+        const slots = await page.getByTestId('assemble-slot').count()
+        for (let s = 0; s < slots; s++) {
+          const before = await page.locator('[data-testid="assemble-slot"] span').count()
+          await tryEach(page, 'assemble-tile', async () => (await page.locator('[data-testid="assemble-slot"] span').count()) > before)
+          await page.waitForTimeout(350)
+        }
+        await page.waitForTimeout(500)
+        if (round === 0) await shotOnce(page, '8-assemble-done')
+        await page.getByRole('button', { name: /следующее слово|дальше/ }).click()
+      }
+      continue
+    }
+    if (await page.getByTestId('dialogue').isVisible().catch(() => false)) {
+      await fits(page, 'dialogue')
+      let first = true
+      while (await page.getByTestId('dialogue-choice').first().isVisible().catch(() => false)) {
+        if (first) { await page.waitForTimeout(300); await shotOnce(page, '29-dialogue') }
+        const before = await page.getByTestId('dialogue-meaning').count()
+        await tryEach(page, 'dialogue-choice', async () => (await page.getByTestId('dialogue-meaning').count()) > before)
+        if (first) { await page.waitForTimeout(500); await shotOnce(page, '30-dialogue-answered'); first = false }
+        await page.waitForTimeout(1500)
+        if (await page.getByRole('button', { name: 'дальше →' }).isVisible().catch(() => false)) break
+      }
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
+    if (await page.getByTestId('cafe').isVisible().catch(() => false)) {
+      await fits(page, 'cafe')
+      await expect(page.getByTestId('cafe-howto')).toHaveText('Гость заказывает по-грузински. Прочитай заказ и подай нужное')
+      await expect(page.getByTestId('cafe-sign')).toHaveText('Бомбора')
+      await page.waitForTimeout(700); await shotOnce(page, '10-cafe-guided')
+      for (let guest = 0; guest < 3; guest++) {
+        const order = (await page.getByTestId('cafe-guest').getAttribute('data-order'))!
+        const id = PRODUCTS.find(p => p.geo === order)!.id
+        await page.getByTestId(`shelf-${id}`).click()
+        await expect(page.getByTestId('cafe-meaning')).toBeVisible()
+        if (guest === 1) { await page.waitForTimeout(400); await shotOnce(page, '11-cafe-served') }
+        await expect(page.getByTestId('cafe-meaning')).toHaveCount(0, { timeout: 3000 })
+        await expect(page.getByTestId('cafe-timer')).toBeVisible()
+        await fits(page, 'cafe shift')
+      }
+      await page.clock.runFor(46_000)
+      await expect(page.getByTestId('cafe-summary')).toBeVisible()
+      await fits(page, 'cafe summary'); await page.waitForTimeout(400); await shotOnce(page, '12-cafe-summary')
+      await page.getByRole('button', { name: 'дальше →' }).click()
+      continue
+    }
+    return
+  }
+}
+
+/** Какие вопросы урок играет как проверку — как AlphabetInterlude.alphabetExam (тот модуль с React и CSS сюда не импортировать). */
+function examOf(lesson: number) {
+  const all = questions(lesson)
+  const info = lessonInfo(lesson)
+  if (info.kind === 'words') return all.slice(-4)
+  return lessonLetters(info.stage).map(l => all.filter((q: any) => q.lemma === l).pop()).filter(Boolean)
+}
+
+/** Короткая проверка: вопросы, которые урок играет. */
+async function exam(page: Page, lesson: number) {
+  const qs = examOf(lesson)
+  for (const q of qs) {
+    await expect(page.getByText(q.question)).toBeVisible()
+    await page.getByRole('button', { name: new RegExp(`^[a-z]\\s*${q.options[q.answerIndex].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).click()
+    await page.getByRole('button', { name: 'проверить' }).click()
+    await page.getByRole('button', { name: /дальше →|итог →/ }).click()
+  }
+}
+
+for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
+  test.describe(`${size.width}×${size.height}`, () => {
+    test.use({ viewport: size })
+
+    test('letters lesson 1: letters, catch, pairs, the check of one question per letter, letters fly into «Мой алфавит»', async ({ page }) => {
+      test.setTimeout(90_000)
+      await setup(page, [], 1)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-1').click()
+      await page.getByRole('button', { name: 'Начать' }).click()
+      await playGames(page)
+      await exam(page, 1)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+      await page.waitForTimeout(3000)
+      await expect(page.getByTestId('finale-letters')).toHaveText('3 из 33')
+      await fits(page, 'finale')
+    })
+
+    test('words lesson 12 (after ა დ რ): each word its own scene, word games, the check, words fly into the dictionary', async ({ page }) => {
+      test.setTimeout(90_000)
+      await setup(page, [1], 12)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-12').click()
+      await expect(page.getByText('Сегодня 3 новых слова')).toBeVisible()
+      await page.waitForTimeout(1000)
+      await shotOnce(page, '28-words-lesson-opener')
+      await page.getByRole('button', { name: 'Начать' }).click()
+      await playGames(page)
+      await exam(page, 12)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+      await page.waitForTimeout(4000)
+      await expect(page.getByTestId('finale-dict')).toContainText('Эти слова теперь в твоём словаре')
+      await expect(page.getByTestId('dict-count')).toHaveText('3')
+      await fits(page, 'finale')
+      await shotOnce(page, '9-finale')
+      await page.getByRole('button', { name: 'открыть словарь' }).click()
+    })
+
+    test('late words lesson 23 (after კ ც წ): a dialogue with Bombora among the word games', async ({ page }) => {
+      test.setTimeout(90_000)
+      await page.clock.install()
+      await setup(page, [1, 2, 3, 4, 5, 6, 7], 23)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-23').click()
+      await page.getByRole('button', { name: 'Начать' }).click()
+      await playGames(page)
+      await exam(page, 23)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+    })
+
+    test('late words lesson 29 (ყავა, წყალი, ყველი): the cafe with a guided guest and a timed shift', async ({ page }) => {
+      test.setTimeout(90_000)
+      await page.clock.install()
+      await setup(page, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 29)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-29').click()
+      await page.getByRole('button', { name: 'Начать' }).click()
+      await playGames(page)
+      await exam(page, 29)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+      await expect(page.getByTestId('cafe-tile')).toHaveCount(0)
+    })
+  })
+}
+
+// Поверхности знакомства с буквой: у каждой своя физика. Снимки — посреди движения пальца.
+const SURFACES: { lesson: number; skip: number; name: string; title: string }[] = [
+  { lesson: 5, skip: 0, name: '20-fx-snow', title: 'Смахни снег' },
+  { lesson: 1, skip: 1, name: '21-fx-fur', title: 'Расчеши шерсть медведя' },
+  { lesson: 2, skip: 0, name: '22-fx-lightning', title: 'Разгони грозовые тучи' },
+  { lesson: 4, skip: 0, name: '23-fx-peel', title: 'Сними кожуру с лимона' },
+  { lesson: 10, skip: 1, name: '24-fx-coffee-foam', title: 'Размешай пенку на кофе' },
+  { lesson: 8, skip: 0, name: '25-fx-leaves', title: 'Раздвинь ветки в лесу' }
+]
+
+for (const fx of SURFACES) {
+  test(`surface effect mid-action: ${fx.title}`, async ({ page }) => {
+    await setup(page, Array.from({ length: fx.lesson - 1 }, (_, i) => i + 1), fx.lesson)
+    await openModule(page)
+    await page.getByTestId(`lesson-btn-${fx.lesson}`).click()
+    await expect(page.getByTestId('lesson-opener')).toBeVisible()
+    await fits(page, 'lesson opener')
+    if (fx.lesson === 2) { await page.waitForTimeout(900); await shot(page, '19-lesson-opener') }
+    await page.getByRole('button', { name: 'Начать' }).click()
+    for (let i = 0; i < fx.skip; i++) {
+      await page.getByTestId('intro-skip').click()
+      await page.getByRole('button', { name: 'дальше →' }).click()
+    }
+    await expect(page.getByText(fx.title)).toBeVisible()
+    await expect(page.getByTestId('intro-stage')).toHaveAttribute('data-ready', 'yes')
+    await page.waitForTimeout(300)
+    const box = (await page.getByTestId('intro-touch').boundingBox())!
+    // Один проход через середину и полпрохода обратно — буква ещё не открылась, частицы в разгаре.
+    await page.mouse.move(box.x + 20, box.y + box.height * 0.45)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width - 20, box.y + box.height * 0.5, { steps: 16 })
+    await page.mouse.move(box.x + box.width * 0.45, box.y + box.height * 0.62, { steps: 8 })
+    await shot(page, fx.name)
+    await page.mouse.up()
+  })
+}
+
+test('«Как пишется» for a two-stroke letter: the pen draws stroke 1, lifts, numbered stroke 2; the learner writes both in order', async ({ page }) => {
+  test.setTimeout(60_000)
+  await setup(page, [], 1)
+  await openModule(page)
+  await page.getByTestId('lesson-btn-1').click()
+  await page.getByRole('button', { name: 'Начать' }).click()
+  await page.getByTestId('intro-skip').click()
+  await page.getByRole('button', { name: 'дальше →' }).click()
+  await expect(page.getByText('Расчеши шерсть медведя')).toBeVisible()
+  const stage = page.getByTestId('intro-stage')
+  await expect(stage).toHaveAttribute('data-ready', 'yes')
+  for (let i = 0; i < 6 && (await stage.getAttribute('data-phase')) === 'reveal'; i++) await rub(page)
+  await expect(stage).toHaveAttribute('data-phase', 'demo', { timeout: 5000 })
+  // Пера ждём на втором штрихе: появилась цифра 2.
+  await expect(page.getByTestId('intro-stroke-numbers').locator('text', { hasText: '2' })).toBeVisible({ timeout: 4000 })
+  await page.waitForTimeout(500)
+  await shot(page, '26-stroke-demo-two-strokes')
+  await expect(stage).toHaveAttribute('data-phase', 'trace', { timeout: 6000 })
+  await expect(page.getByTestId('intro-start')).toHaveAttribute('data-stroke', '1')
+  // Второй штрих раньше первого не засчитывается.
+  const box = (await page.getByTestId('intro-touch').boundingBox())!
+  const s2 = sampleLine(lineOf(MEDIANS['დ'].strokes[1]), 3).map(p => [p.x, p.y] as [number, number])
+  await page.mouse.move(box.x + (s2[0][0] / 100) * box.width, box.y + (s2[0][1] / 100) * box.height)
+  await page.mouse.down()
+  for (const [x, y] of s2.slice(1)) await page.mouse.move(box.x + (x / 100) * box.width, box.y + (y / 100) * box.height, { steps: 2 })
+  await page.mouse.up()
+  await expect(stage).toHaveAttribute('data-phase', 'trace')
+  await expect(page.getByTestId('intro-start')).toHaveAttribute('data-stroke', '1')
+  await write(page, 'დ')
+  await expect(page.getByTestId('intro-caption')).toBeVisible({ timeout: 4000 })
+})
+
+test('«Как пишется» for ჩ: the pen reveals the crisp glyph through the stroke mask', async ({ page }) => {
+  test.setTimeout(60_000)
+  await setup(page, [1, 2, 3], 4)
+  await openModule(page)
+  await page.getByTestId('lesson-btn-4').click()
+  await page.getByRole('button', { name: 'Начать' }).click()
+  await page.getByTestId('intro-skip').click()
+  await page.getByRole('button', { name: 'дальше →' }).click()
+  const stage = page.getByTestId('intro-stage')
+  await expect(stage).toHaveAttribute('data-ready', 'yes')
+  for (let i = 0; i < 6 && (await stage.getAttribute('data-phase')) === 'reveal'; i++) await rub(page)
+  await expect(stage).toHaveAttribute('data-phase', 'demo', { timeout: 5000 })
+  await shot(page, '31-reveal-ch')
+  await page.waitForTimeout(1500)
+  await shot(page, '32-demo-ch')
+  await expect(page.getByTestId('intro-writing')).toBeVisible()
+})

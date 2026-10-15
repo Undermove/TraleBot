@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w29",
+  "title": "Слова: ყავა, წყალი, ყველი",
+  "ordered": true,
+  "lexicon": [
+    "ყავა",
+    "წყალი",
+    "ყველი"
+  ],
+  "questions": [
+    {
+      "id": "abw29-q01",
+      "lemma": "ყავა",
+      "question": "Как читается «ყავა»?",
+      "options": [
+        "иапи",
+        "сад",
+        "къава"
+      ],
+      "answer_index": 2,
+      "explanation": "«ყავა» — «къава», кофе.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw29-q02",
+      "lemma": "წყალი",
+      "question": "Что значит «წყალი»?",
+      "options": [
+        "есть",
+        "кофе",
+        "вода"
+      ],
+      "answer_index": 2,
+      "explanation": "«წყალი» — «ц’къали», вода.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw29-q03",
+      "lemma": "ყველი",
+      "question": "Где написано «сыр»?",
+      "options": [
+        "ყველი",
+        "ძმა",
+        "სკოლა"
+      ],
+      "answer_index": 0,
+      "explanation": "«ყველი» — «къвэли», сыр.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw29-q04",
+      "lemma": "ყავა",
+      "question": "Что значит «ყავა»?",
+      "options": [
+        "кофе",
+        "мой",
+        "дешёвый"
+      ],
+      "answer_index": 0,
+      "explanation": "«ყავა» — «къава», кофе.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

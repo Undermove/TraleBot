@@ -1,0 +1,73 @@
+/* Анимации игр алфавита и «Кафе Бомборы». Префикс ab- — чтобы не пересечься с остальным мини-аппом. */
+
+/* Русская буква «стекает» вниз и растворяется… */
+@keyframes ab-melt { 0% { transform: translateY(0) scale(1); filter: blur(0); opacity: 1 } 100% { transform: translateY(14px) scaleY(0.25) scaleX(1.3); filter: blur(5px); opacity: 0 } }
+/* …а грузинская капает сверху и пружинит. */
+@keyframes ab-drip { 0% { transform: translateY(-22px) scaleY(1.5) scaleX(0.6); filter: blur(4px); opacity: 0 } 55% { transform: translateY(3px) scaleY(0.78) scaleX(1.18); filter: blur(0); opacity: 1 } 78% { transform: translateY(-2px) scaleY(1.08) scaleX(0.96) } 100% { transform: translateY(0) scale(1) } }
+@keyframes ab-shake { 0%, 100% { transform: translateX(0) } 20% { transform: translateX(-7px) rotate(-3deg) } 40% { transform: translateX(6px) rotate(2deg) } 60% { transform: translateX(-4px) } 80% { transform: translateX(3px) } }
+@keyframes ab-boom { 0% { transform: scale(1) } 30% { transform: scale(1.22, 0.86) } 55% { transform: scale(0.94, 1.1) } 75% { transform: scale(1.04, 0.98) } 100% { transform: scale(1) } }
+@keyframes ab-bob { 0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)) } 50% { transform: translateY(-6px) rotate(calc(var(--r, 0deg) * -0.6)) } }
+@keyframes ab-snap { 0% { transform: scale(1.5); opacity: 0.4 } 60% { transform: scale(0.88); opacity: 1 } 100% { transform: scale(1) } }
+@keyframes ab-poof { 0% { transform: scale(1); opacity: 1 } 100% { transform: scale(0.2) rotate(40deg); opacity: 0 } }
+@keyframes ab-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 184, 32, 0.85) } 50% { box-shadow: 0 0 0 7px rgba(245, 184, 32, 0) } }
+@keyframes ab-in { 0% { transform: translateX(120%) } 70% { transform: translateX(-6%) } 100% { transform: translateX(0) } }
+@keyframes ab-out-happy { 0% { transform: translateY(0) } 30% { transform: translateY(-18px) } 100% { transform: translate(-140%, -6px); opacity: 0 } }
+@keyframes ab-out-sad { 0% { transform: translateY(0); opacity: 1 } 100% { transform: translate(140%, 6px) rotate(8deg); opacity: 0 } }
+@keyframes ab-count { 0% { transform: scale(1) } 40% { transform: scale(1.3) } 100% { transform: scale(1) } }
+@keyframes ab-sun { from { transform: rotate(0) } to { transform: rotate(360deg) } }
+@keyframes ab-wobble { 0%, 100% { transform: rotate(0) } 25% { transform: rotate(-6deg) } 75% { transform: rotate(6deg) } }
+@keyframes ab-jump { 0%, 100% { transform: translateY(0) } 30% { transform: translateY(-16px) scaleY(1.05) } 55% { transform: translateY(0) scaleY(0.92) } 70% { transform: translateY(-5px) } }
+
+.ab-melt { animation: ab-melt 360ms ease-in forwards }
+.ab-drip { animation: ab-drip 520ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both }
+.ab-shake { animation: ab-shake 380ms ease-in-out }
+.ab-boom { animation: ab-boom 560ms cubic-bezier(0.2, 0.9, 0.3, 1.2) }
+.ab-bob { animation: ab-bob 2.4s ease-in-out infinite; animation-delay: var(--d, 0s) }
+.ab-snap { animation: ab-snap 300ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both }
+.ab-poof { animation: ab-poof 220ms ease-in forwards }
+.ab-pulse { animation: ab-pulse 1.2s ease-out infinite }
+.ab-in { animation: ab-in 520ms cubic-bezier(0.2, 0.9, 0.3, 1.1) both }
+.ab-out-happy { animation: ab-out-happy 620ms ease-in forwards }
+.ab-out-sad { animation: ab-out-sad 560ms ease-in forwards }
+.ab-count { animation: ab-count 260ms ease-out }
+.ab-wobble { animation: ab-wobble 420ms ease-in-out }
+.ab-jump { animation: ab-jump 640ms ease-out }
+
+.ab-ghost {
+  position: fixed; z-index: 65; pointer-events: none; display: flex; align-items: center; justify-content: center;
+  font-size: 30px; font-weight: 800; color: #15100A; background: #FDFAEF; border: 1.5px solid #15100A; border-radius: 12px;
+  box-shadow: 3px 3px 0 #15100A
+}
+.ab-product-ghost { background: transparent; border: none; box-shadow: none }
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-melt { animation: none; opacity: 0 }
+  .ab-drip, .ab-shake, .ab-boom, .ab-bob, .ab-snap, .ab-pulse, .ab-in, .ab-count, .ab-wobble, .ab-jump { animation: none }
+  .ab-poof, .ab-out-happy, .ab-out-sad { animation: none; opacity: 0 }
+  .ab-product-ghost { background: transparent; border: none; box-shadow: none }
+}
+
+/* Карточка слова переворачивается значением. */
+.ab-flip { perspective: 900px }
+.ab-flip-inner { position: relative; width: 100%; height: 100%; transition: transform 600ms cubic-bezier(0.3, 0.7, 0.3, 1.2); transform-style: preserve-3d }
+.ab-flip[data-flipped="yes"] .ab-flip-inner { transform: rotateY(180deg) }
+.ab-flip-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden }
+.ab-flip-back { transform: rotateY(180deg) }
+@media (prefers-reduced-motion: reduce) { .ab-flip-inner { transition: none } }
+
+/* Экран игры — ровно окно Telegram (стабильная высота вьюпорта), без прокрутки и «резинки». */
+.ab-screen { height: var(--tg-viewport-stable-height, 100dvh); max-height: 100dvh; overflow: hidden; overscroll-behavior: none; touch-action: manipulation }
+
+/* Пузырь лопается: раздувается и исчезает, от него — кольцо и капли. */
+@keyframes ab-pop-bubble { 0% { transform: scale(1); opacity: 1 } 45% { transform: scale(1.28, 1.18); opacity: 1 } 100% { transform: scale(1.5); opacity: 0 } }
+@keyframes ab-pop-ring { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.9 } 100% { transform: translate(-50%, -50%) scale(1.9); opacity: 0 } }
+@keyframes ab-pop-drop { 0% { transform: translate(-50%, -50%); opacity: 1 } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))); opacity: 0 } }
+.ab-pop-bubble { animation: ab-pop-bubble 240ms ease-out forwards }
+.ab-pop-ring { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; border-radius: 9999px; border: 3px solid #3A7FCC; pointer-events: none; animation: ab-pop-ring 380ms ease-out forwards }
+.ab-pop-drop { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; border-radius: 9999px; background: #9CC7EE; border: 1px solid #15100A; pointer-events: none; animation: ab-pop-drop 420ms cubic-bezier(0.2, 0.7, 0.4, 1) forwards }
+@media (prefers-reduced-motion: reduce) { .ab-pop-bubble, .ab-pop-ring, .ab-pop-drop { animation: none; opacity: 0 } }
+
+/* Карточки начала урока раздаются по одной. */
+@keyframes ab-deal { 0% { transform: translateY(40px) rotate(-12deg) scale(0.7); opacity: 0 } 70% { transform: translateY(-6px) rotate(3deg) scale(1.04); opacity: 1 } 100% { transform: none; opacity: 1 } }
+.ab-deal { animation: ab-deal 460ms cubic-bezier(0.2, 0.8, 0.3, 1.2) both }
+@media (prefers-reduced-motion: reduce) { .ab-deal { animation: none } }

@@ -73,7 +73,7 @@ test('spotlight highlights the real element; tapping it (not a CTA) opens the le
 
   // There is no separate CTA — the user taps the REAL highlighted element.
   await page.getByTestId('dashboard-suggestion').click()
-  await expect(page.getByRole('button', { name: 'к практике →' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^(к практике →|Начать)$/ })).toBeVisible()
 })
 
 test('no spotlight is shown when me() returns no hint', async ({ page }) => {
@@ -114,10 +114,8 @@ test('the first-lesson spotlight appears right after the welcome lesson — no r
 
   await page.goto('/?playwright=1')
 
-  // Walk the welcome mini-lesson.
-  await page.getByRole('button', { name: /дальше/i }).click()
-  await page.getByTestId('welcome-listen-а').click()
-  await page.getByTestId('welcome-name-ани').click()
+  // Skip the intro (it is still recorded).
+  await page.getByTestId('welcome-skip').click()
   // The win screen offers the next lesson first; the quiet link leads to the hub.
   await page.getByTestId('welcome-browse').click()
 

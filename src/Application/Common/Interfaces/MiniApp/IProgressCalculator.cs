@@ -22,6 +22,9 @@ public interface IProgressCalculator
     /// <summary>How many lessons of a module the user completed.</summary>
     int CompletedLessons(MiniAppUserProgress progress, string moduleId);
 
+    /// <summary>How many lessons of a module with ids 1..<paramref name="upToId"/> the user completed.</summary>
+    int CompletedLessons(MiniAppUserProgress progress, string moduleId, int upToId);
+
     object SerializeProgress(MiniAppUserProgress progress);
 }
 

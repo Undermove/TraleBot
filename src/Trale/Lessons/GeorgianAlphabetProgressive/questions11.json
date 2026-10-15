@@ -1,474 +1,116 @@
 {
-  "lesson_id": "alpha-audio-1",
-  "title": "Слушай и выбери",
+  "lesson_id": "alpha-11",
+  "title": "Последние буквы: ჟ, ჯ, ჰ",
+  "ordered": true,
   "lexicon": [
-    "ა",
-    "ე",
-    "ი",
-    "ო",
-    "უ",
-    "ბ",
-    "გ",
-    "დ",
-    "მ",
-    "ნ",
-    "ს",
-    "ლ",
-    "კ",
-    "ტ",
-    "რ",
-    "შ",
-    "ხ",
-    "ქ",
-    "თ",
-    "ჩ"
+    "ჟ",
+    "ჯ",
+    "ჰ",
+    "გამარჯობა",
+    "ჰაერი"
   ],
   "questions": [
     {
-      "id": "aau-q01",
-      "lemma": "ა",
-      "question": "Послушай и выбери грузинскую букву",
+      "id": "ab11-q01",
+      "lemma": "ჟ",
+      "question": "Новая буква ჟ — звук «ж». Как читается «ჟურნალი»?",
       "options": [
-        "ა",
-        "ე",
-        "ო",
-        "უ"
+        "журнали",
+        "шурнали",
+        "зурнали"
       ],
       "answer_index": 0,
-      "explanation": "«ა» — гласная «а»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/a.m4a",
-      "transcript": "ანი",
+      "explanation": "ჟ — «ж»: «журнали», журнал по-грузински.",
       "tags": [
-        "audio",
-        "vowel",
-        "letter-name"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "aau-q02",
-      "lemma": "ე",
-      "question": "Послушай и выбери грузинскую букву",
+      "id": "ab11-q02",
+      "lemma": "ჟ",
+      "question": "Как читается «ჟირაფი»?",
       "options": [
-        "ი",
-        "ე",
-        "ო",
-        "ა"
+        "ширапи",
+        "жирапи",
+        "зирапи"
       ],
       "answer_index": 1,
-      "explanation": "«ე» — гласная «э»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/e.m4a",
-      "transcript": "ენი",
+      "explanation": "ჟ — «ж», ფ — «п»: «жирапи», жираф по-грузински.",
       "tags": [
-        "audio",
-        "vowel",
-        "letter-name"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "aau-q03",
-      "lemma": "ი",
-      "question": "Послушай и выбери грузинскую букву",
+      "id": "ab11-q03",
+      "lemma": "ჯ",
+      "question": "Новая буква ჯ — «дж», одной буквой. Как читается «ჯინსы»?",
       "options": [
-        "ი",
-        "ე",
-        "ა",
-        "უ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ი» — гласная «и»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/i.m4a",
-      "transcript": "ინი",
-      "tags": [
-        "audio",
-        "vowel",
-        "letter-name"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "aau-q04",
-      "lemma": "ო",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ა",
-        "ო",
-        "უ",
-        "ე"
-      ],
-      "answer_index": 1,
-      "explanation": "«ო» — гласная «о»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/o.m4a",
-      "transcript": "ონი",
-      "tags": [
-        "audio",
-        "vowel",
-        "letter-name"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "aau-q05",
-      "lemma": "უ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ო",
-        "ა",
-        "ე",
-        "უ"
-      ],
-      "answer_index": 3,
-      "explanation": "«უ» — гласная «у»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/u.m4a",
-      "transcript": "უნი",
-      "tags": [
-        "audio",
-        "vowel",
-        "letter-name"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "aau-q06",
-      "lemma": "ბ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ბ",
-        "გ",
-        "დ",
-        "მ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ბ» — согласная «б»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/b.m4a",
-      "transcript": "ბანი",
-      "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "aau-q07",
-      "lemma": "გ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ბ",
-        "გ",
-        "ნ",
-        "მ"
-      ],
-      "answer_index": 1,
-      "explanation": "«გ» — согласная «г»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/g.m4a",
-      "transcript": "განი",
-      "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "aau-q08",
-      "lemma": "დ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "გ",
-        "ბ",
-        "დ",
-        "ლ"
+        "чинсы",
+        "шинсы",
+        "джинсы"
       ],
       "answer_index": 2,
-      "explanation": "«დ» — согласная «д»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/d.m4a",
-      "transcript": "დონი",
+      "explanation": "ჯ — «дж»: «джинсы».",
       "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
+        "new-letter",
+        "mixed-script"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "aau-q09",
-      "lemma": "მ",
-      "question": "Послушай и выбери грузинскую букву",
+      "id": "ab11-q04",
+      "lemma": "ჯ",
+      "question": "Как читается «გამარჯობა»?",
       "options": [
-        "ბ",
-        "მ",
-        "ნ",
-        "დ"
+        "гамарджоба",
+        "гамарчоба",
+        "гамаршоба"
+      ],
+      "answer_index": 0,
+      "explanation": "«გამარჯობა» — «гамарджоба», по-грузински это «здравствуй».",
+      "tags": [
+        "letter-in-word",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab11-q05",
+      "lemma": "ჰ",
+      "question": "Новая буква ჰ — лёгкое «х», просто выдох. Как читается «ჰო»?",
+      "options": [
+        "го",
+        "хо",
+        "ко"
       ],
       "answer_index": 1,
-      "explanation": "«მ» — согласная «м»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/m.m4a",
-      "transcript": "მანი",
+      "explanation": "«ჰო» — «хо», по-грузински это разговорное «ага».",
       "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
+        "new-letter",
+        "mixed-script"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-      "id": "aau-q10",
-      "lemma": "ნ",
-      "question": "Послушай и выбери грузинскую букву",
+      "id": "ab11-q06",
+      "lemma": "ჰ",
+      "question": "Как читается «ჰაერი»?",
       "options": [
-        "ნ",
-        "მ",
-        "ბ",
-        "გ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ნ» — согласная «н»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/n.m4a",
-      "transcript": "ნარი",
-      "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "aau-q11",
-      "lemma": "ს",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ს",
-        "ზ",
-        "ტ",
-        "კ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ს» — согласная «с»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/s.m4a",
-      "transcript": "სანი",
-      "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "aau-q12",
-      "lemma": "ლ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ბ",
-        "ლ",
-        "ნ",
-        "კ"
-      ],
-      "answer_index": 1,
-      "explanation": "«ლ» — согласная «л»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/l.m4a",
-      "transcript": "ლასი",
-      "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "aau-q13",
-      "lemma": "კ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "კ",
-        "ქ",
-        "გ",
-        "ს"
-      ],
-      "answer_index": 0,
-      "explanation": "«კ» — абруптивная «к»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/k.m4a",
-      "transcript": "კანი",
-      "tags": [
-        "audio",
-        "consonant",
-        "ejective",
-        "letter-name"
-      ],
-      "difficulty": 3
-    },
-    {
-      "id": "aau-q14",
-      "lemma": "ტ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ტ",
-        "თ",
-        "ს",
-        "ლ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ტ» — абруптивная «т»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/t.m4a",
-      "transcript": "ტარი",
-      "tags": [
-        "audio",
-        "consonant",
-        "ejective",
-        "letter-name"
-      ],
-      "difficulty": 3
-    },
-    {
-      "id": "aau-q15",
-      "lemma": "რ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "რ",
-        "ს",
-        "ნ",
-        "ბ"
-      ],
-      "answer_index": 0,
-      "explanation": "«რ» — согласная «р»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/r.m4a",
-      "transcript": "რაე",
-      "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "aau-q16",
-      "lemma": "შ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ს",
-        "შ",
-        "ჟ",
-        "ძ"
-      ],
-      "answer_index": 1,
-      "explanation": "«შ» — согласная «ш»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/sh.m4a",
-      "transcript": "შინი",
-      "tags": [
-        "audio",
-        "consonant",
-        "sibilant",
-        "letter-name"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "aau-q17",
-      "lemma": "ხ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ხ",
-        "ქ",
-        "კ",
-        "ღ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ხ» — согласная «х»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/kh.m4a",
-      "transcript": "ხანი",
-      "tags": [
-        "audio",
-        "consonant",
-        "letter-name"
-      ],
-      "difficulty": 3
-    },
-    {
-      "id": "aau-q18",
-      "lemma": "ქ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ქ",
-        "კ",
-        "ხ",
-        "ჩ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ქ» — придыхательная «к»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/q.m4a",
-      "transcript": "ქანი",
-      "tags": [
-        "audio",
-        "consonant",
-        "aspirated",
-        "letter-name"
-      ],
-      "difficulty": 3
-    },
-    {
-      "id": "aau-q19",
-      "lemma": "თ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ტ",
-        "ს",
-        "თ",
-        "ლ"
+        "гаэри",
+        "каэри",
+        "хаэри"
       ],
       "answer_index": 2,
-      "explanation": "«თ» — придыхательная «т»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/th.m4a",
-      "transcript": "თანი",
+      "explanation": "«ჰაერი» — «хаэри», по-грузински это «воздух».",
       "tags": [
-        "audio",
-        "consonant",
-        "aspirated",
-        "letter-name"
+        "letter-in-word",
+        "mixed-script"
       ],
-      "difficulty": 3
-    },
-    {
-      "id": "aau-q20",
-      "lemma": "ჩ",
-      "question": "Послушай и выбери грузинскую букву",
-      "options": [
-        "ჩ",
-        "შ",
-        "ც",
-        "ჭ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ჩ» — согласная «ч»",
-      "question_type": "audio-choice",
-      "audio_url": "/audio/alphabet/ch.m4a",
-      "transcript": "ჩინი",
-      "tags": [
-        "audio",
-        "consonant",
-        "affricate",
-        "letter-name"
-      ],
-      "difficulty": 2
+      "difficulty": 1
     }
   ]
 }

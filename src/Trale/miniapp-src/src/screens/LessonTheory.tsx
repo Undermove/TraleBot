@@ -3,6 +3,8 @@ import Header from '../components/Header'
 import Button from '../components/Button'
 import RevealKaniOverlay from '../components/RevealKaniOverlay'
 import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
+import LessonOpener from '../alphabet/opener/LessonOpener'
+import { lessonFlow } from '../analytics/lessonEvents'
 
 interface Props {
   catalog: CatalogDto
@@ -24,6 +26,11 @@ export default function LessonTheory({
   const theory = lesson?.theory
 
   const [showReveal, setShowReveal] = useState(false)
+
+  // Аналитика: стартовый экран урока алфавита — шаг 0 его хода.
+  useEffect(() => {
+    if (moduleId === 'alphabet-progressive' && theory) lessonFlow.open(moduleId, lessonId)
+  }, [moduleId, lessonId, !!theory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!theory) return
@@ -57,12 +64,27 @@ export default function LessonTheory({
     )
   }
 
+  // Алфавит: вместо стены теории — короткое начало урока; теория — по «подробнее».
+  if (moduleId === 'alphabet-progressive') {
+    return (
+      <>
+        <LessonOpener
+          lessonId={lessonId}
+          onBack={() => { lessonFlow.exit(); navigate({ kind: 'module', moduleId }) }}
+          onStart={() => { lessonFlow.done(); navigate({ kind: 'practice', moduleId, lessonId }) }}
+          details={theory.blocks.filter(b => b.type !== 'letters').map((b, i) => <TheoryBlock key={i} block={b} />)}
+        />
+        {showReveal && <RevealKaniOverlay onClose={() => setShowReveal(false)} />}
+      </>
+    )
+  }
+
   return (
     <div className="flex flex-col min-h-full bg-cream">
       <Header
         progress={progress}
         onBack={() => navigate({ kind: 'module', moduleId })}
-        eyebrow={`урок ${lessonId} из ${module.lessons.length}`}
+        eyebrow={`урок ${module.lessons.findIndex((l) => l.id === lessonId) + 1} из ${module.lessons.length}`}
         title={module.title}
       />
       <div className="mn-kilim" />

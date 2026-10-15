@@ -274,7 +274,7 @@ public class VerbLearningService(
     {
         var miniApp = await dbContext.MiniAppUserProgresses.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
         var alphabetDone = miniApp != null && alphabetLessons > 0
-            && progressCalculator.CompletedLessons(miniApp, LearningConstants.Modules.Alphabet) >= alphabetLessons;
+            && progressCalculator.CompletedLessons(miniApp, LearningConstants.Modules.Alphabet, alphabetLessons) >= alphabetLessons;
         var dictionarySize = await dbContext.VocabularyEntries
             .CountAsync(v => v.UserId == user.Id && v.Language == user.Settings.CurrentLanguage, ct);
         return new VerbLearnerProfile(

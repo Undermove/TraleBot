@@ -1,346 +1,114 @@
 {
-  "lesson_id": "alpha-common-1",
-  "title": "Частые согласные: რ, ს, ტ, ლ, კ",
+  "lesson_id": "alpha-4",
+  "title": "Буквы ლ, ჩ, ხ",
+  "ordered": true,
   "lexicon": [
-    "რ",
-    "ს",
-    "ტ",
     "ლ",
-    "კ"
+    "ჩ",
+    "ხ"
   ],
   "questions": [
     {
-      "id": "ac1-q1",
-      "lemma": "რ",
-      "question": "Как звучит грузинская буква «რ»?",
-      "options": [
-        "р",
-        "с",
-        "л"
-      ],
-      "answer_index": 0,
-      "explanation": "Буква «რ» читается как «р» — похожа на русскую «р».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q2",
-      "lemma": "ს",
-      "question": "Как звучит грузинская буква «ს»?",
-      "options": [
-        "т'",
-        "к'",
-        "с"
-      ],
-      "answer_index": 2,
-      "explanation": "Буква «ს» читается как «с» — похожа на русскую «с».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q3",
-      "lemma": "ტ",
-      "question": "Как звучит грузинская буква «ტ»?",
-      "options": [
-        "т'",
-        "с",
-        "р"
-      ],
-      "answer_index": 0,
-      "explanation": "Буква «ტ» читается как «т'» — абруптивный (резкий) звук «т».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q4",
+      "id": "ab4-q01",
       "lemma": "ლ",
-      "question": "Как звучит грузинская буква «ლ»?",
+      "question": "Новая буква ლ — звук «л». Как читается «ლამпა»?",
       "options": [
-        "к'",
-        "л",
-        "р"
-      ],
-      "answer_index": 1,
-      "explanation": "Буква «ლ» читается как «л» — похожа на русскую «л».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q5",
-      "lemma": "კ",
-      "question": "Как звучит грузинская буква «კ»?",
-      "options": [
-        "с",
-        "л",
-        "к'"
-      ],
-      "answer_index": 2,
-      "explanation": "Буква «კ» читается как «к'» — абруптивный (резкий) звук «к».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q6",
-      "lemma": "რ",
-      "question": "Какая грузинская буква обозначает звук «р»?",
-      "options": [
-        "ლ",
-        "რ",
-        "ს"
-      ],
-      "answer_index": 1,
-      "explanation": "Звук «р» передаётся буквой «რ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q7",
-      "lemma": "ს",
-      "question": "Какая грузинская буква обозначает звук «с»?",
-      "options": [
-        "ტ",
-        "კ",
-        "ს"
-      ],
-      "answer_index": 2,
-      "explanation": "Звук «с» передаётся буквой «ს».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ac1-q8",
-      "lemma": "ტ",
-      "question": "Какая грузинская буква обозначает абруптивный звук «т'»?",
-      "options": [
-        "ტ",
-        "ლ",
-        "რ"
+        "лампа",
+        "рампа",
+        "вампа"
       ],
       "answer_index": 0,
-      "explanation": "Абруптивный звук «т'» передаётся буквой «ტ».",
+      "explanation": "ლ — «л»: «лампа».",
       "tags": [
-        "sound-to-letter"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q9",
+      "id": "ab4-q02",
       "lemma": "ლ",
-      "question": "Какая грузинская буква обозначает звук «л»?",
+      "question": "Как читается «სоლь»?",
       "options": [
-        "რ",
-        "ს",
-        "ლ"
+        "сорь",
+        "соль",
+        "совь"
+      ],
+      "answer_index": 1,
+      "explanation": "ლ — «л»: «соль».",
+      "tags": [
+        "letter-in-word",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab4-q03",
+      "lemma": "ჩ",
+      "question": "Новая буква ჩ — «ч», с лёгким выдохом. Как читается «ჩაй»?",
+      "options": [
+        "шай",
+        "цай",
+        "чай"
       ],
       "answer_index": 2,
-      "explanation": "Звук «л» передаётся буквой «ლ».",
+      "explanation": "ჩ — «ч»: «чай».",
       "tags": [
-        "sound-to-letter"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q10",
-      "lemma": "კ",
-      "question": "Какая грузинская буква обозначает абруптивный звук «к'»?",
+      "id": "ab4-q04",
+      "lemma": "ჩ",
+      "question": "Как читается «ჩასы»?",
       "options": [
-        "კ",
-        "ტ",
-        "ს"
+        "часы",
+        "шасы",
+        "сасы"
       ],
       "answer_index": 0,
-      "explanation": "Абруптивный звук «к'» передаётся буквой «კ».",
+      "explanation": "ჩ — «ч»: «часы».",
       "tags": [
-        "sound-to-letter"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q11",
-      "lemma": "რ",
-      "question": "Какая буква звучит как русская «р»?",
+      "id": "ab4-q05",
+      "lemma": "ხ",
+      "question": "Новая буква ხ — звук «х». Как читается «ხლეб»?",
       "options": [
-        "ს",
-        "რ",
-        "ლ"
+        "клеб",
+        "хлеб",
+        "глеб"
       ],
       "answer_index": 1,
-      "explanation": "Грузинская «რ» звучит как русская «р».",
+      "explanation": "ხ — «х»: «хлеб».",
       "tags": [
-        "recognition"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ac1-q12",
-      "lemma": "ლ",
-      "question": "Какая буква звучит как русская «л»?",
+      "id": "ab4-q06",
+      "lemma": "ხ",
+      "question": "Как читается «ხელი»?",
       "options": [
-        "ლ",
-        "რ",
-        "კ"
+        "кэли",
+        "хэли",
+        "гэли"
       ],
-      "answer_index": 0,
-      "explanation": "Грузинская «ლ» звучит как русская «л».",
+      "answer_index": 1,
+      "explanation": "ხ — «х»: «хэли». Это грузинское слово — «рука».",
       "tags": [
-        "recognition"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
-    },
-    {
-      "id": "ac1-q13",
-      "lemma": "რა",
-      "question": "Как читается слог «რა»?",
-      "options": [
-        "ла",
-        "са",
-        "ра"
-      ],
-      "answer_index": 2,
-      "explanation": "«რ» = r, «ა» = a, вместе «ра».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac1-q14",
-      "lemma": "სე",
-      "question": "Как читается слог «სე»?",
-      "options": [
-        "сэ",
-        "рэ",
-        "лэ"
-      ],
-      "answer_index": 0,
-      "explanation": "«ს» = s, «ე» = e, вместе «сэ».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac1-q15",
-      "lemma": "ტი",
-      "question": "Как читается слог «ტი»?",
-      "options": [
-        "ки",
-        "ли",
-        "т'и"
-      ],
-      "answer_index": 2,
-      "explanation": "«ტ» = t', «ი» = i, вместе «т'и».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac1-q16",
-      "lemma": "ლო",
-      "question": "Как читается слог «ლო»?",
-      "options": [
-        "ро",
-        "ло",
-        "со"
-      ],
-      "answer_index": 1,
-      "explanation": "«ლ» = l, «ო» = o, вместе «ло».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac1-q17",
-      "lemma": "კუ",
-      "question": "Как читается слог «კუ»?",
-      "options": [
-        "су",
-        "к'у",
-        "лу"
-      ],
-      "answer_index": 1,
-      "explanation": "«კ» = k', «უ» = u, вместе «к'у».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ac1-q18",
-      "lemma": "ტ",
-      "question": "Чем отличается грузинская «ტ» от обычного «т»?",
-      "options": [
-        "ничем не отличается",
-        "это абруптивный (резкий) звук",
-        "это мягкий звук"
-      ],
-      "answer_index": 1,
-      "explanation": "«ტ» — абруптивный согласный: произносится с резким смыканием голосовых связок.",
-      "tags": [
-        "phonetics"
-      ],
-      "difficulty": 2
-    },
-    {
-        "id": "ac1-q19",
-        "lemma": "კ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "კ",
-            "გ",
-            "ს",
-            "ტ"
-        ],
-        "answer_index": 0,
-        "explanation": "«კ» — абруптивная «к»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/k.m4a",
-        "transcript": "კანი",
-        "tags": [
-            "audio",
-            "consonant",
-            "ejective",
-            "letter-name"
-        ],
-        "difficulty": 3
-    },
-    {
-        "id": "ac1-q20",
-        "lemma": "ლ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ნ",
-            "ლ",
-            "რ",
-            "მ"
-        ],
-        "answer_index": 1,
-        "explanation": "«ლ» — согласная «л»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/l.m4a",
-        "transcript": "ლასი",
-        "tags": [
-            "audio",
-            "consonant",
-            "letter-name"
-        ],
-        "difficulty": 2
     }
   ]
 }

@@ -7,6 +7,9 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
 {
     private readonly string _questionsFilePath;
     private List<QuizQuestionData>? _cachedQuestions;
+    // "ordered": true in the lesson file keeps the authored question order (a lesson that
+    // introduces letters one by one must not ask about a letter before it is introduced).
+    private bool _ordered;
     private readonly ILogger<GeorgianQuestionsLoader> _logger;
     private readonly string _fileName;
 
@@ -39,9 +42,11 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
         }
 
         var random = Random.Shared;
-        var shuffled = _cachedQuestions.OrderBy(_ => random.Next()).ToList();
+        var shuffled = _ordered
+            ? _cachedQuestions.ToList()
+            : _cachedQuestions.OrderBy(_ => random.Next()).ToList();
         
-        // Возвращаем 12 случайных вопросов
+        // Возвращаем 12 вопросов (случайных, если урок не помечен "ordered")
         var selectedQuestions = shuffled.Take(12).ToList();
         
         // Shuffle answer options for each question
@@ -73,6 +78,8 @@ public class GeorgianQuestionsLoader : IGeorgianQuestionsLoader
             var root = document.RootElement;
 
             var questions = new List<QuizQuestionData>();
+
+            _ordered = root.TryGetProperty("ordered", out var orderedEl) && orderedEl.ValueKind == JsonValueKind.True;
 
             if (root.TryGetProperty("questions", out var questionsArray))
             {

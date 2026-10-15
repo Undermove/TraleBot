@@ -1,345 +1,114 @@
 {
-  "lesson_id": "alpha-easy-1",
-  "title": "Простые согласные: ბ, გ, დ, მ, ნ",
+  "lesson_id": "alpha-2",
+  "title": "Буквы ე, ი, ს",
+  "ordered": true,
   "lexicon": [
-    "ბ",
-    "გ",
-    "დ",
-    "მ",
-    "ნ"
+    "ე",
+    "ი",
+    "ს"
   ],
   "questions": [
     {
-      "id": "ae1-q1",
-      "lemma": "ბ",
-      "question": "Как звучит грузинская буква «ბ»?",
+      "id": "ab2-q01",
+      "lemma": "ე",
+      "question": "Новая буква ე — звук «э». Как читается «мეтრо»?",
       "options": [
-        "б",
-        "г",
-        "д"
+        "метро",
+        "митро",
+        "мутро"
       ],
       "answer_index": 0,
-      "explanation": "Буква «ბ» читается как «б» — похожа на русскую «б».",
+      "explanation": "ე — «э»: «метро».",
       "tags": [
-        "letter-to-sound"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q2",
-      "lemma": "გ",
-      "question": "Как звучит грузинская буква «გ»?",
+      "id": "ab2-q02",
+      "lemma": "ე",
+      "question": "Как читается «დეло»?",
       "options": [
-        "м",
-        "н",
-        "г"
+        "дуло",
+        "дело",
+        "дило"
+      ],
+      "answer_index": 1,
+      "explanation": "ე — «э»: «дело».",
+      "tags": [
+        "letter-in-word",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab2-q03",
+      "lemma": "ი",
+      "question": "Новая буква ი — звук «и». Как читается «кიно»?",
+      "options": [
+        "кано",
+        "куно",
+        "кино"
       ],
       "answer_index": 2,
-      "explanation": "Буква «გ» читается как «г» — похожа на русскую «г».",
+      "explanation": "ი — «и»: «кино».",
       "tags": [
-        "letter-to-sound"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q3",
-      "lemma": "დ",
-      "question": "Как звучит грузинская буква «დ»?",
+      "id": "ab2-q04",
+      "lemma": "ი",
+      "question": "Как читается «რიс»?",
       "options": [
-        "д",
-        "б",
-        "н"
+        "рис",
+        "рас",
+        "рус"
       ],
       "answer_index": 0,
-      "explanation": "Буква «დ» читается как «д» — похожа на русскую «д».",
+      "explanation": "ი — «и»: «рис».",
       "tags": [
-        "letter-to-sound"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q4",
-      "lemma": "მ",
-      "question": "Как звучит грузинская буква «მ»?",
+      "id": "ab2-q05",
+      "lemma": "ს",
+      "question": "Новая буква ს — звук «с». Как читается «სыრ»?",
       "options": [
-        "г",
-        "м",
-        "д"
+        "зыр",
+        "сыр",
+        "шыр"
       ],
       "answer_index": 1,
-      "explanation": "Буква «მ» читается как «м» — похожа на русскую «м».",
+      "explanation": "ს — «с»: «сыр».",
       "tags": [
-        "letter-to-sound"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae1-q5",
-      "lemma": "ნ",
-      "question": "Как звучит грузинская буква «ნ»?",
+      "id": "ab2-q06",
+      "lemma": "ს",
+      "question": "Как читается «სуп»?",
       "options": [
-        "б",
-        "н",
-        "г"
-      ],
-      "answer_index": 1,
-      "explanation": "Буква «ნ» читается как «н» — похожа на русскую «н».",
-      "tags": [
-        "letter-to-sound"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q6",
-      "lemma": "ბ",
-      "question": "Какая грузинская буква обозначает звук «б»?",
-      "options": [
-        "დ",
-        "ბ",
-        "გ"
-      ],
-      "answer_index": 1,
-      "explanation": "Звук «б» передаётся буквой «ბ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q7",
-      "lemma": "გ",
-      "question": "Какая грузинская буква обозначает звук «г»?",
-      "options": [
-        "გ",
-        "მ",
-        "ნ"
-      ],
-      "answer_index": 0,
-      "explanation": "Звук «г» передаётся буквой «გ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q8",
-      "lemma": "დ",
-      "question": "Какая грузинская буква обозначает звук «д»?",
-      "options": [
-        "ნ",
-        "ბ",
-        "დ"
+        "зуп",
+        "шуп",
+        "суп"
       ],
       "answer_index": 2,
-      "explanation": "Звук «д» передаётся буквой «დ».",
+      "explanation": "ს — «с»: «суп».",
       "tags": [
-        "sound-to-letter"
+        "letter-in-word",
+        "mixed-script"
       ],
       "difficulty": 1
-    },
-    {
-      "id": "ae1-q9",
-      "lemma": "მ",
-      "question": "Какая грузинская буква обозначает звук «м»?",
-      "options": [
-        "მ",
-        "ნ",
-        "დ"
-      ],
-      "answer_index": 0,
-      "explanation": "Звук «м» передаётся буквой «მ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q10",
-      "lemma": "ნ",
-      "question": "Какая грузинская буква обозначает звук «н»?",
-      "options": [
-        "გ",
-        "ბ",
-        "ნ"
-      ],
-      "answer_index": 2,
-      "explanation": "Звук «н» передаётся буквой «ნ».",
-      "tags": [
-        "sound-to-letter"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q11",
-      "lemma": "ბ",
-      "question": "Какая буква звучит как русская «б»?",
-      "options": [
-        "დ",
-        "ბ",
-        "ნ"
-      ],
-      "answer_index": 1,
-      "explanation": "Грузинская «ბ» звучит как русская «б».",
-      "tags": [
-        "recognition"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q12",
-      "lemma": "მ",
-      "question": "Какая буква звучит как русская «м»?",
-      "options": [
-        "მ",
-        "გ",
-        "ბ"
-      ],
-      "answer_index": 0,
-      "explanation": "Грузинская «მ» звучит как русская «м».",
-      "tags": [
-        "recognition"
-      ],
-      "difficulty": 1
-    },
-    {
-      "id": "ae1-q13",
-      "lemma": "ბა",
-      "question": "Как читается слог «ბა»?",
-      "options": [
-        "ба",
-        "га",
-        "да"
-      ],
-      "answer_index": 0,
-      "explanation": "«ბ» = b, «ა» = a, вместе «ба».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae1-q14",
-      "lemma": "გე",
-      "question": "Как читается слог «გე»?",
-      "options": [
-        "дэ",
-        "гэ",
-        "мэ"
-      ],
-      "answer_index": 1,
-      "explanation": "«გ» = g, «ე» = e, вместе «гэ».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae1-q15",
-      "lemma": "დი",
-      "question": "Как читается слог «დი»?",
-      "options": [
-        "ни",
-        "би",
-        "ди"
-      ],
-      "answer_index": 2,
-      "explanation": "«დ» = d, «ი» = i, вместе «ди».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae1-q16",
-      "lemma": "მო",
-      "question": "Как читается слог «მო»?",
-      "options": [
-        "мо",
-        "но",
-        "бо"
-      ],
-      "answer_index": 0,
-      "explanation": "«მ» = m, «ო» = o, вместе «мо».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae1-q17",
-      "lemma": "ნუ",
-      "question": "Как читается слог «ნუ»?",
-      "options": [
-        "гу",
-        "ну",
-        "ду"
-      ],
-      "answer_index": 1,
-      "explanation": "«ნ» = n, «უ» = u, вместе «ну».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae1-q18",
-      "lemma": "დო",
-      "question": "Как читается слог «დო»?",
-      "options": [
-        "бо",
-        "го",
-        "до"
-      ],
-      "answer_index": 2,
-      "explanation": "«დ» = d, «ო» = o, вместе «до».",
-      "tags": [
-        "syllable-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-        "id": "ae1-q19",
-        "lemma": "დ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ბ",
-            "გ",
-            "დ",
-            "ნ"
-        ],
-        "answer_index": 2,
-        "explanation": "«დ» — согласная «д»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/d.m4a",
-        "transcript": "დონი",
-        "tags": [
-            "audio",
-            "consonant",
-            "letter-name"
-        ],
-        "difficulty": 2
-    },
-    {
-        "id": "ae1-q20",
-        "lemma": "ნ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ნ",
-            "მ",
-            "ბ",
-            "გ"
-        ],
-        "answer_index": 0,
-        "explanation": "«ნ» — согласная «н»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/n.m4a",
-        "transcript": "ნარი",
-        "tags": [
-            "audio",
-            "consonant",
-            "letter-name"
-        ],
-        "difficulty": 2
     }
   ]
 }

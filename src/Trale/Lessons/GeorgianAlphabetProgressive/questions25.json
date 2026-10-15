@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w25",
+  "title": "Слова: ფული, ხუთი, ქუჩა, იაფი",
+  "ordered": true,
+  "lexicon": [
+    "ფული",
+    "ხუთი",
+    "ქუჩა",
+    "იაფი"
+  ],
+  "questions": [
+    {
+      "id": "abw25-q01",
+      "lemma": "ფული",
+      "question": "Как читается «ფული»?",
+      "options": [
+        "вар",
+        "пули",
+        "тави"
+      ],
+      "answer_index": 1,
+      "explanation": "«ფული» — «пули», деньги.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw25-q02",
+      "lemma": "ხუთი",
+      "question": "Что значит «ხუთი»?",
+      "options": [
+        "пять",
+        "большой",
+        "два"
+      ],
+      "answer_index": 0,
+      "explanation": "«ხუთი» — «хути», пять.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw25-q03",
+      "lemma": "ქუჩა",
+      "question": "Где написано «улица»?",
+      "options": [
+        "მე",
+        "ქუჩა",
+        "ათი"
+      ],
+      "answer_index": 1,
+      "explanation": "«ქუჩა» — «куча», улица.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw25-q04",
+      "lemma": "იაფი",
+      "question": "Что значит «იაფი»?",
+      "options": [
+        "мы",
+        "хочу",
+        "дешёвый"
+      ],
+      "answer_index": 2,
+      "explanation": "«იაფი» — «иапи», дешёвый.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "lesson_id": "alpha-w31",
+  "title": "Слова: გამარჯობა, ოჯახი, ჰაერი, ჰო",
+  "ordered": true,
+  "lexicon": [
+    "გამარჯობა",
+    "ოჯახი",
+    "ჰაერი",
+    "ჰო"
+  ],
+  "questions": [
+    {
+      "id": "abw31-q01",
+      "lemma": "გამარჯობა",
+      "question": "Как читается «გამარჯობა»?",
+      "options": [
+        "ори",
+        "гамарджоба",
+        "рамдэни"
+      ],
+      "answer_index": 1,
+      "explanation": "«გამარჯობა» — «гамарджоба», здравствуй.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw31-q02",
+      "lemma": "ოჯახი",
+      "question": "Что значит «ოჯახი»?",
+      "options": [
+        "семья",
+        "что",
+        "женщина"
+      ],
+      "answer_index": 0,
+      "explanation": "«ოჯახი» — «оджахи», семья.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw31-q03",
+      "lemma": "ჰაერი",
+      "question": "Где написано «воздух»?",
+      "options": [
+        "ყველი",
+        "პური",
+        "ჰაერი"
+      ],
+      "answer_index": 2,
+      "explanation": "«ჰაერი» — «хаэри», воздух.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw31-q04",
+      "lemma": "ჰო",
+      "question": "Что значит «ჰო»?",
+      "options": [
+        "ага",
+        "чай",
+        "(я) есть"
+      ],
+      "answer_index": 0,
+      "explanation": "«ჰო» — «хо», ага.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

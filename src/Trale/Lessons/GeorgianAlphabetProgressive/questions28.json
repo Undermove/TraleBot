@@ -1,0 +1,78 @@
+{
+  "lesson_id": "alpha-w28",
+  "title": "Слова: დღე, ძმა, ძვირი",
+  "ordered": true,
+  "lexicon": [
+    "დღე",
+    "ძმა",
+    "ძვირი"
+  ],
+  "questions": [
+    {
+      "id": "abw28-q01",
+      "lemma": "დღე",
+      "question": "Как читается «დღე»?",
+      "options": [
+        "ра",
+        "дгхэ",
+        "ахали"
+      ],
+      "answer_index": 1,
+      "explanation": "«დღე» — «дгхэ», день.",
+      "tags": [
+        "word-reading"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw28-q02",
+      "lemma": "ძმა",
+      "question": "Что значит «ძმა»?",
+      "options": [
+        "радио",
+        "брат",
+        "машина"
+      ],
+      "answer_index": 1,
+      "explanation": "«ძმა» — «дзма», брат.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw28-q03",
+      "lemma": "ძვირი",
+      "question": "Где написано «дорогой»?",
+      "options": [
+        "ახალი",
+        "ნახვამდის",
+        "ძვირი"
+      ],
+      "answer_index": 2,
+      "explanation": "«ძვირი» — «дзвири», дорогой.",
+      "tags": [
+        "word-recognition"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "abw28-q04",
+      "lemma": "დღე",
+      "question": "Что значит «დღე»?",
+      "options": [
+        "друг",
+        "три",
+        "день"
+      ],
+      "answer_index": 2,
+      "explanation": "«დღე» — «дгхэ», день.",
+      "tags": [
+        "word-reading",
+        "meaning"
+      ],
+      "difficulty": 1
+    }
+  ]
+}

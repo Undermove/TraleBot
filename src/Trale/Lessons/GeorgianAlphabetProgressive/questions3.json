@@ -1,326 +1,98 @@
 {
-  "lesson_id": "alpha-easy-2",
-  "title": "Первые слова: читаем по-грузински",
+  "lesson_id": "alpha-3",
+  "title": "Буквы ვ, მ, ნ",
+  "ordered": true,
   "lexicon": [
-    "დედა",
-    "მამა",
-    "ბაბუა",
-    "ბინა",
-    "დიდი",
-    "ადამი",
-    "მადე",
-    "ბანანი"
+    "ვ",
+    "მ",
+    "ნ",
+    "მამა"
   ],
   "questions": [
     {
-      "id": "ae2-q1",
-      "lemma": "დედა",
-      "question": "Как читается слово «დედა»?",
+      "id": "ab3-q01",
+      "lemma": "ვ",
+      "question": "Новая буква ვ — звук «в». Как читается «ვоდა»?",
       "options": [
-        "дэда",
-        "мама",
-        "баба"
+        "вода",
+        "бода",
+        "мода"
       ],
       "answer_index": 0,
-      "explanation": "«დედა» читается «дэда» и означает «мама».",
+      "explanation": "ვ — «в»: русское «вода» уже целиком грузинскими буквами.",
       "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q2",
-      "lemma": "მამა",
-      "question": "Как читается слово «მამა»?",
-      "options": [
-        "дэда",
-        "баба",
-        "мама"
-      ],
-      "answer_index": 2,
-      "explanation": "«მამა» читается «мама» и означает «папа».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q3",
-      "lemma": "ბაბუა",
-      "question": "Как читается слово «ბაბუა»?",
-      "options": [
-        "бабуа",
-        "дада",
-        "нана"
-      ],
-      "answer_index": 0,
-      "explanation": "«ბაბუა» читается «бабуа» и означает «дедушка».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q4",
-      "lemma": "ბინა",
-      "question": "Как читается слово «ბინა»?",
-      "options": [
-        "мина",
-        "бина",
-        "дина"
-      ],
-      "answer_index": 1,
-      "explanation": "«ბინა» читается «бина» и означает «квартира».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q5",
-      "lemma": "დიდი",
-      "question": "Как читается слово «დიდი»?",
-      "options": [
-        "диди",
-        "биби",
-        "мини"
-      ],
-      "answer_index": 0,
-      "explanation": "«დიდი» читается «диди» и означает «большой».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q6",
-      "lemma": "ბანანი",
-      "question": "Как читается слово «ბანანი»?",
-      "options": [
-        "мадани",
-        "банани",
-        "нанами"
-      ],
-      "answer_index": 1,
-      "explanation": "«ბანანი» читается «банани» и означает «банан».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q7",
-      "lemma": "დედა",
-      "question": "Что означает «დედა»?",
-      "options": [
-        "папа",
-        "мама",
-        "дедушка"
-      ],
-      "answer_index": 1,
-      "explanation": "«დედა» (deda) — это «мама» по-грузински.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q8",
-      "lemma": "მამა",
-      "question": "Что означает «მამა»?",
-      "options": [
-        "мама",
-        "дедушка",
-        "папа"
-      ],
-      "answer_index": 2,
-      "explanation": "«მამა» (mama) — это «папа» по-грузински. Не путайте с русским «мама»!",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q9",
-      "lemma": "ბაბუა",
-      "question": "Что означает «ბაბუა»?",
-      "options": [
-        "дедушка",
-        "папа",
-        "квартира"
-      ],
-      "answer_index": 0,
-      "explanation": "«ბაბუა» — это «дедушка» по-грузински.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q10",
-      "lemma": "ბინა",
-      "question": "Что означает «ბინა»?",
-      "options": [
-        "банан",
-        "большой",
-        "квартира"
-      ],
-      "answer_index": 2,
-      "explanation": "«ბინა» (bina) — это «квартира» по-грузински.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q11",
-      "lemma": "დიდი",
-      "question": "Что означает «დიდი»?",
-      "options": [
-        "маленький",
-        "большой",
-        "старый"
-      ],
-      "answer_index": 1,
-      "explanation": "«დიდი» (didi) — это «большой» по-грузински.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q12",
-      "lemma": "ბანანი",
-      "question": "Что означает «ბანანი»?",
-      "options": [
-        "банан",
-        "квартира",
-        "дедушка"
-      ],
-      "answer_index": 0,
-      "explanation": "«ბანანი» (banani) — это «банан» по-грузински.",
-      "tags": [
-        "meaning"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q13",
-      "lemma": "დედა",
-      "question": "Как написать «мама» по-грузински?",
-      "options": [
-        "მამა",
-        "ბაბუა",
-        "დედა"
-      ],
-      "answer_index": 2,
-      "explanation": "«Мама» по-грузински — «დედა» (deda).",
-      "tags": [
-        "translation"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q14",
-      "lemma": "მამა",
-      "question": "Как написать «папа» по-грузински?",
-      "options": [
-        "მამა",
-        "დედა",
-        "ბაბუა"
-      ],
-      "answer_index": 0,
-      "explanation": "«Папа» по-грузински — «მამა» (mama). Ложный друг переводчика!",
-      "tags": [
-        "translation"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q15",
-      "lemma": "ადამი",
-      "question": "Как читается слово «ადამი»?",
-      "options": [
-        "адами",
-        "амади",
-        "адими"
-      ],
-      "answer_index": 0,
-      "explanation": "«ადამი» читается «адами» — имя Адам по-грузински.",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q16",
-      "lemma": "მადე",
-      "question": "Как читается слово «მადე»?",
-      "options": [
-        "мадэ",
-        "мэда",
-        "дэма"
-      ],
-      "answer_index": 0,
-      "explanation": "«მადე» читается «мадэ».",
-      "tags": [
-        "word-reading"
-      ],
-      "difficulty": 2
-    },
-    {
-      "id": "ae2-q17",
-      "lemma": "დედა",
-      "question": "С какой буквы начинается слово «დედა» (мама)?",
-      "options": [
-        "მ",
-        "ბ",
-        "დ"
-      ],
-      "answer_index": 2,
-      "explanation": "«დედა» начинается с буквы «დ» (d).",
-      "tags": [
-        "recognition"
+        "new-letter",
+        "mixed-script"
       ],
       "difficulty": 1
     },
     {
-      "id": "ae2-q18",
-      "lemma": "ბანანი",
-      "question": "Сколько букв «ნ» в слове «ბანანი» (банан)?",
+      "id": "ab3-q02",
+      "lemma": "ვ",
+      "question": "Как читается «ვიлкა»?",
       "options": [
-        "одна",
-        "две",
-        "три"
+        "билка",
+        "вилка",
+        "дилка"
       ],
       "answer_index": 1,
-      "explanation": "В слове «ბანანი» буква «ნ» встречается два раза: ბა-ნ-ა-ნ-ი.",
+      "explanation": "ვ — «в»: «вилка».",
       "tags": [
-        "recognition"
+        "letter-in-word",
+        "mixed-script"
       ],
-      "difficulty": 2
+      "difficulty": 1
     },
     {
-        "id": "ae2-q19",
-        "lemma": "გ",
-        "question": "Послушай и выбери грузинскую букву",
-        "options": [
-            "ბ",
-            "გ",
-            "მ",
-            "დ"
-        ],
-        "answer_index": 1,
-        "explanation": "«გ» — согласная «г»",
-        "question_type": "audio-choice",
-        "audio_url": "/audio/alphabet/g.m4a",
-        "transcript": "განი",
-        "tags": [
-            "audio",
-            "consonant",
-            "letter-name"
-        ],
-        "difficulty": 2
+      "id": "ab3-q03",
+      "lemma": "მ",
+      "question": "Новая буква მ — звук «м». Как читается «მამა»?",
+      "options": [
+        "нана",
+        "вава",
+        "мама"
+      ],
+      "answer_index": 2,
+      "explanation": "მ — «м»: «мама».",
+      "tags": [
+        "new-letter",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab3-q04",
+      "lemma": "ნ",
+      "question": "Новая буква ნ — звук «н». Как читается «ნоს»?",
+      "options": [
+        "нос",
+        "мос",
+        "вос"
+      ],
+      "answer_index": 0,
+      "explanation": "ნ — «н»: «нос».",
+      "tags": [
+        "new-letter",
+        "mixed-script"
+      ],
+      "difficulty": 1
+    },
+    {
+      "id": "ab3-q05",
+      "lemma": "ნ",
+      "question": "Как читается «бანან»?",
+      "options": [
+        "бамам",
+        "банан",
+        "бавав"
+      ],
+      "answer_index": 1,
+      "explanation": "ნ — «н»: «банан».",
+      "tags": [
+        "letter-in-word",
+        "mixed-script"
+      ],
+      "difficulty": 1
     }
   ]
 }

@@ -180,4 +180,22 @@ public class GeorgianQuestionsLoaderTests
         }
         finally { File.Delete(path); }
     }
+    [Test]
+    public void LoadQuestions_OrderedLesson_KeepsAuthoredOrder()
+    {
+        var items = string.Join(",", Enumerable.Range(1, 12).Select(n =>
+            $$"""{ "id": "q{{n}}", "lemma": "ა", "question": "Q{{n}}", "options": ["а", "о"], "answer_index": 0 }"""));
+        var json = $$"""{ "lesson_id": "ordered", "ordered": true, "questions": [{{items}}] }""";
+
+        var (loader, path) = CreateLoaderFromJson(json);
+        try
+        {
+            for (var run = 0; run < 5; run++)
+            {
+                var ids = loader.LoadQuestions().Select(q => q.Id).ToList();
+                ids.ShouldBe(Enumerable.Range(1, 12).Select(n => $"q{n}").ToList());
+            }
+        }
+        finally { File.Delete(path); }
+    }
 }
