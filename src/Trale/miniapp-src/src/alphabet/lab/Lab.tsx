@@ -18,6 +18,7 @@ import { lessonInfo } from '../lessons'
 import { DIALOGUES } from '../games/dialogues'
 import Practice from '../../screens/Practice'
 import { defaultProgress } from '../../progress'
+import Welcome, { type Step as WelcomeStep } from '../../screens/Welcome'
 
 // Стенд для проверки вёрстки: одна сцена алфавита с заданными данными, без сервера и без урока вокруг.
 // Открывается адресом ?alphabet-lab=<сцена>&lesson=<id урока>&word=<грузинское слово>&letter=<буква>;
@@ -60,6 +61,8 @@ export default function Lab() {
       return <Dialogue stage={stage} own={g.pool.own} known={g.pool.known} {...common} />
     }
     // Проверка в конце урока — обычный экран вопросов (вопросы стенду отдаёт e2e через page.route).
+    // Знакомство с приложением: &step=hello|letter|catch|gift|word|tour|win.
+    case 'welcome': return <Welcome start={(q.get('step') ?? 'hello') as WelcomeStep} onComplete={noop} onNext={noop} onBrowse={noop} />
     case 'check': return <Practice moduleId="alphabet-lab-check" lessonId={1} progress={defaultProgress} setProgress={noop} authenticated navigate={noop} />
     case 'cafe': return <Cafe {...common} />
     case 'finale': return <Finale lessonId={lessonId} onNext={noop} onVocabulary={noop} />

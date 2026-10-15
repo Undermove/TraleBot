@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { playWelcome } from './welcome'
 
 // Verifies the "hide the hub until the first XP" gate end-to-end:
 // a fresh user (level chosen, 0 XP) is dropped straight into the first lesson
@@ -94,9 +95,9 @@ test('fresh user (0 XP) lands on the welcome lesson, not the hub', async ({ page
   await setupApi(page, freshMe)
   await page.goto('/?playwright=1')
 
-  // The one-letter welcome lesson is shown...
+  // The game-form intro is shown...
   await expect(page.getByTestId('welcome-screen')).toBeVisible()
-  await expect(page.getByRole('button', { name: /дальше/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'поехали →' })).toBeVisible()
 
   // ...and the dashboard hub (module grid) is NOT rendered.
   await expect(page.getByTestId('module-tile-alphabet-progressive')).toHaveCount(0)
@@ -115,9 +116,7 @@ async function finishWelcome(page: any) {
     return route.fulfill({ json: { xpEarned: 15, progress: afterWelcome } })
   })
   await page.goto('/?playwright=1')
-  await page.getByRole('button', { name: /дальше/i }).click()
-  await page.getByTestId('welcome-listen-а').click()
-  await page.getByTestId('welcome-name-ани').click()
+  await playWelcome(page)
   return recorded
 }
 
@@ -125,11 +124,7 @@ test('after the welcome lesson the one main action is the next lesson', async ({
   await setupApi(page, freshMe)
   const recorded = await finishWelcome(page)
 
-  // The next lesson by the app's order is named on the win screen…
-  const next = page.getByTestId('welcome-next-lesson')
-  await expect(next).toContainText('Первые буквы')
-  await expect(next).toContainText('Алфавит · урок 1')
-  // …the lesson is already recorded — before any further tap…
+  // The lesson is already recorded — before any further tap…
   await expect.poll(() => recorded.length).toBe(1)
   expect(recorded[0]).toMatchObject({ moduleId: 'welcome', lessonId: 1 })
   // …and there is exactly one big button; the hub is a quiet link below it.
@@ -137,10 +132,11 @@ test('after the welcome lesson the one main action is the next lesson', async ({
   const browse = page.getByTestId('welcome-browse')
   expect((await browse.boundingBox())!.height).toBeGreaterThanOrEqual(44)
 
-  await page.getByRole('button', { name: /следующий урок/i }).click()
+  await page.getByRole('button', { name: 'продолжить алфавит →' }).click()
 
-  // Straight into that lesson — not the hub.
-  await expect(page.getByText('Запомнить первые буквы алфавита')).toBeVisible()
+  // Straight into alphabet lesson 1 — ა is already familiar there — not the hub.
+  await expect(page.getByTestId('lesson-opener')).toBeVisible()
+  await expect(page.getByText('Одну букву ты уже знаешь, ещё 2 — новые')).toBeVisible()
   await expect(page.getByTestId('module-tile-alphabet-progressive')).toHaveCount(0)
   expect(recorded.length).toBe(1)
 })
@@ -154,9 +150,7 @@ test('the win screen fits a 375px phone without scrolling', async ({ page }) => 
     route.fulfill({ json: { ...catalog, modules: [{ ...catalog.modules[0], lessons: [realFirst] }, catalog.modules[1]] } })
   )
   await finishWelcome(page)
-  await expect(page.getByTestId('welcome-next-lesson')).toContainText('Гласные · ა ე ი ო უ')
-
-  const button = page.getByRole('button', { name: /следующий урок/i })
+  const button = page.getByRole('button', { name: 'продолжить алфавит →' })
   await expect(button).toBeInViewport({ ratio: 1 })
   await expect(page.getByTestId('welcome-browse')).toBeInViewport({ ratio: 1 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
@@ -184,4 +178,33 @@ test('returning user with XP lands on the dashboard hub', async ({ page }) => {
 
   // ...and we did NOT get the welcome lesson.
   await expect(page.getByTestId('welcome-screen')).toHaveCount(0)
+})
+
+test('the whole first minute plays on a 320px phone and every step is tracked', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 })
+  await setupApi(page, freshMe)
+  const events: any[] = []
+  await page.route('**/api/miniapp/events', (route: any) => { events.push(...route.request().postDataJSON().events); return route.fulfill({ status: 204 }) })
+  await page.route('**/api/miniapp/progress/lesson-complete', (route: any) =>
+    route.fulfill({ json: { xpEarned: 15, progress: afterWelcome } }))
+  await page.addInitScript(() => { (window as any).__lessonEventsOn = true })
+  await page.goto('/?playwright=1')
+  const dir = process.env.SHOTS_DIR
+  let n = 50
+  await playWelcome(page, async (name) => {
+    const overflow = await page.evaluate(() => document.scrollingElement!.scrollHeight - innerHeight)
+    expect(overflow, `${name} scrolls`).toBeLessThanOrEqual(1)
+    if (dir) await page.screenshot({ path: `${dir}/${n++}-320-welcome-${name}.png` })
+  })
+  await page.getByRole('button', { name: 'продолжить алфавит →' }).click()
+  await expect(page.getByTestId('lesson-opener')).toBeVisible()
+  await page.waitForTimeout(1200)
+  if (dir) await page.screenshot({ path: `${dir}/${n++}-320-lesson1-opener-known.png` })
+  // Трекер шлёт пачку при уходе со страницы.
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')))
+  await expect.poll(() => events.filter(e => e.moduleId === 'onboarding').map(e => `${e.step}:${e.stepKind}:${e.event}`)).toEqual(expect.arrayContaining([
+    '0:greeting:lesson_open', '1:letter-intro:step_start', '2:catch:step_done', '3:first-word:step_done', '4:tour:step_done',
+    '5:celebration:step_start', '5:celebration:lesson_complete'
+  ]))
+  expect(events.some(e => e.moduleId === 'alphabet-progressive' && e.event === 'lesson_open')).toBe(true)
 })

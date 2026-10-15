@@ -122,6 +122,17 @@ describe('alphabet lesson as a chain of games', () => {
     expect(trail()).toEqual(['1:letter-intro:step_start', '1:letter-intro:lesson_exit'])
   })
 
+  it('after the app intro (ა already written there) lesson 1 only recaps ა, the other letters are new as usual', async () => {
+    localStorage.setItem('bombora_welcome_letters', JSON.stringify(['ა']))
+    render(<Practice moduleId="alphabet-progressive" lessonId={1} progress={defaultProgress} setProgress={() => {}} authenticated navigate={() => {}} />)
+    await waitFor(() => expect(screen.getByText(/уже знаешь · 1 из 3/)).toBeTruthy())
+    expect(screen.getByTestId('intro-word').textContent).toBe('ატამი')
+    expect(screen.queryByTestId('intro-skip')).toBeNull()
+    fireEvent.click(screen.getByText('дальше →'))
+    expect(screen.getByText(/новая буква · 2 из 3/)).toBeTruthy()
+    expect(screen.getByTestId('intro-skip')).toBeTruthy()
+  })
+
   it('leaves other modules untouched', async () => {
     render(<Practice moduleId="numbers" lessonId={1} progress={defaultProgress} setProgress={() => {}} authenticated navigate={() => {}} />)
     await waitFor(() => expect(screen.getByText('Вопрос 1')).toBeTruthy())

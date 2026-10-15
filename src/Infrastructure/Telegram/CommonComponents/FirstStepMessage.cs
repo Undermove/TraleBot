@@ -18,7 +18,7 @@ public static class FirstStepMessage
     public const string ReferralTrialLine = "Тебе бонус за приглашение: 60 дней бесплатно вместо 30 🎁";
 
     public const string Promise =
-        "Одна минута — и ты узнаешь первую грузинскую букву: как она выглядит, как звучит и как называется.";
+        "Одна минута — и ты напишешь первую грузинскую букву и прочитаешь первое слово.";
 
     /// <summary>The link led to the «Глаголы» section: the button opens it, so the letter is not promised.</summary>
     public const string VerbsPromise = "По кнопке ниже — раздел «Глаголы».";

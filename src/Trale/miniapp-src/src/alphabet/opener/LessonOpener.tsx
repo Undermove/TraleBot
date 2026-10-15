@@ -5,6 +5,7 @@ import '../games/alphabet.css'
 import { BackIcon } from '../games/GameFrame'
 import { haptic, sound } from '../games/fx'
 import { useRowFit } from '../games/fit'
+import { recapLetter } from '../known'
 import { lessonLetters, wordsLabel } from '../games/logic'
 import { LESSON_TOTAL, lessonInfo, nextWordsLesson, positionOf } from '../lessons'
 
@@ -31,6 +32,8 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
   const [more, setMore] = useState(false)
   const cardsBox = useRef<HTMLDivElement>(null)
   const card = useRowFit(cardsBox, letters.length, 56, 92, 12).size
+  // Буква, открытая в знакомстве с приложением, лежит лицом вверх с пометкой «уже знаешь».
+  const known = (l: string) => !isWords && recapLetter(lessonId, l)
 
   // Карточки раздаются по одной (анимация ab-deal с задержкой) — с тихим щелчком на каждую.
   useEffect(() => {
@@ -52,7 +55,7 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
       <div className="flex-1 min-h-0 flex flex-col items-center px-5 text-center">
         <div className="ab-short:hidden"><Mascot mood="cheer" size={92} /></div>
         <h1 className="mt-1 text-[28px] ab-short:text-[24px] font-extrabold leading-tight">
-          {isWords ? `Сегодня ${wordsLabel(letters.length).replace('грузинских ', 'новых ').replace('грузинское ', 'новое ')}` : `Сегодня ${letters.length} новые буквы`}
+          {isWords ? `Сегодня ${wordsLabel(letters.length).replace('грузинских ', 'новых ').replace('грузинское ', 'новое ')}` : letters.some(known) ? `Одну букву ты уже знаешь, ещё ${letters.filter(l => !known(l)).length} — новые` : `Сегодня ${letters.length} новые буквы`}
         </h1>
 
         <div ref={cardsBox} className="mt-5 ab-short:mt-3 w-full flex gap-3 justify-center" data-testid="opener-cards">
@@ -65,6 +68,13 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
               className="ab-deal"
               style={{ animationDelay: `${200 + i * 170}ms` }}
             >
+              {known(l) ? (
+              <div className={`relative rounded-2xl border-[1.5px] border-jewelInk overflow-hidden bg-cream-tile flex flex-col items-center justify-center ${wiggle === i ? 'ab-wobble' : 'ab-bob'}`} data-known="yes"
+                style={{ width: card, height: Math.round(card * 1.35), boxShadow: '4px 4px 0 #15100A', ['--d' as any]: `${i * 0.35}s`, ['--r' as any]: `${(i - 1) * 4}deg` }}>
+                <span className="font-geo font-extrabold text-navy leading-none" style={{ fontSize: Math.round(card * 0.55) }}>{l}</span>
+                <span className="absolute bottom-1.5 inset-x-1 rounded-md bg-gold text-[10px] font-extrabold leading-tight py-0.5">уже знаешь</span>
+              </div>
+              ) : (
               <div className={`relative rounded-2xl border-[1.5px] border-jewelInk overflow-hidden ${wiggle === i ? 'ab-wobble' : 'ab-bob'}`}
                 style={{ width: card, height: Math.round(card * 1.35), boxShadow: '4px 4px 0 #15100A', ['--d' as any]: `${i * 0.35}s`, ['--r' as any]: `${(i - 1) * 4}deg`, background: '#1B5FB0' }}>
               <div className="absolute inset-1.5 rounded-xl border border-cream/40" style={{ backgroundImage: 'repeating-linear-gradient(45deg, rgba(253,250,239,0.16) 0 6px, transparent 6px 12px), repeating-linear-gradient(-45deg, rgba(245,184,32,0.18) 0 6px, transparent 6px 12px)' }} />
@@ -72,6 +82,7 @@ export default function LessonOpener({ lessonId, onBack, onStart, details }: {
                 <span className="w-11 h-11 rounded-full bg-gold border-[1.5px] border-jewelInk flex items-center justify-center text-[24px] font-extrabold text-jewelInk">{i + 1}</span>
               </div>
               </div>
+              )}
             </button>
           ))}
         </div>

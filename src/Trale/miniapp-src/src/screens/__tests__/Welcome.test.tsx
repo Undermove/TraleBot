@@ -1,127 +1,94 @@
 import React from 'react'
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import Welcome from '../Welcome'
+import { welcomeLetters } from '../../alphabet/known'
+import { __setLessonEventSender, flushLessonEvents, type LessonEventDto } from '../../analytics/lessonEvents'
 
-// Walks the happy path: meet the letter → listening task → name task → win.
-async function playThrough(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /дальше/i }))
-  await user.click(screen.getByTestId('welcome-listen-а'))
-  await user.click(screen.getByTestId('welcome-name-ани'))
-}
+let sent: LessonEventDto[] = []
+const trail = () => { flushLessonEvents(); return sent.map(e => `${e.moduleId}:${e.step}:${e.stepKind}:${e.event}`) }
 
-const NEXT = { moduleTitle: 'Алфавит', lessonId: 1, title: 'Гласные', short: 'ა ე ი ო უ' }
-
-function renderWelcome(props: Partial<React.ComponentProps<typeof Welcome>> = {}) {
+function renderWelcome() {
   const handlers = { onComplete: vi.fn(), onNext: vi.fn(), onBrowse: vi.fn() }
-  render(<Welcome next={NEXT} {...handlers} {...props} />)
+  render(<Welcome {...handlers} />)
   return handlers
 }
 
-describe('Welcome (one-letter onboarding mini-lesson)', () => {
-  it('introduces the letter with its name and sound', () => {
+describe('Welcome — the first minute of a new user, as a game', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    sent = []
+    __setLessonEventSender(e => { sent.push(...e) })
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+  })
+  afterEach(() => __setLessonEventSender(null))
+
+  it('greets in one line — no wall of text, no letter-name recording', () => {
     renderWelcome()
-    expect(screen.getByText(/первая грузинская буква/i)).toBeInTheDocument()
-    // Teaches both the name ("ани") and the sound ("а").
-    expect(screen.getByText(/ани/i)).toBeInTheDocument()
-    expect(screen.getByText(/звучит как/i)).toBeInTheDocument()
+    expect(screen.getByTestId('welcome-hello').textContent).toMatch(/За минуту прочитаешь первое грузинское слово/)
+    expect(document.querySelector('audio[src*="/audio/alphabet/a.m4a"]')).toBeNull()
+    expect(screen.queryByText(/ани/)).toBeNull()
   })
 
-  it('runs a listening task then a name task, and records the lesson the moment the last one is solved', async () => {
-    const user = userEvent.setup()
-    const { onComplete, onNext, onBrowse } = renderWelcome()
+  it('letter ა → catch → gifted დ → reads და → tour → «1 букву и 1 слово» → alphabet lesson 1', async () => {
+    const { onComplete, onNext } = renderWelcome()
+    fireEvent.click(screen.getByText('поехали →'))
 
-    await user.click(screen.getByRole('button', { name: /дальше/i }))
+    // Знакомство с ა — то же, что в уроке (стираешь персик, пишешь); здесь пропускаем до подписи.
+    expect(screen.getByText(/первая буква/)).toBeTruthy()
+    fireEvent.click(screen.getByTestId('intro-skip'))
+    expect(screen.getByTestId('intro-word').textContent).toBe('ატამი')
+    fireEvent.click(screen.getByText('дальше →'))
+    expect(welcomeLetters()).toEqual(['ა'])
 
-    // Listening step: pick the letter you hear.
-    expect(screen.getByText(/послушай и выбери/i)).toBeInTheDocument()
-    await user.click(screen.getByTestId('welcome-listen-а'))
+    // Одна волна «Поймай букву».
+    await waitFor(() => expect(screen.getAllByTestId('catch-bubble').length).toBe(8))
+    for (const b of screen.getAllByTestId('catch-bubble').filter(b => b.dataset.target === 'yes')) fireEvent.pointerDown(b)
 
-    // Name step: pick the letter's name.
-    expect(screen.getByText(/как называется буква/i)).toBeInTheDocument()
-    expect(onComplete).not.toHaveBeenCalled()
-    await user.click(screen.getByTestId('welcome-name-ани'))
+    // Подарок: вторая буква.
+    await waitFor(() => expect(screen.getByTestId('welcome-gift')).toBeTruthy(), { timeout: 4000 })
+    fireEvent.click(screen.getByTestId('welcome-gift-card'))
+    await waitFor(() => expect(screen.getByText('читать слово →')).toBeTruthy())
+    fireEvent.click(screen.getByText('читать слово →'))
 
-    // Win screen: recorded already — closing the app here does not lose the lesson.
-    expect(screen.getByText(/первая победа/i)).toBeInTheDocument()
+    // Первое слово: ведёшь по буквам და — читаешь.
+    expect(screen.getByText('Твоё первое слово')).toBeTruthy()
+    const tiles = screen.getAllByTestId('word-tile')
+    expect(tiles.map(t => t.textContent)).toEqual(['დ', 'ა'])
+    for (const t of tiles) fireEvent.pointerDown(t)
+    await waitFor(() => expect(screen.getByText('дальше →')).toBeTruthy(), { timeout: 3000 })
+    expect(screen.queryByTestId('dict-chip')).toBeNull()
+    fireEvent.click(screen.getByText('дальше →'))
+
+    // Три карточки «что тут есть».
+    for (const title of ['Алфавит', 'Слова', 'Разговоры']) {
+      expect(screen.getByTestId('welcome-tour-card').textContent).toContain(title)
+      fireEvent.click(screen.getByText(/дальше →|понятно →/))
+    }
+
+    await waitFor(() => expect(screen.getByTestId('welcome-win').textContent).toBe('Ты уже знаешь 1\u00a0букву и 1\u00a0слово'))
     expect(onComplete).toHaveBeenCalledTimes(1)
-    expect(onNext).not.toHaveBeenCalled()
-    expect(onBrowse).not.toHaveBeenCalled()
-  })
+    fireEvent.click(screen.getByText('продолжить алфавит →'))
+    expect(onNext).toHaveBeenCalled()
 
-  it('does not advance on a wrong listening answer — nudges and lets retry', async () => {
-    const user = userEvent.setup()
-    renderWelcome()
+    expect(trail()).toEqual([
+      'onboarding:0:greeting:lesson_open', 'onboarding:0:greeting:step_done',
+      'onboarding:1:letter-intro:step_start', 'onboarding:1:letter-intro:step_skip', 'onboarding:1:letter-intro:step_done',
+      'onboarding:2:catch:step_start', 'onboarding:2:catch:step_done',
+      'onboarding:3:first-word:step_start', 'onboarding:3:first-word:step_done',
+      'onboarding:4:tour:step_start', 'onboarding:4:tour:step_done',
+      'onboarding:5:celebration:step_start', 'onboarding:5:celebration:lesson_complete'
+    ])
+  }, 20_000)
 
-    await user.click(screen.getByRole('button', { name: /дальше/i }))
-    await user.click(screen.getByTestId('welcome-listen-б'))
-
-    // Still on the listening step with a nudge.
-    expect(screen.getByText(/послушай ещё разок/i)).toBeInTheDocument()
-    expect(screen.getByTestId('welcome-listen-а')).toBeInTheDocument()
-  })
-
-  it('does not finish on a wrong name answer — nudges and lets retry', async () => {
-    const user = userEvent.setup()
-    const { onComplete } = renderWelcome()
-
-    await user.click(screen.getByRole('button', { name: /дальше/i }))
-    await user.click(screen.getByTestId('welcome-listen-а'))
-    await user.click(screen.getByTestId('welcome-name-бани'))
-
-    expect(onComplete).not.toHaveBeenCalled()
-    expect(screen.getByTestId('welcome-name-ани')).toBeInTheDocument()
-  })
-
-  it('offers the next lesson as the one main action of the win screen', async () => {
-    const user = userEvent.setup()
-    const { onNext, onBrowse } = renderWelcome()
-
-    await playThrough(user)
-
-    // Which lesson comes next is said in words: its name, what is in it, where it lives.
-    const card = screen.getByTestId('welcome-next-lesson')
-    expect(card).toHaveTextContent('Гласные')
-    expect(card).toHaveTextContent('ა ე ი ო უ')
-    expect(card).toHaveTextContent('Алфавит · урок 1')
-    // One big button — the next lesson; the hub is a quiet link.
-    expect(screen.getAllByRole('button').filter((b) => b.className.includes('jewel-btn'))).toHaveLength(1)
-    await user.click(screen.getByRole('button', { name: /следующий урок/i }))
-    expect(onNext).toHaveBeenCalledTimes(1)
-    expect(onBrowse).not.toHaveBeenCalled()
-  })
-
-  it('keeps the hub one tap away for those who want to choose themselves', async () => {
-    const user = userEvent.setup()
-    const { onNext, onBrowse } = renderWelcome()
-
-    await playThrough(user)
-    await user.click(screen.getByRole('button', { name: /посмотреть все уроки/i }))
-
-    expect(onBrowse).toHaveBeenCalledTimes(1)
-    expect(onNext).not.toHaveBeenCalled()
-  })
-
-  it('falls back to opening the app when there is no lesson to offer', async () => {
-    const user = userEvent.setup()
-    const { onBrowse } = renderWelcome({ next: null })
-
-    await playThrough(user)
-
-    expect(screen.queryByTestId('welcome-next-lesson')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /открыть приложение/i }))
-    expect(onBrowse).toHaveBeenCalledTimes(1)
-  })
-
-  it('addresses the learner without grammatical gender and without emoji on the win screen', async () => {
-    const user = userEvent.setup()
-    renderWelcome()
-
-    await playThrough(user)
-
-    const text = screen.getByTestId('welcome-screen').textContent ?? ''
-    expect(text).not.toMatch(/узнал|услышал|заработал|выучил/i)
-    expect(text).not.toMatch(/\p{Extended_Pictographic}/u)
+  it('can be skipped at once: still recorded (so it is not shown again) and leads to the alphabet', async () => {
+    const { onComplete, onBrowse } = renderWelcome()
+    await act(async () => { fireEvent.click(screen.getByTestId('welcome-skip')) })
+    expect(onComplete).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('welcome-win').textContent).toMatch(/Начнём с алфавита/)
+    expect(welcomeLetters()).toEqual([])
+    fireEvent.click(screen.getByTestId('welcome-browse'))
+    expect(onBrowse).toHaveBeenCalled()
   })
 })

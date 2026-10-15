@@ -407,22 +407,19 @@ export default function App() {
 
   switch (screen.kind) {
     case 'welcome': {
-      // What comes after the welcome lesson — the same lesson the dashboard would suggest.
-      const nextRef = findFirstLesson(catalog, progress.completedLessons)
-      const nextModule = nextRef ? catalog.modules.find((m) => m.id === nextRef.moduleId) : undefined
-      const nextLesson = nextModule?.lessons.find((l) => l.id === nextRef!.lessonId)
+      // После знакомства — первый урок алфавита (ა там уже знакома); если он пройден — урок, который предложил бы хаб.
+      const alphabetDone = (progress.completedLessons['alphabet-progressive'] ?? []).includes(1)
+      const hasAlphabet = catalog.modules.some((m) => m.id === 'alphabet-progressive' && m.lessons.some((l) => l.id === 1))
+      const nextRef = hasAlphabet && !alphabetDone
+        ? { moduleId: 'alphabet-progressive', lessonId: 1 }
+        : findFirstLesson(catalog, progress.completedLessons)
       return (
         <Welcome
-          next={
-            nextModule && nextLesson
-              ? { moduleTitle: nextModule.title, lessonId: nextLesson.id, title: nextLesson.title, short: nextLesson.short }
-              : null
-          }
           onComplete={() => {
             // The welcome lesson is recorded under its own "welcome" module id, so it
             // awards the first XP (flipping the entry gate to the dashboard) without
-            // touching the real alphabet progression. Recorded the moment the last task
-            // is solved — closing the app on the win screen no longer loses the lesson.
+            // touching the real alphabet progression. Recorded the moment the celebration
+            // shows (or the intro is skipped) — closing the app there no longer loses it.
             // Re-fetch me() afterwards: completing welcome unlocks the first onboarding
             // hint, but the initial me() (taken before welcome) returned none.
             api

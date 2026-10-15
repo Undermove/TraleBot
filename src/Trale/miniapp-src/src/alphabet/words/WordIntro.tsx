@@ -39,7 +39,12 @@ export function DictChip({ count, innerRef }: { count: number; innerRef?: React.
   )
 }
 
-export default function WordIntro({ featured, startCount, fraction, onExit, onDone }: {
+export default function WordIntro({ featured, startCount, fraction, onExit, onDone, title = 'Новое слово', eyebrow, collect = true }: {
+  /** Заголовок и подпись сверху (по умолчанию — «Новое слово» и «новое слово · N из M»). */
+  title?: string
+  eyebrow?: string
+  /** Слово уходит в «Словарь» (чип со счётчиком); false — без чипа, кнопка «дальше». */
+  collect?: boolean
   /** Все новые слова урока — каждое своей сценой. */
   featured: Word[]
   /** Сколько слов в «Словаре» до этого урока (для счётчика на чипе). */
@@ -112,11 +117,11 @@ export default function WordIntro({ featured, startCount, fraction, onExit, onDo
   const tileH = Math.round(fit.size * (fit.perRow < letters.length ? 1.05 : 1.25))
   const font = Math.round(fit.size * 0.66)
   return (
-    <GameFrame title="Новое слово" eyebrow={`новое слово · ${wi + 1} из ${featured.length}`} fraction={fraction} onExit={onExit}>
+    <GameFrame title={title} eyebrow={eyebrow ?? `новое слово · ${wi + 1} из ${featured.length}`} fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col items-center gap-3 ab-short:gap-2" data-testid="word-intro" data-phase={phase}>
         <div className="w-full flex items-center justify-between gap-3">
           <div className="text-[14px] font-bold text-jewelInk-mid leading-snug">Тебе хватает букв, чтобы прочитать новое слово!</div>
-          <DictChip count={count} innerRef={chip} />
+          {collect && <DictChip count={count} innerRef={chip} />}
         </div>
 
         <div ref={box} className="w-full flex justify-center">
@@ -166,7 +171,7 @@ export default function WordIntro({ featured, startCount, fraction, onExit, onDo
 
         <div className="mt-auto shrink-0 w-full max-w-[340px] flex flex-col gap-2">
           {phase === 'meaning'
-            ? <Button onClick={() => void toDictionary()}>в словарь →</Button>
+            ? <Button onClick={() => void (collect ? toDictionary() : onDone())}>{collect ? 'в словарь →' : 'дальше →'}</Button>
             : <button onClick={skip} className="h-11 text-[14px] font-bold text-jewelInk-hint underline underline-offset-4" data-testid="word-skip">пропустить</button>}
         </div>
       </div>

@@ -15,6 +15,7 @@ import { EXAM_SIZE, assembleRounds, lessonLetters, lessonSteps, morphWords, pair
 import { dialogueReady } from './games/dialogues'
 import { ALPHABET_LESSONS, lessonInfo, wordsUpToLesson } from './lessons'
 import { lessonFlow, type StepKind } from '../analytics/lessonEvents'
+import { recapLetter } from './known'
 
 /** Как шаг урока называется в аналитике (LessonEvents.StepKind). */
 export const STEP_KIND: Record<LessonStep['kind'], StepKind> = {
@@ -123,7 +124,7 @@ export default function AlphabetInterlude({ scene, lessonId, fraction, onExit, o
   const common = { lesson: lesson.stage, fraction, onExit, onDone }
   switch (step.kind) {
     case 'intro':
-      return <LetterIntro key={step.letter} letter={step.letter} index={step.index} count={3} fraction={fraction} onExit={onExit} onDone={onDone} />
+      return <LetterIntro key={step.letter} letter={step.letter} index={step.index} count={3} recap={recapLetter(lessonId, step.letter)} fraction={fraction} onExit={onExit} onDone={onDone} />
     case 'catch':
       return <Catch key="catch" letters={step.letters} {...common} />
     case 'sound':

@@ -98,6 +98,10 @@ const SCENES: { name: string; q: string; then?: (p: Page) => Promise<void> }[] =
   { name: 'dialogue with the longest options', q: 'dialogue&lesson=22&long=1' },
   { name: 'final check with the longest options', q: 'check' },
   { name: 'cafe', q: 'cafe&lesson=29' },
+  // Знакомство с приложением (первая минута нового человека).
+  ...['hello', 'letter', 'catch', 'word', 'win'].map(step => ({ name: `welcome ${step}`, q: `welcome&step=${step}` })),
+  { name: 'welcome gift (opened)', q: 'welcome&step=gift', then: async (p: Page) => { await p.getByTestId('welcome-gift-card').click(); await p.waitForTimeout(700) } },
+  ...[0, 1, 2].map(n => ({ name: `welcome tour card ${n + 1}`, q: 'welcome&step=tour', then: async (p: Page) => { for (let k = 0; k < n; k++) { await p.getByRole('button', { name: 'дальше →' }).click(); await p.waitForTimeout(150) } await p.waitForTimeout(600) } })),
   { name: 'finale (letters)', q: 'finale&lesson=6', then: p => p.waitForTimeout(3500) },
   { name: 'finale (words, dictionary)', q: 'finale&lesson=22', then: p => p.waitForTimeout(5000) },
   ...LONGEST.flatMap(w => [

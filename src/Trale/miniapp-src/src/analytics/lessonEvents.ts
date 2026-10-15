@@ -45,6 +45,8 @@ export function trackingEnabled(): boolean {
     if ((import.meta as any).env?.MODE === 'test') return false
     if (typeof window === 'undefined') return false
     if (new URLSearchParams(window.location.search).has('alphabet-lab')) return false
+    // e2e: вне Telegram SDK оставляет initData пустым — тест включает трекер явно.
+    if ((window as any).__lessonEventsOn === true) return true
     return initData() !== ''
   } catch { return false }
 }
@@ -95,8 +97,8 @@ function emit(event: LessonEventName, value?: number) {
 /** Ход одного урока: какой шаг сейчас — чтобы «пропустить» и «ушёл» знали, где это случилось. */
 export const lessonFlow = {
   /** Открыт стартовый экран урока (шаг 0). */
-  open(moduleId: string, lessonId: number) {
-    flow = { moduleId, lessonId, step: 0, kind: 'opener', ended: false, exited: false }
+  open(moduleId: string, lessonId: number, kind: StepKind = 'opener') {
+    flow = { moduleId, lessonId, step: 0, kind, ended: false, exited: false }
     emit('lesson_open')
   },
   /** Начался шаг урока; урок без open() (пришли сразу в практику) начинается здесь же. */

@@ -17,6 +17,16 @@ describe('alphabet lesson opener', () => {
     expect(onStart).toHaveBeenCalled()
   })
 
+  it('lesson 1 after the app intro: ა lies face up as «уже знаешь», two cards are new', () => {
+    localStorage.setItem('bombora_welcome_letters', JSON.stringify(['ა']))
+    render(<LessonOpener lessonId={1} onBack={() => {}} onStart={() => {}} details={null} />)
+    expect(screen.getByText('Одну букву ты уже знаешь, ещё 2 — новые')).toBeTruthy()
+    const known = document.querySelectorAll('[data-known="yes"]')
+    expect(known).toHaveLength(1)
+    expect(known[0].textContent).toBe('აуже знаешь')
+    localStorage.clear()
+  })
+
   it('keeps the theory behind «подробнее»', () => {
     render(<LessonOpener lessonId={1} onBack={() => {}} onStart={() => {}} details={<p>Теория урока</p>} />)
     fireEvent.click(screen.getByTestId('opener-more'))

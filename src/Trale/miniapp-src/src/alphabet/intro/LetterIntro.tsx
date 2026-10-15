@@ -34,8 +34,12 @@ const DEMO_MS = 2200
 const ERASE_R = 26
 const TRACE_R = 19
 
-export default function LetterIntro({ letter, index, count, fraction, onExit, onDone }: {
+export default function LetterIntro({ letter, index, count, fraction, onExit, onDone, recap = false, eyebrow }: {
   letter: string
+  /** Букву уже видели (в знакомстве с приложением) — короткое «вспомним»: сразу слово, звук и запись. */
+  recap?: boolean
+  /** Подпись сверху вместо «новая буква · N из M». */
+  eyebrow?: string
   /** Которая это буква урока (0-based) и сколько их всего — для подписи сверху. */
   index: number
   count: number
@@ -44,7 +48,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
   onDone: () => void
 }) {
   const intro = introOf(letter)
-  const [phase, setPhase] = useState<Phase>('reveal')
+  const [phase, setPhase] = useState<Phase>(recap ? 'done' : 'reveal')
   const [progress, setProgress] = useState(0)
   const [size, setSize] = useState(300)
   const box = useRef<HTMLDivElement>(null)
@@ -64,7 +68,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
     reveal: intro.action,
     demo: 'Как пишется',
     trace: 'Теперь ты',
-    done: 'Новая буква'
+    done: recap ? 'Вспомним букву' : 'Новая буква'
   }
 
   const audio = WORD_AUDIO[intro.word]
@@ -79,7 +83,7 @@ export default function LetterIntro({ letter, index, count, fraction, onExit, on
   }
 
   return (
-    <GameFrame title={titles[phase]} eyebrow={`новая буква · ${index + 1} из ${count}`} fraction={fraction} onExit={onExit}>
+    <GameFrame title={titles[phase]} eyebrow={eyebrow ?? (recap ? `уже знаешь · ${index + 1} из ${count}` : `новая буква · ${index + 1} из ${count}`)} fraction={fraction} onExit={onExit}>
       <div className="flex-1 flex flex-col items-center gap-4">
         <div ref={box} className="w-full flex justify-center">
           <Stage key={letter} intro={intro} size={size} phase={phase} replay={replay}
