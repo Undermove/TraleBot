@@ -82,6 +82,14 @@ export default function Passerby({ who, phase, stride, face, talking, wave }: Pa
         <path d="M-8 -129 L0 -116 L8 -129" fill="none" stroke={INK} strokeWidth={SW} strokeLinejoin="round" />
         {[-108, -96].map(y => <circle key={y} cx="0" cy={y} r="1.6" fill={INK} />)}
 
+        {/* Пекарша: белый фартук в муке. */}
+        {who.extra === 'baker' && (
+          <g>
+            <path d="M-17 -118 Q0 -122 17 -118 L20 -72 Q0 -66 -20 -72 Z" fill="#FDFAEF" stroke={INK} strokeWidth={SW} strokeLinejoin="round" />
+            <path d="M-12 -100 h24" stroke={INK} strokeWidth="1.4" opacity="0.4" />
+            {[[-8, -90], [6, -84], [-2, -78]].map(([x, y], k) => <circle key={k} cx={x} cy={y} r="1.6" fill="#E8DCC4" />)}
+          </g>
+        )}
         {/* Сумка через плечо. */}
         {who.extra === 'bag' && (
           <g>
@@ -124,6 +132,8 @@ export default function Passerby({ who, phase, stride, face, talking, wave }: Pa
               ? <path d="M-4 -141 h8" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />
               : <path d={face === 'smile' ? 'M-6 -143 Q0 -137 6 -143' : 'M-5 -142 Q0 -140 5 -142'} stroke={INK} strokeWidth="1.8" fill="none" strokeLinecap="round" />}
 
+        {/* Белая косынка пекарши. */}
+        {who.extra === 'baker' && <path d="M-18 -160 Q-17 -176 0 -176 Q17 -176 18 -160 Q10 -165 0 -165 Q-10 -165 -18 -160 Z" fill="#FDFAEF" stroke={INK} strokeWidth={SW} strokeLinejoin="round" />}
         {/* Очки и кепка. */}
         {who.extra === 'glasses' && (
           <g fill="none" stroke={INK} strokeWidth="1.8">

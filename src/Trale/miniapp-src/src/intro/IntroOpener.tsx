@@ -10,7 +10,7 @@ import { cyr } from '../verbs/types'
 
 /** Как сцена называется в плане урока на стартовом экране. */
 export const STEP_TITLE: Record<IntroStep['kind'], string> = {
-  phrase: 'Новые фразы', rule: 'Находка правила', yard: 'Дворик', walk: 'Прогулка', elevator: 'Лифт', party: 'Вечеринка',
+  phrase: 'Новые фразы', rule: 'Находка правила', yard: 'Дворик', walk: 'Прогулка', bakery: 'Пекарня', pingpong: 'Пинг-понг', elevator: 'Лифт', party: 'Вечеринка',
   magnets: 'Наклейки окончаний', reception: 'Ресепшн', detective: 'Кто есть кто', chat: 'Чат с Нино', taxi: 'Такси',
   family: 'Семейный альбом', havesort: 'Живое или вещь', aboutme: 'Обо мне', supra: 'Супра'
 }

@@ -25,7 +25,7 @@ public partial class RecordLessonEvents : IRequest<int>
         // Знакомство с приложением (ModuleId "onboarding").
         "greeting", "first-word", "tour", "celebration",
         // «Знакомство» (ModuleId "intro").
-        "new-phrase", "rule", "yard", "walk", "elevator", "party", "magnets", "border", "reception", "detective", "chat", "taxi",
+        "new-phrase", "rule", "yard", "walk", "bakery", "pingpong", "elevator", "party", "magnets", "border", "reception", "detective", "chat", "taxi",
         "family", "havesort", "aboutme", "supra"
     };
 

@@ -43,7 +43,7 @@ export interface Who {
   skin: string
   hair: string
   /** Сумка, очки, кепка — чтобы знакомые не были на одно лицо. */
-  extra: 'bag' | 'glasses' | 'cap' | 'none'
+  extra: 'bag' | 'glasses' | 'cap' | 'none' | 'baker'
   /** Каким голосом говорит. */
   voice: 'f' | 'm'
 }

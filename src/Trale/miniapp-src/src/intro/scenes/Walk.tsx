@@ -397,7 +397,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
   )
 }
 
-function SpeechBubble({ id, hint, mine, tail }: { id: string; hint: boolean; mine?: boolean; tail?: 'down' }) {
+export function SpeechBubble({ id, hint, mine, tail }: { id: string; hint: boolean; mine?: boolean; tail?: 'down' }) {
   const p = phrase(id)
   return (
     <div className={`relative rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 text-center whitespace-nowrap ${mine ? 'bg-navy text-cream' : 'bg-cream-tile'}`} style={{ boxShadow: '2px 3px 0 #15100A' }}>

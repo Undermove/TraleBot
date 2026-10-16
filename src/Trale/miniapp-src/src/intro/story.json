@@ -615,7 +615,7 @@
           "kind": "phrase"
         },
         {
-          "kind": "elevator",
+          "kind": "bakery",
           "mode": "howareyou"
         }
       ]
@@ -637,7 +637,7 @@
           "rule": "echo"
         },
         {
-          "kind": "elevator",
+          "kind": "pingpong",
           "mode": "echo"
         }
       ]
@@ -666,7 +666,7 @@
     {
       "id": 6,
       "act": 1,
-      "title": "Целый день во дворе",
+      "title": "Прогулка по Батуми",
       "goal": "Повторить первый акт.",
       "new": [
         "gagimarjos"
@@ -676,12 +676,8 @@
           "kind": "phrase"
         },
         {
-          "kind": "yard",
+          "kind": "walk",
           "mode": "full"
-        },
-        {
-          "kind": "elevator",
-          "mode": "mix"
         }
       ]
     },
