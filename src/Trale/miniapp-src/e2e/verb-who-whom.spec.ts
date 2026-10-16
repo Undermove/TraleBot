@@ -83,6 +83,13 @@ test('the badge under the title opens the rule', async ({ page }) => {
   await expect(page.getByTestId('who-whom-ru')).toHaveText('я бужу тебя')
 })
 
+test('kind badge opens the explanation right under it', async ({ page }) => {
+  await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('აღვიძებს')}`)
+  await page.getByTestId('verb-why').click()
+  await expect(page.getByTestId('verb-why-panel')).toBeInViewport()
+  if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/ww-why.png` }) }
+})
+
 test('verbs without a second person get no line', async ({ page }) => {
   await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('წერს')}`)
   await expect(page.getByTestId('verb-tense-present')).toBeVisible()

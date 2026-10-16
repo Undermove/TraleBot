@@ -73,11 +73,12 @@ describe('VerbSheet', () => {
     expect(localStorage.length).toBe(0)
   })
 
-  it('hides the explanation behind «как устроен этот глагол», below the table, and opens the model verb in the same sheet', async () => {
+  it('shows the kind of verb as a badge above the table; the explanation opens from it and leads to the model verb', async () => {
     const { fetchVerb } = await import('../api')
     open()
     await waitFor(() => screen.getByTestId('verb-why'))
-    expect(screen.getByTestId('verb-tense-present').compareDocumentPosition(screen.getByTestId('verb-why')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByTestId('verb-why').textContent).toContain('по образцу')
+    expect(screen.getByTestId('verb-why').compareDocumentPosition(screen.getByTestId('verb-tense-present')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByText(/Спрягается как/)).toBeNull()
 
     fireEvent.click(screen.getByTestId('verb-why'))
