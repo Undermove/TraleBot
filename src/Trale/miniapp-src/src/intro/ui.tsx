@@ -217,3 +217,38 @@ export function Pill({ children, testId }: { children: React.ReactNode; testId?:
     </span>
   )
 }
+
+// ── Слова сцены ───────────────────────────────────────────────────────────────────────────────────
+// Слово ситуации (story.json → lessons[].scene) появляется там, где оно в жизни: на ценнике, табличке,
+// в реплике. Впервые — карточкой «новое слово» с переводом и записью; потом — просто словом в разговоре.
+
+/**
+ * Карточка нового слова: грузинское, как звучит, перевод. Появляется пружиной и сразу звучит; нажми —
+ * прозвучит ещё раз. Слово из алфавита подписано «знаешь по алфавиту». Где стоять — решает сцена (className).
+ */
+export function NewWord({ word, className = '', style, onTap, testId = 'new-word' }: {
+  word: Phrase; className?: string; style?: React.CSSProperties; onTap?: () => void; testId?: string
+}) {
+  React.useEffect(() => { say(word) }, [word.id])
+  return (
+    <button type="button" data-testid={testId} data-word={word.id}
+      onClick={() => { haptic('tap'); say(word); onTap?.() }}
+      className={`zn-pop rounded-2xl border-[1.5px] border-jewelInk bg-gold-wash px-3 py-1.5 text-left leading-tight ${className}`}
+      style={{ boxShadow: '3px 3px 0 #15100A', ...style }}>
+      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-jewelInk-mid">{word.alphabet ? 'знаешь по алфавиту' : 'новое слово'}</span>
+      <span className="block font-geo text-[19px] font-bold">{word.geo}</span>
+      <span className="block text-[11px] font-semibold text-jewelInk-hint">{cyr(word.geo)} — {word.ru}</span>
+    </button>
+  )
+}
+
+/** Маленькая подпись-слово на предмете (ценник, табличка, кнопка): грузинское и перевод, нажми — прозвучит. */
+export function WordTag({ word, className = '', testId }: { word: Phrase; className?: string; testId?: string }) {
+  return (
+    <button type="button" data-testid={testId} onClick={() => { haptic('tap'); say(word) }}
+      className={`inline-flex flex-col items-center rounded-lg border-[1.5px] border-jewelInk bg-cream-tile px-1.5 py-0.5 leading-none ${className}`}>
+      <span className="font-geo text-[13px] font-bold">{word.geo}</span>
+      <span className="text-[9px] font-semibold text-jewelInk-hint mt-0.5">{word.ru}</span>
+    </button>
+  )
+}

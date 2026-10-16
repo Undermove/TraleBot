@@ -1,5 +1,5 @@
 {
-  "_comment": "Модуль «Знакомство» как одна история. Источник правды и для мини-аппа (сцены, игры), и для бэкенда: tools/intro_story.py собирает из этого файла теорию уроков (MiniAppContentProvider.cs, BuildIntroModule) и вопросы проверки (Lessons/GeorgianVocabIntro/questions{N}.json, кроме урока 1). Каждая грузинская фраза — с источником: урок или теория TraleBot (верный ответ, не вариант-ловушка) либо открытая страница Викисловаря.",
+  "_comment": "Модуль «Знакомство» как одна история. Источник правды и для мини-аппа (сцены, игры), и для бэкенда: tools/intro_story.py собирает из этого файла теорию уроков (MiniAppContentProvider.cs, BuildIntroModule) и вопросы проверки (Lessons/GeorgianVocabIntro/questions{N}.json, кроме урока 1). Каждая грузинская фраза — с источником: урок или теория TraleBot (верный ответ, не вариант-ловушка) либо открытая страница Викисловаря. Слова сцены (lessons[].scene) — слова ситуации, которые встречаются по ходу игры урока (ценник, табличка, реплика собеседника): их слышно и видно с переводом, в финале они отдельной строкой, в проверку не идут. alphabet: true — слово уже было в уроках алфавита.",
   "phrases": {
     "gamarjoba": {
       "geo": "გამარჯობა",
@@ -524,6 +524,237 @@
       "geo": "გაუმარჯოს საქართველოს!",
       "ru": "да здравствует Грузия!",
       "src": "https://en.wiktionary.org/wiki/გაუმარჯოს — пример «გაუმარჯოს საქართველოს! — Long live Georgia!»"
+    },
+    "puri": {
+      "geo": "პური",
+      "ru": "хлеб",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); Lessons/GeorgianVocabCafe/questions.json lexicon",
+      "alphabet": true
+    },
+    "khachapuri": {
+      "geo": "ხაჭაპური",
+      "ru": "хачапури",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); Lessons/GeorgianVocabShopping/questions2.json lexicon",
+      "alphabet": true
+    },
+    "gtkhovt": {
+      "geo": "გთხოვთ",
+      "ru": "пожалуйста (просьба)",
+      "src": "Lessons/GeorgianVocabCafe/questions2.json lexicon: «გთხოვთ — пожалуйста (просьба)»"
+    },
+    "dzalian_kargad": {
+      "geo": "ძალიან კარგად",
+      "ru": "очень хорошо",
+      "src": "https://en.wiktionary.org/wiki/ძალიან; Lessons/GeorgianVocabIntro урок 1: კარგად",
+      "words": [
+        [
+          "ძალიან",
+          "очень"
+        ],
+        [
+          "კარგად",
+          "хорошо"
+        ]
+      ]
+    },
+    "mets_kargad": {
+      "geo": "მეც კარგად",
+      "ru": "я тоже хорошо",
+      "src": "Verbs/verbs.json пример «მეც ვცხოვრობდი ბოსტონში» (მეც — я тоже); კარგად — Знакомство, урок 1",
+      "words": [
+        [
+          "მეც",
+          "я тоже"
+        ],
+        [
+          "კარგად",
+          "хорошо"
+        ]
+      ]
+    },
+    "kidev": {
+      "geo": "კიდევ?",
+      "ru": "ещё?",
+      "src": "https://en.wiktionary.org/wiki/კიდევ; MiniAppContentProvider.cs «კიდევ ერთი — ещё один»"
+    },
+    "gachereba": {
+      "geo": "გაჩერება",
+      "ru": "остановка",
+      "src": "Lessons/GeorgianVocabTaxi/questions.json lexicon: «გაჩერება — остановка»"
+    },
+    "gamicheret": {
+      "geo": "გამიჩერეთ!",
+      "ru": "остановите!",
+      "src": "components/ModulePhraseBanner.tsx: «გამიჩერეთ! — остановите!»"
+    },
+    "aq": {
+      "geo": "აქ",
+      "ru": "здесь",
+      "src": "https://en.wiktionary.org/wiki/აქ"
+    },
+    "zghva": {
+      "geo": "ზღვა",
+      "ru": "море",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); https://en.wiktionary.org/wiki/ზღვა",
+      "alphabet": true
+    },
+    "chai": {
+      "geo": "ჩაი",
+      "ru": "чай",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); Lessons/GeorgianVocabCafe/questions.json lexicon",
+      "alphabet": true
+    },
+    "qava": {
+      "geo": "ყავა",
+      "ru": "кофе",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); Lessons/GeorgianVocabCafe/questions.json lexicon",
+      "alphabet": true
+    },
+    "tskali": {
+      "geo": "წყალი",
+      "ru": "вода",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); Lessons/GeorgianVocabCafe/questions.json lexicon",
+      "alphabet": true
+    },
+    "minda": {
+      "geo": "მინდა",
+      "ru": "хочу",
+      "src": "Lessons/GeorgianVocabCafe/questions2.json lexicon: «მინდა — хочу / я хочу»"
+    },
+    "pasporti": {
+      "geo": "პასპორტი",
+      "ru": "паспорт",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); https://en.wiktionary.org/wiki/პასპორტი",
+      "alphabet": true
+    },
+    "gasaghebi": {
+      "geo": "გასაღები",
+      "ru": "ключ",
+      "src": "MiniAppContentProvider.cs: «გასაღები — ключ»; https://en.wiktionary.org/wiki/გასაღები"
+    },
+    "otakhi": {
+      "geo": "ოთახი",
+      "ru": "комната",
+      "src": "Lessons/GeorgianPostpositions/questions3.json lexicon: «ოთახი — комната»"
+    },
+    "ghvino": {
+      "geo": "ღვინო",
+      "ru": "вино",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); Lessons/GeorgianVocabCafe/questions.json lexicon",
+      "alphabet": true
+    },
+    "gemrielia": {
+      "geo": "გემრიელია!",
+      "ru": "вкусно!",
+      "src": "Lessons/GeorgianVocabCafe/questions3.json: «ძალიან გემრიელია!» (верный ответ); გემრიელი — вкусный, lexicon"
+    },
+    "amanati": {
+      "geo": "ამანათი",
+      "ru": "посылка",
+      "src": "https://en.wiktionary.org/wiki/ამანათი"
+    },
+    "es_shenia": {
+      "geo": "ეს შენია?",
+      "ru": "это твоё?",
+      "src": "MiniAppContentProvider.cs: «ეს ჩემი წიგნია, ის შენია — Эта книга моя, та твоя»; ეს — vocab small",
+      "words": [
+        [
+          "ეს",
+          "это"
+        ],
+        [
+          "შენია",
+          "твоё"
+        ]
+      ]
+    },
+    "marjvniv": {
+      "geo": "მარჯვნივ",
+      "ru": "направо",
+      "src": "Lessons/GeorgianVocabTaxi/questions2.json lexicon"
+    },
+    "marcxniv": {
+      "geo": "მარცხნივ",
+      "ru": "налево",
+      "src": "Lessons/GeorgianVocabTaxi/questions2.json lexicon"
+    },
+    "pirdapir": {
+      "geo": "პირდაპირ",
+      "ru": "прямо",
+      "src": "Lessons/GeorgianVocabTaxi/questions2.json lexicon"
+    },
+    "gaachere": {
+      "geo": "გააჩერე",
+      "ru": "останови здесь",
+      "src": "Lessons/GeorgianVocabTaxi/questions2.json lexicon: «გააჩერე — останови здесь»"
+    },
+    "ramdeni_ghirs": {
+      "geo": "რამდენი ღირს?",
+      "ru": "сколько стоит?",
+      "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon: «რამდენი ღირს — сколько стоит»",
+      "words": [
+        [
+          "რამდენი",
+          "сколько"
+        ],
+        [
+          "ღირს",
+          "стоит"
+        ]
+      ]
+    },
+    "lari": {
+      "geo": "ლარი",
+      "ru": "лари",
+      "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon: «ლარი — лари (грузинская валюта)»"
+    },
+    "bebia": {
+      "geo": "ბებია",
+      "ru": "бабушка",
+      "src": "https://en.wiktionary.org/wiki/ბებია; Lessons/GeorgianVersionVowels/questions5.json «ბებიას»"
+    },
+    "babua": {
+      "geo": "ბაბუა",
+      "ru": "дедушка",
+      "src": "https://en.wiktionary.org/wiki/ბაბუა; MiniAppContentProvider.cs"
+    },
+    "foto": {
+      "geo": "ფოტო",
+      "ru": "фото",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); https://en.wiktionary.org/wiki/ფოტო",
+      "alphabet": true
+    },
+    "chemodani": {
+      "geo": "ჩემოდანი",
+      "ru": "чемодан",
+      "src": "https://en.wiktionary.org/wiki/ჩემოდანი"
+    },
+    "telefoni": {
+      "geo": "ტელეფონი",
+      "ru": "телефон",
+      "src": "alphabet/games/data.ts (слова уроков алфавита); https://en.wiktionary.org/wiki/ტელეფონი",
+      "alphabet": true
+    },
+    "kata": {
+      "geo": "კატა",
+      "ru": "кошка",
+      "src": "alphabet/games/data.ts (слова уроков алфавита)",
+      "alphabet": true
+    },
+    "khinkali": {
+      "geo": "ხინკალი",
+      "ru": "хинкали",
+      "src": "Lessons/GeorgianVocabShopping/questions2.json lexicon"
+    },
+    "churchkhela": {
+      "geo": "ჩურჩხელა",
+      "ru": "чурчхела",
+      "src": "Lessons/GeorgianVocabShopping/questions2.json lexicon"
+    },
+    "tamada": {
+      "geo": "თამადა",
+      "ru": "тамада (глава застолья)",
+      "src": "https://en.wiktionary.org/wiki/თამადა; Infrastructure/Telegram/Services/GeorgianDidYouKnow.cs"
     }
   },
   "acts": [
@@ -610,6 +841,11 @@
         "rogor",
         "kargad_madloba"
       ],
+      "scene": [
+        "puri",
+        "khachapuri",
+        "gtkhovt"
+      ],
       "steps": [
         {
           "kind": "phrase"
@@ -627,6 +863,11 @@
       "goal": "Ответить и спросить в ответ.",
       "new": [
         "kargad_shen"
+      ],
+      "scene": [
+        "dzalian_kargad",
+        "mets_kargad",
+        "kidev"
       ],
       "steps": [
         {
@@ -653,6 +894,11 @@
         "ki",
         "ara"
       ],
+      "scene": [
+        "gachereba",
+        "gamicheret",
+        "aq"
+      ],
       "steps": [
         {
           "kind": "phrase"
@@ -670,6 +916,9 @@
       "goal": "Повторить первый акт.",
       "new": [
         "gagimarjos"
+      ],
+      "scene": [
+        "zghva"
       ],
       "steps": [
         {
@@ -689,6 +938,12 @@
       "new": [
         "me_mkvia",
         "me_mkvia_karlosi"
+      ],
+      "scene": [
+        "chai",
+        "qava",
+        "tskali",
+        "minda"
       ],
       "steps": [
         {
@@ -726,6 +981,11 @@
         "ra_gkvia",
         "me_mkvia_nino"
       ],
+      "scene": [
+        "pasporti",
+        "gasaghebi",
+        "otakhi"
+      ],
       "steps": [
         {
           "kind": "phrase"
@@ -743,6 +1003,10 @@
       "goal": "Познакомиться по всем правилам.",
       "new": [
         "sasiamovnoa"
+      ],
+      "scene": [
+        "ghvino",
+        "gemrielia"
       ],
       "steps": [
         {
@@ -851,6 +1115,10 @@
       "title": "Кто откуда",
       "goal": "Понять на слух, кто откуда.",
       "new": [],
+      "scene": [
+        "amanati",
+        "es_shenia"
+      ],
       "steps": [
         {
           "kind": "detective",
@@ -906,6 +1174,12 @@
       "goal": "Поговорить с таксистом о себе.",
       "new": [
         "kutaisshi"
+      ],
+      "scene": [
+        "marjvniv",
+        "marcxniv",
+        "pirdapir",
+        "gaachere"
       ],
       "steps": [
         {
@@ -963,6 +1237,10 @@
       "new": [
         "vmushaob"
       ],
+      "scene": [
+        "ramdeni_ghirs",
+        "lari"
+      ],
       "steps": [
         {
           "kind": "phrase"
@@ -1018,6 +1296,11 @@
         "mama",
         "ojakhi"
       ],
+      "scene": [
+        "bebia",
+        "babua",
+        "foto"
+      ],
       "steps": [
         {
           "kind": "phrase"
@@ -1061,6 +1344,9 @@
         "myavs_da",
         "myavs_dzaghli"
       ],
+      "scene": [
+        "kata"
+      ],
       "steps": [
         {
           "kind": "phrase"
@@ -1082,6 +1368,10 @@
       "goal": "Отличить «есть» для людей и для вещей.",
       "new": [
         "makvs_manqana"
+      ],
+      "scene": [
+        "chemodani",
+        "telefoni"
       ],
       "steps": [
         {
@@ -1170,6 +1460,11 @@
       "new": [
         "gaumarjos",
         "gaumarjos_sakartvelos"
+      ],
+      "scene": [
+        "khinkali",
+        "churchkhela",
+        "tamada"
       ],
       "steps": [
         {
@@ -1408,6 +1703,58 @@
         "geo": "ის",
         "ru": "он/она",
         "src": "Lessons/GeorgianPronouns/questions.json pron1_q09"
+      }
+    ],
+    "numbers": [
+      {
+        "geo": "ერთი",
+        "ru": "один",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "ორი",
+        "ru": "два",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "სამი",
+        "ru": "три",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "ოთხი",
+        "ru": "четыре",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "ხუთი",
+        "ru": "пять",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "ექვსი",
+        "ru": "шесть",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "შვიდი",
+        "ru": "семь",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "რვა",
+        "ru": "восемь",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "ცხრა",
+        "ru": "девять",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
+      },
+      {
+        "geo": "ათი",
+        "ru": "десять",
+        "src": "Lessons/GeorgianVocabShopping/questions3.json lexicon"
       }
     ]
   }

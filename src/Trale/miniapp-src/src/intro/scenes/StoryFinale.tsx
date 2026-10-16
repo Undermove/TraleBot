@@ -5,7 +5,7 @@ import { speak } from '../voice'
 import Button from '../../components/Button'
 import Mascot from '../../components/Mascot'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
-import { ACTS, INTRO_LESSONS, INTRO_TOTAL, actOf, newPhrases, type IntroLesson } from '../story'
+import { ACTS, INTRO_LESSONS, INTRO_TOTAL, actOf, newPhrases, sceneWords, type IntroLesson } from '../story'
 import '../../alphabet/games/alphabet.css'
 
 /**
@@ -38,6 +38,20 @@ export default function StoryFinale({ lesson, onNext }: { lesson: IntroLesson; o
               transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.35 + k * 0.12 }} whileTap={{ scale: 0.95 }}>
               <b className="font-geo block leading-tight">{p.geo}</b>
               <span className="block text-[11px] text-jewelInk-hint leading-tight">{cyr(p.geo)} — {p.ru}</span>
+            </motion.button>
+          ))}
+        </div>
+      )}
+      {sceneWords(lesson).length > 0 && (
+        <div className="flex flex-wrap justify-center items-center gap-1.5" data-testid="finale-scene-words">
+          {/* Слова, которые встретились по ходу сцены: мельче, без карточек. */}
+          <span className="text-[11px] font-bold text-jewelInk-hint">ещё по ходу:</span>
+          {sceneWords(lesson).map((p, k) => (
+            <motion.button key={p.id} data-testid="finale-scene-word" onClick={() => { haptic('tap'); void speak(p.id) }}
+              className="rounded-full border-[1.5px] border-jewelInk/40 bg-cream px-2 py-0.5 text-[12px]"
+              initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.6 + newPhrases(lesson).length * 0.12 + k * 0.08 }} whileTap={{ scale: 0.95 }}>
+              <b className="font-geo">{p.geo}</b> <span className="text-jewelInk-hint">{p.ru}</span>
             </motion.button>
           ))}
         </div>

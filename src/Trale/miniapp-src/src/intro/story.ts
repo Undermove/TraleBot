@@ -15,6 +15,8 @@ export interface Phrase {
   src: string
   /** Разбор фразы по словам: [грузинское слово, перевод]. */
   words?: [string, string][]
+  /** Слово уже было в уроках алфавита. */
+  alphabet?: boolean
 }
 
 export type RuleId = 'time' | 'echo' | 'name' | 'from' | 'in' | 'da' | 'have'
@@ -46,6 +48,8 @@ export interface IntroLesson {
   goal: string
   /** Новые фразы урока (id из phrases). */
   new: string[]
+  /** Слова сцены: слова ситуации, которые встречаются по ходу игры урока (ценник, табличка, реплика). В проверку не идут. */
+  scene?: string[]
   steps: IntroStep[]
 }
 
@@ -76,12 +80,21 @@ export function phrase(id: string): Phrase {
 /** Новые фразы урока. */
 export const newPhrases = (lesson: IntroLesson): Phrase[] => lesson.new.map(phrase)
 
+/** Слова сцены урока. */
+export const sceneWords = (lesson: IntroLesson): Phrase[] => (lesson.scene ?? []).map(phrase)
+
 /** Всё, что человек уже встретил к концу этого урока (включая его новые фразы). */
 export function knownPhrases(lessonId: number): Phrase[] {
   return INTRO_LESSONS.filter(l => l.id <= lessonId).flatMap(l => l.new).map(phrase)
 }
 
 export const knows = (lessonId: number, id: string) => INTRO_LESSONS.some(l => l.id <= lessonId && l.new.includes(id))
+
+/** Человек уже встречал это слово сцены (в этом уроке или раньше) — сцена может им пользоваться. */
+export const met = (lessonId: number, id: string) => knows(lessonId, id) || INTRO_LESSONS.some(l => l.id <= lessonId && (l.scene ?? []).includes(id))
+
+/** Слово сцены встречается впервые именно в этом уроке — сцена знакомит с ним (показывает перевод, даёт послушать). */
+export const firstMet = (lessonId: number, id: string) => met(lessonId, id) && !met(lessonId - 1, id)
 
 /** Сколько вопросов в проверке в конце урока. */
 export const EXAM_SIZE = 5
@@ -164,7 +177,7 @@ export interface Word { geo: string; ru: string; src: string }
 
 const V = story.vocab as unknown as {
   names: Record<string, string>
-  countries: Country[]; cities: City[]; jobs: Word[]; alive: Word[]; things: Word[]; people: Word[]; small: Word[]
+  countries: Country[]; cities: City[]; jobs: Word[]; alive: Word[]; things: Word[]; people: Word[]; small: Word[]; numbers: Word[]
 }
 /** Грузинские имена → как по-русски. */
 export const NAMES: Record<string, string> = Object.fromEntries(Object.entries(V.names).filter(([k]) => !k.startsWith('_')))
@@ -178,6 +191,8 @@ export const ALIVE: Word[] = V.alive
 export const THINGS: Word[] = V.things
 export const PEOPLE: Word[] = V.people
 export const SMALL: Word[] = V.small
+/** Числа 1–10: счёт, цена, номер комнаты. */
+export const NUMBERS: Word[] = V.numbers
 
 // ── Герой истории ─────────────────────────────────────────────────────────────────────────────────
 // Ученик в истории — студент, который приехал учиться в Батуми. Это видно на карточке «Ты» перед играми,

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 // @ts-ignore
 import { join } from 'node:path'
-import { ALIVE, CITIES, COUNTRIES, INTRO_LESSONS, JOBS, NAME_LIST, PEOPLE, PHRASES, SMALL, THINGS, geoName } from './story'
+import { ALIVE, CITIES, COUNTRIES, INTRO_LESSONS, JOBS, NAME_LIST, NUMBERS, PEOPLE, PHRASES, SMALL, THINGS, geoName } from './story'
 
 // Весь грузинский в «Знакомстве» — из story.json: фразы (phrases) и словарик (vocab), у каждой записи источник.
 // Тест собирает все грузинские слова из кода сцен и требует, чтобы каждое было в story.json.
@@ -16,7 +16,7 @@ const ALLOWED = new Set<string>([
   ...NAME_LIST,
   ...COUNTRIES.flatMap(c => [c.base, c.from]),
   ...CITIES.flatMap(c => [c.base, c.in]),
-  ...[...JOBS, ...ALIVE, ...THINGS, ...PEOPLE, ...SMALL].flatMap(w => words(w.geo)),
+  ...[...JOBS, ...ALIVE, ...THINGS, ...PEOPLE, ...SMALL, ...NUMBERS].flatMap(w => words(w.geo)),
   // Одиночные буквы и окончания, которые сцены показывают как часть правила.
   'ი', 'ში', 'დან'
 ])
@@ -31,14 +31,23 @@ function files(dir: string): string[] {
 describe('story.json', () => {
   it('у каждой фразы и слова есть источник', () => {
     for (const p of Object.values(PHRASES)) expect(p.src, p.id).toMatch(/\S{8,}/)
-    for (const w of [...JOBS, ...ALIVE, ...THINGS, ...PEOPLE, ...SMALL, ...COUNTRIES, ...CITIES]) expect(w.src).toMatch(/\S{4,}/)
+    for (const w of [...JOBS, ...ALIVE, ...THINGS, ...PEOPLE, ...SMALL, ...NUMBERS, ...COUNTRIES, ...CITIES]) expect(w.src).toMatch(/\S{4,}/)
   })
   it('уроки идут подряд с 1, у каждого есть сцены, все новые фразы существуют', () => {
     INTRO_LESSONS.forEach((l, i) => {
       expect(l.id).toBe(i + 1)
       expect(l.steps.length).toBeGreaterThan(0)
       for (const id of l.new) expect(PHRASES[id], `${l.id}: ${id}`).toBeDefined()
+      for (const id of l.scene ?? []) expect(PHRASES[id], `${l.id}: слово сцены ${id}`).toBeDefined()
     })
+  })
+  it('слово сцены вводится один раз и не дублирует новые фразы урока', () => {
+    const seen = new Set<string>()
+    for (const l of INTRO_LESSONS) for (const id of l.scene ?? []) {
+      expect(seen.has(id), `${l.id}: ${id}`).toBe(false)
+      expect(INTRO_LESSONS.some(m => m.new.includes(id)), `${l.id}: ${id}`).toBe(false)
+      seen.add(id)
+    }
   })
   it('сцена «Новая фраза» есть только там, где есть новые фразы', () => {
     for (const l of INTRO_LESSONS) {
