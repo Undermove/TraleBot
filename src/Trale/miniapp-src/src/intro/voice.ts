@@ -26,5 +26,15 @@ export async function speak(id: string, voice?: Voice): Promise<void> {
   if (rest > 0 && mine === turn) await new Promise(r => setTimeout(r, rest))
 }
 
+/** Сказать запись по адресу (реплика собрана из слов: «მე მქვია ლუკა.») и дождаться конца. */
+export async function speakUrl(url: string | undefined, geo: string): Promise<void> {
+  const mine = ++turn
+  stopClips()
+  const started = Date.now()
+  if (url && !isMuted()) await playClipToEnd(url)
+  const rest = readingMs(geo) - (Date.now() - started)
+  if (rest > 0 && mine === turn) await new Promise(r => setTimeout(r, rest))
+}
+
 /** Замолчать (сцена закрылась, человек ушёл). */
 export function hush() { turn++; stopClips() }

@@ -529,8 +529,8 @@
   "acts": [
     {
       "id": 1,
-      "title": "Двор",
-      "story": "Ты студент и только что приехал учиться в Батуми. Первые встречи у подъезда."
+      "title": "Улица",
+      "story": "Ты студент и только что приехал учиться в Батуми. Первые встречи на улице."
     },
     {
       "id": 2,
@@ -735,7 +735,7 @@
           "kind": "phrase"
         },
         {
-          "kind": "border",
+          "kind": "reception",
           "mode": "names"
         }
       ]
@@ -789,7 +789,7 @@
           "script": "act2"
         },
         {
-          "kind": "border",
+          "kind": "reception",
           "mode": "names"
         }
       ]
@@ -809,7 +809,7 @@
           "kind": "phrase"
         },
         {
-          "kind": "border",
+          "kind": "reception",
           "mode": "listen"
         }
       ]
@@ -839,12 +839,12 @@
     {
       "id": 15,
       "act": 3,
-      "title": "Смена на границе",
+      "title": "Смена на ресепшене",
       "goal": "Самому спросить имя и страну.",
       "new": [],
       "steps": [
         {
-          "kind": "border",
+          "kind": "reception",
           "mode": "ask"
         }
       ]
@@ -1003,7 +1003,7 @@
       "new": [],
       "steps": [
         {
-          "kind": "border",
+          "kind": "reception",
           "mode": "full"
         },
         {

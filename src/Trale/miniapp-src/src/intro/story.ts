@@ -27,7 +27,7 @@ export type IntroStep =
   | { kind: 'elevator'; mode: 'howareyou' | 'echo' | 'polite' | 'mix' }
   | { kind: 'party'; mode: 'names' | 'full' | 'who' | 'jobs' }
   | { kind: 'magnets'; set: 'name' | 'from' | 'in' | 'both' }
-  | { kind: 'border'; mode: 'names' | 'listen' | 'ask' | 'full' }
+  | { kind: 'reception'; mode: 'names' | 'listen' | 'ask' | 'full' }
   | { kind: 'detective'; mode: 'from' | 'jobs' }
   | { kind: 'chat'; script: 'act2' | 'act3' | 'act4' | 'act6' }
   | { kind: 'taxi'; mode: 'where' | 'work' }
