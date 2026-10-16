@@ -6,7 +6,7 @@ import { OVERLAY, useOverlay } from '../ui/overlayStack'
 import { useSheetDrag } from '../ui/useSheetDrag'
 import { haptic } from '../../alphabet/games/fx'
 import '../../alphabet/games/alphabet.css'
-import { ATTESTED, WHOMS, WHOS, WHO_WHOM_TENSES, WHO_WHOM_VERBS, flip, formFor, possible, sameSpelling, whomOf, type Cell, type Whom } from './logic'
+import { ATTESTED, WHOMS, WHOS, WHO_WHOM_TENSES, flip, formFor, possible, sameSpelling, whomOf, type Cell, type Whom } from './logic'
 
 /** Слово с подсвеченной меткой «кого». */
 function Marked({ cell, className = '' }: { cell: Cell; className?: string }) {
@@ -29,8 +29,7 @@ function Marked({ cell, className = '' }: { cell: Cell; className?: string }) {
  * и букву в его начале, которая говорит «кого». ⇄ меняет стороны: «я → его» становится «он → меня».
  */
 export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onClose: () => void }) {
-  const [lemma, setLemma] = useState(verbId)
-  const [verbs, setVerbs] = useState<Record<string, VerbDto>>({})
+  const [verb, setVerb] = useState<VerbDto | null>(null)
   const [who, setWho] = useState(0)
   const [whom, setWhom] = useState<Whom>('you')
   const [spin, setSpin] = useState(0)
@@ -39,8 +38,8 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
 
   useEffect(() => { requestAnimationFrame(() => setVisible(true)) }, [])
   useEffect(() => {
-    WHO_WHOM_VERBS.forEach(id => fetchVerb(id).then(v => setVerbs(all => ({ ...all, [id]: v }))).catch(() => {}))
-  }, [])
+    fetchVerb(verbId).then(setVerb).catch(() => {})
+  }, [verbId])
 
   function close() {
     setVisible(false)
@@ -49,8 +48,6 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
   useOverlay(close, OVERLAY.help)
   const drag = useSheetDrag(panel, close)
 
-  const verb = verbs[lemma]
-  const order = [lemma, ...WHO_WHOM_VERBS.filter(v => v !== lemma)]
 
   function pickWho(p: number) {
     haptic('tap')
@@ -87,7 +84,7 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
         <div className="px-5 flex flex-col gap-3" style={{ paddingBottom: 'calc(var(--safe-b) + 20px)' }}>
           <div className="text-center">
             <div className="mn-eyebrow text-navy">правило</div>
-            <h2 className="text-[24px] font-extrabold leading-tight">Кто кого</h2>
+            <h2 className="text-[24px] font-extrabold leading-tight">Кто кого{verb && <span className="text-navy"> · {verb.ru}</span>}</h2>
             <p className="mt-1 text-[13px] text-jewelInk-soft">
               Грузинский глагол говорит не только <b>кто</b>, но и <b>кого</b> — буквой в начале слова.
             </p>
@@ -99,16 +96,6 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
               <span key={ru} className="rounded-full border-[1.5px] border-jewelInk bg-cream-tile px-2.5 py-0.5 font-bold">
                 <span className="font-geo text-ruby">{m}</span> {ru}
               </span>
-            ))}
-          </div>
-
-          {/* Глагол: этот и ещё три, на которых правило то же. */}
-          <div className="flex gap-1.5 overflow-x-auto -mx-5 px-5 pb-1" data-testid="who-whom-verbs">
-            {order.map(id => (
-              <button key={id} onClick={() => { haptic('tap'); setLemma(id) }}
-                className={`shrink-0 rounded-lg border-[1.5px] border-jewelInk px-2.5 py-1 text-[12px] font-bold ${id === lemma ? 'bg-navy text-cream' : 'bg-cream-tile'}`}>
-                {verbs[id]?.ru ?? '…'}
-              </button>
             ))}
           </div>
 
