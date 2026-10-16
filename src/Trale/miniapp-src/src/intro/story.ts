@@ -23,6 +23,7 @@ export type IntroStep =
   | { kind: 'phrase' }
   | { kind: 'rule'; rule: RuleId }
   | { kind: 'yard'; mode: 'hello' | 'day' | 'full' }
+  | { kind: 'walk'; mode: 'hello' | 'day' | 'full' }
   | { kind: 'elevator'; mode: 'howareyou' | 'echo' | 'polite' | 'mix' }
   | { kind: 'party'; mode: 'names' | 'full' | 'who' | 'jobs' }
   | { kind: 'magnets'; set: 'name' | 'from' | 'in' | 'both' }

@@ -28,3 +28,14 @@
   .zn-pop, .zn-shake, .zn-jump, .zn-in-left, .zn-in-right, .zn-stamp, .zn-bob, .zn-dots i { animation: none }
   .zn-out-left, .zn-out-right, .zn-fall { animation: none; opacity: 0 }
 }
+
+/* «Прогулка»: лицо и рука знакомого. fill-box — чтобы точка вращения была у самой детали, где бы на
+   улице ни стоял человек. */
+.zw-blink, .zw-talk, .zw-wave { transform-box: fill-box; }
+.zw-blink { transform-origin: 50% 50%; animation: zw-blink 4.2s infinite; }
+@keyframes zw-blink { 0%, 93%, 100% { transform: scaleY(1) } 96% { transform: scaleY(0.1) } }
+.zw-talk { transform-origin: 50% 50%; animation: zw-talk 180ms ease-in-out infinite alternate; }
+@keyframes zw-talk { from { transform: scaleY(0.35) } to { transform: scaleY(1.15) } }
+.zw-wave { transform-origin: 50% 100%; animation: zw-wave 520ms ease-in-out infinite alternate; }
+@keyframes zw-wave { from { transform: rotate(-14deg) } to { transform: rotate(14deg) } }
+@media (prefers-reduced-motion: reduce) { .zw-blink, .zw-talk, .zw-wave { animation: none; } }

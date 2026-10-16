@@ -14,7 +14,7 @@ export type StepKind =
   | 'assemble' | 'dialogue' | 'cafe' | 'check' | 'finale' | 'lesson'
   | 'greeting' | 'first-word' | 'tour' | 'celebration'
   // «Знакомство» (ModuleId "intro").
-  | 'new-phrase' | 'rule' | 'yard' | 'elevator' | 'party' | 'magnets' | 'border' | 'detective' | 'chat' | 'taxi'
+  | 'new-phrase' | 'rule' | 'yard' | 'walk' | 'elevator' | 'party' | 'magnets' | 'border' | 'detective' | 'chat' | 'taxi'
   | 'family' | 'havesort' | 'aboutme' | 'supra'
 export type LessonEventName =
   | 'lesson_open' | 'step_start' | 'step_done' | 'step_skip' | 'lesson_complete' | 'lesson_fail' | 'lesson_exit'

@@ -6,6 +6,7 @@ import type { SceneProps } from './scenes/types'
 import PhraseScene from './scenes/PhraseScene'
 import RuleScene from './scenes/RuleScene'
 import Yard from './scenes/Yard'
+import Walk from './scenes/Walk'
 import Elevator from './scenes/Elevator'
 import Party from './scenes/Party'
 import Magnets from './scenes/Magnets'
@@ -25,7 +26,7 @@ import StoryFinale from './scenes/StoryFinale'
 
 /** Как сцена называется в аналитике (LessonEvents.StepKind). */
 export const INTRO_STEP_KIND: Record<IntroStep['kind'], StepKind> = {
-  phrase: 'new-phrase', rule: 'rule', yard: 'yard', elevator: 'elevator', party: 'party', magnets: 'magnets',
+  phrase: 'new-phrase', rule: 'rule', yard: 'yard', walk: 'walk', elevator: 'elevator', party: 'party', magnets: 'magnets',
   border: 'border', detective: 'detective', chat: 'chat', taxi: 'taxi', family: 'family', havesort: 'havesort',
   aboutme: 'aboutme', supra: 'supra'
 }
@@ -94,6 +95,7 @@ export default function IntroInterlude({ scene, lessonId, fraction, onExit, onDo
     case 'phrase': return <PhraseScene key={key} {...props(step)} />
     case 'rule': return <RuleScene key={key} {...props(step)} />
     case 'yard': return <Yard key={key} {...props(step)} />
+    case 'walk': return <Walk key={key} {...props(step)} />
     case 'elevator': return <Elevator key={key} {...props(step)} />
     case 'party': return <Party key={key} {...props(step)} />
     case 'magnets': return <Magnets key={key} {...props(step)} />

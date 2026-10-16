@@ -573,7 +573,7 @@
           "kind": "phrase"
         },
         {
-          "kind": "yard",
+          "kind": "walk",
           "mode": "hello"
         }
       ]
@@ -596,7 +596,7 @@
           "rule": "time"
         },
         {
-          "kind": "yard",
+          "kind": "walk",
           "mode": "day"
         }
       ]
