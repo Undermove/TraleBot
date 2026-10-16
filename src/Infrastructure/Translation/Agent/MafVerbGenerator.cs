@@ -48,6 +48,10 @@ public class MafVerbGenerator(
           the English Wiktionary titles Georgian verb entries. A verb that marks its object or its
           experiencer in the form is given with a 3rd person one.
         - "masdar": the name of the action (verbal noun), the plain one without a preverb when both exist.
+        - "masdarWithPreverb": the name of the action with the preverb the verb takes in the future and
+          the aorist (ძებნა → მოძებნა, ღვიძება → გაღვიძება, წერა → დაწერა) — what teachers and
+          dictionaries often give as the verb's name. Null when the verb has no such pair (a preverb that
+          stands in the present too, a verb without a preverb in the future), or when you are not sure.
         - "russian": the dictionary translation into Russian — plain infinitives, the imperfective one
           first, its perfective partner after a comma when it has one; at most three. For "Russian verb: X"
           the list must contain X. Never a descriptive phrase when a single Russian verb exists.
@@ -169,6 +173,7 @@ public class MafVerbGenerator(
         [property: Description("verb | notAVerb | notAWord")] string? Verdict,
         string? Lemma,
         string? Masdar,
+        string? MasdarWithPreverb,
         string? Russian,
         Tenses? Tenses,
         Russian? RussianForms,
@@ -208,7 +213,7 @@ public class MafVerbGenerator(
 
         return new GeneratedVerb(
             verdict, output.Lemma, output.Masdar, output.Russian, Table(output.Tenses), Forms(output.RussianForms),
-            output.MatchedTense, output.MatchedPerson, usage);
+            output.MatchedTense, output.MatchedPerson, usage, output.MasdarWithPreverb);
     }
 
     public async Task<VerbCompletion> CompleteAsync(VerbCompletionRequest request, CancellationToken ct)
@@ -269,7 +274,8 @@ public class MafVerbGenerator(
             text.Append("\n\nYour previous record:\n").Append(MafVerbReviewer.Table(
                 request.Previous.Lemma, request.Previous.Masdar, request.Previous.Russian,
                 (request.Previous.Tenses ?? new Dictionary<string, string?[]>()).ToDictionary(
-                    t => t.Key, t => t.Value.Select(c => c ?? "—").ToArray())));
+                    t => t.Key, t => t.Value.Select(c => c ?? "—").ToArray()),
+                masdarWithPreverb: request.Previous.MasdarWithPreverb));
             text.Append("\nProblems found:");
             foreach (var problem in request.Problems ?? [])
             {

@@ -64,9 +64,14 @@ public class MafVerbReviewer(
            author says — name the tense in "missingTenses" (imperfect, future, conditional, aorist,
            optative), so that the record is marked as incomplete rather than the verb as defective.
 
+        7. The verbal noun with a preverb, when the record has one: it must be the name of the action
+           with the preverb of this verb's future and aorist (ძებნა → მოძებნა). If it is wrong or you
+           are not sure, set "preverbNounWrong" to true. That alone is never a reason to reject: the
+           noun is then left out and the rest is judged as usual.
+
         Answer with JSON: "approve" (true or false), "reasons" — short, concrete sentences in English —
-        "missingTenses" (see 6; empty when nothing is missing or you are not certain), "wrongTenses" and
-        "restIsRight".
+        "missingTenses" (see 6; empty when nothing is missing or you are not certain), "wrongTenses",
+        "restIsRight" and "preverbNounWrong" (see 7; false when there is none).
         "wrongTenses" and "restIsRight" are for a rejection that is about whole rows only. When the verb,
         its gloss, the present row, the match and all the other rows are right, and what you reject is
         one or more rows — their forms are wrong, or you cannot confirm them — list the tenses of those
@@ -80,7 +85,7 @@ public class MafVerbReviewer(
 
     private static readonly string[] Persons = ["I", "you sg", "he/she", "we", "you pl", "they"];
 
-    private sealed record Output(bool Approve, string[]? Reasons, string[]? MissingTenses, string[]? WrongTenses, bool? RestIsRight);
+    private sealed record Output(bool Approve, string[]? Reasons, string[]? MissingTenses, string[]? WrongTenses, bool? RestIsRight, bool? PreverbNounWrong);
 
     public async Task<VerbReview> ReviewAsync(VerbReviewRequest request, CancellationToken ct)
     {
@@ -103,7 +108,8 @@ public class MafVerbReviewer(
             .Distinct()
             .ToList();
         return new VerbReview(
-            output.Approve, reasons, ModelCalls.Usage(response), missing, wrong, RestIsRight: !output.Approve && output.RestIsRight == true);
+            output.Approve, reasons, ModelCalls.Usage(response), missing, wrong, RestIsRight: !output.Approve && output.RestIsRight == true,
+            PreverbNounWrong: request.MasdarWithPreverb != null && output.PreverbNounWrong == true);
     }
 
     private static string Ask(VerbReviewRequest request)
@@ -114,7 +120,7 @@ public class MafVerbReviewer(
         text.Append("\n\nRecord:\n").Append(Table(
             request.Lemma, request.Masdar, request.Russian,
             request.Tenses.ToDictionary(t => t.Key, t => t.Value.Select(c => c.Length == 0 ? "—" : c[0]).ToArray()),
-            request.Meanings));
+            request.Meanings, request.MasdarWithPreverb));
 
         text.Append(request.MatchedForm == null
             ? "\nMatched to: the verb itself (the text is an infinitive or a verbal noun)."
@@ -176,9 +182,16 @@ public class MafVerbReviewer(
         string? masdar,
         string? russian,
         IReadOnlyDictionary<string, string[]> tenses,
-        IReadOnlyDictionary<string, string[]>? meanings = null)
+        IReadOnlyDictionary<string, string[]>? meanings = null,
+        string? masdarWithPreverb = null)
     {
-        var text = new StringBuilder($"lemma: {lemma}\nverbal noun: {masdar ?? "—"}\nrussian: {russian}");
+        var text = new StringBuilder($"lemma: {lemma}\nverbal noun: {masdar ?? "—"}");
+        if (masdarWithPreverb != null)
+        {
+            text.Append($"\nverbal noun with a preverb: {masdarWithPreverb}");
+        }
+
+        text.Append($"\nrussian: {russian}");
         foreach (var tense in VerbAnalyzer.KnownTenses.Where(tenses.ContainsKey))
         {
             var cells = tenses[tense].Select((cell, person) =>

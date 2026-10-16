@@ -38,7 +38,8 @@ public class VerbGenerationTests : TranslationPipelineTestBase
 
     /// <summary>The record the generator writes: the catalog table of the verb, optionally with some cells changed.</summary>
     private static string Record(
-        Func<string, int, string?>? cell = null, string? matchedTense = null, int? matchedPerson = null, string? russian = "танцевать")
+        Func<string, int, string?>? cell = null, string? matchedTense = null, int? matchedPerson = null, string? russian = "танцевать",
+        string? masdarWithPreverb = null)
     {
         var verb = DanceVerb;
         return JsonSerializer.Serialize(new
@@ -46,6 +47,7 @@ public class VerbGenerationTests : TranslationPipelineTestBase
             verdict = "verb",
             lemma = Dance,
             masdar = verb["title"]!.GetValue<string>(),
+            masdarWithPreverb,
             russian,
             tenses = MainTenses.ToDictionary(
                 t => t, t => Enumerable.Range(0, 6).Select(p => cell == null ? Form(verb, t, p) : cell(t, p)).ToArray()),
@@ -135,6 +137,45 @@ public class VerbGenerationTests : TranslationPipelineTestBase
         External.Calls.Should().Be(0);
         Log.Paths.Should().Equal("verb-base", "verb-base", "verb-base");
         (await CacheEntries()).Should().BeEmpty(because: "every answer came from the verb base, nothing needed the cache");
+    }
+
+    // The fakes do not judge Georgian: any name the catalog has with a preverb shows the plumbing.
+    private static string APreverbName => CatalogVerb(Write)["masdarWithPreverb"]![0]!.GetValue<string>();
+
+    [Test]
+    public async Task Name_of_the_action_with_a_preverb_is_stored_next_to_the_title_and_finds_the_verb()
+    {
+        await SeedCatalogWithout(Dance);
+        LexiconKnowsDanceWithoutATable();
+        Lexicon.Attested = MainTenses.SelectMany(t => Enumerable.Range(0, 6).Select(p => Form(DanceVerb, t, p))).ToHashSet();
+        Models.ClassifierModel.AnswerWith(VerbByInfinitive);
+        Models.GeneratorModel.AnswerWith(Record(masdarWithPreverb: APreverbName));
+        Models.ReviewerModel.AnswerWith(Approve);
+
+        await Translate("танцевать");
+
+        LastUserText(Models.ReviewerModel).Should().Contain($"verbal noun with a preverb: {APreverbName}");
+        var stored = await StoredVerb(Dance);
+        stored!.Title.Should().Be(DanceVerb["title"]!.GetValue<string>(), because: "the plain name stays the title");
+        JsonNode.Parse(stored.CardJson)!["masdarWithPreverb"]!.Deserialize<string[]>().Should().Equal(APreverbName);
+    }
+
+    [Test]
+    public async Task Name_with_a_preverb_the_reviewer_cannot_confirm_is_left_out_and_the_verb_is_still_stored()
+    {
+        await SeedCatalogWithout(Dance);
+        LexiconKnowsDanceWithoutATable();
+        Lexicon.Attested = MainTenses.SelectMany(t => Enumerable.Range(0, 6).Select(p => Form(DanceVerb, t, p))).ToHashSet();
+        Models.ClassifierModel.AnswerWith(VerbByInfinitive);
+        Models.GeneratorModel.AnswerWith(Record(masdarWithPreverb: APreverbName));
+        Models.ReviewerModel.AnswerWith(JsonSerializer.Serialize(new { approve = true, reasons = new[] { "The paradigm is consistent" }, preverbNounWrong = true }));
+
+        await Translate("танцевать");
+
+        Models.GeneratorModel.Calls.Should().Be(1, because: "an unconfirmed name with a preverb is not a reason to send the record back");
+        var stored = await StoredVerb(Dance);
+        stored!.Status.Should().Be(VerbStatus.Generated);
+        JsonNode.Parse(stored.CardJson)!["masdarWithPreverb"]!.Deserialize<string[]>().Should().BeEmpty();
     }
 
     [Test]

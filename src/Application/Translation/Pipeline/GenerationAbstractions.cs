@@ -24,6 +24,7 @@ public enum GeneratedVerbVerdict
 /// <param name="Tenses">tense → six cells in the order я, ты, он, мы, вы, они; a null cell = "not sure", left empty.</param>
 /// <param name="RussianForms">Forms of the Russian verb the plain-Russian phrases are built from.</param>
 /// <param name="MatchedTense">The cell the looked-up text is, as the model reads it; null when the text is the verb itself.</param>
+/// <param name="MasdarWithPreverb">The name of the action with the preverb of the future and aorist (მოძებნა next to ძებნა), when it has one.</param>
 public record GeneratedVerb(
     GeneratedVerbVerdict Verdict,
     string? Lemma = null,
@@ -33,7 +34,8 @@ public record GeneratedVerb(
     RussianVerbForms? RussianForms = null,
     string? MatchedTense = null,
     int? MatchedPerson = null,
-    ModelUsage? Usage = null);
+    ModelUsage? Usage = null,
+    string? MasdarWithPreverb = null);
 
 /// <param name="Text">The looked-up text as typed (normalised).</param>
 /// <param name="Infinitive">For a Russian text — its dictionary infinitive, as the classifier named it.</param>
@@ -125,7 +127,8 @@ public record VerbReviewRequest(
     int? MatchedPerson,
     VerbEvidence Evidence,
     IReadOnlyList<MissingTense>? Missing = null,
-    IReadOnlyList<string>? Completed = null);
+    IReadOnlyList<string>? Completed = null,
+    string? MasdarWithPreverb = null);
 
 /// <param name="MissingTenses">
 /// Main tenses the record lacks although the reviewer is certain the verb has them. A note for the
@@ -136,9 +139,10 @@ public record VerbReviewRequest(
 /// On a rejection: nothing but those rows is wrong — the record without them is one the reviewer
 /// approves. <see cref="VerbGenerationService"/> may then store it without them.
 /// </param>
+/// <param name="PreverbNounWrong">The name of the action with a preverb is wrong or unconfirmed: it is left out, the record is not rejected for it.</param>
 public record VerbReview(
     bool Approved, IReadOnlyList<string> Reasons, ModelUsage? Usage = null, IReadOnlyList<string>? MissingTenses = null,
-    IReadOnlyList<string>? WrongTenses = null, bool RestIsRight = false);
+    IReadOnlyList<string>? WrongTenses = null, bool RestIsRight = false, bool PreverbNounWrong = false);
 
 /// <summary>The second model: approves or rejects a generated record, with reasons.</summary>
 public interface IVerbReviewer
