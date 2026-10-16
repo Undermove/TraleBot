@@ -79,6 +79,13 @@ export default function Practice({
     const t = setTimeout(() => document.querySelector('[data-feedback]')?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }), 60)
     return () => clearTimeout(t)
   }, [phase])
+  // Новый вопрос — с верха экрана: иначе страница остаётся прокрученной к объяснению прошлого, и на iPhone
+  // под липкой шапкой остаётся висеть кусок прошлого вопроса (карточка «Послушай и выбери»).
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [index])
   const answerXpRef = React.useRef(0)
   const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
 
@@ -389,6 +396,7 @@ export default function Practice({
 
       {/* Question + answer area */}
       <div
+        key={current.id}
         className="flex-1 px-5 pt-6"
         style={{ paddingBottom: isSentenceBuilder ? 'calc(var(--safe-b) + 24px)' : isTypeQuestion ? '16px' : 'calc(var(--safe-b) + 110px)' }}
       >
