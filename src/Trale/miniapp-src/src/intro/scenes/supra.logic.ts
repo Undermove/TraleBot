@@ -5,18 +5,10 @@ import {
 } from './chatScripts'
 
 // «Супра» — финал модуля. За длинным столом шесть гостей и тамада. Гости по очереди поворачиваются к тебе —
-// у каждого своя тема модуля, 1–2 реплики на короткий таймер. Между гостями тамада поднимает тост:
-// поймай момент «поднять бокал» и ответь на тост.
+// у каждого своя тема модуля, 1–2 реплики. Никто не торопит: гость ждёт сколько нужно. Между гостями
+// тамада поднимает тост: подними бокал вместе со всеми и ответь на тост.
 
 export const SUPRA_LESSON = 33
-/** Сколько ждёт гость (мс). */
-export const GUEST_MS = 9000
-/** Полный ход стрелки тоста (мс): стрелка бежит 0→1 и обратно сначала. */
-export const TOAST_LOOP_MS = 2400
-/** Зона «сейчас!» на шкале тоста. */
-export const TOAST_ZONE: [number, number] = [0.62, 0.86]
-/** После стольких промахов бокал поднимается сам — тост не застревает. */
-export const TOAST_TRIES = 3
 
 export type Theme = 'hello' | 'name' | 'from' | 'live' | 'job' | 'family'
 
@@ -64,10 +56,16 @@ function talk(theme: Theme, guest: string, me: GeoName, rng: Rng): Exchange[] {
 /** «Меня зовут <гость>» — тот же шаблон მე მქვია. */
 const nameLine = (geo: string): Line => ({ ...iAmCalled({ geo, base: geo, added: false, ru: NAMES[geo] }) })
 
+const WOMEN = new Set(['ნინო', 'ანა', 'მარიამი', 'თამარი'])
+
 export function guests(me: GeoName, rng: Rng = Math.random): Guest[] {
   // Первой — соседка Нино; остальные имена — из словарика, без повторов и без имени самого ученика.
   const rest = shuffle(Object.keys(NAMES).filter(n => n !== 'ნინო' && n !== me.geo), rng)
   const names = ['ნინო', ...rest].slice(0, THEMES.length)
+  // Тема «семья» — у бабушки: ей нужно женское имя.
+  const fam = THEMES.indexOf('family')
+  const woman = names.slice(1).find(n => WOMEN.has(n)) ?? rest.find(n => WOMEN.has(n))
+  if (woman && !WOMEN.has(names[fam])) { const k = names.indexOf(woman); if (k > 0) [names[fam], names[k]] = [names[k], names[fam]]; else names[fam] = woman }
   return THEMES.map((theme, i) => ({
     name: names[i], ru: NAMES[names[i]], theme,
     talk: onlyKnown(talk(theme, names[i], me, rng), SUPRA_LESSON).map(e => ({ ...e, opts: shuffle(e.opts, rng) }))
@@ -95,19 +93,5 @@ export const BEATS: Beat[] = [
   { kind: 'guest', g: 4 }, { kind: 'guest', g: 5 }, { kind: 'toast', t: 2 }
 ]
 
-/** Где стрелка тоста через t мс: 0..1. */
-export const needle = (t: number) => (Math.max(0, t) % TOAST_LOOP_MS) / TOAST_LOOP_MS
-
-export type Raise = 'early' | 'ok' | 'late'
-export function raiseAt(t: number): Raise {
-  const p = needle(t)
-  return p < TOAST_ZONE[0] ? 'early' : p > TOAST_ZONE[1] ? 'late' : 'ok'
-}
-
-export const RAISE_MISS: Record<Exclude<Raise, 'ok'>, string> = {
-  early: 'Рано! Тамада ещё говорит — дослушай.',
-  late: 'Поздно — все уже выпили. Лови, когда тамада договорит.'
-}
-
-/** Тепло гостя: верно с первого раза — 2, после промаха — 1, не дождался — 0. */
-export const guestWarmth = (missed: number, timedOut: boolean) => (timedOut ? 0 : missed ? 1 : 2)
+/** Тепло гостя: верно с первого раза — 2, после промахов — 1. */
+export const guestWarmth = (missed: number) => (missed ? 1 : 2)

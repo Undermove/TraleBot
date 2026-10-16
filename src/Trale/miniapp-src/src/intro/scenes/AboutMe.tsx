@@ -1,63 +1,77 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
-import { useLater } from '../../verbs/games/useLater'
 import { cyr } from '../../verbs/types'
-import Mascot from '../../components/Mascot'
 import Button from '../../components/Button'
-import { myName } from '../story'
-import { GameEnd, GameIntro, Pill, RuleCard, Tip, say } from '../ui'
+import { myName, phrase } from '../story'
+import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { hush, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import { Transformed } from './Magnets'
 import type { Item } from './Magnets.logic'
+import { andYou } from './chatScripts'
+import { lineUrl } from './chat/voices'
+import Passerby from './walk/Passerby'
+import type { Who } from './Walk.logic'
 import {
   choose, complete, emptyCard, filled, magnet, needsMagnet, optionsFor, saveStory, storyLines,
   type Card, type Line, type Mag, type Slot
 } from './AboutMe.logic'
 
 /**
- * «Обо мне» — урок 32. Мастерим карточку-анкету из пяти строк: имя уже вписано, откуда, где живёшь, кем
- * работаешь, что любишь. В «откуда» и «где» сначала ставишь слово, потом цепляешь магнит -დან или -ში.
- * Потом «Твой рассказ»: Бомбора читает его по строчке, и карточку можно положить в копилку.
+ * «Обо мне» — урок 32. Интервью для студенческой газеты: журналистка во дворе университета спрашивает,
+ * как тебя зовут, откуда ты, где живёшь, кем работаешь, что любишь. Ответ собираешь сам: слово — и
+ * нужное окончание (-დან, -ში), ответ звучит твоим голосом. В конце — заметка о тебе в газете:
+ * послушать и сдать в номер.
  */
 
 const G = ({ children }: { children: string }) => <b className="font-geo">{children}</b>
-const READ_MS = 1800
+const INK = '#15100A'
+const REPORTER: Who = { ru: 'Журналистка', kind: 'woman', coat: '#2F7F86', skin: '#F2C9A0', hair: '#9A6A3A', extra: 'glasses', voice: 'f' }
+const ME: Who = { ru: 'Ты', kind: 'man', coat: '#1B5FB0', skin: '#F6D7BC', hair: '#5A3A22', extra: 'bag', voice: 'm' }
 
-type Phase = 'intro' | 'build' | 'story' | 'end'
-
+type Phase = 'intro' | 'interview' | 'story' | 'end'
+/** Вопросы по порядку: имя, откуда, где живёшь, кем работаешь, что любишь. */
+const STEPS: (Slot | 'name')[] = ['name', 'country', 'city', 'job', 'love']
+const QUESTIONS: string[][] = [
+  [phrase('ra_gkvia').geo],
+  [phrase('saidan').geo],
+  [phrase('tbilisshi').geo, andYou().geo],
+  [phrase('ra_profesia').geo],
+  [phrase('mogcons').geo]
+]
+const HEAD: Record<Slot | 'name', string> = { name: 'მე მქვია', country: 'მე ვარ', city: 'ვცხოვრობ', job: 'მე ვარ', love: 'მიყვარს' }
 const LABEL: Record<Slot, string> = { country: 'Откуда ты?', city: 'Где живёшь?', job: 'Кто ты?', love: 'Что любишь?' }
-const PAPER: React.CSSProperties = {
-  boxShadow: '3px 3px 0 #15100A',
-  backgroundImage: 'repeating-linear-gradient(180deg, transparent 0 33px, rgba(27,95,176,.13) 33px 34px)'
-}
 
 export default function AboutMe({ fraction, onExit, onDone }: SceneProps<StepOf<'aboutme'>>) {
   const [phase, setPhase] = useState<Phase>('intro')
   const [card, setCard] = useState<Card>(emptyCard)
   const me = useMemo(() => myName(), [])
   const lines = useMemo(() => storyLines(card, me), [card, me])
+  useEffect(() => () => hush(), [])
 
   return (
-    <GameFrame title={phase === 'story' ? 'Твой рассказ' : 'Обо мне'} eyebrow="расскажи о себе" fraction={fraction} onExit={onExit}>
+    <GameFrame title={phase === 'story' ? 'Заметка о тебе' : 'Обо мне'} eyebrow="интервью для газеты" fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col" data-testid="aboutme-scene">
         {phase === 'intro' && (
           <GameIntro
-            title="Карточка о себе"
-            text="Соберём из выученного рассказ о тебе: как зовут, откуда ты, где живёшь, кем работаешь и что любишь. Страну и город ещё надо примагнитить."
+            title="Интервью для газеты"
+            text="Студенческая газета пишет о новичках. Журналистка спросит, как тебя зовут, откуда ты, где живёшь, кем работаешь и что любишь. Ответ собери сам: слово — и нужное окончание."
             chips={[{ geo: '-დან', ru: 'из' }, { geo: '-ში', ru: 'в' }]}
-            onStart={() => setPhase('build')}
+            hero
+            onStart={() => setPhase('interview')}
           />
         )}
-        {phase === 'build' && <Build card={card} setCard={setCard} myGeo={me.geo} onReady={() => setPhase('story')} />}
-        {phase === 'story' && <Story lines={lines} onNext={() => setPhase('end')} onRebuild={() => { setCard(emptyCard()); setPhase('build') }} />}
+        {phase === 'interview' && <Interview card={card} setCard={setCard} myGeo={me.geo} myLine={`მე მქვია ${me.geo}.`} onReady={() => setPhase('story')} />}
+        {phase === 'story' && <Story lines={lines} name={me.ru} onNext={() => setPhase('end')} onRebuild={() => { setCard(emptyCard()); setPhase('interview') }} />}
         {phase === 'end' && (
           <GameEnd
-            title="Рассказ в копилке"
-            text="Пять предложений о себе по-грузински. Теперь ты можешь представиться кому угодно во дворе."
-            rule={<RuleCard title="Два магнита"><G>-დან</G> — «из», слово целиком: <G>ესპანეთი</G> → <G>ესპანეთიდან</G>.<br /><G>-ში</G> — «в», последняя <G>ი</G> уходит: <G>ბათუმი</G> → <G>ბათუმში</G>.</RuleCard>}
+            title="Заметка в номере!"
+            text="Пять предложений о себе по-грузински. Теперь ты можешь представиться кому угодно."
+            rule={<RuleCard title="Два окончания"><G>-დან</G> — «из», слово целиком: <G>ესპანეთი</G> → <G>ესპანეთიდან</G>.<br /><G>-ში</G> — «в», последняя <G>ი</G> уходит: <G>ბათუმი</G> → <G>ბათუმში</G>.</RuleCard>}
             onNext={onDone}
-            onAgain={() => { setCard(emptyCard()); setPhase('build') }}
+            onAgain={() => { setCard(emptyCard()); setPhase('interview') }}
           />
         )}
       </div>
@@ -65,10 +79,9 @@ export default function AboutMe({ fraction, onExit, onDone }: SceneProps<StepOf<
   )
 }
 
-// ── Карточка ──────────────────────────────────────────────────────────────────────────────────────
+// ── Интервью ──────────────────────────────────────────────────────────────────────────────────────
 
-function SlotButton({ slot, card, onClick }: { slot: Slot; card: Card; onClick: () => void }) {
-  const active = card.active === slot
+function SlotChip({ slot, card }: { slot: Slot; card: Card }) {
   let text = '', state: 'empty' | 'needs' | 'filled' = 'empty', item: Item | null = null
   if (slot === 'country' && card.country) {
     if (card.countryOk) { state = 'filled'; item = { key: card.country.base, ru: card.country.ru, base: card.country.base, result: card.country.from, tool: 'დან', order: '' } }
@@ -80,27 +93,68 @@ function SlotButton({ slot, card, onClick }: { slot: Slot; card: Card; onClick: 
   else if (slot === 'love' && card.love) { state = 'filled'; text = card.love.geo }
   const cls = state === 'filled' ? 'border-solid border-jewelInk bg-gold-wash' : state === 'needs' ? 'border-solid border-ruby bg-ruby-wash' : 'border-dashed border-jewelInk-faint text-jewelInk-faint'
   return (
-    <button type="button" data-testid={`slot-${slot}`} data-state={state} onClick={() => { haptic('tap'); onClick() }}
-      className={`min-h-[36px] min-w-[84px] rounded-[10px] border-[1.5px] px-2 font-geo font-bold text-[16px] ${cls} ${active ? 'outline outline-[3px] outline-navy outline-offset-1' : ''}`}>
-      {item ? <Transformed key={item.result} item={item} size={16} /> : text || '…'}
-    </button>
+    <motion.span data-testid={`slot-${slot}`} data-state={state} layout
+      className={`inline-flex items-center min-h-[38px] min-w-[86px] justify-center rounded-[10px] border-[1.5px] px-2 font-geo font-bold text-[18px] ${cls}`}
+      animate={{ scale: state === 'needs' ? [1, 1.06, 1] : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 18 }}>
+      {item ? <Transformed key={item.result} item={item} size={18} /> : text || '…'}
+    </motion.span>
   )
 }
 
-function Build({ card, setCard, myGeo, onReady }: { card: Card; setCard: (c: Card) => void; myGeo: string; onReady: () => void }) {
-  const [tip, setTip] = useState('Нажми на слот и выбери слово снизу.')
+function Interview({ card, setCard, myGeo, myLine, onReady }: { card: Card; setCard: (c: Card) => void; myGeo: string; myLine: string; onReady: () => void }) {
+  const [at, setAt] = useState(0)
+  const [asking, setAsking] = useState(true)
+  const [said, setSaid] = useState<string | null>(null)
+  const [question, setQuestion] = useState<string | null>(null)
+  const [talking, setTalking] = useState<'her' | 'me' | null>(null)
+  const [tip, setTip] = useState('')
   const [shake, setShake] = useState(false)
-  const later = useLater()
-  const pickSlot = (s: Slot) => setCard({ ...card, active: s })
-  const done = complete(card)
+  const [notes, setNotes] = useState(0)
+  const alive = useRef(true)
+  useEffect(() => () => { alive.current = false }, [])
+  const step = STEPS[at]
+
+  // Журналистка задаёт вопрос — по фразе, своим голосом.
+  useEffect(() => {
+    let off = false
+    setAsking(true); setSaid(null)
+    ;(async () => {
+      await new Promise(r => window.setTimeout(r, 450))
+      for (const q of QUESTIONS[at]) {
+        if (off || !alive.current) return
+        setQuestion(q); setTalking('her')
+        await speakUrl(lineUrl(q, 'f'), q)
+      }
+      if (off || !alive.current) return
+      setTalking(null); setAsking(false)
+      setTip(at === 0 ? 'Ответь — нажми на свой ответ.' : at === 1 ? 'Выбери страну — потом прилепи окончание.' : '')
+    })()
+    return () => { off = true }
+  }, [at])
+
+  /** Ответ готов: произнести его и идти к следующему вопросу. */
+  const answered = async (c: Card) => {
+    const line = step === 'name' ? myLine : storyPart(c, step as Slot)
+    if (!line) return
+    setSaid(line); setTalking('me'); setAsking(true)
+    haptic('good'); sound.snap(at + 2)
+    await speakUrl(lineUrl(line, 'hero'), line)
+    if (!alive.current) return
+    setTalking(null); setNotes(n => n + 1)
+    await new Promise(r => window.setTimeout(r, 450))
+    if (!alive.current) return
+    if (at + 1 < STEPS.length) setAt(a => a + 1)
+    else setTip('Интервью готово! Посмотрим заметку?')
+  }
 
   const onPick = (slot: Slot, value: Parameters<typeof choose>[2], geo: string) => {
-    sound.pop(filled(card))
+    if (asking) return
+    haptic('tap'); sound.pop(filled(card))
     const n = choose(card, slot, value)
     setCard(n)
-    if (slot === 'country') setTip(`«Я ${geo}»? Не хватает окончания. Какой магнит?`)
-    else if (slot === 'city') setTip(`«Живу ${geo}»? Не хватает окончания. Какой магнит?`)
-    else setTip(complete(n) ? 'Карточка готова! Прочитаем?' : '')
+    if (slot === 'country') setTip(`«Я ${geo}»? Не хватает окончания. Какое — «из» или «в»?`)
+    else if (slot === 'city') setTip(`«Живу ${geo}»? Не хватает окончания. Какое?`)
+    else { setTip(''); void answered(n) }
   }
   const onMagnet = (m: Mag, el: HTMLElement) => {
     const r = magnet(card, m)
@@ -108,86 +162,168 @@ function Build({ card, setCard, myGeo, onReady }: { card: Card; setCard: (c: Car
     if (r.ok) {
       haptic('snap'); sound.snap(filled(r.card)); burst(el, 'small')
       setCard(r.card)
+      void answered(r.card)
     } else {
-      haptic('bad'); sound.miss(); setShake(true); later(() => setShake(false), 400)
+      haptic('bad'); sound.miss(); setShake(true); window.setTimeout(() => setShake(false), 420)
     }
   }
 
-  const line = (head: string, slot: Slot | null) => (
-    <div className="flex flex-wrap items-center gap-1.5 font-geo font-bold text-[17px] min-h-[34px]">
-      <span>{head}</span>
-      {slot ? <SlotButton slot={slot} card={card} onClick={() => pickSlot(slot)} /> : <span className="rounded-[10px] border-[1.5px] border-jewelInk bg-gold-wash px-2 py-0.5 text-[16px]">{myGeo}</span>}
-      <span>.</span>
-    </div>
-  )
+  const done = complete(card) && at === STEPS.length - 1 && !talking && asking && !!said
+  const ready = !asking
+  const showOptions = ready && step !== 'name' && !(step === 'country' && card.country && !card.countryOk) && !(step === 'city' && card.city && !card.cityOk)
+  const optSlot: Slot | null = showOptions ? (step as Slot) : null
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="aboutme-build">
-      <div className="flex items-center gap-2">
-        <span className="text-[13px] font-bold text-jewelInk-soft">Анкета нового соседа</span>
-        <div className="flex-1" />
-        <Pill testId="aboutme-filled">{filled(card)} / 5</Pill>
-      </div>
-      <div className={`relative rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-2 -rotate-[0.6deg] ${shake ? 'zn-shake' : ''}`} style={PAPER} data-testid="aboutme-card">
-        {line('მე მქვია', null)}
-        {line('მე ვარ', 'country')}
-        {line('ვცხოვრობ', 'city')}
-        {line('მე ვარ', 'job')}
-        {line('მიყვარს', 'love')}
+      <div className="relative flex-1 min-h-[220px] max-h-[460px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }}>
+        <Courtyard />
+        <div className="absolute left-[4%] bottom-[-6%] z-10">
+          <svg width="140" height="222" viewBox="-60 -190 120 196" className="overflow-visible" aria-hidden>
+            <Passerby who={REPORTER} phase={0} stride={0} face="smile" talking={talking === 'her'} wave={false} />
+            {/* Блокнот и ручка: на каждый ответ — запись. */}
+            <g transform="translate(14 -104) rotate(-8)">
+              <rect x="0" y="0" width="30" height="38" rx="3" fill="#FDFAEF" stroke={INK} strokeWidth="2.4" />
+              {Array.from({ length: Math.min(5, notes) }, (_, k) => <path key={k} d={`M5 ${8 + k * 6} h${14 + (k % 2) * 6}`} stroke="#1B5FB0" strokeWidth="1.8" strokeLinecap="round" />)}
+              <motion.path key={notes} d="M30 4 l10 -14" stroke="#E01A3C" strokeWidth="4" strokeLinecap="round" animate={{ rotate: [0, -14, 8, 0] }} transition={{ duration: 0.6 }} />
+            </g>
+          </svg>
+        </div>
+        <div className="absolute right-[2%] bottom-[-8%] z-10">
+          <svg width="130" height="210" viewBox="-60 -190 120 196" className="overflow-visible" aria-hidden>
+            <Passerby who={ME} phase={0} stride={0} face="smile" talking={talking === 'me'} wave={false} />
+          </svg>
+        </div>
+        <AnimatePresence>
+          {question && !said && (
+            <div key={`q-${at}-${question}`} className="absolute z-20 left-[3%] top-[5%]">
+              <motion.div initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 24 }} data-testid="aboutme-question"
+                className="max-w-[230px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-1.5" style={{ boxShadow: '2px 3px 0 #15100A' }}>
+                <span className="block font-geo font-bold text-[16px] leading-tight">{question}</span>
+                <span className="block text-[11px] font-semibold text-jewelInk-hint leading-tight">{cyr(question)}</span>
+              </motion.div>
+            </div>
+          )}
+          {said && (
+            <div key={`a-${at}`} className="absolute z-20 right-[3%] top-[8%]">
+              <motion.div initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                className="max-w-[220px] rounded-2xl border-[1.5px] border-jewelInk bg-navy text-cream px-3 py-1.5" style={{ boxShadow: '2px 3px 0 #15100A' }}>
+                <span className="block font-geo font-bold text-[16px] leading-tight">{said}</span>
+                <span className="block text-[11px] font-semibold text-cream/80 leading-tight">{cyr(said)}</span>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="aboutme-filled">{filled(card)} / 5</div>
       </div>
 
-      {card.active && (
-        <div className="flex flex-col gap-1.5">
-          <div className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-navy">{LABEL[card.active]}</div>
-          <div className="flex flex-wrap gap-1.5" data-testid="aboutme-options">
-            {optionsFor(card.active).map(o => (
-              <button key={o.geo} type="button" data-testid={`opt-${o.geo}`} onClick={() => onPick(card.active!, o.value, o.geo)}
-                className="min-h-[44px] rounded-xl border-[1.5px] border-jewelInk bg-cream-tile px-2.5 py-1 leading-tight" style={{ boxShadow: '2px 2px 0 #15100A' }}>
-                <span className="block font-geo font-bold text-[15px]">{o.geo}</span>
-                <span className="block text-[10px] font-semibold text-jewelInk-hint">{o.ru}</span>
-              </button>
+      {/* Твой ответ — на карточке: начало фразы и место для слова. */}
+      <motion.div key={at} className={`shrink-0 rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-2.5 flex flex-wrap items-center gap-2 font-geo font-bold text-[18px] ${shake ? 'zn-shake' : ''}`}
+        style={{ boxShadow: '3px 3px 0 #15100A', backgroundImage: 'repeating-linear-gradient(180deg, transparent 0 33px, rgba(27,95,176,.12) 33px 34px)' }}
+        initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }} data-testid="aboutme-card">
+        <span>{HEAD[step]}</span>
+        {step === 'name'
+          ? <motion.button type="button" data-testid="aboutme-name" disabled={!ready} onClick={() => { haptic('pop'); void answered(card) }}
+              className="rounded-[10px] border-[1.5px] border-jewelInk bg-gold-wash px-2 py-0.5 text-[18px]" animate={{ scale: ready ? [1, 1.06, 1] : 1 }} transition={{ repeat: ready ? Infinity : 0, duration: 1.4 }}>{myGeo}</motion.button>
+          : <SlotChip slot={step} card={card} />}
+        <span>.</span>
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+        {optSlot && (
+          <motion.div key={`o-${optSlot}`} className="shrink-0 flex flex-col gap-1.5" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
+            <div className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-navy">{LABEL[optSlot]}</div>
+            <div className="flex flex-wrap gap-1.5" data-testid="aboutme-options">
+              {optionsFor(optSlot).map((o, k) => (
+                <motion.button key={o.geo} type="button" data-testid={`opt-${o.geo}`} onClick={() => onPick(optSlot, o.value, o.geo)}
+                  className="min-h-[44px] rounded-xl border-[1.5px] border-jewelInk bg-cream-tile px-2.5 py-1 leading-tight" style={{ boxShadow: '2px 2px 0 #15100A' }}
+                  initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 22, delay: k * 0.04 }} whileTap={{ scale: 0.94 }}>
+                  <span className="block font-geo font-bold text-[15px]">{o.geo}</span>
+                  <span className="block text-[10px] font-semibold text-jewelInk-hint">{o.ru}</span>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {needsMagnet(card) && !asking && (
+          <motion.div className="shrink-0 flex justify-center gap-3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            {(['დან', 'ში'] as Mag[]).map((m, k) => (
+              <motion.button key={m} type="button" data-testid={`magnet-${m}`} onClick={e => onMagnet(m, e.currentTarget)}
+                className="min-h-[54px] min-w-[96px] rounded-2xl border-[1.5px] border-jewelInk px-4 py-1 text-cream" style={{ boxShadow: '3px 3px 0 #15100A', background: m === 'ში' ? '#1B5FB0' : '#E01A3C' }}
+                initial={{ scale: 0.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 16, delay: k * 0.06 }} whileTap={{ scale: 0.92, rotate: -4 }}>
+                <span className="block font-geo font-extrabold text-[22px] leading-none">-{m}</span>
+                <span className="block text-[11px] font-semibold text-cream/85">{m === 'ში' ? 'в' : 'из'}</span>
+              </motion.button>
             ))}
-          </div>
-        </div>
-      )}
-
-      {needsMagnet(card) && (
-        <div className="flex justify-center gap-3 zn-pop">
-          {(['დან', 'ში'] as Mag[]).map(m => (
-            <button key={m} type="button" data-testid={`magnet-${m}`} onClick={e => onMagnet(m, e.currentTarget)}
-              className="min-h-[52px] min-w-[92px] rounded-2xl border-[1.5px] border-jewelInk bg-navy-wash px-4 py-1" style={{ boxShadow: '3px 3px 0 #15100A' }}>
-              <span className="block font-geo font-extrabold text-[21px] leading-none">-{m}</span>
-              <span className="block text-[11px] font-semibold text-jewelInk-soft">{m === 'ში' ? 'в' : 'из'}</span>
-            </button>
-          ))}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 min-h-0" />
-      {tip && <Tip>{tip}</Tip>}
-      {done && <div className="zn-pop"><Button onClick={() => { haptic('pop'); onReady() }}>Готово, прочитать рассказ</Button></div>}
+      {tip && <div className="shrink-0 text-center text-[13px] leading-snug text-jewelInk-soft px-2" aria-live="polite">{tip}</div>}
+      {done && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}><Button onClick={() => { haptic('pop'); onReady() }}>Готово, прочитать рассказ</Button></motion.div>}
     </div>
   )
 }
 
-// ── Рассказ ───────────────────────────────────────────────────────────────────────────────────────
+/** Строка ответа для шага — уже с окончанием, или null, если ещё не готова. */
+function storyPart(c: Card, slot: Slot): string | null {
+  if (slot === 'country') return c.country && c.countryOk ? `მე ვარ ${c.country.from}.` : null
+  if (slot === 'city') return c.city && c.cityOk ? `ვცხოვრობ ${c.city.in}.` : null
+  if (slot === 'job') return c.job ? `მე ვარ ${c.job.geo}.` : null
+  return c.love ? `მიყვარს ${c.love.geo}.` : null
+}
 
-function Story({ lines, onNext, onRebuild }: { lines: Line[]; onNext: () => void; onRebuild: () => void }) {
+/** Двор университета: аркада, дерево, скамейка, вечернее небо. */
+function Courtyard() {
+  return (
+    <svg viewBox="0 0 360 220" preserveAspectRatio="xMidYMax slice" width="100%" height="100%" className="absolute inset-0" aria-hidden>
+      <defs><linearGradient id="am-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#9CC6EE" /><stop offset="1" stopColor="#F6E6D2" /></linearGradient></defs>
+      <rect width="360" height="220" fill="url(#am-sky)" />
+      {/* Здание университета с колоннами и аркадой. */}
+      <rect x="60" y="40" width="240" height="140" fill="#F1DFC2" stroke={INK} strokeWidth="2" />
+      <path d="M50 42 L180 6 L310 42 Z" fill="#E8C3A6" stroke={INK} strokeWidth="2" strokeLinejoin="round" />
+      <circle cx="180" cy="28" r="7" fill="#FDFAEF" stroke={INK} strokeWidth="1.4" />
+      {[90, 130, 170, 210, 250].map(x => (
+        <g key={x}>
+          <path d={`M${x} 180 V112 a16 16 0 0 1 32 0 V180`} fill="#C9B79A" stroke={INK} strokeWidth="1.6" />
+          <rect x={x - 4} y="100" width="4" height="80" fill="#FDFAEF" stroke={INK} strokeWidth="1" />
+        </g>
+      ))}
+      {[78, 118, 158, 198, 238, 278].map(x => <rect key={x} x={x} y="58" width="18" height="24" rx="2" fill="#8FB3D4" stroke={INK} strokeWidth="1.2" />)}
+      {/* Дерево и брусчатка. */}
+      <rect y="180" width="360" height="40" fill="#D9CDB8" />
+      {Array.from({ length: 12 }, (_, k) => <path key={k} d={`M${k * 32} 180 l14 40`} stroke={INK} strokeWidth="0.7" opacity="0.2" />)}
+      <path d="M332 182 v-50" stroke="#7A4E2D" strokeWidth="6" />
+      <circle cx="320" cy="122" r="22" fill="#4E8A5B" stroke={INK} strokeWidth="1.6" />
+      <circle cx="342" cy="112" r="18" fill="#5E9C5F" stroke={INK} strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+// ── Заметка ───────────────────────────────────────────────────────────────────────────────────────
+
+function Story({ lines, name, onNext, onRebuild }: { lines: Line[]; name: string; onNext: () => void; onRebuild: () => void }) {
   const [reading, setReading] = useState(-1)
   const [run, setRun] = useState(0)
   const [saved, setSaved] = useState(false)
-  const later = useLater()
 
+  // Заметку читают твоим голосом, строку за строкой, — следующая после того, как договорили.
   useEffect(() => {
     let stop = false
-    lines.forEach((l, k) => later(() => {
-      if (stop) return
-      setReading(k)
-      if (l.phrase) say(l.phrase)
-      else sound.tick(k)
-    }, 400 + k * READ_MS))
-    later(() => { if (!stop) setReading(-1) }, 400 + lines.length * READ_MS)
-    return () => { stop = true }
+    ;(async () => {
+      await new Promise(r => window.setTimeout(r, 400))
+      for (let k = 0; k < lines.length && !stop; k++) {
+        setReading(k)
+        await speakUrl(lineUrl(lines[k].geo, 'hero'), lines[k].geo)
+      }
+      if (!stop) setReading(-1)
+    })()
+    return () => { stop = true; hush() }
   }, [run]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const keep = (el: HTMLElement) => {
@@ -198,25 +334,44 @@ function Story({ lines, onNext, onRebuild }: { lines: Line[]; onNext: () => void
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="aboutme-story">
-      <div className="flex items-end gap-2">
-        <div className="ab-short:hidden"><Mascot mood={reading >= 0 ? 'cheer' : 'happy'} size={52} /></div>
-        <span className="mb-1 text-[13px] text-jewelInk-soft">{reading >= 0 ? 'Бомбора читает твой рассказ…' : 'Вот что ты о себе рассказал.'}</span>
-      </div>
-      <div className="relative min-h-0 overflow-hidden rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-2" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="story-card">
-        {lines.map((l, k) => (
-          <div key={k} data-testid="story-line" data-reading={reading === k ? 'yes' : 'no'}
-            className={`rounded-lg px-2 py-0.5 ab-short:py-0 transition-colors ${reading === k ? 'bg-gold-wash' : ''}`}>
-            <div className="font-geo font-bold text-[17px] ab-short:text-[15px] leading-tight">{l.geo}</div>
-            <div className="text-[11px] font-semibold text-jewelInk-hint leading-tight">{cyr(l.geo)}</div>
-            <div className="text-[12px] font-bold text-navy leading-tight">{l.ru}</div>
+      <motion.div className="relative min-h-0 overflow-hidden rounded-md border-[1.5px] border-jewelInk bg-[#FBF6EA] px-3 py-2" style={{ boxShadow: '4px 4px 0 #15100A' }} data-testid="story-card"
+        initial={{ rotate: -4, y: 40, opacity: 0 }} animate={{ rotate: -1, y: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 160, damping: 16 }}>
+        {/* Шапка газеты. */}
+        <div className="border-b-[3px] border-double border-jewelInk pb-1 mb-1.5 flex items-end justify-between">
+          <span className="font-serif text-[20px] font-black tracking-tight leading-none">Студенческий вестник</span>
+          <span className="text-[10px] font-bold text-jewelInk-hint">Батуми</span>
+        </div>
+        <div className="flex gap-2.5">
+          <div className="shrink-0 rounded-sm border-[1.5px] border-jewelInk bg-[#E6DCC6] overflow-hidden h-[96px] w-[72px] flex items-end justify-center">
+            <svg width="70" height="112" viewBox="-60 -190 120 196" className="overflow-visible -mb-6" aria-hidden style={{ filter: 'grayscale(0.6) sepia(0.3)' }}>
+              <Passerby who={ME} phase={0} stride={0} face="smile" talking={false} wave />
+            </svg>
           </div>
-        ))}
-        {saved && (
-          <div className="zn-stamp absolute right-3 bottom-3 rounded-lg border-[3px] border-ruby px-2 py-0.5 text-[16px] font-extrabold uppercase tracking-[0.1em] text-ruby bg-cream-tile/80" data-testid="story-stamp">
-            готово
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-black leading-tight">Новый студент: {name}</div>
+            <div className="text-[11px] text-jewelInk-soft leading-snug">Мы спросили новичка о нём самом — вот что он рассказал.</div>
           </div>
-        )}
-      </div>
+        </div>
+        <div className="mt-1.5 flex flex-col">
+          {lines.map((l, k) => (
+            <motion.div key={k} data-testid="story-line" data-reading={reading === k ? 'yes' : 'no'}
+              className="rounded-md px-1.5 py-0.5"
+              initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0, backgroundColor: reading === k ? '#FCE9A8' : '#FBF6EA00' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 24, delay: k * 0.08 }}>
+              <div className="font-geo font-bold text-[16px] ab-short:text-[14px] leading-tight">{l.geo}</div>
+              <div className="text-[11px] font-semibold text-jewelInk-hint leading-tight">{cyr(l.geo)} · <span className="text-navy">{l.ru}</span></div>
+            </motion.div>
+          ))}
+        </div>
+        <AnimatePresence>
+          {saved && (
+            <motion.div className="absolute right-3 bottom-3 rounded-lg border-[3px] border-ruby px-2 py-0.5 text-[16px] font-extrabold uppercase tracking-[0.1em] text-ruby bg-cream-tile/80" data-testid="story-stamp"
+              initial={{ scale: 2.4, rotate: -24, opacity: 0 }} animate={{ scale: 1, rotate: -10, opacity: 1 }} transition={{ type: 'spring', stiffness: 380, damping: 14 }}>
+              в номер
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
       <div className="flex-1 min-h-0" />
       <div className="flex gap-2">
         <div className="flex-1"><Button variant="ghost" onClick={() => setRun(r => r + 1)}>Послушать</Button></div>
@@ -224,14 +379,7 @@ function Story({ lines, onNext, onRebuild }: { lines: Line[]; onNext: () => void
       </div>
       {saved
         ? <Button onClick={onNext}>Дальше</Button>
-        : <SaveButton onClick={keep} />}
+        : <button type="button" data-testid="story-save" onClick={e => keep(e.currentTarget)} className="jewel-btn bg-ruby text-cream w-full"><span className="relative z-[1]">Сдать в номер</span></button>}
     </div>
-  )
-}
-
-function SaveButton({ onClick }: { onClick: (el: HTMLElement) => void }) {
-  return (
-    <button type="button" data-testid="story-save" onClick={e => onClick(e.currentTarget)}
-      className="jewel-btn bg-ruby text-cream w-full"><span className="relative z-[1]">В копилку</span></button>
   )
 }

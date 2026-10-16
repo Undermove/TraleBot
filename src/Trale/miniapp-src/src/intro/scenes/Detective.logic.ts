@@ -156,3 +156,14 @@ export function clueFor(row: number, clues: Clue[]): number | null {
   const k = clues.findIndex(c => c.who === row)
   return k >= 0 ? k : null
 }
+
+// ── Посылки ───────────────────────────────────────────────────────────────────────────────────────
+// Экран раздаёт посылки (варианты) соседям: assign[i] — номер варианта у соседа i, -1 — пока ничего.
+
+/** Соседи, у которых посылка не та или её нет. */
+export const wrongPeople = (assign: number[], solution: number[]) => assign.flatMap((a, i) => (a === solution[i] ? [] : [i]))
+
+/** Отдать посылку opt соседу who: если она была у другого — переходит; если у соседа была другая — та возвращается на пол. */
+export function give(assign: number[], who: number, opt: number): number[] {
+  return assign.map((a, i) => (i === who ? opt : a === opt ? -1 : a))
+}

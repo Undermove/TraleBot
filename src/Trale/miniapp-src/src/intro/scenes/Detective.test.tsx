@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { setMuted } from '../../alphabet/games/fx'
 import { fireEvent, render, screen, act } from '@testing-library/react'
 import { seeded } from '../../verbs/testing/catalog'
 import { introLesson } from '../story'
 import Detective from './Detective'
 import {
-  clueFor, clueGeo, clueKinds, makeCase, makePuzzle, minimalUnique, permutations, solutions, wrongRows, type DetectiveMode, type Mark
+  clueFor, clueGeo, clueKinds, give, makeCase, makePuzzle, minimalUnique, permutations, solutions, wrongPeople, wrongRows, type DetectiveMode, type Mark
 } from './Detective.logic'
 
 beforeEach(() => localStorage.clear())
@@ -65,30 +66,47 @@ describe('detective: logic', () => {
   })
 })
 
+describe('parcels', () => {
+  it('giving a parcel moves it from whoever had it; wrong people are the ones without their own', () => {
+    expect(give([-1, -1, -1], 1, 2)).toEqual([-1, 2, -1])
+    expect(give([2, -1, 0], 1, 2)).toEqual([-1, 2, 0])
+    expect(give([2, 1, 0], 0, 1)).toEqual([1, -1, 0])
+    expect(wrongPeople([2, 0, -1], [2, 1, 0])).toEqual([1, 2])
+  })
+})
+
 describe('Detective scene', () => {
-  it.each<[DetectiveMode, number]>([['from', 16], ['jobs', 21]])('%s: a wrong check shakes rows, then three cases are solved and «Дальше» calls onDone', async (mode, lessonId) => {
+  beforeEach(() => setMuted(true))
+  afterEach(() => { vi.useRealTimers(); setMuted(false) })
+
+  it.each<[DetectiveMode, number]>([['from', 16], ['jobs', 21]])('%s: listen, hand parcels (a wrong try bounces back), three halls → onDone', async (mode, lessonId) => {
     vi.useFakeTimers()
     const onDone = vi.fn()
     const cases = makeCase(mode, lessonId, seeded(7))
     render(<Detective lesson={introLesson(lessonId)} step={{ kind: 'detective', mode }} fraction={0.5} onExit={() => {}} onDone={onDone} rng={seeded(7)} />)
     fireEvent.click(screen.getByText('Начать'))
+    const handOut = (assign: number[]) => assign.forEach((opt, who) => {
+      fireEvent.click(screen.getByTestId(`parcel-${opt}`))
+      fireEvent.click(screen.getByTestId(`person-${who}`))
+    })
     for (let i = 0; i < cases.length; i++) {
-      await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
+      await act(async () => { await vi.advanceTimersByTimeAsync(9000) })
       expect(screen.getAllByTestId('clue')).toHaveLength(cases[i].clues.length)
       if (i === 0) {
+        // Сдвинутая раздача: все чужие — коробки отлетают на пол, подсказка про соседа.
+        handOut(cases[i].solution.map(s => (s + 1) % 3))
         fireEvent.click(screen.getByTestId('detective-check'))
-        expect(screen.getAllByTestId(/row-/).every(r => r.dataset.wrong === 'yes')).toBe(true)
-        const mentioned = cases[i].clues.some(c => c.who === 0)
-        expect(screen.getAllByTestId('clue').some(c => c.dataset.hot === 'yes')).toBe(mentioned)
+        expect(screen.getByTestId('detective-tip').textContent).toMatch(/не моя/)
+        await act(async () => { await vi.advanceTimersByTimeAsync(800) })
+        expect(screen.getAllByTestId(/^parcel-/)).toHaveLength(3)
       }
-      cases[i].solution.forEach((s, r) => fireEvent.click(screen.getByTestId(`cell-${r}-${s}`)))
+      handOut(cases[i].solution)
       fireEvent.click(screen.getByTestId('detective-check'))
-      fireEvent.click(screen.getByText(i + 1 < cases.length ? 'Следующее дело' : 'Закрыть дела'))
+      fireEvent.click(screen.getByText(i + 1 < cases.length ? 'Следующий подъезд' : 'Готово'))
     }
     expect(screen.getByTestId('game-end').textContent).toContain('2 из 3')
     expect(screen.getByTestId('rule-card')).toBeInTheDocument()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
-    vi.useRealTimers()
-  })
+  }, 60_000)
 })

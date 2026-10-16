@@ -1,271 +1,301 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { AnimatePresence, animate, motion, useMotionValue, useTransform, useVelocity } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
-import { floater, haptic, sound } from '../../alphabet/games/fx'
-import { useLater } from '../../verbs/games/useLater'
+import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { GameEnd, GameIntro, Meter, Person, Pill, RuleCard, Tip, INK, type Look } from '../ui'
+import { phrase } from '../story'
+import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { hush, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
-import {
-  DECK_SIZE, GAME_MS, fallMs, fell, haveDeck, hintFor, isOver, send, sentence, startState, verbOf,
-  type Card, type HaveMode, type HaveState, type Side
-} from './HaveSort.logic'
+import { haveDeck, hintFor, isOver, send, sentence, sentenceAudio, sideOf, startState, verbOf, type Card, type HaveState, type Side } from './HaveSort.logic'
+import { Picture } from './have/Pictures'
+import Passerby from './walk/Passerby'
+import type { Who } from './Walk.logic'
 
 /**
- * «Живое или вещь». Сверху падают карточки: грузинское слово и картинка. Внизу две корзины: слева მყავს
- * (живое — люди и звери), справа მაქვს (вещи). Нажми корзину (или смахни карточку влево/вправо), пока
- * карточка не упала. Поймал — на миг видна целая фраза «მე მყავს ძაღლი». Промах — карточка отскакивает
- * наверх с подсказкой. Чем дальше, тем быстрее; верные подряд дают комбо. 20 карточек или 45 секунд.
+ * «Фото и чемодан». Нино по видеосвязи спрашивает, кто и что у тебя есть. Живых — родных, друга, собаку —
+ * ставишь на семейное фото: про них говорят მყავს. Вещи — книгу, машину, хачапури — кладёшь в чемодан:
+ * про них — მაქვს. Карточку тащишь пальцем: она едет за ним, наклоняется, её притягивает к фото или
+ * к чемодану; можно и просто нажать на фото или чемодан. Фраза («მე მყავს ძაღლი») звучит твоим голосом.
+ * Без таймера: карточка ждёт сколько нужно.
  */
 
-// ── Картинки слов ────────────────────────────────────────────────────────────────────────────────
+const G = ({ children }: { children: string }) => <b className="font-geo">{children}</b>
+const NINO: Who = { ru: 'Нино', kind: 'woman', coat: '#E01A3C', skin: '#F2C9A0', hair: '#2A1F18', extra: 'none', voice: 'f' }
+const PULL = 90
+const VERB_COLOR: Record<Side, string> = { alive: '#4E8A5B', thing: '#C68F10' }
 
-const look = (coat: string, extra: Partial<Look> = {}): Look => ({ coat, skin: '#F2C9A0', hair: '#5A3A22', ...extra })
-const PEOPLE_LOOKS: Record<string, Look> = {
-  мама: look('#E01A3C', { long: true, age: 'old' }),
-  папа: look('#1B5FB0', { age: 'old' }),
-  брат: look('#4E8A5B'),
-  сестра: look('#C68F10', { long: true }),
-  муж: look('#2F7F86', { hair: '#15100A' }),
-  жена: look('#7A4E9A', { long: true, hair: '#9A6A3A' }),
-  сын: look('#D4563B', { age: 'kid' }),
-  дочь: look('#E01A3C', { age: 'kid', long: true }),
-  друг: look('#3A2B1F', { bag: true }),
-  ребёнок: look('#F5B820', { age: 'kid', hair: '#9A6A3A' })
-}
-
-const S = { stroke: INK, strokeWidth: 1.6, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const }
-
-function ThingIcon({ ru, size }: { ru: string; size: number }) {
-  const body = (() => {
-    switch (ru) {
-      case 'собака': return <>
-        <path d="M10 22 Q10 12 20 12 Q30 12 30 22 L30 28 Q30 34 20 34 Q10 34 10 28Z" fill="#C68A5E" {...S} />
-        <path d="M10 15 Q4 16 6 27 Q10 26 11 20Z" fill="#5A3A22" {...S} /><path d="M30 15 Q36 16 34 27 Q30 26 29 20Z" fill="#5A3A22" {...S} />
-        <circle cx="16" cy="21" r="1.6" fill={INK} /><circle cx="24" cy="21" r="1.6" fill={INK} />
-        <ellipse cx="20" cy="27" rx="3" ry="2.2" fill={INK} /><path d="M20 29 v2 M18 32 Q20 33.5 22 32" {...S} fill="none" />
-      </>
-      case 'кошка': return <>
-        <path d="M9 15 L11 5 L17 11 Q20 10 23 11 L29 5 L31 15 Q34 22 30 29 Q26 34 20 34 Q14 34 10 29 Q6 22 9 15Z" fill="#E8A13A" {...S} />
-        <circle cx="15.5" cy="20" r="1.6" fill={INK} /><circle cx="24.5" cy="20" r="1.6" fill={INK} />
-        <path d="M18.5 24 L20 25.5 L21.5 24Z" fill="#E01A3C" {...S} /><path d="M20 25.5 Q18 28 16 27 M20 25.5 Q22 28 24 27 M6 23 h7 M27 23 h7" fill="none" {...S} />
-      </>
-      case 'машина': return <>
-        <path d="M5 26 L7 19 Q8 17 11 17 L14 11 Q15 9 18 9 L26 9 Q29 9 30 11 L33 17 Q36 17 36 20 L36 26Z" fill="#1B5FB0" {...S} />
-        <path d="M16 12 L18 16.5 L28 16.5 L27 12Z" fill="#CFE3F5" {...S} />
-        <circle cx="12" cy="27" r="4" fill="#3A2B1F" {...S} /><circle cx="29" cy="27" r="4" fill="#3A2B1F" {...S} />
-      </>
-      case 'книга': return <>
-        <path d="M6 10 Q13 8 20 11 L20 33 Q13 30 6 32Z" fill="#E01A3C" {...S} /><path d="M34 10 Q27 8 20 11 L20 33 Q27 30 34 32Z" fill="#F7EAD0" {...S} />
-        <path d="M24 15 Q28 14 31 15 M24 19 Q28 18 31 19 M24 23 Q28 22 31 23" fill="none" {...S} strokeWidth={1.2} />
-      </>
-      case 'дом': return <>
-        <path d="M5 19 L20 7 L35 19Z" fill="#E01A3C" {...S} /><rect x="9" y="19" width="22" height="15" fill="#F7EAD0" {...S} />
-        <rect x="17" y="25" width="6" height="9" fill="#5A3A22" {...S} /><rect x="11" y="22" width="4.5" height="4.5" fill="#CFE3F5" {...S} /><rect x="25" y="22" width="4.5" height="4.5" fill="#CFE3F5" {...S} />
-      </>
-      case 'хачапури': return <>
-        <path d="M3 21 Q10 9 20 13 Q30 9 37 21 Q30 32 20 29 Q10 32 3 21Z" fill="#E8A13A" {...S} />
-        <ellipse cx="20" cy="21" rx="9" ry="5" fill="#FFF3D6" {...S} /><circle cx="20" cy="21" r="3" fill="#F5B820" {...S} />
-      </>
-      case 'деньги': return <>
-        <rect x="4" y="12" width="32" height="18" rx="2" fill="#9BC79F" {...S} /><circle cx="20" cy="21" r="5" fill="#D6E9D9" {...S} />
-        <path d="M20 18 v6 M8 16 h4 M28 26 h4" fill="none" {...S} />
-      </>
-      case 'кофе': return <>
-        <path d="M8 16 L30 16 L28 32 Q27 34 25 34 L13 34 Q11 34 10 32Z" fill="#F7EAD0" {...S} />
-        <path d="M29 19 Q35 19 34 24 Q33 28 28 27" fill="none" {...S} /><ellipse cx="19" cy="17" rx="10" ry="2" fill="#5A3A22" {...S} />
-        <path d="M15 12 Q13 9 15 6 M20 12 Q18 9 20 6 M25 12 Q23 9 25 6" fill="none" {...S} strokeWidth={1.2} />
-      </>
-      case 'чай': return <>
-        <path d="M7 18 L31 18 Q31 32 19 32 Q7 32 7 18Z" fill="#F7EAD0" {...S} /><path d="M30 21 Q36 21 35 25 Q33 29 28 28" fill="none" {...S} />
-        <ellipse cx="19" cy="19" rx="11" ry="2" fill="#C68F10" {...S} /><path d="M22 18 L24 8" {...S} /><rect x="22" y="5" width="5" height="5" fill="#E01A3C" {...S} />
-        <path d="M5 34 h28" {...S} />
-      </>
-      default: return <circle cx="20" cy="20" r="12" fill="#D8CBB0" {...S} />
-    }
-  })()
-  return <svg viewBox="0 0 40 40" width={size} height={size} aria-hidden>{body}</svg>
-}
-
-export function WordPicture({ ru, size = 48 }: { ru: string; size?: number }) {
-  const p = PEOPLE_LOOKS[ru]
-  if (p) return <Person look={p} height={size} />
-  return <ThingIcon ru={ru} size={size} />
-}
-
-function BasketIcon({ alive }: { alive: boolean }) {
-  return (
-    <svg viewBox="0 0 40 28" width={40} height={28} aria-hidden>
-      <path d="M4 10 h32 l-4 16 h-24Z" fill={alive ? '#D6E9D9' : '#F7E2B0'} {...S} />
-      <path d="M12 10 Q20 -2 28 10" fill="none" {...S} /><path d="M12 14 l2 9 M20 14 v9 M28 14 l-2 9" fill="none" {...S} strokeWidth={1.2} />
-    </svg>
-  )
-}
-
-// ── Сцена ─────────────────────────────────────────────────────────────────────────────────────────
-
-interface Toast { key: number; text: string; alive: boolean }
-
-export default function HaveSort({ step, fraction, onExit, onDone, rng = Math.random, now = Date.now }: SceneProps<StepOf<'havesort'>>) {
-  const mode: HaveMode = step.mode
+export default function HaveSort({ step, fraction, onExit, onDone, rng = Math.random }: SceneProps<StepOf<'havesort'>>) {
+  const mode = step.mode
+  const [round, setRound] = useState(0)
+  const deck = useMemo(() => haveDeck(mode, rng), [mode, round]) // eslint-disable-line react-hooks/exhaustive-deps
   const [phase, setPhase] = useState<'intro' | 'play' | 'end'>('intro')
-  const [run, setRun] = useState(0)
-  const deck = useMemo(() => haveDeck(mode, rng), [mode, run]) // eslint-disable-line react-hooks/exhaustive-deps
   const [hs, setHs] = useState<HaveState>(startState)
-  const [startAt, setStartAt] = useState(0)
-  const [cardAt, setCardAt] = useState(0)
-  const [t, setT] = useState(0)
-  const [hint, setHint] = useState('')
-  const [toast, setToast] = useState<Toast | null>(null)
-  const [bounce, setBounce] = useState(0)
-  const [flash, setFlash] = useState<Side | null>(null)
-  const later = useLater()
-  const cardEl = useRef<HTMLDivElement>(null)
-  const swipe = useRef<number | null>(null)
+  const [placed, setPlaced] = useState<Card[]>([])
+  const [tip, setTip] = useState('')
+  const [said, setSaid] = useState<Card | null>(null)
+  const [near, setNear] = useState<Side | null>(null)
+  const [shake, setShake] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const photo = useRef<HTMLButtonElement>(null)
+  const bag = useRef<HTMLButtonElement>(null)
+  const alive = useRef(true)
+  useEffect(() => () => { alive.current = false; hush() }, [])
+
   const c: Card | undefined = deck[hs.i]
-  const elapsed = t - startAt
-  const progress = c ? Math.min(1, Math.max(0, (t - cardAt) / fallMs(mode, hs.i))) : 0
 
-  const start = () => {
-    const n = now()
-    setHs(startState()); setStartAt(n); setCardAt(n); setT(n); setHint(''); setToast(null); setPhase('play')
+  const decide = async (side: Side): Promise<boolean> => {
+    if (!c || busy) return false
+    const res = send(hs, c, side)
+    setHs(res.state)
+    if (res.outcome === 'bounce') {
+      haptic('bad'); sound.miss(); setShake(k => k + 1)
+      setTip(hintFor(c))
+      return false
+    }
+    setBusy(true)
+    haptic('good'); sound.snap(Math.min(res.state.combo, 8))
+    const target = side === 'alive' ? photo.current : bag.current
+    if (res.points) floater(`+${res.points}`, target, VERB_COLOR[side])
+    if (res.state.combo >= 3) burst(target, 'small')
+    setPlaced(p => [...p, c]); setSaid(c); setTip('')
+    await speakUrl(sentenceAudio(c), sentence(c))
+    if (!alive.current) return true
+    setSaid(null); setBusy(false)
+    if (isOver(res.state, deck)) { sound.win(); setPhase('end') }
+    return true
   }
 
-  // Часы игры: только пока идёт игра; на размонтирование интервал снимается.
-  useEffect(() => {
-    if (phase !== 'play') return
-    const id = setInterval(() => setT(now()), 40)
-    return () => clearInterval(id)
-  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
+  const start = () => { setRound(r => r + 1); setHs(startState()); setPlaced([]); setTip(''); setPhase('play') }
 
-  // Конец игры и карточки, упавшие мимо корзин.
-  useEffect(() => {
-    if (phase !== 'play') return
-    if (isOver(hs, deck, elapsed)) { sound.win(); haptic('good'); setPhase('end'); return }
-    if (c && progress >= 1) {
-      haptic('soft'); sound.miss()
-      setHint(`Улетела! ${hintFor(c)}`)
-      setHs(fell(hs)); setCardAt(now())
-    }
-  }, [t, hs, phase]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const sendTo = (side: Side) => {
-    if (phase !== 'play' || !c) return
-    const r = send(hs, c, side)
-    setHs(r.state)
-    setFlash(side); later(() => setFlash(null), 220)
-    if (r.outcome === 'bounce') {
-      haptic('bad'); sound.miss()
-      setHint(hintFor(c))
-      setBounce(b => b + 1)
-      setCardAt(now())
-      return
-    }
-    haptic(r.outcome === 'catch' ? 'good' : 'tap'); sound.snap(r.state.combo)
-    if (r.points && cardEl.current) floater(`+${r.points}`, cardEl.current, r.state.combo >= 3 ? '#E01A3C' : '#1B5FB0')
-    if (r.outcome === 'catch') setHint('')
-    const key = Date.now() + Math.random()
-    setToast({ key, text: sentence(c), alive: c.alive })
-    later(() => setToast(x => (x?.key === key ? null : x)), 1100)
-    setCardAt(now())
-  }
-
-  useEffect(() => {
-    if (phase !== 'play') return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'ArrowLeft') sendTo('alive'); if (e.key === 'ArrowRight') sendTo('thing') }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  })
-
-  const title = 'Живое или вещь'
-  const ruleCard = (
-    <RuleCard title="Два «у меня есть»">
-      <b className="font-geo">მყავს</b> — кто-то живой: мама, брат, друг, ребёнок, собака, кошка. <b className="font-geo">მაქვს</b> — вещь: машина, книга, деньги, хачапури.
-    </RuleCard>
-  )
-
+  const title = 'Фото и чемодан'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="havesort-scene">
-          <GameIntro title={title}
-            text={mode === 'people'
-              ? 'Падают карточки. Живое (люди, звери) — в левую корзину მყავს, вещи — в правую მაქვს. Нажми корзину или смахни карточку.'
-              : 'Теперь быстрее и хитрее: кто тут живой, а что — вещь? Слева მყავს, справа მაქვს. Верные подряд дают комбо.'}
-            chips={[{ geo: 'მყავს', ru: 'кто-то живой' }, { geo: 'მაქვს', ru: 'вещь' }]}
-            onStart={start} />
+          <GameIntro title={title} text="Нино по видеосвязи спрашивает, кто и что у тебя есть. Живых — родных, друзей, зверей — ставь на семейное фото: про них говорят მყავს. Вещи клади в чемодан: про них — მაქვს." onStart={start}
+            chips={[{ geo: phrase('myavs_dzaghli').geo, ru: phrase('myavs_dzaghli').ru }, { geo: phrase('makvs_manqana').geo, ru: phrase('makvs_manqana').ru }]} />
         </div>
       </GameFrame>
     )
   }
-
   if (phase === 'end') {
-    const good = hs.right >= deck.length * 0.8
     return (
-      <GameFrame title={title} eyebrow="итог" fraction={fraction} onExit={onExit}>
+      <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="havesort-scene">
-          <GameEnd title={good ? 'Ловко!' : 'Хорошая разминка'}
-            text={`Очки: ${hs.score}. С первого раза: ${hs.right} из ${deck.length}. Лучшее комбо: ${hs.best}.`}
-            rule={ruleCard} onNext={onDone} onAgain={() => { setRun(n => n + 1); setPhase('intro') }} />
+          <GameEnd title={hs.misses === 0 ? 'Всё по местам с первого раза!' : 'Фото и чемодан собраны!'}
+            text={`Верно с первого раза: ${hs.right} из ${deck.length}. Лучшая серия: ${hs.best}.`}
+            rule={<RuleCard title="Два «у меня есть»"><G>მყავს</G> — про живых: <G>მე მყავს ძაღლი</G>. <G>მაქვს</G> — про вещи: <G>მე მაქვს მანქანა</G>.</RuleCard>}
+            onNext={onDone} onAgain={start} />
         </div>
       </GameFrame>
     )
   }
 
-  const hints = mode === 'people'
+  const people = placed.filter(p => p.alive), things = placed.filter(p => !p.alive)
+
   return (
-    <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
+    <GameFrame title={title} eyebrow={`${Math.min(hs.i + 1, deck.length)} из ${deck.length}`} fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="havesort-scene">
-        <div className="flex items-center gap-2">
-          <Pill testId="have-score">{hs.score}</Pill>
-          <Meter value={1 - elapsed / GAME_MS} tone={elapsed > GAME_MS * 0.75 ? 'ruby' : 'gold'} label="время" />
-          <Pill testId="have-count">{Math.min(hs.i + 1, deck.length)}/{DECK_SIZE}</Pill>
-          {hs.combo >= 2 && <Pill testId="have-combo"><span key={hs.combo} className="inline-block zn-pop text-ruby">×{hs.combo}</span></Pill>}
+        {/* Нино на видеосвязи. */}
+        <div className="shrink-0 flex items-center gap-2 rounded-2xl border-[1.5px] border-jewelInk bg-[#1D2747] px-2 py-1.5" style={{ boxShadow: '2px 2px 0 #15100A' }}>
+          <div className="shrink-0 w-12 h-12 rounded-xl overflow-hidden border-[1.5px] border-cream/60 bg-[#9CC6EE] flex items-start justify-center">
+            <svg width="48" height="76" viewBox="-40 -190 80 110" aria-hidden><Passerby who={NINO} phase={0} stride={0} face="smile" talking={!!said} wave={false} /></svg>
+          </div>
+          <div className="min-w-0 text-cream text-[12.5px] leading-snug">
+            <span className="font-extrabold">Нино:</span> кто и что у тебя есть? Покажи!
+          </div>
+          {hs.combo >= 2 && <motion.span key={hs.combo} initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="ml-auto shrink-0 rounded-full bg-gold border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="have-combo">×{hs.combo}</motion.span>}
         </div>
 
-        <div className="relative flex-1 min-h-[160px] rounded-2xl border-[1.5px] border-dashed border-jewelInk-faint bg-cream-deep/50 overflow-hidden touch-none select-none"
-          data-testid="have-track"
-          onPointerDown={e => { swipe.current = e.clientX }}
-          onPointerUp={e => {
-            const x0 = swipe.current; swipe.current = null
-            if (x0 === null) return
-            const dx = e.clientX - x0
-            if (dx < -40) sendTo('alive'); else if (dx > 40) sendTo('thing')
-          }}>
-          {c && (
-            <div className="absolute left-1/2" style={{ top: `calc((100% - 112px) * ${progress})`, transform: 'translateX(-50%)' }}>
-            <div key={`${hs.i}-${bounce}`} ref={cardEl} data-testid="have-card" data-alive={c.alive ? 'yes' : 'no'}
-              className={`w-[132px] ab-short:w-[116px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-2 py-2 flex flex-col items-center ${bounce && hs.bounced ? 'zn-jump' : 'zn-pop'}`}
-              style={{ boxShadow: '3px 3px 0 #15100A' }}>
-              <WordPicture ru={c.ru} size={46} />
-              <div className="font-geo font-extrabold text-[19px] leading-tight mt-1">{c.geo}</div>
-              <div className="text-[11px] font-semibold text-jewelInk-hint">{cyr(c.geo)}</div>
-            </div>
-            </div>
-          )}
-          {toast && (
-            <div key={toast.key} className={`zn-pop absolute bottom-2 left-2 right-2 rounded-xl border-[1.5px] border-jewelInk px-2 py-1 text-center ${toast.alive ? 'bg-[#D6E9D9]' : 'bg-gold-wash'}`} data-testid="have-toast">
-              <div className="font-geo font-bold text-[16px] leading-tight">{toast.text}</div>
-              <div className="text-[11px] font-semibold text-jewelInk-hint">{cyr(toast.text)}</div>
-            </div>
-          )}
+        {/* Карточка — посередине; цели — внизу. */}
+        <div className="relative flex-1 min-h-[300px]" data-testid="have-track">
+          <div className="absolute inset-x-0 top-0 h-[46%] flex items-center justify-center z-20">
+            <AnimatePresence mode="popLayout">
+              {c && !said && (
+                <DragCard key={`${round}-${hs.i}`} card={c} shake={shake} photo={photo} bag={bag} disabled={busy}
+                  onNear={setNear} onDrop={decide} />
+              )}
+              {said && (
+                <motion.div key={`said-${hs.i}`} data-testid="have-sentence" className="rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-4 py-2 text-center"
+                  style={{ boxShadow: '3px 3px 0 #15100A' }}
+                  initial={{ opacity: 0, scale: 0.7, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 22 }}>
+                  <div className="font-geo font-extrabold text-[22px] leading-tight">
+                    მე <span style={{ color: VERB_COLOR[sideOf(said)] }}>{verbOf(sideOf(said))}</span> {said.geo}
+                  </div>
+                  <div className="text-[12px] font-semibold text-jewelInk-hint">{cyr(sentence(said))} — у меня есть {said.ru}</div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 h-[54%] grid grid-cols-2 gap-2.5">
+            <Target side="alive" refEl={photo} near={near === 'alive'} onClick={() => { haptic('tap'); void decide('alive') }}>
+              <FamilyPhoto people={people} />
+            </Target>
+            <Target side="thing" refEl={bag} near={near === 'thing'} onClick={() => { haptic('tap'); void decide('thing') }}>
+              <Suitcase things={things} />
+            </Target>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
-          {(['alive', 'thing'] as Side[]).map(side => (
-            <button key={side} onClick={() => sendTo(side)} data-testid={`basket-${side}`}
-              className={`min-h-[72px] ab-short:min-h-[60px] rounded-2xl border-[1.5px] border-jewelInk flex flex-col items-center justify-center px-2 py-1 transition-transform active:translate-x-[2px] active:translate-y-[2px]
-                ${side === 'alive' ? 'bg-[#E4F0E6]' : 'bg-gold-wash'} ${flash === side ? 'scale-105' : ''}`}
-              style={{ boxShadow: '3px 3px 0 #15100A' }}>
-              <BasketIcon alive={side === 'alive'} />
-              <span className="font-geo font-extrabold text-[17px] leading-tight">{verbOf(side)}</span>
-              <span className="text-[11px] font-semibold text-jewelInk-hint">{hints ? (side === 'alive' ? 'живое: люди, звери' : 'вещи') : cyr(verbOf(side))}</span>
-            </button>
-          ))}
+        <div className="shrink-0 min-h-[40px] text-center text-[13px] leading-snug text-jewelInk-soft px-2" aria-live="polite" data-testid="have-tip">
+          {tip || (hs.i === 0 ? 'Тащи карточку на фото или в чемодан — или нажми, куда её отправить.' : '')}
         </div>
-
-        <Tip>{hint || (hints ? 'Живое — налево, вещи — направо. Можно смахнуть карточку.' : 'Осторожно, будут хитрые слова. Сначала подумай: оно живое?')}</Tip>
       </div>
     </GameFrame>
   )
 }
 
+/** Карточка слова: тянется пальцем с наклоном, притягивается к фото или чемодану, отскакивает на промах. */
+function DragCard({ card, shake, photo, bag, disabled, onNear, onDrop }: {
+  card: Card
+  shake: number
+  photo: React.RefObject<HTMLButtonElement>
+  bag: React.RefObject<HTMLButtonElement>
+  disabled: boolean
+  onNear: (s: Side | null) => void
+  onDrop: (s: Side) => Promise<boolean>
+}) {
+  const x = useMotionValue(0), y = useMotionValue(0)
+  const rotate = useTransform(useVelocity(x), [-900, 0, 900], [-18, 0, 18])
+  const el = useRef<HTMLDivElement>(null)
+  const [lift, setLift] = useState(false)
+  const last = useRef<Side | null>(null)
+  const ticks = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    // На промах (shake сменился) карточка подпрыгивает и качается.
+    if (!shake) return
+    void animate(x, [0, -12, 12, -7, 7, 0], { duration: 0.42 })
+  }, [shake]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => onNear(null), []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Смещение от исходного места до центра цели. */
+  const to = (t: HTMLElement | null) => {
+    const r = t?.getBoundingClientRect(), me = el.current?.getBoundingClientRect()
+    if (!r || !me) return null
+    const ox = me.left + me.width / 2 - x.get(), oy = me.top + me.height / 2 - y.get()
+    return { dx: r.left + r.width / 2 - ox, dy: r.top + r.height / 2 - oy }
+  }
+  const closest = (): Side | null => {
+    let best: Side | null = null, dist = Infinity
+    for (const [side, t] of [['alive', photo.current], ['thing', bag.current]] as const) {
+      const d = to(t)
+      if (!d) continue
+      const k = Math.hypot(d.dx - x.get(), d.dy - y.get())
+      if (k < dist) { dist = k; best = side }
+    }
+    return dist < PULL * 1.6 ? best : null
+  }
+  const home = () => {
+    animate(x, 0, { type: 'spring', stiffness: 420, damping: 18 })
+    animate(y, 0, { type: 'spring', stiffness: 420, damping: 18 })
+  }
+
+  return (
+    <motion.div
+      ref={el}
+      data-testid="have-card" data-alive={card.alive ? 'yes' : 'no'}
+      className="relative touch-none select-none cursor-grab active:cursor-grabbing"
+      style={{ x, y, rotate }}
+      drag={!disabled}
+      dragMomentum={false}
+      dragElastic={0.2}
+      initial={{ opacity: 0, y: -40, scale: 0.7, rotate: -8 }}
+      animate={{ opacity: 1, scale: lift ? 1.08 : 1 }}
+      exit={{ opacity: 0, scale: 0.4, transition: { duration: 0.25 } }}
+      transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+      onDragStart={() => { setLift(true); ticks.current = { x: 0, y: 0 }; haptic('pop'); sound.pop(1) }}
+      onDrag={() => {
+        const d = Math.hypot(x.get() - ticks.current.x, y.get() - ticks.current.y)
+        if (d > 55) { ticks.current = { x: x.get(), y: y.get() }; haptic('soft') }
+        const n = closest()
+        if (n !== last.current) { last.current = n; onNear(n); if (n) haptic('snap') }
+      }}
+      onDragEnd={() => {
+        setLift(false)
+        const side = last.current
+        last.current = null; onNear(null)
+        if (!side) { haptic('soft'); home(); return }
+        const t = to(side === 'alive' ? photo.current : bag.current)
+        if (t) {
+          animate(x, t.dx, { type: 'spring', stiffness: 520, damping: 30 })
+          animate(y, t.dy, { type: 'spring', stiffness: 520, damping: 30 })
+        }
+        void onDrop(side).then(ok => { if (!ok) home() })
+      }}
+    >
+      <div className="rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile p-2 pb-2.5 flex flex-col items-center min-w-[132px]"
+        style={{ boxShadow: lift ? '8px 12px 0 rgba(21,16,10,0.3)' : '3px 3px 0 #15100A', transition: 'box-shadow 160ms' }}>
+        <div className="w-[112px] h-[92px] rounded-xl bg-gold-wash border-[1.5px] border-jewelInk/40 flex items-end justify-center overflow-hidden">
+          <Picture geo={card.geo} size={88} />
+        </div>
+        <span className="mt-1.5 font-geo font-extrabold text-[22px] leading-none">{card.geo}</span>
+        <span className="text-[11.5px] font-semibold text-jewelInk-hint leading-tight">{cyr(card.geo)} · {card.ru}</span>
+      </div>
+    </motion.div>
+  )
+}
+
+function Target({ side, refEl, near, onClick, children }: { side: Side; refEl: React.RefObject<HTMLButtonElement>; near: boolean; onClick: () => void; children: React.ReactNode }) {
+  // Абсолютная раскладка: картинка над подписью занимает всё место кнопки, какой бы высоты она ни была.
+  return (
+    <motion.button ref={refEl} data-testid={`basket-${side}`} onClick={onClick}
+      className="relative h-full rounded-2xl border-[1.5px] border-jewelInk overflow-hidden"
+      style={{ boxShadow: '3px 3px 0 #15100A', background: side === 'alive' ? '#E8F1E6' : '#F6EEDC' }}
+      animate={{ scale: near ? 1.05 : 1, borderColor: near ? VERB_COLOR[side] : '#15100A' }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: 'spring', stiffness: 420, damping: 22 }}>
+      <span className="absolute left-1.5 right-1.5 top-1.5 bottom-[48px] block">{children}</span>
+      <span className="absolute inset-x-0 bottom-0 h-[44px] border-t-[1.5px] border-jewelInk flex flex-col items-center justify-center" style={{ background: VERB_COLOR[side] }}>
+        <span className="font-geo font-extrabold text-[17px] text-cream leading-none">მე {verbOf(side)}</span>
+        <span className="block text-[10.5px] font-bold text-cream/85 leading-tight">{side === 'alive' ? 'живые — на фото' : 'вещи — в чемодан'}</span>
+      </span>
+    </motion.button>
+  )
+}
+
+/** Семейное фото в рамке: кого поставил — те и на снимке, рядком, с подписью сзади. */
+function FamilyPhoto({ people }: { people: Card[] }) {
+  return (
+    <div className="relative w-full h-full rounded-xl border-[1.5px] border-jewelInk bg-[#FDFAEF] p-1.5 rotate-[-2deg]" style={{ boxShadow: '2px 3px 0 rgba(21,16,10,0.35)' }}>
+      <div className="relative w-full h-full rounded-lg overflow-hidden" style={{ background: 'linear-gradient(#9CC6EE, #D7EAF7 60%, #CFE0CF 60%)' }}>
+        {people.length === 0 && <svg viewBox="0 0 40 40" className="absolute inset-0 m-auto w-10 h-10 opacity-40" aria-hidden><path d="M20 34 S4 24 4 14 a8 8 0 0 1 16 -3 a8 8 0 0 1 16 3 c0 10 -16 20 -16 20 Z" fill="#E01A3C" stroke="#15100A" strokeWidth="2" /></svg>}
+        <div className="absolute inset-x-1 bottom-0 flex items-end justify-center -space-x-3">
+          <AnimatePresence>
+            {people.slice(-5).map((p, k) => (
+              <motion.div key={`${p.geo}-${k}`} initial={{ y: 40, opacity: 0, scale: 0.6 }} animate={{ y: 0, opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 300, damping: 16 }}>
+                <Picture geo={p.geo} size={66} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Открытый чемодан: что положил — то и внутри, вперемешку. */
+function Suitcase({ things }: { things: Card[] }) {
+  return (
+    <div className="relative w-full h-full">
+      <svg viewBox="0 0 160 120" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" aria-hidden>
+        <path d="M14 34 L30 8 H130 L146 34 Z" fill="#B5793F" stroke="#15100A" strokeWidth="2.4" strokeLinejoin="round" />
+        <rect x="8" y="34" width="144" height="80" rx="10" fill="#C2553A" stroke="#15100A" strokeWidth="2.4" />
+        <rect x="16" y="42" width="128" height="64" rx="7" fill="#8A3A28" stroke="#15100A" strokeWidth="1.6" />
+        <path d="M60 34 v-6 h40 v6" fill="none" stroke="#15100A" strokeWidth="2.4" />
+      </svg>
+      <div className="absolute left-[12%] right-[12%] top-[40%] bottom-[14%] flex flex-wrap items-center justify-center content-center gap-0.5">
+        <AnimatePresence>
+          {things.slice(-6).map((t, k) => (
+            <motion.div key={`${t.geo}-${k}`} initial={{ y: -40, opacity: 0, rotate: -20 }} animate={{ y: 0, opacity: 1, rotate: (k % 3 - 1) * 10 }} transition={{ type: 'spring', stiffness: 300, damping: 14 }}>
+              <Picture geo={t.geo} size={46} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}

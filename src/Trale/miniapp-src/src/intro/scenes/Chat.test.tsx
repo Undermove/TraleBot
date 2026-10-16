@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { setMuted } from '../../alphabet/games/fx'
 import { seeded } from '../../verbs/testing/catalog'
 import { geoName, introLesson, knows } from '../story'
 import Chat from './Chat'
@@ -58,8 +59,9 @@ describe('chat scripts', () => {
 })
 
 describe('Chat scene', () => {
-  beforeEach(() => { vi.useFakeTimers(); localStorage.clear() })
-  afterEach(() => vi.useRealTimers())
+  // Без звука реплика держится столько, сколько её читать: в jsdom записи не играют.
+  beforeEach(() => { vi.useFakeTimers(); localStorage.clear(); setMuted(true) })
+  afterEach(() => { vi.useRealTimers(); setMuted(false) })
 
   const play = async (script: ChatScript) => {
     const onDone = vi.fn()
@@ -71,8 +73,8 @@ describe('Chat scene', () => {
       fireEvent.click(screen.getByText('Открыть чат'))
     } else fireEvent.click(screen.getByText('Начать'))
     let misses = 0
-    for (let guard = 0; guard < 80 && !screen.queryByTestId('chat-finish'); guard++) {
-      await act(async () => { vi.advanceTimersByTime(700) })
+    for (let guard = 0; guard < 300 && !screen.queryByTestId('chat-finish'); guard++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(700) })
       const miss = screen.queryAllByTestId('chat-reply-miss').find(b => !(b as HTMLButtonElement).disabled)
       const okBtn = screen.queryAllByTestId('chat-reply-ok')[0]
       // Один раз промахнуться, чтобы увидеть реакцию, дальше — верно.

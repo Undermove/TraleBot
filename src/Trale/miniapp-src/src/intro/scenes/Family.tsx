@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import Button from '../../components/Button'
 import { phrase } from '../story'
-import { Bubble, GameEnd, GameIntro, Geo, Person, Pill, Reply, RuleCard, Tip, say, type Look, type Mood } from '../ui'
+import { GameEnd, GameIntro, Pill, Reply, RuleCard, Tip, type Look, type Mood } from '../ui'
+import { cyr } from '../../verbs/types'
+import { hush, speak, speakUrl } from '../voice'
+import Passerby from './walk/Passerby'
+import Portrait, { whoOf } from './family/Portrait'
+import DragPhoto from './family/DragPhoto'
 import type { SceneProps, StepOf } from './types'
 import {
   ROLES, SHOW_AFTER, albumPages, albumScore, familyLooks, familyRounds, familyTree, geoOf, missReaction, ownStatements, thisIs, treeRoles,
@@ -20,6 +26,14 @@ import {
  */
 
 const SHADOW = { boxShadow: '3px 3px 0 #15100A' }
+
+/** Слово семьи голосом хозяина альбома: Нино и Ана — женским, Гиорги и Давити — мужским. */
+function sayWord(r: Role, female: boolean) {
+  if (female) void speak(ROLES[r].pid, 'f')
+  else void speakUrl(`/audio/intro-story/family/m-${ROLES[r].pid}.m4a`, geoOf(r))
+}
+
+const MOOD_FACE: Record<Mood, 'smile' | 'huh' | 'wow' | 'calm'> = { smile: 'smile', sad: 'calm', huh: 'huh', wow: 'wow' }
 
 // ── Доска ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -47,11 +61,14 @@ interface BoardProps {
   glow?: Role | null
   bad?: Role | null
   focus?: Role | null
+  /** Рамка, к которой сейчас тянут фото. */
+  near?: string | null
   labels?: boolean
   className?: string
+  boardRef?: React.RefObject<HTMLDivElement>
 }
 
-function Board({ tree, filled, looks, ownerLook, ownerRu, onFrame, glow, bad, focus, labels = true, className = 'flex-1 min-h-[180px]' }: BoardProps) {
+function Board({ tree, filled, looks, ownerLook, ownerRu, onFrame, glow, bad, focus, near, labels = true, className = 'flex-1 min-h-[180px]', boardRef }: BoardProps) {
   const rowH = 100 / tree.rows
   const pos = (r: SlotRole) => tree.slots.find(s => s.role === r)
   const y = (row: number) => (row + 0.5) * rowH
@@ -72,34 +89,39 @@ function Board({ tree, filled, looks, ownerLook, ownerRu, onFrame, glow, bad, fo
     g.kids.forEach((c, j) => ln(`k${k}-${j}`, pos(c)!.x * 100, bus, pos(c)!.x * 100, y(pos(c)!.row)))
   })
   return (
-    <div className={`relative w-full ${className}`} data-testid="family-board">
+    // Стена с обоями: рамки висят на гвоздиках, родство — красной ниткой между ними.
+    <div ref={boardRef} className={`relative w-full rounded-2xl border-[1.5px] border-jewelInk overflow-hidden ${className}`} data-testid="family-board"
+      style={{ boxShadow: '3px 3px 0 #15100A', background: 'repeating-linear-gradient(90deg, #F4E3C8 0 22px, #EFDCBD 22px 24px)' }}>
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-        <g stroke="#7A6B52" strokeWidth="1.6" fill="none">{lines}</g>
+        <g stroke="#C2553A" strokeWidth="2" fill="none" strokeLinecap="round">{lines}</g>
       </svg>
       {tree.slots.map(s => {
         const style: React.CSSProperties = { left: `${s.x * 100}%`, top: `${y(s.row)}%`, transform: 'translate(-50%, -50%)' }
         if (s.role === 'ego') {
           return (
-            <div key="ego" style={style} className="absolute w-[58px] ab-short:w-[52px] rounded-xl border-[1.5px] border-jewelInk bg-gold-wash flex flex-col items-center pt-1 overflow-hidden" data-testid="frame-ego">
-              <Person look={ownerLook} height={46} />
+            <div key="ego" style={style} className="absolute w-[60px] ab-short:w-[52px] rounded-lg border-[3px] border-[#C68F10] bg-gold-wash flex flex-col items-center pt-0.5 overflow-hidden" data-testid="frame-ego">
+              <Portrait look={ownerLook} size={50} />
               <div className="w-full bg-cream-tile border-t-[1.5px] border-jewelInk text-[10px] font-extrabold leading-[14px] text-center truncate">{ownerRu}</div>
             </div>
           )
         }
         const r = s.role, info = ROLES[r], done = !!filled[r]
         return (
+          // Снаружи — место на стене (translate), внутри — пружина: transform анимации не сбивает центровку.
           <div key={r} style={style} className="absolute">
+          <motion.div animate={{ scale: near === r ? 1.14 : 1 }} transition={{ type: 'spring', stiffness: 420, damping: 18 }}>
           <button data-frame={r} data-testid={`frame-${r}`} data-filled={done ? 'yes' : 'no'}
             disabled={done || !onFrame}
             onClick={e => onFrame?.(r, e.currentTarget)}
-            className={`relative w-[58px] ab-short:w-[52px] min-h-[44px] rounded-xl border-[1.5px] flex flex-col items-center pt-1 overflow-hidden transition-colors
-              ${done ? 'border-jewelInk bg-cream-tile zn-pop' : 'border-dashed border-jewelInk-soft bg-cream-deep'}
+            className={`relative w-[60px] ab-short:w-[52px] min-h-[46px] rounded-lg flex flex-col items-center pt-0.5 overflow-hidden transition-colors
+              ${done ? 'border-[3px] border-[#8A5A33] bg-[#FDFAEF] zn-pop' : near === r ? 'border-[3px] border-[#4E8A5B] bg-[#D6E9D9]' : 'border-[2px] border-dashed border-[#8A5A33]/60 bg-[#F6EEDC]/80'}
               ${glow === r ? 'ring-4 ring-gold' : ''} ${focus === r ? 'ring-4 ring-navy' : ''} ${bad === r ? 'zn-shake bg-ruby-wash' : ''}`}>
-            {done ? <Person look={looks[r]} height={46} mood={focus === r ? 'wow' : 'smile'} /> : <Silhouette female={info.female} age={info.age} />}
+            {done ? <Portrait look={looks[r]} female={info.female} size={50} face={focus === r ? 'wow' : 'smile'} /> : <Silhouette female={info.female} age={info.age} />}
             <div className={`w-full border-t-[1.5px] text-[9px] font-extrabold leading-[11px] py-[1px] text-center whitespace-normal ${done ? 'border-jewelInk bg-[#D6E9D9]' : 'border-transparent text-transparent'}`}>
               {done && labels ? info.label : '\u00A0'}
             </div>
           </button>
+          </motion.div>
           </div>
         )
       })}
@@ -130,13 +152,18 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const round = rounds[ri]
   const photo: Role | undefined = round.order[ci]
   const total = rounds.reduce((n, r) => n + r.order.length, 0)
-  useEffect(() => { if (rounds[0].order[0]) say(ROLES[rounds[0].order[0]].pid) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const female = (k: number) => !!rounds[k].ownerLook.long
+  const [talking, setTalking] = useState(false)
+  const [near, setNear] = useState<string | null>(null)
+  const [shake, setShake] = useState(0)
+  const boardRef = useRef<HTMLDivElement>(null)
+  const voice = (r: Role, k: number) => { setTalking(true); sayWord(r, female(k)); later(() => setTalking(false), 900) }
+  useEffect(() => { if (rounds[0].order[0]) voice(rounds[0].order[0], 0) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => hush(), [])
 
-  const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
-  const [off, setOff] = useState<{ x: number; y: number } | null>(null)
-
-  const place = (frame: Role, el?: HTMLElement | null) => {
-    if (!photo || busy || roundDone) return
+  /** true — фото легло в рамку. */
+  const place = (frame: Role, el?: HTMLElement | null): boolean => {
+    if (!photo || busy || roundDone) return false
     const isTrap = mode === 'parents' && ri === 0 && photo === 'mama'
     if (frame === photo) {
       haptic('good'); sound.snap(ci)
@@ -150,15 +177,18 @@ function Placing({ mode, lessonId, rng, onEnd }: {
       setMisses(0); setBusy(true)
       later(() => {
         setBusy(false)
-        if (ci + 1 < round.order.length) { setCi(ci + 1); say(ROLES[round.order[ci + 1]].pid) }
+        if (ci + 1 < round.order.length) { setCi(ci + 1); voice(round.order[ci + 1], ri) }
         else { setRoundDone(true); sound.win() }
       }, 650)
+      return true
     } else {
       haptic('bad'); sound.miss()
       if (isTrap) trap.current = false
       setMisses(m => m + 1)
       setBad(frame); later(() => setBad(null), 420)
       setFb({ tone: isTrap ? 'trap' : 'bad', text: missReaction(photo, frame) })
+      setShake(k => k + 1)
+      return false
     }
   }
 
@@ -166,29 +196,8 @@ function Placing({ mode, lessonId, rng, onEnd }: {
     haptic('pop')
     if (ri + 1 < rounds.length) {
       setRi(ri + 1); setCi(0); setFilled({}); setRoundDone(false); setFb(null)
-      say(ROLES[rounds[ri + 1].order[0]].pid)
+      voice(rounds[ri + 1].order[0], ri + 1)
     } else onEnd({ first: first.current, total, trap: trap.current })
-  }
-
-  const onDown = (e: React.PointerEvent) => {
-    drag.current = { x: e.clientX, y: e.clientY, moved: false }
-    try { (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId) } catch { /* jsdom */ }
-  }
-  const onMove = (e: React.PointerEvent) => {
-    const d = drag.current
-    if (!d) return
-    const dx = e.clientX - d.x, dy = e.clientY - d.y
-    if (!d.moved && Math.hypot(dx, dy) > 8) d.moved = true
-    if (d.moved) setOff({ x: dx, y: dy })
-  }
-  const onUp = (e: React.PointerEvent) => {
-    const d = drag.current
-    drag.current = null; setOff(null)
-    if (!d?.moved || typeof document.elementsFromPoint !== 'function') return
-    // Под пальцем — само фото; рамку ищем под ним.
-    const hit = document.elementsFromPoint(e.clientX, e.clientY).map(x => x.closest('[data-frame]')).find(Boolean) as HTMLElement | undefined
-    const r = hit?.dataset.frame as Role | undefined
-    if (r && !filled[r]) place(r, hit)
   }
 
   const mood: Mood = fb?.tone === 'bad' || (fb?.tone === 'trap' && misses > 0) ? 'wow' : 'smile'
@@ -202,13 +211,20 @@ function Placing({ mode, lessonId, rng, onEnd }: {
         <Pill testId="family-score">★ {first.current}</Pill>
       </div>
 
-      <div className="flex items-end gap-2 min-h-[64px]">
-        <Person look={round.ownerLook} mood={mood} height={64} className="shrink-0" />
-        <Bubble className="mb-2" tone={roundDone ? 'good' : 'plain'} key={`${ri}-${ci}-${roundDone}`}>
+      <div className="flex items-end gap-2 min-h-[84px]">
+        <svg width="62" height="96" viewBox="-50 -196 100 202" className="shrink-0 overflow-visible" aria-hidden>
+          <Passerby who={whoOf(round.ownerLook)} phase={0} stride={0} face={MOOD_FACE[mood]} talking={talking} wave={roundDone} />
+        </svg>
+        <motion.div key={`${ri}-${ci}-${roundDone}`} className={`mb-6 rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 ${roundDone ? 'bg-[#D6E9D9]' : 'bg-cream-tile'}`}
+          style={{ boxShadow: '2px 3px 0 #15100A', transformOrigin: '0% 100%' }}
+          initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
           {roundDone
             ? <span className="text-[13px] font-bold">Вся семья на месте!</span>
-            : photo && <span data-testid="family-say"><Geo text={thisIs(photo)} size={17} /></span>}
-        </Bubble>
+            : photo && <span data-testid="family-say" className="block">
+              <span className="block font-geo font-extrabold text-[18px] leading-tight">{thisIs(photo)}</span>
+              <span className="block text-[11px] font-semibold text-jewelInk-hint">{cyr(thisIs(photo))}</span>
+            </span>}
+        </motion.div>
         {(fb?.tone === 'trap' || fb?.tone === 'dodged') && (
           <span key={fb.text} data-testid="family-trap"
             className={`zn-stamp ml-auto mb-3 shrink-0 rounded-lg border-2 bg-cream-tile px-2 py-0.5 text-[12px] font-extrabold uppercase tracking-wide ${fb.tone === 'trap' ? 'border-ruby text-ruby' : 'border-navy text-navy'}`}>
@@ -217,8 +233,8 @@ function Placing({ mode, lessonId, rng, onEnd }: {
         )}
       </div>
 
-      <Board tree={tree} filled={filled} looks={round.looks} ownerLook={round.ownerLook} ownerRu={round.ownerRu}
-        onFrame={roundDone ? undefined : (r, el) => place(r, el)} glow={glow} bad={bad} />
+      <Board tree={tree} filled={filled} looks={round.looks} ownerLook={round.ownerLook} ownerRu={round.ownerRu} boardRef={boardRef} near={near}
+        onFrame={roundDone ? undefined : (r, el) => { place(r, el) }} glow={glow} bad={bad} />
 
       <div className="shrink-0 min-h-[92px] ab-short:min-h-[80px] flex items-center gap-3">
         {roundDone ? (
@@ -227,14 +243,12 @@ function Placing({ mode, lessonId, rng, onEnd }: {
           </div>
         ) : photo && (
           <>
-            <div key={`${ri}-${ci}`} data-testid="family-photo"
-              onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={() => { drag.current = null; setOff(null) }}
-              className={`shrink-0 touch-none select-none cursor-grab rounded-xl border-[1.5px] border-jewelInk bg-cream-tile p-1 pb-2 ${off ? '' : 'zn-in-right'} ${busy ? 'opacity-0 transition-opacity duration-300' : ''}`}
-              style={{ ...SHADOW, transform: off ? `translate(${off.x}px, ${off.y}px) rotate(-4deg)` : 'rotate(-3deg)', zIndex: 20, position: 'relative' }}>
-              <div className="rounded-lg bg-gold-wash px-2"><Person look={round.looks[photo]} height={70} /></div>
-            </div>
+            <DragPhoto key={`${ri}-${ci}`} board={boardRef} disabled={busy} shake={shake} onNear={setNear}
+              onDrop={(r, el) => place(r as Role, el)}>
+              <div className="w-[64px] h-[64px] rounded bg-gold-wash flex items-end justify-center overflow-hidden"><Portrait look={round.looks[photo]} female={ROLES[photo].female} size={64} /></div>
+            </DragPhoto>
             <div className="text-[13px] leading-snug text-jewelInk-soft">
-              Кого показывают? Перетащи фото в рамку или просто нажми на рамку.
+              Кого показывают? Тащи фото в рамку — или просто нажми на рамку.
             </div>
           </>
         )}
@@ -265,6 +279,8 @@ function Album({ lessonId, rng, onEnd }: { lessonId: number; rng: () => number; 
   const [own, setOwn] = useState<string[] | null>(null)
   const later = useLater()
   const page = pages[pi]
+  useEffect(() => { if (page) void speak('vin_aris', 'f') }, [pi]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => hush(), [])
   const { score, best } = albumScore(results)
   let streak = 0
   for (let k = results.length - 1; k >= 0 && results[k]; k--) streak++
@@ -282,8 +298,10 @@ function Album({ lessonId, rng, onEnd }: { lessonId: number; rng: () => number; 
     return (
       <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="family-own">
         <div className="flex items-end gap-2">
-          <Person look={ninoLook} height={56} className="shrink-0" />
-          <Bubble className="mb-2"><span className="text-[13px]">Последняя страница — твоя. Кто есть у тебя? Выбери, что про тебя правда.</span></Bubble>
+          <svg width="52" height="80" viewBox="-50 -196 100 202" className="shrink-0 overflow-visible" aria-hidden>
+            <Passerby who={whoOf(ninoLook)} phase={0} stride={0} face="smile" talking={false} wave />
+          </svg>
+          <div className="mb-5 rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-1.5 text-[13px]" style={{ boxShadow: '2px 3px 0 #15100A' }}>Последняя страница — твоя. Кто есть у тебя? Выбери, что про тебя правда.</div>
         </div>
         <div className="flex-1 min-h-0 grid grid-cols-2 gap-1.5 content-start overflow-hidden">
           {statements.map(s => (
@@ -300,7 +318,7 @@ function Album({ lessonId, rng, onEnd }: { lessonId: number; rng: () => number; 
   const choose = (r: Role) => {
     if (ok) return
     if (r === page.role) {
-      haptic('good'); sound.snap(streak); say(ROLES[r].pid)
+      haptic('good'); sound.snap(streak); void speak(ROLES[r].pid, 'hero')
       const first = wrong.length === 0
       setResults(x => [...x, first])
       setOk(true)
@@ -322,15 +340,31 @@ function Album({ lessonId, rng, onEnd }: { lessonId: number; rng: () => number; 
         <Pill testId="album-score">★ {score}</Pill>
       </div>
       <div className="flex items-end gap-2">
-        <Person look={ninoLook} height={56} mood={wrong.length && !ok ? 'huh' : 'smile'} className="shrink-0" />
-        <Bubble className="mb-2" key={pi}><Geo text={phrase('vin_aris').geo} size={17} /></Bubble>
+        <svg width="56" height="88" viewBox="-50 -196 100 202" className="shrink-0 overflow-visible" aria-hidden>
+          <Passerby who={whoOf(ninoLook)} phase={0} stride={0} face={wrong.length && !ok ? 'huh' : 'smile'} talking={false} wave={ok} />
+        </svg>
+        <motion.div key={pi} className="mb-6 rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-3 py-1.5" style={{ boxShadow: '2px 3px 0 #15100A', transformOrigin: '0% 100%' }}
+          initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
+          <span className="block font-geo font-extrabold text-[18px] leading-tight">{phrase('vin_aris').geo}</span>
+          <span className="block text-[11px] font-semibold text-jewelInk-hint">{cyr(phrase('vin_aris').geo)}</span>
+        </motion.div>
       </div>
       <Board tree={tree} filled={filled} looks={looks} ownerLook={ninoLook} ownerRu="Нино" focus={page.role} labels={false} />
       <div className="grid grid-cols-3 gap-2" data-testid="album-options">
-        {page.options.map(r => (
-          <Reply key={`${pi}-${r}`} geo={geoOf(r)} onClick={() => choose(r)} compact disabled={wrong.includes(r) || ok}
-            state={ok && r === page.role ? 'good' : wrong.includes(r) ? 'bad' : 'idle'} testId={r === page.role ? 'album-right' : `album-wrong-${r}`} />
-        ))}
+        {page.options.map(r => {
+          const state = ok && r === page.role ? 'good' : wrong.includes(r) ? 'bad' : 'idle'
+          return (
+            <motion.button key={`${pi}-${r}`} data-testid={r === page.role ? 'album-right' : `album-wrong-${r}`} disabled={wrong.includes(r) || ok}
+              onClick={() => { haptic('tap'); choose(r) }}
+              className="min-h-[52px] rounded-2xl border-[1.5px] border-jewelInk px-1 py-1 text-center"
+              style={{ boxShadow: '3px 3px 0 #15100A' }}
+              animate={{ backgroundColor: state === 'good' ? '#D6E9D9' : state === 'bad' ? '#F7DCDD' : '#FDFAEF', opacity: state === 'bad' ? 0.6 : 1, x: state === 'bad' ? [0, -6, 6, -3, 0] : 0 }}
+              whileTap={{ scale: 0.95 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }}>
+              <span className="block font-geo font-bold leading-tight" style={{ fontSize: geoOf(r).length > 6 ? 13.5 : 17 }}>{geoOf(r)}</span>
+              <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{cyr(geoOf(r))}</span>
+            </motion.button>
+          )
+        })}
       </div>
       <Tip>{fb || 'Нино показывает на фото в синей рамке. Кто это ей?'}</Tip>
     </div>

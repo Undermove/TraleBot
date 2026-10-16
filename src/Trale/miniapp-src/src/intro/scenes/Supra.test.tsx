@@ -3,7 +3,9 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { seeded } from '../../verbs/testing/catalog'
 import { geoName, introLesson, knows } from '../story'
 import Supra from './Supra'
-import { BEATS, SUPRA_LESSON, TOASTS, TOAST_LOOP_MS, guestWarmth, guests, needle, raiseAt, toastOpts } from './supra.logic'
+import { BEATS, SUPRA_LESSON, TOASTS, guestWarmth, guests, toastOpts } from './supra.logic'
+import { setMuted } from '../../alphabet/games/fx'
+import { voiceOf } from './Reception.logic'
 
 const me = geoName('Карлос')
 
@@ -41,56 +43,38 @@ describe('supra logic', () => {
     expect(BEATS.filter(b => b.kind === 'toast')).toHaveLength(TOASTS.length)
   })
 
-  it('the raise needle loops and the zone is near the end of the speech', () => {
-    expect(needle(0)).toBe(0)
-    expect(needle(TOAST_LOOP_MS)).toBe(0)
-    expect(raiseAt(TOAST_LOOP_MS * 0.1)).toBe('early')
-    expect(raiseAt(TOAST_LOOP_MS * 0.75)).toBe('ok')
-    expect(raiseAt(TOAST_LOOP_MS * 0.95)).toBe('late')
-    expect([guestWarmth(0, false), guestWarmth(2, false), guestWarmth(0, true)]).toEqual([2, 1, 0])
+  it('warmth: right the first time — 2, after misses — 1; the grandmother of the family theme is a woman', () => {
+    expect([guestWarmth(0), guestWarmth(2)]).toEqual([2, 1])
+    for (let seed = 1; seed < 10; seed++) expect(voiceOf(guests(me, seeded(seed)).find(x => x.theme === 'family')!.name)).toBe('f')
   })
 })
 
 describe('Supra scene', () => {
-  beforeEach(() => { vi.useFakeTimers(); localStorage.clear() })
-  afterEach(() => vi.useRealTimers())
+  beforeEach(() => { vi.useFakeTimers(); localStorage.clear(); setMuted(true) })
+  afterEach(() => { vi.useRealTimers(); setMuted(false) })
 
-  it('goes through all guests and toasts to the group photo and calls onDone', async () => {
+  it('guests talk in turn, toasts are raised and answered, the group photo, onDone — nobody hurries you', async () => {
     const onDone = vi.fn()
     render(<Supra lesson={introLesson(33)} step={{ kind: 'supra' }} fraction={0.9} onExit={() => {}} onDone={onDone} rng={seeded(5)} />)
     fireEvent.click(screen.getByText('Начать'))
-    let early = false, missed = false
-    for (let guard = 0; guard < 400 && !screen.queryByTestId('supra-photo'); guard++) {
-      await act(async () => { vi.advanceTimersByTime(100) })
-      const gauge = screen.queryByTestId('supra-gauge')
-      if (gauge) {
-        // Один раз поднять бокал рано, потом — ровно в зоне.
-        if (!early) { fireEvent.click(screen.getByTestId('supra-raise')); early = true; continue }
-        if (gauge.getAttribute('data-zone') === 'ok') fireEvent.click(screen.getByTestId('supra-raise'))
-        continue
-      }
+    // Подождать долго, ничего не нажимая: гость никуда не уходит.
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+    expect(screen.getAllByTestId('supra-reply-ok').length).toBeGreaterThan(0)
+    let missed = false
+    for (let guard = 0; guard < 1500 && !screen.queryByTestId('supra-photo'); guard++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(100) })
+      const raise = screen.queryByTestId('supra-raise')
+      if (raise && screen.queryByTestId('supra-note')?.textContent?.includes('Подними')) { fireEvent.click(raise); continue }
       const miss = screen.queryAllByTestId('supra-reply-miss').find(b => !(b as HTMLButtonElement).disabled)
-      if (miss && !missed) { fireEvent.click(miss); missed = true; expect(screen.getByTestId('supra-note')).toBeTruthy(); continue }
+      if (miss && !missed) { await act(async () => { fireEvent.click(miss) }); missed = true; expect(screen.getByTestId('supra-note')).toBeTruthy(); continue }
       const ok = screen.queryAllByTestId('supra-reply-ok')[0]
-      if (ok) fireEvent.click(ok)
+      if (ok) await act(async () => { fireEvent.click(ok) })
     }
     expect(screen.getByTestId('supra-photo')).toBeTruthy()
-    expect(screen.getByTestId('supra-toasts').textContent).toBe('тостов: 3 из 3')
+    expect(screen.getByTestId('supra-toasts').textContent).toBe(`тостов: ${TOASTS.length} из ${TOASTS.length}`)
+    expect(screen.getByTestId('supra-warm').textContent).toBe('тёплых гостей: 6 из 6')
     expect(screen.getByText('Ты прошёл всё «Знакомство».')).toBeTruthy()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
-  })
-
-  it('finishes even if the player never answers', async () => {
-    render(<Supra lesson={introLesson(33)} step={{ kind: 'supra' }} fraction={0.9} onExit={() => {}} onDone={() => {}} rng={seeded(2)} />)
-    fireEvent.click(screen.getByText('Начать'))
-    for (let guard = 0; guard < 600 && !screen.queryByTestId('supra-photo'); guard++) {
-      await act(async () => { vi.advanceTimersByTime(250) })
-      // Тосты без ответа не идут дальше — жмём бокал как попало, а на тост отвечаем верно.
-      const raise = screen.queryByTestId('supra-raise')
-      if (raise) fireEvent.click(raise)
-      if (screen.queryByTestId('supra-gauge') === null && screen.queryAllByTestId('supra-reply-ok').length && screen.getByTestId('supra-scene').textContent?.includes('Тамада')) fireEvent.click(screen.getAllByTestId('supra-reply-ok')[0])
-    }
-    expect(screen.getByTestId('supra-warm').textContent).toBe('тёплых гостей: 0 из 6')
-  })
+  }, 60_000)
 })
