@@ -4,9 +4,9 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import Button from '../../components/Button'
-import { JOBS, plural } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
-import { hush, speakUrl } from '../voice'
+import { JOBS, firstMet, met, phrase, plural } from '../story'
+import { GameEnd, GameIntro, NewWord, RuleCard, WordTag } from '../ui'
+import { hush, speak, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
   PUZZLES, clueFor, clueGeo, clueRu, give, makeCase, speakerOf, wrongPeople,
@@ -23,7 +23,8 @@ import type { Who } from './Walk.logic'
  * профессии), а кому какая — не написано. Новые соседи тут же болтают: «მე ვარ ესპანეთიდან», на твой
  * вопрос — «არა», про другого — «ნინო? ის არის ექიმი». Всё подслушанное остаётся списком — помнить не
  * нужно, нужно понять. Раздай посылки: нажми коробку, потом соседа. Прямо сказано не всё — третье
- * узнаёшь методом исключения. Три подъезда, каждый хитрее.
+ * узнаёшь методом исключения. Отдаёшь — спрашиваешь «ეს შენია?» (это твоё?), и каждый сосед отвечает
+ * «კი!» или «არა». Три подъезда, каждый хитрее.
  */
 
 const G = ({ children }: { children: string }) => <b className="font-geo">{children}</b>
@@ -75,7 +76,7 @@ export default function Detective({ lesson, step, fraction, onExit, onDone, rng 
             onStart={() => setPhase('play')}
           />
         )}
-        {phase === 'play' && <Hall key={`${round}-${i}`} puzzle={cases[i]} mode={mode} last={i + 1 >= PUZZLES} onSolved={solved} />}
+        {phase === 'play' && <Hall key={`${round}-${i}`} puzzle={cases[i]} mode={mode} last={i + 1 >= PUZZLES} onSolved={solved} lessonId={lesson.id} first={i === 0 && round === 0} />}
         {phase === 'end' && (
           <GameEnd
             title="Все посылки у хозяев"
@@ -100,7 +101,22 @@ const SPOTS = [22, 50, 78]
 const bubbleAt = (k: number): React.CSSProperties =>
   k === 0 ? { left: '2%' } : k === 2 ? { right: '2%' } : { left: '50%', transform: 'translateX(-50%)' }
 
-function Hall({ puzzle, mode, last, onSolved }: { puzzle: Puzzle; mode: 'from' | 'jobs'; last: boolean; onSolved: (firstTry: boolean) => void }) {
+/** Ответ соседа на «ეს შენია?»: «კი!» — его посылка, «არა.» — не его. */
+const answerAudio = (p: Puzzle['people'][number], mine: boolean) => {
+  const v = voiceOf(p.name)
+  return mine ? `${AUDIO}det2/${v}-ki.m4a` : `${AUDIO}detective/${v}-ara.m4a`
+}
+
+function Hall({ puzzle, mode, last, onSolved, lessonId, first }: {
+  puzzle: Puzzle; mode: 'from' | 'jobs'; last: boolean; onSolved: (firstTry: boolean) => void; lessonId: number; first: boolean
+}) {
+  // Слова сцены: ამანათი — посылка, ეს შენია? — это твоё? В первом подъезде урока, где они впервые, — карточкой.
+  const parcelWord = met(lessonId, 'amanati') ? phrase('amanati') : null
+  const askWord = met(lessonId, 'es_shenia') ? phrase('es_shenia') : null
+  const [fresh, setFresh] = useState<'amanati' | 'es_shenia' | null>(null)
+  // Соседи по очереди отвечают на «ეს შენია?»: кто сейчас и что.
+  const [answer, setAnswer] = useState<{ who: number; mine: boolean } | null>(null)
+  const [asking, setAsking] = useState(false)
   const n = puzzle.people.length
   const [assign, setAssign] = useState<number[]>(() => Array(n).fill(-1))
   const [sel, setSel] = useState<number | null>(null)
@@ -131,7 +147,10 @@ function Hall({ puzzle, mode, last, onSolved }: { puzzle: Puzzle; mode: 'from' |
         setHeard(k + 1); setSpeaking(null)
         await new Promise(r => setTimeout(r, 250))
       }
-      if (!off && alive.current) setTip(hidden ? 'Голоса доносились с лестницы — кто говорил, узнай по лицу в списке. Раздай посылки.' : 'Раздай посылки: нажми коробку, потом соседа.')
+      if (!off && alive.current) {
+        setTip(hidden ? 'Голоса доносились с лестницы — кто говорил, узнай по лицу в списке. Раздай посылки.' : 'Раздай посылки: нажми коробку, потом соседа.')
+        if (first && parcelWord && firstMet(lessonId, 'amanati')) setFresh('amanati')
+      }
     })()
     return () => { off = true }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -139,12 +158,12 @@ function Hall({ puzzle, mode, last, onSolved }: { puzzle: Puzzle; mode: 'from' |
   const listening = heard < puzzle.clues.length
 
   const tapParcel = (opt: number) => {
-    if (done || listening) return
+    if (done || listening || asking) return
     haptic('tap'); sound.pop(2)
     setSel(s => (s === opt ? null : opt))
   }
   const tapPerson = (who: number, el: HTMLElement) => {
-    if (done || listening) return
+    if (done || listening || asking) return
     if (sel === null) {
       // Посылку у соседа можно забрать обратно на пол.
       if (assign[who] >= 0) { haptic('soft'); setAssign(a => a.map((x, k) => (k === who ? -1 : x))) }
@@ -153,9 +172,31 @@ function Hall({ puzzle, mode, last, onSolved }: { puzzle: Puzzle; mode: 'from' |
     }
     haptic('snap'); sound.snap(who)
     burst(el, 'small')
-    setAssign(a => give(a, who, sel))
+    const next = give(assign, who, sel)
+    if (first && askWord && firstMet(lessonId, 'es_shenia') && next.every(a => a >= 0) && fresh !== 'es_shenia') setFresh('es_shenia')
+    else if (fresh === 'amanati') setFresh(null)
+    setAssign(next)
     setWrong(w => w.filter(x => x !== who))
     setSel(null)
+  }
+
+  /** Отдать посылки: спросить «ეს შენია?» — соседи по очереди отвечают «კი!» / «არა.», потом итог. */
+  const ask = async (el: HTMLElement) => {
+    if (asking) return
+    if (!askWord) { check(el); return }
+    setAsking(true); setFresh(null); haptic('tap')
+    await speak('es_shenia', 'hero')
+    for (let k = 0; k < n; k++) {
+      if (!alive.current) return
+      const mine = assign[k] === puzzle.solution[k]
+      setAnswer({ who: k, mine })
+      setFaces(f => f.map((x, j) => (j === k ? (mine ? 'smile' : 'huh') : x)))
+      if (mine) haptic('soft')
+      await speakUrl(answerAudio(puzzle.people[k], mine), mine ? 'კი!' : 'არა.')
+    }
+    if (!alive.current) return
+    setAnswer(null); setAsking(false)
+    check(el)
   }
 
   const check = (el: HTMLElement) => {
@@ -243,6 +284,19 @@ function Hall({ puzzle, mode, last, onSolved }: { puzzle: Puzzle; mode: 'from' |
             </div>
           )}
         </AnimatePresence>
+        {/* Ответ на «ეს შენია?» — над тем, кто отвечает. */}
+        <AnimatePresence>
+          {answer && (
+            <div key={`a${answer.who}`} className="absolute z-20 top-[8%] pointer-events-none" style={bubbleAt(answer.who)}>
+              <motion.div initial={{ opacity: 0, scale: 0.5, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.85 }}
+                transition={{ type: 'spring', stiffness: 460, damping: 20 }} data-testid="detective-answer" data-mine={answer.mine ? 'yes' : 'no'}
+                className={`rounded-2xl border-[1.5px] border-jewelInk px-3 py-1 text-center ${answer.mine ? 'bg-[#D6E9D9]' : 'bg-ruby-wash'}`} style={{ boxShadow: '2px 3px 0 #15100A' }}>
+                <span className="block font-geo font-bold text-[16px] leading-tight">{answer.mine ? 'კი!' : 'არა.'}</span>
+                <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{answer.mine ? 'ки · да!' : 'ара · нет'}</span>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Подслушанное — остаётся перед глазами. */}
@@ -256,7 +310,7 @@ function Hall({ puzzle, mode, last, onSolved }: { puzzle: Puzzle; mode: 'from' |
       </div>
 
       {/* Коробки на полу. */}
-      <div className="shrink-0 flex justify-center gap-3 min-h-[74px] items-end" data-testid="parcels">
+      <div className="relative shrink-0 flex justify-center gap-3 min-h-[74px] items-end" data-testid="parcels">
         <AnimatePresence>
           {onFloor.map(o => (
             <motion.button key={o} type="button" layout data-testid={`parcel-${o}`} onClick={() => tapParcel(o)} disabled={done || listening}
@@ -270,16 +324,22 @@ function Hall({ puzzle, mode, last, onSolved }: { puzzle: Puzzle; mode: 'from' |
         {!onFloor.length && !done && <div className="text-[12px] font-bold text-jewelInk-hint pb-6">Все коробки розданы</div>}
       </div>
 
-      <div className="shrink-0 min-h-[36px] rounded-xl border-[1.5px] border-dashed border-jewelInk-faint bg-gold-wash/70 px-3 py-1.5 text-[13px] leading-snug text-jewelInk-soft" aria-live="polite" data-testid="detective-tip">{tip}</div>
+      {/* Подсказка; рядом — слово сцены: впервые — карточкой «новое слово», потом — подписью. */}
+      <div className="shrink-0 flex items-stretch gap-2">
+        {fresh
+          ? <NewWord key={fresh} word={phrase(fresh)} className="shrink-0" />
+          : parcelWord && <WordTag word={parcelWord} className="shrink-0 self-center" testId="amanati-tag" />}
+        <div className="flex-1 min-h-[36px] rounded-xl border-[1.5px] border-dashed border-jewelInk-faint bg-gold-wash/70 px-3 py-1.5 text-[13px] leading-snug text-jewelInk-soft" aria-live="polite" data-testid="detective-tip">{tip}</div>
+      </div>
       {done ? (
         <Button onClick={() => onSolved(checks === 1)}>{last ? 'Готово' : 'Следующий подъезд'}</Button>
       ) : (
         <div className="flex gap-2">
           {checks >= 3 && <div className="flex-1"><Button variant="ghost" onClick={reveal}>Показать</Button></div>}
           <div className="flex-[2]">
-            <motion.button type="button" data-testid="detective-check" disabled={!allGiven} onClick={e => check(e.currentTarget)}
+            <motion.button type="button" data-testid="detective-check" disabled={!allGiven || asking} onClick={e => void ask(e.currentTarget)}
               className="jewel-btn bg-navy text-cream w-full disabled:opacity-50" animate={{ scale: allGiven ? [1, 1.04, 1] : 1 }} transition={{ duration: 0.4 }}>
-              <span className="relative z-[1]">Отдать посылки</span>
+              <span className="relative z-[1]">{askWord ? <>Отдать: <span className="font-geo">{askWord.geo}</span></> : 'Отдать посылки'}</span>
             </motion.button>
           </div>
         </div>

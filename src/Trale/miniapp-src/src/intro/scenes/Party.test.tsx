@@ -4,8 +4,9 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { seeded } from '../../verbs/testing/catalog'
 import { JOBS, NAME_LIST, introLesson, phrase } from '../story'
 import Party from './Party'
+import { met } from '../story'
 import {
-  HOST, badgeFits, beats, happiness, jobFits, mingle, myJobOptions, planParty, repeatLine, whoAnswer, whoOptions, type PartyMode
+  HOST, badgeFits, beats, errandBeats, partyTwist, welcomeBeat, happiness, jobFits, mingle, myJobOptions, planParty, repeatLine, whoAnswer, whoOptions, type PartyMode
 } from './Party.logic'
 
 const CASES: [number, PartyMode][] = [[7, 'names'], [10, 'full'], [11, 'who'], [20, 'jobs']]
@@ -88,6 +89,33 @@ describe('party logic', () => {
     const opts = myJobOptions(20, seeded(1))
     expect(opts.filter(o => o.ok).map(o => o.geo)).toEqual([`მე ვარ ${JOBS[0].geo}`])
     expect(opts.map(o => o.geo)).toContain(phrase('sakartvelodan').geo)
+  })
+
+  it('every party lesson has its own twist, made only of words already met', () => {
+    const sigs = CASES.map(([l, m]) => {
+      const t = partyTwist(l, m, seeded(1))
+      const list = Object.values(t.errands)
+      expect(list.length + (t.welcome ? 1 : 0)).toBeGreaterThan(0)
+      for (const e of list) {
+        expect(met(l, e.treat)).toBe(true)
+        for (const bt of errandBeats(e, seeded(3))) {
+          expect(bt.options.filter(o => o.ok)).toHaveLength(1)
+          for (const w of [bt.word].filter(Boolean)) expect(met(l, w!)).toBe(true)
+        }
+      }
+      return JSON.stringify(t.errands) + t.welcome
+    })
+    expect(new Set(sigs).size).toBe(sigs.length)
+    // Урок 7: хозяйка встречает напитками, гости просят «მე მინდა …».
+    const t7 = partyTwist(7, 'names', seeded(2))
+    expect(t7.welcome).toBe(true)
+    expect(welcomeBeat(seeded(1)).options.filter(o => o.ok)).toHaveLength(3)
+    const serve = errandBeats(Object.values(t7.errands)[0], seeded(1))[0]
+    expect(serve.says).toMatch(/^მე მინდა /)
+    expect(serve.options.every(o => o.treat)).toBe(true)
+    // Урок 10: угощают — «კი, გთხოვთ», потом «გემრიელია!».
+    const offer = errandBeats({ kind: 'offer', treat: 'khachapuri' }, seeded(1))
+    expect(offer.map(x => x.options.find(o => o.ok)!.geo)).toEqual([`${phrase('ki').geo}, ${phrase('gtkhovt').geo}`, phrase('gemrielia').geo])
   })
 
   it('mingle moves everybody, badges and happiness', () => {

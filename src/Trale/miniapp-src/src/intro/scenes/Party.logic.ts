@@ -1,4 +1,5 @@
-import { HERO, JOBS, NAME_LIST, knows, phrase, shuffle, type Rng, type Word } from '../story'
+import { HERO, JOBS, NAME_LIST, knows, met, phrase, shuffle, type Rng, type Word } from '../story'
+import { DRINKS, drinksLine, offerLine, pleaseLine, wantLine, type Treat } from './party/Treats'
 import { randomLook, type Look } from '../ui'
 import { voiceOf } from './Reception.logic'
 
@@ -59,7 +60,7 @@ export function planParty(lessonId: number, mode: PartyMode, me: string, rng: Rn
   return { guests, waves, questions, spare: spare && !guests.some(g => g.name === spare) ? spare : null }
 }
 
-export interface Option { geo: string; ok: boolean; why?: string }
+export interface Option { geo: string; ok: boolean; why?: string; /** Плитка угощения вместо реплики: подать чашку. */ treat?: Treat; /** Перевод — пока слово новое. */ ru?: string }
 export interface Beat {
   /** Что говорит гость (грузинский); null — молча ждёт. */
   says: string | null
@@ -68,6 +69,10 @@ export interface Beat {
   options: Option[]
   /** Что гость отвечает на верную реплику. */
   echo?: string
+  /** Запись реплики гостя (если она собрана из слов и записана отдельно). */
+  audio?: string
+  /** Слово сцены, с которым этот момент знакомит (карточка «новое слово»). */
+  word?: string
 }
 
 const hello = () => `${phrase('gamarjoba').geo}!`
@@ -184,4 +189,101 @@ export function myJobOptions(lessonId: number, rng: Rng = Math.random): Option[]
     ...others.map(j => ({ geo: `მე ვარ ${j.geo}`, ok: false, why: `Ты же ${HERO.job.ru}, приехал учиться в Батуми.` })),
     ...wrong
   ], rng)
+}
+
+// ── Угощения: у каждого урока свой поворот вечеринки ──────────────────────────────────────────────
+// Вечеринка повторяется в четырёх уроках, поэтому в каждом что-то своё: в уроке 7 хозяйка встречает
+// напитками и гости просят чай или кофе, в уроке 10 гости угощают хачапури и вином, в 11 друг хочет
+// пить, в 20 врач приносит вино, а учитель просит кофе. Слова — из слов сцены (story.json → scene).
+
+export type Errand =
+  /** Гость просит напиток: «მე მინდა ყავა» — подай чашку. */
+  | { kind: 'serve'; treat: Treat }
+  /** Гость угощает: «ხაჭაპური?» → «კი, გთხოვთ» → попробуй: «გემრიელია!». */
+  | { kind: 'offer'; treat: Treat }
+
+export interface PartyTwist {
+  /** Хозяйка встречает у входа: «ჩაი? ყავა? წყალი?» — выбери себе напиток. */
+  welcome: boolean
+  /** Поручения по номеру гостя (после знакомства). */
+  errands: Record<number, Errand>
+  /** Строчка к описанию игры на стартовом экране. */
+  intro: string
+}
+
+export function partyTwist(lessonId: number, mode: PartyMode, rng: Rng = Math.random): PartyTwist {
+  const drinks = shuffle([...DRINKS], rng)
+  if (mode === 'names') return {
+    welcome: met(lessonId, 'chai'),
+    errands: met(lessonId, 'minda') ? { 0: { kind: 'serve', treat: drinks[0] }, 2: { kind: 'serve', treat: drinks[1] } } : {},
+    intro: 'Нино встречает у входа с чаем и кофе, а гости будут просить напитки — подай каждому то, что он хочет.'
+  }
+  if (mode === 'full') return {
+    welcome: false,
+    errands: met(lessonId, 'gemrielia') ? { 1: { kind: 'offer', treat: 'khachapuri' }, 3: { kind: 'offer', treat: 'ghvino' } } : {},
+    intro: 'Гости пришли не с пустыми руками: угощают хачапури и вином. Попробуй и похвали.'
+  }
+  if (mode === 'who') return {
+    welcome: false,
+    errands: { 1: { kind: 'serve', treat: 'tskali' }, 2: { kind: 'offer', treat: 'puri' } },
+    intro: 'На крыше жарко: кто-то попросит воды, кто-то угостит свежим хлебом.'
+  }
+  return {
+    welcome: false,
+    errands: { 0: { kind: 'offer', treat: 'ghvino' }, 2: { kind: 'serve', treat: 'qava' } },
+    intro: 'Один гость принёс вино, другой с работы — и хочет кофе.'
+  }
+}
+
+/** Хозяйка у входа: выбери себе напиток — верен любой, «до свидания» — нет. */
+export function welcomeBeat(rng: Rng = Math.random): Beat {
+  return {
+    says: drinksLine(),
+    note: 'Нино встречает тебя у входа',
+    word: 'chai',
+    options: shuffle([
+      ...DRINKS.map(d => ({ geo: pleaseLine(d), ok: true, ru: `${phrase(d).ru}, пожалуйста` })),
+      { geo: `${phrase('nakhvamdis').geo}!`, ok: false, why: 'Ты только пришёл! Выбери, что будешь пить.' }
+    ], rng)
+  }
+}
+
+/** Поручение гостя — реплики и твои ответы. */
+export function errandBeats(e: Errand, rng: Rng = Math.random): Beat[] {
+  if (e.kind === 'serve') {
+    return [{
+      says: wantLine(e.treat),
+      note: 'Гость просит напиток — подай ему',
+      word: 'minda',
+      echo: `${phrase('madloba').geo}!`,
+      options: shuffle(DRINKS.map(d => ({
+        geo: phrase(d).geo, treat: d, ok: d === e.treat,
+        why: d === e.treat ? undefined : `Это ${phrase(d).ru}. Послушай: гость сказал «${wantLine(e.treat)}».`
+      })), rng)
+    }]
+  }
+  const nice = { geo: phrase('gemrielia').geo, ok: true, ru: phrase('gemrielia').ru }
+  return [
+    {
+      says: offerLine(e.treat),
+      note: 'Гость угощает',
+      word: e.treat,
+      options: shuffle([
+        { geo: pleaseLine('ki'), ok: true, ru: 'да, пожалуйста' },
+        { geo: `${phrase('nakhvamdis').geo}!`, ok: false, why: 'Гость угощает, а ты прощаешься? Скажи «да, пожалуйста».' },
+        { geo: phrase('bodishi').geo, ok: false, why: 'Извиняться не за что — тебя угощают. Скажи «да, пожалуйста».' }
+      ], rng)
+    },
+    {
+      says: null,
+      note: 'Ты пробуешь… Похвали!',
+      word: 'gemrielia',
+      echo: `${phrase('madloba').geo}!`,
+      options: shuffle([
+        nice,
+        { geo: phrase('bodishi').geo, ok: false, why: 'Вкусно же! Скажи «вкусно!».' },
+        { geo: phrase('ara').geo, ok: false, why: 'Нет? Гость старался! Похвали угощение.' }
+      ], rng)
+    }
+  ]
 }

@@ -5,11 +5,13 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import { cyr } from '../../verbs/types'
-import { JOBS, NAME_LIST, knows, myName, phrase, shuffle, type Word } from '../story'
-import { Face, GameEnd, GameIntro, Meter, Person, Pill, Reply, RuleCard, Tip, say, type Look, type Mood } from '../ui'
+import { JOBS, NAME_LIST, firstMet, knows, myName, phrase, shuffle, type Word } from '../story'
+import { Face, GameEnd, GameIntro, Meter, NewWord, Pill, Reply, RuleCard, Tip, say, type Look, type Mood } from '../ui'
+import { speak, speakUrl } from '../voice'
+import { TreatIcon, drinksAudio, offerAudio, pleaseAudio, wantAudio, type Treat } from './party/Treats'
 import type { SceneProps, StepOf } from './types'
 import {
-  badgeFits, beats, happiness, jobFits, mingle, myJobOptions, planParty, repeatLine, whoAnswer, whoOptions,
+  badgeFits, beats, errandBeats, happiness, jobFits, mingle, myJobOptions, partyTwist, planParty, repeatLine, welcomeBeat, whoAnswer, whoOptions,
   type Beat, type Guest, type Option, type PartyMode
 } from './Party.logic'
 
@@ -19,7 +21,7 @@ import {
  * кто есть кто. Режимы: имена; знакомство в три реплики; «кто это?» от Нино; профессии по углам крыши.
  */
 
-type Phase = 'intro' | 'arrive' | 'mingle' | 'badge' | 'sort' | 'quiz' | 'myjob' | 'end'
+type Phase = 'intro' | 'welcome' | 'arrive' | 'errand' | 'mingle' | 'badge' | 'sort' | 'quiz' | 'myjob' | 'end'
 
 interface Speech { who: number | 'host'; geo?: string | null; ru?: React.ReactNode; note?: string; tone?: 'plain' | 'good' | 'bad' }
 
@@ -111,6 +113,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   const me = useMemo(() => myName(), [])
   const [round, setRound] = useState(0)
   const plan = useMemo(() => planParty(lesson.id, mode, me.geo, rng), [lesson.id, mode, round]) // eslint-disable-line react-hooks/exhaustive-deps
+  const twist = useMemo(() => partyTwist(lesson.id, mode, rng), [lesson.id, mode, round]) // eslint-disable-line react-hooks/exhaustive-deps
   const later = useLater()
   const byId = (id: number) => plan.guests[id]
 
@@ -140,6 +143,12 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   const [quizOpts, setQuizOpts] = useState<string[]>([])
   const [jobOpts, setJobOpts] = useState<Option[]>([])
   const [myJob, setMyJob] = useState<string | null>(null)
+  // Угощения: кто сейчас просит или угощает, что у гостей в руках, с какими словами уже познакомили.
+  const [errWho, setErrWho] = useState<number | 'host'>('host')
+  const [held, setHeld] = useState<Record<number, Treat>>({})
+  const [doneErr, setDoneErr] = useState<number[]>([])
+  const [fresh, setFresh] = useState<string | null>(null)
+  const shown = React.useRef<string[]>([])
 
   const total = mode === 'who' ? plan.questions.length : plan.guests.length
   const happy = happiness(misses, repeats)
@@ -147,6 +156,40 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   const mood = (id: number, m: Mood, ms = 1200) => { setMoods(x => ({ ...x, [id]: m })); later(() => setMoods(x => ({ ...x, [id]: 'smile' })), ms) }
   const miss = (key: string) => { setMisses(x => x + 1); setWrongs(x => ({ ...x, [key]: (x[key] ?? 0) + 1 })); haptic('bad'); sound.miss() }
   const el = (id: number) => document.querySelector(`[data-testid="party-guest-${id}"]`)
+  const voiceOf = (who: number | 'host'): 'f' | 'm' => (who === 'host' || byId(who).look.long ? 'f' : 'm')
+
+  // Реплика угощения: показать, сказать голосом гостя, познакомить с новым словом сцены.
+  const showBeat = (who: number | 'host', beat: Beat) => {
+    setSpeech({ who, geo: beat.says, note: beat.note })
+    if (beat.audio) void speakUrl(beat.audio, beat.says ?? '')
+    if (beat.word && firstMet(lesson.id, beat.word) && !shown.current.includes(beat.word)) {
+      setFresh(beat.word); shown.current = [...shown.current, beat.word]
+    } else setFresh(null)
+  }
+  const withAudio = (who: number | 'host', list: Beat[], e?: { kind: 'serve' | 'offer'; treat: Treat }): Beat[] => list.map((bt, k) => ({
+    ...bt,
+    audio: who === 'host' ? drinksAudio('f') : e?.kind === 'serve' ? wantAudio(e.treat, voiceOf(who)) : k === 0 && e ? offerAudio(e.treat, voiceOf(who)) : undefined
+  }))
+
+  const startErrand = (who: number | 'host', list: Beat[]) => {
+    setErrWho(who); setB(0); setBeatList(list); setBusy(false)
+    setPhase(who === 'host' ? 'welcome' : 'errand')
+    if (who !== 'host' && list[0].options.some(o => o.treat === undefined)) setHeld(h => ({ ...h, [who]: (twist.errands[who] as { treat: Treat }).treat }))
+    setTip(who === 'host' ? 'Что будешь пить? Скажи и добавь «пожалуйста».' : list[0].options[0].treat ? 'Гость просит напиток. Что он хочет?' : 'Тебя угощают!')
+    showBeat(who, list[0])
+    sound.pop()
+  }
+
+  /** Гость познакомился и получил бейдж (или угол) — если у него есть просьба или угощение, сначала оно. */
+  const guestDone = (id: number) => {
+    const e = twist.errands[id]
+    if (e && !doneErr.includes(id)) {
+      setDoneErr(d => [...d, id])
+      later(() => startErrand(id, withAudio(id, errandBeats(e, rng), e)), 500)
+      return
+    }
+    nextGuest()
+  }
 
   // ── Приход гостя ──
   const arrive = (wi: number, ai: number, onRoof: number[], places: Record<number, number>) => {
@@ -167,7 +210,12 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
 
   const begin = () => {
     setBadges({}); setSorted({}); setWrongs({}); setMisses(0); setRepeats(0); setFirstTry(0); setMoods({}); setMyJob(null)
-    setSelG(null); setSelB(null)
+    setSelG(null); setSelB(null); setHeld({}); setDoneErr([]); shown.current = []; setFresh(null)
+    if (twist.welcome) { startErrand('host', withAudio('host', [welcomeBeat(rng)])); return }
+    arriveFirst()
+  }
+
+  const arriveFirst = () => {
     // Друг пришёл с тобой — он уже на крыше.
     const start = mode === 'who' ? [0] : []
     const places: Record<number, number> = mode === 'who' ? { 0: 0 } : {}
@@ -215,7 +263,8 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
 
   // ── Реплики при знакомстве ──
   const choose = (o: Option) => {
-    if (busy || phase !== 'arrive') return
+    if (busy || (phase !== 'arrive' && phase !== 'errand' && phase !== 'welcome')) return
+    if (phase !== 'arrive') return chooseErrand(o)
     const id = plan.waves[w][a]
     const key = `beat-${id}-${b}`
     if (!o.ok) {
@@ -239,12 +288,43 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     }, beat.echo ? 1100 : 700)
   }
 
+  const chooseErrand = (o: Option) => {
+    const who = errWho
+    const key = `err-${String(who)}-${b}`
+    if (!o.ok) {
+      miss(key); setShakeOpt(o.geo); later(() => setShakeOpt(null), 450)
+      if (who !== 'host') mood(who, 'huh')
+      setTip(o.why ?? 'Не то. Попробуй ещё.')
+      return
+    }
+    haptic('good'); sound.snap(b); setGoodOpt(o.geo); setBusy(true); setTip(null); setFresh(null)
+    // Твой ответ — твоим голосом; подал чашку — гость держит её.
+    if (o.treat && who !== 'host') { setHeld(h => ({ ...h, [who]: o.treat! })); burst(el(who), 'small') }
+    else if (o.geo === phrase('gemrielia').geo) void speak('gemrielia', 'hero')
+    else if (o.geo.endsWith(phrase('gtkhovt').geo)) {
+      const t = (['chai', 'qava', 'tskali', 'ki'] as const).find(x => o.geo.startsWith(phrase(x).geo))
+      if (t) void speakUrl(pleaseAudio(t), o.geo)
+    }
+    const beat = beatList[b]
+    if (who !== 'host') mood(who, 'wow', 900)
+    else later(() => setSpeech({ who, tone: 'good', ru: 'Нино протягивает тебе чашку. Проходи!' }), 600)
+    later(() => {
+      if (beat.echo) { setSpeech({ who, geo: beat.echo, tone: 'good' }); void speak(beat.echo.startsWith(phrase('madloba').geo) ? 'madloba' : 'gtkhovt', voiceOf(who)) }
+    }, 700)
+    later(() => {
+      setGoodOpt(null)
+      if (b + 1 < beatList.length) { setB(b + 1); setBusy(false); showBeat(who, beatList[b + 1]) }
+      else if (who === 'host') arriveFirst()
+      else nextGuest()
+    }, beat.echo ? 1900 : 1300)
+  }
+
   // Гость представился — сразу, пока его слова звучат, бейдж или угол: игра про то, что услышал, а не про память.
   const afterGuest = (id: number) => {
     const g = byId(id)
     if (mode === 'who') {
       setBadges(x => ({ ...x, [id]: g.name }))
-      return nextGuest()
+      return guestDone(id)
     }
     setSelG(id); setSelB(null); setBusy(false)
     if (mode === 'jobs') {
@@ -282,7 +362,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
       setSpeech({ who: id, geo: `${phrase('madloba').geo}!`, tone: 'good' })
       mood(id, 'wow')
       setTip(null); setBusy(true)
-      later(() => { setBusy(false); nextGuest() }, 900)
+      later(() => { setBusy(false); guestDone(id) }, 900)
     } else {
       miss(key); mood(id, 'wow', 1400)
       setSelG(id)
@@ -303,7 +383,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
       burst(document.querySelector(`[data-testid="party-zone-${JOBS.indexOf(job)}"]`), 'small')
       setSpeech({ who: id, geo: `მე ვარ ${g.job.geo}.`, tone: 'good' })
       setTip(null); setBusy(true)
-      later(() => { setBusy(false); nextGuest() }, 900)
+      later(() => { setBusy(false); guestDone(id) }, 900)
     } else {
       miss(key); mood(id, 'wow', 1400)
       setSelG(id)
@@ -390,7 +470,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     return (
       <GameFrame title="Вечеринка на крыше" eyebrow="соседи зовут в гости" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="party-scene">
-          <GameIntro title="Вечеринка на крыше" text={INTRO_TEXT[mode]} chips={chips} onStart={begin} mood="happy" hero={mode === 'jobs'} />
+          <GameIntro title="Вечеринка на крыше" text={`${INTRO_TEXT[mode]} ${twist.intro}`} chips={chips} onStart={begin} mood="happy" hero={mode === 'jobs'} />
         </div>
       </GameFrame>
     )
@@ -406,7 +486,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
             text={`${label}: ${firstTry} из ${total} с первого раза. Гости довольны: ${happy}%.`}
             rule={endRule(mode, me.geo)}
             onNext={onDone}
-            onAgain={() => { setRound(r => r + 1); setPresent([]); setSlots({}); setSpeech(null); setPhase('intro') }}
+            onAgain={() => { setRound(r => r + 1); setPresent([]); setSlots({}); setSpeech(null); setHeld({}); setPhase('intro') }}
           />
         </div>
       </GameFrame>
@@ -415,7 +495,8 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
 
   const speakerLook = speech ? (speech.who === 'host' ? HOST_LOOK : byId(speech.who).look) : null
   const target = phase === 'quiz' ? plan.questions[q] : null
-  const beat = phase === 'arrive' ? beatList[b] : null
+  const beat = phase === 'arrive' || phase === 'errand' || phase === 'welcome' ? beatList[b] : null
+  const errKey = `err-${String(errWho)}-${b}`
   const hintBadge = selG !== null && (wrongs[`badge-${selG}`] ?? 0) >= 2 ? byId(selG).name : null
   const hintZone = selG !== null && (wrongs[`job-${selG}`] ?? 0) >= 2 ? byId(selG).job.geo : null
   const freeOnRoof = present.filter(id => !(mode === 'jobs' && sorted[id]))
@@ -474,6 +555,15 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
                       <span className="absolute -top-3 right-0 rounded-full border-[1.5px] border-jewelInk bg-gold px-1 text-[9px] font-extrabold leading-tight" data-testid="party-friend-mark">друг</span>
                     )}
                     <AnimatePresence>
+                      {held[id] && (
+                        <motion.span key={held[id]} className="absolute right-[-6px] top-[38%]" data-testid={`party-held-${id}`}
+                          initial={{ scale: 0, y: 30, rotate: -30 }} animate={{ scale: 1, y: 0, rotate: 0 }} exit={{ scale: 0 }}
+                          transition={{ type: 'spring', stiffness: 380, damping: 15 }}>
+                          <TreatIcon t={held[id]} size={26} />
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    <AnimatePresence>
                       {badges[id] && (
                         <motion.span key={badges[id]} data-testid={`party-badge-on-${id}`}
                           className="absolute top-[46%] rounded-md border-[1.5px] border-jewelInk bg-cream-tile px-1.5 font-geo font-extrabold text-[11px] leading-tight whitespace-nowrap overflow-hidden"
@@ -503,6 +593,12 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
               </div>
             </div>
           )}
+
+          {fresh && (
+            <div className="absolute left-2 bottom-2 z-30" key={fresh}>
+              <NewWord word={phrase(fresh)} />
+            </div>
+          )}
         </div>
 
         <Tip>{tip}</Tip>
@@ -514,6 +610,32 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
                 state={goodOpt === o.geo ? 'good' : shakeOpt === o.geo ? 'bad' : (wrongs[`beat-${plan.waves[w][a]}-${b}`] ?? 0) >= 2 && o.ok ? 'good' : 'idle'} disabled={busy} />
             ))}
           </div>
+        )}
+
+        {(phase === 'errand' || phase === 'welcome') && beat && (
+          beat.options[0]?.treat ? (
+            <div className="shrink-0 grid grid-cols-3 gap-1.5" data-testid="party-options">
+              {beat.options.map((o, k) => (
+                <motion.button key={o.geo} data-testid={`party-opt-${k}`} disabled={busy} onClick={() => { haptic('tap'); choose(o) }}
+                  className="min-h-[78px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile flex flex-col items-center justify-center gap-0.5"
+                  style={{ boxShadow: '2px 2px 0 #15100A' }}
+                  animate={{ x: shakeOpt === o.geo ? [0, -7, 7, -5, 5, 0] : 0, backgroundColor: goodOpt === o.geo ? '#D6E9D9' : (wrongs[errKey] ?? 0) >= 2 && o.ok ? '#FBEFC6' : '#FDFAEF', y: goodOpt === o.geo ? -6 : 0 }}
+                  whileTap={busy ? undefined : { scale: 0.94 }} transition={{ type: 'spring', stiffness: 420, damping: 22 }}>
+                  <TreatIcon t={o.treat!} size={36} />
+                  <span className="font-geo font-bold text-[14px] leading-none">{o.geo}</span>
+                  <span className="text-[10px] font-semibold text-jewelInk-hint leading-none">{firstMet(lesson.id, o.treat!) ? phrase(o.treat!).ru : cyr(o.geo)}</span>
+                </motion.button>
+              ))}
+            </div>
+          ) : (
+            <div className={`shrink-0 grid gap-1.5 ${beat.options.length > 3 ? 'grid-cols-2' : 'grid-cols-1'}`} data-testid="party-options">
+              {beat.options.map((o, k) => (
+                <Reply key={o.geo} compact geo={o.geo} onClick={() => choose(o)} testId={`party-opt-${k}`}
+                  hint={o.ru && beat.word && firstMet(lesson.id, beat.word) ? `${cyr(o.geo)} — ${o.ru}` : undefined}
+                  state={goodOpt === o.geo ? 'good' : shakeOpt === o.geo ? 'bad' : (wrongs[errKey] ?? 0) >= 2 && o.ok ? 'good' : 'idle'} disabled={busy} />
+              ))}
+            </div>
+          )
         )}
 
         {phase === 'quiz' && (

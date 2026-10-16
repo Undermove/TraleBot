@@ -17,7 +17,10 @@ const PEOPLE: Record<string, Who> = {
   'ვაჟი': { ru: 'сын', kind: 'kid', coat: '#D4563B', skin: '#F2C9A0', hair: '#5A3A22', extra: 'cap', voice: 'm' },
   'ქალიშვილი': { ru: 'дочь', kind: 'kid', coat: '#7A4E9A', skin: '#F6D7BC', hair: '#9A6A3A', extra: 'none', voice: 'f' },
   'მეგობარი': { ru: 'друг', kind: 'man', coat: '#2F7F86', skin: '#C68A5E', hair: '#15100A', extra: 'cap', voice: 'm' },
-  'ბავშვი': { ru: 'ребёнок', kind: 'kid', coat: '#4E8A5B', skin: '#E0AC7E', hair: '#2A1F18', extra: 'cap', voice: 'm' }
+  'ბავშვი': { ru: 'ребёнок', kind: 'kid', coat: '#4E8A5B', skin: '#E0AC7E', hair: '#2A1F18', extra: 'cap', voice: 'm' },
+  // Бабушка и дедушка — слова сцены (урок 25); родители рядом с ними моложе.
+  'ბებია': { ru: 'бабушка', kind: 'old', coat: '#C2553A', skin: '#F2C9A0', hair: '#F4F0E6', extra: 'none', voice: 'f' },
+  'ბაბუა': { ru: 'дедушка', kind: 'old', coat: '#5B4A3A', skin: '#E0AC7E', hair: '#F4F0E6', extra: 'cap', voice: 'm' }
 }
 
 /** Картинка слова в квадрате size×size. */
@@ -106,6 +109,34 @@ const THING: Record<string, React.ReactNode> = {
       <path d="M58 40 q10 0 10 9 q0 9 -12 9" fill="none" stroke={INK} strokeWidth="2.4" />
       <ellipse cx="38" cy="33" rx="19" ry="4" fill="#5A3A22" stroke={INK} strokeWidth="1.6" />
       <path d="M30 22 q-4 -6 0 -12 M40 22 q-4 -6 0 -12" fill="none" stroke="#B5A68B" strokeWidth="2" strokeLinecap="round" className="zn-bob" />
+    </g>
+  ),
+  // Телефон: экран с видеозвонком.
+  'ტელეფონი': (
+    <g strokeLinejoin="round">
+      <rect x="24" y="8" width="32" height="62" rx="7" fill="#2A2F3A" stroke={INK} strokeWidth="2.4" />
+      <rect x="28" y="15" width="24" height="45" rx="3" fill="#9CC6EE" />
+      <circle cx="40" cy="32" r="6" fill="#F2C9A0" stroke={INK} strokeWidth="1.4" />
+      <path d="M31 48 q9 -9 18 0 v4 h-18 Z" fill="#E01A3C" stroke={INK} strokeWidth="1.4" />
+      <circle cx="40" cy="65" r="2" fill="#FDFAEF" />
+    </g>
+  ),
+  // Паспорт: бордовая книжечка с гербом.
+  'პასპორტი': (
+    <g strokeLinejoin="round">
+      <rect x="20" y="12" width="40" height="56" rx="4" fill="#7A1E2C" stroke={INK} strokeWidth="2.4" />
+      <circle cx="40" cy="36" r="9" fill="none" stroke="#F5B820" strokeWidth="2" />
+      <path d="M40 27 V45 M31 36 H49" stroke="#F5B820" strokeWidth="1.6" />
+      <path d="M28 54 h24 M31 60 h18" stroke="#F5B820" strokeWidth="1.8" />
+    </g>
+  ),
+  // Фото: карточка с белыми полями, на ней море и солнце.
+  'ფოტო': (
+    <g strokeLinejoin="round">
+      <rect x="12" y="16" width="56" height="50" rx="3" fill="#FDFAEF" stroke={INK} strokeWidth="2.4" transform="rotate(-6 40 41)" />
+      <rect x="18" y="21" width="44" height="32" fill="#9CC6EE" transform="rotate(-6 40 41)" />
+      <path d="M18 44 q11 -6 22 0 t22 0 V53 H18 Z" fill="#1B5FB0" transform="rotate(-6 40 41)" />
+      <circle cx="52" cy="30" r="5" fill="#F5B820" transform="rotate(-6 40 41)" />
     </g>
   ),
   // Чай в стаканчике-армуди.

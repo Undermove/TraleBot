@@ -26,6 +26,23 @@ describe('HaveSort logic', () => {
     }
   })
 
+  it('scene words join the deck once met: cat in 27, phone in 28, grandparents and photo in 30', () => {
+    for (let seed = 1; seed < 10; seed++) {
+      const l27 = haveDeck('people', seeded(seed), DECK_SIZE, 27).map(c => c.geo)
+      expect(l27).toContain('კატა')
+      expect(l27).not.toContain('ტელეფონი')
+      const l28 = haveDeck('full', seeded(seed), DECK_SIZE, 28)
+      expect(l28.find(c => c.geo === 'ტელეფონი')?.alive).toBe(false)
+      expect(l28.find(c => c.geo === 'პასპორტი')?.alive).toBe(false)
+      const l30 = haveDeck('full', seeded(seed), DECK_SIZE, 30)
+      expect(l30.find(c => c.geo === 'ბებია')?.alive).toBe(true)
+      expect(l30.find(c => c.geo === 'ბაბუა')?.alive).toBe(true)
+      expect(l30.find(c => c.geo === 'ფოტო')?.alive).toBe(false)
+      expect(new Set(l30.map(c => c.geo)).size).toBe(DECK_SIZE)
+      for (const c of l30) expect(sentenceAudio(c)).toBeTruthy()
+    }
+  })
+
   it('scores with combo, bounces a wrong card back without points; the sentence is voiced by the hero', () => {
     const dog = { geo: 'ძაღლი', ru: 'собака', src: 'x', alive: true }
     const money = { geo: 'ფული', ru: 'деньги', src: 'x', alive: false }

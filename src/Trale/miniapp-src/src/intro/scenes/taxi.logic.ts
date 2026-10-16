@@ -1,16 +1,76 @@
-import { CITIES, HERO, JOBS, pick, shuffle, type City, type GeoName, type Rng } from '../story'
+import { CITIES, HERO, JOBS, NUMBERS, met, phrase, pick, shuffle, type City, type GeoName, type Rng } from '../story'
 import {
   ABROAD, BATUMI, P, her, iAmCalled, iAmCountry, iAmFrom, iAmJob, iLiveCity, iLiveIn, no, note, ok, onlyKnown, toCity,
   type Exchange
 } from './chatScripts'
 
 // «Таксист спрашивает»: поездка по Батуми с заднего сиденья. Болтливый таксист расспрашивает по дороге —
-// по шагам, без таймеров: спросил, ты ответил, он отреагировал, едем дальше. За разговор — скидка: верно с
-// первого раза — лари, со второго — 50 тетри. В конце — чек.
+// по шагам, без таймеров: спросил, ты ответил, он отреагировал, едем дальше. На перекрёстках навигатор в
+// телефоне показывает, куда ехать, — говоришь таксисту მარჯვნივ / მარცხნივ / პირდაპირ, у дома — გააჩერე.
+// В уроке 22 в конце спрашиваешь რამდენი ღირს? — и таксист называет цену в лари. За разговор — скидка:
+// верно с первого раза — лари, со второго — 50 тетри. В конце — чек.
 
 export type TaxiMode = 'where' | 'work'
 
-export function taxiTurns(mode: TaxiMode, dest: City, me: GeoName, lessonId: number, rng: Rng = Math.random): Exchange[] {
+/** Что показывает навигатор: поворот, прямо или «приехали — останови». */
+export type Nav = 'right' | 'left' | 'straight' | 'stop'
+
+/** Ход поездки: обмен репликами, иногда — с навигатором (nav) или вопросом о цене (price). */
+export interface TaxiTurn extends Exchange { nav?: Nav; price?: boolean }
+
+const DIR: Record<Exclude<Nav, 'stop'>, string> = { right: 'marjvniv', left: 'marcxniv', straight: 'pirdapir' }
+export const NAV_RU: Record<Nav, string> = { right: 'направо', left: 'налево', straight: 'прямо', stop: 'останови здесь' }
+
+/** Перекрёсток: навигатор показывает поворот — скажи таксисту, куда. */
+function navTurn(d: Exclude<Nav, 'stop'>): TaxiTurn {
+  const others = (Object.keys(DIR) as Exclude<Nav, 'stop'>[]).filter(x => x !== d)
+  return {
+    nav: d,
+    her: [note('Перекрёсток. Навигатор показывает, куда ехать, — скажи таксисту.')],
+    opts: [
+      ok(P(DIR[d]), 2, [note(d === 'straight' ? 'Таксист кивает и едет прямо.' : `Таксист кивает и поворачивает ${NAV_RU[d]}.`)]),
+      ...others.map(x => no(P(DIR[x]), `Таксист: «${cap(NAV_RU[x])}? Навигатор же показывает ${NAV_RU[d]}!»`))
+    ]
+  }
+}
+
+/** Твой дом: попроси остановить. */
+const stopTurn = (): TaxiTurn => ({
+  nav: 'stop',
+  her: [note('Вот твой дом! Попроси таксиста остановить.')],
+  opts: [
+    ok(P('gaachere'), 2),
+    no(P('pirdapir'), 'Таксист: «Прямо? Так мы проедем мимо твоего дома!»'),
+    no(P('nakhvamdis'), 'Таксист: «До свидания? Сначала давай остановимся!»')
+  ]
+})
+
+/** Приехали: спроси, сколько с тебя. Цену таксист назовёт по счётчику (экран: priceLine). */
+const priceTurn = (): TaxiTurn => ({
+  price: true,
+  her: [note('Приехали! Узнай, сколько с тебя.')],
+  opts: [
+    ok(P('ramdeni_ghirs'), 2),
+    no(P('madloba'), 'Таксист: «Пожалуйста! А платить будем?» Спроси, сколько стоит.'),
+    no(P('nakhvamdis'), 'Таксист смеётся: «Эй, а заплатить?»')
+  ]
+})
+
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1)
+
+/** Цена словами: «ხუთი ლარი» — число из словарика и ლარი. Сумма — целые лари от 1 до 10. */
+export function priceLine(n: number): { geo: string; ru: string; ids: string[] } {
+  const k = Math.max(1, Math.min(10, Math.round(n)))
+  return { geo: `${NUMBERS[k - 1].geo} ${phrase('lari').geo}`, ru: `${k} лари`, ids: ['lari'] }
+}
+
+/** Таксист называет цену — запись его голосом. */
+export const priceAudio = (n: number) => `/audio/intro-story/taxi2/m-lari-${Math.max(1, Math.min(10, Math.round(n)))}.m4a`
+
+/** Что таксист берёт по факту: счётчик минус скидка, вниз до целых лари (в твою пользу), от 1 до 10. */
+export const cashFare = (fare: number, discount: number) => Math.max(1, Math.min(10, Math.floor(toPay(fare, discount))))
+
+export function taxiTurns(mode: TaxiMode, dest: City, me: GeoName, lessonId: number, rng: Rng = Math.random): TaxiTurn[] {
   const country = pick(ABROAD, rng)
   const otherCity = pick(CITIES.filter(c => c !== dest), rng)
   const greet: Exchange = { her: [her(P('gamarjoba'))], opts: [
@@ -48,14 +108,23 @@ export function taxiTurns(mode: TaxiMode, dest: City, me: GeoName, lessonId: num
     no(P('vmushaob'), 'Таксист: «Работаешь — молодец. А кем?» Скажи «я — …».'),
     no(iAmJob(other), `Таксист: «${other.ru[0].toUpperCase() + other.ru.slice(1)}? Ты же говорил, что студент!»`)
   ] }
-  const bye: Exchange = { her: [note('Приехали!'), her(P('nakhvamdis'))], opts: [
+  const bye: Exchange = { her: mode === 'where' ? [note('Приехали!'), her(P('nakhvamdis'))] : [her(P('nakhvamdis'))], opts: [
     ok(P('nakhvamdis'), 1), ok(P('madloba'), 2),
     no(P('gamarjoba'), 'Таксист: «Здороваться надо было в начале!»')
   ] }
-  const plan = mode === 'where'
-    ? [greet, confirm, name, from, live, how, bye]
-    : [greet, confirm, how, work, live, from, bye]
-  return onlyKnown(plan, lessonId).map(e => ({ ...e, opts: shuffle(e.opts, rng) }))
+  // Где это уже можно: слова навигатора и цены — слова сцены (уроки 19 и 22).
+  const can = (id: string) => met(lessonId, id)
+  const known = (e: Exchange): Exchange | null => onlyKnown([e], lessonId)[0] ?? null
+  // Урок 19 — три перекрёстка (каждое слово впервые) и остановка у дома. Урок 22 — один поворот наугад
+  // (слова уже знакомы) и в конце вопрос о цене.
+  const turn = (d: Exclude<Nav, 'stop'>) => (can(DIR[d]) ? navTurn(d) : null)
+  const randomTurn = () => turn(pick(['right', 'left', 'straight'] as const, rng))
+  const stop = can('gaachere') ? stopTurn() : null
+  const price = can('ramdeni_ghirs') ? priceTurn() : null
+  const plan: (TaxiTurn | null)[] = mode === 'where'
+    ? [known(greet), known(confirm), turn('right'), known(from), turn('left'), known(live), turn('straight'), known(name), stop, known(bye)]
+    : [known(greet), known(confirm), known(how), randomTurn(), known(work), known(live), stop, price, known(bye)]
+  return plan.filter((e): e is TaxiTurn => !!e).map(e => ({ ...e, opts: shuffle(e.opts, rng) }))
 }
 
 // ── Счётчик ───────────────────────────────────────────────────────────────────────────────────────

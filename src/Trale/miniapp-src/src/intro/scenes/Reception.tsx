@@ -3,16 +3,17 @@ import { AnimatePresence, motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { JOBS, phrase } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { JOBS, firstMet, met, phrase } from '../story'
+import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { TreatIcon, pleaseAudio, pleaseLine, type Treat } from './party/Treats'
 import { hush, speak, speakUrl } from '../voice'
 import { JobIcon } from './Party'
 import { Flag } from './icons'
 import Passerby from './walk/Passerby'
 import type { SceneProps, StepOf } from './types'
 import {
-  GUESTS, answer, answerAudio, askField, fieldsOf, judge, planShift, reviewStars, shiftVerdict,
-  type Booking, type Field, type ReceptionMode
+  GUESTS, SHIFT_INTRO, answer, answerAudio, askField, extraBeats, fieldsOf, judge, planShift, reviewStars, shiftVerdict,
+  type Booking, type Field, type RBeat, type ROption, type ReceptionMode
 } from './Reception.logic'
 
 /**
@@ -44,7 +45,7 @@ function endRule(mode: ReceptionMode) {
   )
 }
 
-type Stage = 'enter' | 'talk' | 'thanks' | 'leave'
+type Stage = 'enter' | 'talk' | 'thanks' | 'errand' | 'leave'
 
 interface Line { geo: string; who: 'guest' | 'you' }
 
@@ -64,6 +65,19 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
   const [misses, setMisses] = useState(0)
   const [stars, setStars] = useState<number[]>([])
   const [walk, setWalk] = useState(0)
+  // Свой поворот смены: паспорт до брони, просьба или угощение после ключа, знакомство со словами сцены.
+  const [passOk, setPassOk] = useState(false)
+  const [err, setErr] = useState<{ list: RBeat[]; b: number } | null>(null)
+  const [errBad, setErrBad] = useState<string | null>(null)
+  const [errGood, setErrGood] = useState<string | null>(null)
+  const [errMiss, setErrMiss] = useState(0)
+  const [served, setServed] = useState<Treat | null>(null)
+  const [fresh, setFresh] = useState<string | null>(null)
+  const shown = useRef<string[]>([])
+  const keysGiven = useRef(0)
+  const introduce = (id: string | undefined) => {
+    if (id && firstMet(lesson.id, id) && !shown.current.includes(id)) { shown.current = [...shown.current, id]; setFresh(id) }
+  }
   const alive = useRef(true)
   useEffect(() => () => { alive.current = false; hush() }, [])
 
@@ -87,6 +101,7 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
     if (phase !== 'play') return
     let off = false
     setStage('enter'); setLines([]); setHeard([]); setBusy(true); setGiven(null); setMisses(0); setBad(null)
+    setPassOk(false); setErr(null); setServed(null); setFresh(null)
     setTip(at === 0 ? 'Гость заходит. Послушай, что он скажет.' : 'Следующий гость.')
     ;(async () => {
       await new Promise(r => window.setTimeout(r, 1100))
@@ -102,7 +117,7 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
       if (off || !alive.current) return
       setBusy(false)
       const left = fields.filter(f => !g.told.includes(f))
-      setTip(left.length ? 'Гость рассказал не всё — спроси, что нужно, и найди бронь.' : 'Найди бронь гостя и выдай ключ.')
+      setTip(g.extra.passport ? 'Сначала попроси у гостя паспорт.' : left.length ? 'Гость рассказал не всё — спроси, что нужно, и найди бронь.' : 'Найди бронь гостя и выдай ключ.')
     })()
     return () => { off = true }
   }, [phase, at]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -124,8 +139,57 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
     if (alive.current) setBusy(false)
   }
 
+  const askPassport = async () => {
+    if (busy || passOk) return
+    setBusy(true)
+    await say({ geo: pleaseLine('pasporti'), who: 'you' }, pleaseAudio('pasporti'))
+    if (!alive.current) return
+    setPassOk(true); haptic('soft'); sound.pop(2)
+    introduce('pasporti')
+    setTip(fields.some(f => !heard.includes(f) && !g.told.includes(f)) ? 'Паспорт на стойке. Теперь узнай, что нужно, и найди бронь.' : 'Паспорт на стойке. Найди бронь гостя.')
+    setBusy(false)
+  }
+
+  // После ключа: гость просит напиток, угощает — или ты сам предлагаешь чай.
+  const showErr = async (list: RBeat[], b: number) => {
+    setErr({ list, b }); setBusy(true)
+    const beat = list[b]
+    if (beat.says) await say({ geo: beat.says, who: 'guest' }, beat.audio)
+    if (!alive.current) return
+    introduce(beat.word)
+    setTip(beat.options[0].treat ? 'Что гость хочет? Подай.' : beat.who === 'you' && b === 0 && !beat.says ? 'Предложи гостю попить с дороги.' : beat.word === 'gemrielia' ? 'Ты пробуешь… Похвали!' : 'Тебя угощают!')
+    setBusy(false)
+  }
+  const answerErr = async (o: ROption) => {
+    if (busy || !err) return
+    if (!o.ok) {
+      haptic('bad'); sound.miss(); setErrMiss(m => m + 1)
+      setErrBad(o.geo); window.setTimeout(() => setErrBad(null), 500)
+      setTip(o.why ?? 'Не то. Попробуй ещё.')
+      return
+    }
+    setBusy(true); haptic('good'); sound.snap(err.b); setErrGood(o.geo); setFresh(null)
+    if (o.treat) { setServed(o.treat); await new Promise(r => window.setTimeout(r, 600)) }
+    else if (o.audio) await say({ geo: o.geo, who: 'you' }, o.audio)
+    else await say({ geo: o.geo, who: 'you' }, undefined, o.geo === phrase('gemrielia').geo ? 'gemrielia' : undefined)
+    if (!alive.current) return
+    const beat = err.list[err.b]
+    if (beat.echo) await say({ geo: beat.echo, who: 'guest' }, undefined, 'madloba')
+    if (!alive.current) return
+    setErrGood(null); setErrMiss(0)
+    if (err.b + 1 < err.list.length) { void showErr(err.list, err.b + 1); return }
+    leave()
+  }
+  const leave = async () => {
+    setErr(null); setStage('leave')
+    await new Promise(r => window.setTimeout(r, 1300))
+    if (!alive.current) return
+    if (at + 1 >= GUESTS) { sound.win(); setPhase('end') } else setAt(a => a + 1)
+  }
+
   const pickCard = async (card: Booking, el: HTMLElement) => {
     if (busy || stage !== 'talk') return
+    if (g.extra.passport && !passOk) { haptic('soft'); setTip('Сначала попроси паспорт.'); return }
     const v = judge(g, card, heard)
     if (!v.ok) {
       haptic('bad'); sound.miss()
@@ -139,26 +203,31 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
     setGiven(card.room)
     const s = reviewStars(misses)
     setStars(st => [...st, s])
-    setTip(`Ключ от номера ${card.room} — у гостя.`)
+    // Слова урока 9: первый ключ — «გასაღები», второй — «ოთახი» (комната).
+    keysGiven.current += 1
+    introduce(keysGiven.current === 1 ? 'gasaghebi' : keysGiven.current === 2 ? 'otakhi' : undefined)
+    setTip(met(lesson.id, 'gasaghebi')
+      ? `Гость получил ключ — ${phrase('gasaghebi').geo} — от комнаты ${card.room}.`
+      : `Ключ от номера ${card.room} — у гостя.`)
     setStage('thanks')
     await new Promise(r => window.setTimeout(r, 650))
     if (!alive.current) return
     await say({ geo: `${phrase('madloba').geo}!`, who: 'guest' }, undefined, 'madloba')
     if (!alive.current) return
-    setStage('leave')
-    await new Promise(r => window.setTimeout(r, 1300))
-    if (!alive.current) return
-    if (at + 1 >= GUESTS) { sound.win(); setPhase('end') } else setAt(a => a + 1)
+    const list = extraBeats(g.extra, g.voice, rng)
+    // Подарок гость ставит на стойку; напиток появится, когда подашь.
+    if (list.length) { setStage('errand'); if (g.extra.gift) setServed(g.extra.gift); void showErr(list, 0); return }
+    void leave()
   }
 
-  const start = () => { setAt(0); setStars([]); setPhase('play') }
+  const start = () => { setAt(0); setStars([]); shown.current = []; keysGiven.current = 0; setPhase('play') }
 
   const title = 'Ресепшн'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="reception-scene">
-          <GameIntro title="Ресепшн у моря" text={INTRO_TEXT[mode]} onStart={start} hero />
+          <GameIntro title="Ресепшн у моря" text={`${INTRO_TEXT[mode]}${SHIFT_INTRO[lesson.id] ? ` ${SHIFT_INTRO[lesson.id]}` : ''}`} onStart={start} hero />
         </div>
       </GameFrame>
     )
@@ -191,7 +260,7 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
             className="absolute bottom-[38px] z-10"
             data-testid="reception-guest"
             initial={{ left: '-12%' }}
-            animate={{ left: stage === 'enter' ? '70%' : stage === 'leave' ? '118%' : '70%' }}
+            animate={{ left: stage === 'leave' ? '118%' : '70%' }}
             transition={stage === 'leave' ? { duration: 1.3, ease: 'easeIn' } : { type: 'spring', stiffness: 60, damping: 16 }}
           >
             <div className="relative -translate-x-1/2">
@@ -212,6 +281,30 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
           </motion.div>
 
           <Counter />
+
+          {/* Паспорт гостя на стойке и то, что ты подал. */}
+          <AnimatePresence>
+            {passOk && stage !== 'leave' && (
+              <motion.div key={`pass-${at}`} className="absolute z-30 left-[59%] bottom-[60px] ab-short:bottom-[46px]" data-testid="reception-passport-on"
+                initial={{ opacity: 0, x: 60, rotate: 20, scale: 0.7 }} animate={{ opacity: 1, x: 0, rotate: -8, scale: 1 }} exit={{ opacity: 0, y: 20 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 16 }}>
+                <PassportIcon />
+              </motion.div>
+            )}
+            {served && stage !== 'leave' && (
+              <motion.div key={`served-${at}`} className="absolute z-30 left-[73%] bottom-[60px] ab-short:bottom-[46px]" data-testid="reception-served"
+                initial={{ opacity: 0, y: 40, scale: 0.5 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 15 }}>
+                <TreatIcon t={served} size={36} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {fresh && (
+            <div key={fresh} className="absolute left-2 bottom-2 z-30">
+              <NewWord word={phrase(fresh)} />
+            </div>
+          )}
 
           {/* Ключ летит к гостю. */}
           <AnimatePresence>
@@ -256,13 +349,45 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
           </div>
         )}
 
-        {/* Брони на стойке. */}
-        <div className={`shrink-0 grid gap-2 ${g.desk.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`} data-testid="reception-desk" data-want={g.booking.room}>
+        {/* Паспорт — до брони. */}
+        {g.extra.passport && !passOk && stage === 'talk' && (
+          <div className="shrink-0" data-testid="reception-passport">
+            <motion.button data-testid="ask-pasporti" disabled={busy} onClick={() => { haptic('tap'); void askPassport() }}
+              className="w-full min-h-[44px] rounded-xl border-[1.5px] border-jewelInk bg-gold-wash px-2 py-1 text-center"
+              style={{ boxShadow: '2px 2px 0 #15100A' }} animate={{ opacity: busy ? 0.5 : 1 }} whileTap={busy ? undefined : { scale: 0.96 }}>
+              <span className="block font-geo font-bold text-[14px] leading-tight">{pleaseLine('pasporti')}</span>
+              <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{cyr(pleaseLine('pasporti'))} — паспорт, пожалуйста</span>
+            </motion.button>
+          </div>
+        )}
+
+        {/* Просьба, угощение или твоё предложение — после ключа. */}
+        {stage === 'errand' && err && (
+          <div className={`shrink-0 grid gap-1.5 ${err.list[err.b].options[0].treat ? 'grid-cols-3' : 'grid-cols-1'}`} data-testid="reception-errand"
+            data-want={err.list[err.b].options.findIndex(o => o.ok)}>
+            {err.list[err.b].options.map((o, k) => (
+              <motion.button key={`${err.b}-${o.geo}`} data-testid={`rc-opt-${k}`} disabled={busy} onClick={() => { haptic('tap'); void answerErr(o) }}
+                className={`rounded-xl border-[1.5px] border-jewelInk px-2 py-1 flex flex-col items-center justify-center ${o.treat ? 'min-h-[78px] gap-0.5' : 'min-h-[44px]'}`}
+                style={{ boxShadow: '2px 2px 0 #15100A' }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: busy && errGood !== o.geo ? 0.55 : 1, y: errGood === o.geo ? -5 : 0, x: errBad === o.geo ? [0, -7, 7, -5, 5, 0] : 0,
+                  backgroundColor: errGood === o.geo ? '#D6E9D9' : errBad === o.geo ? '#F7DCDD' : errMiss >= 2 && o.ok ? '#FBEFC6' : o.treat ? '#FDFAEF' : '#E3ECF7' }}
+                whileTap={busy ? undefined : { scale: 0.95 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
+                {o.treat && <TreatIcon t={o.treat} size={34} />}
+                <span className="block font-geo font-bold text-[14px] leading-tight">{o.geo}</span>
+                <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{o.treat && firstMet(lesson.id, o.treat) ? phrase(o.treat).ru : cyr(o.geo)}</span>
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        {/* Брони на стойке (пока идёт просьба или угощение — ключ уже выдан, брони убраны). */}
+        {stage !== 'errand' && <div className={`shrink-0 grid gap-2 ${g.desk.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`} data-testid="reception-desk" data-want={g.booking.room}>
           {g.desk.map(card => (
             <motion.button
               key={`${at}-${card.room}`}
               data-testid={`booking-${card.room}`}
-              disabled={busy || stage !== 'talk'}
+              disabled={busy || stage !== 'talk' || (g.extra.passport && !passOk)}
               onClick={e => { haptic('tap'); void pickCard(card, e.currentTarget) }}
               className="relative min-h-[86px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-2 pt-1.5 pb-2 text-center flex flex-col items-center gap-1"
               style={{ boxShadow: '3px 3px 0 #15100A' }}
@@ -286,11 +411,23 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
               )}
             </motion.button>
           ))}
-        </div>
+        </div>}
 
         <div className="shrink-0 min-h-[40px] text-center text-[13px] leading-snug text-jewelInk-soft px-2" aria-live="polite" data-testid="reception-tip">{tip}</div>
       </div>
     </GameFrame>
+  )
+}
+
+/** Паспорт: бордовая книжечка с гербом. */
+function PassportIcon() {
+  return (
+    <svg width="34" height="44" viewBox="0 0 34 44" aria-hidden>
+      <rect x="2" y="2" width="30" height="40" rx="4" fill="#8E1B2E" stroke="#15100A" strokeWidth="2" />
+      <circle cx="17" cy="18" r="6" fill="none" stroke="#F5B820" strokeWidth="1.6" />
+      <path d="M17 12 v12 M11 18 h12" stroke="#F5B820" strokeWidth="1.2" />
+      <rect x="9" y="30" width="16" height="3" rx="1.5" fill="#F5B820" />
+    </svg>
   )
 }
 

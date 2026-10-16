@@ -3,11 +3,12 @@ import { AnimatePresence, motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { phrase } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
-import { hush, speak } from '../voice'
+import { NUMBERS, phrase } from '../story'
+import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { hush, speak, speakUrl } from '../voice'
+import { numberAudio } from '../audio'
 import type { SceneProps, StepOf } from './types'
-import { HINTS_OFF_AFTER, POINTS, judge, match, replies } from './Pingpong.logic'
+import { HINTS_OFF_AFTER, POINTS, heardBy, judge, match, replies, type Speaker } from './Pingpong.logic'
 import type { Who } from './Walk.logic'
 import Passerby, { type Face } from './walk/Passerby'
 import { SpeechBubble } from './Walk'
@@ -16,7 +17,9 @@ import { SpeechBubble } from './Walk'
  * «Пинг-понг» на Бульваре: разговор — розыгрыш. Каждая реплика — удар по мячу. Вернул вопрос
  * («კარგად, შენ?») — мяч летит обратно, разговор живёт; ответил и замолчал — мяч в сетке. Подача по
  * очереди: то друг спрашивает тебя, то ты его. Мяч летит по дуге и отскакивает от стола; на твой удар —
- * вибрация. Логика — Pingpong.logic.ts.
+ * вибрация.
+ * Партия — один вечер: к столу подходят соседи, темнеет, друг зовёт «კიდევ?», счёт он называет
+ * по-грузински. Логика — Pingpong.logic.ts.
  */
 
 const G = ({ children }: { children: string }) => <b className="font-geo">{children}</b>
@@ -28,7 +31,6 @@ const AT = { friend: { left: 50, top: 37 }, you: { left: 66, top: 86 }, bounceFa
 
 export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProps<StepOf<'pingpong'>>) {
   const rallies = useMemo(() => match(), [])
-  const panel = replies(lesson.id)
   const [phase, setPhase] = useState<'intro' | 'play' | 'end'>('intro')
   const [ri, setRi] = useState(0)
   const [si, setSi] = useState(0)
@@ -47,6 +49,10 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   const [best, setBest] = useState(0)
   const [streak, setStreak] = useState(0)
   const [nets, setNets] = useState(0)
+  const [who, setWho] = useState<Speaker>('friend')
+  const [word, setWord] = useState<string | undefined>()
+  const [called, setCalled] = useState(0)
+  const shown = useRef(new Set<string>())
   const alive = useRef(true)
   const busy = useRef(false)
   useEffect(() => () => { alive.current = false; hush() }, [])
@@ -54,21 +60,27 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
 
   const r = rallies[Math.min(ri, rallies.length - 1)]
   const hints = hits < HINTS_OFF_AFTER
+  const panel = replies(lesson.id, heardBy(rallies, ri, si))
 
   const fly = async (to: Ball) => { setBall(to); setThrowKey(k => k + 1); await wait(to === 'net' ? 650 : 720) }
 
-  const friendHit = async (id: string) => {
-    setTheir(id); setTalking(true); setMine(undefined)
+  // Реплика друга или того, кто подошёл. Слово сцены звучит впервые — рядом карточка «новое слово».
+  const friendHit = async (id: string, by: Speaker = 'friend', newWord?: string, rIdx = ri) => {
+    setWho(by); setTheir(id); setTalking(true); setMine(undefined)
+    if (newWord === id && !shown.current.has(id)) { shown.current.add(id); setWord(id) }
     haptic('soft'); sound.pop(2)
-    await Promise.all([speak(id, 'm'), fly('toYou')])
+    const voice = by === 'guest' ? rallies[rIdx]?.guest?.voice ?? 'f' : 'm'
+    // Пока говорит соседка, друг всё равно отбивает: мяч летит к тебе.
+    await Promise.all([speak(id, voice), fly('toYou')])
     if (!alive.current) return
-    setBall('you'); setTalking(false)
+    setBall('you')
+    setTalking(false)
   }
 
   const openShot = async (rIdx: number, sIdx: number) => {
     const shot = rallies[rIdx].shots[sIdx]
     setSi(sIdx); setBad(undefined); setCue(shot.cue); setFace('smile')
-    if (shot.line) await friendHit(shot.line)
+    if (shot.line) await friendHit(shot.line, shot.by, shot.word, rIdx)
     if (!alive.current) return
     setYourTurn(true); busy.current = false
   }
@@ -76,7 +88,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   // Новый розыгрыш: мяч у подающего.
   useEffect(() => {
     if (phase !== 'play') return
-    setTheir(undefined); setMine(undefined); setYourTurn(false); setStreak(0)
+    setTheir(undefined); setMine(undefined); setYourTurn(false); setStreak(0); setWord(undefined)
     setBall(rallies[ri].serve === 'friend' ? 'friend' : 'you')
     const id = window.setTimeout(() => { if (alive.current) void openShot(ri, 0) }, 600)
     return () => window.clearTimeout(id)
@@ -107,26 +119,30 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
     }
     setBall('friend'); setHits(h => h + 1)
     setStreak(s => { const n = s + 1; setBest(b => Math.max(b, n)); return n })
-    if (shot.react) await friendHit(shot.react)
+    if (shot.react) await friendHit(shot.react, shot.reactBy, shot.word)
     if (!alive.current) return
     if (si + 1 < r.shots.length) { void openShot(ri, si + 1); return }
-    // Розыгрыш выигран — разговор состоялся.
-    setWon(w => w + 1); sound.win(); haptic('good'); burst(el, 'small')
-    setCue('Розыгрыш твой!')
-    await wait(1100)
+    // Розыгрыш выигран — разговор состоялся. Друг называет счёт по-грузински.
+    const score = won + 1
+    setWon(score); sound.win(); haptic('good'); burst(el, 'small')
+    setCue('Розыгрыш твой!'); setWho('friend'); setTheir(undefined); setCalled(score); setTalking(true)
+    await speakUrl(numberAudio(score, 'm'), NUMBERS[score - 1].geo)
+    if (!alive.current) return
+    setTalking(false)
+    await wait(350)
     if (!alive.current) return
     if (ri + 1 < rallies.length) setRi(x => x + 1)
     else setPhase('end')
   }
 
-  const start = () => { setRi(0); setWon(0); setHits(0); setBest(0); setNets(0); setPhase('play') }
+  const start = () => { setRi(0); setWon(0); setHits(0); setBest(0); setNets(0); setCalled(0); shown.current.clear(); setPhase('play') }
 
   const title = 'Пинг-понг на Бульваре'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="pingpong-scene">
-          <GameIntro title={title} text="Разговор — как пинг-понг: каждая реплика — удар. Спросили «როგორ ხარ?» — ответь и верни мяч: «კარგად, შენ?» Ответил и замолчал — мяч в сетке. Подаёте по очереди." onStart={start} hero
+          <GameIntro title={title} text="Партия с другом на Бульваре. Каждая реплика — удар: спросили «როგორ ხარ?» — ответь и верни мяч: «კარგად, შენ?» Ответил и замолчал — мяч в сетке. К столу будут подходить соседи." onStart={start} hero
             chips={['kargad_shen', 'kargad_madloba'].map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -149,7 +165,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
     <GameFrame title={title} eyebrow={`розыгрыш ${ri + 1} из ${POINTS}`} fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="pingpong-scene">
         <div className="relative flex-1 min-h-[280px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="pingpong-court">
-          <Boulevard />
+          <Boulevard evening={!!r.evening} />
           {/* Друг за дальним краем стола. */}
           <div className="absolute left-1/2 top-[14%] -translate-x-1/2 z-10">
             <svg width="96" height="150" viewBox="-60 -190 120 196" className="overflow-visible" aria-hidden>
@@ -158,6 +174,18 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
             </svg>
           </div>
           <Table />
+          {/* Тот, кто подошёл к столу, — сбоку. */}
+          <AnimatePresence>
+            {r.guest && (
+              <motion.div key={`g${ri}`} className="absolute left-[2%] top-[30%] z-[16]" data-testid="pingpong-guest"
+                initial={{ x: -90, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -90, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 160, damping: 20 }}>
+                <svg width="74" height="118" viewBox="-60 -190 120 196" className="overflow-visible" aria-hidden>
+                  <Passerby who={r.guest} phase={0} stride={0} face="smile" talking={talking && who === 'guest'} wave={false} />
+                </svg>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* Мяч. */}
           <motion.div key={throwKey} data-testid="pingpong-ball" data-at={ball}
             className="absolute z-30 w-5 h-5 -ml-2.5 -mt-2.5 rounded-full border-[1.5px] border-jewelInk bg-cream"
@@ -176,18 +204,30 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
           </motion.div>
 
           <div className="absolute top-2 left-2 right-2 flex justify-between z-30 pointer-events-none">
-            <span className="rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold" data-testid="pingpong-score">{won} : 0</span>
-            {streak >= 2 && <motion.span key={streak} initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="rounded-full bg-gold border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold">удары подряд: {streak}</motion.span>}
+            <motion.span key={`score-${called}`} initial={{ scale: called ? 1.5 : 1 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 14 }}
+              className="rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold" data-testid="pingpong-score">
+              {won} : 0{won > 0 && <span className="font-geo font-bold text-jewelInk-mid ml-1">{NUMBERS[won - 1].geo}</span>}
+            </motion.span>
+            {streak >= 2 && <motion.span key={`streak-${streak}`} initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="rounded-full bg-gold border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold">удары подряд: {streak}</motion.span>}
           </div>
 
           <AnimatePresence>
             {their && (
-              <div key={`${ri}-${si}-${their}`} className="absolute z-30 left-[4%] top-[9%]">
+              <div key={`${ri}-${si}-${their}`} className={`absolute z-30 ${who === 'guest' ? 'left-[3%] top-[15%]' : 'left-[4%] top-[9%]'}`}>
                 <motion.div data-testid="pingpong-their" initial={{ opacity: 0, scale: 0.6, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.85 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
                   <SpeechBubble id={their} hint={hints} />
                 </motion.div>
               </div>
+            )}
+          </AnimatePresence>
+          {/* Новое слово сцены — карточкой справа, звучит и остаётся до следующего розыгрыша. */}
+          <AnimatePresence mode="wait">
+            {word && (
+              <motion.div key={word} className="absolute z-30 right-[3%] top-[22%]" initial={{ opacity: 0, x: 30, rotate: 6 }} animate={{ opacity: 1, x: 0, rotate: 0 }} exit={{ opacity: 0, x: 20 }}
+                transition={{ type: 'spring', stiffness: 360, damping: 20 }}>
+                <NewWord word={phrase(word)} testId="pingpong-new-word" />
+              </motion.div>
             )}
           </AnimatePresence>
           <AnimatePresence>
@@ -222,8 +262,8 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   )
 }
 
-/** Бульвар: небо, море, пальмы, плитка. */
-function Boulevard() {
+/** Бульвар: небо, море, пальмы, плитка. Вечером небо темнеет, вместо солнца — луна. */
+function Boulevard({ evening }: { evening: boolean }) {
   const INK = '#15100A'
   return (
     <svg viewBox="0 0 360 300" preserveAspectRatio="xMidYMax slice" width="100%" height="100%" className="absolute inset-0" aria-hidden>
@@ -232,10 +272,14 @@ function Boulevard() {
         <linearGradient id="pp-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4F9BB0" /><stop offset="1" stopColor="#2F7F86" /></linearGradient>
       </defs>
       <rect width="360" height="300" fill="url(#pp-sky)" />
-      <circle cx="300" cy="34" r="14" fill="#F5B820" stroke={INK} strokeWidth="1.2" />
+      <rect width="360" height="96" fill="#1E2A55" style={{ opacity: evening ? 0.75 : 0, transition: 'opacity 1.2s ease' }} />
+      {evening
+        ? <path d="M306 22a14 14 0 1 0 6 24a11 11 0 0 1 -6 -24Z" fill="#F5E6A8" stroke={INK} strokeWidth="1.2" />
+        : <circle cx="300" cy="34" r="14" fill="#F5B820" stroke={INK} strokeWidth="1.2" />}
       <rect y="70" width="360" height="26" fill="url(#pp-sea)" />
       {[[30, 80], [90, 86], [200, 78], [260, 88], [330, 82]].map(([x, y], k) => <path key={k} d={`M${x} ${y} q6 -3 12 0`} stroke="#FDFAEF" strokeWidth="1.4" fill="none" />)}
       <rect y="96" width="360" height="204" fill="#E3D6BE" />
+      <rect y="96" width="360" height="204" fill="#1E2A55" style={{ opacity: evening ? 0.25 : 0, transition: 'opacity 1.2s ease' }} />
       {Array.from({ length: 14 }, (_, k) => <path key={k} d={`M${180 + (k * 30 - 195) * 0.4} 96 L${180 + (k * 30 - 195) * 1.8} 300`} stroke={INK} strokeWidth="0.7" opacity="0.18" />)}
       {[[18, 96], [342, 96]].map(([x, y], k) => (
         <g key={k}>

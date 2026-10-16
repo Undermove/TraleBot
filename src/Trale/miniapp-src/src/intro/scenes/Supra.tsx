@@ -3,11 +3,11 @@ import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { myName } from '../story'
-import { GameEnd, GameIntro } from '../ui'
+import { firstMet, met, myName, phrase, type Phrase } from '../story'
+import { GameEnd, GameIntro, NewWord } from '../ui'
 import { hush, speakUrl } from '../voice'
 import type { Opt, Say } from './chatScripts'
-import { BEATS, THEME_RU, TOASTS, guestWarmth, guests, toastOpts, type Guest } from './supra.logic'
+import { BEATS, THEME_RU, TOASTS, dishUrl, guestWarmth, guests, toastOpts, type Guest } from './supra.logic'
 import { voiceOf } from './Reception.logic'
 import { lineUrl, type Voice } from './chat/voices'
 import Passerby, { type Face } from './walk/Passerby'
@@ -82,10 +82,21 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
       if (l.kind === 'note') { setNote(l.text); continue }
       if (l.kind !== 'her') continue
       setBubble({ who: who === 'tamada' ? 'tamada' : 'guest', geo: l.geo, ru: l.ru }); setTalking(who)
-      await speakUrl(lineUrl(l.geo, who === 'tamada' ? 'm' : voiceOfGuest(who)), l.geo)
+      introduce(l.ids)
+      const v = who === 'tamada' ? 'm' : voiceOfGuest(who)
+      await speakUrl(dishUrl(l.geo, v) ?? lineUrl(l.geo, v), l.geo)
       if (alive.current) setTalking(null)
     }
   }
+
+  // Слова сцены впервые (урок 33): тамада — на первом тосте, хинкали и чурчхела — когда угощают.
+  const [fresh, setFresh] = useState<Phrase | null>(null)
+  const shown = useRef(new Set<string>())
+  const introduce = (ids: string[]) => {
+    const id = ids.find(x => (lesson.scene ?? []).includes(x) && firstMet(lesson.id, x) && !shown.current.has(x))
+    if (id) { shown.current.add(id); setFresh(phrase(id)) }
+  }
+  const tamadaWord = met(lesson.id, 'tamada') ? phrase('tamada') : null
 
   // Ход вечера: гость говорит — твой ответ; тамада — тост.
   useEffect(() => {
@@ -102,6 +113,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
         if (!off && alive.current) setStage('answer')
       } else {
         setStage('talk')
+        introduce(['tamada'])
         setBubble({ who: 'tamada', ru: `«${TOASTS[beat.t].ru}»` }); setTalking('tamada'); sound.pop(2)
         await wait(1500)
         if (off || !alive.current) return
@@ -133,7 +145,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
       return
     }
     busy.current = true
-    setStage('talk'); setNote(null); setFaces(f => ({ ...f, [gi]: 'smile' }))
+    setStage('talk'); setNote(null); setFresh(null); setFaces(f => ({ ...f, [gi]: 'smile' }))
     setBubble({ who: 'you', geo: o.geo, ru: o.ru })
     haptic('pop'); sound.snap(b + e)
     await speakUrl(lineUrl(o.geo, 'hero'), o.geo)
@@ -160,7 +172,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
     if (beat.kind !== 'toast' || stage !== 'toastAnswer' || busy.current) return
     if (!o.good) { setTried(t => [...t, k]); setNote(o.miss ?? null); haptic('bad'); sound.miss(); return }
     busy.current = true
-    setStage('cheer'); setNote(null)
+    setStage('cheer'); setNote(null); setFresh(null)
     setBubble({ who: 'you', geo: o.geo, ru: o.ru })
     haptic('pop')
     await speakUrl(lineUrl(o.geo, 'hero'), o.geo)
@@ -178,7 +190,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
   }
 
   const start = () => {
-    setB(0); setE(0); setWarm(table.map(() => null)); setToasts(0); setNote(null); setBubble(null); setFaces({}); setStage('talk')
+    setB(0); setE(0); setWarm(table.map(() => null)); setToasts(0); setNote(null); setBubble(null); setFaces({}); setStage('talk'); setFresh(null); shown.current = new Set()
     setPhase('play')
   }
 
@@ -187,7 +199,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
   if (phase === 'intro') return (
     <GameFrame title="Супра" eyebrow={`финал · урок ${lesson.id}`} fraction={fraction} onExit={onExit}>
       <GameIntro title="Большой вечер у соседей" hero
-        text="Беседка под виноградом, длинный стол, шесть гостей и тамада. Гости по очереди заговорят с тобой — отвечай, никто не торопит. Тамада поднимет три тоста: подними бокал вместе со всеми и ответь."
+        text="Беседка под виноградом, длинный стол, шесть гостей и тамада. Гости по очереди заговорят с тобой — отвечай, никто не торопит. Будут и угощать: попробуй и похвали. Тамада поднимет три тоста: подними бокал вместе со всеми и ответь."
         chips={[{ geo: 'გაუმარჯოს!', ru: 'за здоровье!' }, { geo: 'გაუმარჯოს საქართველოს!', ru: 'да здравствует Грузия!' }]}
         mood="cheer" onStart={start} />
     </GameFrame>
@@ -269,7 +281,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
                       <span className="block font-geo font-bold text-[16px] leading-tight">{bubble.geo}</span>
                       <span className={`block text-[11px] font-semibold leading-tight ${bubble.who === 'you' ? 'text-cream/80' : 'text-jewelInk-hint'}`}>{cyr(bubble.geo)} · {bubble.ru}</span>
                     </>
-                  ) : <span className="block text-[14px] font-extrabold">Тамада: {bubble.ru}</span>}
+                  ) : <span className="block text-[14px] font-extrabold">{tamadaWord ? <span className="font-geo">{tamadaWord.geo}</span> : 'Тамада'}: {bubble.ru}</span>}
                 </motion.div>
               </div>
             )}
@@ -284,6 +296,16 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
           <div className="absolute top-2 right-2 z-30 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold">тёплые {warmCount}/{table.length}</div>
         </div>
 
+        {/* Новое слово сцены — под столом, пока не ответишь. */}
+        <AnimatePresence>
+          {fresh && (
+            <motion.div key={fresh.id} className="shrink-0 flex justify-center"
+              initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 18 }}>
+              <NewWord word={fresh} />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <AnimatePresence>
           {note && (
             <motion.div key={note} className="shrink-0 rounded-xl border-[1.5px] border-dashed border-jewelInk-hint px-3 py-1 text-center text-[12px] font-semibold text-jewelInk-soft" data-testid="supra-note"

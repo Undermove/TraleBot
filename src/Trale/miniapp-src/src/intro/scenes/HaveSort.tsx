@@ -3,11 +3,11 @@ import { AnimatePresence, animate, motion, useMotionValue, useTransform, useVelo
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { phrase } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { firstMet, met, phrase } from '../story'
+import { GameEnd, GameIntro, NewWord, RuleCard, WordTag, say } from '../ui'
 import { hush, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
-import { haveDeck, hintFor, isOver, send, sentence, sentenceAudio, sideOf, startState, verbOf, type Card, type HaveState, type Side } from './HaveSort.logic'
+import { DECK_SIZE, haveDeck, hintFor, isOver, sceneIdOf, send, sentence, sentenceAudio, sideOf, startState, verbOf, type Card, type HaveState, type Side } from './HaveSort.logic'
 import { Picture } from './have/Pictures'
 import Passerby from './walk/Passerby'
 import type { Who } from './Walk.logic'
@@ -25,10 +25,14 @@ const NINO: Who = { ru: 'Нино', kind: 'woman', coat: '#E01A3C', skin: '#F2C9
 const PULL = 90
 const VERB_COLOR: Record<Side, string> = { alive: '#4E8A5B', thing: '#C68F10' }
 
-export default function HaveSort({ step, fraction, onExit, onDone, rng = Math.random }: SceneProps<StepOf<'havesort'>>) {
+export default function HaveSort({ lesson, step, fraction, onExit, onDone, rng = Math.random }: SceneProps<StepOf<'havesort'>>) {
   const mode = step.mode
   const [round, setRound] = useState(0)
-  const deck = useMemo(() => haveDeck(mode, rng), [mode, round]) // eslint-disable-line react-hooks/exhaustive-deps
+  const deck = useMemo(() => haveDeck(mode, rng, DECK_SIZE, lesson.id), [mode, round]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Слова сцены: ჩემოდანი — подпись на чемодане, ფოტო — на фото; впервые в уроке — карточкой «новое слово».
+  const bagWord = met(lesson.id, 'chemodani') ? phrase('chemodani') : null
+  const photoWord = met(lesson.id, 'foto') ? phrase('foto') : null
+  const isNew = (geo: string) => { const id = sceneIdOf(geo); return !!id && (lesson.scene ?? []).includes(id) && firstMet(lesson.id, id) }
   const [phase, setPhase] = useState<'intro' | 'play' | 'end'>('intro')
   const [hs, setHs] = useState<HaveState>(startState)
   const [placed, setPlaced] = useState<Card[]>([])
@@ -114,7 +118,7 @@ export default function HaveSort({ step, fraction, onExit, onDone, rng = Math.ra
             <AnimatePresence mode="popLayout">
               {c && !said && (
                 <DragCard key={`${round}-${hs.i}`} card={c} shake={shake} photo={photo} bag={bag} disabled={busy}
-                  onNear={setNear} onDrop={decide} />
+                  onNear={setNear} onDrop={decide} fresh={isNew(c.geo) && deck.findIndex(d => d.geo === c.geo) === hs.i} />
               )}
               {said && (
                 <motion.div key={`said-${hs.i}`} data-testid="have-sentence" className="rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-4 py-2 text-center"
@@ -137,11 +141,16 @@ export default function HaveSort({ step, fraction, onExit, onDone, rng = Math.ra
             <Target side="thing" refEl={bag} near={near === 'thing'} onClick={() => { haptic('tap'); void decide('thing') }}>
               <Suitcase things={things} />
             </Target>
+            {/* Подписи — поверх целей, чтобы не перехватывать нажатие на фото и чемодан. */}
+            {photoWord && <span className="absolute left-2 top-2 z-10"><WordTag word={photoWord} testId="photo-tag" /></span>}
+            {bagWord && <span className="absolute right-2 top-2 z-10"><WordTag word={bagWord} testId="bag-tag" /></span>}
           </div>
         </div>
 
         <div className="shrink-0 min-h-[40px] text-center text-[13px] leading-snug text-jewelInk-soft px-2" aria-live="polite" data-testid="have-tip">
-          {tip || (hs.i === 0 ? 'Тащи карточку на фото или в чемодан — или нажми, куда её отправить.' : '')}
+          {tip || (hs.i === 0
+            ? (bagWord && firstMet(lesson.id, 'chemodani') ? <NewWord word={bagWord} className="mx-auto" /> : 'Тащи карточку на фото или в чемодан — или нажми, куда её отправить.')
+            : '')}
         </div>
       </div>
     </GameFrame>
@@ -149,8 +158,10 @@ export default function HaveSort({ step, fraction, onExit, onDone, rng = Math.ra
 }
 
 /** Карточка слова: тянется пальцем с наклоном, притягивается к фото или чемодану, отскакивает на промах. */
-function DragCard({ card, shake, photo, bag, disabled, onNear, onDrop }: {
+function DragCard({ card, shake, photo, bag, disabled, onNear, onDrop, fresh }: {
   card: Card
+  /** Слово сцены впервые: на карточке — ленточка «новое слово», и слово звучит. */
+  fresh?: boolean
   shake: number
   photo: React.RefObject<HTMLButtonElement>
   bag: React.RefObject<HTMLButtonElement>
@@ -171,6 +182,7 @@ function DragCard({ card, shake, photo, bag, disabled, onNear, onDrop }: {
     void animate(x, [0, -12, 12, -7, 7, 0], { duration: 0.42 })
   }, [shake]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => onNear(null), []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const id = sceneIdOf(card.geo); if (fresh && id) say(id) }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Смещение от исходного места до центра цели. */
   const to = (t: HTMLElement | null) => {
@@ -232,6 +244,7 @@ function DragCard({ card, shake, photo, bag, disabled, onNear, onDrop }: {
         <div className="w-[112px] h-[92px] rounded-xl bg-gold-wash border-[1.5px] border-jewelInk/40 flex items-end justify-center overflow-hidden">
           <Picture geo={card.geo} size={88} />
         </div>
+        {fresh && <span className="absolute -top-2.5 -right-2.5 rotate-6 rounded-full border-[1.5px] border-jewelInk bg-gold px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider zn-pop" data-testid="have-new">новое слово</span>}
         <span className="mt-1.5 font-geo font-extrabold text-[22px] leading-none">{card.geo}</span>
         <span className="text-[11.5px] font-semibold text-jewelInk-hint leading-tight">{cyr(card.geo)} · {card.ru}</span>
       </div>

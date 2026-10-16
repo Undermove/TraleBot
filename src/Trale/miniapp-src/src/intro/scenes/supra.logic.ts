@@ -1,12 +1,13 @@
-import { HERO, JOBS, NAMES, pick, shuffle, type GeoName, type Rng } from '../story'
+import { HERO, JOBS, NAMES, met, phrase, pick, shuffle, type GeoName, type Rng } from '../story'
 import {
-  ABROAD, BATUMI, P, TBILISI, andYou, hello, her, iAmCalled, iAmCountry, iAmFrom, iAmJob, iLiveCity, iLiveIn, no, ok, onlyKnown,
+  ABROAD, BATUMI, P, TBILISI, andYou, hello, her, iAmCalled, iAmCountry, iAmFrom, iAmJob, iLiveCity, iLiveIn, no, note, ok, onlyKnown,
   type Exchange, type Line
 } from './chatScripts'
 
 // «Супра» — финал модуля. За длинным столом шесть гостей и тамада. Гости по очереди поворачиваются к тебе —
 // у каждого своя тема модуля, 1–2 реплики. Никто не торопит: гость ждёт сколько нужно. Между гостями
-// тамада поднимает тост: подними бокал вместе со всеми и ответь на тост.
+// тамада поднимает тост: подними бокал вместе со всеми и ответь на тост. Ещё за столом угощают: Нино
+// предлагает ხინკალი, бабушка — ჩურჩხელა; соглашаешься (კი), пробуешь и хвалишь — გემრიელია!
 
 export const SUPRA_LESSON = 33
 
@@ -53,6 +54,45 @@ function talk(theme: Theme, guest: string, me: GeoName, rng: Rng): Exchange[] {
   }
 }
 
+// ── Угощение ──────────────────────────────────────────────────────────────────────────────────────
+
+export type Dish = 'khinkali' | 'churchkhela'
+const DISH_RU: Record<Dish, { what: string; acc: string }> = {
+  khinkali: { what: 'Хинкали?', acc: 'хинкали' },
+  churchkhela: { what: 'Чурчхелу?', acc: 'чурчхелу' }
+}
+
+/** Гость угощает: «ხინკალი?» — ты соглашаешься, пробуешь и хвалишь. Слова сцены урока 33 (и გემრიელია! с урока 10). */
+export function offer(dish: Dish, who: string, lessonId = SUPRA_LESSON): Exchange[] {
+  if (!met(lessonId, dish)) return []
+  const d = DISH_RU[dish]
+  const ask: Exchange = {
+    her: [her({ geo: `${phrase(dish).geo}?`, ru: d.what, ids: [dish] })],
+    opts: [
+      ok(P('ki'), 2, [note(`${who} кладёт тебе ${d.acc}. Попробуй!`)]),
+      no(P('ara'), `${who}: «Как это нет? Это же ${d.acc}! Хоть попробуй».`),
+      no(P('nakhvamdis'), `${who}: «Уходишь? Возьми хотя бы ${d.acc}!»`)
+    ]
+  }
+  if (!met(lessonId, 'gemrielia')) return [ask]
+  const taste: Exchange = {
+    her: [note(`Ты пробуешь ${d.acc}. Скажи, как тебе!`)],
+    opts: [
+      ok(P('gemrielia'), 2),
+      ok(P('madloba'), 1),
+      no(P('bodishi'), `${who}: «За что извиняешься? Скажи лучше, вкусно ли!»`)
+    ]
+  }
+  return [ask, taste]
+}
+
+/** Угощение звучит голосом гостя: записи вопросом («ხინკალი?») — public/audio/intro-story/supra2. */
+export function dishUrl(geo: string, voice: 'm' | 'f' | 'hero'): string | undefined {
+  if (voice === 'hero') return undefined
+  const dish = (['khinkali', 'churchkhela'] as Dish[]).find(d => `${phrase(d).geo}?` === geo)
+  return dish ? `/audio/intro-story/supra2/${voice}-${dish}.m4a` : undefined
+}
+
 /** «Меня зовут <гость>» — тот же шаблон მე მქვია. */
 const nameLine = (geo: string): Line => ({ ...iAmCalled({ geo, base: geo, added: false, ru: NAMES[geo] }) })
 
@@ -66,10 +106,16 @@ export function guests(me: GeoName, rng: Rng = Math.random): Guest[] {
   const fam = THEMES.indexOf('family')
   const woman = names.slice(1).find(n => WOMEN.has(n)) ?? rest.find(n => WOMEN.has(n))
   if (woman && !WOMEN.has(names[fam])) { const k = names.indexOf(woman); if (k > 0) [names[fam], names[k]] = [names[k], names[fam]]; else names[fam] = woman }
-  return THEMES.map((theme, i) => ({
-    name: names[i], ru: NAMES[names[i]], theme,
-    talk: onlyKnown(talk(theme, names[i], me, rng), SUPRA_LESSON).map(e => ({ ...e, opts: shuffle(e.opts, rng) }))
-  }))
+  // Угощают двое: первая гостья (Нино) — хинкали, бабушка — чурчхелой.
+  const dishOf: Partial<Record<Theme, Dish>> = { hello: 'khinkali', family: 'churchkhela' }
+  return THEMES.map((theme, i) => {
+    const dish = dishOf[theme]
+    const treat = dish ? offer(dish, theme === 'family' ? 'Бабушка' : NAMES[names[i]]) : []
+    return {
+      name: names[i], ru: NAMES[names[i]], theme,
+      talk: [...onlyKnown(talk(theme, names[i], me, rng), SUPRA_LESSON), ...treat].map(e => ({ ...e, opts: shuffle(e.opts, rng) }))
+    }
+  })
 }
 
 export const TOASTS: { ru: string; georgia?: boolean }[] = [

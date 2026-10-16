@@ -4,17 +4,18 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { phrase } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
-import { HINTS_OFF_AFTER, judge, plan, replies, type Step } from './Bakery.logic'
+import { HINTS_OFF_AFTER, ITEMS, judge, plan, replies, type Item, type Step } from './Bakery.logic'
 import { PART_RU, type Part, type Who } from './Walk.logic'
 import Passerby, { type Face } from './walk/Passerby'
 import { SpeechBubble } from './Walk'
 
 /**
  * «Пекарня» — пекарня у дома, за шоти каждый день. Пекарша здоровается или ждёт, что начнёшь ты,
- * спрашивает, как дела (или ты спрашиваешь её), достаёт хлеб из тоне — ты забираешь его и прощаешься.
+ * спрашивает, как дела (или ты спрашиваешь её); ты показываешь на витрине, что берёшь (პური или
+ * ხაჭაპური), и добавляешь გთხოვთ; пекарша достаёт из тоне — ты забираешь и прощаешься.
  * Четыре визита: утро, утро, день, вечер — время видно в окне. Всё по шагам, голоса не накладываются.
  */
 
@@ -44,6 +45,8 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
   const [bread, setBread] = useState<'oven' | 'counter' | 'bag'>('oven')
   const [right, setRight] = useState(0)
   const [misses, setMisses] = useState(0)
+  const [word, setWord] = useState<string | undefined>()
+  const shown = useRef(new Set<string>())
   const alive = useRef(true)
   useEffect(() => () => { alive.current = false; hush() }, [])
 
@@ -59,6 +62,10 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
   const open = async (vIdx: number, sIdx: number) => {
     const s: Step = visits[vIdx].steps[sIdx]
     setSi(sIdx); setMine(undefined); setBad(undefined); setFace('smile'); setCue(s.cue)
+    // Слово витрины или «пожалуйста» нужно впервые — карточка «новое слово».
+    const fresh = (s.order || s.want === 'gtkhovt') && !shown.current.has(s.want)
+    if (fresh) shown.current.add(s.want)
+    setWord(fresh ? s.want : undefined)
     if (s.line) {
       setTurn('them')
       await theySay(s.line)
@@ -79,7 +86,7 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
   const answer = async (id: string) => {
     if (turn !== 'you') return
     const s = v.steps[si]
-    setTurn('speaking'); setMine(id); setBad(undefined)
+    setTurn('speaking'); setMine(id); setBad(undefined); setWord(undefined)
     await speak(id, 'hero')
     if (!alive.current) return
     const res = judge(lesson.id, v, s, id)
@@ -96,7 +103,7 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
     if (s.bread) {
       // Шоти из тоне — на прилавок; забери его.
       setTurn('bread'); setBread('counter'); sound.pop(5)
-      setCue('Пекарша достала из тоне горячий шоти. Забери его.')
+      setCue(v.item === 'khachapuri' ? 'Пекарша достала из тоне горячий хачапури. Забери его.' : 'Пекарша достала из тоне горячий шоти. Забери его.')
       return
     }
     next()
@@ -123,14 +130,14 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
     window.setTimeout(() => { taking.current = false; if (alive.current) next() }, 650)
   }
 
-  const start = () => { setVi(0); setRight(0); setMisses(0); setPhase('play') }
+  const start = () => { setVi(0); setRight(0); setMisses(0); shown.current.clear(); setPhase('play') }
 
   const title = 'Пекарня у дома'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="bakery-scene">
-          <GameIntro title={title} text="Каждый день ты заходишь в пекарню у дома за шоти. Пекарша уже тебя знает: поздоровайся, поговори о делах — а то и сам спроси, как у неё. Забери хлеб и попрощайся." onStart={start} hero
+          <GameIntro title={title} text="Каждый день ты заходишь в пекарню у дома. Пекарша уже тебя знает: поздоровайся, поговори о делах — а то и сам спроси, как у неё. Покажи на витрине, что берёшь, попроси вежливо, забери и попрощайся." onStart={start} hero
             chips={['rogor', 'kargad_madloba'].map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -159,6 +166,16 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
             </svg>
           </motion.div>
           <Counter />
+          <Showcase active={turn === 'you' && !!v.steps[si].order} bad={bad} onPick={(id, el) => { haptic('tap'); void answer(id); if (id === v.steps[si].want) burst(el, 'small') }} />
+          {/* Новое слово — над витриной. */}
+          <AnimatePresence mode="wait">
+            {word && (
+              <motion.div key={word} className="absolute z-30 left-[3%] top-[30%]" initial={{ opacity: 0, y: 16, rotate: -5 }} animate={{ opacity: 1, y: 0, rotate: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', stiffness: 360, damping: 20 }}>
+                <NewWord word={phrase(word)} testId="bakery-new-word" />
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* Шоти: в тоне → на прилавке → в сумке. */}
           <AnimatePresence>
             {bread !== 'bag' && (
@@ -175,7 +192,7 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
                 whileTap={{ scale: 0.92 }}
                 aria-label="Забрать хлеб"
               >
-                <Shoti />
+                {v.item === 'khachapuri' ? <Khachapuri /> : <Shoti />}
                 {bread === 'counter' && <motion.span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[11px] font-extrabold text-cream bg-jewelInk/70 rounded-full px-2 whitespace-nowrap"
                   animate={{ y: [0, -3, 0] }} transition={{ repeat: Infinity, duration: 1.2 }}>нажми</motion.span>}
               </motion.button>
@@ -232,6 +249,42 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
         </div>
       </div>
     </GameFrame>
+  )
+}
+
+/** Витрина на прилавке: хлеб и хачапури, под каждым — подпись по-грузински. Нажми — закажешь. */
+function Showcase({ active, bad, onPick }: { active: boolean; bad?: string; onPick: (id: Item, el: HTMLElement) => void }) {
+  return (
+    <div className="absolute z-[18] left-[6%] bottom-[3%] flex gap-2" data-testid="bakery-showcase">
+      {ITEMS.map(id => {
+        const p = phrase(id)
+        return (
+          <motion.button key={id} type="button" data-testid={`bakery-reply-${id}`} disabled={!active}
+            onClick={e => onPick(id, e.currentTarget)}
+            className="flex flex-col items-center rounded-xl border-[1.5px] border-jewelInk bg-cream-tile/95 px-1.5 pt-1 pb-0.5"
+            style={{ boxShadow: active ? '3px 3px 0 #15100A' : '1px 1px 0 #15100A' }}
+            animate={{ y: active ? [0, -4, 0] : 0, x: bad === id ? [0, -5, 5, -3, 3, 0] : 0 }}
+            transition={active && bad !== id ? { repeat: Infinity, duration: 1.4, ease: 'easeInOut' } : { duration: 0.35 }}
+            whileTap={active ? { scale: 0.92 } : undefined}>
+            <span className="block" style={{ transform: 'scale(0.5)', margin: '-12px -26px -10px' }}>{id === 'khachapuri' ? <Khachapuri /> : <Shoti />}</span>
+            <span className="font-geo text-[12px] font-bold leading-tight">{p.geo}</span>
+            <span className="text-[9px] font-semibold text-jewelInk-hint leading-none mb-0.5">{cyr(p.geo)}</span>
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Хачапури по-аджарски: лодочка с сыром и желтком. */
+function Khachapuri() {
+  return (
+    <svg width="110" height="46" viewBox="0 0 110 46" aria-hidden>
+      <path d="M2 24 Q26 2 55 10 Q84 2 108 24 Q84 44 55 38 Q26 44 2 24 Z" fill="#D9963F" stroke="#15100A" strokeWidth="2.2" strokeLinejoin="round" />
+      <path d="M20 24 Q55 8 90 24 Q55 36 20 24 Z" fill="#FBE7A6" stroke="#15100A" strokeWidth="1.6" />
+      <ellipse cx="55" cy="23" rx="8" ry="6" fill="#F5B820" stroke="#15100A" strokeWidth="1.4" />
+      <ellipse cx="53" cy="21" rx="2.5" ry="1.6" fill="#FFF4D6" />
+    </svg>
   )
 }
 

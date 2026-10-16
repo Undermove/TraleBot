@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { seeded } from '../../verbs/testing/catalog'
-import { geoName, introLesson, knows } from '../story'
+import { geoName, introLesson, met } from '../story'
 import Supra from './Supra'
 import { BEATS, SUPRA_LESSON, TOASTS, guestWarmth, guests, toastOpts } from './supra.logic'
 import { setMuted } from '../../alphabet/games/fx'
@@ -20,13 +20,24 @@ describe('supra logic', () => {
       expect(g.map(x => x.name)).not.toContain('კარლოსი')
       for (const x of g) {
         expect(x.talk.length).toBeGreaterThanOrEqual(1)
-        expect(x.talk.length).toBeLessThanOrEqual(2)
+        // Двое ещё и угощают: «ხინკალი?» → კი → გემრიელია! — на два обмена больше.
+        expect(x.talk.length).toBeLessThanOrEqual(x.theme === 'hello' || x.theme === 'family' ? 4 : 2)
         for (const e of x.talk) {
           expect(e.opts.some(o => o.good)).toBe(true)
-          for (const o of e.opts) for (const id of o.ids) expect(knows(SUPRA_LESSON, id)).toBe(true)
+          for (const o of e.opts) for (const id of o.ids) expect(met(SUPRA_LESSON, id)).toBe(true)
         }
       }
     }
+  })
+
+  it('Nino treats you to khinkali, grandma to churchkhela; you accept and praise it', () => {
+    const g = guests(me, seeded(3))
+    const nino = g.find(x => x.theme === 'hello')!.talk.flatMap(e => e.her).find(h => h.kind === 'her' && h.geo === 'ხინკალი?')
+    expect(nino).toBeTruthy()
+    const fam = g.find(x => x.theme === 'family')!.talk
+    expect(fam.flatMap(e => e.her).some(h => h.kind === 'her' && h.geo === 'ჩურჩხელა?')).toBe(true)
+    expect(fam.flatMap(e => e.opts).find(o => o.ids[0] === 'gemrielia')?.good).toBe(true)
+    expect(fam.flatMap(e => e.opts).find(o => o.ids[0] === 'bodishi')?.good).toBe(false)
   })
 
   it('family guest drills მყავს / მაქვს and love for Georgia', () => {

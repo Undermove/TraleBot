@@ -3,8 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { phrase } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { met as metWord, phrase } from '../story'
+import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
@@ -172,8 +172,8 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
     setStage('arrive')
     sound.win(); haptic('good')
     setCue('')
-    // Постоять у перил и посмотреть на море — потом итог.
-    window.setTimeout(() => alive.current && setPhase('end'), 2600)
+    // Постоять у перил и посмотреть на море — потом итог. На набережной (урок 6) — слово ზღვა: море.
+    window.setTimeout(() => alive.current && setPhase('end'), metWord(lesson.id, 'zghva') ? 4200 : 2600)
   }
 
   const answer = async (id: string) => {
@@ -348,6 +348,15 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
                   style={{ boxShadow: '3px 3px 0 #15100A' }}
                   initial={{ opacity: 0, y: -16, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.3 }}>
                   Ты у моря
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+          <AnimatePresence>
+            {stage === 'arrive' && metWord(lesson.id, 'zghva') && (
+              <div className="absolute inset-x-0 top-[34%] flex justify-center">
+                <motion.div initial={{ opacity: 0, y: 20, rotate: -4 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 18, delay: 0.9 }}>
+                  <NewWord word={phrase('zghva')} testId="walk-new-word" />
                 </motion.div>
               </div>
             )}

@@ -1,11 +1,12 @@
-import { ALIVE, NAMES, knows, phrase, shuffle, type Rng } from '../story'
+import { ALIVE, NAMES, knows, met, phrase, shuffle, type Rng } from '../story'
 import { randomLook, type Look } from '../ui'
 
 // «Семейный альбом» — чистая логика: кто есть на доске в каждом режиме, где стоят рамки, в каком порядке
 // приходят фото, что Нино говорит на промах, вопросы альбома и фразы «у меня есть …» для своей страницы.
+// С урока 25 на доске есть и бабушка с дедушкой (ბებია, ბაბუა — слова сцены): ряд над родителями.
 
 export type FamilyMode = 'parents' | 'siblings' | 'full' | 'album'
-export type Role = 'mama' | 'deda' | 'dzma' | 'da' | 'coli' | 'kmari' | 'vazhi' | 'kalishvili'
+export type Role = 'mama' | 'deda' | 'dzma' | 'da' | 'coli' | 'kmari' | 'vazhi' | 'kalishvili' | 'bebia' | 'babua'
 export type SlotRole = Role | 'ego'
 
 export interface RoleInfo {
@@ -20,8 +21,10 @@ export interface RoleInfo {
 }
 
 export const ROLES: Record<Role, RoleInfo> = {
-  mama: { pid: 'mama', ru: 'папа', label: 'папа', female: false, age: 'old' },
-  deda: { pid: 'deda', ru: 'мама', label: 'мама', female: true, age: 'old' },
+  bebia: { pid: 'bebia', ru: 'бабушка', label: 'бабушка', female: true, age: 'old' },
+  babua: { pid: 'babua', ru: 'дедушка', label: 'дедушка', female: false, age: 'old' },
+  mama: { pid: 'mama', ru: 'папа', label: 'папа', female: false, age: 'adult' },
+  deda: { pid: 'deda', ru: 'мама', label: 'мама', female: true, age: 'adult' },
   dzma: { pid: 'dzma', ru: 'брат', label: 'брат', female: false, age: 'adult' },
   da: { pid: 'da', ru: 'сестра', label: 'сестра', female: true, age: 'adult' },
   coli: { pid: 'coli', ru: 'жена', label: 'жена брата', female: true, age: 'adult' },
@@ -44,21 +47,25 @@ export interface Tree {
   kids: { parents: [SlotRole, SlotRole]; kids: SlotRole[] }[]
 }
 
-const TREES: Record<Exclude<FamilyMode, 'album'>, Tree> = {
+const TREES: Record<FamilyMode, Tree> = {
   parents: {
-    rows: 2,
-    slots: [{ role: 'mama', x: 0.33, row: 0 }, { role: 'deda', x: 0.67, row: 0 }, { role: 'ego', x: 0.5, row: 1 }],
-    couples: [['mama', 'deda']],
-    kids: [{ parents: ['mama', 'deda'], kids: ['ego'] }]
+    rows: 3,
+    slots: [
+      { role: 'babua', x: 0.2, row: 0 }, { role: 'bebia', x: 0.44, row: 0 },
+      { role: 'mama', x: 0.32, row: 1 }, { role: 'deda', x: 0.68, row: 1 }, { role: 'ego', x: 0.5, row: 2 }
+    ],
+    couples: [['babua', 'bebia'], ['mama', 'deda']],
+    kids: [{ parents: ['babua', 'bebia'], kids: ['mama'] }, { parents: ['mama', 'deda'], kids: ['ego'] }]
   },
   siblings: {
-    rows: 2,
+    rows: 3,
     slots: [
-      { role: 'mama', x: 0.38, row: 0 }, { role: 'deda', x: 0.62, row: 0 },
-      { role: 'dzma', x: 0.2, row: 1 }, { role: 'ego', x: 0.5, row: 1 }, { role: 'da', x: 0.8, row: 1 }
+      { role: 'babua', x: 0.24, row: 0 }, { role: 'bebia', x: 0.48, row: 0 },
+      { role: 'mama', x: 0.36, row: 1 }, { role: 'deda', x: 0.64, row: 1 },
+      { role: 'dzma', x: 0.2, row: 2 }, { role: 'ego', x: 0.5, row: 2 }, { role: 'da', x: 0.8, row: 2 }
     ],
-    couples: [['mama', 'deda']],
-    kids: [{ parents: ['mama', 'deda'], kids: ['dzma', 'ego', 'da'] }]
+    couples: [['babua', 'bebia'], ['mama', 'deda']],
+    kids: [{ parents: ['babua', 'bebia'], kids: ['mama'] }, { parents: ['mama', 'deda'], kids: ['dzma', 'ego', 'da'] }]
   },
   full: {
     rows: 3,
@@ -70,13 +77,27 @@ const TREES: Record<Exclude<FamilyMode, 'album'>, Tree> = {
     ],
     couples: [['mama', 'deda'], ['coli', 'dzma'], ['da', 'kmari']],
     kids: [{ parents: ['mama', 'deda'], kids: ['dzma', 'ego', 'da'] }, { parents: ['coli', 'dzma'], kids: ['vazhi', 'kalishvili'] }]
+  },
+  // Альбом-повторение (урок 30): вся семья и сверху — бабушка с дедушкой.
+  album: {
+    rows: 4,
+    slots: [
+      { role: 'babua', x: 0.3, row: 0 }, { role: 'bebia', x: 0.5, row: 0 },
+      { role: 'mama', x: 0.4, row: 1 }, { role: 'deda', x: 0.6, row: 1 },
+      { role: 'coli', x: 0.1, row: 2 }, { role: 'dzma', x: 0.3, row: 2 }, { role: 'ego', x: 0.5, row: 2 },
+      { role: 'da', x: 0.7, row: 2 }, { role: 'kmari', x: 0.9, row: 2 },
+      { role: 'vazhi', x: 0.1, row: 3 }, { role: 'kalishvili', x: 0.3, row: 3 }
+    ],
+    couples: [['babua', 'bebia'], ['mama', 'deda'], ['coli', 'dzma'], ['da', 'kmari']],
+    kids: [{ parents: ['babua', 'bebia'], kids: ['mama'] }, { parents: ['mama', 'deda'], kids: ['dzma', 'ego', 'da'] }, { parents: ['coli', 'dzma'], kids: ['vazhi', 'kalishvili'] }]
   }
 }
 
 /** Доска режима; рамки слов, которых человек ещё не встречал к этому уроку, убираем. */
 export function familyTree(mode: FamilyMode, lessonId: number): Tree {
-  const t = TREES[mode === 'album' ? 'full' : mode]
-  const ok = (r: SlotRole) => r === 'ego' || knows(lessonId, ROLES[r].pid)
+  const t = TREES[mode]
+  // Слова семьи — новые фразы уроков, бабушка с дедушкой — слова сцены: годится всё, что уже встречалось.
+  const ok = (r: SlotRole) => r === 'ego' || met(lessonId, ROLES[r].pid)
   return {
     rows: t.rows,
     slots: t.slots.filter(s => ok(s.role)),
@@ -150,7 +171,7 @@ export interface AlbumPage { role: Role; options: Role[] }
 
 /** Пары-ловушки: в вариантах рядом с верным словом стоит его «близнец». */
 const TWIN: Record<Role, Role> = {
-  mama: 'deda', deda: 'mama', dzma: 'da', da: 'dzma', coli: 'kmari', kmari: 'coli', vazhi: 'kalishvili', kalishvili: 'vazhi'
+  mama: 'deda', deda: 'mama', dzma: 'da', da: 'dzma', coli: 'kmari', kmari: 'coli', vazhi: 'kalishvili', kalishvili: 'vazhi', bebia: 'babua', babua: 'bebia'
 }
 
 export function albumPages(lessonId: number, rng: Rng = Math.random): AlbumPage[] {

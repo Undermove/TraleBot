@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { setMuted } from '../../alphabet/games/fx'
 import { seeded } from '../../verbs/testing/catalog'
-import { geoName, introLesson, knows } from '../story'
+import { geoName, introLesson, met } from '../story'
 import Chat from './Chat'
 import { SCRIPT_LESSON, bankAdd, chatScript, ending, onlyKnown, warmAfter, type ChatScript } from './chatScripts'
 
@@ -23,10 +23,10 @@ describe('chat scripts', () => {
         expect(e.opts.length).toBeLessThanOrEqual(3)
         expect(e.opts.some(o => o.good)).toBe(true)
         for (const o of e.opts) {
-          for (const id of o.ids) expect(knows(lessonId, id), `${s}: ${id}`).toBe(true)
+          for (const id of o.ids) expect(met(lessonId, id), `${s}: ${id}`).toBe(true)
           if (!o.good) expect(o.miss).toBeTruthy()
         }
-        for (const h of e.her) if (h.kind === 'her') for (const id of h.ids) expect(knows(lessonId, id), `${s}: ${id}`).toBe(true)
+        for (const h of e.her) if (h.kind === 'her') for (const id of h.ids) expect(met(lessonId, id), `${s}: ${id}`).toBe(true)
       }
     }
   })
@@ -45,7 +45,7 @@ describe('chat scripts', () => {
   it('drops what the learner has not met yet', () => {
     // act6 в 12-м уроке: семьи, «люблю Грузию» и «не знаю» ещё нет — эти обмены выпадают.
     const plan = onlyKnown(chatScript('act6', me, seeded(1)), 12)
-    for (const e of plan) for (const o of e.opts) for (const id of o.ids) expect(knows(12, id)).toBe(true)
+    for (const e of plan) for (const o of e.opts) for (const id of o.ids) expect(met(12, id)).toBe(true)
     expect(plan.length).toBeLessThan(6)
   })
 

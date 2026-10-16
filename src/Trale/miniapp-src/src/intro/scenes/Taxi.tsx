@@ -3,11 +3,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { CITIES, myName, type City } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { CITIES, firstMet, myName, phrase, type City, type Phrase } from '../story'
+import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
 import { hush, speak, speakUrl } from '../voice'
-import type { Exchange, Opt, Say } from './chatScripts'
-import { discountFor, driverAudio, fareAt, heroAudio, lari, taxiTurns, toPay, type TaxiMode } from './taxi.logic'
+import type { Opt, Say } from './chatScripts'
+import { cashFare, discountFor, driverAudio, fareAt, heroAudio, lari, priceAudio, priceLine, taxiTurns, toPay, type Nav, type TaxiMode, type TaxiTurn } from './taxi.logic'
 import type { SceneProps, StepOf } from './types'
 import Street from './walk/Street'
 import { buildStreet, type View } from './walk/geometry'
@@ -15,7 +15,8 @@ import { buildStreet, type View } from './walk/geometry'
 /**
  * «Таксист спрашивает» — с заднего сиденья. Через лобовое стекло едет Батуми, впереди затылок таксиста,
  * в зеркале — его глаза, на панели — счётчик. Таксист болтливый: спрашивает, ты отвечаешь, он реагирует —
- * по шагам, без таймеров. Верный ответ — скидка за разговор. В конце — чек.
+ * по шагам, без таймеров. На перекрёстках телефон с навигатором показывает стрелку — говоришь таксисту, куда
+ * повернуть; у дома просишь остановить; в уроке 22 спрашиваешь цену. Верный ответ — скидка. В конце — чек.
  */
 
 const G = ({ children }: { children: string }) => <b className="font-geo">{children}</b>
@@ -34,7 +35,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
   const [dest, setDest] = useState<City>(CITIES[0])
   const [round, setRound] = useState(0)
   const me = useMemo(() => myName(), [round]) // eslint-disable-line react-hooks/exhaustive-deps
-  const turns: Exchange[] = useMemo(() => taxiTurns(mode, dest, me, lesson.id, rng), [mode, dest, me, lesson.id, round]) // eslint-disable-line react-hooks/exhaustive-deps
+  const turns: TaxiTurn[] = useMemo(() => taxiTurns(mode, dest, me, lesson.id, rng), [mode, dest, me, lesson.id, round]) // eslint-disable-line react-hooks/exhaustive-deps
   const n = turns.length
   const buildings = useMemo(() => buildStreet(STREET_M, 5 + lesson.id), [lesson.id])
 
@@ -50,6 +51,13 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
   const [discount, setDiscount] = useState(0)
   const [good, setGood] = useState(0)
   const [missed, setMissed] = useState(false)
+  // Слово сцены впервые — карточка «новое слово»; каждое — один раз за поездку.
+  const [fresh, setFresh] = useState<Phrase | null>(null)
+  const shown = useRef(new Set<string>())
+  // Машина поворачивает: улица уезжает в сторону.
+  const [sway, setSway] = useState<{ d: Nav; k: number } | null>(null)
+  // Цена, которую назвал таксист (урок 22).
+  const [cash, setCash] = useState<number | null>(null)
   const meter = useRef<HTMLDivElement>(null)
   // Улица рисуется в пропорциях окна: иначе дома растягиваются.
   const glass = useRef<HTMLDivElement>(null)
@@ -71,6 +79,8 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
   const cam = useRef({ z: 0, v: 0 })
   const [, setFrame] = useState(0)
   const turnRef = useRef<Turn>('talk')
+  // После «გააჩერე» машина стоит у дома до конца поездки.
+  const parkedRef = useRef(false)
   turnRef.current = turn
   useEffect(() => {
     if (phase !== 'ride') return
@@ -81,7 +91,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
     const tick = () => {
       const t = performance.now(); const dt = Math.min(0.05, (t - last) / 1000); last = t
       const c = cam.current
-      const target = turnRef.current === 'arrive' ? 0 : turnRef.current === 'drive' ? DRIVE * 1.4 : DRIVE
+      const target = parkedRef.current || turnRef.current === 'arrive' ? 0 : turnRef.current === 'drive' ? DRIVE * 1.4 : DRIVE
       c.v += (target - c.v) * Math.min(1, dt * 1.6)
       c.z = Math.min(STREET_M - 60, c.z + c.v * dt)
       setFrame(f => (f + 1) % 1e6)
@@ -110,17 +120,19 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
   }
 
   const open = async (k: number) => {
-    setAt(k); setTried([]); setMine(null); setOops(null); setMissed(false); setTurn('talk')
+    setAt(k); setTried([]); setMine(null); setOops(null); setMissed(false); setTurn('talk'); setFresh(null)
     await driverSays(turns[k].her)
     if (!alive.current) return
+    const want = turns[k].opts.find(o => o.good)?.ids.find(id => (lesson.scene ?? []).includes(id) && firstMet(lesson.id, id) && !shown.current.has(id))
+    if (want) { shown.current.add(want); setFresh(phrase(want)) }
     setTurn('you'); busy.current = false
   }
 
   const begin = (c: City) => {
     haptic('pop'); sound.pop()
     setDest(c); setRound(r => r + 1)
-    cam.current = { z: 0, v: 0 }
-    setDiscount(0); setGood(0); setBubble(null)
+    cam.current = { z: 0, v: 0 }; parkedRef.current = false
+    setDiscount(0); setGood(0); setBubble(null); setCash(null); setFresh(null); shown.current = new Set()
     setPhase('ride')
   }
   // Новый маршрут — поездка с начала.
@@ -141,7 +153,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
       busy.current = false
       return
     }
-    setTurn('speaking'); setMine(o.geo); setBubble(null); setOops(null)
+    setTurn('speaking'); setMine(o.geo); setBubble(null); setOops(null); setFresh(null)
     haptic('tap')
     const url = heroAudio(o.geo)
     if (url) await speakUrl(url, o.geo)
@@ -153,8 +165,22 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
     haptic('good'); sound.snap(at)
     if (meter.current) { burst(meter.current, 'small'); floater(`−${lari(plus)}`, meter.current, '#4E8A5B') }
     setTurn('react')
+    const cur = turns[at]
+    if (cur.nav && cur.nav !== 'stop') { setSway({ d: cur.nav, k: at }); haptic('soft') }
+    if (cur.nav === 'stop') { parkedRef.current = true; setTurn('arrive') }
     if (o.then?.length) await driverSays(o.then)
     if (!alive.current) return
+    if (cur.price) {
+      // Таксист смотрит на счётчик и называет цену — целыми лари, вниз в твою пользу.
+      const sum = cashFare(fareAt(n), discount + plus)
+      const line = priceLine(sum)
+      setCash(sum)
+      setBubble({ geo: line.geo, ru: line.ru }); setTalking(true); setEyes('smile')
+      await speakUrl(priceAudio(sum), line.geo)
+      if (!alive.current) return
+      setTalking(false)
+      await wait(500)
+    }
     if (at + 1 >= n) {
       setTurn('arrive'); setBubble({ ru: 'Приехали!', tone: 'note' })
       sound.win(); haptic('good')
@@ -162,9 +188,10 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
       if (alive.current) setPhase('end')
       return
     }
-    // Немного проехать молча — и следующий вопрос.
-    setTurn('drive'); setMine(null)
-    await wait(1600)
+    // Немного проехать молча — и следующий вопрос. После «останови» машина уже стоит.
+    const parked = cur.nav === 'stop' || !!cur.price
+    setTurn(parked ? 'arrive' : 'drive'); setMine(null)
+    await wait(parked ? 700 : 1600)
     if (alive.current) void open(at + 1)
   }
 
@@ -175,8 +202,8 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
       <div className="flex-1 min-h-0 flex flex-col" data-testid="taxi-scene">
         <GameIntro title="Такси по Батуми" hero
           text={mode === 'where'
-            ? 'Таксист попался болтливый: всю дорогу расспрашивает. Отвечай — за хороший разговор скидка. Он обязательно спросит, где ты живёшь.'
-            : 'Опять болтливый таксист. Теперь он спросит, кем ты работаешь. Каждый хороший ответ — скидка по счётчику.'}
+            ? 'Таксист попался болтливый: всю дорогу расспрашивает. Отвечай — за хороший разговор скидка. Он обязательно спросит, где ты живёшь. А дорогу показывает навигатор в телефоне — подсказывай таксисту, куда поворачивать.'
+            : 'Опять болтливый таксист. Теперь он спросит, кем ты работаешь. Каждый хороший ответ — скидка. Приедешь — спроси, сколько с тебя: таксист назовёт цену по-грузински.'}
           chips={mode === 'where' ? [{ geo: 'ბათუმში', ru: 'в Батуми' }, { geo: 'ქუთაისში', ru: 'в Кутаиси' }] : [{ geo: 'მე ვარ სტუდენტი', ru: 'я студент' }, { geo: 'ვმუშაობ', ru: 'я работаю' }]}
           onStart={() => setPhase('dest')} />
       </div>
@@ -201,7 +228,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
 
   if (phase === 'end') {
     const total = fareAt(n)
-    const pay = toPay(total, discount)
+    const pay = cash ?? toPay(total, discount)
     return (
       <GameFrame title="Приехали!" eyebrow={`такси · урок ${lesson.id}`} fraction={fraction} onExit={onExit}>
         <GameEnd
@@ -211,8 +238,9 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
             <motion.div className="rounded-xl border-[1.5px] border-dashed border-jewelInk bg-cream-tile px-4 py-2 text-[13px] tabular-nums" data-testid="taxi-receipt"
               initial={{ y: -20, opacity: 0, rotate: -3 }} animate={{ y: 0, opacity: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 220, damping: 16 }}>
               <div className="flex justify-between"><span>По счётчику</span><b>{lari(total)}</b></div>
-              <div className="flex justify-between text-ruby"><span>Скидка за разговор</span><b>−{lari(Math.min(discount, total - 1))}</b></div>
+              <div className="flex justify-between text-ruby"><span>Скидка за разговор</span><b>−{lari(cash !== null ? total - cash : Math.min(discount, total - 1))}</b></div>
               <div className="flex justify-between border-t-[1.5px] border-dashed border-jewelInk-faint mt-1 pt-1"><span>К оплате</span><b>{lari(pay)}</b></div>
+              {cash !== null && <div className="flex justify-between text-jewelInk-hint" data-testid="taxi-cash"><span>Таксист сказал</span><b className="font-geo">{priceLine(cash).geo}</b></div>}
             </motion.div>
             {mode === 'where'
               ? <RuleCard title="Где живёшь">«Живу в …» — <G>ვცხოვრობ</G> и город с <G>-ში</G>: <G>ბათუმი</G> → <G>ბათუმში</G>. Без <G>-ში</G> выходит «живу Батуми».</RuleCard>
@@ -233,11 +261,35 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
         <div className="relative flex-1 min-h-[270px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="taxi-cab">
           {/* Лобовое стекло: улица едет навстречу. */}
           <div ref={glass} className="absolute inset-x-0 top-0 h-[66%] overflow-hidden">
+            <motion.div key={sway ? `${sway.d}-${sway.k}` : 'still'} className="absolute inset-0"
+              initial={false} animate={sway && sway.d !== 'straight' ? { x: [0, sway.d === 'right' ? -46 : 46, 0], rotate: [0, sway.d === 'right' ? -2.5 : 2.5, 0] } : { x: 0, rotate: 0 }}
+              transition={{ duration: 1.3, ease: 'easeInOut' }}>
             <Street view={view} camZ={cam.current.z} clock={0.45} bob={Math.sin(cam.current.z * 1.7) * 0.012} buildings={buildings} people={[]} end={STREET_M} rail={STREET_M * 50} time={performance.now()} />
+            </motion.div>
           </div>
           <Interior />
           <Mirror eyes={eyes} talking={talking} />
           <DriverBack talking={talking} />
+          {/* Телефон с навигатором: на перекрёстке — стрелка, у дома — флажок «приехали». */}
+          <AnimatePresence>
+            {ex.nav && (turn === 'talk' || turn === 'you' || turn === 'speaking') && (
+              <motion.div key={`nav-${at}`} className="absolute left-[5%] top-[34%] z-20" data-testid="taxi-nav" data-nav={ex.nav}
+                initial={{ x: -70, rotate: -18, opacity: 0 }} animate={{ x: 0, rotate: -6, opacity: 1 }} exit={{ x: -70, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 18 }}>
+                <NavPhone nav={ex.nav} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* Новое слово — рядом с телефоном, пока ты отвечаешь. */}
+          <AnimatePresence>
+            {fresh && turn === 'you' && (
+              <motion.div key={fresh.id} className="absolute right-[4%] top-[34%] z-30 max-w-[60%]"
+                initial={{ scale: 0.5, opacity: 0, y: 10 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 18 }}>
+                <NewWord word={fresh} />
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* Счётчик на панели. */}
           <div ref={meter} className="absolute right-[7%] bottom-[9%] z-20 rounded-lg border-[1.5px] border-jewelInk bg-[#15241A] px-2 py-1 text-right" data-testid="taxi-meter" style={{ boxShadow: '2px 2px 0 #15100A' }}>
             <div className="font-mono text-[15px] font-bold text-[#7CF59A] leading-none tabular-nums" data-testid="taxi-fare">{lari(fare)}</div>
@@ -381,5 +433,34 @@ function Mirror({ eyes, talking }: { eyes: Eyes; talking: boolean }) {
         <rect x="10" y="11" width="110" height="22" rx="8" fill="#FFFFFF" opacity="0.08" />
       </svg>
     </motion.div>
+  )
+}
+
+/** Телефон на держателе: навигатор со стрелкой поворота или флажком «приехали». */
+function NavPhone({ nav }: { nav: Nav }) {
+  const INK = '#15100A'
+  return (
+    <svg width="58" height="92" viewBox="0 0 58 92" aria-hidden>
+      <rect x="2" y="2" width="54" height="88" rx="9" fill="#15100A" stroke={INK} strokeWidth="2" />
+      <rect x="6" y="9" width="46" height="72" rx="4" fill="#D7E4DA" />
+      {/* Дорога на карте. */}
+      <path d="M29 81 V48" stroke="#FDFAEF" strokeWidth="10" />
+      {nav === 'right' && <path d="M29 52 Q29 38 44 38" stroke="#FDFAEF" strokeWidth="10" fill="none" />}
+      {nav === 'left' && <path d="M29 52 Q29 38 14 38" stroke="#FDFAEF" strokeWidth="10" fill="none" />}
+      {nav === 'straight' && <path d="M29 52 V14" stroke="#FDFAEF" strokeWidth="10" />}
+      {/* Стрелка маршрута. */}
+      {nav === 'right' && <path d="M29 72 V50 Q29 40 40 40 M36 34 L44 40 L36 46" stroke="#1B5FB0" strokeWidth="4.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+      {nav === 'left' && <path d="M29 72 V50 Q29 40 18 40 M22 34 L14 40 L22 46" stroke="#1B5FB0" strokeWidth="4.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+      {nav === 'straight' && <path d="M29 72 V20 M22 27 L29 18 L36 27" stroke="#1B5FB0" strokeWidth="4.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+      {nav === 'stop' && (
+        <g>
+          <path d="M29 72 V50" stroke="#1B5FB0" strokeWidth="4.5" strokeLinecap="round" />
+          <path d="M18 38 L29 28 L40 38 V50 H18 Z" fill="#E01A3C" stroke={INK} strokeWidth="1.6" />
+          <rect x="26" y="42" width="6" height="8" fill="#FDFAEF" />
+          <path d="M40 22 V36 M40 22 L50 26 L40 30" stroke={INK} strokeWidth="1.6" fill="#F5B820" />
+        </g>
+      )}
+      <circle cx="29" cy="72" r="4" fill="#1B5FB0" stroke="#FDFAEF" strokeWidth="1.6" />
+    </svg>
   )
 }

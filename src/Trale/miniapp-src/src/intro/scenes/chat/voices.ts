@@ -32,6 +32,8 @@ const OWN: Record<Voice, Record<string, string>> = {
   'ვცხოვრობ ქუთაისში': '/audio/intro-story/supra/h18.m4a',
   'მე ვარ ექიმი': '/audio/intro-story/supra/h19.m4a',
   'მე ვარ მასწავლებელი': '/audio/intro-story/supra/h20.m4a',
+  'ყავა გთხოვთ': '/audio/intro-story/chat/h-qava-gtkhovt.m4a',
+  'ჩაი გთხოვთ': '/audio/intro-story/chat/h-chai-gtkhovt.m4a',
   },
   m: {
   'რა გქვია': '/audio/intro-story/supra/m01.m4a',
@@ -46,6 +48,8 @@ const OWN: Record<Voice, Record<string, string>> = {
   },
   f: {
   'შენ': '/audio/intro-story/supra/f01.m4a',
+  'ყავა ჩაი': '/audio/intro-story/chat/f-qava-chai.m4a',
+  'ზღვა': '/audio/intro-story/chat/f-zghva.m4a',
   }
 }
 

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { seeded } from '../../verbs/testing/catalog'
 import { setMuted } from '../../alphabet/games/fx'
-import { introLesson, knows } from '../story'
+import { introLesson, met } from '../story'
 import Bakery from './Bakery'
 import { judge, plan, replies } from './Bakery.logic'
 
@@ -14,10 +14,21 @@ describe('bakery logic', () => {
     for (const visit of v) {
       expect(visit.steps[visit.steps.length - 1].want).toBe('nakhvamdis')
       expect(visit.steps.some(s => s.bread)).toBe(true)
-      for (const s of visit.steps) for (const id of [s.want, s.line, s.react].filter(Boolean) as string[]) expect(knows(3, id)).toBe(true)
+      for (const s of visit.steps) for (const id of [s.want, s.line, s.react].filter(Boolean) as string[]) expect(met(3, id)).toBe(true)
     }
     expect(v.some(x => x.steps.some(s => s.want === 'rogor'))).toBe(true)
-    for (const id of replies(3)) expect(knows(3, id)).toBe(true)
+    for (const id of replies(3)) expect(met(3, id)).toBe(true)
+  })
+
+  it('каждый визит — заказ с витрины и «пожалуйста»: в первые два дня хлеб и хачапури', () => {
+    const v = plan(3, seeded(5))
+    expect(v.map(x => x.item).slice(0, 2)).toEqual(['puri', 'khachapuri'])
+    for (const visit of v) {
+      const i = visit.steps.findIndex(s => s.order)
+      expect(visit.steps[i].want).toBe(visit.item)
+      expect(visit.steps[i + 1]).toMatchObject({ want: 'gtkhovt', bread: true })
+      expect(judge(3, visit, visit.steps[i], visit.item === 'puri' ? 'khachapuri' : 'puri').hint).toMatch(/нужен/)
+    }
   })
 
   it('a wrong line says why', () => {

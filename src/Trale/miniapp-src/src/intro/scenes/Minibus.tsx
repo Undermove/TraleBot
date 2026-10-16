@@ -4,10 +4,10 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { phrase } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
-import { HINTS_OFF_AFTER, MY_STOP, STOPS, STOP_RU, judge, replies, ride, type RideEvent, type Stop } from './Minibus.logic'
+import { HINTS_OFF_AFTER, MY_STOP, STOPS, STOP_RU, heardBy, judge, replies, ride, type RideEvent, type Speaker, type Stop } from './Minibus.logic'
 import type { Who } from './Walk.logic'
 import Passerby, { type Face } from './walk/Passerby'
 import { SpeechBubble } from './Walk'
@@ -16,6 +16,7 @@ import { SpeechBubble } from './Walk'
  * «Маршрутка» — едешь в университет. Скамейки друг напротив друга: перед тобой пассажиры, за ними
  * окно, в окне плывёт Батуми. Сдача, поворот, остановки, уроненная перчатка, торможение, выход — каждое
  * событие ждёт ответа. На поворотах салон кренит, на торможении бросает вперёд, вибрация в такт.
+ * Новые слова — там, где они в жизни: გაჩერება на табличке, «აქ?» водителя, «გამიჩერეთ!» пассажира сзади.
  */
 
 const G = ({ children }: { children: string }) => <b className="font-geo">{children}</b>
@@ -26,7 +27,6 @@ const DRIVER: Who = { ru: 'Водитель', kind: 'man', coat: '#2F3A4E', skin
 
 export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps<StepOf<'minibus'>>) {
   const events = useMemo(() => ride(), [])
-  const panel = replies(lesson.id)
   const [phase, setPhase] = useState<'intro' | 'play' | 'end'>('intro')
   const [ei, setEi] = useState(0)
   const [ready, setReady] = useState(false)
@@ -39,6 +39,9 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
   const [right, setRight] = useState(0)
   const [misses, setMisses] = useState(0)
   const [stopAt, setStopAt] = useState(-1)
+  const [by, setBy] = useState<Speaker>('d')
+  const [word, setWord] = useState<string | undefined>()
+  const shown = useRef(new Set<string>())
   const cabin = useAnimationControls()
   const alive = useRef(true)
   const busy = useRef(false)
@@ -47,6 +50,9 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
 
   const e: RideEvent = events[Math.min(ei, events.length - 1)]
   const hints = right < HINTS_OFF_AFTER
+  const panel = replies(lesson.id, heardBy(events, ei))
+  const fresh = (id: string) => { if (shown.current.has(id)) return false; shown.current.add(id); setWord(id); return true }
+  const voiceOf = (who: Speaker) => (who === 'd' || who === 'n' ? 'm' : 'f')
 
   // Событие: маршрутка едет пару секунд — и что-то случается.
   useEffect(() => {
@@ -63,6 +69,18 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
         setMoving(false); haptic('soft'); sound.pop(1)
         if (ev.stop) setStopAt(STOPS.indexOf(ev.stop))
         setFaces(f => ({ ...f, d: 'smile' }))
+        // Первая остановка — знакомимся с табличкой.
+        if (ev.stop && !shown.current.has('gachereba')) { fresh('gachereba'); await wait(1400); if (off || !alive.current) return }
+      }
+      if (ev.kind === 'call' && ev.stop) setStopAt(STOPS.indexOf(ev.stop) - 1)
+      // Реплики до твоего ответа: водитель спрашивает, кто-то сзади кричит.
+      for (const l of ev.lines ?? []) {
+        setBy(l.by); setTheir(l.id)
+        if (!shown.current.has(l.id)) fresh(l.id)
+        if (l.id === 'gamicheret') { haptic('soft') }
+        await speak(l.id, voiceOf(l.by))
+        if (off || !alive.current) return
+        if (l.id === 'gamicheret') { setMoving(false); haptic('snap'); void cabin.start({ x: [0, -14, 4, 0], transition: { duration: 0.6 } }); await wait(500) }
       }
       if (ev.kind === 'lurch') {
         haptic('snap')
@@ -84,7 +102,7 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
   const answer = async (id: string) => {
     if (!ready || busy.current) return
     busy.current = true
-    setReady(false); setMine(id); setBad(undefined)
+    setReady(false); setMine(id); setBad(undefined); setWord(undefined)
     await speak(id, 'hero')
     if (!alive.current) return
     const v = judge(e, id)
@@ -96,21 +114,27 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
     haptic('good'); sound.pop(3); setRight(r => r + 1)
     const who = e.kind === 'glove' || e.kind === 'brake' ? 'l' : e.kind === 'stop' || e.kind === 'exit' ? 'd' : 'n'
     setFaces(f => ({ ...f, [who]: 'smile' }))
-    if (e.react) { setTheir(e.react); await speak(e.react, 'm') }
+    if (e.kind === 'call') {
+      // Водитель услышал — тормозит у университета.
+      setMoving(false); haptic('snap'); sound.pop(1)
+      void cabin.start({ x: [0, -22, 6, 0], transition: { duration: 0.7 } })
+      if (e.stop) setStopAt(STOPS.indexOf(e.stop))
+    }
+    if (e.react) { setBy('d'); setTheir(e.react); await speak(e.react, 'm') }
     await wait(500)
     if (!alive.current) return
     if (ei + 1 < events.length) setEi(x => x + 1)
     else { sound.win(); setPhase('end') }
   }
 
-  const start = () => { setEi(0); setRight(0); setMisses(0); setStopAt(-1); setPhase('play') }
+  const start = () => { setEi(0); setRight(0); setMisses(0); setStopAt(-1); shown.current.clear(); setWord(undefined); setPhase('play') }
 
   const title = 'Маршрутка'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="minibus-scene">
-          <GameIntro title="Маршрутка до университета" text="Ты едешь на маршрутке в университет. Передать за проезд, налететь на соседа на повороте, ответить водителю, твоя ли остановка, — тут пригодятся спасибо, извините, да и нет." onStart={start} hero
+          <GameIntro title="Маршрутка до университета" text="Ты едешь на маршрутке в университет. Передать за проезд, налететь на соседа на повороте, ответить водителю, твоя ли остановка, — тут пригодятся спасибо, извините, да и нет. А на своей остановке не забудь крикнуть водителю." onStart={start} hero
             chips={['madloba', 'bodishi', 'ki', 'ara'].map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -132,12 +156,12 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
         <Route at={stopAt} />
         <div className="relative flex-1 min-h-[250px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden bg-[#3A3550]" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="minibus-cabin">
           <motion.div className="absolute inset-[-14px]" animate={cabin}>
-            <Outside moving={moving} stop={e.kind === 'stop' && !moving ? e.stop : undefined} />
+            <Outside moving={moving} stop={(e.kind === 'stop' && !moving) || (e.kind === 'call' && ready) ? e.stop : undefined} />
             <Cabin />
             {/* Пассажиры напротив и водитель впереди. */}
             <div className="absolute left-[3%] top-[30%] z-10">
               <svg width="80" height="128" viewBox="-60 -190 120 196" className="overflow-visible" aria-hidden>
-                <Passerby who={DRIVER} phase={0} stride={0} face={faces.d} talking={!!their} wave={false} />
+                <Passerby who={DRIVER} phase={0} stride={0} face={faces.d} talking={!!their && by === 'd'} wave={false} />
               </svg>
             </div>
             <div className="absolute left-[33%] top-[38%] z-10">
@@ -175,11 +199,21 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
 
           <AnimatePresence>
             {their && (
-              <div key={`t-${ei}`} className="absolute z-30 left-[4%] top-[4%]">
+              <div key={`t-${ei}-${their}`} className={`absolute z-30 ${by === 'back' ? 'right-[4%] top-[4%]' : 'left-[4%] top-[4%]'}`} data-testid="minibus-their">
+                {by === 'back' && <div className="text-[10px] font-extrabold uppercase tracking-wider text-cream text-right mb-0.5">сзади кричат</div>}
                 <motion.div initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
                   <SpeechBubble id={their} hint={hints} />
                 </motion.div>
               </div>
+            )}
+          </AnimatePresence>
+          {/* Новое слово — карточкой, пока не ответишь. */}
+          <AnimatePresence mode="wait">
+            {word && (
+              <motion.div key={word} className="absolute z-30 right-[3%] top-[40%]" initial={{ opacity: 0, y: 16, rotate: 5 }} animate={{ opacity: 1, y: 0, rotate: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', stiffness: 360, damping: 20 }}>
+                <NewWord word={phrase(word)} testId="minibus-new-word" />
+              </motion.div>
             )}
           </AnimatePresence>
           <AnimatePresence>
@@ -270,7 +304,10 @@ function Outside({ moving, stop }: { moving: boolean; stop?: Stop }) {
       <AnimatePresence>
         {stop && (
           <motion.div key={stop} className="absolute right-[18%] bottom-1 flex flex-col items-center" initial={{ x: 80 }} animate={{ x: 0 }} exit={{ x: -120 }} transition={{ type: 'spring', stiffness: 120, damping: 18 }} data-testid="minibus-stop-sign">
-            <div className="rounded-md border-[1.5px] border-jewelInk bg-cream p-0.5"><StopIcon stop={stop} size={30} /></div>
+            <div className="rounded-md border-[1.5px] border-jewelInk bg-cream px-1 pt-0.5 flex flex-col items-center">
+              <span className="font-geo text-[9px] font-bold leading-none text-navy">{phrase('gachereba').geo}</span>
+              <StopIcon stop={stop} size={26} />
+            </div>
             <div className="w-1 h-6 bg-jewelInk" />
           </motion.div>
         )}

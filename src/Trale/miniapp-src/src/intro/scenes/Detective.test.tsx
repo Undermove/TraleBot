@@ -92,16 +92,26 @@ describe('Detective scene', () => {
     for (let i = 0; i < cases.length; i++) {
       await act(async () => { await vi.advanceTimersByTimeAsync(9000) })
       expect(screen.getAllByTestId('clue')).toHaveLength(cases[i].clues.length)
+      if (lessonId === 21 || i > 0) expect(screen.getByTestId('amanati-tag').textContent).toContain('ამანათი')
+      if (i === 0 && lessonId === 16) expect(screen.getByTestId('new-word').getAttribute('data-word')).toBe('amanati')
+      if (lessonId === 21) expect(screen.queryByTestId('new-word')).toBeNull()
       if (i === 0) {
         // Сдвинутая раздача: все чужие — коробки отлетают на пол, подсказка про соседа.
         handOut(cases[i].solution.map(s => (s + 1) % 3))
+        // Слово сцены впервые — карточкой: в уроке 16 ამანათი, потом ეს შენია?
+        if (lessonId === 16) expect(screen.getAllByTestId('new-word').slice(-1)[0].getAttribute('data-word')).toBe('es_shenia')
         fireEvent.click(screen.getByTestId('detective-check'))
+        // «ეს შენია?» — каждый отвечает: тут все чужие, значит «არა».
+        await act(async () => { await vi.advanceTimersByTimeAsync(1400) })
+        expect(screen.getByTestId('detective-answer').getAttribute('data-mine')).toBe('no')
+        await act(async () => { await vi.advanceTimersByTimeAsync(6000) })
         expect(screen.getByTestId('detective-tip').textContent).toMatch(/не моя/)
         await act(async () => { await vi.advanceTimersByTimeAsync(800) })
         expect(screen.getAllByTestId(/^parcel-/)).toHaveLength(3)
       }
       handOut(cases[i].solution)
       fireEvent.click(screen.getByTestId('detective-check'))
+      await act(async () => { await vi.advanceTimersByTimeAsync(7000) })
       fireEvent.click(screen.getByText(i + 1 < cases.length ? 'Следующий подъезд' : 'Готово'))
     }
     expect(screen.getByTestId('game-end').textContent).toContain('2 из 3')

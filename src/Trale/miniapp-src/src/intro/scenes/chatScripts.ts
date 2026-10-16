@@ -1,4 +1,4 @@
-import { CITIES, COUNTRIES, HERO, JOBS, NAMES, knows, phrase, pick, shuffle, type City, type Country, type GeoName, type Rng, type Word } from '../story'
+import { CITIES, COUNTRIES, HERO, JOBS, NAMES, met, phrase, pick, shuffle, type City, type Country, type GeoName, type Rng, type Word } from '../story'
 
 // Разговоры «Знакомства» как данные: реплики собеседника и варианты ответа. Общие для чата с Нино,
 // такси и супры. Весь грузинский — фразы из story.json или словарик по разрешённым шаблонам
@@ -66,9 +66,9 @@ export const GEORGIA = COUNTRIES.find(c => c.flag === 'ge') ?? COUNTRIES[0]
 
 const NINO = 'ნინო'
 
-/** Оставить только то, что человек к этому уроку уже встречал. Обмен без верного ответа выпадает. */
+/** Оставить только то, что человек к этому уроку уже встречал (фразы и слова сцен). Обмен без верного ответа выпадает. */
 export function onlyKnown(list: Exchange[], lessonId: number): Exchange[] {
-  const known = (l: { ids: string[] }) => l.ids.every(id => knows(lessonId, id))
+  const known = (l: { ids: string[] }) => l.ids.every(id => met(lessonId, id))
   const clean = (s: Say[]) => s.filter(x => x.kind !== 'her' || known(x))
   return list
     .map(e => ({ her: clean(e.her), opts: e.opts.filter(known).map(o => (o.then ? { ...o, then: clean(o.then) } : o)) }))
@@ -81,17 +81,26 @@ const mix = (e: Exchange, rng: Rng): Exchange => ({ ...e, opts: shuffle(e.opts, 
 
 export type ChatScript = 'act2' | 'act3' | 'act4' | 'act6'
 
-/** «Как дела?» — общий для всех актов обмен; на «а ты?» Нино отвечает. */
-function howAreYou(me: GeoName, wrong: Opt): Exchange {
+/**
+ * «Как дела?» — общий для всех актов обмен; на «а ты?» Нино отвечает. В поздних актах она отвечает
+ * по-разному (ძალიან კარგად), а у тебя есть «очень хорошо» вместо простого «хорошо, спасибо».
+ */
+function howAreYou(me: GeoName, wrong: Opt, warm = false): Exchange {
   return {
     her: [her(P('rogor'))],
     opts: [
-      ok(P('kargad_shen'), 2, [her(P('kargad_madloba'))]),
-      ok(P('kargad_madloba'), 1),
+      ok(P('kargad_shen'), 2, [her(P(warm ? 'dzalian_kargad' : 'kargad_madloba'))]),
+      warm ? ok(P('dzalian_kargad'), 1, [her(P('mets_kargad'))]) : ok(P('kargad_madloba'), 1),
       wrong
     ]
   }
 }
+
+// Слова сцен первых уроков (кафе во дворе, море, хачапури) — чтобы разговоры с Нино были про жизнь, а не
+// одни и те же вопросы. Реплики собраны из слов story.json.
+const coffeeOrTea = (): Line => ({ geo: 'ყავა? ჩაი?', ru: 'Кофе? Чай?', ids: ['qava', 'chai'] })
+const please = (id: 'qava' | 'chai'): Line => ({ geo: `${phrase(id).geo}, ${phrase('gtkhovt').geo}.`, ru: `${phrase(id).ru[0].toUpperCase() + phrase(id).ru.slice(1)}, пожалуйста.`, ids: [id, 'gtkhovt'] })
+const seaQ = (): Line => ({ geo: `${phrase('zghva').geo}?`, ru: 'На море?', ids: ['zghva'] })
 
 const bye = (): Exchange => ({
   her: [her(P('nakhvamdis'))],
@@ -119,6 +128,10 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
         no(P('ara'), 'Нино в шоке: «Не приятно?!» Ответь ей тем же словом.', -1)
       ] },
       howAreYou(me, no(iAmCalled(me), 'Нино: «Как тебя зовут, я уже знаю. Как дела?»')),
+      { her: [note('Нино варит кофе во дворе и зовёт тебя'), her(coffeeOrTea())], opts: [
+        ok(please('qava'), 2), ok(please('chai'), 2),
+        no(P('pasporti'), 'Нино смеётся: «Паспорт? Это двор, а не граница!» Выбери кофе или чай.')
+      ] },
       { her: [{ kind: 'photo', caption: `Нино прислала фото со двора: ты и твой друг ${NAMES[friend]}`, seed: photoSeed }, her(P('vin_aris'))], opts: [
         ok(P('es_chemi_megobaria'), 2), ok(justName(friend), 1),
         no(iAmCalled(me), 'Нино: «Тебя я уже знаю! А кто рядом с тобой?»')
@@ -140,6 +153,11 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
         no(P('madloba'), 'Нино: «За что спасибо? Я спросила, нравится ли тебе Грузия».'),
         no(P('ara'), 'Нино: «Ты здесь три дня, дай Грузии шанс!»', -1)
       ] },
+      { her: [note('Нино зовёт завтра искупаться'), her(seaQ())], opts: [
+        ok(P('ki'), 2, [her(P('dzalian_kargad'))]),
+        no(P('gamicheret'), 'Нино: «Остановить? Мы же не в маршрутке!» Она зовёт на море — ответь «да».'),
+        no(P('ara'), 'Нино: «Вода тёплая, соглашайся!»', -1)
+      ] },
       { her: [note('Спроси Нино, откуда она')], opts: [
         ok(P('saidan'), 1, [her(P('sakartvelodan'))]),
         no(P('ra_gkvia'), 'Нино: «Как меня зовут, ты знаешь. Спроси, откуда я».'),
@@ -156,7 +174,11 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
           ok(P('saghamo'), 1), ok(P('gamarjoba'), 1),
           no(P('dila'), 'Нино: «Утро? Уже луна над морем!» Сейчас вечер.')
         ] },
-        howAreYou(me, no(P('ki'), 'Нино: «Да — что? Я спросила, как дела».')),
+        howAreYou(me, no(P('ki'), 'Нино: «Да — что? Я спросила, как дела».'), true),
+        { her: [{ kind: 'photo', caption: 'Нино прислала фото: хачапури в кафе на вокзале', seed: photoSeed + 7 }, her(P('khachapuri'))], opts: [
+          ok(P('gemrielia'), 2), ok(P('ki'), 1),
+          no(P('bodishi'), 'Нино: «За что извиняешься? Я хвастаюсь хачапури!»')
+        ] },
         { her: [note('Нино пишет из поезда: она учится в столице'), her(P('tbilisshi')), her(andYou())], opts: [
           ok(P('batumshi'), 2),
           no(iLiveCity(BATUMI), 'Нино: «Живу Батуми?» Не хватает -ში — «в». И ი в конце уходит.'),
@@ -182,7 +204,11 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
           ok(P('gagimarjos'), 2), ok(hello(NINO, 'Нино'), 1),
           no(P('ra_gkvia'), 'Нино: «Ты что, забыл? Я Нино, твоя соседка!»')
         ] },
-        howAreYou(me, no(iAmJob(JOBS[0]), 'Нино: «Кем работаешь, я помню. Как дела?»')),
+        howAreYou(me, no(iAmJob(JOBS[0]), 'Нино: «Кем работаешь, я помню. Как дела?»'), true),
+        { her: [note('Нино спрашивает, что ты принесёшь в субботу к столу')], opts: [
+          ok(P('ghvino'), 2, [her(P('dzalian_kargad'))]), ok(P('khachapuri'), 2, [her(P('dzalian_kargad'))]),
+          no(P('gasaghebi'), 'Нино: «Ключ? Дверь будет открыта!» Принеси что-нибудь к столу.')
+        ] },
         { her: [her(P('myavs_dzma_da')), her(andYou())], opts: [
           ok(P('myavs_da'), 2), ok(P('myavs_dzma_da'), 2),
           no(P('makvs_manqana'), 'Нино: «Машина — не родня!» Про людей говорят მყავს (мкавс).')

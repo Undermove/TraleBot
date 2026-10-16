@@ -58,8 +58,9 @@ describe('Walk', () => {
     const step = async (ms: number) => { await act(async () => { for (let i = 0; i < ms / 50; i++) { t += 50; await vi.advanceTimersByTimeAsync(50) } }) }
     const street = screen.getByTestId('walk-street')
     expect(screen.getByTestId('walk-hold-hint')).toBeTruthy()
-    let answered = 0
+    let answered = 0, sea = false
     for (let k = 0; k < 2000 && !screen.queryByTestId('game-end'); k++) {
+      if (screen.queryByTestId('walk-new-word')) sea = true
       const want = screen.getByTestId('walk-replies').getAttribute('data-want')
       if (want) {
         fireEvent.pointerUp(street)
@@ -69,6 +70,8 @@ describe('Walk', () => {
       await step(100)
     }
     expect(answered).toBeGreaterThanOrEqual(MEETINGS[mode] * 2)
+    // У моря в уроке 6 — слово ზღვა.
+    expect(sea).toBe(mode === 'full')
     expect(screen.getByTestId('game-end').textContent).toMatch(/у моря/)
     expect(screen.getByTestId('rule-card')).toBeTruthy()
     fireEvent.click(screen.getByText('Дальше'))

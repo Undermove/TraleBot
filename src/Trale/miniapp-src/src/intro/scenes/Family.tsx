@@ -4,8 +4,8 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import Button from '../../components/Button'
-import { phrase } from '../story'
-import { GameEnd, GameIntro, Pill, Reply, RuleCard, Tip, type Look, type Mood } from '../ui'
+import { firstMet, met, phrase } from '../story'
+import { GameEnd, GameIntro, NewWord, Pill, Reply, RuleCard, Tip, WordTag, type Look, type Mood } from '../ui'
 import { cyr } from '../../verbs/types'
 import { hush, speak, speakUrl } from '../voice'
 import Passerby from './walk/Passerby'
@@ -30,6 +30,8 @@ const SHADOW = { boxShadow: '3px 3px 0 #15100A' }
 /** Слово семьи голосом хозяина альбома: Нино и Ана — женским, Гиорги и Давити — мужским. */
 function sayWord(r: Role, female: boolean) {
   if (female) void speak(ROLES[r].pid, 'f')
+  // Бабушка и дедушка — слова сцены: мужской голос у них свой (audio.ts).
+  else if (r === 'bebia' || r === 'babua') void speak(ROLES[r].pid, 'm')
   else void speakUrl(`/audio/intro-story/family/m-${ROLES[r].pid}.m4a`, geoOf(r))
 }
 
@@ -158,6 +160,18 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const [shake, setShake] = useState(0)
   const boardRef = useRef<HTMLDivElement>(null)
   const voice = (r: Role, k: number) => { setTalking(true); sayWord(r, female(k)); later(() => setTalking(false), 900) }
+  // Слова сцены впервые (урок 25): ფოტო — с первым фото, ბებია и ბაბუა — когда приходит их фото. Один раз за игру.
+  const fotoWord = met(lessonId, 'foto') ? phrase('foto') : null
+  const fresh = useMemo(() => {
+    const out = new Map<string, string>() // «раунд-фото» → слово
+    if (firstMet(lessonId, 'foto')) out.set('0-0', 'foto')
+    for (const w of ['bebia', 'babua'] as const) {
+      if (!firstMet(lessonId, w)) continue
+      const k = rounds.findIndex(r => r.order.includes(w))
+      if (k >= 0) { const at = `${k}-${rounds[k].order.indexOf(w)}`; if (!out.has(at)) out.set(at, w) }
+    }
+    return out
+  }, [lessonId, rounds]).get(`${ri}-${ci}`) ?? null
   useEffect(() => { if (rounds[0].order[0]) voice(rounds[0].order[0], 0) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => hush(), [])
 
@@ -247,9 +261,12 @@ function Placing({ mode, lessonId, rng, onEnd }: {
               onDrop={(r, el) => place(r as Role, el)}>
               <div className="w-[64px] h-[64px] rounded bg-gold-wash flex items-end justify-center overflow-hidden"><Portrait look={round.looks[photo]} female={ROLES[photo].female} size={64} /></div>
             </DragPhoto>
-            <div className="text-[13px] leading-snug text-jewelInk-soft">
-              Кого показывают? Тащи фото в рамку — или просто нажми на рамку.
-            </div>
+            {fresh
+              ? <NewWord key={fresh} word={phrase(fresh)} className="min-w-0" />
+              : <div className="text-[13px] leading-snug text-jewelInk-soft">
+                {fotoWord && <WordTag word={fotoWord} className="mr-1 align-middle" testId="foto-tag" />}
+                Кого показывают? Тащи фото в рамку — или просто нажми на рамку.
+              </div>}
           </>
         )}
       </div>
@@ -374,8 +391,8 @@ function Album({ lessonId, rng, onEnd }: { lessonId: number; rng: () => number; 
 // ── Сцена ─────────────────────────────────────────────────────────────────────────────────────────
 
 const MODE_TEXT: Record<FamilyMode, { title: string; text: string }> = {
-  parents: { title: 'Семейный альбом', text: 'Нино показывает родителей. Слушай, кого она называет, и клади фото в нужную рамку. Осторожно: одно слово — ловушка.' },
-  siblings: { title: 'Брат и сестра', text: 'В альбоме прибавилось людей: брат и сестра. Слушай, кого называют, и раскладывай фото по рамкам.' },
+  parents: { title: 'Семейный альбом', text: 'Нино показывает родителей — и бабушку с дедушкой. Слушай, кого она называет, и клади фото в нужную рамку. Осторожно: одно слово — ловушка.' },
+  siblings: { title: 'Брат и сестра', text: 'В альбоме прибавилось людей: брат и сестра. Бабушка с дедушкой на месте, сверху. Слушай, кого называют, и раскладывай фото по рамкам.' },
   full: { title: 'Вся семья', text: 'У брата Нино своя семья, у сестры — муж. Девять рамок: смотри на линии родства и слушай Нино.' },
   album: { title: 'Семейный альбом', text: 'Листаем альбом Нино: она показывает на фото и спрашивает «кто это?». Отвечай по-грузински, серия даёт бонус.' }
 }

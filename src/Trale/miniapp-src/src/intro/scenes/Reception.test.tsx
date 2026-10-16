@@ -5,9 +5,10 @@ import { seeded } from '../../verbs/testing/catalog'
 import { setMuted } from '../../alphabet/games/fx'
 import { introLesson, knows } from '../story'
 import Reception from './Reception'
-import { GUESTS, askField, fieldsOf, judge, planShift, type ReceptionMode } from './Reception.logic'
+import { GUESTS, askField, extraBeats, fieldsOf, judge, planShift, type ReceptionMode } from './Reception.logic'
 
 const LESSON: Record<ReceptionMode, number> = { names: 9, listen: 13, ask: 15, full: 24 }
+const EXTRA_LESSONS: [number, ReceptionMode][] = [[9, 'names'], [12, 'names'], [13, 'listen'], [15, 'ask'], [24, 'full']]
 
 describe('reception logic', () => {
   it.each(Object.keys(LESSON) as ReceptionMode[])('%s: every guest has a booking and look-alikes that differ in exactly one field', mode => {
@@ -42,6 +43,23 @@ describe('reception logic', () => {
   })
 })
 
+describe('reception shifts differ', () => {
+  it.each(EXTRA_LESSONS)('lesson %i: its own twist, only with words already met', (lessonId, mode) => {
+    const shift = planShift(lessonId, mode, seeded(1))
+    const kinds = shift.map(g => Object.keys(g.extra).sort().join('+')).filter(Boolean)
+    expect(kinds.length).toBeGreaterThan(0)
+    if (lessonId === 9) expect(shift.filter(g => g.extra.passport)).toHaveLength(3)
+    for (const g of shift) for (const b of extraBeats(g.extra, g.voice, seeded(2))) {
+      expect(b.options.filter(o => o.ok)).toHaveLength(1)
+      expect(b.options.some(o => !o.ok)).toBe(true)
+    }
+  })
+  it('the twists are not the same from lesson to lesson', () => {
+    const sig = EXTRA_LESSONS.map(([l, m]) => planShift(l, m, seeded(1)).map(g => JSON.stringify(g.extra)).join('|'))
+    expect(new Set(sig).size).toBe(sig.length)
+  })
+})
+
 describe('Reception', () => {
   beforeEach(() => setMuted(true))
   afterEach(() => { vi.useRealTimers(); setMuted(false) })
@@ -53,8 +71,15 @@ describe('Reception', () => {
     fireEvent.click(screen.getByText('Начать'))
     const step = async (ms: number) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms) }) }
     let keys = 0
+    let extras = 0
     for (let k = 0; k < 2000 && !screen.queryByTestId('game-end'); k++) {
       await step(100)
+      const errand = screen.queryByTestId('reception-errand')
+      if (errand) {
+        const opt = screen.getByTestId(`rc-opt-${errand.getAttribute('data-want')}`) as HTMLButtonElement
+        if (!opt.disabled) { await act(async () => { fireEvent.click(opt) }); extras++ }
+        continue
+      }
       const desk = screen.queryByTestId('reception-desk')
       if (!desk) continue
       const ask = screen.queryAllByTestId(/^ask-/).find(b => !(b as HTMLButtonElement).disabled && !b.dataset.testid!.endsWith('rogor'))
@@ -63,6 +88,8 @@ describe('Reception', () => {
       if (!card.disabled && !screen.queryByTestId('reception-asks')) { await act(async () => { fireEvent.click(card) }); keys++; await step(3000) }
     }
     expect(keys).toBe(GUESTS)
+    // Свой поворот смены: в каждом уроке ресепшена, кроме урока 9, после ключа есть просьбы или угощения.
+    if (LESSON[mode] !== 9) expect(extras).toBeGreaterThan(0)
     expect(screen.getByTestId('game-end').textContent).toMatch(/5\.0 из 5/)
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()

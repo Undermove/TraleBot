@@ -1,8 +1,10 @@
-import { ALIVE, THINGS, shuffle, type Rng, type Word } from '../story'
+import { ALIVE, THINGS, met, phrase, shuffle, type Rng, type Word } from '../story'
 
 // «Фото и чемодан» (бывш. «Живое или вещь») — чистая логика. Нино по видеосвязи спрашивает, кто и что у
 // тебя есть. Живых — людей и зверей — ты ставишь на семейное фото (მყავს), вещи кладёшь в чемодан
 // (მაქვს). Без таймера: карточка ждёт, сколько нужно. Экран — HaveSort.tsx.
+// Слова сцены, которые человек уже встретил, тоже приходят карточками: бабушка и дедушка (урок 25) — на
+// фото; телефон (урок 28), паспорт (9) и фото (25) — в чемодан. Так урок 30 не повторяет урок 28.
 
 export type HaveMode = 'people' | 'full'
 export type Side = 'alive' | 'thing'
@@ -16,11 +18,26 @@ export const DECK_SIZE = 12
 
 const card = (w: Word, alive: boolean): Card => ({ ...w, alive })
 
+const SCENE_ALIVE = ['bebia', 'babua']
+const SCENE_THINGS = ['telefoni', 'pasporti', 'foto']
+const asWord = (id: string): Word => { const p = phrase(id); return { geo: p.geo, ru: p.ru, src: p.src } }
+
+/** Слова сцены, которые к этому уроку уже встречались: живые и вещи. */
+export function sceneWords(lessonId: number): { alive: Word[]; things: Word[] } {
+  return {
+    alive: SCENE_ALIVE.filter(id => met(lessonId, id)).map(asWord),
+    things: SCENE_THINGS.filter(id => met(lessonId, id)).map(asWord)
+  }
+}
+
+/** id слова сцены по грузинскому (для карточки «новое слово»). */
+export const sceneIdOf = (geo: string) => [...SCENE_ALIVE, ...SCENE_THINGS, 'kata'].find(id => phrase(id).geo === geo)
+
 /**
  * Колода: в people (урок 27) — в основном живое и немного вещей; в full — поровну и с хитрыми словами.
  * Одно и то же слово не повторяется.
  */
-export function haveDeck(mode: HaveMode, rng: Rng = Math.random, size = DECK_SIZE): Card[] {
+export function haveDeck(mode: HaveMode, rng: Rng = Math.random, size = DECK_SIZE, lessonId?: number): Card[] {
   const nAlive = mode === 'people' ? Math.round(size * 0.67) : Math.round(size / 2)
   const draw = (pool: Word[], n: number, must: string[] = []) => {
     const first = shuffle(pool.filter(w => must.includes(w.geo)), rng)
@@ -29,10 +46,12 @@ export function haveDeck(mode: HaveMode, rng: Rng = Math.random, size = DECK_SIZ
     while (out.length < n) out.push(...shuffle(pool, rng))
     return out.slice(0, n)
   }
-  const must = mode === 'full' ? TRICKY : []
+  // Слова сцены — обязательно в колоде: ради них урок и отличается от прошлого. В уроке 27 — кошка.
+  const extra = lessonId ? sceneWords(lessonId) : { alive: [], things: [] }
+  const must = [...(mode === 'full' ? TRICKY : ['კატა']), ...extra.alive.map(w => w.geo), ...extra.things.map(w => w.geo)]
   const pool = shuffle([
-    ...draw(ALIVE, nAlive, must).map(w => card(w, true)),
-    ...draw(THINGS, size - nAlive, must).map(w => card(w, false))
+    ...draw([...ALIVE, ...extra.alive], nAlive, must).map(w => card(w, true)),
+    ...draw([...THINGS, ...extra.things], size - nAlive, must).map(w => card(w, false))
   ], rng)
   const cards: Card[] = []
   while (pool.length) {
@@ -55,7 +74,12 @@ export function hintFor(c: Card): string {
 }
 
 /** Запись фразы голосом героя: живые — по месту в ALIVE, вещи — в THINGS (public/audio/intro-story/have). */
+const SCENE_AUDIO: Record<string, string> = {
+  'ბებია': 'a-bebia', 'ბაბუა': 'a-babua', 'ტელეფონი': 't-telefoni', 'პასპორტი': 't-pasporti', 'ფოტო': 't-foto'
+}
+
 export function sentenceAudio(c: Card): string | undefined {
+  if (SCENE_AUDIO[c.geo]) return `/audio/intro-story/have2/${SCENE_AUDIO[c.geo]}.m4a`
   const list = c.alive ? ALIVE : THINGS
   const k = list.findIndex(w => w.geo === c.geo)
   return k < 0 ? undefined : `/audio/intro-story/have/${c.alive ? 'a' : 't'}${k}.m4a`

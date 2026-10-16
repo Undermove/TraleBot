@@ -1,4 +1,5 @@
-import { COUNTRIES, JOBS, NAMES, NAME_LIST, knows, pick, shuffle, type Country, type Rng, type Word } from '../story'
+import { COUNTRIES, JOBS, NAMES, NAME_LIST, knows, met, phrase, pick, shuffle, type Country, type Rng, type Word } from '../story'
+import { DRINKS, drinksAudio, drinksLine, offerAudio, offerLine, pleaseAudio, pleaseLine, wantAudio, wantLine, type Treat } from './party/Treats'
 
 // «Ресепшн» — чистая логика смены. Ты подрабатываешь администратором маленького гестхауса в Батуми.
 // Гости заходят с чемоданами и представляются; на стойке — карточки броней. Найди бронь гостя и выдай
@@ -28,6 +29,8 @@ export interface Guest {
   /** Кнопки-вопросы (id фраз) — если гость рассказал не всё. */
   asks: string[]
   voice: 'f' | 'm'
+  /** Паспорт, напиток, угощение — свой поворот смены. */
+  extra: Extra
   look: { coat: string; skin: string; hair: string; extra: 'bag' | 'glasses' | 'cap' | 'none'; kind: 'woman' | 'man' }
 }
 
@@ -99,6 +102,7 @@ export function planShift(lessonId: number, mode: ReceptionMode, rng: Rng = Math
       booking, desk, told,
       asks: told.length < fieldsOf(mode).length ? shuffle(asksBase, rng) : [],
       voice,
+      extra: extrasFor(lessonId, i),
       look: { coat: p(COATS), skin: p(SKIN), hair: p(HAIR), extra: p(['bag', 'glasses', 'cap', 'none'] as const), kind: voice === 'f' ? 'woman' : 'man' }
     }
   })
@@ -147,4 +151,81 @@ export function answerAudio(g: Guest, f: Field): string | undefined {
   if (f === 'country') return `${base}c-${g.booking.country.flag}-${g.voice}.m4a`
   const k = JOBS.indexOf(g.booking.job)
   return k >= 0 ? `${base}j${k}-${g.voice}.m4a` : undefined
+}
+
+// ── У каждой смены свой поворот ───────────────────────────────────────────────────────────────────
+// Ресепшн повторяется в пяти уроках, поэтому смены разные. В уроке 9 появляются паспорт, ключ и комната
+// (слова сцены). Дальше гости то просят с дороги воды или чаю, то угощают хачапури, то ты сам предлагаешь
+// напитки ночным гостям. Главное в смене по-прежнему — имя и страна; это короткие живые моменты между.
+
+export interface Extra {
+  /** Перед бронью спроси паспорт: «პასპორტი, გთხოვთ». */
+  passport?: boolean
+  /** После ключа: гость просит напиток (ты подаёшь) или ты предлагаешь сам («ჩაი? ყავა? წყალი?»). */
+  drink?: { treat: Treat; offer: boolean }
+  /** После ключа: гость угощает тем, что привёз. */
+  gift?: Treat
+}
+
+const PLAN_EXTRAS: Record<number, Record<number, Extra>> = {
+  9: { 0: { passport: true }, 3: { passport: true }, 6: { passport: true } },
+  12: { 1: { drink: { treat: 'tskali', offer: false } }, 2: { passport: true }, 5: { drink: { treat: 'chai', offer: false } } },
+  13: { 2: { gift: 'khachapuri' }, 4: { passport: true }, 6: { drink: { treat: 'qava', offer: false } } },
+  15: { 1: { drink: { treat: 'chai', offer: true } }, 3: { gift: 'puri' }, 5: { drink: { treat: 'tskali', offer: true } }, 7: { passport: true } },
+  24: { 0: { passport: true }, 2: { drink: { treat: 'qava', offer: false } }, 4: { gift: 'ghvino' }, 6: { drink: { treat: 'chai', offer: true } } }
+}
+
+/** Что ещё случится с гостем смены (кроме брони) — только со словами, которые человек уже встречал. */
+export function extrasFor(lessonId: number, i: number): Extra {
+  const e = PLAN_EXTRAS[lessonId]?.[i] ?? {}
+  return {
+    ...(e.passport && met(lessonId, 'pasporti') ? { passport: true } : {}),
+    ...(e.drink && met(lessonId, e.drink.treat) && met(lessonId, 'minda') ? { drink: e.drink } : {}),
+    ...(e.gift && met(lessonId, e.gift) && met(lessonId, 'gemrielia') ? { gift: e.gift } : {})
+  }
+}
+
+export const SHIFT_INTRO: Record<number, string> = {
+  9: 'Новое на смене: попроси у гостя паспорт и выдай ключ от комнаты.',
+  12: 'Вечерняя смена: гости устали с дороги и попросят что-нибудь попить.',
+  13: 'Утренняя смена: кто-то хочет кофе, а кто-то привёз хачапури на всех.',
+  15: 'Ночная смена: гости с позднего рейса — предложи им чай, кофе или воду.',
+  24: 'Большой заезд: паспорта, напитки и даже вино в подарок.'
+}
+
+export interface ROption { geo: string; ok: boolean; why?: string; treat?: Treat; audio?: string }
+export interface RBeat { says: string | null; audio?: string; who: 'guest' | 'you'; word?: string; options: ROption[]; echo?: string }
+
+/** Реплики момента после ключа: просьба, угощение или твоё предложение. */
+export function extraBeats(e: Extra, voice: 'f' | 'm', rng: Rng = Math.random): RBeat[] {
+  const serve = (t: Treat): RBeat => ({
+    says: wantLine(t), audio: wantAudio(t, voice), who: 'guest', word: 'minda', echo: `${phrase('madloba').geo}!`,
+    options: shuffle(DRINKS.map(d => ({ geo: phrase(d).geo, treat: d, ok: d === t, why: d === t ? undefined : `Это ${phrase(d).ru}. Гость сказал «${wantLine(t)}».` })), rng)
+  })
+  if (e.drink && !e.drink.offer) return [serve(e.drink.treat)]
+  if (e.drink) return [{
+    says: null, who: 'you', options: shuffle([
+      { geo: drinksLine(), ok: true, audio: drinksAudio('hero') },
+      { geo: `${phrase('nakhvamdis').geo}!`, ok: false, why: 'Гость только заселился. Предложи ему чай, кофе или воду.' }
+    ], rng)
+  }, serve(e.drink.treat)]
+  if (e.gift) return [
+    {
+      says: offerLine(e.gift), audio: offerAudio(e.gift, voice), who: 'guest', word: e.gift,
+      options: shuffle([
+        { geo: pleaseLine('ki'), ok: true, audio: pleaseAudio('ki') },
+        { geo: phrase('bodishi').geo, ok: false, why: 'Извиняться не за что — тебя угощают. Скажи «да, пожалуйста».' },
+        { geo: `${phrase('nakhvamdis').geo}!`, ok: false, why: 'Гость угощает! Скажи «да, пожалуйста».' }
+      ], rng)
+    },
+    {
+      says: null, who: 'you', word: 'gemrielia', echo: `${phrase('madloba').geo}!`,
+      options: shuffle([
+        { geo: phrase('gemrielia').geo, ok: true },
+        { geo: phrase('ara').geo, ok: false, why: 'Гость старался! Похвали угощение.' },
+        { geo: phrase('bodishi').geo, ok: false, why: 'Вкусно же! Скажи «вкусно!».' }
+      ], rng)
+    }
+  ]
+  return []
 }

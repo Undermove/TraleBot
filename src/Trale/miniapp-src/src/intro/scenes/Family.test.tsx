@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import Family from './Family'
 import { ROLES, albumPages, albumScore, familyRounds, familyTree, missReaction, ownStatements, thisIs, treeRoles, type Role } from './Family.logic'
-import { introLesson, knows } from '../story'
+import { introLesson, met } from '../story'
 import { seeded } from '../../verbs/testing/catalog'
 
 afterEach(() => { vi.useRealTimers() })
@@ -11,13 +11,17 @@ const GEO_TO_ROLE = (geo: string) => (Object.keys(ROLES) as Role[]).find(r => th
 
 describe('Family logic', () => {
   it('grows the board with the mode and only shows words the learner has met', () => {
-    expect(treeRoles(familyTree('parents', 25)).sort()).toEqual(['deda', 'mama'])
-    expect(treeRoles(familyTree('siblings', 26)).sort()).toEqual(['da', 'deda', 'dzma', 'mama'])
+    // С урока 25 — и бабушка с дедушкой (слова сцены): ряд над родителями.
+    expect(treeRoles(familyTree('parents', 25)).sort()).toEqual(['babua', 'bebia', 'deda', 'mama'])
+    expect(treeRoles(familyTree('siblings', 26)).sort()).toEqual(['babua', 'bebia', 'da', 'deda', 'dzma', 'mama'])
     expect(treeRoles(familyTree('full', 29))).toHaveLength(8)
+    expect(treeRoles(familyTree('album', 30))).toHaveLength(10)
     for (const [mode, id] of [['parents', 25], ['siblings', 26], ['full', 29], ['album', 30]] as const)
-      for (const r of treeRoles(familyTree(mode, id))) expect(knows(id, ROLES[r].pid)).toBe(true)
+      for (const r of treeRoles(familyTree(mode, id))) expect(met(id, ROLES[r].pid)).toBe(true)
     // В 25-м уроке брата ещё не знают: рамки ძმა нет даже на полной доске.
     expect(treeRoles(familyTree('full', 25)).sort()).toEqual(['deda', 'mama'])
+    // До 25-го бабушки с дедушкой нет.
+    expect(treeRoles(familyTree('parents', 24)).length).toBe(0)
   })
 
   it('starts the parents album with მამა — the classic trap', () => {
@@ -29,7 +33,8 @@ describe('Family logic', () => {
     const sib = familyRounds('siblings', 26, seeded(2))
     expect(sib.every(r => r.order.includes('da'))).toBe(true)
     expect(familyRounds('full', 29, seeded(2))[0].looks.vazhi.age).toBe('kid')
-    expect(familyRounds('full', 29, seeded(2))[0].looks.mama.age).toBe('old')
+    expect(familyRounds('full', 29, seeded(2))[0].looks.mama.age).toBe('adult')
+    expect(familyRounds('parents', 25, seeded(2))[0].looks.bebia.age).toBe('old')
   })
 
   it('reacts to the trap and to და', () => {
@@ -39,7 +44,8 @@ describe('Family logic', () => {
 
   it('album: 8 pages, 3 options with the right word and its twin; streak bonus', () => {
     const pages = albumPages(30, seeded(4))
-    expect(pages).toHaveLength(8)
+    expect(pages).toHaveLength(10)
+    expect(pages.find(p => p.role === 'bebia')!.options).toContain('babua')
     for (const p of pages) {
       expect(p.options).toHaveLength(3)
       expect(new Set(p.options).size).toBe(3)
@@ -61,6 +67,8 @@ describe('Family scene', () => {
     fireEvent.click(screen.getByText('Начать'))
     expect(screen.getByTestId('family-scene')).toBeTruthy()
     let missed = false
+    // В уроке 25 первое фото приходит с новым словом ფოტო.
+    if (id === 25) expect(screen.getByTestId('new-word').getAttribute('data-word')).toBe('foto')
     for (let k = 0; k < 60 && !screen.queryByTestId('game-end'); k++) {
       const say = screen.queryByTestId('family-say')
       if (!say) { fireEvent.click(screen.getByRole('button', { name: /Альбом:|Готово/ })); continue }
@@ -90,7 +98,7 @@ describe('Family scene', () => {
     fireEvent.click(screen.getByText('Начать'))
     const wrong = screen.getAllByTestId(/album-wrong-/)[0]
     fireEvent.click(wrong)
-    for (let k = 0; k < 8; k++) {
+    for (let k = 0; k < 10; k++) {
       fireEvent.click(screen.getByTestId('album-right'))
       act(() => { vi.advanceTimersByTime(1000) })
     }
