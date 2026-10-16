@@ -71,7 +71,7 @@ export const INTRO_WORD_AUDIO: Readonly<Record<string, string>> = {
 // Разные голоса в разговорах (ElevenLabs, eleven_v4, ka, та же обработка): герой — это ты — Will (молодой
 // мужской), знакомые-мужчины — George, женщины и дети — Alice (записи выше). Чтобы на слух было ясно,
 // кто говорит: ты или тебе.
-const HERO_IDS = ['gamarjoba', 'gagimarjos', 'nakhvamdis', 'dila', 'saghamo', 'kargad_madloba', 'kargad_shen', 'ra_gkvia', 'saidan', 'ra_profesia', 'rogor']
+const HERO_IDS = ['gamarjoba', 'gagimarjos', 'nakhvamdis', 'dila', 'saghamo', 'kargad_madloba', 'kargad_shen', 'ra_gkvia', 'saidan', 'ra_profesia', 'rogor', 'madloba', 'bodishi', 'ki', 'ara']
 const MALE_IDS = ['gamarjoba', 'gagimarjos', 'dila', 'saghamo', 'rogor', 'kargad_madloba', 'nakhvamdis', 'madloba', 'kargad_shen']
 
 /** Голос реплики: hero — ты, m — знакомый-мужчина, f — женщина (по умолчанию, записи Alice). */

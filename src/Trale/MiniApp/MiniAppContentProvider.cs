@@ -2091,7 +2091,7 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
                     new List<TheoryBlockDto>
                     {
                         List("მადლობა — спасибо", "ბოდიში — извините", "კი — да", "არა — нет"),
-                        Paragraph("Игра «Лифт»: успей поговорить с соседом, пока лифт не доехал до его этажа.")
+                        Paragraph("Игра «Маршрутка»: спасибо за сдачу, извините на повороте, да или нет — твоя ли остановка.")
                     }),
                 Lesson(6, "Прогулка по Батуми", "გაგიმარჯოს",
                     "Прогулка по Батуми",

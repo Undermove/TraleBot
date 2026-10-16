@@ -22,11 +22,10 @@ export type RuleId = 'time' | 'echo' | 'name' | 'from' | 'in' | 'da' | 'have'
 export type IntroStep =
   | { kind: 'phrase' }
   | { kind: 'rule'; rule: RuleId }
-  | { kind: 'yard'; mode: 'hello' | 'day' | 'full' }
   | { kind: 'walk'; mode: 'hello' | 'day' | 'full' }
   | { kind: 'bakery'; mode: 'howareyou' }
   | { kind: 'pingpong'; mode: 'echo' }
-  | { kind: 'elevator'; mode: 'howareyou' | 'echo' | 'polite' | 'mix' }
+  | { kind: 'minibus'; mode: 'polite' }
   | { kind: 'party'; mode: 'names' | 'full' | 'who' | 'jobs' }
   | { kind: 'magnets'; set: 'name' | 'from' | 'in' | 'both' }
   | { kind: 'reception'; mode: 'names' | 'listen' | 'ask' | 'full' }

@@ -5,11 +5,10 @@ import { INTRO_MODULE, introLesson, type IntroStep } from './story'
 import type { SceneProps } from './scenes/types'
 import PhraseScene from './scenes/PhraseScene'
 import RuleScene from './scenes/RuleScene'
-import Yard from './scenes/Yard'
 import Walk from './scenes/Walk'
 import Bakery from './scenes/Bakery'
 import Pingpong from './scenes/Pingpong'
-import Elevator from './scenes/Elevator'
+import Minibus from './scenes/Minibus'
 import Party from './scenes/Party'
 import Magnets from './scenes/Magnets'
 import Reception from './scenes/Reception'
@@ -28,7 +27,7 @@ import StoryFinale from './scenes/StoryFinale'
 
 /** Как сцена называется в аналитике (LessonEvents.StepKind). */
 export const INTRO_STEP_KIND: Record<IntroStep['kind'], StepKind> = {
-  phrase: 'new-phrase', rule: 'rule', yard: 'yard', walk: 'walk', bakery: 'bakery', pingpong: 'pingpong', elevator: 'elevator', party: 'party', magnets: 'magnets',
+  phrase: 'new-phrase', rule: 'rule', walk: 'walk', bakery: 'bakery', pingpong: 'pingpong', minibus: 'minibus', party: 'party', magnets: 'magnets',
   reception: 'reception', detective: 'detective', chat: 'chat', taxi: 'taxi', family: 'family', havesort: 'havesort',
   aboutme: 'aboutme', supra: 'supra'
 }
@@ -96,11 +95,10 @@ export default function IntroInterlude({ scene, lessonId, fraction, onExit, onDo
   switch (step.kind) {
     case 'phrase': return <PhraseScene key={key} {...props(step)} />
     case 'rule': return <RuleScene key={key} {...props(step)} />
-    case 'yard': return <Yard key={key} {...props(step)} />
     case 'walk': return <Walk key={key} {...props(step)} />
     case 'bakery': return <Bakery key={key} {...props(step)} />
     case 'pingpong': return <Pingpong key={key} {...props(step)} />
-    case 'elevator': return <Elevator key={key} {...props(step)} />
+    case 'minibus': return <Minibus key={key} {...props(step)} />
     case 'party': return <Party key={key} {...props(step)} />
     case 'magnets': return <Magnets key={key} {...props(step)} />
     case 'reception': return <Reception key={key} {...props(step)} />
