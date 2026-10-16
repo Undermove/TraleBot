@@ -12,7 +12,7 @@ import SessionEntry from './session/SessionEntry'
 import FormsTable from './FormsTable'
 import FamilyNote from './family/FamilyNote'
 import WhoWhomSheet from './whoWhom/WhoWhomSheet'
-import { formFor, hasWhoWhom } from './whoWhom/logic'
+import { hasWhoWhom } from './whoWhom/logic'
 
 interface Props {
   verbId: string
@@ -240,18 +240,6 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
 
           <FormsTable verb={verb} person={person} onPerson={pickPerson} highlight={highlight} initialRare={initialRare} pulsePerson={hint ? 1 : undefined} />
 
-          {/* Таблица — это «кого» = его. Остальные стороны — одной строкой и правилом по нажатию, карточка не растёт. */}
-          {hasWhoWhom(verb.id) && (
-            <button onClick={() => setWhoWhom(true)} data-testid="verb-who-whom"
-              className="jewel-pressable -mt-1 w-full text-left rounded-xl bg-navy-wash border-[1.5px] border-jewelInk px-3.5 py-2.5 flex items-center gap-3"
-              style={{ boxShadow: '2px 2px 0 #15100A' }}>
-              <span className="flex-1 min-w-0 text-[13px] text-jewelInk-mid leading-snug">
-                <span className="block">ты → меня: <span className="font-geo text-[15px] font-bold text-jewelInk">{formFor(verb, 'present', 1, 'me')?.form}</span></span>
-                <span className="block">я → тебя: <span className="font-geo text-[15px] font-bold text-jewelInk">{formFor(verb, 'present', 0, 'you')?.form}</span></span>
-              </span>
-              <span className="shrink-0 text-[12px] font-bold text-navy whitespace-nowrap">кто кого →</span>
-            </button>
-          )}
           {/* В body: шторка-родитель сдвинута transform'ом, внутри неё fixed поехал бы вместе с ней. */}
           {whoWhom && createPortal(<WhoWhomSheet verbId={verb.id} onClose={() => setWhoWhom(false)} />, document.body)}
 

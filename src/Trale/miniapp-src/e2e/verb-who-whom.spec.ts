@@ -40,19 +40,13 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-test('verb card links to «кто кого», and the rule flips the sides', async ({ page }) => {
+test('badge under the title opens «кто кого», and the rule flips the sides', async ({ page }) => {
   await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('ხედავს')}`)
   // Значок у заголовка видно сразу, без прокрутки.
   const badge = page.getByTestId('verb-who-whom-badge')
   await expect(badge).toBeInViewport()
   if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/ww-top.png` }) }
-  const line = page.getByTestId('verb-who-whom')
-  await expect(line).toContainText('მხედავ')
-  await expect(line).toContainText('გხედავ')
-  await line.scrollIntoViewIfNeeded()
-  if (shots) await page.screenshot({ path: `${shots}/ww-card.png` })
-
-  await line.click()
+  await badge.click()
   const sheet = page.getByTestId('who-whom-sheet')
   await expect(sheet).toBeVisible()
   await expect(page.getByTestId('who-whom-ru')).toHaveText('я вижу тебя')
