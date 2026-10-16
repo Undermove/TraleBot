@@ -3,7 +3,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import { cyr } from '../../verbs/types'
-import { JOBS, knows, myName, phrase, shuffle, type Word } from '../story'
+import { JOBS, NAME_LIST, knows, myName, phrase, shuffle, type Word } from '../story'
 import { Face, GameEnd, GameIntro, Meter, Person, Pill, Reply, RuleCard, Tip, say, type Look, type Mood } from '../ui'
 import type { SceneProps, StepOf } from './types'
 import {
@@ -92,10 +92,10 @@ function endRule(mode: PartyMode, me: string) {
 }
 
 const INTRO_TEXT: Record<PartyMode, string> = {
-  names: 'Учимся понимать, как человек представился: «მე მქვია …» — «меня зовут …». Гости приходят по двое и называют себя — ответь каждому и прилепи бейдж с его именем.',
-  full: 'Учимся знакомиться как следует: поздоровайся в ответ, назови себя, скажи «приятно познакомиться». Потом бейджи с именами.',
-  who: 'Учимся спрашивать и отвечать «кто это?»: ты пришёл с другом, к вам подходят двое гостей. Нино показывает на людей и спрашивает «ვინ არის ეს?».',
-  jobs: 'Учимся понимать «მე ვარ …» — «я …»: три гостя говорят, кем работают. Разведи их по углам крыши.'
+  names: 'Учимся понимать, как человек представился: «მე მქვია …» — «меня зовут …». Гость называет себя — ответь ему и сразу дай бейдж с его именем.',
+  full: 'Учимся знакомиться как следует: поздоровайся в ответ, назови себя, скажи «приятно познакомиться» — и дай гостю бейдж с его именем.',
+  who: 'Учимся спрашивать и отвечать «кто это?»: на гостях бейджи с именами, твой друг пришёл с тобой. Нино показывает на людей и спрашивает «ვინ არის ეს?».',
+  jobs: 'Учимся понимать «მე ვარ …» — «я …»: гость говорит, кем работает, — отправь его в нужный угол крыши.'
 }
 
 export default function Party({ lesson, step, fraction, onExit, onDone, rng = Math.random }: SceneProps<StepOf<'party'>>) {
@@ -165,7 +165,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     const places: Record<number, number> = mode === 'who' ? { 0: 0 } : {}
     if (mode === 'who') {
       const f = byId(0)
-      setTip(<>С тобой пришёл твой друг — <G g={f.name} />. Запомни его!</>)
+      setTip(<>С тобой пришёл твой друг — <G g={f.name} />. У него нет бейджа: вы пришли вместе.</>)
     } else setTip(mode === 'jobs' ? 'Слушай, кем работает каждый гость.' : 'Слушай, как зовут гостя, и ответь.')
     arrive(0, 0, start, places)
   }
@@ -227,9 +227,34 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
       if (b + 1 < beatList.length) {
         setB(b + 1); setBusy(false)
         setSpeech({ who: id, geo: beatList[b + 1].says, note: beatList[b + 1].note })
-      } else if (a + 1 < plan.waves[w].length) arrive(w, a + 1, present, slots)
-      else afterWave(present, slots)
+      } else afterGuest(id)
     }, beat.echo ? 1100 : 700)
+  }
+
+  // Гость представился — сразу, пока его слова звучат, бейдж или угол: игра про то, что услышал, а не про память.
+  const afterGuest = (id: number) => {
+    const g = byId(id)
+    if (mode === 'who') {
+      setBadges(x => ({ ...x, [id]: g.name }))
+      return nextGuest()
+    }
+    setSelG(id); setSelB(null); setBusy(false)
+    if (mode === 'jobs') {
+      setPhase('sort')
+      setTip('Гость сказал, кем работает — отправь его в нужный угол.')
+      return
+    }
+    const others = shuffle(NAME_LIST.filter(n => n !== g.name && n !== me.geo), rng).slice(0, 2)
+    setTray(shuffle([g.name, ...others], rng))
+    setPhase('badge')
+    setTip('Гость назвал своё имя — дай ему бейдж.')
+  }
+
+  const nextGuest = () => {
+    setSelG(null); setSelB(null)
+    if (a + 1 < plan.waves[w].length) arrive(w, a + 1, present, slots)
+    else if (mode === 'who') afterWave(present, slots)
+    else nextWaveOrEnd()
   }
 
   // ── Бейджи и углы ──
@@ -248,13 +273,13 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
       burst(el(id), 'small')
       setSpeech({ who: id, geo: `${phrase('madloba').geo}!`, tone: 'good' })
       mood(id, 'wow')
-      setTip(null)
-      if (waveDone(nb, sorted)) later(nextWaveOrEnd, 900)
+      setTip(null); setBusy(true)
+      later(() => { setBusy(false); nextGuest() }, 900)
     } else {
       miss(key); mood(id, 'wow', 1400)
-      const n = (wrongs[key] ?? 0) + 1
-      setSpeech({ who: id, tone: 'bad', ru: <>Ха-ха! Я не <G g={name} />!</>, geo: n >= 2 ? repeatLine(g, mode) : null })
-      setTip(n >= 2 ? 'Гость сам подсказал. Бейдж вернулся в стопку.' : 'Бейдж вернулся в стопку. Не помнишь — переспроси.')
+      setSelG(id)
+      setSpeech({ who: id, tone: 'bad', ru: <>Я не <G g={name} />!</>, geo: repeatLine(g, mode) })
+      setTip('Гость повторил, как его зовут. Найди этот бейдж.')
     }
   }
 
@@ -269,33 +294,25 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
       haptic('good'); sound.snap(Object.keys(ns).length)
       burst(document.querySelector(`[data-testid="party-zone-${JOBS.indexOf(job)}"]`), 'small')
       setSpeech({ who: id, geo: `მე ვარ ${g.job.geo}.`, tone: 'good' })
-      setTip(null)
-      if (waveDone(badges, ns)) later(nextWaveOrEnd, 900)
+      setTip(null); setBusy(true)
+      later(() => { setBusy(false); nextGuest() }, 900)
     } else {
       miss(key); mood(id, 'wow', 1400)
-      const n = (wrongs[key] ?? 0) + 1
-      setSpeech({ who: id, tone: 'bad', ru: <>Ха! Я не <G g={job.geo} />!</>, geo: n >= 2 ? repeatLine(g, mode) : null })
-      setTip(n >= 2 ? 'Гость сам подсказал, кем работает.' : 'Не тот угол. Не помнишь — переспроси.')
+      setSelG(id)
+      setSpeech({ who: id, tone: 'bad', ru: <>Я не <G g={job.geo} />!</>, geo: repeatLine(g, mode) })
+      setTip('Гость повторил, кем работает. Найди его угол.')
     }
   }
 
-  const tapGuest = (id: number) => {
+  // Гость, о котором речь, выбран сам — тот, кто только что представился; нажатие на него ничего не меняет.
+  const tapGuest = (_id: number) => {
     if (busy) return
-    if (phase === 'badge') {
-      if (badges[id]) return
-      haptic('tap')
-      if (selB) return tryBadge(id, selB)
-      setSelG(s => (s === id ? null : id))
-    } else if (phase === 'sort') {
-      if (sorted[id]) return
-      haptic('tap'); setSelG(s => (s === id ? null : id))
-    }
+    if (phase === 'badge' || phase === 'sort') haptic('tap')
   }
   const tapBadge = (name: string) => {
-    if (busy) return
+    if (busy || selG === null) return
     haptic('tap')
-    if (selG !== null) return tryBadge(selG, name)
-    setSelB(s => (s === name ? null : name))
+    tryBadge(selG, name)
   }
   const tapZone = (job: Word) => {
     if (busy) return
@@ -304,7 +321,6 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   }
   const ask = () => {
     if (selG === null) return
-    setRepeats(x => x + 1)
     setSpeech({ who: selG, geo: repeatLine(byId(selG), mode), note: 'Повторяет — но уже не так радостно' })
     sound.pop()
   }
@@ -398,7 +414,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   const placed = mode === 'jobs' ? Object.keys(sorted).length : mode === 'who' ? q : Object.keys(badges).length
 
   return (
-    <GameFrame title="Вечеринка на крыше" eyebrow={mode === 'who' ? 'кто есть кто' : mode === 'jobs' ? 'кто кем работает' : 'знакомься и запоминай'} fraction={fraction} onExit={onExit}>
+    <GameFrame title="Вечеринка на крыше" eyebrow={mode === 'who' ? 'кто есть кто' : mode === 'jobs' ? 'кто кем работает' : 'знакомься'} fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="party-scene">
         <div className="shrink-0 flex items-center gap-2">
           <Pill testId="party-placed">{mode === 'jobs' ? 'по углам' : mode === 'who' ? 'ответы' : 'бейджи'}: {placed}/{total}</Pill>
@@ -445,6 +461,9 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
                       <svg width="18" height="16" viewBox="0 0 18 16" className="absolute -top-4 zn-bob" aria-hidden><path d="M2 2h14L9 14z" fill="#F5B820" stroke="#15100A" strokeWidth="1.5" strokeLinejoin="round" /></svg>
                     )}
                     <Person look={g.look} mood={moods[id] ?? 'smile'} height={66} className={`ab-short:h-[56px] ${moods[id] === 'huh' ? 'zn-shake' : moods[id] === 'wow' ? 'zn-jump' : ''}`} />
+                    {mode === 'who' && g.friend && (
+                      <span className="absolute -top-3 right-0 rounded-full border-[1.5px] border-jewelInk bg-gold px-1 text-[9px] font-extrabold leading-tight" data-testid="party-friend-mark">друг</span>
+                    )}
                     {badges[id] && (
                       <span className="zn-pop absolute top-[52%] rounded-md border-[1.5px] border-jewelInk bg-cream-tile px-1 font-geo font-bold text-[10px] leading-tight whitespace-nowrap" data-testid={`party-badge-on-${id}`}>{badges[id]}</span>
                     )}
@@ -515,7 +534,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
             )}
             <button data-testid="party-repeat" onClick={ask} disabled={selG === null}
               className="min-h-[44px] rounded-xl border-[1.5px] border-dashed border-jewelInk px-3 text-[13px] font-bold disabled:opacity-40">
-              {selG === null ? 'Выбери гостя' : 'Переспросить гостя'}
+              Послушать ещё раз
             </button>
           </div>
         )}

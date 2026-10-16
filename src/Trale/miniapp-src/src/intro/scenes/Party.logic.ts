@@ -1,5 +1,6 @@
 import { HERO, JOBS, NAME_LIST, knows, phrase, shuffle, type Rng, type Word } from '../story'
 import { randomLook, type Look } from '../ui'
+import { voiceOf } from './Reception.logic'
 
 // «Вечеринка на крыше» — чистая логика: кто приходит, что говорит, какие реплики у тебя в ответ, какой бейдж
 // чей, перемешивание гостей и итог. Экран — Party.tsx.
@@ -38,7 +39,8 @@ export function planParty(lessonId: number, mode: PartyMode, me: string, rng: Rn
   const guests: Guest[] = Array.from({ length: size }, (_, id) => ({
     id,
     name: pool[id % pool.length],
-    look: randomLook(rng),
+    // Внешность — по имени: Нино и Мариам с длинными волосами, Гиорги и Лука — без.
+    look: randomLook(rng, { long: voiceOf(pool[id % pool.length]) === 'f' }),
     job: mode === 'jobs' ? jobs[id] : JOBS[Math.floor(rng() * JOBS.length)],
     ...(mode === 'who' && id === 0 ? { friend: true } : {}),
     ...(mode === 'names' && (id === 1 || id === 3) ? { asksFirst: true } : {})
