@@ -196,7 +196,7 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
                 .ToList();
         }
 
-        return await dbContext.Verbs
+        var byTitle = await dbContext.Verbs
             .AsNoTracking()
             .Where(v => v.Title == word)
             .OrderBy(v => v.SortOrder)
@@ -204,7 +204,33 @@ public class VerbBaseSearch(ITraleDbContext dbContext)
             .Take(MaxResults)
             .Select(v => new VerbBaseMatch(v.Lemma, v.Title, v.Translation, v.Status, "masdar", null, null, null))
             .ToListAsync(ct);
+        return byTitle.Count > 0 ? byTitle : await FindByPreverbMasdarAsync(word, ct);
     }
+
+    /// <summary>
+    /// The name of the action with a preverb (გაღვიძება next to the title ღვიძება) — what teachers and
+    /// dictionaries often give. It lives only in the card, so the database narrows by the quoted word
+    /// in the card text and the card's own list decides.
+    /// </summary>
+    private async Task<IReadOnlyList<VerbBaseMatch>> FindByPreverbMasdarAsync(string word, CancellationToken ct)
+    {
+        var quoted = $"\"{word}\"";
+        var candidates = await dbContext.Verbs
+            .AsNoTracking()
+            .Where(v => v.CardJson.Contains(quoted))
+            .OrderBy(v => v.SortOrder)
+            .ThenBy(v => v.Lemma)
+            .Select(v => new { v.Lemma, v.Title, v.Translation, v.Status, v.CardJson })
+            .ToListAsync(ct);
+        return candidates
+            .Where(v => PreverbMasdars(v.CardJson).Contains(word))
+            .Take(MaxResults)
+            .Select(v => new VerbBaseMatch(v.Lemma, v.Title, v.Translation, v.Status, "masdar", null, null, null))
+            .ToList();
+    }
+
+    private static IReadOnlyList<string> PreverbMasdars(string cardJson) =>
+        JsonNode.Parse(cardJson)?["masdarWithPreverb"]?.AsArray().Select(m => m?.GetValue<string>()).OfType<string>().ToList() ?? [];
 
     private async Task<IReadOnlyList<VerbBaseMatch>> FindRussianAsync(string text, CancellationToken ct)
     {

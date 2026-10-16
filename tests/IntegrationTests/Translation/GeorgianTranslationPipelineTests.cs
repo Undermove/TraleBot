@@ -83,6 +83,26 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         Log.Paths.Should().Equal("verb-base");
     }
 
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task Name_of_the_action_with_a_preverb_finds_the_catalog_verb(bool agentOn)
+    {
+        // Teachers and dictionaries often give გაღვიძება; the card is titled ღვიძება. (დაწერა would not
+        // do here: it is also «он написал», and a form of the table wins.)
+        await SeedCatalogWithout();
+        Models.Configured = agentOn;
+        var verb = CatalogVerb(LemmaOf("просыпаться"));
+        var withPreverb = verb["masdarWithPreverb"]![0]!.GetValue<string>();
+
+        var result = await Translate(withPreverb);
+
+        var answer = result.Should().BeOfType<TranslationResult.Success>().Subject;
+        answer.Definition.Should().Be(verb["ru"]!.GetValue<string>());
+        answer.AdditionalInfo.Should().StartWith($"с приставкой; без неё — {verb["title"]!.GetValue<string>()}");
+        Models.ModelCalls.Should().Be(0);
+        Log.Paths.Should().Equal("verb-base");
+    }
+
     [Test]
     public async Task Russian_infinitive_of_a_catalog_verb_is_answered_with_the_name_of_the_action_with_the_agent_off()
     {

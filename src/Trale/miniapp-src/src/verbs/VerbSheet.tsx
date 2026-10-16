@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import LoaderLetter from '../components/LoaderLetter'
 import { fetchVerb } from '../api'
 import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, TITLE_TERM, cyr, type TenseKey, type VerbDto, type VerbFormHitDto } from './types'
@@ -6,6 +6,7 @@ import { meaningOf, meaningOfHit } from './meaning'
 import { Coach, KindChip, MeaningText, VerbForm } from './parts'
 import { OVERLAY, useOverlay } from './ui/overlayStack'
 import { hintSeen, markHintSeen } from './ui/hints'
+import { useSheetDrag } from './ui/useSheetDrag'
 import SessionEntry from './session/SessionEntry'
 import FormsTable from './FormsTable'
 import FamilyNote from './family/FamilyNote'
@@ -67,6 +68,8 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
   }
 
   useOverlay(close, OVERLAY.sheet)
+  const panel = useRef<HTMLDivElement>(null)
+  const drag = useSheetDrag(panel, close)
 
   function pickPerson(p: number) {
     setPerson(p)
@@ -84,11 +87,13 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
       style={{ background: `rgba(21,16,10,${visible ? '0.4' : '0'})`, transition: 'background 200ms ease' }}
     >
       <div
-        className="bg-cream rounded-t-2xl border-t-2 border-x-2 border-jewelInk max-h-[92dvh] overflow-y-auto w-full max-w-[480px] mx-auto"
+        ref={panel}
+        data-testid="verb-sheet-panel"
+        className="bg-cream rounded-t-2xl border-t-2 border-x-2 border-jewelInk max-h-[92dvh] overflow-y-auto overscroll-contain w-full max-w-[480px] mx-auto"
         style={{
           boxShadow: '0 -4px 0 #15100A',
-          transform: visible ? 'translateY(0)' : 'translateY(100%)',
-          transition: visible ? 'transform 300ms ease-out' : 'transform 220ms ease-in'
+          transform: visible ? `translateY(${drag.offset}px)` : 'translateY(100%)',
+          transition: drag.dragging ? 'none' : visible ? 'transform 300ms ease-out' : 'transform 220ms ease-in'
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -126,6 +131,20 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
               <>
                 <div className="font-geo text-[36px] font-extrabold leading-none">{verb.title}</div>
                 <div className="mt-1 text-[13px] text-jewelInk-hint">{cyr(verb.title)}</div>
+                {/* Пара, как «делать / сделать»: учителя и словари часто называют форму с приставкой —
+                    её должно быть видно сразу, а не в пояснении. */}
+                {verb.masdarWithPreverb.length > 0 && (
+                  <div className="mt-2 text-[13px] text-jewelInk-mid" data-testid="verb-preverb-masdar">
+                    с приставкой:{' '}
+                    {verb.masdarWithPreverb.map((m, i) => (
+                      <React.Fragment key={m}>
+                        {i > 0 && ', '}
+                        <span className="font-geo text-[17px] font-extrabold text-jewelInk">{m}</span>{' '}
+                        <span className="text-jewelInk-hint">[{cyr(m)}]</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
                 <div className="mt-2 text-[20px] font-extrabold text-navy">{verb.ru}</div>
               </>
             )}
@@ -172,7 +191,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                 <span className="font-geo font-bold">{verb.title}</span> — название действия, как «чтение» или «ходьба».
                 В грузинском оно вместо начальной формы глагола
                 {verb.masdarWithPreverb.length > 0 && (
-                  <>. С приставкой: <span className="font-geo">{verb.masdarWithPreverb.join(', ')}</span></>
+                  <>. Форма с приставкой (<span className="font-geo">{verb.masdarWithPreverb.join(', ')}</span>) — то же действие, от неё обычно строятся будущее и прошедшее</>
                 )}.
               </div>
               {/* Учебные термины — только здесь, в свёрнутом пояснении: в таблице и заданиях их нет. */}
