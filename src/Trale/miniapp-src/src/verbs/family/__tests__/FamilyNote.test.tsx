@@ -31,11 +31,12 @@ describe('семья на карточке глагола', () => {
     state.learning = id => ({ ...newLearning, family: familyOf(id, true) })
   })
 
-  it('глагол с приставкой: строка, приставка выделена в каждой форме таблицы, игра — короткая', async () => {
+  it('глагол с приставкой: значок, по нему строка, приставка выделена в каждой форме таблицы, игра — короткая', async () => {
     open(ACROSS)
     const verb = familyVerb(ACROSS)
     const prefix = verb.family!.prefixes[0]
 
+    fireEvent.click(await screen.findByTestId('verb-family-badge'))
     await waitFor(() => expect(screen.getByTestId('family-line').textContent).toContain(`Это «${GO.baseName}» с приставкой «через»`))
     expect(screen.getByTestId('family-line').textContent).toContain(`${prefix}- в начале слова — через · туда`)
     const marked = screen.getAllByTestId('form-prefix')
@@ -55,6 +56,7 @@ describe('семья на карточке глагола', () => {
   it('«сюда»: в строке обе приставки, выделена составная целиком', async () => {
     const id = at('out', 'here')
     open(id)
+    fireEvent.click(await screen.findByTestId('verb-family-badge'))
     await waitFor(() => expect(screen.getByTestId('family-line').textContent).toContain('«наружу» + «сюда»'))
     expect(screen.getAllByTestId('form-prefix')[0].textContent).toBe(familyVerb(id).family!.prefixes[0])
   })
@@ -63,6 +65,7 @@ describe('семья на карточке глагола', () => {
     const opened = vi.fn()
     const off = onOpenLessonModule(opened)
     open(ACROSS)
+    fireEvent.click(await screen.findByTestId('verb-family-badge'))
     await waitFor(() => screen.getByTestId('family-lesson'))
     fireEvent.click(screen.getByTestId('family-lesson'))
     expect(opened).toHaveBeenCalledWith('preverbs')
@@ -74,6 +77,7 @@ describe('семья на карточке глагола', () => {
 
   it('основной глагол: ряд остальных направлений, нажатие открывает глагол; приставки выделены и у него', async () => {
     open(GO.base)
+    fireEvent.click(await screen.findByTestId('verb-family-badge'))
     await waitFor(() => expect(screen.getAllByTestId('family-member')).toHaveLength(GO.members.length - 1))
     expect(screen.queryByTestId('family-line')).toBeNull()
     const base = familyVerb(GO.base)
@@ -93,13 +97,14 @@ describe('семья на карточке глагола', () => {
     expect(screen.getByTestId('session-entry-base').textContent).toBe(`Сначала «${GO.baseName}»`)
     expect(screen.getByTestId('session-entry-alone').textContent).toBe('Учить этот глагол отдельно')
     fireEvent.click(screen.getByTestId('session-entry-base'))
-    await waitFor(() => expect(screen.getByTestId('family-note').getAttribute('data-role')).toBe('base'))
+    await waitFor(() => expect(screen.getByTestId('verb-family-badge').textContent).toBe('направления'))
   })
 
   it('обычный глагол: ни строки, ни ряда, ни выделенных приставок семьи', async () => {
     open('любой')
     await waitFor(() => screen.getByTestId('session-entry'))
     expect(screen.queryByTestId('family-note')).toBeNull()
+    expect(screen.queryByTestId('verb-family-badge')).toBeNull()
     expect(screen.queryByTestId('form-prefix')).toBeNull()
   })
 

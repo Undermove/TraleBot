@@ -1,15 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import LoaderLetter from '../components/LoaderLetter'
 import { fetchVerb } from '../api'
 import { CARD_TENSES, KINDS, PERSONS, RARE_TENSES, TENSES, TITLE_TERM, cyr, type TenseKey, type VerbDto, type VerbFormHitDto } from './types'
 import { meaningOf, meaningOfHit } from './meaning'
-import { Coach, KindChip, MeaningText, VerbForm } from './parts'
+import { Coach, MeaningText, VerbForm } from './parts'
 import { OVERLAY, useOverlay } from './ui/overlayStack'
 import { hintSeen, markHintSeen } from './ui/hints'
 import { useSheetDrag } from './ui/useSheetDrag'
 import SessionEntry from './session/SessionEntry'
 import FormsTable from './FormsTable'
 import FamilyNote from './family/FamilyNote'
+import DirectionGlyph from './family/DirectionGlyph'
+import { TOWARD_RU } from './family/types'
+import WhoWhomSheet from './whoWhom/WhoWhomSheet'
+import { hasWhoWhom } from './whoWhom/logic'
 
 interface Props {
   verbId: string
@@ -33,6 +38,27 @@ export interface VerbEntry {
   onDelete: () => Promise<void>
 }
 
+/** Как значок называет тип глагола: «по образцу» — с образцом рядом. */
+const KIND_TRAIT: Record<VerbDto['kind'], string> = { pattern: 'по образцу', feature: 'с особенностью', special: 'особый' }
+
+/** По образцу — две одинаковые карточки; с особенностью — карточка с меткой; особый — зигзаг. */
+function KindIcon({ kind }: { kind: VerbDto['kind'] }) {
+  const common = { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  if (kind === 'pattern') return <svg {...common}><rect x="2" y="4.5" width="8" height="9" rx="1.5" /><path d="M6 2.5h6.5A1.5 1.5 0 0 1 14 4v7" /></svg>
+  if (kind === 'feature') return <svg {...common}><rect x="2" y="3" width="10" height="11" rx="1.5" /><path d="M12.5 1.5v3M11 3h3" /></svg>
+  return <svg {...common}><path d="M9.5 1.5 4 9h4l-1.5 5.5L12 7H8l1.5-5.5Z" /></svg>
+}
+
+/** Две встречные стрелки: «я → тебя», «ты → меня». */
+function WhoWhomIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M2 5.5h10M9.5 3l2.5 2.5L9.5 8" />
+      <path d="M14 10.5H4M6.5 8 4 10.5 6.5 13" />
+    </svg>
+  )
+}
+
 /** Подсказка «нажми „ты“ или „он“» — один раз; отметка хранится на сервере (ui/hints.ts). */
 const PERSON_HINT = 'verb_card_person'
 
@@ -52,6 +78,9 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
   const [person, setPerson] = useState(initialHighlight?.person ?? 0)
   const initialRare = !!initialHighlight && RARE_TENSES.includes(initialHighlight.tense as TenseKey)
   const [why, setWhy] = useState(false)
+  const [whoWhom, setWhoWhom] = useState(false)
+  // Не сбрасывается при переходе по семье: открыл направления — ходишь по ним, панель остаётся.
+  const [familyOpen, setFamilyOpen] = useState(false)
   const [visible, setVisible] = useState(false)
   const [hint, setHint] = useState(() => !hintSeen(PERSON_HINT))
 
@@ -148,25 +177,41 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                 <div className="mt-2 text-[20px] font-extrabold text-navy">{verb.ru}</div>
               </>
             )}
+            {/* Особенности глагола значками сразу под заголовком: что за глагол, видно до таблицы.
+                Каждый значок раскрывает своё — как устроен, или правило «кто кого». */}
+            <div className="mt-2.5 flex flex-wrap justify-center gap-1.5" data-testid="verb-traits">
+              <button onClick={() => { setWhy(!why); setFamilyOpen(false) }} data-testid="verb-why" aria-expanded={why}
+                className={`jewel-pressable inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-jewelInk pl-2 pr-3 py-1 text-[12px] font-bold text-jewelInk ${KINDS[verb.kind].chip}`}
+                style={{ boxShadow: '2px 2px 0 #15100A' }}>
+                <KindIcon kind={verb.kind} />
+                <span>{KIND_TRAIT[verb.kind]}{verb.kind === 'pattern' && verb.model && <> <span className="font-geo">{verb.model.title}</span></>}</span>
+              </button>
+              {verb.family && (
+                <button onClick={() => { setFamilyOpen(!familyOpen); setWhy(false) }} data-testid="verb-family-badge" aria-expanded={familyOpen}
+                  className="jewel-pressable inline-flex items-center gap-1 rounded-full border-[1.5px] border-jewelInk bg-cream-tile pl-0.5 pr-3 py-0 text-[12px] font-bold text-jewelInk"
+                  style={{ boxShadow: '2px 2px 0 #15100A' }}>
+                  <DirectionGlyph direction={verb.family.role === 'member' ? verb.family.direction : 'none'} toward={verb.family.role === 'member' ? verb.family.toward : 'there'} size={28} />
+                  <span>{verb.family.role === 'member' ? (verb.family.directionRu ? `${verb.family.directionRu}, ${TOWARD_RU[verb.family.toward]}` : TOWARD_RU[verb.family.toward]) : 'направления'}</span>
+                </button>
+              )}
+              {hasWhoWhom(verb) && (
+                <button onClick={() => setWhoWhom(true)} data-testid="verb-who-whom-badge"
+                  className="jewel-pressable inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-jewelInk bg-cream-tile pl-2 pr-3 py-1 text-[12px] font-bold text-navy"
+                  style={{ boxShadow: '2px 2px 0 #15100A' }}>
+                  <WhoWhomIcon />
+                  кто кого
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Глагол из семьи: что он такое в ней — до кнопки игры, чтобы было понятно, почему игра короткая. */}
-          <FamilyNote verb={verb} onOpenVerb={setVerbId} show="member" />
-
-          <SessionEntry verb={verb} onOpenVerb={setVerbId} />
-
-          {/* У основного глагола семья — одной прокручиваемой строкой под кнопкой: игра остаётся на виду. */}
-          <FamilyNote verb={verb} onOpenVerb={setVerbId} show="base" />
-
-          <FormsTable verb={verb} person={person} onPerson={pickPerson} highlight={highlight} initialRare={initialRare} pulsePerson={hint ? 1 : undefined} />
-
-          {/* Как устроен глагол — для любопытных: одной тихой строкой под таблицей, по нажатию. */}
-          <button onClick={() => setWhy(!why)} data-testid="verb-why" className="min-h-[44px] self-center inline-flex items-center gap-1.5">
-            <KindChip kind={verb.kind} />
-            <span className="text-[12px] text-navy underline">{why ? 'скрыть' : 'как устроен этот глагол'}</span>
-          </button>
+          {/* Семья с приставками направления — по значку, на месте пояснения. */}
+          {familyOpen && <>
+            <FamilyNote verb={verb} onOpenVerb={setVerbId} show="member" />
+            <FamilyNote verb={verb} onOpenVerb={setVerbId} show="base" />
+          </>}
           {why && (
-            <div className={`rounded-xl border border-jewelInk/40 p-3 ${KINDS[verb.kind].chip}`}>
+            <div data-testid="verb-why-panel" className={`text-left rounded-xl border border-jewelInk/40 p-3 ${KINDS[verb.kind].chip}`}>
               <div className="text-[13px] text-jewelInk-soft">{verb.reason}</div>
               {verb.kind !== 'special' && verb.root && (
                 <div className="mt-1 text-[12px] text-jewelInk-mid">
@@ -202,6 +247,12 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             </div>
           )}
 
+          <SessionEntry verb={verb} onOpenVerb={setVerbId} />
+
+          <FormsTable verb={verb} person={person} onPerson={pickPerson} highlight={highlight} initialRare={initialRare} pulsePerson={hint ? 1 : undefined} />
+
+          {/* В body: шторка-родитель сдвинута transform'ом, внутри неё fixed поехал бы вместе с ней. */}
+          {whoWhom && createPortal(<WhoWhomSheet verbId={verb.id} onClose={() => setWhoWhom(false)} />, document.body)}
 
           {entry && (
             <div className="flex flex-col items-center gap-1 text-[13px]" data-testid="verb-entry-actions">

@@ -85,6 +85,8 @@ test('the card of a direction says what it is, highlights the prefix in every fo
 
   const sheet = page.getByTestId('verb-sheet')
   const across = member(at('across', 'there'))
+  await expect(sheet.getByTestId('verb-family-badge')).toContainText(`${across.directionRu}, туда`)
+  await sheet.getByTestId('verb-family-badge').click()
   await expect(sheet.getByTestId('family-line')).toContainText(`Это «${GO.baseName}» с приставкой «${across.directionRu}»`)
   await expect(sheet.getByTestId('form-prefix')).toHaveCount(6)
   for (const part of await sheet.getByTestId('form-prefix').all()) await expect(part).toHaveText(across.prefixes[0])
@@ -121,7 +123,7 @@ test('while the base verb is not learned, the card of a direction leads to the b
   await shot(page, '07-member-card-base-first')
 
   await sheet.getByTestId('session-entry-base').click()
-  await expect(sheet.getByTestId('family-note')).toHaveAttribute('data-role', 'base')
+  await expect(sheet.getByTestId('verb-family-badge')).toHaveText('направления')
 })
 
 async function right(page: Page) {

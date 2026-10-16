@@ -159,6 +159,12 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             ["source"] = entry["source"]?.DeepClone(),
             ["status"] = RuntimeVerbStore.StatusName(VerbStatus.Verified)
         };
+        // «Кто кого» (scripts/verbs/object-person.json): only verbs that have it carry the field.
+        if (entry["objectPerson"] is { } objectPerson)
+        {
+            card["objectPerson"] = objectPerson.DeepClone();
+        }
+
         verb.CardJson = card.ToJsonString(Json);
     }
 

@@ -182,7 +182,8 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
     {
         var card = JsonNode.Parse(verb.CardJson)!;
         var masdar = (card["masdarWithPreverb"]?.Deserialize<List<string>>() ?? []).Prepend(verb.Title).Distinct().ToList();
-        var paradigm = new VerbParadigm(verb.Lemma, masdar, tenses, [], Source: null, Revid: null, HeadMasdar: verb.Title);
+        var paradigm = new VerbParadigm(verb.Lemma, masdar, tenses, [], Source: null, Revid: null, HeadMasdar: verb.Title,
+            ObjectPerson: ObjectPerson.Case(card["objectPerson"]?.GetValue<string>()));
         var meanings = new VerbMeanings(
             (card["meanings"]?.Deserialize<Dictionary<string, string[]>>() ?? []).Where(m => tenses.ContainsKey(m.Key)).ToDictionary(m => m.Key, m => m.Value),
             (card["meaningChips"]?.Deserialize<Dictionary<string, string>>() ?? []).Where(m => tenses.ContainsKey(m.Key)).ToDictionary(m => m.Key, m => m.Value),
@@ -251,6 +252,11 @@ public class RuntimeVerbStore(ITraleDbContext dbContext)
             ["status"] = StatusName(status),
             ["verification"] = verification
         };
+        if (paradigm.ObjectPerson != null)
+        {
+            card["objectPerson"] = paradigm.ObjectPerson;
+        }
+
         var unverified = modelMade
             ? VerbAnalyzer.KnownTenses.Where(t => (unverifiedTenses ?? []).Contains(t) && paradigm.Tenses.ContainsKey(t)).ToList()
             : [];

@@ -48,6 +48,19 @@ public class MafVerbGenerator(
           the English Wiktionary titles Georgian verb entries. A verb that marks its object or its
           experiencer in the form is given with a 3rd person one.
         - "masdar": the name of the action (verbal noun), the plain one without a preverb when both exist.
+        - "masdarWithPreverb": the name of the action with the preverb the verb takes in the future and
+          the aorist (ძებნა → მოძებნა, ღვიძება → გაღვიძება, წერა → დაწერა) — what teachers and
+          dictionaries often give as the verb's name. Null when the verb has no such pair (a preverb that
+          stands in the present too, a verb without a preverb in the future), or when you are not sure.
+        - "objectPerson": whether the verb shows in the word the person it is done to or addressed to,
+          with მ- (me), გ- (you), გვ- (us) where ვ- of "I" stands: ვხედავ "I see him" → გხედავ "I see
+          you", მხედავს "he sees me"; ვეძებ → გეძებ "I look for you"; ვხვდები → მხვდები "you meet me".
+          Then say how Russian puts that person: "acc" («вижу тебя»), "dat" («показываю тебе») or "with"
+          («встречаюсь с тобой»). Null when the verb's object is a thing, when the mark means "for me"
+          (მიყიდა "he bought for me"), when მ- is the one who feels or has (მიყვარს "I love", მომწონს
+          "I like"), when the vowel before the root changes with the person, or when you are not sure.
+        - "objectForms": when "objectPerson" is not null — the present forms {"youMe": "you see me",
+          "iYou": "I see you"} as you know them from real use; else null.
         - "russian": the dictionary translation into Russian — plain infinitives, the imperfective one
           first, its perfective partner after a comma when it has one; at most three. For "Russian verb: X"
           the list must contain X. Never a descriptive phrase when a single Russian verb exists.
@@ -169,6 +182,9 @@ public class MafVerbGenerator(
         [property: Description("verb | notAVerb | notAWord")] string? Verdict,
         string? Lemma,
         string? Masdar,
+        string? MasdarWithPreverb,
+        [property: Description("acc | dat | with | null")] string? ObjectPerson,
+        ObjectForms? ObjectForms,
         string? Russian,
         Tenses? Tenses,
         Russian? RussianForms,
@@ -178,6 +194,8 @@ public class MafVerbGenerator(
     private sealed record Tenses(
         string?[]? Present, string?[]? Imperfect, string?[]? Future, string?[]? Conditional, string?[]? Aorist, string?[]? Optative,
         string?[]? PresentSubjunctive, string?[]? FutureSubjunctive, string?[]? Perfect, string?[]? Pluperfect, string?[]? PerfectSubjunctive);
+
+    private sealed record ObjectForms(string? YouMe, string? IYou);
 
     private sealed record Past(string? M, string? F, string? Pl);
 
@@ -208,7 +226,8 @@ public class MafVerbGenerator(
 
         return new GeneratedVerb(
             verdict, output.Lemma, output.Masdar, output.Russian, Table(output.Tenses), Forms(output.RussianForms),
-            output.MatchedTense, output.MatchedPerson, usage);
+            output.MatchedTense, output.MatchedPerson, usage, output.MasdarWithPreverb,
+            output.ObjectPerson, output.ObjectForms?.YouMe, output.ObjectForms?.IYou);
     }
 
     public async Task<VerbCompletion> CompleteAsync(VerbCompletionRequest request, CancellationToken ct)
@@ -269,7 +288,8 @@ public class MafVerbGenerator(
             text.Append("\n\nYour previous record:\n").Append(MafVerbReviewer.Table(
                 request.Previous.Lemma, request.Previous.Masdar, request.Previous.Russian,
                 (request.Previous.Tenses ?? new Dictionary<string, string?[]>()).ToDictionary(
-                    t => t.Key, t => t.Value.Select(c => c ?? "—").ToArray())));
+                    t => t.Key, t => t.Value.Select(c => c ?? "—").ToArray()),
+                masdarWithPreverb: request.Previous.MasdarWithPreverb));
             text.Append("\nProblems found:");
             foreach (var problem in request.Problems ?? [])
             {
