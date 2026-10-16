@@ -45,11 +45,20 @@ export interface Building {
   balconies: { floor: number; laundry: boolean }[]
   /** Номер окна → загорится вечером (доля дня, после которой). */
   lights: number[]
+  /** Перед домом проулок — виден его торец. */
+  gapBefore: boolean
+  /** Ставни у окон, арки над окнами второго этажа и выше, черепичный край крыши. */
+  shutters?: string
+  arched: boolean
+  tiles: boolean
+  /** Глубина дома от фасада — какой ширины торец. */
+  depth: number
 }
 
 const FACADES = ['#F1D9B5', '#E8C3A6', '#CFE0CF', '#F4E7C8', '#D9CBE3', '#F2C9B8', '#E6D3A8', '#CDE0EA']
 const TRIMS = ['#B8794A', '#8C6A9A', '#4E8A5B', '#B5793F', '#2F7F86']
 const AWNINGS = ['#E01A3C', '#1B5FB0', '#4E8A5B', '#C68F10']
+const SHUTTERS = ['#2F7F86', '#4E8A5B', '#7A4E2D', '#1B5FB0']
 
 /** Детерминированный случай: улица одна и та же при каждом заходе. */
 export function seeded(seed: number) {
@@ -68,8 +77,10 @@ export function buildStreet(length: number, seed = 7): Building[] {
   const out: Building[] = []
   for (const side of [-1, 1] as const) {
     let z = -6
-    while (z < length + 40) {
-      const len = 9 + Math.floor(r() * 7)
+    let gap = true
+    while (z < length - 4) {
+      // Последний дом кончается там, где начинается набережная.
+      const len = Math.min(9 + Math.floor(r() * 7), length - z)
       const floors = 3 + Math.floor(r() * 4)
       const cols = Math.max(2, Math.floor(len / 3))
       out.push({
@@ -78,10 +89,16 @@ export function buildStreet(length: number, seed = 7): Building[] {
         trim: TRIMS[Math.floor(r() * TRIMS.length)],
         awning: r() < 0.35 ? AWNINGS[Math.floor(r() * AWNINGS.length)] : undefined,
         balconies: Array.from({ length: floors - 1 }, (_, f) => f + 1).filter(() => r() < 0.4).map(floor => ({ floor, laundry: r() < 0.45 })),
-        lights: Array.from({ length: cols * floors }, () => 0.62 + r() * 0.35)
+        lights: Array.from({ length: cols * floors }, () => 0.62 + r() * 0.35),
+        gapBefore: gap,
+        shutters: r() < 0.5 ? SHUTTERS[Math.floor(r() * SHUTTERS.length)] : undefined,
+        arched: r() < 0.4,
+        tiles: r() < 0.45,
+        depth: 7 + r() * 5
       })
       // Между домами иногда — узкий проулок.
-      z += len + (r() < 0.25 ? 2 + r() * 2 : 0)
+      gap = r() < 0.28
+      z += len + (gap ? 2.2 + r() * 2 : 0)
     }
   }
   return out

@@ -26,6 +26,7 @@ export default function Passerby({ who, phase, stride, face, talking, wave }: Pa
   const kid = who.kind === 'kid'
   const woman = who.kind === 'woman' || (kid && who.extra !== 'cap')
   const old = who.kind === 'old'
+  const granny = old && who.voice === 'f'
   const lift = (k: number) => Math.max(0, Math.sin(phase + k * Math.PI)) * 9 * stride
   const bob = -Math.abs(Math.sin(phase)) * 3 * stride
   const sway = Math.sin(phase) * 2.2 * stride
@@ -103,6 +104,9 @@ export default function Passerby({ who, phase, stride, face, talking, wave }: Pa
             ? <path d="M-18 -152 Q-18 -172 0 -171 Q18 -172 18 -152 Q12 -162 2 -160 Q-8 -163 -18 -152 Z" fill={who.hair} stroke={INK} strokeWidth={SW} />
             : <path d="M-17 -154 Q-16 -173 0 -172 Q16 -173 17 -154 Q10 -163 0 -162 Q-10 -163 -17 -154 Z" fill={who.hair} stroke={INK} strokeWidth={SW} />}
         {kid && woman && [-1, 1].map(sx => <circle key={sx} cx={sx * 19} cy="-163" r="6" fill={who.hair} stroke={INK} strokeWidth={SW} />)}
+        {/* У бабушки — пучок и платок на плечах. */}
+        {granny && <circle cx="0" cy="-172" r="7" fill={who.hair} stroke={INK} strokeWidth={SW} />}
+        {granny && <path d="M-22 -126 Q0 -110 22 -126 L18 -118 Q0 -104 -18 -118 Z" fill="#C2553A" stroke={INK} strokeWidth={SW} strokeLinejoin="round" />}
 
         {/* Лицо. */}
         <g className="zw-blink">

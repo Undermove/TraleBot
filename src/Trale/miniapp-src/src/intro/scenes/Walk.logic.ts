@@ -1,6 +1,6 @@
 import { knows, phrase, type Rng } from '../story'
 
-// «Прогулка» — чистая логика. Ты идёшь по батумской улице от дома до университета; навстречу — знакомые.
+// «Прогулка» — чистая логика. Ты идёшь по батумской улице к морю; навстречу — знакомые.
 // Встреча — короткий разговор по шагам: кто говорит, что ты должен ответить, что ответят тебе. Никаких
 // таймеров: следующий шаг начинается, когда договорили предыдущий. Время суток — это место на маршруте:
 // в начале улицы утро, в конце вечер (в режиме «день»), — его видно по небу.
@@ -44,11 +44,15 @@ export interface Who {
   hair: string
   /** Сумка, очки, кепка — чтобы знакомые не были на одно лицо. */
   extra: 'bag' | 'glasses' | 'cap' | 'none'
+  /** Каким голосом говорит. */
+  voice: 'f' | 'm'
 }
 
 /** Между встречами — пара десятков шагов: успеваешь пройтись, но не заскучать. */
-export const SPACING = 24
-const FIRST_AT = 16
+export const SPACING = 18
+const FIRST_AT = 12
+/** После последнего знакомого улица выходит на набережную: дома кончаются, впереди перила и море. */
+export const PROMENADE = 20
 /** На каком расстоянии знакомый останавливается перед тобой. */
 export const MEET_GAP = 2.7
 
@@ -58,8 +62,10 @@ const PART_WHEN: Record<Part, string> = { morning: 'утром', day: 'днём'
 /** Сколько встреч в прогулке. */
 export const MEETINGS: Record<WalkMode, number> = { hello: 4, day: 6, full: 6 }
 
-/** Длина улицы: от дома до университета. */
-export const routeLength = (mode: WalkMode) => FIRST_AT + (MEETINGS[mode] - 1) * SPACING + 22
+/** Длина улицы — до начала набережной. */
+export const routeLength = (mode: WalkMode) => FIRST_AT + (MEETINGS[mode] - 1) * SPACING + 14
+/** Где перила набережной: тут прогулка и кончается. */
+export const railAt = (mode: WalkMode) => routeLength(mode) + PROMENADE
 
 /** Время суток в точке маршрута. В первом уроке весь день — день: про время там ещё не говорили. */
 export function partAt(mode: WalkMode, m: number): Part {
@@ -87,10 +93,10 @@ const echoOf = (lessonId: number, id: string) => (id === 'gamarjoba' && knows(le
 const COATS = ['#1B5FB0', '#E01A3C', '#4E8A5B', '#C68F10', '#7A4E9A', '#D4563B', '#2F7F86']
 const SKIN = ['#F2C9A0', '#E0AC7E', '#C68A5E', '#F6D7BC']
 const HAIR = ['#2A1F18', '#5A3A22', '#9A6A3A', '#15100A']
-const WHO: { ru: string; kind: Who['kind'] }[] = [
-  { ru: 'Соседка', kind: 'woman' }, { ru: 'Однокурсник', kind: 'man' }, { ru: 'Сосед с пятого этажа', kind: 'old' },
-  { ru: 'Девочка из твоего подъезда', kind: 'kid' }, { ru: 'Продавщица из пекарни', kind: 'woman' }, { ru: 'Преподаватель', kind: 'man' },
-  { ru: 'Бабушка с балкона напротив', kind: 'old' }, { ru: 'Однокурсница', kind: 'woman' }
+const WHO: { ru: string; kind: Who['kind']; voice: Who['voice'] }[] = [
+  { ru: 'Соседка', kind: 'woman', voice: 'f' }, { ru: 'Однокурсник', kind: 'man', voice: 'm' }, { ru: 'Сосед с пятого этажа', kind: 'old', voice: 'm' },
+  { ru: 'Девочка из твоего подъезда', kind: 'kid', voice: 'f' }, { ru: 'Продавщица из пекарни', kind: 'woman', voice: 'f' }, { ru: 'Преподаватель', kind: 'man', voice: 'm' },
+  { ru: 'Бабушка с балкона напротив', kind: 'old', voice: 'f' }, { ru: 'Однокурсница', kind: 'woman', voice: 'f' }
 ]
 
 function who(i: number, rng: Rng): Who {

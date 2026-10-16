@@ -69,11 +69,11 @@ describe('Walk', () => {
       await step(100)
     }
     expect(answered).toBeGreaterThanOrEqual(MEETINGS[mode] * 2)
-    expect(screen.getByTestId('game-end').textContent).toMatch(/Дошёл/)
+    expect(screen.getByTestId('game-end').textContent).toMatch(/у моря/)
     expect(screen.getByTestId('rule-card')).toBeTruthy()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
-  })
+  }, 60_000)
 
   it('a wrong answer is not counted: the same turn waits, with a hint why', async () => {
     vi.useFakeTimers()

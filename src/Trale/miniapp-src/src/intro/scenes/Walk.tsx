@@ -8,7 +8,7 @@ import { GameEnd, GameIntro, RuleCard } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
-  HINTS_OFF_AFTER, MEET_GAP, PART_RU, addScore, dayClock, emptyScore, judge, partAt, replies, route, routeLength, verdictText,
+  HINTS_OFF_AFTER, MEET_GAP, PART_RU, addScore, dayClock, emptyScore, judge, partAt, railAt, replies, route, routeLength, verdictText,
   type Beat, type Meeting, type Score, type WalkMode
 } from './Walk.logic'
 import Street, { type StreetPerson } from './walk/Street'
@@ -27,12 +27,12 @@ const G = ({ children }: { children: string }) => <b className="font-geo">{child
 const INTRO: Record<WalkMode, { title: string; text: string; ids: string[] }> = {
   hello: {
     title: 'Прогулка',
-    text: 'Утро, ты идёшь из дома в университет. Навстречу — знакомые: при встрече поздоровайся, а когда расходитесь — попрощайся. Держи палец на улице — идёшь, отпусти — стоишь.',
+    text: 'Ты идёшь по улице к морю. Навстречу — знакомые: при встрече поздоровайся, а когда расходитесь — попрощайся. Держи палец на улице — идёшь, отпусти — стоишь.',
     ids: ['gamarjoba', 'nakhvamdis']
   },
   day: {
     title: 'Прогулка: целый день',
-    text: 'Идёшь по улице с утра до вечера — смотри на небо. Утром, днём и вечером здороваются по-разному. Расходитесь — попрощайся.',
+    text: 'Целый день идёшь к морю — смотри на небо. Утром, днём и вечером здороваются по-разному. Расходитесь — попрощайся.',
     ids: ['dila', 'gamarjoba', 'saghamo', 'nakhvamdis']
   },
   full: {
@@ -76,7 +76,8 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
   const [phase, setPhase] = useState<'intro' | 'play' | 'end'>('intro')
   const meetings = useMemo(() => route(lesson.id, mode, rng), []) // eslint-disable-line react-hooks/exhaustive-deps
   const length = routeLength(mode)
-  const buildings = useMemo(() => buildStreet(length + 40, 11 + lesson.id), [lesson.id, length])
+  const rail = railAt(mode)
+  const buildings = useMemo(() => buildStreet(length, 11 + lesson.id), [lesson.id, length])
   const panel = useMemo(() => replies(lesson.id, mode), [lesson.id, mode])
 
   // Камера и люди — в ref: кадр 60 раз в секунду, React только перерисовывает.
@@ -119,7 +120,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
       const c = cam.current
       const st = stageRef.current
       const next = meetings[metRef.current]
-      const stopAt = next ? next.at - MEET_GAP : length - 6
+      const stopAt = next ? next.at - MEET_GAP : rail - 11
       const left = Math.max(0, stopAt - c.z)
       let target = st === 'walk' && c.holding ? WALK_SPEED : 0
       // Мягко тормозим так, чтобы встать ровно перед знакомым.
@@ -142,9 +143,9 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Разговор ────────────────────────────────────────────────────────────────────────────────────
-  const say = useCallback(async (id: string, who: 'them' | 'you') => {
+  const say = useCallback(async (id: string, who: 'them' | 'you', voice: 'f' | 'm' = 'f') => {
     setTalk(tk => tk && (who === 'them' ? { ...tk, their: id, talking: true } : { ...tk, mine: id }))
-    await speak(id)
+    await speak(id, who === 'you' ? 'hero' : voice)
     if (!alive.current) return
     setTalk(tk => tk && (who === 'them' ? { ...tk, talking: false } : tk))
   }, [])
@@ -154,7 +155,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
     setCue(bi === 0 && !b.line ? `${m.who.ru}. Поздоровайся.` : b.cue)
     setTalk(tk => tk && { ...tk, beat: bi, turn: b.line ? 'them' : 'you', mine: undefined, their: undefined, wave: !b.line && bi === 0, face: 'smile' })
     if (b.line) {
-      await say(b.line, 'them')
+      await say(b.line, 'them', m.who.voice)
       if (!alive.current) return
       setTalk(tk => tk && { ...tk, turn: 'you' })
     }
@@ -170,7 +171,9 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
   function arrive() {
     setStage('arrive')
     sound.win(); haptic('good')
-    window.setTimeout(() => alive.current && setPhase('end'), 900)
+    setCue('')
+    // Постоять у перил и посмотреть на море — потом итог.
+    window.setTimeout(() => alive.current && setPhase('end'), 2600)
   }
 
   const answer = async (id: string) => {
@@ -194,7 +197,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
     if (head && v.res === 'bonus') burst(head, 'small')
     setTalk(tk => tk && { ...tk, turn: 'react', face: v.res === 'bonus' ? 'wow' : 'smile', wave: !!b.parting })
     const react = v.res === 'bonus' ? 'kargad_madloba' : b.react
-    if (react) await say(react, 'them')
+    if (react) await say(react, 'them', m.who.voice)
     if (!alive.current) return
     if (talk.beat + 1 < m.beats.length) { void openBeat(talk.meeting, talk.beat + 1); return }
     // Попрощались: знакомый проходит мимо, ты идёшь дальше.
@@ -204,7 +207,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
     setStage('pass')
     metRef.current = talk.meeting + 1
     setMet(metRef.current)
-    setCue(metRef.current < meetings.length ? 'Иди дальше — держи палец на улице.' : 'Почти пришёл. Держи палец — до университета пара шагов.')
+    setCue(metRef.current < meetings.length ? 'Иди дальше — держи палец на улице.' : 'Впереди море. Держи палец — дойди до набережной.')
     window.setTimeout(() => { if (alive.current && stageRef.current === 'pass') setStage('walk') }, 650)
   }
 
@@ -229,10 +232,11 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
     if (i === met && (stage === 'walk' || stage === 'talk')) {
       // Идёт навстречу: пока ты далеко, он тоже шагает к тебе; встал — разговариваете.
       const gap = Math.max(0, m.at - MEET_GAP - c.z)
-      const z = m.at + gap * 0.7
+      // Идёт навстречу бодро: сходитесь быстрее, чем идёшь один.
+      const z = m.at + gap * 1.2
       const walking = stage === 'walk' && gap > 0.05
       people.push({
-        id: i, who: m.who, x, z, phase: c.step * 0.9 + (walking ? (now() / 380) : 0), stride: walking ? 1 : 0,
+        id: i, who: m.who, x, z, phase: c.step * 0.9 + (walking ? (now() / 300) : 0), stride: walking ? 1 : 0,
         face: talk?.face ?? 'calm', talking: !!talk?.talking, wave: stage === 'talk' && !!talk?.wave
       })
     } else if (i === met - 1 && (stage === 'pass' || stage === 'walk')) {
@@ -266,7 +270,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
   if (phase === 'end') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
-        <GameEnd title="Дошёл!" text={verdictText(score, mode)} rule={recap(mode)} onNext={onDone} onAgain={start} />
+         <GameEnd title="Ты у моря!" text={verdictText(score, mode)} rule={recap(mode)} onNext={onDone} onAgain={start} />
       </GameFrame>
     )
   }
@@ -285,7 +289,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
           onPointerLeave={() => hold(false)}
           onContextMenu={e => e.preventDefault()}
         >
-          <Street view={view} camZ={c.z} clock={clock} bob={bob} buildings={buildings} people={people} end={length + 30} />
+          <Street view={view} camZ={c.z} clock={clock} bob={bob} buildings={buildings} people={people} end={length} rail={rail} time={now()} />
 
           {/* Время суток и сколько встреч позади. */}
           <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2.5 py-0.5 text-[12px] font-extrabold" data-testid="walk-part">
@@ -332,6 +336,18 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
                   transition={{ type: 'spring', stiffness: 380, damping: 22 }}
                 >
                   <SpeechBubble id={talk.mine} hint={hints} mine />
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {stage === 'arrive' && (
+              <div className="absolute inset-x-0 top-[18%] flex justify-center pointer-events-none">
+                <motion.div data-testid="walk-arrived" className="rounded-2xl border-[1.5px] border-jewelInk bg-cream/95 px-4 py-2 text-[18px] font-extrabold"
+                  style={{ boxShadow: '3px 3px 0 #15100A' }}
+                  initial={{ opacity: 0, y: -16, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.3 }}>
+                  Ты у моря
                 </motion.div>
               </div>
             )}

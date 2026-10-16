@@ -67,3 +67,18 @@ export const INTRO_WORD_AUDIO: Readonly<Record<string, string>> = {
   'ექიმი': '/audio/intro-story/w_job1.m4a',
   'მასწავლებელი': '/audio/intro-story/w_job2.m4a',
 }
+
+// Разные голоса в разговорах (ElevenLabs, eleven_v4, ka, та же обработка): герой — это ты — Will (молодой
+// мужской), знакомые-мужчины — George, женщины и дети — Alice (записи выше). Чтобы на слух было ясно,
+// кто говорит: ты или тебе.
+const HERO_IDS = ['gamarjoba', 'gagimarjos', 'nakhvamdis', 'dila', 'saghamo', 'kargad_madloba', 'kargad_shen']
+const MALE_IDS = ['gamarjoba', 'gagimarjos', 'dila', 'saghamo', 'rogor', 'kargad_madloba', 'nakhvamdis']
+
+/** Голос реплики: hero — ты, m — знакомый-мужчина, f — женщина (по умолчанию, записи Alice). */
+export type Voice = 'hero' | 'm' | 'f'
+
+export function voicedAudio(id: string, voice: Voice): string | undefined {
+  if (voice === 'hero' && HERO_IDS.includes(id)) return `/audio/intro-story/hero/${id}.m4a`
+  if (voice === 'm' && MALE_IDS.includes(id)) return `/audio/intro-story/m/${id}.m4a`
+  return INTRO_AUDIO[id]
+}
