@@ -133,6 +133,9 @@ export function saveName(name: string) {
 
 export const myName = (): GeoName => geoName(savedName())
 
+/** Есть ли имя, которое пишется по-грузински: своё введённое или из Telegram. Нет — спросим в начале урока. */
+export const hasUsableName = () => !!transliterateToGeorgian(savedName().trim())
+
 // ── Мелочи для игр ────────────────────────────────────────────────────────────────────────────────
 
 export type Rng = () => number

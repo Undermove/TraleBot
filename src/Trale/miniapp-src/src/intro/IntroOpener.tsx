@@ -4,7 +4,9 @@ import Mascot from '../components/Mascot'
 import '../alphabet/games/alphabet.css'
 import { BackIcon } from '../alphabet/games/GameFrame'
 import { haptic } from '../alphabet/games/fx'
-import { ACTS, INTRO_TOTAL, actOf, introLesson, newPhrases, type IntroStep } from './story'
+import { ACTS, INTRO_TOTAL, actOf, geoName, hasUsableName, introLesson, newPhrases, saveName, type IntroStep } from './story'
+import { transliterateToGeorgian } from '../utils/georgianizerName'
+import { cyr } from '../verbs/types'
 
 /** Как сцена называется в плане урока на стартовом экране. */
 export const STEP_TITLE: Record<IntroStep['kind'], string> = {
@@ -27,6 +29,11 @@ export default function IntroOpener({ lessonId, onBack, onStart, details }: {
   const act = actOf(lesson)
   const phrases = newPhrases(lesson)
   const [more, setMore] = useState(false)
+  // Имени, которое пишется по-грузински, нет (в Telegram латиница-никнейм, эмодзи…) — спрашиваем тут же,
+  // а не подставляем чужое: в уроках герой — это ты.
+  const [askName] = useState(() => !hasUsableName())
+  const [name, setName] = useState('')
+  const nameOk = !askName || !!transliterateToGeorgian(name.trim())
   const plan = lesson.steps.map(s => STEP_TITLE[s.kind])
 
   return (
@@ -66,7 +73,23 @@ export default function IntroOpener({ lessonId, onBack, onStart, details }: {
       </div>
 
       <div className="shrink-0 px-5 pt-3 flex flex-col gap-2" style={{ paddingBottom: 'calc(var(--safe-b) + 16px)' }}>
-        <Button onClick={() => { haptic('pop'); onStart() }}>Начать</Button>
+        {askName && (
+          <label className="flex flex-col gap-1 text-[13px] font-bold text-jewelInk-soft" data-testid="opener-name">
+            Как тебя зовут? В уроках так будут звать тебя.
+            <input
+              data-testid="opener-name-input"
+              value={name}
+              maxLength={20}
+              onChange={e => setName(e.target.value)}
+              className="min-h-[44px] rounded-xl border-[1.5px] border-jewelInk bg-cream-tile px-3 text-[17px] font-bold text-jewelInk"
+              placeholder="Имя по-русски"
+            />
+            {name.trim() && (nameOk
+              ? <span className="text-[12px] text-jewelInk-mid">по-грузински: <span className="font-geo font-bold text-jewelInk">{geoName(name).geo}</span> [{cyr(geoName(name).geo)}]</span>
+              : <span className="text-[12px] text-ruby">Напиши русскими или латинскими буквами</span>)}
+          </label>
+        )}
+        <Button disabled={!nameOk} onClick={() => { haptic('pop'); if (askName) saveName(name.trim()); onStart() }}>Начать</Button>
         <button onClick={() => setMore(m => !m)} className="min-h-[40px] text-[13px] font-bold text-navy">{more ? 'свернуть' : 'подробнее'}</button>
       </div>
     </div>

@@ -150,7 +150,6 @@ function MagnetIcon() {
 function MyName({ onNext }: { onNext: () => void }) {
   const [ru, setRu] = useState(() => savedName())
   const [printed, setPrinted] = useState(-1) // -1 — ещё не печатали
-  const [armed, setArmed] = useState<Tool | null>(null)
   const [applied, setApplied] = useState(false)
   const [shake, setShake] = useState(false)
   const [tip, setTip] = useState('Напиши имя по-русски — как тебя зовут друзья.')
@@ -158,32 +157,33 @@ function MyName({ onNext }: { onNext: () => void }) {
   const g = useMemo(() => geoName(ru), [ru])
   const letters = useMemo(() => [...g.base], [g])
   const run = useRef(0)
+  const tile = useRef<HTMLDivElement>(null)
 
   const print = () => {
     if (!ru.trim()) { setTip('Сначала напиши имя.'); return }
     haptic('pop')
     const id = ++run.current
-    setApplied(false); setArmed(null); setPrinted(0)
+    setApplied(false); setPrinted(0)
     setTip('Печатаем…')
     letters.forEach((_, k) => later(() => {
       if (run.current !== id) return
       setPrinted(k + 1); sound.tick(k)
       if (k === letters.length - 1) setTip(g.added
-        ? 'Имя кончается на согласную. Возьми магнит ი и прилепи к имени.'
-        : 'Имя кончается на гласную. Нужна ли ი? Выбери и нажми на имя.')
+        ? 'Имя кончается на согласную. Нужна ли ი? Нажми на ответ.'
+        : 'Имя кончается на гласную. Нужна ли ი? Нажми на ответ.')
     }, 160 * (k + 1)))
   }
   const ready = printed >= letters.length
-  const tapName = (el: HTMLElement) => {
+  // Одно нажатие на ответ — и всё: без «сначала возьми магнит, потом нажми на имя».
+  const choose = (tool: Tool) => {
     if (!ready || applied) return
     const want: Tool = g.added ? 'ი' : 'none'
-    if (!armed) { setTip('Сначала возьми магнит снизу.'); return }
-    if (armed !== want) {
+    if (tool !== want) {
       haptic('bad'); sound.miss(); setShake(true); later(() => setShake(false), 400)
       setTip(g.added ? 'На согласную грузины договаривают ი: Карлос → კარლოსი.' : 'Имя уже кончается на гласную — ი не нужна: ნინო так и остаётся.')
       return
     }
-    haptic('good'); burst(el, 'small')
+    haptic('good'); if (tile.current) burst(tile.current, 'small')
     setApplied(true)
     saveName(ru.trim())
     setTip(g.added ? `${g.base} → ${g.geo}. Так тебя и будут звать.` : `${g.geo} — без изменений. Так тебя и будут звать.`)
@@ -214,7 +214,7 @@ function MyName({ onNext }: { onNext: () => void }) {
         {printed < 0 ? (
           <div className="ab-short:hidden"><Mascot mood="think" size={72} /></div>
         ) : (
-          <WordTile testId="name-tile" onClick={tapName} className={`${shake ? 'zn-shake bg-ruby-wash' : ''} ${ready && !applied ? 'ring-2 ring-navy ring-offset-2' : ''}`}>
+          <div ref={tile}><WordTile testId="name-tile" className={shake ? 'zn-shake bg-ruby-wash' : ''}>
             {applied ? <Transformed item={item} size={32} /> : (
               <span className="font-geo font-extrabold text-[32px]">
                 {letters.slice(0, printed).map((l, k) => <span key={k} className="zn-pop inline-block">{l}</span>)}
@@ -222,7 +222,7 @@ function MyName({ onNext }: { onNext: () => void }) {
               </span>
             )}
             <span className="block text-[11px] font-semibold text-jewelInk-hint">{g.ru}</span>
-          </WordTile>
+          </WordTile></div>
         )}
         {applied && (
           <div className="zn-pop text-center" data-testid="my-line">
@@ -235,7 +235,7 @@ function MyName({ onNext }: { onNext: () => void }) {
 
       {ready && !applied && (
         <div className="flex justify-center gap-3 zn-pop">
-          {(['ი', 'none'] as Tool[]).map(t => <MagnetButton key={t} tool={t} armed={armed === t} glow={false} onClick={() => setArmed(a => (a === t ? null : t))} />)}
+          {(['ი', 'none'] as Tool[]).map(t => <MagnetButton key={t} tool={t} armed={false} glow={false} onClick={() => choose(t)} />)}
         </div>
       )}
       {applied && <Button onClick={onNext}>Дальше: чужие имена</Button>}

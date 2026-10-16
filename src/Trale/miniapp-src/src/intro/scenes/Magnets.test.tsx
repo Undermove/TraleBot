@@ -151,7 +151,7 @@ describe('Magnets scene (автомат с краном)', () => {
     expect(screen.getByTestId('endings-round').textContent).toContain('2 /')
   })
 
-  it('name: prints the name, applies ი, saves it, then foreign names to the end', async () => {
+  it('name: prints the name, one tap on the answer applies ი, saves it, then foreign names to the end', async () => {
     vi.useFakeTimers()
     const onDone = vi.fn()
     render(<Magnets lesson={introLesson(8)} step={{ kind: 'magnets', set: 'name' }} fraction={0.5} onExit={() => {}} onDone={onDone} rng={seeded(4)} now={() => Date.now()} />)
@@ -159,11 +159,10 @@ describe('Magnets scene (автомат с краном)', () => {
     fireEvent.change(screen.getByTestId('name-input'), { target: { value: 'Карлос' } })
     fireEvent.click(screen.getByTestId('name-print'))
     await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
+    // Один нажатый ответ — и всё: неверный не засчитывается, верный сразу прилепляется к имени.
     fireEvent.click(screen.getByTestId('magnet-none'))
-    fireEvent.click(screen.getByTestId('name-tile'))
     expect(screen.queryByTestId('my-line')).toBeNull()
     fireEvent.click(screen.getByTestId('magnet-ი'))
-    fireEvent.click(screen.getByTestId('name-tile'))
     expect(screen.getByTestId('my-line').textContent).toContain('მე მქვია კარლოსი')
     expect(localStorage.getItem('intro_name')).toBe('Карлос')
     fireEvent.click(screen.getByText('Дальше: чужие имена'))
