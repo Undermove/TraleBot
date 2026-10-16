@@ -42,6 +42,10 @@ test.beforeEach(async ({ page }) => {
 
 test('verb card links to «кто кого», and the rule flips the sides', async ({ page }) => {
   await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('ხედავს')}`)
+  // Значок у заголовка видно сразу, без прокрутки.
+  const badge = page.getByTestId('verb-who-whom-badge')
+  await expect(badge).toBeInViewport()
+  if (shots) { await page.waitForTimeout(400); await page.screenshot({ path: `${shots}/ww-top.png` }) }
   const line = page.getByTestId('verb-who-whom')
   await expect(line).toContainText('მხედავ')
   await expect(line).toContainText('გხედავ')
@@ -72,8 +76,16 @@ test('verb card links to «кто кого», and the rule flips the sides', asy
   if (shots) await page.screenshot({ path: `${shots}/ww-bottom.png` })
 })
 
+test('the badge under the title opens the rule', async ({ page }) => {
+  await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('აღვიძებს')}`)
+  await page.getByTestId('verb-who-whom-badge').click()
+  await expect(page.getByTestId('who-whom-sheet')).toBeVisible()
+  await expect(page.getByTestId('who-whom-ru')).toHaveText('я бужу тебя')
+})
+
 test('verbs without a second person get no line', async ({ page }) => {
   await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('წერს')}`)
   await expect(page.getByTestId('verb-tense-present')).toBeVisible()
   await expect(page.getByTestId('verb-who-whom')).toHaveCount(0)
+  await expect(page.getByTestId('verb-who-whom-badge')).toHaveCount(0)
 })

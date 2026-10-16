@@ -36,6 +36,16 @@ export interface VerbEntry {
   onDelete: () => Promise<void>
 }
 
+/** Две встречные стрелки: «я → тебя», «ты → меня». */
+function WhoWhomIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M2 5.5h10M9.5 3l2.5 2.5L9.5 8" />
+      <path d="M14 10.5H4M6.5 8 4 10.5 6.5 13" />
+    </svg>
+  )
+}
+
 /** Подсказка «нажми „ты“ или „он“» — один раз; отметка хранится на сервере (ui/hints.ts). */
 const PERSON_HINT = 'verb_card_person'
 
@@ -151,6 +161,15 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                 )}
                 <div className="mt-2 text-[20px] font-extrabold text-navy">{verb.ru}</div>
               </>
+            )}
+            {/* Значок у самого заголовка: у глагола есть «меня / тебя» — до строки под таблицей можно не долистать. */}
+            {hasWhoWhom(verb.id) && (
+              <button onClick={() => setWhoWhom(true)} data-testid="verb-who-whom-badge"
+                className="jewel-pressable mt-2 inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-jewelInk bg-navy-wash pl-2 pr-3 py-1 text-[12px] font-bold text-navy"
+                style={{ boxShadow: '2px 2px 0 #15100A' }}>
+                <WhoWhomIcon />
+                кто кого: меня, тебя, нас
+              </button>
             )}
           </div>
 
