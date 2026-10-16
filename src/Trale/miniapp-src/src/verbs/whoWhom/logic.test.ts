@@ -11,7 +11,16 @@ const wake = { tenses: {
   present: [['ვაღვიძებ'], ['აღვიძებ'], ['აღვიძებს'], ['ვაღვიძებთ'], ['აღვიძებთ'], ['აღვიძებენ']],
   aorist: [['გავაღვიძე'], ['გააღვიძე'], ['გააღვიძა'], ['გავაღვიძეთ'], ['გააღვიძეთ'], ['გააღვიძეს']]
 } }
-const f = (v: typeof see | typeof wake, t: 'present' | 'aorist' | 'future', who: number, whom: Parameters<typeof formFor>[3]) => formFor(v, t, who, whom)?.form
+// Карточки, собранные агентом на проде (16.10.2026).
+const search = { tenses: {
+  present: [['ვეძებ'], ['ეძებ'], ['ეძებს'], ['ვეძებთ'], ['ეძებთ'], ['ეძებენ']],
+  aorist: [['მოვძებნე'], ['მოძებნე'], ['მოძებნა'], ['მოვძებნეთ'], ['მოძებნეთ'], ['მოძებნეს']]
+} }
+const meet = { tenses: {
+  present: [['ვხვდები'], ['ხვდები'], ['ხვდება'], ['ვხვდებით'], ['ხვდებით'], ['ხვდებიან']],
+  aorist: [['შევხვდი'], ['შეხვდი'], ['შეხვდა'], ['შევხვდით'], ['შეხვდით'], ['შეხვდნენ']]
+} }
+const f = (v: { tenses: Record<string, string[][]> }, t: 'present' | 'aorist' | 'future', who: number, whom: Parameters<typeof formFor>[3]) => formFor(v, t, who, whom)?.form
 
 describe('кто кого', () => {
   it('puts the mark of «whom» where ვ- of «I» stands', () => {
@@ -23,6 +32,15 @@ describe('кто кого', () => {
     expect(f(see, 'aorist', 0, 'you')).toBe('დაგინახე')
     expect(f(wake, 'aorist', 1, 'me')).toBe('გამაღვიძე')
     expect(f(wake, 'present', 0, 'you')).toBe('გაღვიძებ')
+  })
+
+  it('works on «искать» and «встречаться» too', () => {
+    expect(f(search, 'present', 0, 'you')).toBe('გეძებ')
+    expect(f(search, 'present', 2, 'us')).toBe('გვეძებს')
+    expect(f(search, 'aorist', 2, 'me')).toBe('მომძებნა')
+    expect(f(meet, 'present', 1, 'me')).toBe('მხვდები')
+    expect(f(meet, 'present', 0, 'you')).toBe('გხვდები')
+    expect(f(meet, 'aorist', 2, 'me')).toBe('შემხვდა')
   })
 
   it('«you (plural)» adds -თ, which pushes out -ს of «he»; «they» keep their own ending', () => {
