@@ -11,6 +11,8 @@ import { api } from '../api'
 import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
 import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
 import AlphabetInterlude, { ALPHABET_MODULE, alphabetExam, useAlphabetLesson } from '../alphabet/AlphabetInterlude'
+import IntroInterlude, { useIntroLesson } from '../intro/IntroInterlude'
+import { INTRO_MODULE, introExam } from '../intro/story'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeQuestion(d: any): QuizQuestion {
@@ -65,7 +67,25 @@ export default function Practice({
   // Per-answer server credit: XP accumulated mid-lesson, plus the in-flight call
   // so lesson-complete on the final question never races it.
   // Модуль «Алфавит»: урок — цепочка игр со знакомством с буквами и словами, короткая проверка, праздник.
-  const alphabet = useAlphabetLesson(moduleId, lessonId, questions, index)
+  // Модуль «Знакомство»: урок — цепочка сцен истории (новая фраза, правило, игра), короткая проверка, праздник.
+  const intro = useIntroLesson(moduleId, lessonId, questions)
+  const alphabetFlow = useAlphabetLesson(moduleId, lessonId, questions, index)
+  // Ход урока с играми — у того модуля, что включён; у остальных модулей оба ничего не делают.
+  const alphabet = intro.on ? intro : alphabetFlow
+  // После проверки объяснение может оказаться под нижней кнопкой (длинная карточка, длинные варианты) —
+  // прокручиваем к нему.
+  useEffect(() => {
+    if (phase !== 'checked') return
+    const t = setTimeout(() => document.querySelector('[data-feedback]')?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }), 60)
+    return () => clearTimeout(t)
+  }, [phase])
+  // Новый вопрос — с верха экрана: иначе страница остаётся прокрученной к объяснению прошлого, и на iPhone
+  // под липкой шапкой остаётся висеть кусок прошлого вопроса (карточка «Послушай и выбери»).
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [index])
   const answerXpRef = React.useRef(0)
   const pendingAnswerRef = React.useRef<Promise<void> | null>(null)
 
@@ -98,7 +118,7 @@ export default function Practice({
       return
     }
     // Алфавит: урок — цепочка игр, а вопросы — короткая проверка в конце (последние вопросы урока).
-    const played = (moduleId === ALPHABET_MODULE ? alphabetExam(data, lessonId) : data.slice(0, 10)).map(normalizeQuestion)
+    const played = (moduleId === ALPHABET_MODULE ? alphabetExam(data, lessonId) : moduleId === INTRO_MODULE ? introExam(data) : data.slice(0, 10)).map(normalizeQuestion)
     setQuestions(played)
     setPhase('answering')
   }
@@ -170,14 +190,26 @@ export default function Practice({
     )
   }
 
-  if (alphabet.scene) {
+  if (intro.scene) {
+    return (
+      <IntroInterlude
+        scene={intro.scene}
+        lessonId={lessonId}
+        fraction={intro.progress(index, questions.length)}
+        onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
+        onDone={() => intro.sceneDone(navigate)}
+      />
+    )
+  }
+
+  if (alphabetFlow.scene) {
     return (
       <AlphabetInterlude
-        scene={alphabet.scene}
+        scene={alphabetFlow.scene}
         lessonId={lessonId}
-        fraction={alphabet.progress(index, questions.length)}
+        fraction={alphabetFlow.progress(index, questions.length)}
         onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
-        onDone={() => alphabet.sceneDone(navigate)}
+        onDone={() => alphabetFlow.sceneDone(navigate)}
         navigate={navigate}
       />
     )
@@ -364,6 +396,7 @@ export default function Practice({
 
       {/* Question + answer area */}
       <div
+        key={current.id}
         className="flex-1 px-5 pt-6"
         style={{ paddingBottom: isSentenceBuilder ? 'calc(var(--safe-b) + 24px)' : isTypeQuestion ? '16px' : 'calc(var(--safe-b) + 110px)' }}
       >
@@ -424,14 +457,14 @@ export default function Practice({
 
             {/* Feedback banner */}
             {phase === 'checked' && (
-              <FeedbackBanner
+              <div data-feedback><FeedbackBanner
                 isCorrect={isCorrect}
                 body={
                   isCorrect
                     ? (current.explanation || 'Хорошо запомнил — так держать.')
                     : `правильно: ${correctAnswer}`
                 }
-              />
+              /></div>
             )}
           </div>
         ) : (
@@ -503,7 +536,7 @@ export default function Practice({
             </div>
 
             {phase === 'checked' && (
-              <FeedbackBanner
+              <div data-feedback><FeedbackBanner
                 isCorrect={isCorrect}
                 topMargin="mt-6"
                 body={
@@ -527,7 +560,7 @@ export default function Practice({
                         ? 'Хорошо запомнил — так держать.'
                         : 'Запомни правильный вариант и идём дальше.')
                 }
-              />
+              /></div>
             )}
           </>
         )}

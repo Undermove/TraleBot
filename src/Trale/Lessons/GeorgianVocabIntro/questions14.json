@@ -1,0 +1,114 @@
+{
+  "lesson_id": "intro-14",
+  "title": "Из Испании, из Франции",
+  "lexicon": [
+    "საფრანგეთიდან",
+    "მე ვარ საქართველოდან",
+    "საიდან ხარ?",
+    "საქართველოდან"
+  ],
+  "questions": [
+    {
+      "lemma": "საფრანგეთიდან",
+      "question": "Как переводится «საფრანგეთიდან»?",
+      "options": [
+        "из Франции",
+        "как дела?",
+        "здравствуй"
+      ],
+      "answer_index": 0,
+      "explanation": "«საფრანგეთიდან» — из Франции.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro14-q1"
+    },
+    {
+      "lemma": "მე ვარ საქართველოდან",
+      "question": "Как переводится «მე ვარ საქართველოდან»?",
+      "options": [
+        "нет",
+        "хорошо, спасибо",
+        "я из Грузии"
+      ],
+      "answer_index": 2,
+      "explanation": "«მე ვარ საქართველოდან» — я из Грузии.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro14-q2"
+    },
+    {
+      "lemma": "საფრანგეთიდან",
+      "question": "Как сказать «из Франции»?",
+      "options": [
+        "საფრანგეთიდან",
+        "ბოდიში",
+        "საიდან ხარ?"
+      ],
+      "answer_index": 0,
+      "explanation": "«из Франции» — «საფრანგეთიდან».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro14-q3"
+    },
+    {
+      "lemma": "საფრანგეთიდან",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გამარჯობა! მე მქვია ნინო. შენ?",
+        "საღამო მშვიდობისა",
+        "საფრანგეთიდან"
+      ],
+      "answer_index": 2,
+      "explanation": "«საფრანგეთიდან» — из Франции.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/safrangetidan.m4a",
+      "transcript": "საფრანგეთიდან",
+      "id": "intro14-q4"
+    },
+    {
+      "lemma": "საიდან ხარ?",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "კარგად, შენ?",
+        "საიდან ხარ?",
+        "კი"
+      ],
+      "answer_index": 1,
+      "explanation": "«საიდან ხარ?» — откуда ты?.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/saidan.m4a",
+      "transcript": "საიდან ხარ?",
+      "id": "intro14-q5"
+    },
+    {
+      "lemma": "საქართველოდან",
+      "question": "Как сказать «из Грузии»?",
+      "options": [
+        "საფრანგეთიდან",
+        "საქართველო",
+        "საქართველოდან"
+      ],
+      "answer_index": 2,
+      "explanation": "-დან — «из»: საქართველო → საქართველოდან.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro14-q6"
+    }
+  ]
+}

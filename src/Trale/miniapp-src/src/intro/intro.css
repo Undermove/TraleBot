@@ -1,0 +1,41 @@
+/* Анимации сцен «Знакомства». Префикс zn- — чтобы не пересечься с алфавитом (ab-) и остальным мини-аппом. */
+@keyframes zn-pop { 0% { transform: scale(.5); opacity: 0 } 70% { transform: scale(1.06) } 100% { transform: scale(1); opacity: 1 } }
+@keyframes zn-shake { 0%, 100% { transform: translateX(0) } 25% { transform: translateX(-7px) } 50% { transform: translateX(6px) } 75% { transform: translateX(-4px) } }
+@keyframes zn-jump { 0%, 100% { transform: translateY(0) } 35% { transform: translateY(-16px) } 60% { transform: translateY(0) scaleY(.93) } 80% { transform: translateY(-4px) } }
+@keyframes zn-in-left { from { transform: translateX(-140%) } to { transform: translateX(0) } }
+@keyframes zn-in-right { from { transform: translateX(140%) } to { transform: translateX(0) } }
+@keyframes zn-out-left { to { transform: translateX(-160%); opacity: 0 } }
+@keyframes zn-out-right { to { transform: translateX(160%); opacity: 0 } }
+@keyframes zn-fall { to { transform: translateY(48px) rotate(40deg); opacity: 0 } }
+@keyframes zn-stamp { 0% { transform: scale(2.2) rotate(-18deg); opacity: 0 } 60% { transform: scale(.92) rotate(-12deg); opacity: 1 } 100% { transform: scale(1) rotate(-12deg) } }
+@keyframes zn-bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-4px) } }
+@keyframes zn-type { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
+
+.zn-pop { animation: zn-pop 320ms cubic-bezier(.2,.9,.3,1.3) both }
+.zn-shake { animation: zn-shake 380ms ease-in-out }
+.zn-jump { animation: zn-jump 560ms ease-out }
+.zn-in-left { animation: zn-in-left 700ms cubic-bezier(.2,.8,.3,1) both }
+.zn-in-right { animation: zn-in-right 700ms cubic-bezier(.2,.8,.3,1) both }
+.zn-out-left { animation: zn-out-left 700ms ease-in forwards }
+.zn-out-right { animation: zn-out-right 700ms ease-in forwards }
+.zn-fall { display: inline-block; animation: zn-fall 600ms ease-in forwards }
+.zn-stamp { animation: zn-stamp 380ms cubic-bezier(.2,.9,.3,1.2) both }
+.zn-bob { animation: zn-bob 2.2s ease-in-out infinite }
+.zn-dots i { display: inline-block; width: 6px; height: 6px; margin: 0 2px; border-radius: 50%; background: #7A6B52; animation: zn-type 1s infinite }
+.zn-dots i:nth-child(2) { animation-delay: .15s } .zn-dots i:nth-child(3) { animation-delay: .3s }
+
+@media (prefers-reduced-motion: reduce) {
+  .zn-pop, .zn-shake, .zn-jump, .zn-in-left, .zn-in-right, .zn-stamp, .zn-bob, .zn-dots i { animation: none }
+  .zn-out-left, .zn-out-right, .zn-fall { animation: none; opacity: 0 }
+}
+
+/* «Прогулка»: лицо и рука знакомого. fill-box — чтобы точка вращения была у самой детали, где бы на
+   улице ни стоял человек. */
+.zw-blink, .zw-talk, .zw-wave { transform-box: fill-box; }
+.zw-blink { transform-origin: 50% 50%; animation: zw-blink 4.2s infinite; }
+@keyframes zw-blink { 0%, 93%, 100% { transform: scaleY(1) } 96% { transform: scaleY(0.1) } }
+.zw-talk { transform-origin: 50% 50%; animation: zw-talk 180ms ease-in-out infinite alternate; }
+@keyframes zw-talk { from { transform: scaleY(0.35) } to { transform: scaleY(1.15) } }
+.zw-wave { transform-origin: 50% 100%; animation: zw-wave 520ms ease-in-out infinite alternate; }
+@keyframes zw-wave { from { transform: rotate(-14deg) } to { transform: rotate(14deg) } }
+@media (prefers-reduced-motion: reduce) { .zw-blink, .zw-talk, .zw-wave { animation: none; } }

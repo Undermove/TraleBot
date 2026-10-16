@@ -1,0 +1,114 @@
+{
+  "lesson_id": "intro-22",
+  "title": "Я работаю",
+  "lexicon": [
+    "ვმუშაობ",
+    "მე ვცხოვრობ თბილისში",
+    "ქუთაისში",
+    "ვცხოვრობ ბათუმში"
+  ],
+  "questions": [
+    {
+      "lemma": "ვმუშაობ",
+      "question": "Как переводится «ვმუშაობ»?",
+      "options": [
+        "я работаю",
+        "врач",
+        "добрый вечер"
+      ],
+      "answer_index": 0,
+      "explanation": "«ვმუშაობ» — я работаю.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro22-q1"
+    },
+    {
+      "lemma": "მე ვცხოვრობ თბილისში",
+      "question": "Как переводится «მე ვცხოვრობ თბილისში»?",
+      "options": [
+        "здравствуй",
+        "добрый вечер",
+        "я живу в Тбилиси"
+      ],
+      "answer_index": 2,
+      "explanation": "«მე ვცხოვრობ თბილისში» — я живу в Тбилиси.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro22-q2"
+    },
+    {
+      "lemma": "ქუთაისში",
+      "question": "Как переводится «ქუთაისში»?",
+      "options": [
+        "как тебя зовут?",
+        "в Кутаиси",
+        "откуда ты?"
+      ],
+      "answer_index": 1,
+      "explanation": "«ქუთაისში» — в Кутаиси.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro22-q3"
+    },
+    {
+      "lemma": "ვმუშაობ",
+      "question": "Как сказать «я работаю»?",
+      "options": [
+        "ვმუშაობ",
+        "შენ რა პროფესია გაქვს?",
+        "ქუთაისში"
+      ],
+      "answer_index": 0,
+      "explanation": "«я работаю» — «ვმუშაობ».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro22-q4"
+    },
+    {
+      "lemma": "ვმუშაობ",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ვმუშაობ",
+        "კარგად, მადლობა",
+        "ეს ჩემი მეგობარია"
+      ],
+      "answer_index": 0,
+      "explanation": "«ვმუშაობ» — я работаю.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/vmushaob.m4a",
+      "transcript": "ვმუშაობ",
+      "id": "intro22-q5"
+    },
+    {
+      "lemma": "ვცხოვრობ ბათუმში",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ვცხოვრობ ბათუმში",
+        "რა გქვია?",
+        "შენ რა პროფესია გაქვს?"
+      ],
+      "answer_index": 0,
+      "explanation": "«ვცხოვრობ ბათუმში» — живу в Батуми.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/batumshi.m4a",
+      "transcript": "ვცხოვრობ ბათუმში",
+      "id": "intro22-q6"
+    }
+  ]
+}

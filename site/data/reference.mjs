@@ -6,6 +6,8 @@
 //   link.verb('хотеть') → a link to that verb's page, looked up by the catalog's Russian gloss.
 
 const not = (...words) => (ru) => !words.some((w) => ru.toLowerCase().includes(w))
+// Примеры «Знакомства» в теории идут с разбором по словам в скобках: «Как дела? (როგორ — как, …)». В диалоге — без разбора.
+const plain = (xs) => xs.map((x) => ({ ...x, ru: x.ru.replace(/\s*\([^()]+ — .*$/, '') }))
 const has = (...words) => (ru) => words.some((w) => ru.toLowerCase().includes(w))
 
 const CTA = {
@@ -44,10 +46,10 @@ export function referenceDefs(S, link) {
       lead: 'Слова, с которых начинается любой разговор: поздороваться, поблагодарить, извиниться, переспросить.',
       cta: CTA.phrases, related: ['/phrases/intro/', '/phrases/cafe/', '/grammar/alphabet/'],
       blocks: [
-        { h2: 'Поздороваться и попрощаться', id: 'hello', short: 'Здравствуйте', items: S.list('intro', 1), ru: { 'здравствуй': 'здравствуйте, привет' } },
-        { h2: 'Спасибо, извините, да и нет', id: 'thanks', short: 'Спасибо', items: S.list('intro', 6) },
-        { h2: 'Если не понял', id: 'again', short: 'Не понимаю', items: S.list('intro', 7), where: not('помогите', 'врач') },
-        { h2: 'Короткий диалог', id: 'dialogue', short: 'Диалог', dialogue: true, items: S.examples('intro', 1) }
+        { h2: 'Поздороваться и попрощаться', id: 'hello', short: 'Здравствуйте', items: [...S.list('intro', 1), ...S.list('intro', 2), ...S.list('intro', 3)], ru: { 'здравствуй': 'здравствуйте, привет' } },
+        { h2: 'Спасибо, извините, да и нет', id: 'thanks', short: 'Спасибо', items: S.list('intro', 5) },
+        { h2: 'Если не понял', id: 'again', short: 'Не понимаю', items: [...S.list('emergency', 3), ...S.list('emergency', 4)], where: not('помоги', 'полици', 'потерял', 'посольств') },
+        { h2: 'Короткий диалог', id: 'dialogue', short: 'Диалог', dialogue: true, items: plain([...S.examples('intro', 3), ...S.examples('intro', 4)]) }
       ]
     },
     {
@@ -59,9 +61,9 @@ export function referenceDefs(S, link) {
       lead: 'Назвать имя, сказать, откуда ты и чем занимаешься, и спросить то же у собеседника.',
       cta: CTA.phrases, related: ['/phrases/greetings/', '/words/family/', '/words/pronouns/'],
       blocks: [
-        { h2: 'Имя и откуда ты', id: 'name', items: S.list('intro', 2), where: not('семья') },
-        { h2: 'О себе', id: 'about', items: S.list('intro', 4) },
-        { h2: 'Как это звучит в разговоре', id: 'dialogue', short: 'Диалог', dialogue: true, items: [...S.examples('intro', 5), ...S.examples('intro', 2), ...S.examples('intro', 4)] },
+        { h2: 'Имя и откуда ты', id: 'name', items: [...S.list('intro', 7, 0), ...S.list('intro', 9), ...S.list('intro', 13), ...S.list('intro', 14, 0)], where: not('нино', 'карлос') },
+        { h2: 'О себе', id: 'about', items: [...S.list('intro', 18, 0), ...S.list('intro', 20, 0), ...S.list('intro', 21, 0), ...S.list('intro', 22), ...S.list('intro', 10), ...S.list('intro', 31)] },
+        { h2: 'Как это звучит в разговоре', id: 'dialogue', short: 'Диалог', dialogue: true, items: plain([...S.examples('intro', 9), ...S.examples('intro', 13), ...S.examples('intro', 18), ...S.examples('intro', 20), ...S.examples('intro', 23)]) },
         { html: `<p>В этих фразах работают глаголы ${link.verb('быть')}, ${link.verb('жить')} и ${link.verb('иметь')} — у каждого есть таблица по лицам и временам.</p>` }
       ]
     },
@@ -202,8 +204,8 @@ export function referenceDefs(S, link) {
       lead: 'Мама, папа, брат, сестра, сын, дочь, муж, жена — и как сказать, что они у тебя есть.',
       cta: CTA.words, related: ['/grammar/have/', '/words/pronouns/', '/phrases/intro/'],
       blocks: [
-        { h2: '', id: 'family', items: S.list('intro', 3, 0) },
-        { h2: 'У меня есть брат и сестра', id: 'have', dialogue: true, items: S.examples('intro', 3).slice(0, 1) },
+        { h2: '', id: 'family', items: [...S.list('intro', 25), ...S.list('intro', 26), ...S.list('intro', 29)] },
+        { h2: 'У меня есть брат и сестра', id: 'have', dialogue: true, items: plain(S.examples('intro', 27)).slice(0, 1) },
         { html: `<p>«У меня есть» о людях — форма глагола ${link.verb('иметь (кого-то)')}. О вещах говорят другим глаголом — разница разобрана на странице <a href="/grammar/have/">«У меня есть» по-грузински</a>.</p>` }
       ]
     },

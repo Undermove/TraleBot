@@ -1,0 +1,178 @@
+{
+  "lesson_id": "intro-29",
+  "title": "Муж и жена, сын и дочь",
+  "lexicon": [
+    "ქმარი",
+    "ცოლი",
+    "ვაჟი",
+    "ქალიშვილი"
+  ],
+  "questions": [
+    {
+      "lemma": "ქმარი",
+      "question": "Как переводится «ქმარი»?",
+      "options": [
+        "у меня есть собака",
+        "муж",
+        "мама"
+      ],
+      "answer_index": 1,
+      "explanation": "«ქმარი» — муж.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q1"
+    },
+    {
+      "lemma": "ცოლი",
+      "question": "Как переводится «ცოლი»?",
+      "options": [
+        "хорошо, а ты?",
+        "жена",
+        "добрый вечер"
+      ],
+      "answer_index": 1,
+      "explanation": "«ცოლი» — жена.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q2"
+    },
+    {
+      "lemma": "ვაჟი",
+      "question": "Как переводится «ვაჟი»?",
+      "options": [
+        "сын",
+        "он/она учитель",
+        "живу в Батуми"
+      ],
+      "answer_index": 0,
+      "explanation": "«ვაჟი» — сын.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q3"
+    },
+    {
+      "lemma": "ქალიშვილი",
+      "question": "Как переводится «ქალიშვილი»?",
+      "options": [
+        "дочь",
+        "Приятно! Тебе нравится Грузия?",
+        "хорошо, а ты?"
+      ],
+      "answer_index": 0,
+      "explanation": "«ქალიშვილი» — дочь.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q4"
+    },
+    {
+      "lemma": "ქმარი",
+      "question": "Как сказать «муж»?",
+      "options": [
+        "გაგიმარჯოს",
+        "ქმარი",
+        "ოჯახი"
+      ],
+      "answer_index": 1,
+      "explanation": "«муж» — «ქმარი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q5"
+    },
+    {
+      "lemma": "ცოლი",
+      "question": "Как сказать «жена»?",
+      "options": [
+        "ვინ არის ეს?",
+        "ცოლი",
+        "ძმა"
+      ],
+      "answer_index": 1,
+      "explanation": "«жена» — «ცოლი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q6"
+    },
+    {
+      "lemma": "ვაჟი",
+      "question": "Как сказать «сын»?",
+      "options": [
+        "ვაჟი",
+        "სასიამოვნოა! საქართველო მოგწონს?",
+        "საქართველო ძალიან ლამაზია"
+      ],
+      "answer_index": 0,
+      "explanation": "«сын» — «ვაჟი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q7"
+    },
+    {
+      "lemma": "ქალიშვილი",
+      "question": "Как сказать «дочь»?",
+      "options": [
+        "რა გქვია?",
+        "მე ვარ ესპანეთიდან",
+        "ქალიშვილი"
+      ],
+      "answer_index": 2,
+      "explanation": "«дочь» — «ქალიშვილი».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro29-q8"
+    },
+    {
+      "lemma": "ქმარი",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "შენ რა პროფესია გაქვს?",
+        "ქმარი",
+        "რა გქვია?"
+      ],
+      "answer_index": 1,
+      "explanation": "«ქმარი» — муж.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/kmari.m4a",
+      "transcript": "ქმარი",
+      "id": "intro29-q9"
+    },
+    {
+      "lemma": "ცოლი",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ცოლი",
+        "სასიამოვნოა! საქართველო მოგწონს?",
+        "მე მქვია კარლოსი"
+      ],
+      "answer_index": 0,
+      "explanation": "«ცოლი» — жена.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/coli.m4a",
+      "transcript": "ცოლი",
+      "id": "intro29-q10"
+    }
+  ]
+}

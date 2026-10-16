@@ -108,11 +108,11 @@ public class LessonVerbAnnotationTests : TestBase
     [Test]
     public async Task Verb_that_appears_only_among_wrong_options_is_not_annotated()
     {
-        // intro1-q11 («что сказать, уходя из гостей»): the correct answer is a farewell, not a verb,
-        // while one wrong option is a phrase with a form of the catalog verb "to be".
-        var hits = await AnnotateLesson("intro", 1, Viewer(withAccess: true), "intro1-q11");
+        // intro3-leave («что сказать на прощание»): the correct answer is a farewell, not a verb,
+        // while one wrong option is «როგორ ხარ?» — a form of the catalog verb "to be".
+        var hits = await AnnotateLesson("intro", 3, Viewer(withAccess: true), "intro3-leave");
 
-        hits["intro1-q11"].Should().BeNull(because: "a distractor's verb is not what the question is about");
+        hits["intro3-leave"].Should().BeNull(because: "a distractor's verb is not what the question is about");
     }
 
     [Test]

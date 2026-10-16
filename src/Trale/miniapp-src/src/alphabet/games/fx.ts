@@ -158,6 +158,36 @@ export function playClip(url: string): Promise<void> {
   return safePlay(el).catch(() => {})
 }
 
+/**
+ * Сыграть запись до конца: обещание выполняется, когда она доиграла (или не смогла играть, или её
+ * остановили). Для разговоров, где следующая реплика ждёт, пока договорят предыдущую.
+ * maxMs — страховка: событие ended может не прийти (браузер без звука, выключен звук в мини-аппе).
+ */
+export function playClipToEnd(url: string, maxMs = 6000): Promise<void> {
+  if (muted) return Promise.resolve()
+  const el = clip(url)
+  if (!el) return Promise.resolve()
+  return new Promise<void>(resolve => {
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      for (const ev of ['ended', 'error', 'pause'] as const) el.removeEventListener(ev, finish)
+      resolve()
+    }
+    const timer = setTimeout(finish, maxMs)
+    try { el.pause(); el.currentTime = 0; el.muted = false } catch { /* ещё не загрузилась */ }
+    for (const ev of ['ended', 'error', 'pause'] as const) el.addEventListener(ev, finish)
+    safePlay(el).catch(finish)
+  })
+}
+
+/** Остановить все записи — чтобы новая реплика не легла поверх старой. */
+export function stopClips() {
+  for (const el of clips.values()) { try { if (!el.paused) el.pause() } catch { /* нечего останавливать */ } }
+}
+
 /** Один тон: частота от f0 к f1, громкость спадает. */
 function tone(f0: number, f1: number, ms: number, type: OscillatorType = 'sine', gain = 0.16, delay = 0) {
   withAudio(a => {

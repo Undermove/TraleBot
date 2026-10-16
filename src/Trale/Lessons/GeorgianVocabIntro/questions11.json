@@ -1,0 +1,144 @@
+{
+  "lesson_id": "intro-11",
+  "title": "Кто это?",
+  "lexicon": [
+    "ვინ არის ეს?",
+    "ეს ჩემი მეგობარია"
+  ],
+  "questions": [
+    {
+      "lemma": "ვინ არის ეს?",
+      "question": "Как переводится «ვინ არის ეს?»?",
+      "options": [
+        "до свидания",
+        "кто это?",
+        "меня зовут Карлос"
+      ],
+      "answer_index": 1,
+      "explanation": "«ვინ არის ეს?» — кто это?.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro11-q1"
+    },
+    {
+      "lemma": "ეს ჩემი მეგობარია",
+      "question": "Как переводится «ეს ჩემი მეგობარია»?",
+      "options": [
+        "спасибо",
+        "это мой друг",
+        "хорошо, спасибо"
+      ],
+      "answer_index": 1,
+      "explanation": "«ეს ჩემი მეგობარია» — это мой друг.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro11-q2"
+    },
+    {
+      "lemma": "ვინ არის ეს?",
+      "question": "Как сказать «кто это?»?",
+      "options": [
+        "მე მქვია",
+        "მე მქვია კარლოსი",
+        "ვინ არის ეს?"
+      ],
+      "answer_index": 2,
+      "explanation": "«кто это?» — «ვინ არის ეს?».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro11-q3"
+    },
+    {
+      "lemma": "ეს ჩემი მეგობარია",
+      "question": "Как сказать «это мой друг»?",
+      "options": [
+        "ეს ჩემი მეგობარია",
+        "დილა მშვიდობისა",
+        "ბოდიში"
+      ],
+      "answer_index": 0,
+      "explanation": "«это мой друг» — «ეს ჩემი მეგობარია».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro11-q4"
+    },
+    {
+      "lemma": "ვინ არის ეს?",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "მე მქვია კარლოსი",
+        "ვინ არის ეს?",
+        "ეს ჩემი მეგობარია"
+      ],
+      "answer_index": 1,
+      "explanation": "«ვინ არის ეს?» — кто это?.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/vin_aris.m4a",
+      "transcript": "ვინ არის ეს?",
+      "id": "intro11-q5"
+    },
+    {
+      "lemma": "ეს ჩემი მეგობარია",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "კარგად, მადლობა",
+        "მე მქვია",
+        "ეს ჩემი მეგობარია"
+      ],
+      "answer_index": 2,
+      "explanation": "«ეს ჩემი მეგობარია» — это мой друг.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/es_chemi_megobaria.m4a",
+      "transcript": "ეს ჩემი მეგობარია",
+      "id": "intro11-q6"
+    },
+    {
+      "lemma": "ვინ არის ეს?",
+      "question": "Нино показывает на человека на фото. Как спросить, кто это?",
+      "options": [
+        "რა გქვია?",
+        "ვინ არის ეს?",
+        "როგორ ხარ?"
+      ],
+      "answer_index": 1,
+      "explanation": "«ვინ არის ეს?» — кто это?.",
+      "tags": [
+        "context"
+      ],
+      "difficulty": 1,
+      "id": "intro11-q7"
+    },
+    {
+      "lemma": "ეს ჩემი მეგობარია",
+      "question": "Ты знакомишь Нино со своим другом. Что сказать?",
+      "options": [
+        "ეს ჩემი მეგობარია",
+        "ვინ არის ეს?",
+        "სასიამოვნოა"
+      ],
+      "answer_index": 0,
+      "explanation": "«ეს ჩემი მეგობარია» — это мой друг.",
+      "tags": [
+        "context"
+      ],
+      "difficulty": 1,
+      "id": "intro11-q8"
+    }
+  ]
+}

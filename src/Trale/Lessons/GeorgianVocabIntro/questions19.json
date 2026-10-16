@@ -1,0 +1,111 @@
+{
+  "lesson_id": "intro-19",
+  "title": "Таксист спрашивает",
+  "lexicon": [
+    "ქუთაისში",
+    "მე ვცხოვრობ თბილისში",
+    "ბათუმში",
+    "თბილისში"
+  ],
+  "questions": [
+    {
+      "lemma": "ქუთაისში",
+      "question": "Как переводится «ქუთაისში»?",
+      "options": [
+        "откуда ты?",
+        "в Кутаиси",
+        "да"
+      ],
+      "answer_index": 1,
+      "explanation": "«ქუთაისში» — в Кутаиси.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro19-q1"
+    },
+    {
+      "lemma": "მე ვცხოვრობ თბილისში",
+      "question": "Как переводится «მე ვცხოვრობ თბილისში»?",
+      "options": [
+        "я живу в Тбилиси",
+        "добрый вечер",
+        "я из Испании"
+      ],
+      "answer_index": 0,
+      "explanation": "«მე ვცხოვრობ თბილისში» — я живу в Тбилиси.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro19-q2"
+    },
+    {
+      "lemma": "ქუთაისში",
+      "question": "Как сказать «в Кутаиси»?",
+      "options": [
+        "საფრანგეთიდან",
+        "რა გქვია?",
+        "ქუთაისში"
+      ],
+      "answer_index": 2,
+      "explanation": "«в Кутаиси» — «ქუთაისში».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro19-q3"
+    },
+    {
+      "lemma": "ქუთაისში",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "გამარჯობა! მე მქვია ნინო. შენ?",
+        "ქუთაისში",
+        "რა გქვია?"
+      ],
+      "answer_index": 1,
+      "explanation": "«ქუთაისში» — в Кутаиси.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/kutaisshi.m4a",
+      "transcript": "ქუთაისში",
+      "id": "intro19-q4"
+    },
+    {
+      "lemma": "ბათუმში",
+      "question": "Как сказать «в Батуми»?",
+      "options": [
+        "ბათუმში",
+        "ბათუმი",
+        "თბილისში"
+      ],
+      "answer_index": 0,
+      "explanation": "-ში — «в», последняя ი уходит: ბათუმი → ბათუმში.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro19-q5"
+    },
+    {
+      "lemma": "თბილისში",
+      "question": "Как сказать «в Тбилиси»?",
+      "options": [
+        "თბილისი",
+        "თბილისში",
+        "ქუთაისში"
+      ],
+      "answer_index": 1,
+      "explanation": "-ში — «в», последняя ი уходит: თბილისი → თბილისში.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro19-q6"
+    }
+  ]
+}

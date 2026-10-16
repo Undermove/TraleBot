@@ -1,0 +1,161 @@
+{
+  "lesson_id": "intro-13",
+  "title": "Откуда ты?",
+  "lexicon": [
+    "საიდან ხარ?",
+    "მე ვარ საქართველოდან",
+    "მე ვარ ესპანეთიდან"
+  ],
+  "questions": [
+    {
+      "lemma": "საიდან ხარ?",
+      "question": "Как переводится «საიდან ხარ?»?",
+      "options": [
+        "хорошо, спасибо",
+        "откуда ты?",
+        "Привет! Меня зовут Нино. А тебя?"
+      ],
+      "answer_index": 1,
+      "explanation": "«საიდან ხარ?» — откуда ты?.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro13-q1"
+    },
+    {
+      "lemma": "მე ვარ საქართველოდან",
+      "question": "Как переводится «მე ვარ საქართველოდან»?",
+      "options": [
+        "я из Грузии",
+        "до свидания",
+        "спасибо"
+      ],
+      "answer_index": 0,
+      "explanation": "«მე ვარ საქართველოდან» — я из Грузии.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro13-q2"
+    },
+    {
+      "lemma": "მე ვარ ესპანეთიდან",
+      "question": "Как переводится «მე ვარ ესპანეთიდან»?",
+      "options": [
+        "я из Испании",
+        "хорошо, а ты?",
+        "кто это?"
+      ],
+      "answer_index": 0,
+      "explanation": "«მე ვარ ესპანეთიდან» — я из Испании.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro13-q3"
+    },
+    {
+      "lemma": "საიდან ხარ?",
+      "question": "Как сказать «откуда ты?»?",
+      "options": [
+        "რა გქვია?",
+        "დილა მშვიდობისა",
+        "საიდან ხარ?"
+      ],
+      "answer_index": 2,
+      "explanation": "«откуда ты?» — «საიდან ხარ?».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro13-q4"
+    },
+    {
+      "lemma": "მე ვარ საქართველოდან",
+      "question": "Как сказать «я из Грузии»?",
+      "options": [
+        "გამარჯობა",
+        "მე ვარ საქართველოდან",
+        "ვინ არის ეს?"
+      ],
+      "answer_index": 1,
+      "explanation": "«я из Грузии» — «მე ვარ საქართველოდან».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro13-q5"
+    },
+    {
+      "lemma": "მე ვარ ესპანეთიდან",
+      "question": "Как сказать «я из Испании»?",
+      "options": [
+        "მე ვარ ესპანეთიდან",
+        "მადლობა",
+        "გაგიმარჯოს"
+      ],
+      "answer_index": 0,
+      "explanation": "«я из Испании» — «მე ვარ ესპანეთიდან».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro13-q6"
+    },
+    {
+      "lemma": "საიდან ხარ?",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "არა",
+        "კარგად, მადლობა",
+        "საიდან ხარ?"
+      ],
+      "answer_index": 2,
+      "explanation": "«საიდან ხარ?» — откуда ты?.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/saidan.m4a",
+      "transcript": "საიდან ხარ?",
+      "id": "intro13-q7"
+    },
+    {
+      "lemma": "მე ვარ საქართველოდან",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "მე ვარ საქართველოდან",
+        "გაგიმარჯოს",
+        "როგორ ხარ?"
+      ],
+      "answer_index": 0,
+      "explanation": "«მე ვარ საქართველოდან» — я из Грузии.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/sakartvelodan.m4a",
+      "transcript": "მე ვარ საქართველოდან",
+      "id": "intro13-q8"
+    },
+    {
+      "lemma": "საიდან ხარ?",
+      "question": "Ты хочешь узнать, откуда человек. Что спросить?",
+      "options": [
+        "როგორ ხარ?",
+        "საიდან ხარ?",
+        "რა გქვია?"
+      ],
+      "answer_index": 1,
+      "explanation": "«საიდან ხარ?» — откуда ты?.",
+      "tags": [
+        "context"
+      ],
+      "difficulty": 1,
+      "id": "intro13-q9"
+    }
+  ]
+}

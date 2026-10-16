@@ -6,13 +6,16 @@
  * в тестах и на стенде ?alphabet-lab. Сервер сам отбрасывает незнакомые события.
  *
  * Общий для модулей: lessonFlow.open(модуль, урок) → step(позиция, вид) → done()/skip() → end('lesson_complete'|'lesson_fail')
- * или exit() (ушёл посреди урока). Сейчас размечен только алфавит.
+ * или exit() (ушёл посреди урока). Размечены алфавит и «Знакомство».
  */
 
 export type StepKind =
   | 'opener' | 'letter-intro' | 'how-to-write' | 'catch' | 'sound-letter' | 'pairs' | 'new-word' | 'morph'
   | 'assemble' | 'dialogue' | 'cafe' | 'check' | 'finale' | 'lesson'
   | 'greeting' | 'first-word' | 'tour' | 'celebration'
+  // «Знакомство» (ModuleId "intro").
+  | 'new-phrase' | 'rule' | 'yard' | 'walk' | 'bakery' | 'pingpong' | 'minibus' | 'elevator' | 'party' | 'magnets' | 'border' | 'reception' | 'detective' | 'chat' | 'taxi'
+  | 'family' | 'havesort' | 'aboutme' | 'supra'
 export type LessonEventName =
   | 'lesson_open' | 'step_start' | 'step_done' | 'step_skip' | 'lesson_complete' | 'lesson_fail' | 'lesson_exit'
 
@@ -44,7 +47,7 @@ export function trackingEnabled(): boolean {
     if (sender) return true
     if ((import.meta as any).env?.MODE === 'test') return false
     if (typeof window === 'undefined') return false
-    if (new URLSearchParams(window.location.search).has('alphabet-lab')) return false
+    if (new URLSearchParams(window.location.search).has('alphabet-lab') || new URLSearchParams(window.location.search).has('intro-lab')) return false
     // e2e: вне Telegram SDK оставляет initData пустым — тест включает трекер явно.
     if ((window as any).__lessonEventsOn === true) return true
     return initData() !== ''

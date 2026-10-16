@@ -1,0 +1,122 @@
+{
+  "lesson_id": "intro-28",
+  "title": "У меня есть машина",
+  "lexicon": [
+    "მე მაქვს მანქანა",
+    "მყავს",
+    "მაქვს"
+  ],
+  "questions": [
+    {
+      "lemma": "მე მაქვს მანქანა",
+      "question": "Как переводится «მე მაქვს მანქანა»?",
+      "options": [
+        "извините",
+        "врач",
+        "у меня есть машина"
+      ],
+      "answer_index": 2,
+      "explanation": "«მე მაქვს მანქანა» — у меня есть машина.",
+      "tags": [
+        "meaning"
+      ],
+      "difficulty": 1,
+      "id": "intro28-q1"
+    },
+    {
+      "lemma": "მე მაქვს მანქანა",
+      "question": "Как сказать «у меня есть машина»?",
+      "options": [
+        "მადლობა",
+        "ძმა",
+        "მე მაქვს მანქანა"
+      ],
+      "answer_index": 2,
+      "explanation": "«у меня есть машина» — «მე მაქვს მანქანა».",
+      "tags": [
+        "reverse"
+      ],
+      "difficulty": 1,
+      "id": "intro28-q2"
+    },
+    {
+      "lemma": "მე მაქვს მანქანა",
+      "question": "Послушай и выбери, что сказали",
+      "options": [
+        "ვინ არის ეს?",
+        "მე მაქვს მანქანა",
+        "ექიმი"
+      ],
+      "answer_index": 1,
+      "explanation": "«მე მაქვს მანქანა» — у меня есть машина.",
+      "tags": [
+        "audio"
+      ],
+      "difficulty": 1,
+      "question_type": "audio-choice",
+      "audio_url": "/audio/intro-story/makvs_manqana.m4a",
+      "transcript": "მე მაქვს მანქანა",
+      "id": "intro28-q3"
+    },
+    {
+      "lemma": "მყავს",
+      "question": "Как сказать «у меня есть ребёнок»?",
+      "options": [
+        "მე მყავს ბავშვი",
+        "მე მაქვს ბავშვი"
+      ],
+      "answer_index": 0,
+      "explanation": "ბავშვი — живое: მყავს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro28-q4"
+    },
+    {
+      "lemma": "მყავს",
+      "question": "Как сказать «у меня есть муж»?",
+      "options": [
+        "მე მაქვს ქმარი",
+        "მე მყავს ქმარი"
+      ],
+      "answer_index": 1,
+      "explanation": "ქმარი — живое: მყავს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro28-q5"
+    },
+    {
+      "lemma": "მაქვს",
+      "question": "Как сказать «у меня есть кофе»?",
+      "options": [
+        "მე მყავს ყავა",
+        "მე მაქვს ყავა"
+      ],
+      "answer_index": 1,
+      "explanation": "ყავა — вещь: მაქვს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro28-q6"
+    },
+    {
+      "lemma": "მაქვს",
+      "question": "Как сказать «у меня есть хачапури»?",
+      "options": [
+        "მე მყავს ხაჭაპური",
+        "მე მაქვს ხაჭაპური"
+      ],
+      "answer_index": 1,
+      "explanation": "ხაჭაპური — вещь: მაქვს.",
+      "tags": [
+        "rule"
+      ],
+      "difficulty": 1,
+      "id": "intro28-q7"
+    }
+  ]
+}
