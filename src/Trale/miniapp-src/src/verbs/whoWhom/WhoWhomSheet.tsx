@@ -6,7 +6,7 @@ import { OVERLAY, useOverlay } from '../ui/overlayStack'
 import { useSheetDrag } from '../ui/useSheetDrag'
 import { haptic } from '../../alphabet/games/fx'
 import '../../alphabet/games/alphabet.css'
-import { ATTESTED, WHOMS, WHOS, WHO_WHOM_TENSES, flip, formFor, possible, sameSpelling, whomOf, type Cell, type Whom } from './logic'
+import { ATTESTED, WHOMS, WHOM_LABEL, WHOS, WHO_WHOM_TENSES, flip, formFor, objectCaseOf, possible, sameSpelling, whomOf, type Cell, type Whom } from './logic'
 
 /** Слово с подсвеченной меткой «кого». */
 function Marked({ cell, className = '' }: { cell: Cell; className?: string }) {
@@ -60,8 +60,10 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
     setWho(f.who); setWhom(f.whom); setSpin(s => s + 1)
   }
 
+  const kase = (verb && objectCaseOf(verb)) || 'acc'
+  const ru = (w: Whom) => whomOf(w).ru[kase]
   const now = verb ? formFor(verb, 'present', who, whom) : null
-  const same = verb ? sameSpelling(verb, 'present', who, whom) : []
+  const same = verb ? sameSpelling(verb, 'present', who, whom, kase) : []
 
   return (
     <div
@@ -86,13 +88,13 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
             <div className="mn-eyebrow text-navy">правило</div>
             <h2 className="text-[24px] font-extrabold leading-tight">Кто кого{verb && <span className="text-navy"> · {verb.ru}</span>}</h2>
             <p className="mt-1 text-[13px] text-jewelInk-soft">
-              Грузинский глагол говорит не только <b>кто</b>, но и <b>кого</b> — буквой в начале слова.
+              Грузинский глагол говорит не только <b>кто</b>, но и <b>{WHOM_LABEL[kase]}</b> — буквой в начале слова.
             </p>
           </div>
 
           {/* Метки — все сразу: их всего три. */}
           <div className="flex flex-wrap justify-center gap-1.5 text-[12px]" data-testid="who-whom-marks">
-            {[['მ', 'меня'], ['გ', 'тебя'], ['გვ', 'нас'], ['გ…თ', 'вас'], ['—', 'его, их']].map(([m, ru]) => (
+            {[['მ', ru('me')], ['გ', ru('you')], ['გვ', ru('us')], ['გ…თ', ru('youpl')], ['—', `${ru('him')}, ${ru('them')}`]].map(([m, ru]) => (
               <span key={ru} className="rounded-full border-[1.5px] border-jewelInk bg-cream-tile px-2.5 py-0.5 font-bold">
                 <span className="font-geo text-ruby">{m}</span> {ru}
               </span>
@@ -101,14 +103,14 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
 
           <div className="rounded-xl bg-cream-tile border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }}>
             <Pick label="кто" items={WHOS} active={who} onPick={pickWho} testid="who" />
-            <Pick label="кого" items={WHOMS.map(w => w.ru)} active={WHOMS.findIndex(w => w.key === whom)}
+            <Pick label={WHOM_LABEL[kase]} items={WHOMS.map(w => w.ru[kase].replace(/^со? /, ''))} active={WHOMS.findIndex(w => w.key === whom)}
               disabled={WHOMS.map(w => !possible(who, w.key))} onPick={i => { haptic('tap'); setWhom(WHOMS[i].key) }} testid="whom" />
 
             <div className="px-4 pt-4 pb-3 text-center border-t border-cream-edge">
               {verb && now ? (
                 <div key={spin} className="ab-deal">
                   <div className="text-[15px] font-bold text-jewelInk" data-testid="who-whom-ru">
-                    {meaningOf(verb, 'present', who).text} {whomOf(whom).ru}
+                    {meaningOf(verb, 'present', who).text} {ru(whom)}
                   </div>
                   <Marked cell={now} className="block mt-1 text-[34px] font-extrabold leading-none" />
                   <div className="mt-1 text-[13px] text-jewelInk-hint">{cyr(now.form)}</div>
@@ -120,7 +122,7 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
                 <span aria-hidden>⇄</span> поменять стороны
               </button>
               {verb && <div className="mt-1 text-[12px] text-jewelInk-mid">
-                {meaningOf(verb, 'present', flip(who, whom).who).text} {whomOf(flip(who, whom).whom).ru}
+                {meaningOf(verb, 'present', flip(who, whom).who).text} {ru(flip(who, whom).whom)}
               </div>}
             </div>
 
@@ -130,7 +132,7 @@ export default function WhoWhomSheet({ verbId, onClose }: { verbId: string; onCl
               return (
                 <div key={t} className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-cream-edge" data-testid={`who-whom-${t}`}>
                   <span className="min-w-0">
-                    <span className="block text-[14px] font-bold">{meaningOf(verb, t, who).text} {whomOf(whom).ru}</span>
+                    <span className="block text-[14px] font-bold">{meaningOf(verb, t, who).text} {ru(whom)}</span>
                     <span className="block text-[11px] text-jewelInk-hint">{TENSES[t].name}</span>
                   </span>
                   <span className="text-right">

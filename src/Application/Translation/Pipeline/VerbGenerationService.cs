@@ -240,7 +240,7 @@ public class VerbGenerationService(
                         new VerbReviewRequest(
                             request.Text, request.IsRussian, askedInfinitive, draft.Lemma, draft.Masdar.FirstOrDefault(), glosses,
                             draft.Tenses, shown.Meanings.Meanings, shown.Matched?.Form, shown.Matched?.Tense, shown.Matched?.Person,
-                            shown.Evidence, shown.Missing, shown.Added, PreverbMasdar(draft)),
+                            shown.Evidence, shown.Missing, shown.Added, PreverbMasdar(draft), WhomEvidence(draft)),
                         timeout.Token);
                 }
 
@@ -276,6 +276,12 @@ public class VerbGenerationService(
                         draft = draft with { Masdar = draft.Masdar.Where(m => m == draft.HeadMasdar).ToList() };
                     }
 
+                    // Nor «кто кого»: the verb is stored without it.
+                    if (review.ObjectPersonWrong)
+                    {
+                        draft = draft with { ObjectPerson = null };
+                    }
+
                     var provenance = Provenance(request.Text, round, shown.Evidence, review, lastDraft.Missing, shown.Added);
                     if (preview)
                     {
@@ -307,6 +313,40 @@ public class VerbGenerationService(
     }
 
     private static string? PreverbMasdar(VerbParadigm draft) => draft.Masdar.FirstOrDefault(m => m != draft.HeadMasdar);
+
+    /// <summary>
+    /// «Кто кого» is kept only when the forms the model recalls are the forms the rule gives: two
+    /// independent ways to the same word. Otherwise the verb is stored without it — never sent back for it.
+    /// </summary>
+    private static string? ObjectPersonOf(GeneratedVerb written, IReadOnlyDictionary<string, string[][]> tenses)
+    {
+        var claimed = ObjectPerson.Case(written.ObjectPerson);
+        if (claimed == null)
+        {
+            return null;
+        }
+
+        var (youMe, iYou) = ObjectPerson.Controls(tenses);
+        return youMe != null && iYou != null && youMe == written.ObjectYouMe?.Trim() && iYou == written.ObjectIYou?.Trim()
+            ? claimed
+            : null;
+    }
+
+    private ObjectPersonEvidence? WhomEvidence(VerbParadigm draft)
+    {
+        if (draft.ObjectPerson == null || !draft.Tenses.TryGetValue("present", out var present))
+        {
+            return null;
+        }
+
+        var examples = new[] { ("you → me", 1, "me"), ("I → you", 0, "you"), ("he → us", 2, "us") }
+            .Select(e => (e.Item1, Form: ObjectPerson.Form(present, e.Item2, e.Item3)))
+            .Where(e => e.Form != null)
+            .Select(e => $"{e.Item1}: {e.Form}")
+            .ToList();
+        var all = ObjectPerson.AllForms(draft.Tenses);
+        return new ObjectPersonEvidence(draft.ObjectPerson, examples, all.Count(lexicon.IsAttested), all.Count);
+    }
 
     /// <summary>Main tenses the record has no row for, in the card's order. The present is a gate, not a gap.</summary>
     public static IReadOnlyList<string> MissingMainTenses(IReadOnlyDictionary<string, string[][]> tenses) =>
@@ -504,7 +544,8 @@ public class VerbGenerationService(
         // With a preverb (მოძებნა next to ძებნა): kept next to the plain one, which stays the title.
         var withPreverb = written.MasdarWithPreverb?.Trim();
         var masdar = new[] { plain, IsGeorgianWord(withPreverb) && withPreverb != plain ? withPreverb : null }.OfType<string>().ToArray();
-        var draft = new VerbParadigm(lemma, masdar, tenses, [], Source: null, Revid: null, HeadMasdar: plain);
+        var draft = new VerbParadigm(lemma, masdar, tenses, [], Source: null, Revid: null, HeadMasdar: plain,
+            ObjectPerson: ObjectPersonOf(written, tenses));
         if (askedWords.Count > 0 && !askedWords.Any(draft.Contains))
         {
             problems.Add($"the looked-up word {string.Join(" ", askedWords)} is not among the forms you wrote: " +

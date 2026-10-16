@@ -18,6 +18,10 @@
 //   sentences.manual.json [{ id, ka, ru, source, why }] — примеры, вписанные руками взамен вычеркнутых:
 //                       id отрицательный (не пересекается с Tatoeba), грузинский текст — только из
 //                       названного источника (уроки этого репозитория), не из головы
+//   object-person.json { лемма: { ru, case, attested } } — глаголы «кто кого»: в начале слова видно, кого
+//                       («вижу тебя» — გხედავ). case — падеж по-русски: acc «вижу тебя», dat «показываю
+//                       тебе». attested — формы «меня / тебя / нас» по правилу, встреченные в корпусах
+//                       (attested.bloom); список вычитан руками, сборка требует хотя бы две такие формы
 //   sentences.stoplist.json  слова, которых не должно быть в примерах (страны и темы, которые здесь
 //                       не к месту); сборка падает, если такое слово нашлось
 //
@@ -61,6 +65,7 @@ const ruForms = read('ru-forms.json')
 const skipVerbs = read('verbs.skip.json')
 // Названия действия, вписанные руками по словарям: выгрузка Викисловаря не даёт их у части глаголов.
 const titles = read('titles.json')
+const objectPerson = read('object-person.json')
 const prodLookups = read('prod-lookups.json').words
 const wanted = read('wanted.json')
 
@@ -203,6 +208,8 @@ const verbs = analysed.map(entry => {
     oddTenses: a.oddTenses,
     model: model ? { id: model.v.lemma, title: titleOf(model.v), ru: ru[model.v.lemma] ?? null } : null,
     masdarWithPreverb: v.masdar.perfective.filter(m => m !== titleOf(v)),
+    // «Кто кого»: падеж того, кого (acc — «вижу тебя», dat — «показываю тебе»); нет — у глагола этого нет.
+    ...(objectPerson[v.lemma] ? { objectPerson: objectPerson[v.lemma].case } : {}),
     tenses: v.tenses,
     // Что значит каждая форма по-русски: время → шесть фраз («я хочу», «ты хочешь», …).
     meanings: plain.meanings,
@@ -229,6 +236,12 @@ for (const [lemma, entry] of Object.entries(titles)) {
   }
   if (entry.title === lemma) fail.push(`titles.json: у ${lemma} название действия повторяет лемму`)
   if (entry.title === sourceTitleOf(v)) fail.push(`titles.json: ${lemma} — «${entry.title}» и так берётся из выгрузки, запись лишняя`)
+}
+
+for (const [lemma, entry] of Object.entries(objectPerson)) {
+  if (!verbs.some(v => v.lemma === lemma)) fail.push(`object-person.json: глагола ${lemma} нет в каталоге`)
+  if (!['acc', 'dat'].includes(entry.case)) fail.push(`object-person.json: у ${lemma} case должен быть acc или dat`)
+  if (!Array.isArray(entry.attested) || entry.attested.length < 2) fail.push(`object-person.json: у ${lemma} меньше двух форм, встреченных в корпусах`)
 }
 
 const orphans = [...pinned.keys()].filter(lemma => !verbs.some(v => v.lemma === lemma))

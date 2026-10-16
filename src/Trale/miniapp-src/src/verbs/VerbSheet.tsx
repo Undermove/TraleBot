@@ -194,7 +194,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
                   <span>{verb.family.role === 'member' ? (verb.family.directionRu ? `${verb.family.directionRu}, ${TOWARD_RU[verb.family.toward]}` : TOWARD_RU[verb.family.toward]) : 'направления'}</span>
                 </button>
               )}
-              {hasWhoWhom(verb.id) && (
+              {hasWhoWhom(verb) && (
                 <button onClick={() => setWhoWhom(true)} data-testid="verb-who-whom-badge"
                   className="jewel-pressable inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-jewelInk bg-cream-tile pl-2 pr-3 py-1 text-[12px] font-bold text-navy"
                   style={{ boxShadow: '2px 2px 0 #15100A' }}>

@@ -77,6 +77,13 @@ test('the badge under the title opens the rule', async ({ page }) => {
   await expect(page.getByTestId('who-whom-ru')).toHaveText('я бужу тебя')
 })
 
+test('«показывать» says whom in the dative: «я показываю тебе»', async ({ page }) => {
+  await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('აჩვენებს')}`)
+  await page.getByTestId('verb-who-whom-badge').click()
+  await expect(page.getByTestId('who-whom-ru')).toHaveText('я показываю тебе')
+  if (shots) { await page.waitForTimeout(500); await page.screenshot({ path: `${shots}/ww-dat.png` }) }
+})
+
 test('kind badge opens the explanation right under it', async ({ page }) => {
   await page.goto(`/?playwright=1&screen=verb&verbId=${encodeURIComponent('აღვიძებს')}`)
   await page.getByTestId('verb-why').click()

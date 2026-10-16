@@ -1,14 +1,18 @@
-import type { TenseKey, VerbDto } from '../types'
+import type { ObjectCase, TenseKey, VerbDto } from '../types'
 
 // «Кто кого»: у глагола со вторым человеком («вижу тебя», «он видит меня») грузинский ставит в начало
 // не только «кто», но и «кого». Таблица карточки — это «кого» = его/её (метки нет). Остальные стороны
 // выводим по одному правилу из этой таблицы: на место ვ- (я/мы) встаёт метка «кого» — მ- меня,
 // გ- тебя/вас, გვ- нас; «вас» ещё добавляет -თ в конце. Чистая логика, экран — WhoWhomSheet.tsx.
 
-/** Глаголы, у которых правило проверено на их формах: приставка просто встаёт на место ვ-. */
-export const WHO_WHOM_VERBS = ['ხედავს', 'აღვიძებს', 'პატიჟებს', 'აწუხებს',
-  // Собраны агентом на проде (в каталоге их нет): «искать», «встречаться».
-  'ეძებს', 'ხვდება'] as const
+/**
+ * У кого «кто кого» — поле objectPerson карточки: каталог (scripts/verbs/object-person.json) и глаголы,
+ * которые собирает агент. Здесь — только глаголы, собранные агентом до того, как он стал его ставить.
+ */
+const BEFORE_THE_AGENT: Record<string, ObjectCase> = { 'ეძებს': 'acc', 'ხვდება': 'with' }
+
+export const objectCaseOf = (verb: Pick<VerbDto, 'id' | 'objectPerson'>): ObjectCase | null =>
+  verb.objectPerson ?? BEFORE_THE_AGENT[verb.id] ?? null
 
 /** Формы, найденные в реальных предложениях (Tatoeba, №8493346 и №8482909, с их переводом), — остальные выведены по правилу. */
 export const ATTESTED: Record<string, string> = {
@@ -21,14 +25,17 @@ export const WHO_WHOM_TENSES: TenseKey[] = ['present', 'aorist', 'future']
 
 export type Whom = 'him' | 'me' | 'you' | 'us' | 'youpl' | 'them'
 
-export const WHOMS: { key: Whom; ru: string; with: string; mark: string }[] = [
-  { key: 'me', ru: 'меня', with: 'со мной', mark: 'მ' },
-  { key: 'you', ru: 'тебя', with: 'с тобой', mark: 'გ' },
-  { key: 'him', ru: 'его', with: 'с ним', mark: '' },
-  { key: 'us', ru: 'нас', with: 'с нами', mark: 'გვ' },
-  { key: 'youpl', ru: 'вас', with: 'с вами', mark: 'გ' },
-  { key: 'them', ru: 'их', with: 'с ними', mark: '' }
+export const WHOMS: { key: Whom; ru: Record<ObjectCase, string>; mark: string }[] = [
+  { key: 'me', ru: { acc: 'меня', dat: 'мне', with: 'со мной' }, mark: 'მ' },
+  { key: 'you', ru: { acc: 'тебя', dat: 'тебе', with: 'с тобой' }, mark: 'გ' },
+  { key: 'him', ru: { acc: 'его', dat: 'ему', with: 'с ним' }, mark: '' },
+  { key: 'us', ru: { acc: 'нас', dat: 'нам', with: 'с нами' }, mark: 'გვ' },
+  { key: 'youpl', ru: { acc: 'вас', dat: 'вам', with: 'с вами' }, mark: 'გ' },
+  { key: 'them', ru: { acc: 'их', dat: 'им', with: 'с ними' }, mark: '' }
 ]
+
+/** Как называется второй переключатель: «кого», «кому», «с кем». */
+export const WHOM_LABEL: Record<ObjectCase, string> = { acc: 'кого', dat: 'кому', with: 'с кем' }
 
 /** «Кто» в том же порядке, что лица таблицы: я, ты, он, мы, вы, они. */
 export const WHOS = ['я', 'ты', 'он', 'мы', 'вы', 'они']
@@ -87,15 +94,15 @@ export function flip(who: number, whom: Whom): { who: number; whom: Whom } {
 }
 
 /** Другие «кто → кого», которые пишутся так же (გხედავთ: я → вас, мы → тебя, мы → вас, он → вас). */
-export function sameSpelling(verb: Pick<VerbDto, 'tenses'>, tense: TenseKey, who: number, whom: Whom): string[] {
+export function sameSpelling(verb: Pick<VerbDto, 'tenses'>, tense: TenseKey, who: number, whom: Whom, kase: ObjectCase = 'acc'): string[] {
   const mine = formFor(verb, tense, who, whom)?.form
   if (!mine) return []
   const out: string[] = []
   for (let p = 0; p < 6; p++) for (const w of WHOMS) {
     if (p === who && w.key === whom) continue
-    if (formFor(verb, tense, p, w.key)?.form === mine) out.push(`${WHOS[p]} → ${w.ru}`)
+    if (formFor(verb, tense, p, w.key)?.form === mine) out.push(`${WHOS[p]} → ${w.ru[kase]}`)
   }
   return out
 }
 
-export const hasWhoWhom = (lemma: string) => (WHO_WHOM_VERBS as readonly string[]).includes(lemma)
+export const hasWhoWhom = (verb: Pick<VerbDto, 'id' | 'objectPerson'>) => objectCaseOf(verb) !== null

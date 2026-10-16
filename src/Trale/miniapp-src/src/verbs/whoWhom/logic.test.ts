@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ATTESTED, flip, formFor, possible, sameSpelling } from './logic'
+import { ATTESTED, flip, formFor, hasWhoWhom, objectCaseOf, possible, sameSpelling } from './logic'
 
 // Таблицы из каталога (src/Trale/Verbs/verbs.json).
 const see = { tenses: {
@@ -66,5 +66,13 @@ describe('кто кого', () => {
     expect(flip(0, 'him')).toEqual({ who: 2, whom: 'me' })
     expect(flip(2, 'you')).toEqual({ who: 1, whom: 'him' })
     expect(sameSpelling(see, 'present', 0, 'youpl')).toEqual(expect.arrayContaining(['он → вас', 'мы → тебя', 'мы → вас']))
+  })
+
+  it('takes «кто кого» and its Russian case from the card', () => {
+    expect(objectCaseOf({ id: 'x', objectPerson: 'dat' })).toBe('dat')
+    expect(hasWhoWhom({ id: 'x', objectPerson: null })).toBe(false)
+    // Собраны агентом до того, как он стал ставить отметку.
+    expect(objectCaseOf({ id: 'ხვდება' })).toBe('with')
+    expect(sameSpelling(see, 'present', 0, 'youpl', 'dat')).toContain('он → вам')
   })
 })

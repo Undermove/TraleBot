@@ -69,9 +69,16 @@ public class MafVerbReviewer(
            are not sure, set "preverbNounWrong" to true. That alone is never a reason to reject: the
            noun is then left out and the rest is judged as usual.
 
+        8. «Whom», when the record has it: the verb really shows in the word the person it is done to
+           (მ- me, გ- you, გვ- us in place of ვ- of "I"), the forms shown by the rule are the forms this
+           verb has, and the Russian case is the one Russian uses with this verb. If any of it is wrong
+           or you are not sure, set "objectPersonWrong" to true. That alone is never a reason to
+           reject: the record is then stored without «whom».
+
         Answer with JSON: "approve" (true or false), "reasons" — short, concrete sentences in English —
         "missingTenses" (see 6; empty when nothing is missing or you are not certain), "wrongTenses",
-        "restIsRight" and "preverbNounWrong" (see 7; false when there is none).
+        "restIsRight", "preverbNounWrong" (see 7; false when there is none) and "objectPersonWrong"
+        (see 8; false when there is none).
         "wrongTenses" and "restIsRight" are for a rejection that is about whole rows only. When the verb,
         its gloss, the present row, the match and all the other rows are right, and what you reject is
         one or more rows — their forms are wrong, or you cannot confirm them — list the tenses of those
@@ -85,7 +92,7 @@ public class MafVerbReviewer(
 
     private static readonly string[] Persons = ["I", "you sg", "he/she", "we", "you pl", "they"];
 
-    private sealed record Output(bool Approve, string[]? Reasons, string[]? MissingTenses, string[]? WrongTenses, bool? RestIsRight, bool? PreverbNounWrong);
+    private sealed record Output(bool Approve, string[]? Reasons, string[]? MissingTenses, string[]? WrongTenses, bool? RestIsRight, bool? PreverbNounWrong, bool? ObjectPersonWrong);
 
     public async Task<VerbReview> ReviewAsync(VerbReviewRequest request, CancellationToken ct)
     {
@@ -109,7 +116,8 @@ public class MafVerbReviewer(
             .ToList();
         return new VerbReview(
             output.Approve, reasons, ModelCalls.Usage(response), missing, wrong, RestIsRight: !output.Approve && output.RestIsRight == true,
-            PreverbNounWrong: request.MasdarWithPreverb != null && output.PreverbNounWrong == true);
+            PreverbNounWrong: request.MasdarWithPreverb != null && output.PreverbNounWrong == true,
+            ObjectPersonWrong: request.ObjectPerson != null && output.ObjectPersonWrong == true);
     }
 
     private static string Ask(VerbReviewRequest request)
@@ -121,6 +129,12 @@ public class MafVerbReviewer(
             request.Lemma, request.Masdar, request.Russian,
             request.Tenses.ToDictionary(t => t.Key, t => t.Value.Select(c => c.Length == 0 ? "—" : c[0]).ToArray()),
             request.Meanings, request.MasdarWithPreverb));
+
+        if (request.ObjectPerson is { } whom)
+        {
+            text.Append($"\nWhom («кто кого», Russian case {whom.Case}), forms by the rule: {string.Join("; ", whom.Examples)}");
+            text.Append($"\nThose forms attested in corpora of real texts: {whom.FormsAttested} of {whom.FormsTotal}.");
+        }
 
         text.Append(request.MatchedForm == null
             ? "\nMatched to: the verb itself (the text is an infinitive or a verbal noun)."

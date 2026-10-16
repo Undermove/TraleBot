@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Application.Common;
@@ -46,6 +47,25 @@ public class VerbCatalogTests : TestBase
 
         verbs.Should().HaveCount(expected);
         verbs.Should().OnlyContain(v => v.Status == VerbStatus.Verified);
+    }
+
+    [Test]
+    public async Task Catalog_verb_marked_for_whom_carries_it_in_its_card_with_forms_real_texts_have()
+    {
+        var marked = JsonNode.Parse(CatalogJson())!["verbs"]!.AsArray().Select(v => v!.AsObject()).Where(v => v.ContainsKey("objectPerson")).ToList();
+        marked.Should().NotBeEmpty();
+        var lexicon = VerbLexicon.Load(Path.Combine(AppContext.BaseDirectory, "Verbs"));
+
+        foreach (var entry in marked)
+        {
+            var lemma = entry["lemma"]!.GetValue<string>();
+            var card = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().Verbs.Where(v => v.Lemma == lemma).Select(v => v.CardJson).SingleAsync());
+            JsonNode.Parse(card)!["objectPerson"]!.GetValue<string>().Should().Be(entry["objectPerson"]!.GetValue<string>());
+
+            // The forms the mini-app builds by the rule are not invented: real texts have at least two of them.
+            var tenses = entry["tenses"]!.Deserialize<Dictionary<string, string[][]>>()!;
+            ObjectPerson.AllForms(tenses).Count(lexicon.IsAttested).Should().BeGreaterThanOrEqualTo(2, because: lemma);
+        }
     }
 
     [Test]

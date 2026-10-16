@@ -25,6 +25,9 @@ public enum GeneratedVerbVerdict
 /// <param name="RussianForms">Forms of the Russian verb the plain-Russian phrases are built from.</param>
 /// <param name="MatchedTense">The cell the looked-up text is, as the model reads it; null when the text is the verb itself.</param>
 /// <param name="MasdarWithPreverb">The name of the action with the preverb of the future and aorist (მოძებნა next to ძებნა), when it has one.</param>
+/// <param name="ObjectPerson">«Кто кого»: acc | dat | with when the verb shows in the word whom it is done to; null when not.</param>
+/// <param name="ObjectYouMe">The present «you → me» as the model recalls it — checked against the rule.</param>
+/// <param name="ObjectIYou">The present «I → you» as the model recalls it — checked against the rule.</param>
 public record GeneratedVerb(
     GeneratedVerbVerdict Verdict,
     string? Lemma = null,
@@ -35,7 +38,10 @@ public record GeneratedVerb(
     string? MatchedTense = null,
     int? MatchedPerson = null,
     ModelUsage? Usage = null,
-    string? MasdarWithPreverb = null);
+    string? MasdarWithPreverb = null,
+    string? ObjectPerson = null,
+    string? ObjectYouMe = null,
+    string? ObjectIYou = null);
 
 /// <param name="Text">The looked-up text as typed (normalised).</param>
 /// <param name="Infinitive">For a Russian text — its dictionary infinitive, as the classifier named it.</param>
@@ -128,7 +134,11 @@ public record VerbReviewRequest(
     VerbEvidence Evidence,
     IReadOnlyList<MissingTense>? Missing = null,
     IReadOnlyList<string>? Completed = null,
-    string? MasdarWithPreverb = null);
+    string? MasdarWithPreverb = null,
+    ObjectPersonEvidence? ObjectPerson = null);
+
+/// <summary>«Кто кого» as the record claims it: the Russian case, forms by the rule, how many of them real texts have.</summary>
+public record ObjectPersonEvidence(string Case, IReadOnlyList<string> Examples, int FormsAttested, int FormsTotal);
 
 /// <param name="MissingTenses">
 /// Main tenses the record lacks although the reviewer is certain the verb has them. A note for the
@@ -142,7 +152,8 @@ public record VerbReviewRequest(
 /// <param name="PreverbNounWrong">The name of the action with a preverb is wrong or unconfirmed: it is left out, the record is not rejected for it.</param>
 public record VerbReview(
     bool Approved, IReadOnlyList<string> Reasons, ModelUsage? Usage = null, IReadOnlyList<string>? MissingTenses = null,
-    IReadOnlyList<string>? WrongTenses = null, bool RestIsRight = false, bool PreverbNounWrong = false);
+    IReadOnlyList<string>? WrongTenses = null, bool RestIsRight = false, bool PreverbNounWrong = false,
+    bool ObjectPersonWrong = false);
 
 /// <summary>The second model: approves or rejects a generated record, with reasons.</summary>
 public interface IVerbReviewer

@@ -13,6 +13,7 @@ namespace Application.Verbs;
 /// <param name="Alt">Parallel tables of the same verb with another preverb.</param>
 /// <param name="Source">Page the forms were taken from; null when a model produced them.</param>
 /// <param name="HeadMasdar">The verbal noun the source names in the entry's headline, when it does.</param>
+/// <param name="ObjectPerson">«Кто кого» (<see cref="Verbs.ObjectPerson"/>): how the Russian says whom; null — the verb has no such forms.</param>
 public record VerbParadigm(
     string Lemma,
     IReadOnlyList<string> Masdar,
@@ -20,7 +21,8 @@ public record VerbParadigm(
     IReadOnlyList<IReadOnlyDictionary<string, string[][]>> Alt,
     string? Source,
     long? Revid,
-    string? HeadMasdar = null)
+    string? HeadMasdar = null,
+    string? ObjectPerson = null)
 {
     /// <summary>One Georgian word, Georgian letters only — what a form, a lemma or a masdar must look like.</summary>
     public static readonly Regex GeorgianWord = new("^[ა-ჰ]+$", RegexOptions.Compiled);

@@ -39,7 +39,7 @@ public class VerbGenerationTests : TranslationPipelineTestBase
     /// <summary>The record the generator writes: the catalog table of the verb, optionally with some cells changed.</summary>
     private static string Record(
         Func<string, int, string?>? cell = null, string? matchedTense = null, int? matchedPerson = null, string? russian = "танцевать",
-        string? masdarWithPreverb = null)
+        string? masdarWithPreverb = null, string? objectPerson = null, object? objectForms = null)
     {
         var verb = DanceVerb;
         return JsonSerializer.Serialize(new
@@ -48,6 +48,8 @@ public class VerbGenerationTests : TranslationPipelineTestBase
             lemma = Dance,
             masdar = verb["title"]!.GetValue<string>(),
             masdarWithPreverb,
+            objectPerson,
+            objectForms,
             russian,
             tenses = MainTenses.ToDictionary(
                 t => t, t => Enumerable.Range(0, 6).Select(p => cell == null ? Form(verb, t, p) : cell(t, p)).ToArray()),
@@ -176,6 +178,59 @@ public class VerbGenerationTests : TranslationPipelineTestBase
         var stored = await StoredVerb(Dance);
         stored!.Status.Should().Be(VerbStatus.Generated);
         JsonNode.Parse(stored.CardJson)!["masdarWithPreverb"]!.Deserialize<string[]>().Should().BeEmpty();
+    }
+
+    /// <summary>«You → me» and «I → you» of the record's present by the rule — what the generator must recall for «кто кого» to stay.</summary>
+    private static object RuleForms()
+    {
+        var present = Enumerable.Range(0, 6).Select(p => new[] { Form(DanceVerb, "present", p) }).ToArray();
+        return new { youMe = ObjectPerson.Form(present, 1, "me"), iYou = ObjectPerson.Form(present, 0, "you") };
+    }
+
+    private async Task<string?> StoredObjectPerson()
+    {
+        var stored = await StoredVerb(Dance);
+        return JsonNode.Parse(stored!.CardJson)!["objectPerson"]?.GetValue<string>();
+    }
+
+    private async Task GenerateDance(string record, string review)
+    {
+        await SeedCatalogWithout(Dance);
+        LexiconKnowsDanceWithoutATable();
+        Lexicon.Attested = MainTenses.SelectMany(t => Enumerable.Range(0, 6).Select(p => Form(DanceVerb, t, p))).ToHashSet();
+        Models.ClassifierModel.AnswerWith(VerbByInfinitive);
+        Models.GeneratorModel.AnswerWith(record);
+        Models.ReviewerModel.AnswerWith(review);
+        await Translate("танцевать");
+    }
+
+    [Test]
+    public async Task Whom_is_stored_when_the_forms_the_generator_recalls_are_the_forms_of_the_rule()
+    {
+        await GenerateDance(Record(objectPerson: "dat", objectForms: RuleForms()), Approve);
+
+        (await StoredObjectPerson()).Should().Be("dat");
+        LastUserText(Models.ReviewerModel).Should().Contain("Whom («кто кого», Russian case dat), forms by the rule: you → me:");
+    }
+
+    [Test]
+    public async Task Whom_whose_recalled_forms_differ_from_the_rule_is_left_out_without_sending_the_record_back()
+    {
+        await GenerateDance(Record(objectPerson: "acc", objectForms: new { youMe = Form(DanceVerb, "present", 1), iYou = Form(DanceVerb, "present", 0) }), Approve);
+
+        Models.GeneratorModel.Calls.Should().Be(1);
+        (await StoredObjectPerson()).Should().BeNull();
+        LastUserText(Models.ReviewerModel).Should().NotContain("Whom");
+    }
+
+    [Test]
+    public async Task Whom_the_reviewer_cannot_confirm_is_left_out_and_the_verb_is_still_stored()
+    {
+        await GenerateDance(Record(objectPerson: "acc", objectForms: RuleForms()),
+            JsonSerializer.Serialize(new { approve = true, reasons = new[] { "The paradigm is consistent" }, objectPersonWrong = true }));
+
+        (await StoredVerb(Dance))!.Status.Should().Be(VerbStatus.Generated);
+        (await StoredObjectPerson()).Should().BeNull();
     }
 
     [Test]

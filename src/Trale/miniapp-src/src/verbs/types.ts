@@ -9,6 +9,8 @@ export type TenseKey =
 /** pattern — спрягается по образцу; feature — тот же корень, но схема ломается; special — разные корни. */
 export type VerbKind = 'pattern' | 'feature' | 'special'
 
+export type ObjectCase = 'acc' | 'dat' | 'with'
+
 export interface VerbSummaryDto {
   id: string
   title: string
@@ -21,6 +23,8 @@ export interface VerbSummaryDto {
 export interface VerbDto extends VerbSummaryDto {
   /** Название действия с приставкой, если оно есть (დაწერა при წერა). */
   masdarWithPreverb: string[]
+  /** «Кто кого»: как по-русски тот, кого — «вижу тебя» (acc), «показываю тебе» (dat), «встречаюсь с тобой» (with). Нет — у глагола этого нет. */
+  objectPerson?: ObjectCase | null
   reason: string
   /** Корень для подсветки; пусто у особых глаголов. */
   root: string
