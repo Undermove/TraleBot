@@ -81,38 +81,5 @@ export function why(r: Round, tool: Tool): string {
   return ''
 }
 
-// ── Автомат с краном ──────────────────────────────────────────────────────────────────────────────
-
-export interface Capsule { id: number; tool: Tool; /** Центр капсулы, доля ширины стекла 0..1. */ x: number; /** Слой в куче: 0 — внизу. */ row: number }
-
-/**
- * Капсулы в стекле: окончаний набора поровну, всего 5–6, рассыпаны по ширине без наложений.
- * Правая часть стекла занята трубой (x > 0.82), там капсул нет.
- */
-export function pile(set: MagnetSet, rng: Rng, seed = 0): Capsule[] {
-  const tools = toolsFor(set)
-  const list: Tool[] = shuffle([...tools, ...tools, ...tools], rng).slice(0, 6)
-  // Хотя бы по одной каждого, чтобы выбор был всегда.
-  for (const t of tools) if (!list.includes(t)) list[0] = t
-  // Нижний ряд — пять мест без наложений, шестая капсула лежит сверху, между двумя.
-  const bottom = shuffle([0.1, 0.25, 0.4, 0.55, 0.7], rng)
-  const top = shuffle([0.175, 0.325, 0.475, 0.625], rng)
-  return list.map((tool, i) => ({ id: seed * 10 + i, tool, x: i < 5 ? bottom[i] : top[0], row: i < 5 ? 0 : 1 }))
-}
-
-/** Какую капсулу схватит кран в точке x (доля ширины): ближайшую в пределах захвата, верхний слой первым. */
-export function grab(caps: Capsule[], x: number, reach = 0.075): Capsule | null {
-  const near = caps.filter(c => Math.abs(c.x - x) <= reach)
-  if (!near.length) return null
-  return near.sort((a, b) => b.row - a.row || Math.abs(a.x - x) - Math.abs(b.x - x))[0]
-}
-
-/** Кран не заезжает в трубу. */
-export const clampClaw = (x: number) => Math.max(0.06, Math.min(0.74, x))
-
-/** Свободное место на дне стекла — туда падает отскочившая капсула. */
-export function freeSpot(caps: Capsule[], rng: Rng): number {
-  const spots = [0.1, 0.25, 0.4, 0.55, 0.7]
-  const free = spots.filter(x => caps.every(c => c.row > 0 || Math.abs(c.x - x) > 0.1))
-  return free.length ? free[Math.floor(rng() * free.length)] : spots[Math.floor(rng() * spots.length)]
-}
+/** Итог игры с окончаниями — для экрана «Магнитов». */
+export interface EndingsResult { done: number; total: number; score: number; best: number }

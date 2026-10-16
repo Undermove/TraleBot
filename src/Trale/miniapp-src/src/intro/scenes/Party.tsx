@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import Passerby, { type Face as PFace } from './walk/Passerby'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
@@ -23,10 +25,16 @@ interface Speech { who: number | 'host'; geo?: string | null; ru?: React.ReactNo
 
 const HOST_LOOK: Look = { coat: '#E01A3C', skin: '#F2C9A0', hair: '#2A1F18', long: true }
 
-/** Места на крыше (центр, ноги) в процентах сцены. */
-const SLOTS: [number, number][] = [[16, 66], [40, 63], [64, 66], [86, 63], [28, 94], [54, 96], [80, 94]]
+/** Места на крыше (центр, ноги) в процентах сцены: задний ряд у парапета, передний — ближе к тебе. */
+const SLOTS: [number, number][] = [[18, 80], [42, 77], [64, 80], [86, 77], [28, 98], [54, 99], [80, 98]]
 /** В режиме профессий низ крыши занят тремя углами — гости стоят выше. */
-const SORT_SLOTS: [number, number][] = [[14, 67], [38, 64], [62, 67], [86, 64]]
+const SORT_SLOTS: [number, number][] = [[16, 76], [39, 73], [62, 76], [85, 73]]
+
+/** Чем дальше гость (выше на крыше), тем он меньше. */
+const depthScale = (y: number) => 1 + Math.max(0, Math.min(1, (y - 74) / 26)) * 0.32
+
+const FACE_OF: Record<Mood, PFace> = { smile: 'smile', sad: 'calm', huh: 'huh', wow: 'wow' }
+const whoOf = (look: Look) => ({ ru: '', kind: (look.long ? 'woman' : 'man') as 'woman' | 'man', coat: look.coat, skin: look.skin, hair: look.hair, extra: (look.bag ? 'bag' : 'none') as 'bag' | 'none', voice: (look.long ? 'f' : 'm') as 'f' | 'm' })
 
 function G({ g }: { g: string }) {
   return <><b className="font-geo">{g}</b> <span className="text-[12px] text-jewelInk-hint">({cyr(g)})</span></>
@@ -422,12 +430,8 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
           <Meter value={happy / 100} tone={happy < 50 ? 'ruby' : 'sage'} label="Гости довольны" />
         </div>
 
-        <div className="relative flex-1 min-h-[210px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ background: '#1D2747' }} data-testid="party-roof">
-          {/* звёзды и гирлянда */}
-          {[[8, 6], [30, 14], [57, 5], [78, 18], [93, 9], [45, 26]].map(([x, y], k) => (
-            <span key={k} className="absolute w-[3px] h-[3px] rounded-full bg-cream" style={{ left: `${x}%`, top: `${y}%`, opacity: 0.7 }} aria-hidden />
-          ))}
-          <div className="absolute inset-x-0 bottom-0 top-[38%] border-t-[1.5px] border-jewelInk" style={{ background: 'repeating-linear-gradient(90deg, #6B5238 0 34px, #5E4831 34px 36px)' }} aria-hidden />
+        <div className="relative flex-1 min-h-[260px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ background: '#1D2747', boxShadow: '3px 3px 0 #15100A' }} data-testid="party-roof">
+          <RoofBackdrop />
           <Garland />
 
           {mode === 'jobs' && (
@@ -460,13 +464,26 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
                     {isTarget && (
                       <svg width="18" height="16" viewBox="0 0 18 16" className="absolute -top-4 zn-bob" aria-hidden><path d="M2 2h14L9 14z" fill="#F5B820" stroke="#15100A" strokeWidth="1.5" strokeLinejoin="round" /></svg>
                     )}
-                    <Person look={g.look} mood={moods[id] ?? 'smile'} height={66} className={`ab-short:h-[56px] ${moods[id] === 'huh' ? 'zn-shake' : moods[id] === 'wow' ? 'zn-jump' : ''}`} />
+                    <div className={moods[id] === 'huh' ? 'zn-shake' : moods[id] === 'wow' ? 'zn-jump' : ''}>
+                      <svg width={84 * depthScale(y)} height={134 * depthScale(y)} viewBox="-50 -190 100 196" className="overflow-visible" aria-hidden>
+                        <Passerby who={whoOf(g.look)} phase={0} stride={0} face={FACE_OF[moods[id] ?? 'smile']}
+                          talking={!!speech && speech.who === id && !!speech.geo && speech.tone !== 'bad'} wave={isNew && b === 0} />
+                      </svg>
+                    </div>
                     {mode === 'who' && g.friend && (
                       <span className="absolute -top-3 right-0 rounded-full border-[1.5px] border-jewelInk bg-gold px-1 text-[9px] font-extrabold leading-tight" data-testid="party-friend-mark">друг</span>
                     )}
-                    {badges[id] && (
-                      <span className="zn-pop absolute top-[52%] rounded-md border-[1.5px] border-jewelInk bg-cream-tile px-1 font-geo font-bold text-[10px] leading-tight whitespace-nowrap" data-testid={`party-badge-on-${id}`}>{badges[id]}</span>
-                    )}
+                    <AnimatePresence>
+                      {badges[id] && (
+                        <motion.span key={badges[id]} data-testid={`party-badge-on-${id}`}
+                          className="absolute top-[46%] rounded-md border-[1.5px] border-jewelInk bg-cream-tile px-1.5 font-geo font-extrabold text-[11px] leading-tight whitespace-nowrap overflow-hidden"
+                          style={{ boxShadow: '1px 2px 0 #15100A' }}
+                          initial={{ scale: 2.2, rotate: -18, y: -40, opacity: 0 }} animate={{ scale: 1, rotate: -3, y: 0, opacity: 1 }}
+                          transition={{ type: 'spring', stiffness: 420, damping: 14 }}>
+                          <span className="block h-[3px] -mx-1.5 bg-ruby" />{badges[id]}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </button>
                 </div>
               </div>
@@ -542,5 +559,79 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
         {phase === 'mingle' && <div className="shrink-0 min-h-[44px] flex items-center justify-center text-[13px] font-bold text-jewelInk-soft" data-testid="party-mingle">гости перемешиваются…</div>}
       </div>
     </GameFrame>
+  )
+}
+
+/** Ночная крыша в Батуми: небо, луна и море, силуэт города с Алфавитной башней и колесом обозрения, парапет, черепица. */
+function RoofBackdrop() {
+  const INK = '#15100A'
+  const windows: [number, number][] = [[12, 98], [20, 104], [44, 92], [52, 100], [70, 106], [118, 96], [126, 104], [150, 100], [196, 94], [204, 102], [262, 98], [300, 92], [308, 100], [336, 104]]
+  return (
+    <svg viewBox="0 0 360 300" preserveAspectRatio="xMidYMax slice" width="100%" height="100%" className="absolute inset-0" aria-hidden>
+      <defs>
+        <linearGradient id="pr-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#141B3A" /><stop offset="0.7" stopColor="#3B2F66" /><stop offset="1" stopColor="#8C5A86" /></linearGradient>
+        <linearGradient id="pr-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2B3D6E" /><stop offset="1" stopColor="#1A2547" /></linearGradient>
+        <linearGradient id="pr-floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#9C5A3C" /><stop offset="1" stopColor="#C2704A" /></linearGradient>
+        <radialGradient id="pr-moon"><stop offset="0.5" stopColor="#FFF4D6" /><stop offset="1" stopColor="#FFF4D6" stopOpacity="0" /></radialGradient>
+      </defs>
+      <rect width="360" height="300" fill="url(#pr-sky)" />
+      {[[30, 20], [80, 40], [120, 14], [170, 30], [220, 18], [250, 48], [300, 26], [340, 44], [150, 60], [60, 70]].map(([x, y], k) => (
+        <circle key={k} cx={x} cy={y} r={k % 3 ? 1 : 1.6} fill="#FFF8EA" className="zn-bob" style={{ animationDelay: `${k * 0.3}s` }} />
+      ))}
+      <circle cx="290" cy="56" r="26" fill="url(#pr-moon)" />
+      <circle cx="290" cy="56" r="13" fill="#FFF4D6" stroke={INK} strokeWidth="1.2" />
+      <circle cx="285" cy="52" r="2.4" fill="#E8DCB8" /><circle cx="294" cy="60" r="1.8" fill="#E8DCB8" />
+
+      {/* Море и лунная дорожка. */}
+      <rect y="118" width="360" height="30" fill="url(#pr-sea)" />
+      {[0, 1, 2, 3, 4].map(k => <ellipse key={k} cx={290 + (k % 2 ? 4 : -3)} cy={122 + k * 5} rx={10 - k} ry="1.2" fill="#FFF4D6" opacity={0.7 - k * 0.1} />)}
+
+      {/* Город: дома с окнами, Алфавитная башня, колесо обозрения. */}
+      <g fill="#241B3F" stroke={INK} strokeWidth="1">
+        <rect x="0" y="88" width="34" height="34" /><rect x="36" y="80" width="28" height="42" /><rect x="64" y="96" width="22" height="26" />
+        <rect x="108" y="86" width="30" height="36" /><rect x="140" y="92" width="24" height="30" />
+        <rect x="186" y="84" width="30" height="38" /><rect x="252" y="90" width="26" height="32" /><rect x="292" y="82" width="30" height="40" /><rect x="324" y="94" width="36" height="28" />
+      </g>
+      {windows.map(([x, y], k) => <rect key={k} x={x} y={y} width="4" height="5" fill="#FFD36B" opacity={0.85} />)}
+      {/* Алфавитная башня: тонкий столб, спираль и шар наверху. */}
+      <g stroke={INK} strokeWidth="1">
+        <rect x="96" y="40" width="4" height="82" fill="#3A2F5A" />
+        {Array.from({ length: 8 }, (_, k) => <path key={k} d={`M92 ${118 - k * 10} q6 -6 12 0`} fill="none" stroke="#C9B8E8" strokeWidth="1.4" />)}
+        <circle cx="98" cy="38" r="5" fill="#FFD36B" />
+      </g>
+      {/* Колесо обозрения на набережной. */}
+      <g stroke="#C9B8E8" strokeWidth="1.2" fill="none">
+        <circle cx="232" cy="92" r="22" />
+        {Array.from({ length: 8 }, (_, k) => { const a = (k * Math.PI) / 4; return <path key={k} d={`M232 92 L${232 + Math.cos(a) * 22} ${92 + Math.sin(a) * 22}`} /> })}
+        <path d="M224 122 L232 92 L240 122" stroke={INK} strokeWidth="1.6" />
+        {Array.from({ length: 8 }, (_, k) => { const a = (k * Math.PI) / 4; return <circle key={k} cx={232 + Math.cos(a) * 22} cy={92 + Math.sin(a) * 22} r="2" fill={['#E01A3C', '#F5B820', '#4E8A5B', '#1B5FB0'][k % 4]} stroke="none" /> })}
+      </g>
+
+      {/* Парапет крыши. */}
+      <rect y="146" width="360" height="22" fill="#D9C2A0" stroke={INK} strokeWidth="1.6" />
+      <rect y="142" width="360" height="6" fill="#B5793F" stroke={INK} strokeWidth="1.4" />
+      {Array.from({ length: 12 }, (_, k) => <path key={k} d={`M${k * 32 + 14} 148 v20`} stroke={INK} strokeWidth="0.8" opacity="0.25" />)}
+
+      {/* Черепичный пол в перспективе. */}
+      <path d="M0 168 H360 V300 H0 Z" fill="url(#pr-floor)" stroke={INK} strokeWidth="1.2" />
+      {Array.from({ length: 13 }, (_, k) => { const x = k * 30; return <path key={k} d={`M${180 + (x - 180) * 0.55} 168 L${180 + (x - 180) * 1.6} 300`} stroke={INK} strokeWidth="0.8" opacity="0.3" /> })}
+      {[184, 204, 230, 262].map(y => <path key={y} d={`M0 ${y} H360`} stroke={INK} strokeWidth="0.8" opacity="0.3" />)}
+
+      {/* Стол с лимонадом и хачапури, лимонное дерево в кадке. */}
+      <g>
+        <ellipse cx="30" cy="196" rx="26" ry="6" fill="#15100A" opacity="0.2" />
+        <rect x="8" y="176" width="44" height="6" rx="2" fill="#FDFAEF" stroke={INK} strokeWidth="1.4" />
+        <path d="M14 182 v14 M46 182 v14" stroke={INK} strokeWidth="1.6" />
+        <rect x="14" y="164" width="8" height="12" rx="2" fill="#F5E27A" stroke={INK} strokeWidth="1.2" />
+        <ellipse cx="38" cy="174" rx="10" ry="4" fill="#F5B820" stroke={INK} strokeWidth="1.2" />
+        <ellipse cx="38" cy="173" rx="4" ry="1.8" fill="#FFF4B8" />
+      </g>
+      <g>
+        <rect x="330" y="176" width="22" height="20" rx="3" fill="#C2553A" stroke={INK} strokeWidth="1.4" />
+        <path d="M341 176 v-16" stroke="#7A4E2D" strokeWidth="2.4" />
+        <circle cx="341" cy="152" r="14" fill="#4E8A5B" stroke={INK} strokeWidth="1.4" />
+        {[[334, 148], [346, 154], [340, 160]].map(([x, y], k) => <circle key={k} cx={x} cy={y} r="2.4" fill="#F5E27A" stroke={INK} strokeWidth="0.8" />)}
+      </g>
+    </svg>
   )
 }

@@ -8,15 +8,16 @@ import Button from '../../components/Button'
 import { geoName, plural, saveName, savedName, type Rng } from '../story'
 import { GameEnd, GameIntro, Pill, RuleCard, Tip } from '../ui'
 import type { SceneProps, StepOf } from './types'
-import Endings, { type EndingsResult } from './Endings'
+import Stickers from './Stickers'
+import type { EndingsResult } from './Endings.logic'
 import {
   MAGNET_RU, activeOrder, finished, hint, praise, startBelt, tap, tick, toolsOf, transform, xOf,
   type Belt, type Item, type MagnetSet, type Tool
 } from './Magnets.logic'
 
 /**
- * «Магниты» — окончания как капсулы в автомате с краном (Endings.tsx): Нино спрашивает, в твоём ответе
- * у слова нет окончания, краном достаёшь нужную капсулу и бросаешь в ответ — слово меняется на глазах
+ * «Магниты» — окончания как наклейки (Stickers.tsx): Нино спрашивает, в твоём ответе у слова нет
+ * окончания — отрываешь наклейку и прилепляешь её к слову, слово меняется на глазах
  * (у -ში отваливается ი, у -დან слово остаётся целым). В наборе name сначала печатаем имя самого
  * человека и цепляем ему ი, потом чужие имена: ი или «без ი»?
  */
@@ -26,7 +27,7 @@ const TICK_MS = 50
 
 type Phase = 'intro' | 'me' | 'belt' | 'end'
 
-const TITLE: Record<MagnetSet, string> = { name: 'Имя по-грузински', from: 'Автомат: откуда', in: 'Автомат: где', both: 'Автомат: где и откуда' }
+const TITLE: Record<MagnetSet, string> = { name: 'Имя по-грузински', from: 'Бирки: откуда', in: 'Открытки: где', both: 'Бирки и открытки' }
 
 export default function Magnets({ step, fraction, onExit, onDone, rng = Math.random, now = Date.now }: SceneProps<StepOf<'magnets'>>) {
   const set = step.set
@@ -38,23 +39,25 @@ export default function Magnets({ step, fraction, onExit, onDone, rng = Math.ran
   const end = (b: EndingsResult) => { setResult(b); setPhase('end'); sound.win() }
 
   return (
-    <GameFrame title={title} eyebrow="автомат окончаний" fraction={fraction} onExit={onExit}>
+    <GameFrame title={title} eyebrow="наклейки окончаний" fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col" data-testid="magnets-scene">
         {phase === 'intro' && (
           <GameIntro
             title={title}
             text={set === 'name'
-              ? 'Сначала напечатаем твоё имя грузинскими буквами. Потом чужие имена: краном достань капсулу ი или «без ი» и брось в ответ.'
-              : 'Нино спрашивает, а в твоём ответе у слова нет окончания. Краном достань нужную капсулу и брось её в ответ: -დან — «из», -ში — «в».'}
+              ? 'Сначала напечатаем твоё имя грузинскими буквами. Потом бейджи гостей: прилепи к имени наклейку ი — или «как есть», если ი не нужна.'
+              : set === 'from' ? 'Нино спрашивает, откуда ты. Ответ — на бирке чемодана: прилепи к стране наклейку -დან — «из».'
+                : set === 'in' ? 'Нино спрашивает, где ты живёшь. Ответ — на адресе открытки: прилепи к городу наклейку -ში — «в».'
+                  : 'Чемоданы и открытки вперемешку: «откуда» — на бирке, «где живёшь» — на открытке. Прилепи нужную наклейку.'}
             chips={set === 'name' ? [{ geo: 'ი', ru: 'на согласную' }] : toolsOf(set).map(t => ({ geo: `-${t}`, ru: MAGNET_RU[t] }))}
             onStart={() => setPhase(set === 'name' ? 'me' : 'belt')}
           />
         )}
         {phase === 'me' && <MyName onNext={() => setPhase('belt')} />}
-        {phase === 'belt' && <Endings key={round} set={set} rng={rng} onEnd={end} />}
+        {phase === 'belt' && <Stickers key={round} set={set} rng={rng} onEnd={end} />}
         {phase === 'end' && result && (
           <GameEnd
-            title="Автомат пуст"
+            title="Всё наклеено"
             text={`${result.done} ${plural(result.done, 'ответ', 'ответа', 'ответов')} · ${result.score} ${plural(result.score, 'очко', 'очка', 'очков')} · лучшая серия ×${result.best}`}
             rule={<RuleCard title={set === 'name' ? 'Имя по-грузински' : 'Где и откуда'}><Recap set={set} /></RuleCard>}
             onNext={onDone}
