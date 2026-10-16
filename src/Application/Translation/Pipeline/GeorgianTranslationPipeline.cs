@@ -537,8 +537,10 @@ public class GeorgianTranslationPipeline(
         var typo = verb.Form != null && !key.Split(' ').Contains(verb.Form) ? $"возможно, это форма {verb.Form}; " : string.Empty;
         if (verb.Meaning == null)
         {
+            // გაღვიძება: the name of the action with a preverb — the card is under the plain one.
+            var preverb = verb is { Match: "masdar", Form: null } && verb.Title != key ? $"с приставкой; без неё — {verb.Title}" : string.Empty;
             return new TranslationResult.Success(
-                verb.Translation, typo.TrimEnd(' ', ';') + Transcription(key), await ExampleFor(verb.Lemma, verb.Form, ct));
+                verb.Translation, (typo + preverb).TrimEnd(' ', ';') + Transcription(key), await ExampleFor(verb.Lemma, verb.Form, ct));
         }
 
         // A form of the base is translated as what it says — «мы писали», not the infinitive.

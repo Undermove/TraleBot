@@ -37,6 +37,12 @@ describe('VerbSheet', () => {
     expect(screen.getByTestId('verb-tense-future').textContent).toContain('დაწერენ')
   })
 
+  it('shows the name of the action with a preverb right under the title', async () => {
+    open()
+    // Учитель скажет «დაწერა» — её видно сразу, без «как устроен этот глагол».
+    expect((await screen.findByTestId('verb-preverb-masdar')).textContent).toContain('დაწერა')
+  })
+
   it('keeps rare tenses collapsed until asked', async () => {
     open()
     await waitFor(() => screen.getByTestId('verb-rare-toggle'))
