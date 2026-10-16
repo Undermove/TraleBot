@@ -6,12 +6,11 @@ import { cyr } from '../../verbs/types'
 import Button from '../../components/Button'
 import { myName, phrase } from '../story'
 import { GameEnd, GameIntro, RuleCard } from '../ui'
-import { hush, speakUrl } from '../voice'
+import { hush, speakLine } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import { Transformed } from './Magnets'
 import type { Item } from './Magnets.logic'
 import { andYou } from './chatScripts'
-import { lineUrl } from './chat/voices'
 import Passerby from './walk/Passerby'
 import type { Who } from './Walk.logic'
 import {
@@ -123,7 +122,7 @@ function Interview({ card, setCard, myGeo, myLine, onReady }: { card: Card; setC
       for (const q of QUESTIONS[at]) {
         if (off || !alive.current) return
         setQuestion(q); setTalking('her')
-        await speakUrl(lineUrl(q, 'f'), q)
+        await speakLine(q, 'f')
       }
       if (off || !alive.current) return
       setTalking(null); setAsking(false)
@@ -138,7 +137,7 @@ function Interview({ card, setCard, myGeo, myLine, onReady }: { card: Card; setC
     if (!line) return
     setSaid(line); setTalking('me'); setAsking(true)
     haptic('good'); sound.snap(at + 2)
-    await speakUrl(lineUrl(line, 'hero'), line)
+    await speakLine(line, 'hero')
     if (!alive.current) return
     setTalking(null); setNotes(n => n + 1)
     await new Promise(r => window.setTimeout(r, 450))
@@ -319,7 +318,7 @@ function Story({ lines, name, onNext, onRebuild }: { lines: Line[]; name: string
       await new Promise(r => window.setTimeout(r, 400))
       for (let k = 0; k < lines.length && !stop; k++) {
         setReading(k)
-        await speakUrl(lineUrl(lines[k].geo, 'hero'), lines[k].geo)
+        await speakLine(lines[k].geo, 'hero')
       }
       if (!stop) setReading(-1)
     })()

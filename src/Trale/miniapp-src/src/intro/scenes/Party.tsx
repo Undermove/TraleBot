@@ -7,7 +7,7 @@ import { useLater } from '../../verbs/games/useLater'
 import { cyr } from '../../verbs/types'
 import { JOBS, NAME_LIST, firstMet, knows, myName, phrase, shuffle, type Word } from '../story'
 import { Face, GameEnd, GameIntro, Meter, NewWord, Pill, Reply, RuleCard, Tip, say, type Look, type Mood } from '../ui'
-import { speak, speakUrl } from '../voice'
+import { hush, speak, speakLine, speakUrl } from '../voice'
 import { TreatIcon, drinksAudio, offerAudio, pleaseAudio, wantAudio, type Treat } from './party/Treats'
 import type { SceneProps, StepOf } from './types'
 import {
@@ -23,7 +23,7 @@ import {
 
 type Phase = 'intro' | 'welcome' | 'arrive' | 'errand' | 'mingle' | 'badge' | 'sort' | 'quiz' | 'myjob' | 'end'
 
-interface Speech { who: number | 'host'; geo?: string | null; ru?: React.ReactNode; note?: string; tone?: 'plain' | 'good' | 'bad' }
+interface Speech { who: number | 'host'; geo?: string | null; ru?: React.ReactNode; note?: string; tone?: 'plain' | 'good' | 'bad'; /** Реплику уже озвучили отдельно (угощение) — второй раз не говорить. */ voiced?: boolean }
 
 const HOST_LOOK: Look = { coat: '#E01A3C', skin: '#F2C9A0', hair: '#2A1F18', long: true }
 
@@ -158,9 +158,18 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   const el = (id: number) => document.querySelector(`[data-testid="party-guest-${id}"]`)
   const voiceOf = (who: number | 'host'): 'f' | 'm' => (who === 'host' || byId(who).look.long ? 'f' : 'm')
 
+  // Реплики звучат по очереди: сначала твой ответ (голос героя), потом отклик гостя его голосом. Всё, что
+  // появляется в пузыре гостя по-грузински, он и говорит — собранные из слов реплики играются кусками.
+  const voiceQ = React.useRef<Promise<void>>(Promise.resolve())
+  const talk = (geo: string, v: 'hero' | 'f' | 'm') => { voiceQ.current = voiceQ.current.then(() => speakLine(geo, v, false)).catch(() => {}) }
+  React.useEffect(() => () => hush(), [])
+  React.useEffect(() => {
+    if (speech?.geo && !speech.voiced) talk(speech.geo, voiceOf(speech.who))
+  }, [speech]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Реплика угощения: показать, сказать голосом гостя, познакомить с новым словом сцены.
   const showBeat = (who: number | 'host', beat: Beat) => {
-    setSpeech({ who, geo: beat.says, note: beat.note })
+    setSpeech({ who, geo: beat.says, note: beat.note, voiced: !!beat.audio })
     if (beat.audio) void speakUrl(beat.audio, beat.says ?? '')
     if (beat.word && firstMet(lesson.id, beat.word) && !shown.current.includes(beat.word)) {
       setFresh(beat.word); shown.current = [...shown.current, beat.word]
@@ -275,6 +284,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     }
     haptic('good'); sound.snap(b)
     setGoodOpt(o.geo); setBusy(true)
+    talk(o.geo, 'hero')
     const beat = beatList[b]
     if (beat.echo) setSpeech({ who: id, geo: beat.echo, tone: 'good' })
     mood(id, 'wow', 900)
@@ -309,7 +319,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     if (who !== 'host') mood(who, 'wow', 900)
     else later(() => setSpeech({ who, tone: 'good', ru: 'Нино протягивает тебе чашку. Проходи!' }), 600)
     later(() => {
-      if (beat.echo) { setSpeech({ who, geo: beat.echo, tone: 'good' }); void speak(beat.echo.startsWith(phrase('madloba').geo) ? 'madloba' : 'gtkhovt', voiceOf(who)) }
+      if (beat.echo) { setSpeech({ who, geo: beat.echo, tone: 'good', voiced: true }); void speak(beat.echo.startsWith(phrase('madloba').geo) ? 'madloba' : 'gtkhovt', voiceOf(who)) }
     }, 700)
     later(() => {
       setGoodOpt(null)
@@ -416,7 +426,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   // ── «Кто это?» ──
   const startQuiz = (k: number) => {
     setQ(k); setQuizOpts(whoOptions(plan.guests, rng)); setBusy(false)
-    setSpeech({ who: 'host', geo: phrase('vin_aris').geo, note: 'Нино показывает на гостя' })
+    setSpeech({ who: 'host', geo: phrase('vin_aris').geo, note: 'Нино показывает на гостя', voiced: true })
     say('vin_aris')
     setTip(k === 0 ? 'Нино показывает на гостя. Кто это? Про своего друга скажи «это мой друг».' : null)
   }
@@ -426,6 +436,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     const key = `q-${q}`
     if (opt === whoAnswer(target)) {
       haptic('good'); sound.snap(q); setGoodOpt(opt); setBusy(true)
+      talk(opt, 'hero')
       if (!wrongs[key]) setFirstTry(x => x + 1)
       mood(target.id, 'wow'); burst(el(target.id), 'small')
       setSpeech(target.friend
@@ -453,6 +464,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
       return
     }
     haptic('good'); setMyJob(o.geo); setGoodOpt(o.geo)
+    talk(o.geo, 'hero')
     setSpeech({ who: plan.guests[0].id, tone: 'good', geo: knows(lesson.id, 'sasiamovnoa') ? `${phrase('sasiamovnoa').geo}!` : null, ru: knows(lesson.id, 'sasiamovnoa') ? undefined : 'Гости хлопают!' })
     setTip('Теперь вся крыша знает, кем ты работаешь.')
     later(() => { setGoodOpt(null); finish() }, 1200)

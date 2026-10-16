@@ -5,7 +5,7 @@ import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { CITIES, firstMet, myName, phrase, type City, type Phrase } from '../story'
 import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
-import { hush, speak, speakUrl } from '../voice'
+import { hush, speak, speakLine, speakUrl } from '../voice'
 import type { Opt, Say } from './chatScripts'
 import { cashFare, discountFor, driverAudio, fareAt, heroAudio, lari, priceAudio, priceLine, taxiTurns, toPay, type Nav, type TaxiMode, type TaxiTurn } from './taxi.logic'
 import type { SceneProps, StepOf } from './types'
@@ -110,7 +110,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
         const url = driverAudio(l.geo)
         if (url) await speakUrl(url, l.geo)
         else if (l.ids.length === 1) await speak(l.ids[0], 'm')
-        else await speakUrl(undefined, l.geo)
+        else await speakLine(l.geo, 'm')
         if (alive.current) setTalking(false)
       } else if (l.kind === 'note') {
         setBubble({ ru: l.text, tone: 'note' })
@@ -158,7 +158,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
     const url = heroAudio(o.geo)
     if (url) await speakUrl(url, o.geo)
     else if (o.ids.length === 1) await speak(o.ids[0], 'hero')
-    else await speakUrl(undefined, o.geo)
+    else await speakLine(o.geo, 'hero')
     if (!alive.current) return
     const plus = discountFor(missed)
     setDiscount(d => d + plus); setGood(g => g + 1); setEyes('smile')

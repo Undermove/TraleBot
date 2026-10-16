@@ -5,11 +5,11 @@ import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { firstMet, met, myName, phrase, type Phrase } from '../story'
 import { GameEnd, GameIntro, NewWord } from '../ui'
-import { hush, speakUrl } from '../voice'
+import { hush, speakLine, speakUrl } from '../voice'
 import type { Opt, Say } from './chatScripts'
 import { BEATS, THEME_RU, TOASTS, dishUrl, guestWarmth, guests, toastOpts, type Guest } from './supra.logic'
 import { voiceOf } from './Reception.logic'
-import { lineUrl, type Voice } from './chat/voices'
+import { type Voice } from './chat/voices'
 import Passerby, { type Face } from './walk/Passerby'
 import type { Who } from './Walk.logic'
 import type { SceneProps, StepOf } from './types'
@@ -84,7 +84,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
       setBubble({ who: who === 'tamada' ? 'tamada' : 'guest', geo: l.geo, ru: l.ru }); setTalking(who)
       introduce(l.ids)
       const v = who === 'tamada' ? 'm' : voiceOfGuest(who)
-      await speakUrl(dishUrl(l.geo, v) ?? lineUrl(l.geo, v), l.geo)
+      { const d = dishUrl(l.geo, v); await (d ? speakUrl(d, l.geo) : speakLine(l.geo, v)) }
       if (alive.current) setTalking(null)
     }
   }
@@ -148,7 +148,7 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
     setStage('talk'); setNote(null); setFresh(null); setFaces(f => ({ ...f, [gi]: 'smile' }))
     setBubble({ who: 'you', geo: o.geo, ru: o.ru })
     haptic('pop'); sound.snap(b + e)
-    await speakUrl(lineUrl(o.geo, 'hero'), o.geo)
+    await speakLine(o.geo, 'hero')
     if (!alive.current) return
     if (o.then?.length) await tell(o.then, gi)
     if (!alive.current) return
@@ -175,14 +175,14 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
     setStage('cheer'); setNote(null); setFresh(null)
     setBubble({ who: 'you', geo: o.geo, ru: o.ru })
     haptic('pop')
-    await speakUrl(lineUrl(o.geo, 'hero'), o.geo)
+    await speakLine(o.geo, 'hero')
     if (!alive.current) return
     // Весь стол подхватывает тост.
     setToasts(n => n + 1); setClink(c => c + 1)
     setBubble({ who: 'tamada', geo: o.geo, ru: o.ru }); setTalking('tamada')
     haptic('good'); sound.snap(6)
     burst(document.querySelector('[data-testid="supra-table"]') as HTMLElement | null, 'big')
-    await speakUrl(lineUrl(o.geo, 'm'), o.geo)
+    await speakLine(o.geo, 'm')
     if (!alive.current) return
     setTalking(null)
     await wait(400)

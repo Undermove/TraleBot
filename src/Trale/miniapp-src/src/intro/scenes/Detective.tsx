@@ -6,7 +6,7 @@ import { cyr } from '../../verbs/types'
 import Button from '../../components/Button'
 import { JOBS, firstMet, met, phrase, plural } from '../story'
 import { GameEnd, GameIntro, NewWord, RuleCard, WordTag } from '../ui'
-import { hush, speak, speakUrl } from '../voice'
+import { hush, speak, speakLine, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
   PUZZLES, clueFor, clueGeo, clueRu, give, makeCase, speakerOf, wrongPeople,
@@ -142,7 +142,7 @@ function Hall({ puzzle, mode, last, onSolved, lessonId, first }: {
         if (off || !alive.current) return
         const c = puzzle.clues[k]
         setSpeaking(k); sound.pop(k)
-        await speakUrl(clueAudio(c, puzzle), clueGeo(c, puzzle))
+        { const u = clueAudio(c, puzzle); await (u ? speakUrl(u, clueGeo(c, puzzle)) : speakLine(clueGeo(c, puzzle), voiceOf(puzzle.people[speakerOf(c)].name))) }
         if (off || !alive.current) return
         setHeard(k + 1); setSpeaking(null)
         await new Promise(r => setTimeout(r, 250))

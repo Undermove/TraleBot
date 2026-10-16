@@ -8,9 +8,8 @@ import Button from '../../components/Button'
 import Mascot from '../../components/Mascot'
 import { geoName, myName, savedName, saveName, type GeoName } from '../story'
 import { Face, GameEnd, GameIntro, Reply, type Look } from '../ui'
-import { hush, speakUrl } from '../voice'
+import { hush, speakLine } from '../voice'
 import Passerby from './walk/Passerby'
-import { lineUrl } from './chat/voices'
 import {
   ENDINGS, MAX_WARMTH, bankAdd, chatScript, ending, onlyKnown, warmAfter,
   type ChatScript, type Exchange, type Line, type Opt, type Say
@@ -94,7 +93,7 @@ function Bubbles({ msgs, typing }: { msgs: Msg[]; typing: boolean }) {
               <div className="rounded-xl border-[1.5px] border-dashed border-jewelInk-hint bg-cream/70 px-3 py-1 text-center text-[12px] font-semibold text-jewelInk-soft" data-testid="chat-note">{m.text}</div>
             ) : m.kind === 'photo' ? <Photo caption={m.caption} seed={m.seed} /> : (
               <>
-                <button type="button" onClick={() => { void speakUrl(lineUrl(m.geo, mine ? 'hero' : 'f'), m.geo) }}
+                <button type="button" onClick={() => { void speakLine(m.geo, mine ? 'hero' : 'f') }}
                   className={`text-left rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 ${mine ? `rounded-br-md ${m.bad ? 'bg-ruby-wash' : 'bg-gold-wash'}` : 'rounded-bl-md bg-cream-tile'}`}
                   style={{ boxShadow: '2px 2px 0 #15100A' }}
                   data-testid={mine ? 'chat-mine' : 'chat-hers'}>
@@ -179,7 +178,7 @@ export default function Chat({ lesson, step, fraction, onExit, onDone, rng = Mat
       setTyping(false)
       push(toMsg(head))
       sound.pop(); haptic('soft')
-      void speakUrl(lineUrl(head.geo, 'f'), head.geo).then(() => { if (alive.current) later(() => herSays(rest, then), GAP_MS) })
+      void speakLine(head.geo, 'f').then(() => { if (alive.current) later(() => herSays(rest, then), GAP_MS) })
     }, typeMs(head.geo))
   }
 
@@ -220,7 +219,7 @@ export default function Chat({ lesson, step, fraction, onExit, onDone, rng = Mat
     if (o.w >= 2) burst(el, 'small')
     setBank(b => bankAdd(b, o))
     // Сказал — дослушали — Нино отвечает.
-    void speakUrl(lineUrl(o.geo, 'hero'), o.geo).then(() => { if (alive.current) later(() => herSays(o.then ?? [], () => runExchange(i + 1)), 300) })
+    void speakLine(o.geo, 'hero').then(() => { if (alive.current) later(() => herSays(o.then ?? [], () => runExchange(i + 1)), 300) })
   }
 
   const intro = script === 'act2'

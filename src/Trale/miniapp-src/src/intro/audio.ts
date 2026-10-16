@@ -109,7 +109,7 @@ export const INTRO_WORD_AUDIO: Readonly<Record<string, string>> = {
 // мужской), знакомые-мужчины — George, женщины и дети — Alice (записи выше). Чтобы на слух было ясно,
 // кто говорит: ты или тебе.
 const HERO_IDS = ['gamarjoba', 'gagimarjos', 'nakhvamdis', 'dila', 'saghamo', 'kargad_madloba', 'kargad_shen', 'ra_gkvia', 'saidan', 'ra_profesia', 'rogor', 'madloba', 'bodishi', 'ki', 'ara']
-const MALE_IDS = ['gamarjoba', 'gagimarjos', 'dila', 'saghamo', 'rogor', 'kargad_madloba', 'nakhvamdis', 'madloba', 'kargad_shen']
+const MALE_IDS = ['gamarjoba', 'gagimarjos', 'dila', 'saghamo', 'rogor', 'kargad_madloba', 'nakhvamdis', 'madloba', 'kargad_shen', 'sasiamovnoa']
 
 /** Слова сцены записаны всеми тремя голосами. */
 const SCENE_IDS: readonly string[] = ['puri', 'khachapuri', 'gtkhovt', 'dzalian_kargad', 'mets_kargad', 'kidev', 'gachereba', 'gamicheret', 'aq', 'zghva', 'chai', 'qava', 'tskali', 'minda', 'pasporti', 'gasaghebi', 'otakhi', 'ghvino', 'gemrielia', 'amanati', 'es_shenia', 'marjvniv', 'marcxniv', 'pirdapir', 'gaachere', 'ramdeni_ghirs', 'lari', 'bebia', 'babua', 'foto', 'kata', 'chemodani', 'telefoni', 'khinkali', 'churchkhela', 'tamada']
