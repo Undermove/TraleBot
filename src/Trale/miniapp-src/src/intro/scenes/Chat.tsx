@@ -77,10 +77,25 @@ function Photo({ caption, seed }: { caption: string; seed: number }) {
 
 function Bubbles({ msgs, typing }: { msgs: Msg[]; typing: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => { const el = ref.current; if (el) el.scrollTop = el.scrollHeight }, [msgs.length, typing])
+  const inner = useRef<HTMLDivElement>(null)
+  // Чат держится за низ, как мессенджер: не только когда пришло сообщение, но и когда снизу выехали
+  // кнопки ответа (окно чата стало ниже) или пузырь дорос в анимации. Если человек сам пролистал вверх
+  // — не дёргаем; новое сообщение всё равно возвращает вниз.
+  const stick = useRef(true)
+  const toBottom = () => { const el = ref.current; if (el && stick.current) el.scrollTop = el.scrollHeight }
+  useEffect(() => { stick.current = true; toBottom() }, [msgs.length, typing])
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(toBottom)
+    if (ref.current) ro.observe(ref.current)
+    if (inner.current) ro.observe(inner.current)
+    return () => ro.disconnect()
+  }, [])
+  const onScroll = () => { const el = ref.current; if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48 }
   return (
-    <div ref={ref} className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 p-3" data-testid="chat-log"
+    <div ref={ref} onScroll={onScroll} className="flex-1 min-h-0 overflow-y-auto p-3" data-testid="chat-log"
       style={{ background: '#EAF0E4', backgroundImage: 'radial-gradient(#D5DFCB 1.2px, transparent 1.2px)', backgroundSize: '18px 18px' }}>
+      <div ref={inner} className="flex flex-col gap-2">
       {msgs.map((m, k) => {
         const mine = m.kind === 'me'
         const last = mine && msgs.slice(k + 1).every(x => x.kind !== 'me')
@@ -118,6 +133,7 @@ function Bubbles({ msgs, typing }: { msgs: Msg[]; typing: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   )
 }
