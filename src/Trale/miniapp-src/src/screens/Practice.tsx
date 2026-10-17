@@ -198,6 +198,7 @@ export default function Practice({
         fraction={intro.progress(index, questions.length)}
         onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
         onDone={() => intro.sceneDone(navigate)}
+        navigate={navigate}
       />
     )
   }

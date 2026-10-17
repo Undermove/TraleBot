@@ -39,6 +39,7 @@ builder.Services.AddSingleton<Trale.MiniApp.ITraleMiniAppContentProvider>(sp => 
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IMiniAppContentProvider>(sp => sp.GetRequiredService<Trale.MiniApp.MiniAppContentProvider>());
 builder.Services.AddScoped<Application.Common.Interfaces.MiniApp.IProgressCalculator, Trale.MiniApp.ProgressCalculator>();
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IAlphabetLessonWords, Trale.MiniApp.AlphabetLessonWords>();
+builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IIntroLessonWords, Trale.MiniApp.IntroLessonWords>();
 builder.Services.AddHostedService<CreateWebhook>();
 builder.Services.AddHostedService<SeedVerbCatalog>();
 builder.Services.AddHostedService<LoadVerbStories>();

@@ -166,6 +166,13 @@ export const api = {
       body: JSON.stringify({ lessonId })
     }),
 
+  /** Слова засчитанного урока «Знакомства» (фразы и слова сцены) — в «Словарь». Как у алфавита: список — серверный. */
+  addIntroWords: (lessonId: number) =>
+    request<{ words: { word: string; translation: string; added: boolean }[]; added: number }>('/api/miniapp/vocabulary/intro-words', {
+      method: 'POST',
+      body: JSON.stringify({ lessonId })
+    }),
+
   recordAnswer: (payload: { correct: boolean }) =>
     request<LessonCompleteResponse>('/api/miniapp/progress/answer', {
       method: 'POST',

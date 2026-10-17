@@ -246,7 +246,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
                   <button type="button" onClick={() => { haptic('tap'); void speak(learn, who === 'guest' ? r.guest?.voice ?? 'f' : 'm') }}
                     className="mt-1 block w-full font-geo text-[26px] font-bold leading-tight" aria-label="Послушать ещё раз">{phrase(learn).geo}</button>
                   <div className="text-[13px] font-semibold text-jewelInk-hint">{cyr(phrase(learn).geo)} — {phrase(learn).ru}</div>
-                  <div className="mt-2 text-[12px] leading-snug text-jewelInk-soft">Теперь эта кнопка есть внизу — с меткой «новое».</div>
+                  <div className="mt-2 text-[12px] leading-snug text-jewelInk-soft">Теперь эта кнопка есть внизу — с меткой «новое». А после урока слово попадёт в твой словарь.</div>
                   <button type="button" data-testid="pingpong-word-ok" onClick={() => { haptic('tap'); ack.current?.(); ack.current = undefined }}
                     className="mt-3 w-full min-h-[44px] rounded-xl border-[1.5px] border-jewelInk bg-navy text-cream font-extrabold text-[15px]"
                     style={{ boxShadow: '2px 2px 0 #15100A' }}>Понятно</button>

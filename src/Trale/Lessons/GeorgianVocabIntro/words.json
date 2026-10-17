@@ -1,0 +1,541 @@
+{
+  "about": "Слова уроков «Знакомства» (intro): фразы урока и слова сцены. Собирается из story.json скриптом tools/intro_story.py. После засчитанного урока сервер кладёт их в словарь ученика (POST /api/miniapp/vocabulary/intro-words).",
+  "wordLessons": [
+    {
+      "id": 1,
+      "after": 0,
+      "words": [
+        {
+          "word": "გამარჯობა",
+          "translation": "здравствуй"
+        },
+        {
+          "word": "ნახვამდის",
+          "translation": "до свидания"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "after": 0,
+      "words": [
+        {
+          "word": "დილა მშვიდობისა",
+          "translation": "доброе утро"
+        },
+        {
+          "word": "საღამო მშვიდობისა",
+          "translation": "добрый вечер"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "after": 0,
+      "words": [
+        {
+          "word": "როგორ ხარ?",
+          "translation": "как дела?"
+        },
+        {
+          "word": "კარგად, მადლობა",
+          "translation": "хорошо, спасибо"
+        },
+        {
+          "word": "პური",
+          "translation": "хлеб"
+        },
+        {
+          "word": "ხაჭაპური",
+          "translation": "хачапури"
+        },
+        {
+          "word": "გთხოვთ",
+          "translation": "пожалуйста (просьба)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "after": 0,
+      "words": [
+        {
+          "word": "კარგად, შენ?",
+          "translation": "хорошо, а ты?"
+        },
+        {
+          "word": "ძალიან კარგად",
+          "translation": "очень хорошо"
+        },
+        {
+          "word": "მეც კარგად",
+          "translation": "я тоже хорошо"
+        },
+        {
+          "word": "კიდევ?",
+          "translation": "ещё?"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "after": 0,
+      "words": [
+        {
+          "word": "მადლობა",
+          "translation": "спасибо"
+        },
+        {
+          "word": "ბოდიში",
+          "translation": "извините"
+        },
+        {
+          "word": "კი",
+          "translation": "да"
+        },
+        {
+          "word": "არა",
+          "translation": "нет"
+        },
+        {
+          "word": "გაჩერება",
+          "translation": "остановка"
+        },
+        {
+          "word": "გამიჩერეთ!",
+          "translation": "остановите!"
+        },
+        {
+          "word": "აქ",
+          "translation": "здесь"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "after": 0,
+      "words": [
+        {
+          "word": "გაგიმარჯოს",
+          "translation": "здравствуй и ты (ответ)"
+        },
+        {
+          "word": "ზღვა",
+          "translation": "море"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "after": 0,
+      "words": [
+        {
+          "word": "მე მქვია",
+          "translation": "меня зовут…"
+        },
+        {
+          "word": "მე მქვია კარლოსი",
+          "translation": "меня зовут Карлос"
+        },
+        {
+          "word": "ჩაი",
+          "translation": "чай"
+        },
+        {
+          "word": "ყავა",
+          "translation": "кофе"
+        },
+        {
+          "word": "წყალი",
+          "translation": "вода"
+        },
+        {
+          "word": "მინდა",
+          "translation": "хочу"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "after": 0,
+      "words": []
+    },
+    {
+      "id": 9,
+      "after": 0,
+      "words": [
+        {
+          "word": "რა გქვია?",
+          "translation": "как тебя зовут?"
+        },
+        {
+          "word": "გამარჯობა! მე მქვია ნინო. შენ?",
+          "translation": "Привет! Меня зовут Нино. А тебя?"
+        },
+        {
+          "word": "პასპორტი",
+          "translation": "паспорт"
+        },
+        {
+          "word": "გასაღები",
+          "translation": "ключ"
+        },
+        {
+          "word": "ოთახი",
+          "translation": "комната"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "after": 0,
+      "words": [
+        {
+          "word": "სასიამოვნოა",
+          "translation": "приятно познакомиться"
+        },
+        {
+          "word": "ღვინო",
+          "translation": "вино"
+        },
+        {
+          "word": "გემრიელია!",
+          "translation": "вкусно!"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "after": 0,
+      "words": [
+        {
+          "word": "ვინ არის ეს?",
+          "translation": "кто это?"
+        },
+        {
+          "word": "ეს ჩემი მეგობარია",
+          "translation": "это мой друг"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "after": 0,
+      "words": []
+    },
+    {
+      "id": 13,
+      "after": 0,
+      "words": [
+        {
+          "word": "საიდან ხარ?",
+          "translation": "откуда ты?"
+        },
+        {
+          "word": "მე ვარ საქართველოდან",
+          "translation": "я из Грузии"
+        },
+        {
+          "word": "მე ვარ ესპანეთიდან",
+          "translation": "я из Испании"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "after": 0,
+      "words": [
+        {
+          "word": "საფრანგეთიდან",
+          "translation": "из Франции"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "after": 0,
+      "words": []
+    },
+    {
+      "id": 16,
+      "after": 0,
+      "words": [
+        {
+          "word": "ამანათი",
+          "translation": "посылка"
+        },
+        {
+          "word": "ეს შენია?",
+          "translation": "это твоё?"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "after": 0,
+      "words": [
+        {
+          "word": "სასიამოვნოა! საქართველო მოგწონს?",
+          "translation": "Приятно! Тебе нравится Грузия?"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "after": 0,
+      "words": [
+        {
+          "word": "მე ვცხოვრობ თბილისში",
+          "translation": "я живу в Тбилиси"
+        },
+        {
+          "word": "ვცხოვრობ ბათუმში",
+          "translation": "живу в Батуми"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "after": 0,
+      "words": [
+        {
+          "word": "ქუთაისში",
+          "translation": "в Кутаиси"
+        },
+        {
+          "word": "მარჯვნივ",
+          "translation": "направо"
+        },
+        {
+          "word": "მარცხნივ",
+          "translation": "налево"
+        },
+        {
+          "word": "პირდაპირ",
+          "translation": "прямо"
+        },
+        {
+          "word": "გააჩერე",
+          "translation": "останови здесь"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "after": 0,
+      "words": [
+        {
+          "word": "მე ვარ სტუდენტი",
+          "translation": "я студент"
+        },
+        {
+          "word": "ექიმი",
+          "translation": "врач"
+        },
+        {
+          "word": "ის არის მასწავლებელი",
+          "translation": "он/она учитель"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "after": 0,
+      "words": [
+        {
+          "word": "შენ რა პროფესია გაქვს?",
+          "translation": "какая у тебя профессия?"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "after": 0,
+      "words": [
+        {
+          "word": "ვმუშაობ",
+          "translation": "я работаю"
+        },
+        {
+          "word": "რამდენი ღირს?",
+          "translation": "сколько стоит?"
+        },
+        {
+          "word": "ლარი",
+          "translation": "лари"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "after": 0,
+      "words": [
+        {
+          "word": "საქართველო ძალიან ლამაზია",
+          "translation": "Грузия очень красивая"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "after": 0,
+      "words": []
+    },
+    {
+      "id": 25,
+      "after": 0,
+      "words": [
+        {
+          "word": "დედა",
+          "translation": "мама"
+        },
+        {
+          "word": "მამა",
+          "translation": "папа"
+        },
+        {
+          "word": "ოჯახი",
+          "translation": "семья"
+        },
+        {
+          "word": "ბებია",
+          "translation": "бабушка"
+        },
+        {
+          "word": "ბაბუა",
+          "translation": "дедушка"
+        },
+        {
+          "word": "ფოტო",
+          "translation": "фото"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "after": 0,
+      "words": [
+        {
+          "word": "ძმა",
+          "translation": "брат"
+        },
+        {
+          "word": "და",
+          "translation": "сестра"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "after": 0,
+      "words": [
+        {
+          "word": "მე მყავს ერთი ძმა და ერთი და",
+          "translation": "у меня есть один брат и одна сестра"
+        },
+        {
+          "word": "მე მყავს და",
+          "translation": "у меня есть сестра"
+        },
+        {
+          "word": "მე მყავს ძაღლი",
+          "translation": "у меня есть собака"
+        },
+        {
+          "word": "კატა",
+          "translation": "кошка"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "after": 0,
+      "words": [
+        {
+          "word": "მე მაქვს მანქანა",
+          "translation": "у меня есть машина"
+        },
+        {
+          "word": "ჩემოდანი",
+          "translation": "чемодан"
+        },
+        {
+          "word": "ტელეფონი",
+          "translation": "телефон"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "after": 0,
+      "words": [
+        {
+          "word": "ქმარი",
+          "translation": "муж"
+        },
+        {
+          "word": "ცოლი",
+          "translation": "жена"
+        },
+        {
+          "word": "ვაჟი",
+          "translation": "сын"
+        },
+        {
+          "word": "ქალიშვილი",
+          "translation": "дочь"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "after": 0,
+      "words": []
+    },
+    {
+      "id": 31,
+      "after": 0,
+      "words": [
+        {
+          "word": "მიყვარს საქართველო",
+          "translation": "я люблю Грузию"
+        },
+        {
+          "word": "არ ვიცი",
+          "translation": "не знаю"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "after": 0,
+      "words": []
+    },
+    {
+      "id": 33,
+      "after": 0,
+      "words": [
+        {
+          "word": "გაუმარჯოს!",
+          "translation": "за здоровье! (тост)"
+        },
+        {
+          "word": "გაუმარჯოს საქართველოს!",
+          "translation": "да здравствует Грузия!"
+        },
+        {
+          "word": "ხინკალი",
+          "translation": "хинкали"
+        },
+        {
+          "word": "ჩურჩხელა",
+          "translation": "чурчхела"
+        },
+        {
+          "word": "თამადა",
+          "translation": "тамада (глава застолья)"
+        }
+      ]
+    }
+  ]
+}

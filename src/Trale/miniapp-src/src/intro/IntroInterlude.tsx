@@ -79,15 +79,16 @@ export function useIntroLesson(moduleId: string, lessonId: number, questions: Qu
   }
 }
 
-export default function IntroInterlude({ scene, lessonId, fraction, onExit, onDone }: {
+export default function IntroInterlude({ scene, lessonId, fraction, onExit, onDone, navigate }: {
   scene: IntroScene
   lessonId: number
   fraction: number
   onExit: () => void
   onDone: () => void
+  navigate?: (s: Screen) => void
 }) {
   const lesson = introLesson(lessonId)
-  if (scene.kind === 'finale') return <StoryFinale lesson={lesson} onNext={onDone} />
+  if (scene.kind === 'finale') return <StoryFinale lesson={lesson} onNext={onDone} onVocabulary={navigate && (() => navigate({ kind: 'vocabulary-list' }))} />
   const step = scene.step
   const key = `${lessonId}-${scene.index}`
   const p = { lesson, fraction, onExit, onDone } as const

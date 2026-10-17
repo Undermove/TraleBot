@@ -92,6 +92,23 @@ public class AlphabetLessonWordsTests : TestBase
     }
 
     [Test]
+    public async Task A_counted_intro_lesson_puts_its_phrases_and_scene_words_into_the_dictionary()
+    {
+        // Урок 3 «Знакомства»: როგორ ხარ?, კარგად, მადლობა и слова сцены пекарни.
+        var words = new IntroLessonWords().WordsOf(3);
+        (await Post("progress/lesson-complete", new { moduleId = "intro", lessonId = 3, correct = 5, total = 5 }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = JsonNode.Parse(await (await Post("vocabulary/intro-words", new { lessonId = 3 })).Content.ReadAsStringAsync())!;
+        body["words"]!.AsArray().Select(w => w!["word"]!.GetValue<string>()).Should().Equal(words.Select(w => w.Word));
+        words.Select(w => w.Word).Should().Contain(["როგორ ხარ?", "პური"]);
+        (await Dictionary()).Select(e => e.Word).Should().BeEquivalentTo(words.Select(w => w.Word));
+
+        (await Post("vocabulary/intro-words", new { lessonId = 4 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await Post("vocabulary/intro-words", new { lessonId = 99 })).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Test]
     public async Task The_server_word_list_is_the_lesson_theory()
     {
         var words = new AlphabetLessonWords();

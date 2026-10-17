@@ -1,4 +1,5 @@
 import React from 'react'
+import { DictIcon } from '../alphabet/words/WordIntro'
 import Button from '../components/Button'
 import Mascot from '../components/Mascot'
 import { cyr } from '../verbs/types'
@@ -235,7 +236,11 @@ export function NewWord({ word, className = '', style, onTap, testId = 'new-word
       onClick={() => { haptic('tap'); say(word); onTap?.() }}
       className={`zn-pop rounded-2xl border-[1.5px] border-jewelInk bg-gold-wash px-3 py-1.5 text-left leading-tight ${className}`}
       style={{ boxShadow: '3px 3px 0 #15100A', ...style }}>
-      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-jewelInk-mid">{word.alphabet ? 'знаешь по алфавиту' : 'новое слово'}</span>
+      <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-jewelInk-mid">
+        {word.alphabet ? 'знаешь по алфавиту' : 'новое слово'}
+        {/* После урока слово ляжет в личный словарь — видно сразу, на карточке. */}
+        <span className="inline-flex items-center gap-0.5 normal-case tracking-normal font-bold text-jewelInk-hint" data-testid="new-word-dict"><DictIcon size={11} />в словарь</span>
+      </span>
       <span className="block font-geo text-[19px] font-bold">{word.geo}</span>
       <span className="block text-[11px] font-semibold text-jewelInk-hint">{cyr(word.geo)} — {word.ru}</span>
     </button>

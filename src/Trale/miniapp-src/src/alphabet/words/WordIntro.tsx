@@ -23,8 +23,8 @@ import { PRODUCTS } from '../cafe/products'
 
 type Phase = 'tap' | 'read' | 'meaning'
 
-const DictIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#15100A" strokeWidth="1.8" strokeLinejoin="round" aria-hidden>
+export const DictIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#15100A" strokeWidth="1.8" strokeLinejoin="round" aria-hidden>
     <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z" fill="#C9DBF0" />
     <path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5z" fill="#FDFAEF" />
     <path d="M8 8h8M8 11.5h6" />
