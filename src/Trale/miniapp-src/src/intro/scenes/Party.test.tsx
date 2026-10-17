@@ -145,8 +145,10 @@ describe('party scene', () => {
     render(<Party lesson={introLesson(lessonId)} step={{ kind: 'party', mode }} fraction={0.5} onExit={() => {}} onDone={onDone} rng={seeded(lessonId)} />)
     expect(screen.getByTestId('party-scene')).toBeTruthy()
     fireEvent.click(screen.getByText('Начать'))
-    let asked = false
+    let asked = false, cards = 0
     for (let i = 0; i < 600 && !screen.queryByTestId('game-end'); i++) {
+      const card = screen.queryByTestId('party-quiz-card-go')
+      if (card) { fireEvent.click(card.querySelector('button')!); cards++; await step(100); continue }
       const opts = screen.queryAllByTestId(/^party-opt-/)
       const guest = screen.queryAllByTestId(/^party-guest-/).find(b => b.dataset.done === '0')
       const badgesNow = screen.queryAllByTestId(/^party-badge-\d/)
@@ -163,6 +165,7 @@ describe('party scene', () => {
       await step(600)
     }
     expect(screen.getByTestId('game-end')).toBeTruthy()
+    expect(cards).toBe(mode === 'who' ? 1 : 0)
     expect(screen.getByTestId('rule-card')).toBeTruthy()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()

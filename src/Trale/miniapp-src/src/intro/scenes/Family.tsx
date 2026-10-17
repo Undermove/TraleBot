@@ -5,7 +5,7 @@ import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import Button from '../../components/Button'
 import { firstMet, met, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, Pill, Reply, RuleCard, Tip, WordTag, type Look, type Mood } from '../ui'
+import { GameEnd, GameIntro, NewWord, Pill, Reply, RoundCard, RuleCard, Tip, WordTag, type Look, type Mood } from '../ui'
 import { cyr } from '../../verbs/types'
 import { hush, speak, speakUrl } from '../voice'
 import Passerby from './walk/Passerby'
@@ -13,7 +13,7 @@ import Portrait, { whoOf } from './family/Portrait'
 import DragPhoto from './family/DragPhoto'
 import type { SceneProps, StepOf } from './types'
 import {
-  ROLES, SHOW_AFTER, albumPages, albumScore, familyLooks, familyRounds, familyTree, geoOf, missReaction, ownStatements, thisIs, treeRoles,
+  ROLES, SHOW_AFTER, albumCard, albumPages, albumsLine, albumScore, familyLooks, familyRounds, familyTree, geoOf, missReaction, ownStatements, thisIs, treeRoles,
   type FamilyMode, type Role, type SlotRole, type Tree
 } from './Family.logic'
 
@@ -148,6 +148,8 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const [fb, setFb] = useState<Feedback | null>(null)
   const [busy, setBusy] = useState(false)
   const [roundDone, setRoundDone] = useState(false)
+  // Перед каждым альбомом — карточка «Альбом N из M · Семья Аны»: смена хозяина не проходит незаметно.
+  const [cover, setCover] = useState(rounds.length > 1)
   const first = useRef(0)
   const trap = useRef<boolean | null>(null)
   const later = useLater()
@@ -172,12 +174,12 @@ function Placing({ mode, lessonId, rng, onEnd }: {
     }
     return out
   }, [lessonId, rounds]).get(`${ri}-${ci}`) ?? null
-  useEffect(() => { if (rounds[0].order[0]) voice(rounds[0].order[0], 0) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!cover && rounds[ri].order[0]) voice(rounds[ri].order[0], ri) }, [cover]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => hush(), [])
 
   /** true — фото легло в рамку. */
   const place = (frame: Role, el?: HTMLElement | null): boolean => {
-    if (!photo || busy || roundDone) return false
+    if (!photo || busy || roundDone || cover) return false
     const isTrap = mode === 'parents' && ri === 0 && photo === 'mama'
     if (frame === photo) {
       haptic('good'); sound.snap(ci)
@@ -209,8 +211,7 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const nextRound = () => {
     haptic('pop')
     if (ri + 1 < rounds.length) {
-      setRi(ri + 1); setCi(0); setFilled({}); setRoundDone(false); setFb(null)
-      voice(rounds[ri + 1].order[0], ri + 1)
+      setRi(ri + 1); setCi(0); setFilled({}); setRoundDone(false); setFb(null); setCover(true)
     } else onEnd({ first: first.current, total, trap: trap.current })
   }
 
@@ -218,9 +219,11 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const glow = photo && misses >= SHOW_AFTER ? photo : null
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="family-play">
+    <div className="relative flex-1 min-h-0 flex flex-col gap-2" data-testid="family-play">
+      {cover && <RoundCard {...albumCard(mode, ri)} go="Открыть альбом" onGo={() => setCover(false)} testId="album-card" />}
       <div className="flex items-center gap-2">
-        <Pill testId="family-round">{rounds.length > 1 ? `альбом ${ri + 1} из ${rounds.length}` : 'альбом Нино'}</Pill>
+        <Pill testId="family-round">{rounds.length > 1 ? `альбом ${ri + 1} из ${rounds.length}` : `альбом ${round.ownerRu}`}</Pill>
+        <Pill testId="family-photo">фото {Math.min(ci + 1, round.order.length)} из {round.order.length}</Pill>
         <div className="flex-1" />
         <Pill testId="family-score">★ {first.current}</Pill>
       </div>
@@ -253,7 +256,7 @@ function Placing({ mode, lessonId, rng, onEnd }: {
       <div className="shrink-0 min-h-[92px] ab-short:min-h-[80px] flex items-center gap-3">
         {roundDone ? (
           <div className="w-full zn-pop">
-            <Button onClick={nextRound}>{ri + 1 < rounds.length ? `Альбом: ${rounds[ri + 1].ownerRu}` : 'Готово'}</Button>
+            <Button onClick={nextRound}>{ri + 1 < rounds.length ? `Дальше: альбом ${ri + 2} из ${rounds.length}` : 'Готово'}</Button>
           </div>
         ) : photo && (
           <>
@@ -391,10 +394,10 @@ function Album({ lessonId, rng, onEnd }: { lessonId: number; rng: () => number; 
 // ── Сцена ─────────────────────────────────────────────────────────────────────────────────────────
 
 const MODE_TEXT: Record<FamilyMode, { title: string; text: string }> = {
-  parents: { title: 'Семейный альбом', text: 'Нино показывает родителей — и бабушку с дедушкой. Слушай, кого она называет, и клади фото в нужную рамку. Осторожно: одно слово — ловушка.' },
-  siblings: { title: 'Брат и сестра', text: 'В альбоме прибавилось людей: брат и сестра. Бабушка с дедушкой на месте, сверху. Слушай, кого называют, и раскладывай фото по рамкам.' },
+  parents: { title: 'Семейный альбом', text: `${albumsLine('parents')} В каждом — родители и бабушка с дедушкой. Слушай, кого называют, и клади фото в нужную рамку. Осторожно: одно слово — ловушка.` },
+  siblings: { title: 'Брат и сестра', text: `${albumsLine('siblings')} В альбомах прибавилось людей: брат и сестра. Бабушка с дедушкой на месте, сверху. Слушай, кого называют, и раскладывай фото по рамкам.` },
   full: { title: 'Вся семья', text: 'У брата Нино своя семья, у сестры — муж. Девять рамок: смотри на линии родства и слушай Нино.' },
-  album: { title: 'Семейный альбом', text: 'Листаем альбом Нино: она показывает на фото и спрашивает «кто это?». Отвечай по-грузински, серия даёт бонус.' }
+  album: { title: 'Семейный альбом', text: 'Листаем альбом Нино: она показывает на фото и спрашивает «кто это?». Отвечай по-грузински, серия даёт бонус. Последняя страница — про тебя.' }
 }
 
 type Result = { title: string; text: string }

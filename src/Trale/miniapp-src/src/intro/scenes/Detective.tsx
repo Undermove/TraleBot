@@ -5,7 +5,7 @@ import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import Button from '../../components/Button'
 import { JOBS, firstMet, met, phrase, plural } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard, WordTag } from '../ui'
+import { GameEnd, GameIntro, NewWord, Pill, RoundCard, RuleCard, WordTag } from '../ui'
 import { hush, speak, speakLine, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
@@ -53,30 +53,37 @@ export default function Detective({ lesson, step, fraction, onExit, onDone, rng 
   const [phase, setPhase] = useState<'intro' | 'play' | 'end'>('intro')
   const [i, setI] = useState(0)
   const [clean, setClean] = useState(0)
+  // В последнем подъезде правило меняется — говорящих не видно. Сначала карточка, потом слушаем.
+  const [briefed, setBriefed] = useState(false)
   useEffect(() => () => hush(), [])
 
   const title = mode === 'from' ? 'Кто откуда' : 'Кто кем работает'
   const solved = (firstTry: boolean) => {
     if (firstTry) setClean(c => c + 1)
     if (i + 1 >= PUZZLES) setPhase('end')
-    else setI(i + 1)
+    else { setI(i + 1); setBriefed(false) }
   }
 
   return (
     <GameFrame title={title} eyebrow={phase === 'play' ? `подъезд ${i + 1} из ${PUZZLES}` : 'посылки для соседей'} fraction={fraction} onExit={onExit}>
-      <div className="flex-1 min-h-0 flex flex-col" data-testid="detective-scene">
+      <div className="relative flex-1 min-h-0 flex flex-col" data-testid="detective-scene">
         {phase === 'intro' && (
           <GameIntro
             mood="think"
             title="Посылки для соседей"
             text={mode === 'from'
-              ? 'Курьер оставил в подъезде три посылки из разных стран — а кому какая, не написал. Послушай, что говорят соседи, и раздай: нажми коробку, потом соседа. Не всё скажут прямо.'
-              : 'Три посылки: учебники, аптечка и школьная доска. Кто из соседей студент, кто врач, а кто учитель? Послушай и раздай. Иногда говорят и про других.'}
+              ? `Тебя ждут ${PUZZLES} подъезда, каждый хитрее. В каждом курьер оставил три посылки из разных стран — а кому какая, не написал. Послушай, что говорят соседи, и раздай: нажми коробку, потом соседа. Не всё скажут прямо.`
+              : `Тебя ждут ${PUZZLES} подъезда, каждый хитрее. В каждом три посылки: учебники, аптечка и школьная доска. Кто из соседей студент, кто врач, а кто учитель? Послушай и раздай. Иногда говорят и про других.`}
             chips={mode === 'from' ? [{ geo: 'მე ვარ', ru: 'я' }, { geo: '-დან', ru: 'из' }] : [{ geo: 'მე ვარ', ru: 'я' }, { geo: 'ის არის', ru: 'он/она' }]}
             onStart={() => setPhase('play')}
           />
         )}
-        {phase === 'play' && <Hall key={`${round}-${i}`} puzzle={cases[i]} mode={mode} last={i + 1 >= PUZZLES} onSolved={solved} lessonId={lesson.id} first={i === 0 && round === 0} />}
+        {phase === 'play' && cases[i].level >= 3 && !briefed && (
+          <RoundCard count={`Подъезд ${i + 1} из ${PUZZLES}`} title="Голоса с лестницы" testId="hidden-card"
+            text="Здесь соседей не видно, пока они говорят: голоса доносятся с лестницы. Кто что сказал — угадывай по словам, а потом по списку реплик."
+            go="Слушать" onGo={() => setBriefed(true)} />
+        )}
+        {phase === 'play' && (cases[i].level < 3 || briefed) && <Hall key={`${round}-${i}`} puzzle={cases[i]} mode={mode} last={i + 1 >= PUZZLES} at={i} onSolved={solved} lessonId={lesson.id} first={i === 0 && round === 0} />}
         {phase === 'end' && (
           <GameEnd
             title="Все посылки у хозяев"
@@ -107,8 +114,8 @@ const answerAudio = (p: Puzzle['people'][number], mine: boolean) => {
   return mine ? `${AUDIO}det2/${v}-ki.m4a` : `${AUDIO}detective/${v}-ara.m4a`
 }
 
-function Hall({ puzzle, mode, last, onSolved, lessonId, first }: {
-  puzzle: Puzzle; mode: 'from' | 'jobs'; last: boolean; onSolved: (firstTry: boolean) => void; lessonId: number; first: boolean
+function Hall({ puzzle, mode, last, at, onSolved, lessonId, first }: {
+  puzzle: Puzzle; mode: 'from' | 'jobs'; last: boolean; at: number; onSolved: (firstTry: boolean) => void; lessonId: number; first: boolean
 }) {
   // Слова сцены: ამანათი — посылка, ეს შენია? — это твоё? В первом подъезде урока, где они впервые, — карточкой.
   const parcelWord = met(lessonId, 'amanati') ? phrase('amanati') : null
@@ -301,7 +308,10 @@ function Hall({ puzzle, mode, last, onSolved, lessonId, first }: {
 
       {/* Подслушанное — остаётся перед глазами. */}
       <div className="shrink-0 flex flex-col gap-1" data-testid="clues">
-        <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-hint">{hidden ? 'Подслушано с лестницы' : 'Подслушано'} · {puzzle.clues.length} {plural(puzzle.clues.length, 'реплика', 'реплики', 'реплик')}</div>
+        <div className="flex items-center gap-2">
+          <Pill testId="detective-entrance">подъезд {at + 1} из {PUZZLES}</Pill>
+          <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-hint">{hidden ? 'Подслушано с лестницы' : 'Подслушано'} · {puzzle.clues.length} {plural(puzzle.clues.length, 'реплика', 'реплики', 'реплик')}</div>
+        </div>
         {puzzle.clues.slice(0, heard).map((c, k) => (
           <ClueLine key={k} clue={c} puzzle={puzzle} hot={hot === k} open={open.includes(k)} hidden={hidden}
             onToggle={() => setOpen(o => (o.includes(k) ? o.filter(x => x !== k) : [...o, k]))} />

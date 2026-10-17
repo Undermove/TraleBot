@@ -6,13 +6,13 @@ import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import { cyr } from '../../verbs/types'
 import { JOBS, NAME_LIST, firstMet, knows, myName, phrase, shuffle, type Word } from '../story'
-import { Face, GameEnd, GameIntro, Meter, NewWord, Pill, Reply, RuleCard, Tip, say, type Look, type Mood } from '../ui'
+import { Face, GameEnd, GameIntro, Meter, NewWord, Pill, Reply, RoundCard, RuleCard, Tip, say, type Look, type Mood } from '../ui'
 import { hush, speak, speakLine, speakUrl } from '../voice'
 import { TreatIcon, drinksAudio, offerAudio, pleaseAudio, wantAudio, type Treat } from './party/Treats'
 import type { SceneProps, StepOf } from './types'
 import {
   badgeFits, beats, errandBeats, happiness, jobFits, mingle, myJobOptions, partyTwist, planParty, repeatLine, welcomeBeat, whoAnswer, whoOptions,
-  type Beat, type Guest, type Option, type PartyMode
+  type Beat, type Guest, type Option, type PartyMode, type PartyPlan
 } from './Party.logic'
 
 /**
@@ -108,6 +108,14 @@ const INTRO_TEXT: Record<PartyMode, string> = {
   jobs: 'Учимся понимать «მე ვარ …» — «я …»: гость говорит, кем работает, — отправь его в нужный угол крыши.'
 }
 
+/** Сколько гостей и вопросов — чтобы с порога было ясно, когда вечеринка кончится. */
+function partyLength(mode: PartyMode, plan: PartyPlan): string {
+  const waves = plan.waves.length
+  const guests = plan.waves.flat().length
+  if (mode === 'who') return `Придут ${guests} гостя, потом Нино задаст ${plan.questions.length} вопроса.`
+  return waves > 1 ? `Придут ${guests} гостя, по ${guests / waves} за раз.` : `Придут ${guests} гостя.`
+}
+
 export default function Party({ lesson, step, fraction, onExit, onDone, rng = Math.random }: SceneProps<StepOf<'party'>>) {
   const mode = step.mode
   const me = useMemo(() => myName(), [])
@@ -118,6 +126,8 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   const byId = (id: number) => plan.guests[id]
 
   const [phase, setPhase] = useState<Phase>('intro')
+  // «Кто это?»: перед вопросами — карточка, что знакомство кончилось и начинаются вопросы Нино.
+  const [quizCard, setQuizCard] = useState(false)
   const [w, setW] = useState(0)
   const [a, setA] = useState(0)
   const [b, setB] = useState(0)
@@ -252,7 +262,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
         setTray(shuffle([...names, ...(plan.spare && w === plan.waves.length - 1 ? [plan.spare] : [])], rng))
         setTip('Выбери гостя, потом бейдж (или наоборот).')
       } else if (next === 'sort') setTip('Выбери гостя, потом угол: кем он работает?')
-      else startQuiz(0)
+      else setQuizCard(true)
     }, 1100)
   }
 
@@ -482,7 +492,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
     return (
       <GameFrame title="Вечеринка на крыше" eyebrow="соседи зовут в гости" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="party-scene">
-          <GameIntro title="Вечеринка на крыше" text={`${INTRO_TEXT[mode]} ${twist.intro}`} chips={chips} onStart={begin} mood="happy" hero={mode === 'jobs'} />
+          <GameIntro title="Вечеринка на крыше" text={`${INTRO_TEXT[mode]} ${partyLength(mode, plan)} ${twist.intro}`} chips={chips} onStart={begin} mood="happy" hero={mode === 'jobs'} />
         </div>
       </GameFrame>
     )
@@ -498,7 +508,7 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
             text={`${label}: ${firstTry} из ${total} с первого раза. Гости довольны: ${happy}%.`}
             rule={endRule(mode, me.geo)}
             onNext={onDone}
-            onAgain={() => { setRound(r => r + 1); setPresent([]); setSlots({}); setSpeech(null); setHeld({}); setPhase('intro') }}
+            onAgain={() => { setRound(r => r + 1); setQuizCard(false); setPresent([]); setSlots({}); setSpeech(null); setHeld({}); setPhase('intro') }}
           />
         </div>
       </GameFrame>
@@ -512,13 +522,16 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
   const hintBadge = selG !== null && (wrongs[`badge-${selG}`] ?? 0) >= 2 ? byId(selG).name : null
   const hintZone = selG !== null && (wrongs[`job-${selG}`] ?? 0) >= 2 ? byId(selG).job.geo : null
   const freeOnRoof = present.filter(id => !(mode === 'jobs' && sorted[id]))
-  const placed = mode === 'jobs' ? Object.keys(sorted).length : mode === 'who' ? q : Object.keys(badges).length
+  // В «кто это?» сначала счёт гостей, с которыми поздоровался, потом — ответов Нино.
+  const greeting = mode === 'who' && phase !== 'quiz'
+  const placed = mode === 'jobs' ? Object.keys(sorted).length : greeting ? present.filter(id => id !== 0).length : mode === 'who' ? q : Object.keys(badges).length
+  const outOf = greeting ? plan.waves.flat().length : total
 
   return (
     <GameFrame title="Вечеринка на крыше" eyebrow={mode === 'who' ? 'кто есть кто' : mode === 'jobs' ? 'кто кем работает' : 'знакомься'} fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="party-scene">
         <div className="shrink-0 flex items-center gap-2">
-          <Pill testId="party-placed">{mode === 'jobs' ? 'по углам' : mode === 'who' ? 'ответы' : 'бейджи'}: {placed}/{total}</Pill>
+          <Pill testId="party-placed">{mode === 'jobs' ? 'по углам' : greeting ? 'гости' : mode === 'who' ? 'ответы' : 'бейджи'}: {placed}/{outOf}</Pill>
           <span className="text-[11px] font-bold text-jewelInk-hint whitespace-nowrap">гости довольны</span>
           <Meter value={happy / 100} tone={happy < 50 ? 'ruby' : 'sage'} label="Гости довольны" />
         </div>
@@ -526,6 +539,11 @@ export default function Party({ lesson, step, fraction, onExit, onDone, rng = Ma
         <div className="relative flex-1 min-h-[260px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ background: '#1D2747', boxShadow: '3px 3px 0 #15100A' }} data-testid="party-roof">
           <RoofBackdrop />
           <Garland />
+          {quizCard && (
+            <RoundCard testId="party-quiz-card" count={`дальше — ${plan.questions.length} вопроса`} title="Нино спрашивает: кто это?"
+              text="Все гости пришли и перемешались. Нино будет показывать на людей — ответь, кто это. Бейджи подскажут." go="Отвечать"
+              onGo={() => { setQuizCard(false); startQuiz(0) }} />
+          )}
 
           {mode === 'jobs' && (
             <div className="absolute inset-x-1.5 bottom-1.5 grid grid-cols-3 gap-1.5">

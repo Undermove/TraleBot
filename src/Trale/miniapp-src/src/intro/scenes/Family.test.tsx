@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import Family from './Family'
-import { ROLES, albumPages, albumScore, familyRounds, familyTree, missReaction, ownStatements, thisIs, treeRoles, type Role } from './Family.logic'
+import { ROLES, albumCard, albumPages, albumScore, albumsLine, familyRounds, familyTree, missReaction, ownStatements, thisIs, treeRoles, type Role } from './Family.logic'
 import { introLesson, met } from '../story'
 import { seeded } from '../../verbs/testing/catalog'
 
@@ -66,12 +66,14 @@ describe('Family scene', () => {
     render(<Family lesson={introLesson(id)} step={{ kind: 'family', mode }} fraction={0.5} onExit={() => {}} onDone={onDone} rng={seeded(7)} />)
     fireEvent.click(screen.getByText('Начать'))
     expect(screen.getByTestId('family-scene')).toBeTruthy()
-    let missed = false
+    let missed = false, cards = 0
     // В уроке 25 первое фото приходит с новым словом ფოტო.
     if (id === 25) expect(screen.getByTestId('new-word').getAttribute('data-word')).toBe('foto')
     for (let k = 0; k < 60 && !screen.queryByTestId('game-end'); k++) {
+      const card = screen.queryByTestId('album-card-go')
+      if (card) { cards++; fireEvent.click(card.querySelector('button')!); continue }
       const say = screen.queryByTestId('family-say')
-      if (!say) { fireEvent.click(screen.getByRole('button', { name: /Альбом:|Готово/ })); continue }
+      if (!say) { fireEvent.click(screen.getByRole('button', { name: /Дальше: альбом|Готово/ })); continue }
       const role = GEO_TO_ROLE(say.textContent!.replace(/[^ა-ჿ ]/g, '').trim())
       if (!missed) {
         const other = (Object.keys(ROLES) as Role[]).find(r => r !== role && screen.queryByTestId(`frame-${r}`)?.dataset.filled === 'no')
@@ -86,9 +88,17 @@ describe('Family scene', () => {
       act(() => { vi.advanceTimersByTime(700) })
     }
     expect(screen.getByTestId('game-end')).toBeTruthy()
+    // Перед каждым альбомом — карточка: три у родителей, два у брата с сестрой, у «всей семьи» альбом один.
+    expect(cards).toBe({ parents: 3, siblings: 2, full: 0 }[mode])
     expect(screen.getByTestId('rule-card')).toBeTruthy()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
+  })
+
+  it('intro and album cards say how many albums and whose', () => {
+    expect(albumsLine('parents')).toBe('Ты посмотришь три альбома: Нино, Аны и Гиорги.')
+    expect(albumsLine('siblings')).toBe('Ты посмотришь два альбома: Нино и Давити.')
+    expect(albumCard('parents', 1)).toMatchObject({ count: 'Альбом 2 из 3', title: 'Семья Аны', text: expect.stringMatching(/другая семья/) })
   })
 
   it('album: answers pages, picks own statements, ends with the own page', () => {

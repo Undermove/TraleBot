@@ -8,6 +8,10 @@ import { haptic } from '../alphabet/games/fx'
 import { ACTS, INTRO_LESSONS, INTRO_TOTAL, actOf, geoName, hasUsableName, introLesson, newPhrases, saveName, type IntroStep } from './story'
 import { transliterateToGeorgian } from '../utils/georgianizerName'
 import { cyr } from '../verbs/types'
+import { DAYS } from './scenes/Bakery.logic'
+import { POINTS } from './scenes/Pingpong.logic'
+import { ride } from './scenes/Minibus.logic'
+import { DECK_SIZE } from './scenes/HaveSort.logic'
 
 /** Как сцена называется в плане урока на стартовом экране. */
 export const STEP_TITLE: Record<IntroStep['kind'], string> = {
@@ -19,10 +23,10 @@ export const STEP_TITLE: Record<IntroStep['kind'], string> = {
 /** Что будешь делать в шаге — одной строкой, под названием. */
 export const STEP_DESC: Record<IntroStep['kind'], string> = {
   phrase: 'послушай и разбери по словам', rule: 'сравни примеры и найди правило', walk: 'идёшь по улице и здороваешься',
-  bakery: 'за шоти — и разговор с пекаршей', pingpong: 'верни вопрос, как мяч', minibus: 'спасибо, извините, да и нет',
+  bakery: `${DAYS.length} визита за шоти — и разговор с пекаршей`, pingpong: `партия из ${POINTS} розыгрышей: верни вопрос, как мяч`, minibus: `${ride().length} ситуаций в дороге: спасибо, извините, да и нет`,
   party: 'знакомься и раздавай бейджи', magnets: 'прилепи окончание к слову', reception: 'найди бронь гостя и выдай ключ',
   detective: 'раздай соседям их посылки', chat: 'переписка с соседкой Нино', taxi: 'поболтай — и таксист сбросит цену',
-  family: 'семейный альбом Нино', havesort: 'живых — на фото, вещи — в чемодан', aboutme: 'интервью для студенческой газеты', supra: 'большое застолье у соседей'
+  family: 'семейный альбом Нино', havesort: `${DECK_SIZE} карточек: живых — на фото, вещи — в чемодан`, aboutme: 'интервью для студенческой газеты', supra: 'большое застолье у соседей'
 }
 
 /** Пиктограммы шагов: по картинке понятно, куда идёшь. */

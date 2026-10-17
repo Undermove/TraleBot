@@ -127,6 +127,32 @@ const OWNERS: Record<Exclude<FamilyMode, 'album'>, string[]> = {
 }
 const FEMALE_OWNERS = new Set(['ნინო', 'ანა', 'მარიამი', 'თამარი'])
 
+/** Чьи альбомы по порядку — по-русски. */
+export const albumOwners = (mode: Exclude<FamilyMode, 'album'>): string[] => OWNERS[mode].map(o => NAMES[o] ?? o)
+/** «Ана» → «Аны»: чей альбом. Нино, Гиорги, Давити не склоняются. */
+export const ownerOf = (ru: string): string => /[^и]а$/.test(ru) ? `${ru.slice(0, -1)}ы` : /я$/.test(ru) ? `${ru.slice(0, -1)}и` : ru
+
+const ALBUMS_RU = ['', 'один альбом', 'два альбома', 'три альбома', 'четыре альбома']
+/** «Ты посмотришь три альбома: Нино, Аны и Гиорги» — сколько и чьи. */
+export function albumsLine(mode: Exclude<FamilyMode, 'album'>): string {
+  const names = albumOwners(mode).map(ownerOf)
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} и ${names[names.length - 1]}` : names[0]
+  return `Ты посмотришь ${ALBUMS_RU[names.length] ?? `${names.length} альбомов`}: ${list}.`
+}
+
+/** Карточка перед альбомом: какой по счёту и чья это семья. */
+export function albumCard(mode: Exclude<FamilyMode, 'album'>, k: number): { count: string; title: string; text: string } {
+  const owners = albumOwners(mode)
+  const who = owners[k]
+  return {
+    count: `Альбом ${k + 1} из ${owners.length}`,
+    title: `Семья ${ownerOf(who)}`,
+    text: k === 0
+      ? `Первым свой альбом показывает ${who}. Слушай, кого называют, и клади фото в рамку.`
+      : `Теперь альбом ${ownerOf(who)} — это другая семья: другие лица, другой голос. Рамки те же.`
+  }
+}
+
 export function familyLooks(rng: Rng): Record<Role, Look> {
   const out = {} as Record<Role, Look>
   for (const r of Object.keys(ROLES) as Role[]) {

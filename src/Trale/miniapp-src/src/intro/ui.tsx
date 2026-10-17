@@ -302,32 +302,47 @@ export function TimeLine({ steps, current, compact, testId = 'time-line' }: { st
   )
 }
 
-/** Перед каждым заходом: какой по счёту, какой день и время, что было между заходами. Дальше — по кнопке. */
-export function TimeSkip({ count, title, text, steps, current, go, onGo }: {
-  count: string; title: string; text: string; steps: { part: DayPart; label: string }[]; current: number; go: string; onGo: () => void
+/** Между раундами: какой по счёту, что изменилось, дальше — по кнопке. Пока карточка открыта, сцена ждёт. */
+export function RoundCard({ count, title, text, icon, children, go, onGo, testId = 'round-card' }: {
+  count: string; title: string; text: string; icon?: React.ReactNode; children?: React.ReactNode; go: string; onGo: () => void; testId?: string
 }) {
-  const part = steps[current].part
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-jewelInk/45" data-testid="time-skip">
+    <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-jewelInk/45" data-testid={testId}>
       <div className="w-full max-w-[320px] rounded-2xl border-[1.5px] border-jewelInk bg-cream px-3 py-4 flex flex-col items-center gap-2.5 text-center zn-pop" style={{ boxShadow: '4px 4px 0 #15100A' }}>
-        <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-mid" data-testid="time-skip-count">{count}</div>
-        <TimeIcon part={part} size={40} />
+        <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-mid" data-testid={`${testId}-count`}>{count}</div>
+        {icon}
         <div className="text-[20px] font-extrabold leading-tight">{title}</div>
         <p className="text-[13.5px] leading-snug text-jewelInk-soft">{text}</p>
-        <TimeLine steps={steps} current={current} compact />
-        <div className="w-full mt-1" data-testid="time-skip-go"><Button onClick={() => { haptic('pop'); onGo() }}>{go}</Button></div>
+        {children}
+        <div className="w-full mt-1" data-testid={`${testId}-go`}><Button onClick={() => { haptic('pop'); onGo() }}>{go}</Button></div>
       </div>
     </div>
   )
 }
 
-/** Короткая плашка «наступил вечер» поверх сцены — не останавливает игру. */
-export function TimeBanner({ part, text }: { part: DayPart; text: string }) {
+/** Перед каждым заходом: какой по счёту, какой день и время, что было между заходами. */
+export function TimeSkip({ count, title, text, steps, current, go, onGo }: {
+  count: string; title: string; text: string; steps: { part: DayPart; label: string }[]; current: number; go: string; onGo: () => void
+}) {
   return (
-    <div className="absolute z-40 left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 pointer-events-none" data-testid="time-banner">
-      <div className="zn-pop flex items-center gap-2 rounded-2xl border-[1.5px] border-jewelInk bg-cream/95 px-3.5 py-2 text-[15px] font-extrabold whitespace-nowrap" style={{ boxShadow: '3px 3px 0 #15100A' }}>
-        <TimeIcon part={part} size={22} /> {text}
+    <RoundCard count={count} title={title} text={text} go={go} onGo={onGo} testId="time-skip" icon={<TimeIcon part={steps[current].part} size={40} />}>
+      <TimeLine steps={steps} current={current} compact />
+    </RoundCard>
+  )
+}
+
+/** Короткая плашка поверх сцены («наступил вечер», «дальше без перевода») — не останавливает игру. */
+export function Banner({ icon, text, testId = 'banner' }: { icon?: React.ReactNode; text: string; testId?: string }) {
+  return (
+    <div className="absolute z-40 left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 pointer-events-none" data-testid={testId}>
+      <div className="zn-pop flex items-center gap-2 rounded-2xl border-[1.5px] border-jewelInk bg-cream/95 px-3.5 py-2 text-[15px] font-extrabold text-center max-w-[300px]" style={{ boxShadow: '3px 3px 0 #15100A' }}>
+        {icon}{text}
       </div>
     </div>
   )
+}
+
+/** Плашка «наступил вечер». */
+export function TimeBanner({ part, text }: { part: DayPart; text: string }) {
+  return <Banner icon={<TimeIcon part={part} size={22} />} text={text} testId="time-banner" />
 }

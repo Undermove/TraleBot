@@ -13,7 +13,16 @@ export interface Round {
   lead: string
   /** Что ты хочешь сказать, по-русски. */
   goal: string
+  /** Кто отвечает, если не ты (бейджи гостей: Нино спрашивает гостя). */
+  who?: string
 }
+
+/** Что в наборе по одному — для счётчика «бейдж 3 из 8». */
+export const ROUND_NOUN: Record<MagnetSet, [string, string, string]> = {
+  name: ['бейдж', 'бейджа', 'бейджей'], from: ['бирка', 'бирки', 'бирок'], in: ['открытка', 'открытки', 'открыток'], both: ['ответ', 'ответа', 'ответов']
+}
+/** Сколько раундов в наборе (не зависит от перемешивания). */
+export const roundsIn = (set: MagnetSet) => startGame(set, () => 0.5).rounds.length
 
 export interface Game {
   set: MagnetSet
@@ -29,7 +38,7 @@ export interface Game {
 
 const fromRound = (item: Item): Round => ({ item, ask: { phrase: 'saidan', ru: 'Откуда ты?' }, lead: 'მე ვარ', goal: `я ${item.order}` })
 const inRound = (item: Item): Round => ({ item, ask: { ru: 'Где ты живёшь?' }, lead: 'ვცხოვრობ', goal: `живу ${item.order}` })
-const nameRound = (item: Item): Round => ({ item, ask: { phrase: 'ra_gkvia', ru: 'Как тебя зовут?' }, lead: 'მე მქვია', goal: `меня зовут ${item.ru}` })
+const nameRound = (item: Item): Round => ({ item, ask: { phrase: 'ra_gkvia', ru: 'Как тебя зовут?' }, lead: 'მე მქვია', goal: `меня зовут ${item.ru}`, who: 'гость' })
 
 /** Порядок без двух одинаковых слов подряд. */
 function spread<T extends { item: Item }>(list: T[], rng: Rng): T[] {

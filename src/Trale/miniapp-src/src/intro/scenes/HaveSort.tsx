@@ -3,8 +3,8 @@ import { AnimatePresence, animate, motion, useMotionValue, useTransform, useVelo
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { firstMet, met, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard, WordTag, say } from '../ui'
+import { firstMet, met, phrase, plural } from '../story'
+import { GameEnd, GameIntro, NewWord, Pill, RuleCard, WordTag, say } from '../ui'
 import { hush, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import { DECK_SIZE, haveDeck, hintFor, isOver, sceneIdOf, send, sentence, sentenceAudio, sideOf, startState, verbOf, type Card, type HaveState, type Side } from './HaveSort.logic'
@@ -77,7 +77,7 @@ export default function HaveSort({ lesson, step, fraction, onExit, onDone, rng =
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="havesort-scene">
-          <GameIntro title={title} text="Нино по видеосвязи спрашивает, кто и что у тебя есть. Живых — родных, друзей, зверей — ставь на семейное фото: про них говорят მყავს. Вещи клади в чемодан: про них — მაქვს." onStart={start}
+          <GameIntro title={title} text={`Нино по видеосвязи спрашивает, кто и что у тебя есть — впереди ${deck.length} ${plural(deck.length, 'карточка', 'карточки', 'карточек')}. Живых — родных, друзей, зверей — ставь на семейное фото: про них говорят მყავს. Вещи клади в чемодан: про них — მაქვს. Верно подряд — серия, за неё больше очков.`} onStart={start}
             chips={[{ geo: phrase('myavs_dzaghli').geo, ru: phrase('myavs_dzaghli').ru }, { geo: phrase('makvs_manqana').geo, ru: phrase('makvs_manqana').ru }]} />
         </div>
       </GameFrame>
@@ -88,7 +88,7 @@ export default function HaveSort({ lesson, step, fraction, onExit, onDone, rng =
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="havesort-scene">
           <GameEnd title={hs.misses === 0 ? 'Всё по местам с первого раза!' : 'Фото и чемодан собраны!'}
-            text={`Верно с первого раза: ${hs.right} из ${deck.length}. Лучшая серия: ${hs.best}.`}
+            text={`Очки: ${hs.score}. Верно с первого раза: ${hs.right} из ${deck.length}. Лучшая серия: ${hs.best}.`}
             rule={<RuleCard title="Два «у меня есть»"><G>მყავს</G> — про живых: <G>მე მყავს ძაღლი</G>. <G>მაქვს</G> — про вещи: <G>მე მაქვს მანქანა</G>.</RuleCard>}
             onNext={onDone} onAgain={start} />
         </div>
@@ -99,7 +99,7 @@ export default function HaveSort({ lesson, step, fraction, onExit, onDone, rng =
   const people = placed.filter(p => p.alive), things = placed.filter(p => !p.alive)
 
   return (
-    <GameFrame title={title} eyebrow={`${Math.min(hs.i + 1, deck.length)} из ${deck.length}`} fraction={fraction} onExit={onExit}>
+    <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="havesort-scene">
         {/* Нино на видеосвязи. */}
         <div className="shrink-0 flex items-center gap-2 rounded-2xl border-[1.5px] border-jewelInk bg-[#1D2747] px-2 py-1.5" style={{ boxShadow: '2px 2px 0 #15100A' }}>
@@ -109,7 +109,12 @@ export default function HaveSort({ lesson, step, fraction, onExit, onDone, rng =
           <div className="min-w-0 text-cream text-[12.5px] leading-snug">
             <span className="font-extrabold">Нино:</span> кто и что у тебя есть? Покажи!
           </div>
-          {hs.combo >= 2 && <motion.span key={hs.combo} initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="ml-auto shrink-0 rounded-full bg-gold border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="have-combo">×{hs.combo}</motion.span>}
+          {hs.combo >= 2 && <motion.span key={hs.combo} initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="ml-auto shrink-0 rounded-full bg-gold border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="have-combo">серия ×{hs.combo}</motion.span>}
+        </div>
+
+        <div className="shrink-0 flex items-center justify-between gap-2">
+          <Pill testId="have-progress">карточка {Math.min(hs.i + 1, deck.length)} из {deck.length}</Pill>
+          <Pill testId="have-score">{hs.score} {plural(hs.score, 'очко', 'очка', 'очков')}</Pill>
         </div>
 
         {/* Карточка — посередине; цели — внизу. */}

@@ -90,6 +90,13 @@ describe('Detective scene', () => {
       fireEvent.click(screen.getByTestId(`person-${who}`))
     })
     for (let i = 0; i < cases.length; i++) {
+      // Перед последним подъездом — карточка: говорящих не видно. Пока она открыта, никто не говорит.
+      if (cases[i].level >= 3) {
+        expect(screen.getByTestId('hidden-card-count').textContent).toBe(`Подъезд ${i + 1} из 3`)
+        expect(screen.queryByTestId('detective-board')).toBeNull()
+        fireEvent.click(screen.getByTestId('hidden-card-go').querySelector('button')!)
+      } else expect(screen.queryByTestId('hidden-card')).toBeNull()
+      expect(screen.getByTestId('detective-entrance').textContent).toBe(`подъезд ${i + 1} из 3`)
       await act(async () => { await vi.advanceTimersByTimeAsync(9000) })
       expect(screen.getAllByTestId('clue')).toHaveLength(cases[i].clues.length)
       if (lessonId === 21 || i > 0) expect(screen.getByTestId('amanati-tag').textContent).toContain('ამანათი')
