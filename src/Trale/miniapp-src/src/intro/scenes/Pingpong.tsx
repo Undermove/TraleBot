@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { NUMBERS, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { GameEnd, GameIntro, RuleCard } from '../ui'
 import { hush, speak, speakUrl } from '../voice'
 import { numberAudio } from '../audio'
 import type { SceneProps, StepOf } from './types'
@@ -50,8 +50,14 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   const [streak, setStreak] = useState(0)
   const [nets, setNets] = useState(0)
   const [who, setWho] = useState<Speaker>('friend')
-  const [word, setWord] = useState<string | undefined>()
   const [called, setCalled] = useState(0)
+  /** Какая плашка над кнопками: слушай, твой удар, мимо, сетка, розыгрыш твой. */
+  const [tone, setTone] = useState<Tone>('listen')
+  /** Новое слово на паузе: игра ждёт, пока человек нажмёт «Понятно». */
+  const [learn, setLearn] = useState<string | undefined>()
+  /** Кнопки новых слов с меткой «новое» — пока ими ни разу не ответили. */
+  const [fresh, setFresh] = useState<string[]>([])
+  const ack = useRef<(() => void) | undefined>()
   const shown = useRef(new Set<string>())
   const alive = useRef(true)
   const busy = useRef(false)
@@ -64,10 +70,10 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
 
   const fly = async (to: Ball) => { setBall(to); setThrowKey(k => k + 1); await wait(to === 'net' ? 650 : 720) }
 
-  // Реплика друга или того, кто подошёл. Слово сцены звучит впервые — рядом карточка «новое слово».
+  // Реплика друга или того, кто подошёл. Слово сцены звучит впервые — игра встаёт на паузу с карточкой
+  // «новое слово» и ждёт «Понятно»: слово не пролетает мимо, а кнопка с ним внизу помечена «новое».
   const friendHit = async (id: string, by: Speaker = 'friend', newWord?: string, rIdx = ri) => {
-    setWho(by); setTheir(id); setTalking(true); setMine(undefined)
-    if (newWord === id && !shown.current.has(id)) { shown.current.add(id); setWord(id) }
+    setWho(by); setTheir(id); setTalking(true); setMine(undefined); setTone('listen')
     haptic('soft'); sound.pop(2)
     const voice = by === 'guest' ? rallies[rIdx]?.guest?.voice ?? 'f' : 'm'
     // Пока говорит соседка, друг всё равно отбивает: мяч летит к тебе.
@@ -75,20 +81,28 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
     if (!alive.current) return
     setBall('you')
     setTalking(false)
+    if (newWord === id && !shown.current.has(id)) {
+      shown.current.add(id)
+      setFresh(f => [...f, id]); setLearn(id); haptic('soft')
+      await new Promise<void>(r => { ack.current = r })
+      if (!alive.current) return
+      setLearn(undefined)
+    }
   }
 
   const openShot = async (rIdx: number, sIdx: number) => {
     const shot = rallies[rIdx].shots[sIdx]
-    setSi(sIdx); setBad(undefined); setCue(shot.cue); setFace('smile')
-    if (shot.line) await friendHit(shot.line, shot.by, shot.word, rIdx)
+    setSi(sIdx); setBad(undefined); setFace('smile')
+    if (shot.line) { setCue(''); await friendHit(shot.line, shot.by, shot.word, rIdx) }
     if (!alive.current) return
+    setCue(shot.cue); setTone('turn')
     setYourTurn(true); busy.current = false
   }
 
   // Новый розыгрыш: мяч у подающего.
   useEffect(() => {
     if (phase !== 'play') return
-    setTheir(undefined); setMine(undefined); setYourTurn(false); setStreak(0); setWord(undefined)
+    setTheir(undefined); setMine(undefined); setYourTurn(false); setStreak(0); setCue(''); setTone('listen')
     setBall(rallies[ri].serve === 'friend' ? 'friend' : 'you')
     const id = window.setTimeout(() => { if (alive.current) void openShot(ri, 0) }, 600)
     return () => window.clearTimeout(id)
@@ -101,23 +115,23 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
     const shot = r.shots[si]
     const v = judge(shot, id)
     if (v.res === 'miss') {
-      haptic('bad'); sound.miss(); setBad(id); setCue(v.hint)
+      haptic('bad'); sound.miss(); setBad(id); setCue(v.hint); setTone('miss')
       setYourTurn(true); busy.current = false
       return
     }
     // Удар: ракетка замахивается, мяч уходит к другу — или в сетку.
-    setSwing(s => s + 1); setMine(id); setTheir(undefined)
+    setSwing(s => s + 1); setMine(id); setTheir(undefined); setCue(''); setTone('listen')
     haptic('snap'); sound.snap(3)
     await Promise.all([speak(id, 'hero'), fly(v.res === 'net' ? 'net' : 'toFriend')])
     if (!alive.current) return
     if (v.res === 'net') {
       haptic('bad'); sound.miss(); setNets(n => n + 1); setStreak(0)
-      setFace('huh'); setCue(v.hint); setBad(id)
+      setFace('huh'); setCue(v.hint); setTone('net'); setBad(id)
       await wait(500)
       setBall('you'); setMine(undefined); setYourTurn(true); busy.current = false
       return
     }
-    setBall('friend'); setHits(h => h + 1)
+    setBall('friend'); setHits(h => h + 1); setFresh(f => f.filter(w => w !== id))
     setStreak(s => { const n = s + 1; setBest(b => Math.max(b, n)); return n })
     if (shot.react) await friendHit(shot.react, shot.reactBy, shot.word)
     if (!alive.current) return
@@ -125,24 +139,24 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
     // Розыгрыш выигран — разговор состоялся. Друг называет счёт по-грузински.
     const score = won + 1
     setWon(score); sound.win(); haptic('good'); burst(el, 'small')
-    setCue('Розыгрыш твой!'); setWho('friend'); setTheir(undefined); setCalled(score); setTalking(true)
+    setCue(score < rallies.length ? `Осталось розыгрышей: ${rallies.length - score}` : 'Это был последний — партия твоя!'); setTone('win'); setWho('friend'); setTheir(undefined); setCalled(score); setTalking(true)
     await speakUrl(numberAudio(score, 'm'), NUMBERS[score - 1].geo)
     if (!alive.current) return
     setTalking(false)
-    await wait(350)
+    await wait(900)
     if (!alive.current) return
     if (ri + 1 < rallies.length) setRi(x => x + 1)
     else setPhase('end')
   }
 
-  const start = () => { setRi(0); setWon(0); setHits(0); setBest(0); setNets(0); setCalled(0); shown.current.clear(); setPhase('play') }
+  const start = () => { setRi(0); setWon(0); setHits(0); setBest(0); setNets(0); setCalled(0); setFresh([]); setLearn(undefined); shown.current.clear(); setPhase('play') }
 
   const title = 'Пинг-понг на Бульваре'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="pingpong-scene">
-          <GameIntro title={title} text="Партия с другом на Бульваре. Каждая реплика — удар: спросили «როგორ ხარ?» — ответь и верни мяч: «კარგად, შენ?» Ответил и замолчал — мяч в сетке. К столу будут подходить соседи." onStart={start} hero
+          <GameIntro title={title} text="Партия с другом на Бульваре — 5 коротких розыгрышей. Каждая реплика — удар: спросили «როგორ ხარ?» — ответь и верни мяч: «კარგად, შენ?» Ответил и замолчал — мяч в сетке. К столу будут подходить соседи." onStart={start} hero
             chips={['kargad_shen', 'kargad_madloba'].map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -162,7 +176,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   const scale = ball === 'toFriend' ? [1.25, 0.85, 0.55] : ball === 'toYou' ? [0.55, 0.9, 1.25] : ball === 'net' ? [1.25, 0.8, 0.75] : [ball === 'you' ? 1.25 : 0.55]
 
   return (
-    <GameFrame title={title} eyebrow={`розыгрыш ${ri + 1} из ${POINTS}`} fraction={fraction} onExit={onExit}>
+    <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="pingpong-scene">
         <div className="relative flex-1 min-h-[280px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="pingpong-court">
           <Boulevard evening={!!r.evening} />
@@ -204,10 +218,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
           </motion.div>
 
           <div className="absolute top-2 left-2 right-2 flex justify-between z-30 pointer-events-none">
-            <motion.span key={`score-${called}`} initial={{ scale: called ? 1.5 : 1 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 14 }}
-              className="rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold" data-testid="pingpong-score">
-              {won} : 0{won > 0 && <span className="font-geo font-bold text-jewelInk-mid ml-1">{NUMBERS[won - 1].geo}</span>}
-            </motion.span>
+            <MatchProgress won={won} current={ri} total={POINTS} called={called} />
             {streak >= 2 && <motion.span key={`streak-${streak}`} initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="rounded-full bg-gold border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold">удары подряд: {streak}</motion.span>}
           </div>
 
@@ -221,12 +232,24 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
               </div>
             )}
           </AnimatePresence>
-          {/* Новое слово сцены — карточкой справа, звучит и остаётся до следующего розыгрыша. */}
-          <AnimatePresence mode="wait">
-            {word && (
-              <motion.div key={word} className="absolute z-30 right-[3%] top-[22%]" initial={{ opacity: 0, x: 30, rotate: 6 }} animate={{ opacity: 1, x: 0, rotate: 0 }} exit={{ opacity: 0, x: 20 }}
-                transition={{ type: 'spring', stiffness: 360, damping: 20 }}>
-                <NewWord word={phrase(word)} testId="pingpong-new-word" />
+          {/* Новое слово: пауза поверх стола, пока не нажмёшь «Понятно». */}
+          <AnimatePresence>
+            {learn && (
+              <motion.div key={learn} className="absolute inset-0 z-40 flex items-center justify-center bg-jewelInk/35 px-6"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div data-testid="pingpong-new-word" data-word={learn}
+                  className="w-full max-w-[260px] rounded-2xl border-[1.5px] border-jewelInk bg-gold-wash px-4 py-3 text-center"
+                  style={{ boxShadow: '3px 3px 0 #15100A' }}
+                  initial={{ scale: 0.7, rotate: -4 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', stiffness: 380, damping: 18 }}>
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-mid">новое слово</div>
+                  <button type="button" onClick={() => { haptic('tap'); void speak(learn, who === 'guest' ? r.guest?.voice ?? 'f' : 'm') }}
+                    className="mt-1 block w-full font-geo text-[26px] font-bold leading-tight" aria-label="Послушать ещё раз">{phrase(learn).geo}</button>
+                  <div className="text-[13px] font-semibold text-jewelInk-hint">{cyr(phrase(learn).geo)} — {phrase(learn).ru}</div>
+                  <div className="mt-2 text-[12px] leading-snug text-jewelInk-soft">Теперь эта кнопка есть внизу — с меткой «новое».</div>
+                  <button type="button" data-testid="pingpong-word-ok" onClick={() => { haptic('tap'); ack.current?.(); ack.current = undefined }}
+                    className="mt-3 w-full min-h-[44px] rounded-xl border-[1.5px] border-jewelInk bg-navy text-cream font-extrabold text-[15px]"
+                    style={{ boxShadow: '2px 2px 0 #15100A' }}>Понятно</button>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -242,16 +265,17 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
           </AnimatePresence>
         </div>
 
-        <div className="shrink-0 min-h-[40px] text-center text-[13px] leading-snug text-jewelInk-soft px-2" aria-live="polite" data-testid="pingpong-cue">{cue}</div>
+        <Task tone={tone} text={cue} />
 
         <div className="shrink-0 grid grid-cols-3 gap-2" data-testid="pingpong-replies" data-want={yourTurn ? r.shots[si].want : undefined}>
           {panel.map(id => (
             <motion.button key={id} data-testid={`pingpong-reply-${id}`} disabled={!yourTurn} onClick={e => { haptic('tap'); void hit(id, e.currentTarget) }}
-              className={`min-h-[54px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-1.5 py-1 text-center ${id === 'nakhvamdis' ? 'col-span-1' : ''}`}
+              className="relative min-h-[54px] rounded-2xl border-[1.5px] border-jewelInk bg-cream-tile px-1.5 py-1 text-center"
               style={{ boxShadow: '3px 3px 0 #15100A' }}
               animate={{ opacity: yourTurn ? 1 : 0.45, x: bad === id ? [0, -6, 6, -4, 4, 0] : 0, backgroundColor: bad === id ? '#F7DCDD' : '#FDFAEF' }}
               whileTap={yourTurn ? { scale: 0.94, y: 2 } : undefined}
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}>
+              {fresh.includes(id) && <span className="absolute -top-2 -right-1.5 rounded-full border-[1.5px] border-jewelInk bg-gold px-1.5 text-[9.5px] font-extrabold uppercase leading-[15px]">новое</span>}
               <span className="block font-geo font-bold leading-tight" style={{ fontSize: phrase(id).geo.length > 12 ? 12.5 : 14.5 }}>{phrase(id).geo}</span>
               <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{hints ? phrase(id).ru : cyr(phrase(id).geo)}</span>
             </motion.button>
@@ -259,6 +283,48 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
         </div>
       </div>
     </GameFrame>
+  )
+}
+
+type Tone = 'listen' | 'turn' | 'miss' | 'net' | 'win'
+
+const TONE: Record<Tone, { label: string; bg: string; chip: string }> = {
+  listen: { label: 'Слушай', bg: 'bg-cream-deep', chip: 'bg-cream-edge' },
+  turn: { label: 'Твой удар', bg: 'bg-navy-wash', chip: 'bg-navy text-cream' },
+  miss: { label: 'Не то', bg: 'bg-ruby-wash', chip: 'bg-ruby text-cream' },
+  net: { label: 'Мяч в сетке', bg: 'bg-ruby-wash', chip: 'bg-ruby text-cream' },
+  win: { label: 'Розыгрыш твой!', bg: 'bg-gold-wash', chip: 'bg-gold' }
+}
+
+/** Плашка над кнопками: что сейчас происходит и что от тебя нужно. */
+function Task({ tone, text }: { tone: Tone; text: string }) {
+  const t = TONE[tone]
+  return (
+    <motion.div key={`${tone}-${text}`} data-testid="pingpong-cue" data-tone={tone} aria-live="polite"
+      className={`shrink-0 min-h-[58px] rounded-2xl border-[1.5px] border-jewelInk px-3 py-2 flex items-center gap-2.5 ${t.bg}`}
+      initial={{ y: 6, opacity: 0.6 }} animate={{ y: 0, opacity: 1, x: tone === 'miss' || tone === 'net' ? [0, -4, 4, 0] : 0 }} transition={{ duration: 0.25 }}>
+      <span className={`shrink-0 rounded-full border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide ${t.chip}`}>{t.label}</span>
+      <span className="flex-1 text-[14.5px] font-semibold leading-snug text-jewelInk">{text || (tone === 'listen' ? '…' : '')}</span>
+    </motion.div>
+  )
+}
+
+/** Сколько партии сыграно: пять мячей, выигранные закрашены, текущий мигает. */
+function MatchProgress({ won, current, total, called }: { won: number; current: number; total: number; called: number }) {
+  return (
+    <div className="rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-1 flex items-center gap-1.5" data-testid="pingpong-score" data-won={won}>
+      <span className="text-[11px] font-extrabold">{won} : 0</span>
+      <span className="flex items-center gap-1" aria-label={`Розыгрыш ${Math.min(current + 1, total)} из ${total}`}>
+        {Array.from({ length: total }, (_, k) => (
+          <motion.span key={k === won - 1 ? `w${called}` : k}
+            className={`block w-3 h-3 rounded-full border-[1.5px] border-jewelInk ${k < won ? 'bg-gold' : 'bg-cream-tile'}`}
+            initial={k === won - 1 ? { scale: 1.8 } : false}
+            animate={k === current && k >= won ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+            transition={k === current && k >= won ? { repeat: Infinity, duration: 1.2 } : { type: 'spring', stiffness: 400, damping: 14 }} />
+        ))}
+      </span>
+      <span className="text-[11px] font-bold text-jewelInk-mid">{current + 1 >= total ? 'последний' : `${Math.min(current + 1, total)} из ${total}`}</span>
+    </div>
   )
 }
 
