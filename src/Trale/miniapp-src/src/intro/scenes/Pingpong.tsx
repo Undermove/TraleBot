@@ -74,6 +74,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   // «новое слово» и ждёт «Понятно»: слово не пролетает мимо, а кнопка с ним внизу помечена «новое».
   const friendHit = async (id: string, by: Speaker = 'friend', newWord?: string, rIdx = ri) => {
     setWho(by); setTheir(id); setTalking(true); setMine(undefined); setTone('listen')
+    setCue(`${by === 'guest' ? rallies[rIdx]?.guest?.ru ?? 'Гость' : 'Друг'} говорит — послушай.`)
     haptic('soft'); sound.pop(2)
     const voice = by === 'guest' ? rallies[rIdx]?.guest?.voice ?? 'f' : 'm'
     // Пока говорит соседка, друг всё равно отбивает: мяч летит к тебе.
@@ -83,7 +84,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
     setTalking(false)
     if (newWord === id && !shown.current.has(id)) {
       shown.current.add(id)
-      setFresh(f => [...f, id]); setLearn(id); haptic('soft')
+      setFresh(f => [...f, id]); setLearn(id); setTone('new'); setCue('Запомни слово и нажми «Понятно».'); haptic('soft')
       await new Promise<void>(r => { ack.current = r })
       if (!alive.current) return
       setLearn(undefined)
@@ -93,7 +94,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   const openShot = async (rIdx: number, sIdx: number) => {
     const shot = rallies[rIdx].shots[sIdx]
     setSi(sIdx); setBad(undefined); setFace('smile')
-    if (shot.line) { setCue(''); await friendHit(shot.line, shot.by, shot.word, rIdx) }
+    if (shot.line) { await friendHit(shot.line, shot.by, shot.word, rIdx) }
     if (!alive.current) return
     setCue(shot.cue); setTone('turn')
     setYourTurn(true); busy.current = false
@@ -102,7 +103,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   // Новый розыгрыш: мяч у подающего.
   useEffect(() => {
     if (phase !== 'play') return
-    setTheir(undefined); setMine(undefined); setYourTurn(false); setStreak(0); setCue(''); setTone('listen')
+    setTheir(undefined); setMine(undefined); setYourTurn(false); setStreak(0); setCue(rallies[ri].serve === 'friend' ? 'Подаёт друг.' : 'Подаёшь ты.'); setTone('listen')
     setBall(rallies[ri].serve === 'friend' ? 'friend' : 'you')
     const id = window.setTimeout(() => { if (alive.current) void openShot(ri, 0) }, 600)
     return () => window.clearTimeout(id)
@@ -120,7 +121,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
       return
     }
     // Удар: ракетка замахивается, мяч уходит к другу — или в сетку.
-    setSwing(s => s + 1); setMine(id); setTheir(undefined); setCue(''); setTone('listen')
+    setSwing(s => s + 1); setMine(id); setTheir(undefined); setCue('Мяч летит…'); setTone('listen')
     haptic('snap'); sound.snap(3)
     await Promise.all([speak(id, 'hero'), fly(v.res === 'net' ? 'net' : 'toFriend')])
     if (!alive.current) return
@@ -286,10 +287,11 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   )
 }
 
-type Tone = 'listen' | 'turn' | 'miss' | 'net' | 'win'
+type Tone = 'listen' | 'new' | 'turn' | 'miss' | 'net' | 'win'
 
 const TONE: Record<Tone, { label: string; bg: string; chip: string }> = {
   listen: { label: 'Слушай', bg: 'bg-cream-deep', chip: 'bg-cream-edge' },
+  new: { label: 'Новое слово', bg: 'bg-gold-wash', chip: 'bg-gold' },
   turn: { label: 'Твой удар', bg: 'bg-navy-wash', chip: 'bg-navy text-cream' },
   miss: { label: 'Не то', bg: 'bg-ruby-wash', chip: 'bg-ruby text-cream' },
   net: { label: 'Мяч в сетке', bg: 'bg-ruby-wash', chip: 'bg-ruby text-cream' },
@@ -304,7 +306,7 @@ function Task({ tone, text }: { tone: Tone; text: string }) {
       className={`shrink-0 min-h-[58px] rounded-2xl border-[1.5px] border-jewelInk px-3 py-2 flex items-center gap-2.5 ${t.bg}`}
       initial={{ y: 6, opacity: 0.6 }} animate={{ y: 0, opacity: 1, x: tone === 'miss' || tone === 'net' ? [0, -4, 4, 0] : 0 }} transition={{ duration: 0.25 }}>
       <span className={`shrink-0 rounded-full border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wide ${t.chip}`}>{t.label}</span>
-      <span className="flex-1 text-[14.5px] font-semibold leading-snug text-jewelInk">{text || (tone === 'listen' ? '…' : '')}</span>
+      <span className="flex-1 text-[14.5px] font-semibold leading-snug text-jewelInk">{text}</span>
     </motion.div>
   )
 }
