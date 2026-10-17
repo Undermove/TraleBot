@@ -33,11 +33,11 @@ const NEED: Record<Item, string[]> = {
 
 export interface Visit { day: string; part: Part; item: Item; steps: Step[] }
 
-const DAYS = ['понедельник', 'вторник', 'среда', 'четверг']
-const PARTS: Part[] = ['morning', 'morning', 'day', 'evening']
+const DAYS = ['понедельник', 'вторник', 'среда']
+const PARTS: Part[] = ['morning', 'day', 'evening']
 
 /**
- * Четыре визита: в первом пекарша сама начинает всё, дальше — по-разному, чтобы не по шаблону. Заказ:
+ * Три визита (утро, день, вечер — третий урок, сцена не должна быть длиннее прошлых): в первом пекарша сама начинает всё, дальше — по-разному, чтобы не по шаблону. Заказ:
  * в первый день — хлеб, во второй — хачапури (знакомство со словами витрины), дальше — что выпадет.
  */
 export function plan(lessonId: number, rng: Rng = Math.random): Visit[] {

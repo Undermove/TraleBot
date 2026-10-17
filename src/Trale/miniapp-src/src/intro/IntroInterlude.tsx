@@ -20,6 +20,7 @@ import HaveSort from './scenes/HaveSort'
 import AboutMe from './scenes/AboutMe'
 import Supra from './scenes/Supra'
 import StoryFinale from './scenes/StoryFinale'
+import { IntroLessonId } from './ui'
 
 // Урок «Знакомства» — цепочка сцен из story.json (новая фраза → правило → игра урока), потом короткая
 // проверка вопросами урока (introExam), потом праздник, если без ошибок. Тот же контракт, что у алфавита
@@ -89,6 +90,11 @@ export default function IntroInterlude({ scene, lessonId, fraction, onExit, onDo
 }) {
   const lesson = introLesson(lessonId)
   if (scene.kind === 'finale') return <StoryFinale lesson={lesson} onNext={onDone} onVocabulary={navigate && (() => navigate({ kind: 'vocabulary-list' }))} />
+  return <IntroLessonId.Provider value={lessonId}><Step scene={scene} lessonId={lessonId} fraction={fraction} onExit={onExit} onDone={onDone} /></IntroLessonId.Provider>
+}
+
+function Step({ scene, lessonId, fraction, onExit, onDone }: { scene: Extract<IntroScene, { kind: 'step' }>; lessonId: number; fraction: number; onExit: () => void; onDone: () => void }) {
+  const lesson = introLesson(lessonId)
   const step = scene.step
   const key = `${lessonId}-${scene.index}`
   const p = { lesson, fraction, onExit, onDone } as const

@@ -7,7 +7,7 @@ import Mascot from '../../components/Mascot'
 import { burst, flyGhost, haptic, reducedMotion, sound } from '../../alphabet/games/fx'
 import { DictChip } from '../../alphabet/words/WordIntro'
 import { api } from '../../api'
-import { ACTS, INTRO_LESSONS, INTRO_TOTAL, actOf, newPhrases, sceneWords, type IntroLesson } from '../story'
+import { ACTS, INTRO_LESSONS, INTRO_TOTAL, RU_UNDER_REPLIES_UNTIL, actOf, newPhrases, sceneWords, type IntroLesson } from '../story'
 import '../../alphabet/games/alphabet.css'
 
 /** Первые уроки объясняют, зачем словарь; дальше хватает счётчика и кнопки. */
@@ -111,6 +111,11 @@ export default function StoryFinale({ lesson, onNext, onVocabulary }: { lesson: 
       {saved && lesson.id <= EXPLAIN_DICT_UNTIL && (
         <p className="text-[13px] leading-snug text-jewelInk-soft max-w-[32ch] rounded-xl border-[1.5px] border-dashed border-jewelInk-faint bg-gold-wash/70 px-3 py-2" data-testid="finale-dict-tip">
           Забыл слово? Открой «Мой словарь» на главной: там все слова, которые ты встретил. Найди нужное и нажми — откроется карточка.
+        </p>
+      )}
+      {lesson.id === RU_UNDER_REPLIES_UNTIL && (
+        <p className="text-[13px] leading-snug text-jewelInk-soft max-w-[32ch]" data-testid="finale-no-ru">
+          Дальше под кнопками ответа не будет перевода — только как читается. Фразы ты уже знаешь, справишься.
         </p>
       )}
       {next && <p className="text-[13px] text-jewelInk-hint">Дальше: {next.title}</p>}

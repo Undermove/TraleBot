@@ -6,7 +6,7 @@ import { cyr } from '../verbs/types'
 import { haptic, isMuted, playClip } from '../alphabet/games/fx'
 import { INTRO_AUDIO, INTRO_WORD_AUDIO } from './audio'
 import { WORD_AUDIO } from '../alphabet/games/data'
-import { HERO, myName, type Phrase, type Rng } from './story'
+import { HERO, myName, replyRu, type Phrase, type Rng } from './story'
 import './intro.css'
 
 // Общие детали сцен «Знакомства»: человечки, реплики, кнопки-реплики, карточка правила, экран итога сцены.
@@ -105,10 +105,15 @@ export function replySize(geo: string, compact?: boolean): number {
   return compact ? base - 2 : base
 }
 
-/** Кнопка-реплика: грузинская фраза крупно, под ней кириллица или перевод. */
+/** Какой урок «Знакомства» идёт — кнопки-реплики решают по нему, показывать ли перевод. */
+export const IntroLessonId = React.createContext(0)
+
+/** Кнопка-реплика: грузинская фраза крупно, под ней перевод (второй акт) или кириллица. */
 export function Reply({ geo, hint, onClick, state = 'idle', disabled, testId, compact }: {
   geo: string; hint?: string; onClick: () => void; state?: 'idle' | 'good' | 'bad' | 'dim'; disabled?: boolean; testId?: string; compact?: boolean
 }) {
+  const lessonId = React.useContext(IntroLessonId)
+  hint = hint ?? replyRu(lessonId, geo)
   const bg = state === 'good' ? 'bg-[#D6E9D9]' : state === 'bad' ? 'bg-ruby-wash zn-shake' : 'bg-cream-tile'
   return (
     <button

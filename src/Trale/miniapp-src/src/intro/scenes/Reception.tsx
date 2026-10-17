@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { JOBS, firstMet, met, phrase } from '../story'
+import { JOBS, firstMet, met, phrase, replyRu } from '../story'
 import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
 import { TreatIcon, pleaseAudio, pleaseLine, type Treat } from './party/Treats'
 import { hush, speak, speakUrl } from '../voice'
@@ -375,7 +375,7 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
                 whileTap={busy ? undefined : { scale: 0.95 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
                 {o.treat && <TreatIcon t={o.treat} size={34} />}
                 <span className="block font-geo font-bold text-[14px] leading-tight">{o.geo}</span>
-                <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{o.treat && firstMet(lesson.id, o.treat) ? phrase(o.treat).ru : cyr(o.geo)}</span>
+                <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{o.treat && firstMet(lesson.id, o.treat) ? phrase(o.treat).ru : replyRu(lesson.id, o.geo) ?? cyr(o.geo)}</span>
               </motion.button>
             ))}
           </div>

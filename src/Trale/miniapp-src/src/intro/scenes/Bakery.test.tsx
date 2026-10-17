@@ -8,9 +8,9 @@ import Bakery from './Bakery'
 import { judge, plan, replies } from './Bakery.logic'
 
 describe('bakery logic', () => {
-  it('four visits: greet by time of day, talk about how you are (sometimes you ask), say goodbye', () => {
+  it('three visits: greet by time of day, talk about how you are (sometimes you ask), say goodbye', () => {
     const v = plan(3, seeded(2))
-    expect(v.map(x => x.part)).toEqual(['morning', 'morning', 'day', 'evening'])
+    expect(v.map(x => x.part)).toEqual(['morning', 'day', 'evening'])
     for (const visit of v) {
       expect(visit.steps[visit.steps.length - 1].want).toBe('nakhvamdis')
       expect(visit.steps.some(s => s.bread)).toBe(true)
@@ -43,7 +43,7 @@ describe('Bakery', () => {
   beforeEach(() => setMuted(true))
   afterEach(() => { vi.useRealTimers(); setMuted(false) })
 
-  it('four visits for bread → rule → onDone', async () => {
+  it('three visits for bread → rule → onDone', async () => {
     vi.useFakeTimers()
     const onDone = vi.fn()
     render(<Bakery lesson={introLesson(3)} step={{ kind: 'bakery', mode: 'howareyou' }} fraction={0.5} onExit={() => {}} onDone={onDone} rng={seeded(3)} />)
@@ -56,7 +56,7 @@ describe('Bakery', () => {
       if (bread && screen.getByTestId('bakery-cue').textContent!.includes('Забери')) { await act(async () => { fireEvent.click(bread) }); breads++; await act(async () => { await vi.advanceTimersByTimeAsync(800) }) }
       else if (want) await act(async () => { fireEvent.click(screen.getByTestId(`bakery-reply-${want}`)) })
     }
-    expect(breads).toBe(4)
+    expect(breads).toBe(3)
     expect(screen.getByTestId('rule-card')).toBeTruthy()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
