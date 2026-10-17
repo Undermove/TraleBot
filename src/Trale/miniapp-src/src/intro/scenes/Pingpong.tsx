@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { NUMBERS, phrase } from '../story'
-import { GameEnd, GameIntro, RuleCard } from '../ui'
+import { GameEnd, GameIntro, RuleCard, TimeBanner } from '../ui'
 import { hush, speak, speakUrl } from '../voice'
 import { numberAudio } from '../audio'
 import type { SceneProps, StepOf } from './types'
@@ -65,6 +65,14 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
   const wait = (ms: number) => new Promise<void>(r => window.setTimeout(r, ms))
 
   const r = rallies[Math.min(ri, rallies.length - 1)]
+  // Первый вечерний розыгрыш — плашка «стемнело», чтобы смену времени не проглядели.
+  const [dusk, setDusk] = useState(false)
+  const duskShown = useRef(false)
+  useEffect(() => {
+    if (phase !== 'play' || !r.evening || duskShown.current) return
+    duskShown.current = true; setDusk(true)
+    window.setTimeout(() => { if (alive.current) setDusk(false) }, 2600)
+  }, [phase, ri]) // eslint-disable-line react-hooks/exhaustive-deps
   const hints = hits < HINTS_OFF_AFTER
   const panel = replies(lesson.id, heardBy(rallies, ri, si))
 
@@ -150,14 +158,14 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
     else setPhase('end')
   }
 
-  const start = () => { setRi(0); setWon(0); setHits(0); setBest(0); setNets(0); setCalled(0); setFresh([]); setLearn(undefined); shown.current.clear(); setPhase('play') }
+  const start = () => { setRi(0); setWon(0); setHits(0); setBest(0); setNets(0); setCalled(0); setFresh([]); setLearn(undefined); shown.current.clear(); duskShown.current = false; setDusk(false); setPhase('play') }
 
   const title = 'Пинг-понг на Бульваре'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="pingpong-scene">
-          <GameIntro title={title} text="Партия с другом на Бульваре — 5 коротких розыгрышей. Каждая реплика — удар: спросили «როგორ ხარ?» — ответь и верни мяч: «კარგად, შენ?» Ответил и замолчал — мяч в сетке. К столу будут подходить соседи." onStart={start} hero
+          <GameIntro title={title} text="Партия с другом на Бульваре — 5 коротких розыгрышей. Каждая реплика — удар: спросили «როგორ ხარ?» — ответь и верни мяч: «კარგად, შენ?» Ответил и замолчал — мяч в сетке. К столу будут подходить соседи, а к концу партии стемнеет." onStart={start} hero
             chips={['kargad_shen', 'kargad_madloba'].map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -181,6 +189,7 @@ export default function Pingpong({ lesson, onExit, onDone, fraction }: SceneProp
       <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="pingpong-scene">
         <div className="relative flex-1 min-h-[280px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="pingpong-court">
           <Boulevard evening={!!r.evening} />
+          {dusk && <TimeBanner part="evening" text="Стемнело — уже вечер" />}
           {/* Друг за дальним краем стола. */}
           <div className="absolute left-1/2 top-[14%] -translate-x-1/2 z-10">
             <svg width="96" height="150" viewBox="-60 -190 120 196" className="overflow-visible" aria-hidden>

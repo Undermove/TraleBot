@@ -4,10 +4,10 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { GameEnd, GameIntro, NewWord, RuleCard, TimeIcon, TimeLine, TimeSkip } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
-import { HINTS_OFF_AFTER, ITEMS, judge, plan, replies, type Item, type Step } from './Bakery.logic'
+import { HINTS_OFF_AFTER, ITEMS, PLAN_LABELS, judge, plan, replies, skipText, type Item, type Step } from './Bakery.logic'
 import { PART_RU, type Part, type Who } from './Walk.logic'
 import Passerby, { type Face } from './walk/Passerby'
 import { SpeechBubble } from './Walk'
@@ -16,7 +16,8 @@ import { SpeechBubble } from './Walk'
  * «Пекарня» — пекарня у дома, за шоти каждый день. Пекарша здоровается или ждёт, что начнёшь ты,
  * спрашивает, как дела (или ты спрашиваешь её); ты показываешь на витрине, что берёшь (პური или
  * ხაჭაპური), и добавляешь გთხოვთ; пекарша достаёт из тоне — ты забираешь и прощаешься.
- * Три визита: утро, день, вечер — время видно в окне. Всё по шагам, голоса не накладываются.
+ * Три визита: утро, день, вечер — время видно в окне. Перед каждым — карточка «визит N из 3»: какой день
+ * и что ты уходил домой. Всё по шагам, голоса не накладываются.
  */
 
 const G = ({ children }: { children: string }) => <b className="font-geo">{children}</b>
@@ -46,12 +47,15 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
   const [right, setRight] = useState(0)
   const [misses, setMisses] = useState(0)
   const [word, setWord] = useState<string | undefined>()
+  // Карточка перед визитом: пока она открыта, пекарша ждёт.
+  const [door, setDoor] = useState(true)
   const shown = useRef(new Set<string>())
   const alive = useRef(true)
   useEffect(() => () => { alive.current = false; hush() }, [])
 
   const v = visits[Math.min(vi, visits.length - 1)]
   const hints = right < HINTS_OFF_AFTER
+  const timeline = visits.map((x, i) => ({ part: x.part, label: PLAN_LABELS[i] }))
 
   const theySay = async (id: string) => {
     setTheir(id); setTalking(true)
@@ -77,11 +81,12 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
   // Новый визит: дверь звенит, пекарша поднимает голову.
   useEffect(() => {
     if (phase !== 'play') return
-    setBread('oven'); setTheir(undefined); setMine(undefined); setTurn('idle')
+    setBread('oven'); setTheir(undefined); setMine(undefined); setTurn('idle'); setCue('')
+    if (door) return
     sound.pop(2); haptic('soft')
     const id = window.setTimeout(() => { if (alive.current) void open(vi, 0) }, 700)
     return () => window.clearTimeout(id)
-  }, [phase, vi]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [phase, vi, door]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const answer = async (id: string) => {
     if (turn !== 'you') return
@@ -116,7 +121,7 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
     if (passed.current === key) return
     passed.current = key
     if (si + 1 < v.steps.length) { void open(vi, si + 1); return }
-    if (vi + 1 < visits.length) { setTurn('idle'); window.setTimeout(() => alive.current && setVi(x => x + 1), 900); return }
+    if (vi + 1 < visits.length) { setTurn('idle'); window.setTimeout(() => { if (alive.current) { setDoor(true); setVi(x => x + 1) } }, 900); return }
     sound.win(); window.setTimeout(() => alive.current && setPhase('end'), 900)
   }
 
@@ -130,14 +135,15 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
     window.setTimeout(() => { taking.current = false; if (alive.current) next() }, 650)
   }
 
-  const start = () => { setVi(0); setRight(0); setMisses(0); shown.current.clear(); setPhase('play') }
+  const start = () => { setVi(0); setRight(0); setMisses(0); shown.current.clear(); setDoor(true); setPhase('play') }
 
   const title = 'Пекарня у дома'
   if (phase === 'intro') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="bakery-scene">
-          <GameIntro title={title} text="Каждый день ты заходишь в пекарню у дома. Пекарша уже тебя знает: поздоровайся, поговори о делах — а то и сам спроси, как у неё. Покажи на витрине, что берёшь, попроси вежливо, забери и попрощайся." onStart={start} hero
+          <GameIntro title={title} text="Ты зайдёшь в пекарню у дома три раза — в разные дни и в разное время. Смотри в окно: здороваться утром, днём и вечером нужно по-разному. Каждый раз поговори с пекаршей, закажи на витрине, забери хлеб и попрощайся." onStart={start} hero
+            plan={<TimeLine steps={timeline} />}
             chips={['rogor', 'kargad_madloba'].map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -146,7 +152,7 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
   if (phase === 'end') {
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
-        <GameEnd title="Хлеба на неделю!" text={misses === 0 ? 'Ни одной запинки — пекарша оставит тебе самый румяный шоти.' : 'Пекарша к тебе привыкла — и ты к ней тоже.'}
+        <GameEnd title="Три визита — хлеба на неделю!" text={misses === 0 ? 'Ни одной запинки — пекарша оставит тебе самый румяный шоти.' : 'Пекарша к тебе привыкла — и ты к ней тоже.'}
           rule={<RuleCard title="Ты заметил"><G>როგორ ხარ?</G> — как дела? В ответ: <G>კარგად, მადლობა</G> — хорошо, спасибо. Спросить можно и самому.</RuleCard>}
           onNext={onDone} onAgain={start} />
       </GameFrame>
@@ -221,12 +227,14 @@ export default function Bakery({ lesson, onExit, onDone, fraction, rng = Math.ra
               </div>
             )}
           </AnimatePresence>
-          {/* Дни визитов. */}
-          <div className="absolute top-2 right-2 flex gap-1 z-30" aria-label={`Визит ${vi + 1} из ${visits.length}`}>
-            {visits.map((_, i) => (
-              <motion.span key={i} className="block w-2.5 h-2.5 rounded-full border-[1.5px] border-jewelInk" animate={{ backgroundColor: i < vi ? '#4E8A5B' : i === vi ? '#F5B820' : '#FDFAEF' }} />
-            ))}
+          {/* Какой визит и когда. */}
+          <div className="absolute top-2 right-2 z-30 flex items-center gap-1.5 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2.5 py-0.5 text-[12px] font-extrabold" data-testid="bakery-visit">
+            <TimeIcon part={v.part} /> визит {vi + 1} из {visits.length}
           </div>
+          {door && (() => {
+            const t = skipText(vi, v)
+            return <TimeSkip {...t} steps={timeline} current={vi} go="Зайти в пекарню" onGo={() => setDoor(false)} />
+          })()}
         </div>
 
         <div className="shrink-0 min-h-[40px] text-center text-[13px] leading-snug text-jewelInk-soft px-2" aria-live="polite" data-testid="bakery-cue">{cue}</div>

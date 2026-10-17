@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { met as metWord, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { GameEnd, GameIntro, NewWord, RuleCard, TimeBanner, TimeIcon, TimeLine } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
@@ -32,12 +32,12 @@ const INTRO: Record<WalkMode, { title: string; text: string; ids: string[] }> = 
   },
   day: {
     title: 'Прогулка: целый день',
-    text: 'Целый день идёшь к морю — смотри на небо. Утром, днём и вечером здороваются по-разному. Расходитесь — попрощайся.',
+    text: 'Ты гуляешь к морю целый день, с утра до вечера, — по дороге 6 встреч. Время меняется на ходу: смотри на небо и на плашку слева сверху. Утром, днём и вечером здороваются по-разному. Расходитесь — попрощайся.',
     ids: ['dila', 'gamarjoba', 'saghamo', 'nakhvamdis']
   },
   full: {
     title: 'Прогулка: соседи разговорились',
-    text: 'Теперь знакомые и сами здороваются первыми и спрашивают, как дела. Отвечай, здоровайся по времени суток, прощайся.',
+    text: 'Снова целый день до моря, 6 встреч. Теперь знакомые и сами здороваются первыми и спрашивают, как дела. Отвечай, здоровайся по времени суток, прощайся.',
     ids: ['dila', 'saghamo', 'gagimarjos', 'kargad_shen']
   }
 }
@@ -252,6 +252,17 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
 
   const clock = dayClock(mode, c.z)
   const part = partAt(mode, c.z)
+  // Время сменилось — на пару секунд плашка «наступил вечер», игра не останавливается.
+  const [turned, setTurned] = useState<typeof part | undefined>()
+  const lastPart = useRef(part)
+  useEffect(() => {
+    if (phase !== 'play') { lastPart.current = part; return }
+    if (part === lastPart.current) return
+    lastPart.current = part
+    setTurned(part); haptic('soft')
+    const id = window.setTimeout(() => setTurned(undefined), 2600)
+    return () => window.clearTimeout(id)
+  }, [part, phase]) // eslint-disable-line react-hooks/exhaustive-deps
   const current: Meeting | undefined = talk ? meetings[talk.meeting] : undefined
   const head = current ? project(view, c.z, sideOf(talk!.meeting), current.who.kind === 'kid' ? 1.28 : 1.92, current.at, bob) : null
   const hints = score.right + score.soft < HINTS_OFF_AFTER
@@ -262,6 +273,7 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="walk-scene">
           <GameIntro title={title} text={INTRO[mode].text} onStart={start} hero
+            plan={mode === 'hello' ? undefined : <TimeLine steps={(['morning', 'day', 'evening'] as const).map(p => ({ part: p, label: PART_RU[p] }))} />}
             chips={INTRO[mode].ids.map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -295,7 +307,9 @@ export default function Walk({ lesson, step, fraction, onExit, onDone, rng = Mat
           <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2.5 py-0.5 text-[12px] font-extrabold" data-testid="walk-part">
             <TimeIcon part={part} /> {PART_RU[part]}
           </div>
-          <div className="absolute top-2.5 right-2.5 flex gap-1" aria-label={`Встреч: ${met} из ${meetings.length}`}>
+          {turned && <TimeBanner key={turned} part={turned} text={turned === 'day' ? 'Наступил день' : turned === 'evening' ? 'Наступил вечер' : 'Утро'} />}
+          <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-1" aria-label={`Встреч: ${met} из ${meetings.length}`} data-testid="walk-met">
+            <span className="text-[11px] font-extrabold mr-0.5">встречи {met}/{meetings.length}</span>
             {meetings.map((_, i) => (
               <motion.span key={i} className="block w-2.5 h-2.5 rounded-full border-[1.5px] border-jewelInk"
                 animate={{ backgroundColor: i < met ? '#4E8A5B' : '#FDFAEF', scale: i === met - 1 ? [1, 1.5, 1] : 1 }}
@@ -416,20 +430,6 @@ export function SpeechBubble({ id, hint, mine, tail }: { id: string; hint: boole
         <span className="absolute left-1/2 -bottom-[7px] -translate-x-1/2 w-3 h-3 rotate-45 bg-cream-tile border-r-[1.5px] border-b-[1.5px] border-jewelInk" />
       )}
     </div>
-  )
-}
-
-function TimeIcon({ part }: { part: 'morning' | 'day' | 'evening' }) {
-  if (part === 'evening') {
-    return <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden><path d="M11 2.5a6 6 0 1 0 2.5 8.2A5 5 0 0 1 11 2.5Z" fill="#F5B820" stroke="#15100A" strokeWidth="1.3" /></svg>
-  }
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
-      <circle cx="8" cy={part === 'morning' ? 10 : 8} r="3.4" fill={part === 'morning' ? '#FF9F5A' : '#F5B820'} stroke="#15100A" strokeWidth="1.3" />
-      {[0, 45, 90, 135, 180, 225, 270, 315].map(a => (
-        <path key={a} d="M8 1.8v1.6" stroke="#15100A" strokeWidth="1.3" strokeLinecap="round" transform={`rotate(${a} 8 ${part === 'morning' ? 10 : 8})`} />
-      ))}
-    </svg>
   )
 }
 

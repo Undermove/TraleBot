@@ -164,14 +164,17 @@ export function HeroCard() {
 }
 
 /** Экран начала игры: что за игра и как в неё играть. hero — показать карточку «Ты». */
-export function GameIntro({ title, text, chips, onStart, mood = 'guide', hero }: {
+export function GameIntro({ title, text, chips, onStart, mood = 'guide', hero, plan }: {
   title: string; text: string; chips?: { geo: string; ru: string }[]; onStart: () => void; mood?: 'guide' | 'cheer' | 'happy' | 'think'; hero?: boolean
+  /** Из чего состоит сцена по времени — например, три визита: утро, день, вечер. */
+  plan?: React.ReactNode
 }) {
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3" data-testid="game-intro">
       <div className="ab-short:hidden"><Mascot mood={mood} size={84} /></div>
       <div className="text-[21px] font-extrabold leading-tight">{title}</div>
       <p className="text-[14px] leading-snug text-jewelInk-soft max-w-[32ch]">{text}</p>
+      {plan}
       {hero && <HeroCard />}
       {chips && (
         <div className="flex flex-wrap justify-center gap-1.5">
@@ -260,5 +263,71 @@ export function WordTag({ word, className = '', testId }: { word: Phrase; classN
       <span className="font-geo text-[13px] font-bold">{word.geo}</span>
       <span className="text-[9px] font-semibold text-jewelInk-hint mt-0.5">{word.ru}</span>
     </button>
+  )
+}
+
+// ── Время суток: значок, план сцены, переход между визитами ───────────────────────────────────────
+
+export type DayPart = 'morning' | 'day' | 'evening'
+export const DAY_PART_RU: Record<DayPart, string> = { morning: 'утро', day: 'день', evening: 'вечер' }
+
+export function TimeIcon({ part, size = 14 }: { part: DayPart; size?: number }) {
+  if (part === 'evening') {
+    return <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden><path d="M11 2.5a6 6 0 1 0 2.5 8.2A5 5 0 0 1 11 2.5Z" fill="#F5B820" stroke={INK} strokeWidth="1.3" /></svg>
+  }
+  const cy = part === 'morning' ? 10 : 8
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy={cy} r="3.4" fill={part === 'morning' ? '#FF9F5A' : '#F5B820'} stroke={INK} strokeWidth="1.3" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map(a => (
+        <path key={a} d="M8 1.8v1.6" stroke={INK} strokeWidth="1.3" strokeLinecap="round" transform={`rotate(${a} 8 ${cy})`} />
+      ))}
+    </svg>
+  )
+}
+
+/** План сцены по времени: «пн, утро → вт, день → ср, вечер». Пройденное — зелёное, текущее — золотое. */
+export function TimeLine({ steps, current, compact, testId = 'time-line' }: { steps: { part: DayPart; label: string }[]; current?: number; compact?: boolean; testId?: string }) {
+  return (
+    <div className={`flex flex-wrap items-center justify-center ${compact ? 'gap-0.5' : 'gap-1'}`} data-testid={testId}>
+      {steps.map((s, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span className={`text-jewelInk-hint font-bold ${compact ? 'text-[10px]' : 'text-[12px]'}`} aria-hidden>→</span>}
+          <span className={`flex items-center gap-1 rounded-full border-[1.5px] border-jewelInk ${compact ? 'px-1.5 text-[11px]' : 'px-2 text-[12px]'} py-0.5 font-bold whitespace-nowrap ${current === undefined ? 'bg-cream-tile' : i < current ? 'bg-[#DDEBDD]' : i === current ? 'bg-gold' : 'bg-cream-tile opacity-60'}`}>
+            <TimeIcon part={s.part} /> {s.label}
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  )
+}
+
+/** Перед каждым заходом: какой по счёту, какой день и время, что было между заходами. Дальше — по кнопке. */
+export function TimeSkip({ count, title, text, steps, current, go, onGo }: {
+  count: string; title: string; text: string; steps: { part: DayPart; label: string }[]; current: number; go: string; onGo: () => void
+}) {
+  const part = steps[current].part
+  return (
+    <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-jewelInk/45" data-testid="time-skip">
+      <div className="w-full max-w-[320px] rounded-2xl border-[1.5px] border-jewelInk bg-cream px-3 py-4 flex flex-col items-center gap-2.5 text-center zn-pop" style={{ boxShadow: '4px 4px 0 #15100A' }}>
+        <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-mid" data-testid="time-skip-count">{count}</div>
+        <TimeIcon part={part} size={40} />
+        <div className="text-[20px] font-extrabold leading-tight">{title}</div>
+        <p className="text-[13.5px] leading-snug text-jewelInk-soft">{text}</p>
+        <TimeLine steps={steps} current={current} compact />
+        <div className="w-full mt-1" data-testid="time-skip-go"><Button onClick={() => { haptic('pop'); onGo() }}>{go}</Button></div>
+      </div>
+    </div>
+  )
+}
+
+/** Короткая плашка «наступил вечер» поверх сцены — не останавливает игру. */
+export function TimeBanner({ part, text }: { part: DayPart; text: string }) {
+  return (
+    <div className="absolute z-40 left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 pointer-events-none" data-testid="time-banner">
+      <div className="zn-pop flex items-center gap-2 rounded-2xl border-[1.5px] border-jewelInk bg-cream/95 px-3.5 py-2 text-[15px] font-extrabold whitespace-nowrap" style={{ boxShadow: '3px 3px 0 #15100A' }}>
+        <TimeIcon part={part} size={22} /> {text}
+      </div>
+    </div>
   )
 }
