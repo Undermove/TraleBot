@@ -38,6 +38,30 @@ public class TranslationAgentOptions
     /// <inheritdoc cref="ClassifierReasoning"/>
     public string GeneratorReasoning { get; set; } = string.Empty;
 
+    private string _wordTranslatorModel = string.Empty;
+    private string _wordTranslatorReasoning = string.Empty;
+
+    /// <summary>
+    /// The model that translates a plain word (not a verb) the way people say it, before the dictionary
+    /// site is trusted with it; empty = the analyst's model. Its answer is served only after the
+    /// dictionary confirms the Georgian word exists (see <c>GeorgianTranslationPipeline</c>).
+    /// </summary>
+    public string WordTranslatorModel
+    {
+        get => string.IsNullOrWhiteSpace(_wordTranslatorModel) ? AnalystModel : _wordTranslatorModel;
+        set => _wordTranslatorModel = value;
+    }
+
+    /// <summary>Reasoning of the word translator; empty = the analyst's.</summary>
+    public string WordTranslatorReasoning
+    {
+        get => string.IsNullOrWhiteSpace(_wordTranslatorReasoning) ? AnalystReasoning : _wordTranslatorReasoning;
+        set => _wordTranslatorReasoning = value;
+    }
+
+    /// <summary>Off: plain words are translated by the dictionary site and Google, as before.</summary>
+    public bool TranslateWordsWithModel { get; set; } = true;
+
     /// <inheritdoc cref="ClassifierReasoning"/>
     public string ReviewerReasoning { get; set; } = string.Empty;
 
@@ -94,6 +118,9 @@ public class TranslationAgentOptions
 
     /// <summary>The whole analysis run: every model turn and every tool call of it.</summary>
     public int AnalystTimeoutSeconds { get; set; } = 25;
+
+    /// <summary>The word translator's step: its call (or two, with the retry) and the dictionary checks.</summary>
+    public int WordTranslatorTimeoutSeconds { get; set; } = 20;
 
     /// <summary>One call of the generator. A strong model writing forty forms takes its time.</summary>
     public int GeneratorTimeoutSeconds { get; set; } = 60;

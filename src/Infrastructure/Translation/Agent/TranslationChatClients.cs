@@ -23,6 +23,9 @@ public interface ITranslationChatClients
 
     /// <summary>The model that approves or rejects such a record.</summary>
     IChatClient? Reviewer { get; }
+
+    /// <summary>The model that translates plain words (not verbs); its answer is checked against the dictionary.</summary>
+    IChatClient? Translator { get; }
 }
 
 /// <summary>OpenAI models; ids come from <see cref="TranslationAgentOptions"/>, the key from the existing <see cref="OpenAiConfig"/>.</summary>
@@ -32,6 +35,7 @@ public class OpenAiTranslationChatClients : ITranslationChatClients
     private readonly Lazy<IChatClient?> _analyst;
     private readonly Lazy<IChatClient?> _generator;
     private readonly Lazy<IChatClient?> _reviewer;
+    private readonly Lazy<IChatClient?> _translator;
 
     public OpenAiTranslationChatClients(IOptions<OpenAiConfig> openAi, IOptions<TranslationAgentOptions> options)
     {
@@ -40,12 +44,14 @@ public class OpenAiTranslationChatClients : ITranslationChatClients
         _analyst = new Lazy<IChatClient?>(() => Create(openAi.Value?.ApiKey, options.Value.AnalystModel));
         _generator = new Lazy<IChatClient?>(() => Create(openAi.Value?.ApiKey, options.Value.GeneratorModel));
         _reviewer = new Lazy<IChatClient?>(() => Create(openAi.Value?.ApiKey, options.Value.ReviewerModel));
+        _translator = new Lazy<IChatClient?>(() => Create(openAi.Value?.ApiKey, options.Value.WordTranslatorModel));
     }
 
     public IChatClient? Classifier => _classifier.Value;
     public IChatClient? Analyst => _analyst.Value;
     public IChatClient? Generator => _generator.Value;
     public IChatClient? Reviewer => _reviewer.Value;
+    public IChatClient? Translator => _translator.Value;
 
     private static IChatClient? Create(string? apiKey, string model)
     {

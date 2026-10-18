@@ -23,6 +23,7 @@ public static class TranslationAgentRegistration
         services.AddScoped<IVerbGenerationSwitch, VerbGenerationSwitch>();
         services.AddScoped<IVerbGenerator, MafVerbGenerator>();
         services.AddScoped<IVerbReviewer, MafVerbReviewer>();
+        services.AddScoped<IWordTranslator, MafWordTranslator>();
 
         services.AddSingleton<WiktionaryRateLimiter>();
         services.AddHttpClient(WiktionaryVerbSource.HttpClientName);

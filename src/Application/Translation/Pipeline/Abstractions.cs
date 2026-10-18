@@ -105,4 +105,24 @@ public interface IWiktionaryVerbSource
 }
 
 /// <summary>A model step failed in a way worth naming in the log: "the provider answered 429", "no result".</summary>
+/// <summary>A word or a short phrase that is not a verb, for <see cref="IWordTranslator"/>.</summary>
+/// <param name="Text">The text as asked, normalised.</param>
+/// <param name="DictionaryTranslations">What the dictionary site lists for the text — a hint, often with rare or scientific entries first.</param>
+/// <param name="Feedback">Why the previous answer was not accepted — for the one retry.</param>
+public record WordQuestion(string Text, bool IsRussian, IReadOnlyList<string> DictionaryTranslations, string? Feedback = null);
+
+/// <param name="Translation">The everyday translation; null when the model has none.</param>
+/// <param name="Alternatives">Other common translations, at most a few.</param>
+/// <param name="Note">A short Russian remark for the learner (register, «разговорное»), or null.</param>
+public record WordTranslation(string? Translation, IReadOnlyList<string> Alternatives, string? Note, ModelUsage? Usage = null);
+
+/// <summary>A model translates a plain word the way people say it; the pipeline checks the answer against the dictionary.</summary>
+public interface IWordTranslator
+{
+    /// <summary>False when no model is configured for it: plain words then go to the old translator.</summary>
+    bool IsAvailable { get; }
+
+    Task<WordTranslation> TranslateAsync(WordQuestion question, CancellationToken ct);
+}
+
 public class TranslationAgentException(string message) : Exception(message);

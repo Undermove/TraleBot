@@ -15,6 +15,9 @@ public class TranslationCache(ITraleDbContext dbContext)
     public const string SourceExternal = "external";
     public const string SourceVerbAgent = "verb-agent";
 
+    /// <summary>A plain word the word translator translated and the dictionary confirmed.</summary>
+    public const string SourceWordAgent = "word-agent";
+
     /// <summary>A verdict without a translation: the classifier is sure the text is not something to translate.</summary>
     public const string SourceNotTranslatable = "not-translatable";
 
@@ -30,7 +33,8 @@ public class TranslationCache(ITraleDbContext dbContext)
     /// said is asked from them again each time: rows with <see cref="SourceExternal"/> are from before
     /// that rule and count as a verdict only.
     /// </remarks>
-    public static bool HasTranslation(TranslationCacheEntry entry) => entry.Source == SourceVerbAgent;
+    public static bool HasTranslation(TranslationCacheEntry entry) =>
+        entry.Source is SourceVerbAgent or SourceWordAgent;
 
     /// <summary>Remembers what the models decided about a text that has no translation to cache.</summary>
     public Task StoreVerdictAsync(

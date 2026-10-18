@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddTransient<IGoogleApiTranslator, GoogleApiTranslator>();
         services.AddTransient<IParsingEnglishTranslator, WooordHuntParsingEnglishParsingEnglishTranslator>();
         services.AddTransient<IParsingUniversalTranslator, GlosbeParsingTranslationService>();
+        services.AddTransient<IDictionaryLookup, GlosbeParsingTranslationService>();
         services.AddTransient<IAiTranslationService, OpenAiAzureTranslationService>();
         services.AddTranslationAgent(configuration);
         services.AddJobQueue();
