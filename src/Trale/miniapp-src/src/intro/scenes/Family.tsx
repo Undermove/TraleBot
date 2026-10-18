@@ -228,11 +228,24 @@ function Placing({ mode, lessonId, rng, onEnd }: {
         <Pill testId="family-score">★ {first.current}</Pill>
       </div>
 
-      <div className="flex items-end gap-2 min-h-[84px]">
+      {/* Хозяин альбома держит фото и говорит, кто на нём: фото — у него в руке, его тащат вниз в рамку. */}
+      <div className="flex items-end min-h-[96px]" data-testid="family-show">
         <svg width="62" height="96" viewBox="-50 -196 100 202" className="shrink-0 overflow-visible" aria-hidden>
           <Passerby who={whoOf(round.ownerLook)} phase={0} stride={0} face={MOOD_FACE[mood]} talking={talking} wave={roundDone} />
         </svg>
-        <motion.div key={`${ri}-${ci}-${roundDone}`} className={`mb-6 rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 ${roundDone ? 'bg-[#D6E9D9]' : 'bg-cream-tile'}`}
+        {!roundDone && photo && (
+          <div className="shrink-0 -ml-4 mb-1">
+            {/* Первое фото — рука показывает, что его тащат в рамку. */}
+            {ri === 0 && ci === 0 && !cover && (
+              <DragDemo from={() => document.querySelector('[data-testid="family-photo"]')} to={[() => boardRef.current]} label="Тащи фото в рамку" />
+            )}
+            <DragPhoto key={`${ri}-${ci}`} board={boardRef} disabled={busy} shake={shake} onNear={setNear}
+              onDrop={(r, el) => place(r as Role, el)}>
+              <div className="w-[60px] h-[60px] rounded bg-gold-wash flex items-end justify-center overflow-hidden"><Portrait look={round.looks[photo]} female={ROLES[photo].female} size={60} /></div>
+            </DragPhoto>
+          </div>
+        )}
+        <motion.div key={`${ri}-${ci}-${roundDone}`} className={`relative ml-2 mb-8 rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 ${roundDone ? 'bg-[#D6E9D9]' : 'bg-cream-tile'}`}
           style={{ boxShadow: '2px 3px 0 #15100A', transformOrigin: '0% 100%' }}
           initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
           {roundDone
@@ -241,41 +254,31 @@ function Placing({ mode, lessonId, rng, onEnd }: {
               <span className="block font-geo font-extrabold text-[18px] leading-tight">{thisIs(photo)}</span>
               <span className="block text-[11px] font-semibold text-jewelInk-hint">{cyr(thisIs(photo))}</span>
             </span>}
+          {/* Хвостик реплики — к фото. */}
+          <span className={`absolute -left-[7px] bottom-3 w-3 h-3 rotate-45 border-l-[1.5px] border-b-[1.5px] border-jewelInk ${roundDone ? 'bg-[#D6E9D9]' : 'bg-cream-tile'}`} />
+          {(fb?.tone === 'trap' || fb?.tone === 'dodged') && (
+            <span key={fb.text} data-testid="family-trap"
+              className={`zn-stamp absolute -top-4 -right-3 rounded-lg border-2 bg-cream-tile px-2 py-0.5 text-[12px] font-extrabold uppercase tracking-wide ${fb.tone === 'trap' ? 'border-ruby text-ruby' : 'border-navy text-navy'}`}>
+              {fb.tone === 'trap' ? 'ловушка!' : 'обошёл'}
+            </span>
+          )}
         </motion.div>
-        {(fb?.tone === 'trap' || fb?.tone === 'dodged') && (
-          <span key={fb.text} data-testid="family-trap"
-            className={`zn-stamp ml-auto mb-3 shrink-0 rounded-lg border-2 bg-cream-tile px-2 py-0.5 text-[12px] font-extrabold uppercase tracking-wide ${fb.tone === 'trap' ? 'border-ruby text-ruby' : 'border-navy text-navy'}`}>
-            {fb.tone === 'trap' ? 'ловушка!' : 'обошёл'}
-          </span>
-        )}
       </div>
 
       <Board tree={tree} filled={filled} looks={round.looks} ownerLook={round.ownerLook} ownerRu={round.ownerRu} boardRef={boardRef} near={near}
         onFrame={roundDone ? undefined : (r, el) => { place(r, el) }} glow={glow} bad={bad} />
 
-      <div className="shrink-0 min-h-[92px] ab-short:min-h-[80px] flex items-center gap-3">
+      <div className="shrink-0 min-h-[56px] flex items-center gap-3">
         {roundDone ? (
           <div className="w-full zn-pop">
             <Button onClick={nextRound}>{ri + 1 < rounds.length ? `Дальше: альбом ${ri + 2} из ${rounds.length}` : 'Готово'}</Button>
           </div>
-        ) : photo && (
-          <>
-            {/* Первое фото — рука показывает, что его тащат в рамку. */}
-            {ri === 0 && ci === 0 && !cover && (
-              <DragDemo from={() => document.querySelector('[data-testid="family-photo"]')} to={[() => boardRef.current]} label="Тащи фото в рамку" />
-            )}
-            <DragPhoto key={`${ri}-${ci}`} board={boardRef} disabled={busy} shake={shake} onNear={setNear}
-              onDrop={(r, el) => place(r as Role, el)}>
-              <div className="w-[64px] h-[64px] rounded bg-gold-wash flex items-end justify-center overflow-hidden"><Portrait look={round.looks[photo]} female={ROLES[photo].female} size={64} /></div>
-            </DragPhoto>
-            {fresh
-              ? <NewWord key={fresh} word={phrase(fresh)} className="min-w-0" />
-              : <div className="text-[13px] leading-snug text-jewelInk-soft">
-                {fotoWord && <WordTag word={fotoWord} className="mr-1 align-middle" testId="foto-tag" />}
-                Кого показывают? Тащи фото в рамку — или просто нажми на рамку.
-              </div>}
-          </>
-        )}
+        ) : photo && (fresh
+          ? <NewWord key={fresh} word={phrase(fresh)} className="min-w-0" />
+          : <div className="text-[13px] leading-snug text-jewelInk-soft">
+            {fotoWord && <WordTag word={fotoWord} className="mr-1 align-middle" testId="foto-tag" />}
+            Кого показывают? Тащи фото в рамку — или просто нажми на рамку.
+          </div>)}
       </div>
 
       <Tip>
