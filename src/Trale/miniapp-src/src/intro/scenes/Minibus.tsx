@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { Banner, GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import { HINTS_OFF_AFTER, MY_STOP, STOPS, STOP_RU, heardBy, judge, replies, ride, type RideEvent, type Speaker, type Stop } from './Minibus.logic'
@@ -50,6 +50,14 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
 
   const e: RideEvent = events[Math.min(ei, events.length - 1)]
   const hints = right < HINTS_OFF_AFTER
+  // Перевод под кнопками пропадает — говорим об этом, а не меняем молча.
+  const [noRu, setNoRu] = useState(false)
+  useEffect(() => {
+    if (phase !== 'play' || right !== HINTS_OFF_AFTER) return
+    setNoRu(true)
+    const id = window.setTimeout(() => { if (alive.current) setNoRu(false) }, 2800)
+    return () => window.clearTimeout(id)
+  }, [right, phase])
   const panel = replies(lesson.id, heardBy(events, ei))
   const fresh = (id: string) => { if (shown.current.has(id)) return false; shown.current.add(id); setWord(id); return true }
   const voiceOf = (who: Speaker) => (who === 'd' || who === 'n' ? 'm' : 'f')
@@ -134,7 +142,7 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="minibus-scene">
-          <GameIntro title="Маршрутка до университета" text="Ты едешь на маршрутке в университет. Передать за проезд, налететь на соседа на повороте, ответить водителю, твоя ли остановка, — тут пригодятся спасибо, извините, да и нет. А на своей остановке не забудь крикнуть водителю." onStart={start} hero
+          <GameIntro title="Маршрутка до университета" text={`Ты едешь на маршрутке в университет — по дороге ${events.length} ситуаций. Передать за проезд, налететь на соседа на повороте, ответить водителю, твоя ли остановка, — тут пригодятся спасибо, извините, да и нет. А на своей остановке не забудь крикнуть водителю.`} onStart={start} hero
             chips={['madloba', 'bodishi', 'ki', 'ara'].map(id => ({ geo: phrase(id).geo, ru: phrase(id).ru }))} />
         </div>
       </GameFrame>
@@ -151,8 +159,8 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
   }
 
   return (
-    <GameFrame title={title} eyebrow={`едешь в университет`} fraction={fraction} onExit={onExit}>
-      <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="minibus-scene">
+    <GameFrame title={title} eyebrow={`едешь в университет · ${Math.min(ei + 1, events.length)} из ${events.length}`} fraction={fraction} onExit={onExit}>
+      <div className="relative flex-1 min-h-0 flex flex-col gap-2.5" data-testid="minibus-scene">
         <Route at={stopAt} />
         <div className="relative flex-1 min-h-[250px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden bg-[#3A3550]" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="minibus-cabin">
           <motion.div className="absolute inset-[-14px]" animate={cabin}>
@@ -229,6 +237,7 @@ export default function Minibus({ lesson, onExit, onDone, fraction }: SceneProps
         </div>
 
         <div className="shrink-0 min-h-[40px] text-center text-[13px] leading-snug text-jewelInk-soft px-2" aria-live="polite" data-testid="minibus-cue">{cue}</div>
+        {noRu && <Banner text="Дальше без перевода — ты уже знаешь эти слова" testId="minibus-no-ru" />}
 
         <div className="shrink-0 grid grid-cols-3 gap-2" data-testid="minibus-replies" data-want={ready ? e.want : undefined}>
           {panel.map(id => (

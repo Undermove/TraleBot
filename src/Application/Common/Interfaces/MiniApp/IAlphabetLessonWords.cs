@@ -17,3 +17,9 @@ public interface IAlphabetLessonWords
 public record AlphabetWordLesson(int Id, int After, IReadOnlyList<AlphabetWord> Words);
 
 public record AlphabetWord(string Word, string Translation);
+
+/// <summary>
+/// The words of the «Знакомство» lessons (<c>intro</c>): each lesson's phrases and scene words with their Russian
+/// translation, generated from the course story. The server's own list, the same shape as the alphabet one.
+/// </summary>
+public interface IIntroLessonWords : IAlphabetLessonWords;

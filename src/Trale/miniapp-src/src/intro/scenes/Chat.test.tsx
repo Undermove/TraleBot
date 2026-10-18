@@ -98,3 +98,12 @@ describe('Chat scene', () => {
     expect(screen.getByTestId('chat-scene')).toBeTruthy()
   })
 })
+
+describe('chat: время суток и длина разговора', () => {
+  it('утро и вечер сказаны с первой же реплики', () => {
+    const me = geoName('Карлос')
+    const first = (s: ChatScript) => chatScript(s, me, seeded(1))[0].her.map(h => (h.kind === 'note' ? h.text : '')).join(' ')
+    expect(first('act2')).toMatch(/^Утро/)
+    expect(first('act4')).toMatch(/^Вечер/)
+  })
+})

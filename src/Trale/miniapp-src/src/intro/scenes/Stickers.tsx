@@ -4,10 +4,10 @@ import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import { cyr } from '../../verbs/types'
 import { phrase, type Rng } from '../story'
-import { Bubble, Face, Pill, Tip, say } from '../ui'
+import { DragDemo, Bubble, Face, Pill, Tip, say } from '../ui'
 import { Transformed } from './Magnets'
 import { MAGNET_RU, type MagnetSet, type Tool } from './Magnets.logic'
-import { advance, choose, current, startGame, toolsFor, why, type EndingsResult, type Game, type Round } from './Endings.logic'
+import { ROUND_NOUN, advance, choose, current, startGame, toolsFor, why, type EndingsResult, type Game, type Round } from './Endings.logic'
 
 /**
  * Окончания — наклейки. Нино спрашивает, твой ответ написан на вещи из этой ситуации: «откуда» — на бирке
@@ -76,7 +76,7 @@ export default function Stickers({ set, rng = Math.random, onEnd }: { set: Magne
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="endings">
       <div className="shrink-0 flex items-center justify-between gap-2">
-        <Pill testId="endings-round">{g.at + 1} / {g.rounds.length}</Pill>
+        <Pill testId="endings-round">{ROUND_NOUN[set][0]} {Math.min(g.at + 1, g.rounds.length)} из {g.rounds.length}</Pill>
         {g.combo >= 2 && <Pill testId="endings-combo">серия ×{g.combo}</Pill>}
         <Pill testId="endings-score">{g.score} очков</Pill>
       </div>
@@ -89,7 +89,7 @@ export default function Stickers({ set, rng = Math.random, onEnd }: { set: Magne
             : <span className="text-[14px] font-bold">{r.ask.ru}</span>}
         </Bubble>
       </div>
-      <div className="shrink-0 text-center text-[12px] font-bold text-navy">ты хочешь сказать: «{r.goal}»</div>
+      <div className="shrink-0 text-center text-[12px] font-bold text-navy">{r.who ? `${r.who} хочет сказать` : 'ты хочешь сказать'}: «{r.goal}»</div>
 
       {/* Вещь с ответом — бирка, открытка или бейдж; в конце слова — место для наклейки. */}
       <div className="relative flex-1 min-h-[150px] flex items-center justify-center" data-testid="endings-answer" data-tool={r.item.tool}>
@@ -115,6 +115,9 @@ export default function Stickers({ set, rng = Math.random, onEnd }: { set: Magne
 
       <Tip>{tip || (g.at === 0 ? firstTip : '')}</Tip>
 
+      {g.at === 0 && !solved && (
+        <DragDemo from={() => document.querySelector('[data-testid="sticker-sheet"]')} to={[() => slot.current]} label="Тащи нужную наклейку к слову" />
+      )}
       {/* Лист наклеек: каждую можно оторвать и тащить. */}
       <div className="shrink-0 relative rounded-2xl border-[1.5px] border-jewelInk px-3 py-3 flex justify-center gap-5" data-testid="sticker-sheet"
         style={{ background: 'repeating-linear-gradient(45deg, #FDFAEF 0 10px, #F6EEDC 10px 20px)', boxShadow: '3px 3px 0 #15100A' }}>

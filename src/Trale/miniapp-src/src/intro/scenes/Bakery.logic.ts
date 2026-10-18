@@ -33,11 +33,11 @@ const NEED: Record<Item, string[]> = {
 
 export interface Visit { day: string; part: Part; item: Item; steps: Step[] }
 
-const DAYS = ['понедельник', 'вторник', 'среда', 'четверг']
-const PARTS: Part[] = ['morning', 'morning', 'day', 'evening']
+export const DAYS = ['понедельник', 'вторник', 'среда']
+const PARTS: Part[] = ['morning', 'day', 'evening']
 
 /**
- * Четыре визита: в первом пекарша сама начинает всё, дальше — по-разному, чтобы не по шаблону. Заказ:
+ * Три визита (утро, день, вечер — третий урок, сцена не должна быть длиннее прошлых): в первом пекарша сама начинает всё, дальше — по-разному, чтобы не по шаблону. Заказ:
  * в первый день — хлеб, во второй — хачапури (знакомство со словами витрины), дальше — что выпадет.
  */
 export function plan(lessonId: number, rng: Rng = Math.random): Visit[] {
@@ -64,6 +64,21 @@ export function plan(lessonId: number, rng: Rng = Math.random): Visit[] {
     steps.push({ cue: `${item === 'khachapuri' ? 'Хачапури' : 'Хлеб'} у тебя. Попрощайся.`, want: 'nakhvamdis', react: 'nakhvamdis' })
     return { day, part, item, steps }
   })
+}
+
+/** Подписи плана: «пн, утро». */
+export const PLAN_LABELS = ['пн, утро', 'вт, день', 'ср, вечер']
+
+/** Что случилось между визитами — чтобы было ясно: ты ушёл, прошли сутки, снова пришёл. */
+export function skipText(i: number, v: Visit): { count: string; title: string; text: string } {
+  const when = { morning: 'утром', day: 'днём', evening: 'вечером' }[v.part]
+  const title = `${v.day[0].toUpperCase()}${v.day.slice(1)}, ${when}`
+  const text = i === 0
+    ? 'Первый визит. Ты идёшь за хлебом в пекарню у дома.'
+    : i === 1
+      ? 'Ты ушёл домой с хлебом. Наступил следующий день — снова идёшь в пекарню, теперь днём.'
+      : 'Прошёл ещё день. Последний визит — заходишь в пекарню вечером.'
+  return { count: `Визит ${i + 1} из ${DAYS.length}`, title, text }
 }
 
 export type Result = 'right' | 'soft' | 'miss'

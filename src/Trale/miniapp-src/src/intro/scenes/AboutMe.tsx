@@ -214,7 +214,7 @@ function Interview({ card, setCard, myGeo, myLine, onReady }: { card: Card; setC
             </div>
           )}
         </AnimatePresence>
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="aboutme-filled">{filled(card)} / 5</div>
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-30 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="aboutme-filled">ответы: {notes} из {STEPS.length}</div>
       </div>
 
       {/* Твой ответ — на карточке: начало фразы и место для слова. */}

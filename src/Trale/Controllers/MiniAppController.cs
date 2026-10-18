@@ -986,18 +986,40 @@ public class MiniAppController : Controller
             UserId = user.Id,
             LessonId = request.LessonId
         }, ct);
-
-        return result switch
-        {
-            Application.MiniApp.Commands.AddAlphabetLessonWordsResult.Success s => Ok(new
-            {
-                words = s.Words.Select(w => new { word = w.Word, translation = w.Translation, added = w.Added }),
-                added = s.AddedCount
-            }),
-            Application.MiniApp.Commands.AddAlphabetLessonWordsResult.LessonNotCompleted => Conflict(new { error = "lesson_not_completed" }),
-            _ => NotFound(new { error = "unknown_lesson" })
-        };
+        return LessonWordsResult(result);
     }
+
+    /// <summary>
+    /// After a counted «Знакомство» lesson: puts its phrases and scene words into the learner's dictionary
+    /// (<see cref="Application.MiniApp.Commands.AddIntroLessonWords"/>), the same way as the alphabet words.
+    /// </summary>
+    [HttpPost("vocabulary/intro-words")]
+    public async Task<IActionResult> AddIntroLessonWords([FromBody] AlphabetWordsRequest request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var result = await _mediator.Send(new Application.MiniApp.Commands.AddIntroLessonWords
+        {
+            UserId = user.Id,
+            LessonId = request.LessonId
+        }, ct);
+        return LessonWordsResult(result);
+    }
+
+    private IActionResult LessonWordsResult(Application.MiniApp.Commands.AddAlphabetLessonWordsResult result) => result switch
+    {
+        Application.MiniApp.Commands.AddAlphabetLessonWordsResult.Success s => Ok(new
+        {
+            words = s.Words.Select(w => new { word = w.Word, translation = w.Translation, added = w.Added }),
+            added = s.AddedCount
+        }),
+        Application.MiniApp.Commands.AddAlphabetLessonWordsResult.LessonNotCompleted => Conflict(new { error = "lesson_not_completed" }),
+        _ => NotFound(new { error = "unknown_lesson" })
+    };
 
     public class LessonEventsRequest
     {

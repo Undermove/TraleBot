@@ -97,3 +97,17 @@ describe('Taxi', () => {
     expect(onDone).toHaveBeenCalled()
   }, 60_000)
 })
+
+describe('taxi: остановка по адресу', () => {
+  it('«вот твой дом» — только в Батуми, в другом городе — нужный адрес', () => {
+    const me = geoName('Карлос')
+    const noteOf = (city: string) => {
+      const turns = taxiTurns('where', CITIES.find(c => c.ru === city)!, me, 19, seeded(1))
+      const stop = turns.find(t => t.nav === 'stop')!
+      return stop.her.map(h => (h.kind === 'note' ? h.text : '')).join(' ')
+    }
+    expect(noteOf('Батуми')).toMatch(/твой дом/)
+    expect(noteOf('Кутаиси')).not.toMatch(/твой дом/)
+    expect(noteOf('Кутаиси')).toMatch(/Кутаиси/)
+  })
+})

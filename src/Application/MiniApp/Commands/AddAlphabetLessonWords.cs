@@ -36,80 +36,113 @@ public class AddAlphabetLessonWords : IRequest<AddAlphabetLessonWordsResult>
                 return new AddAlphabetLessonWordsResult.UnknownLesson();
             }
 
-            var progress = await context.MiniAppUserProgresses.AsNoTracking()
-                .FirstOrDefaultAsync(p => p.UserId == request.UserId, ct);
-            var counted = CompletedAlphabetLessons(progress?.CompletedLessonsJson);
-            if (!counted.Contains(request.LessonId))
-            {
-                return new AddAlphabetLessonWordsResult.LessonNotCompleted();
-            }
+            return await LessonWordsToDictionary.AddAsync(context, achievements, request.UserId, ModuleId, lessonWords, request.LessonId, ct);
+        }
+    }
+}
 
-            // Слова всех засчитанных уроков слов (этот — тоже), которых у человека ещё нет.
-            var wanted = lessonWords.WordLessons
-                .Where(l => counted.Contains(l.Id))
-                .SelectMany(l => l.Words)
-                .DistinctBy(w => w.Word)
-                .ToList();
-            var keys = wanted.Select(w => w.Word.Trim().ToLowerInvariant()).ToList();
-            var existing = (await context.VocabularyEntries
-                    .Where(e => e.UserId == request.UserId && e.Language == Language.Georgian && keys.Contains(e.Word))
-                    .Select(e => e.Word)
-                    .ToListAsync(ct))
-                .ToHashSet();
+/// <summary>
+/// After a counted «Знакомство» lesson its phrases and scene words go into the learner's dictionary — the same way
+/// as the alphabet words (<see cref="AddAlphabetLessonWords"/>): from the server's own list, no translator, no
+/// limits; words already there are left as is, earlier counted lessons' words are added too.
+/// </summary>
+public class AddIntroLessonWords : IRequest<AddAlphabetLessonWordsResult>
+{
+    public const string ModuleId = "intro";
 
-            var now = DateTime.UtcNow;
-            var added = new HashSet<string>();
-            foreach (var w in wanted)
-            {
-                var word = w.Word.Trim().ToLowerInvariant();
-                if (existing.Contains(word) || !added.Add(word))
-                {
-                    continue;
-                }
+    public required Guid UserId { get; init; }
+    public required int LessonId { get; init; }
 
-                await context.VocabularyEntries.AddAsync(new VocabularyEntry
-                {
-                    Id = Guid.NewGuid(),
-                    Word = word,
-                    Definition = w.Translation.Trim().ToLowerInvariant(),
-                    AdditionalInfo = "",
-                    Example = "",
-                    UserId = request.UserId,
-                    DateAddedUtc = now,
-                    UpdatedAtUtc = now,
-                    Language = Language.Georgian
-                }, ct);
-            }
+    public class Handler(ITraleDbContext context, IIntroLessonWords lessonWords, IAchievementsService achievements)
+        : IRequestHandler<AddIntroLessonWords, AddAlphabetLessonWordsResult>
+    {
+        public Task<AddAlphabetLessonWordsResult> Handle(AddIntroLessonWords request, CancellationToken ct) =>
+            lessonWords.WordsOf(request.LessonId).Count == 0
+                ? Task.FromResult<AddAlphabetLessonWordsResult>(new AddAlphabetLessonWordsResult.UnknownLesson())
+                : LessonWordsToDictionary.AddAsync(context, achievements, request.UserId, ModuleId, lessonWords, request.LessonId, ct);
+    }
+}
 
-            if (added.Count > 0)
-            {
-                await context.SaveChangesAsync(ct);
-                // The same achievements a translated word can open (10, 100, 1000 words in the dictionary).
-                var total = await context.VocabularyEntries.CountAsync(e => e.UserId == request.UserId, ct);
-                await achievements.AssignAchievements(new VocabularyCountTrigger { VocabularyEntriesCount = total }, request.UserId, ct);
-            }
-
-            return new AddAlphabetLessonWordsResult.Success(
-                own.Select(w => new AddedAlphabetWord(w.Word, w.Translation, added.Contains(w.Word.Trim().ToLowerInvariant()))).ToList(),
-                added.Count);
+/// <summary>Puts a counted lesson's words (and those of the module's other counted lessons) into the dictionary.</summary>
+internal static class LessonWordsToDictionary
+{
+    public static async Task<AddAlphabetLessonWordsResult> AddAsync(ITraleDbContext context, IAchievementsService achievements,
+        Guid userId, string moduleId, IAlphabetLessonWords lessonWords, int lessonId, CancellationToken ct)
+    {
+        var own = lessonWords.WordsOf(lessonId);
+        var progress = await context.MiniAppUserProgresses.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.UserId == userId, ct);
+        var counted = CompletedLessons(progress?.CompletedLessonsJson, moduleId);
+        if (!counted.Contains(lessonId))
+        {
+            return new AddAlphabetLessonWordsResult.LessonNotCompleted();
         }
 
-        private static HashSet<int> CompletedAlphabetLessons(string? json)
+        // Слова всех засчитанных уроков слов (этот — тоже), которых у человека ещё нет.
+        var wanted = lessonWords.WordLessons
+            .Where(l => counted.Contains(l.Id))
+            .SelectMany(l => l.Words)
+            .DistinctBy(w => w.Word)
+            .ToList();
+        var keys = wanted.Select(w => w.Word.Trim().ToLowerInvariant()).ToList();
+        var existing = (await context.VocabularyEntries
+                .Where(e => e.UserId == userId && e.Language == Language.Georgian && keys.Contains(e.Word))
+                .Select(e => e.Word)
+                .ToListAsync(ct))
+            .ToHashSet();
+
+        var now = DateTime.UtcNow;
+        var added = new HashSet<string>();
+        foreach (var w in wanted)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            var word = w.Word.Trim().ToLowerInvariant();
+            if (existing.Contains(word) || !added.Add(word))
             {
-                return [];
+                continue;
             }
 
-            try
+            await context.VocabularyEntries.AddAsync(new VocabularyEntry
             {
-                var all = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(json);
-                return all != null && all.TryGetValue(ModuleId, out var lessons) ? lessons.ToHashSet() : [];
-            }
-            catch (JsonException)
-            {
-                return [];
-            }
+                Id = Guid.NewGuid(),
+                Word = word,
+                Definition = w.Translation.Trim().ToLowerInvariant(),
+                AdditionalInfo = "",
+                Example = "",
+                UserId = userId,
+                DateAddedUtc = now,
+                UpdatedAtUtc = now,
+                Language = Language.Georgian
+            }, ct);
+        }
+
+        if (added.Count > 0)
+        {
+            await context.SaveChangesAsync(ct);
+            // The same achievements a translated word can open (10, 100, 1000 words in the dictionary).
+            var total = await context.VocabularyEntries.CountAsync(e => e.UserId == userId, ct);
+            await achievements.AssignAchievements(new VocabularyCountTrigger { VocabularyEntriesCount = total }, userId, ct);
+        }
+
+        return new AddAlphabetLessonWordsResult.Success(
+            own.Select(w => new AddedAlphabetWord(w.Word, w.Translation, added.Contains(w.Word.Trim().ToLowerInvariant()))).ToList(),
+            added.Count);
+    }
+
+    private static HashSet<int> CompletedLessons(string? json, string moduleId)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        try
+        {
+            var all = JsonSerializer.Deserialize<Dictionary<string, List<int>>>(json);
+            return all != null && all.TryGetValue(moduleId, out var lessons) ? lessons.ToHashSet() : [];
+        }
+        catch (JsonException)
+        {
+            return [];
         }
     }
 }

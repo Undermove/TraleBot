@@ -1,11 +1,14 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { motion } from 'framer-motion'
+import { DictIcon } from '../alphabet/words/WordIntro'
 import Button from '../components/Button'
 import Mascot from '../components/Mascot'
 import { cyr } from '../verbs/types'
 import { haptic, isMuted, playClip } from '../alphabet/games/fx'
 import { INTRO_AUDIO, INTRO_WORD_AUDIO } from './audio'
 import { WORD_AUDIO } from '../alphabet/games/data'
-import { HERO, myName, type Phrase, type Rng } from './story'
+import { HERO, myName, replyRu, type Phrase, type Rng } from './story'
 import './intro.css'
 
 // Общие детали сцен «Знакомства»: человечки, реплики, кнопки-реплики, карточка правила, экран итога сцены.
@@ -104,10 +107,15 @@ export function replySize(geo: string, compact?: boolean): number {
   return compact ? base - 2 : base
 }
 
-/** Кнопка-реплика: грузинская фраза крупно, под ней кириллица или перевод. */
+/** Какой урок «Знакомства» идёт — кнопки-реплики решают по нему, показывать ли перевод. */
+export const IntroLessonId = React.createContext(0)
+
+/** Кнопка-реплика: грузинская фраза крупно, под ней перевод (второй акт) или кириллица. */
 export function Reply({ geo, hint, onClick, state = 'idle', disabled, testId, compact }: {
   geo: string; hint?: string; onClick: () => void; state?: 'idle' | 'good' | 'bad' | 'dim'; disabled?: boolean; testId?: string; compact?: boolean
 }) {
+  const lessonId = React.useContext(IntroLessonId)
+  hint = hint ?? replyRu(lessonId, geo)
   const bg = state === 'good' ? 'bg-[#D6E9D9]' : state === 'bad' ? 'bg-ruby-wash zn-shake' : 'bg-cream-tile'
   return (
     <button
@@ -158,14 +166,17 @@ export function HeroCard() {
 }
 
 /** Экран начала игры: что за игра и как в неё играть. hero — показать карточку «Ты». */
-export function GameIntro({ title, text, chips, onStart, mood = 'guide', hero }: {
+export function GameIntro({ title, text, chips, onStart, mood = 'guide', hero, plan }: {
   title: string; text: string; chips?: { geo: string; ru: string }[]; onStart: () => void; mood?: 'guide' | 'cheer' | 'happy' | 'think'; hero?: boolean
+  /** Из чего состоит сцена по времени — например, три визита: утро, день, вечер. */
+  plan?: React.ReactNode
 }) {
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-3" data-testid="game-intro">
       <div className="ab-short:hidden"><Mascot mood={mood} size={84} /></div>
       <div className="text-[21px] font-extrabold leading-tight">{title}</div>
       <p className="text-[14px] leading-snug text-jewelInk-soft max-w-[32ch]">{text}</p>
+      {plan}
       {hero && <HeroCard />}
       {chips && (
         <div className="flex flex-wrap justify-center gap-1.5">
@@ -235,7 +246,11 @@ export function NewWord({ word, className = '', style, onTap, testId = 'new-word
       onClick={() => { haptic('tap'); say(word); onTap?.() }}
       className={`zn-pop rounded-2xl border-[1.5px] border-jewelInk bg-gold-wash px-3 py-1.5 text-left leading-tight ${className}`}
       style={{ boxShadow: '3px 3px 0 #15100A', ...style }}>
-      <span className="block text-[10px] font-extrabold uppercase tracking-wider text-jewelInk-mid">{word.alphabet ? 'знаешь по алфавиту' : 'новое слово'}</span>
+      <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-jewelInk-mid">
+        {word.alphabet ? 'знаешь по алфавиту' : 'новое слово'}
+        {/* После урока слово ляжет в личный словарь — видно сразу, на карточке. */}
+        <span className="inline-flex items-center gap-0.5 normal-case tracking-normal font-bold text-jewelInk-hint" data-testid="new-word-dict"><DictIcon size={11} />в словарь</span>
+      </span>
       <span className="block font-geo text-[19px] font-bold">{word.geo}</span>
       <span className="block text-[11px] font-semibold text-jewelInk-hint">{cyr(word.geo)} — {word.ru}</span>
     </button>
@@ -250,5 +265,168 @@ export function WordTag({ word, className = '', testId }: { word: Phrase; classN
       <span className="font-geo text-[13px] font-bold">{word.geo}</span>
       <span className="text-[9px] font-semibold text-jewelInk-hint mt-0.5">{word.ru}</span>
     </button>
+  )
+}
+
+// ── Время суток: значок, план сцены, переход между визитами ───────────────────────────────────────
+
+export type DayPart = 'morning' | 'day' | 'evening'
+export const DAY_PART_RU: Record<DayPart, string> = { morning: 'утро', day: 'день', evening: 'вечер' }
+
+export function TimeIcon({ part, size = 14 }: { part: DayPart; size?: number }) {
+  if (part === 'evening') {
+    return <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden><path d="M11 2.5a6 6 0 1 0 2.5 8.2A5 5 0 0 1 11 2.5Z" fill="#F5B820" stroke={INK} strokeWidth="1.3" /></svg>
+  }
+  const cy = part === 'morning' ? 10 : 8
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <circle cx="8" cy={cy} r="3.4" fill={part === 'morning' ? '#FF9F5A' : '#F5B820'} stroke={INK} strokeWidth="1.3" />
+      {[0, 45, 90, 135, 180, 225, 270, 315].map(a => (
+        <path key={a} d="M8 1.8v1.6" stroke={INK} strokeWidth="1.3" strokeLinecap="round" transform={`rotate(${a} 8 ${cy})`} />
+      ))}
+    </svg>
+  )
+}
+
+/** План сцены по времени: «пн, утро → вт, день → ср, вечер». Пройденное — зелёное, текущее — золотое. */
+export function TimeLine({ steps, current, compact, testId = 'time-line' }: { steps: { part: DayPart; label: string }[]; current?: number; compact?: boolean; testId?: string }) {
+  return (
+    <div className={`flex flex-wrap items-center justify-center ${compact ? 'gap-0.5' : 'gap-1'}`} data-testid={testId}>
+      {steps.map((s, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span className={`text-jewelInk-hint font-bold ${compact ? 'text-[10px]' : 'text-[12px]'}`} aria-hidden>→</span>}
+          <span className={`flex items-center gap-1 rounded-full border-[1.5px] border-jewelInk ${compact ? 'px-1.5 text-[11px]' : 'px-2 text-[12px]'} py-0.5 font-bold whitespace-nowrap ${current === undefined ? 'bg-cream-tile' : i < current ? 'bg-[#DDEBDD]' : i === current ? 'bg-gold' : 'bg-cream-tile opacity-60'}`}>
+            <TimeIcon part={s.part} /> {s.label}
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  )
+}
+
+/** Между раундами: какой по счёту, что изменилось, дальше — по кнопке. Пока карточка открыта, сцена ждёт. */
+export function RoundCard({ count, title, text, icon, children, go, onGo, testId = 'round-card' }: {
+  count: string; title: string; text: string; icon?: React.ReactNode; children?: React.ReactNode; go: string; onGo: () => void; testId?: string
+}) {
+  return (
+    <div className="absolute inset-0 z-40 flex items-center justify-center p-4 bg-jewelInk/45" data-testid={testId}>
+      <div className="w-full max-w-[320px] rounded-2xl border-[1.5px] border-jewelInk bg-cream px-3 py-4 flex flex-col items-center gap-2.5 text-center zn-pop" style={{ boxShadow: '4px 4px 0 #15100A' }}>
+        <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-mid" data-testid={`${testId}-count`}>{count}</div>
+        {icon}
+        <div className="text-[20px] font-extrabold leading-tight">{title}</div>
+        <p className="text-[13.5px] leading-snug text-jewelInk-soft">{text}</p>
+        {children}
+        <div className="w-full mt-1" data-testid={`${testId}-go`}><Button onClick={() => { haptic('pop'); onGo() }}>{go}</Button></div>
+      </div>
+    </div>
+  )
+}
+
+/** Перед каждым заходом: какой по счёту, какой день и время, что было между заходами. */
+export function TimeSkip({ count, title, text, steps, current, go, onGo }: {
+  count: string; title: string; text: string; steps: { part: DayPart; label: string }[]; current: number; go: string; onGo: () => void
+}) {
+  return (
+    <RoundCard count={count} title={title} text={text} go={go} onGo={onGo} testId="time-skip" icon={<TimeIcon part={steps[current].part} size={40} />}>
+      <TimeLine steps={steps} current={current} compact />
+    </RoundCard>
+  )
+}
+
+/** Короткая плашка поверх сцены («наступил вечер», «дальше без перевода») — не останавливает игру. */
+export function Banner({ icon, text, testId = 'banner' }: { icon?: React.ReactNode; text: string; testId?: string }) {
+  return (
+    <div className="absolute z-40 left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 pointer-events-none" data-testid={testId}>
+      <div className="zn-pop flex items-center gap-2 rounded-2xl border-[1.5px] border-jewelInk bg-cream/95 px-3.5 py-2 text-[15px] font-extrabold text-center max-w-[300px]" style={{ boxShadow: '3px 3px 0 #15100A' }}>
+        {icon}{text}
+      </div>
+    </div>
+  )
+}
+
+/** Плашка «наступил вечер». */
+export function TimeBanner({ part, text }: { part: DayPart; text: string }) {
+  return <Banner icon={<TimeIcon part={part} size={22} />} text={text} testId="time-banner" />
+}
+
+// ── Показ механики: рука тащит предмет к цели ─────────────────────────────────────────────────────
+
+type Box = { x: number; y: number; w: number; h: number }
+const boxOf = (el: Element | null | undefined): Box | null => {
+  if (!el) return null
+  const r = el.getBoundingClientRect()
+  return r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height } : null
+}
+
+export function FingerIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden>
+      <path d="M8 2.5a1.6 1.6 0 0 1 3.2 0V9l3.6 0.9a2 2 0 0 1 1.5 2.3l-0.8 4.2A2.4 2.4 0 0 1 13.1 18.5H9.4a2.4 2.4 0 0 1-2-1.1L4.2 12.6a1.4 1.4 0 0 1 2.2-1.7L8 12.4Z"
+        fill="#FDFAEF" stroke={INK} strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/**
+ * Первый раз в игре «перетаскивания»: призрачная рука берёт предмет и тащит к цели — по кругу,
+ * пока человек сам не коснётся экрана. Целей несколько — по очереди (фото, потом чемодан).
+ * Рисуется поверх всего (портал), координаты — по экрану, поэтому сцене ничего не нужно знать.
+ */
+export function DragDemo({ from, to, label, testId = 'drag-demo' }: {
+  from: () => Element | null
+  /** Куда тащить: элементы (по очереди) или сдвиг от предмета (бокал — вверх). */
+  to: Array<() => Element | null> | { dx: number; dy: number }
+  label: string
+  testId?: string
+}) {
+  const [gone, setGone] = useState(false)
+  const [loop, setLoop] = useState(0)
+  const [pts, setPts] = useState<{ a: Box; b: Box } | null>(null)
+  // Первое касание — человек понял, рука уходит.
+  useEffect(() => {
+    const off = () => setGone(true)
+    window.addEventListener('pointerdown', off, { once: true, capture: true })
+    return () => window.removeEventListener('pointerdown', off, { capture: true })
+  }, [])
+  // Где предмет и цель — пересчитываем на каждом круге: сцена могла сдвинуться.
+  useEffect(() => {
+    if (gone) return
+    const measure = () => {
+      const a = boxOf(from())
+      let b: Box | null = null
+      if (Array.isArray(to)) b = boxOf(to[loop % to.length]())
+      else if (a) b = { ...a, x: a.x + to.dx, y: a.y + to.dy }
+      setPts(a && b ? { a, b } : null)
+    }
+    const t = window.setTimeout(measure, 60)
+    return () => window.clearTimeout(t)
+  }, [loop, gone]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (gone || typeof document === 'undefined') return null
+  const ghost = pts && { w: Math.min(pts.a.w, 120), h: Math.min(pts.a.h, 120) }
+  return createPortal(
+    <div className="fixed inset-0 z-[60] pointer-events-none" data-testid={testId} aria-hidden>
+      {pts && ghost && (
+        <motion.div key={loop} className="absolute left-0 top-0"
+          initial={{ x: pts.a.x, y: pts.a.y, opacity: 0 }}
+          animate={{ x: [pts.a.x, pts.a.x, pts.b.x, pts.b.x, pts.b.x], y: [pts.a.y, pts.a.y, pts.b.y, pts.b.y, pts.b.y], opacity: [0, 1, 1, 1, 0] }}
+          transition={{ duration: 2.6, times: [0, 0.18, 0.66, 0.8, 1], ease: 'easeInOut', delay: loop ? 0.5 : 1 }}
+          onAnimationComplete={() => setLoop(l => l + 1)}>
+          {/* Призрак предмета — едет под пальцем. */}
+          <div className="absolute rounded-lg border-2 border-dashed border-jewelInk bg-cream/55"
+            style={{ width: ghost.w, height: ghost.h, left: -ghost.w / 2, top: -ghost.h / 2, transform: 'rotate(-4deg)' }} />
+          <motion.div className="absolute" style={{ left: -2, top: 0 }}
+            animate={{ scale: [1, 0.82, 0.82, 1, 1] }} transition={{ duration: 2.6, times: [0, 0.18, 0.66, 0.8, 1], delay: loop ? 0.5 : 1 }}>
+            <span className="block drop-shadow-[2px_3px_0_rgba(21,16,10,0.35)]"><FingerIcon size={40} /></span>
+          </motion.div>
+        </motion.div>
+      )}
+      {pts && (
+        <div className="absolute inset-x-0 flex justify-center px-4"
+          style={{ top: Math.max(8, Math.min(pts.a.y, pts.b.y) - Math.max(pts.a.h, 40) / 2 - 40) }}>
+          <div className="rounded-full bg-jewelInk/80 text-cream px-3 py-1 text-[13px] font-extrabold text-center zn-pop" data-testid={`${testId}-label`}>{label}</div>
+        </div>
+      )}
+    </div>,
+    document.body
   )
 }

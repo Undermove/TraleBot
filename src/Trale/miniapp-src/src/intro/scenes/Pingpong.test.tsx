@@ -54,7 +54,13 @@ describe('Pingpong', () => {
     for (let k = 0; k < 3000 && !screen.queryByTestId('game-end'); k++) {
       await act(async () => { await vi.advanceTimersByTimeAsync(100) })
       if (screen.queryByTestId('pingpong-guest')) sawGuest = true
-      if (screen.queryAllByTestId('pingpong-new-word').length) sawWord = true
+      if (screen.queryAllByTestId('pingpong-new-word').length) {
+        sawWord = true
+        // Пока карточка нового слова открыта, отвечать нельзя: игра ждёт «Понятно».
+        expect(screen.queryByTestId('pingpong-replies')?.getAttribute('data-want')).toBeFalsy()
+        await act(async () => { fireEvent.click(screen.getByTestId('pingpong-word-ok')) })
+        continue
+      }
       const want = screen.queryByTestId('pingpong-replies')?.getAttribute('data-want')
       if (want) await act(async () => { fireEvent.click(screen.getByTestId(`pingpong-reply-${want}`)) })
     }

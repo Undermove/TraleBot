@@ -114,7 +114,7 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
   let list: Exchange[]
   switch (script) {
     case 'act2': list = [
-      { her: [her(P('dila'))], opts: [
+      { her: [note('Утро. Нино только проснулась и пишет тебе'), her(P('dila'))], opts: [
         ok(P('dila'), 1), ok(P('gamarjoba'), 1),
         no(P('saghamo'), 'Нино: «Вечер? У меня ещё кофе не остыл». Сейчас утро.')
       ] },
@@ -170,7 +170,7 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
       const job = HERO.job
       const other = pick(JOBS.filter(j => j !== job), rng)
       list = [
-        { her: [her(P('saghamo'))], opts: [
+        { her: [note('Вечер. Над морем уже луна — Нино пишет тебе'), her(P('saghamo'))], opts: [
           ok(P('saghamo'), 1), ok(P('gamarjoba'), 1),
           no(P('dila'), 'Нино: «Утро? Уже луна над морем!» Сейчас вечер.')
         ] },
@@ -233,6 +233,9 @@ export function chatScript(script: ChatScript, me: GeoName, rng: Rng = Math.rand
 export const SCRIPT_LESSON: Record<ChatScript, number> = { act2: 12, act3: 17, act4: 23, act6: 31 }
 
 export const MAX_WARMTH = 5
+
+/** «7 ответов», «2 ответа», «1 ответ». */
+export const answersRu = (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'ответ' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? 'ответа' : 'ответов'}`
 
 /** Тепло после ответа: от 0 до 5. */
 export const warmAfter = (warmth: number, o: Opt) => Math.max(0, Math.min(MAX_WARMTH, warmth + o.w))

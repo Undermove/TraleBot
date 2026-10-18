@@ -142,13 +142,13 @@ describe('Magnets scene (автомат с краном)', () => {
     vi.useFakeTimers()
     render(<Magnets lesson={introLesson(18)} step={{ kind: 'magnets', set: 'in' }} fraction={0.5} onExit={() => {}} onDone={() => {}} rng={seeded(3)} now={() => Date.now()} />)
     fireEvent.click(screen.getByText('Начать'))
-    expect(screen.getByTestId('endings-round').textContent).toContain('1 /')
+    expect(screen.getByTestId('endings-round').textContent).toContain('1 из')
     fireEvent.click(screen.getAllByTestId('capsule-დან')[0])
     await act(async () => { await vi.advanceTimersByTimeAsync(4000) })
-    expect(screen.getByTestId('endings-round').textContent).toContain('1 /')
+    expect(screen.getByTestId('endings-round').textContent).toContain('1 из')
     expect(screen.getByText(/-დან — это «из»/)).toBeInTheDocument()
     await answerRound()
-    expect(screen.getByTestId('endings-round').textContent).toContain('2 /')
+    expect(screen.getByTestId('endings-round').textContent).toContain('2 из')
   })
 
   it('name: prints the name, one tap on the answer applies ი, saves it, then foreign names to the end', async () => {
@@ -169,5 +169,14 @@ describe('Magnets scene (автомат с краном)', () => {
     for (let k = 0; k < 20 && !screen.queryByTestId('game-end'); k++) await answerRound()
     fireEvent.click(screen.getByText('Дальше'))
     expect(onDone).toHaveBeenCalled()
+  })
+})
+
+describe('Magnets: сколько раундов и кто отвечает', () => {
+  it('число раундов не зависит от перемешивания, в бейджах отвечает гость', async () => {
+    const { roundsIn, startGame } = await import('./Endings.logic')
+    for (const set of ['name', 'from', 'in', 'both'] as const) expect(startGame(set, Math.random).rounds.length).toBe(roundsIn(set))
+    expect(startGame('name').rounds.every(r => r.who === 'гость')).toBe(true)
+    expect(startGame('from').rounds.every(r => !r.who)).toBe(true)
   })
 })

@@ -72,8 +72,10 @@ describe('Reception', () => {
     const step = async (ms: number) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms) }) }
     let keys = 0
     let extras = 0
+    let quiet = false
     for (let k = 0; k < 2000 && !screen.queryByTestId('game-end'); k++) {
       await step(100)
+      if (screen.queryByTestId('reception-quiet')) quiet = true
       const errand = screen.queryByTestId('reception-errand')
       if (errand) {
         const opt = screen.getByTestId(`rc-opt-${errand.getAttribute('data-want')}`) as HTMLButtonElement
@@ -88,6 +90,8 @@ describe('Reception', () => {
       if (!card.disabled && !screen.queryByTestId('reception-asks')) { await act(async () => { fireEvent.click(card) }); keys++; await step(3000) }
     }
     expect(keys).toBe(GUESTS)
+    // Гости перестали называть имя — об этом сказали заранее, а не только после ошибки.
+    expect(quiet).toBe(mode === 'names')
     // Свой поворот смены: в каждом уроке ресепшена, кроме урока 9, после ключа есть просьбы или угощения.
     if (LESSON[mode] !== 9) expect(extras).toBeGreaterThan(0)
     expect(screen.getByTestId('game-end').textContent).toMatch(/5\.0 из 5/)

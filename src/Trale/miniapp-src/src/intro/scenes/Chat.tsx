@@ -11,7 +11,7 @@ import { Face, GameEnd, GameIntro, Reply, type Look } from '../ui'
 import { hush, speakLine } from '../voice'
 import Passerby from './walk/Passerby'
 import {
-  ENDINGS, MAX_WARMTH, bankAdd, chatScript, ending, onlyKnown, warmAfter,
+  ENDINGS, MAX_WARMTH, answersRu, bankAdd, chatScript, ending, onlyKnown, warmAfter,
   type ChatScript, type Exchange, type Line, type Opt, type Say
 } from './chatScripts'
 import type { SceneProps, StepOf } from './types'
@@ -42,7 +42,8 @@ const TITLES: Record<ChatScript, string> = {
 
 export function Warmth({ value }: { value: number }) {
   return (
-    <div className="flex gap-[3px] shrink-0" role="meter" aria-label="теплота разговора" aria-valuenow={value} aria-valuemin={0} aria-valuemax={MAX_WARMTH} data-testid="chat-warmth" data-value={value}>
+    <div className="flex flex-col items-end gap-0.5 shrink-0" role="meter" aria-label="теплота разговора" aria-valuenow={value} aria-valuemin={0} aria-valuemax={MAX_WARMTH} data-testid="chat-warmth" data-value={value}>
+      <span className="text-[10px] font-extrabold uppercase tracking-wide text-jewelInk-mid leading-none" aria-hidden>теплота</span>
       <svg width={MAX_WARMTH * 15} height="14" viewBox={`0 0 ${MAX_WARMTH * 15} 14`} aria-hidden>
         {Array.from({ length: MAX_WARMTH }, (_, i) => (
           <circle key={i} cx={7 + i * 15} cy="7" r="5.5" fill={i < value ? '#E01A3C' : '#FDFAEF'} stroke="#15100A" strokeWidth="1.5" style={{ transition: 'fill 300ms' }} />
@@ -77,10 +78,25 @@ function Photo({ caption, seed }: { caption: string; seed: number }) {
 
 function Bubbles({ msgs, typing }: { msgs: Msg[]; typing: boolean }) {
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => { const el = ref.current; if (el) el.scrollTop = el.scrollHeight }, [msgs.length, typing])
+  const inner = useRef<HTMLDivElement>(null)
+  // Чат держится за низ, как мессенджер: не только когда пришло сообщение, но и когда снизу выехали
+  // кнопки ответа (окно чата стало ниже) или пузырь дорос в анимации. Если человек сам пролистал вверх
+  // — не дёргаем; новое сообщение всё равно возвращает вниз.
+  const stick = useRef(true)
+  const toBottom = () => { const el = ref.current; if (el && stick.current) el.scrollTop = el.scrollHeight }
+  useEffect(() => { stick.current = true; toBottom() }, [msgs.length, typing])
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(toBottom)
+    if (ref.current) ro.observe(ref.current)
+    if (inner.current) ro.observe(inner.current)
+    return () => ro.disconnect()
+  }, [])
+  const onScroll = () => { const el = ref.current; if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48 }
   return (
-    <div ref={ref} className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 p-3" data-testid="chat-log"
+    <div ref={ref} onScroll={onScroll} className="flex-1 min-h-0 overflow-y-auto p-3" data-testid="chat-log"
       style={{ background: '#EAF0E4', backgroundImage: 'radial-gradient(#D5DFCB 1.2px, transparent 1.2px)', backgroundSize: '18px 18px' }}>
+      <div ref={inner} className="flex flex-col gap-2">
       {msgs.map((m, k) => {
         const mine = m.kind === 'me'
         const last = mine && msgs.slice(k + 1).every(x => x.kind !== 'me')
@@ -118,19 +134,20 @@ function Bubbles({ msgs, typing }: { msgs: Msg[]; typing: boolean }) {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   )
 }
 
 /** Подтвердить имя (в первом чате): по-русски → как по-грузински, с правилом ი. */
-function NameStart({ onStart }: { onStart: (name: GeoName) => void }) {
+function NameStart({ onStart, answers }: { onStart: (name: GeoName) => void; answers: number }) {
   const [raw, setRaw] = useState(savedName())
   const g = geoName(raw)
   return (
     <div className="flex-1 min-h-0 flex flex-col items-center justify-center text-center gap-2.5" data-testid="chat-name-start">
       <div className="ab-short:hidden"><Mascot mood="guide" size={72} /></div>
       <div className="text-[20px] font-extrabold leading-tight">Нино пишет тебе</div>
-      <p className="text-[14px] leading-snug text-jewelInk-soft max-w-[32ch]">Соседка сверху нашла тебя в мессенджере. Сначала проверь, как тебя зовут по-грузински, — так она тебя и запомнит.</p>
+      <p className="text-[14px] leading-snug text-jewelInk-soft max-w-[32ch]">Соседка сверху нашла тебя в мессенджере. Сначала проверь, как тебя зовут по-грузински, — так она тебя и запомнит. Потом ответь ей: в разговоре {answersRu(answers)}, чем теплее — тем лучше конец.</p>
       <label htmlFor="chat-name" className="text-[13px] font-bold">Твоё имя по-русски</label>
       <input id="chat-name" data-testid="chat-name-input" value={raw} onChange={e => setRaw(e.target.value)} placeholder="Например, Карлос"
         className="w-full max-w-[260px] min-h-[44px] rounded-xl border-[1.5px] border-jewelInk bg-cream-tile px-3 text-center text-[17px] font-bold outline-none" style={{ boxShadow: '2px 2px 0 #15100A' }} />
@@ -223,8 +240,8 @@ export default function Chat({ lesson, step, fraction, onExit, onDone, rng = Mat
   }
 
   const intro = script === 'act2'
-    ? <NameStart onStart={n => start(n)} />
-    : <GameIntro title="Нино пишет" text="Соседка Нино пишет тебе в мессенджер. Отвечай репликами, которые знаешь: чем теплее разговор, тем интереснее конец." hero onStart={() => start()} />
+    ? <NameStart onStart={n => start(n)} answers={plan.length} />
+    : <GameIntro title="Нино пишет" text={`Соседка Нино пишет тебе в мессенджер. В разговоре ${answersRu(plan.length)} — отвечай репликами, которые знаешь. Кружки «теплота» сверху: чем теплее разговор, тем интереснее конец.`} hero onStart={() => start()} />
 
   if (phase === 'end') {
     const e = ending(warmth)
@@ -260,7 +277,7 @@ export default function Chat({ lesson, step, fraction, onExit, onDone, rng = Mat
               </div>
               <div className="flex-1 min-w-0 leading-tight">
                 <div className="text-[14px] font-extrabold">Нино · <span className="font-geo">ნინო</span></div>
-                <div className="text-[12px] text-jewelInk-hint" data-testid="chat-status">{typing ? 'печатает…' : 'в сети'}</div>
+                <div className="text-[12px] text-jewelInk-hint" data-testid="chat-status">{typing ? 'печатает…' : 'в сети'} · <span data-testid="chat-progress">ответ {Math.min(i + 1, plan.length)} из {plan.length}</span></div>
               </div>
               <Warmth value={warmth} />
             </div>

@@ -5,7 +5,7 @@ import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import Button from '../../components/Button'
 import { firstMet, met, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, Pill, Reply, RuleCard, Tip, WordTag, type Look, type Mood } from '../ui'
+import { DragDemo, GameEnd, GameIntro, NewWord, Pill, Reply, RoundCard, RuleCard, Tip, WordTag, type Look, type Mood } from '../ui'
 import { cyr } from '../../verbs/types'
 import { hush, speak, speakUrl } from '../voice'
 import Passerby from './walk/Passerby'
@@ -13,7 +13,7 @@ import Portrait, { whoOf } from './family/Portrait'
 import DragPhoto from './family/DragPhoto'
 import type { SceneProps, StepOf } from './types'
 import {
-  ROLES, SHOW_AFTER, albumPages, albumScore, familyLooks, familyRounds, familyTree, geoOf, missReaction, ownStatements, thisIs, treeRoles,
+  ROLES, SHOW_AFTER, albumCard, albumPages, albumsLine, albumScore, familyLooks, familyRounds, familyTree, geoOf, missReaction, ownStatements, thisIs, treeRoles,
   type FamilyMode, type Role, type SlotRole, type Tree
 } from './Family.logic'
 
@@ -148,6 +148,8 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const [fb, setFb] = useState<Feedback | null>(null)
   const [busy, setBusy] = useState(false)
   const [roundDone, setRoundDone] = useState(false)
+  // Перед каждым альбомом — карточка «Альбом N из M · Семья Аны»: смена хозяина не проходит незаметно.
+  const [cover, setCover] = useState(rounds.length > 1)
   const first = useRef(0)
   const trap = useRef<boolean | null>(null)
   const later = useLater()
@@ -172,12 +174,12 @@ function Placing({ mode, lessonId, rng, onEnd }: {
     }
     return out
   }, [lessonId, rounds]).get(`${ri}-${ci}`) ?? null
-  useEffect(() => { if (rounds[0].order[0]) voice(rounds[0].order[0], 0) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!cover && rounds[ri].order[0]) voice(rounds[ri].order[0], ri) }, [cover]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => hush(), [])
 
   /** true — фото легло в рамку. */
   const place = (frame: Role, el?: HTMLElement | null): boolean => {
-    if (!photo || busy || roundDone) return false
+    if (!photo || busy || roundDone || cover) return false
     const isTrap = mode === 'parents' && ri === 0 && photo === 'mama'
     if (frame === photo) {
       haptic('good'); sound.snap(ci)
@@ -209,8 +211,7 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const nextRound = () => {
     haptic('pop')
     if (ri + 1 < rounds.length) {
-      setRi(ri + 1); setCi(0); setFilled({}); setRoundDone(false); setFb(null)
-      voice(rounds[ri + 1].order[0], ri + 1)
+      setRi(ri + 1); setCi(0); setFilled({}); setRoundDone(false); setFb(null); setCover(true)
     } else onEnd({ first: first.current, total, trap: trap.current })
   }
 
@@ -218,18 +219,33 @@ function Placing({ mode, lessonId, rng, onEnd }: {
   const glow = photo && misses >= SHOW_AFTER ? photo : null
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="family-play">
+    <div className="relative flex-1 min-h-0 flex flex-col gap-2" data-testid="family-play">
+      {cover && <RoundCard {...albumCard(mode, ri)} go="Открыть альбом" onGo={() => setCover(false)} testId="album-card" />}
       <div className="flex items-center gap-2">
-        <Pill testId="family-round">{rounds.length > 1 ? `альбом ${ri + 1} из ${rounds.length}` : 'альбом Нино'}</Pill>
+        <Pill testId="family-round">{rounds.length > 1 ? `альбом ${ri + 1} из ${rounds.length}` : `альбом ${round.ownerRu}`}</Pill>
+        <Pill testId="family-photo-count">фото {Math.min(ci + 1, round.order.length)} из {round.order.length}</Pill>
         <div className="flex-1" />
         <Pill testId="family-score">★ {first.current}</Pill>
       </div>
 
-      <div className="flex items-end gap-2 min-h-[84px]">
+      {/* Хозяин альбома держит фото и говорит, кто на нём: фото — у него в руке, его тащат вниз в рамку. */}
+      <div className="flex items-end min-h-[96px]" data-testid="family-show">
         <svg width="62" height="96" viewBox="-50 -196 100 202" className="shrink-0 overflow-visible" aria-hidden>
           <Passerby who={whoOf(round.ownerLook)} phase={0} stride={0} face={MOOD_FACE[mood]} talking={talking} wave={roundDone} />
         </svg>
-        <motion.div key={`${ri}-${ci}-${roundDone}`} className={`mb-6 rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 ${roundDone ? 'bg-[#D6E9D9]' : 'bg-cream-tile'}`}
+        {!roundDone && photo && (
+          <div className="shrink-0 -ml-4 mb-1">
+            {/* Первое фото — рука показывает, что его тащат в рамку. */}
+            {ri === 0 && ci === 0 && !cover && (
+              <DragDemo from={() => document.querySelector('[data-testid="family-photo"]')} to={[() => boardRef.current]} label="Тащи фото в рамку" />
+            )}
+            <DragPhoto key={`${ri}-${ci}`} board={boardRef} disabled={busy} shake={shake} onNear={setNear}
+              onDrop={(r, el) => place(r as Role, el)}>
+              <div className="w-[60px] h-[60px] rounded bg-gold-wash flex items-end justify-center overflow-hidden"><Portrait look={round.looks[photo]} female={ROLES[photo].female} size={60} /></div>
+            </DragPhoto>
+          </div>
+        )}
+        <motion.div key={`${ri}-${ci}-${roundDone}`} className={`relative ml-2 mb-8 rounded-2xl border-[1.5px] border-jewelInk px-3 py-1.5 ${roundDone ? 'bg-[#D6E9D9]' : 'bg-cream-tile'}`}
           style={{ boxShadow: '2px 3px 0 #15100A', transformOrigin: '0% 100%' }}
           initial={{ opacity: 0, scale: 0.6, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
           {roundDone
@@ -238,37 +254,31 @@ function Placing({ mode, lessonId, rng, onEnd }: {
               <span className="block font-geo font-extrabold text-[18px] leading-tight">{thisIs(photo)}</span>
               <span className="block text-[11px] font-semibold text-jewelInk-hint">{cyr(thisIs(photo))}</span>
             </span>}
+          {/* Хвостик реплики — к фото. */}
+          <span className={`absolute -left-[7px] bottom-3 w-3 h-3 rotate-45 border-l-[1.5px] border-b-[1.5px] border-jewelInk ${roundDone ? 'bg-[#D6E9D9]' : 'bg-cream-tile'}`} />
+          {(fb?.tone === 'trap' || fb?.tone === 'dodged') && (
+            <span key={fb.text} data-testid="family-trap"
+              className={`zn-stamp absolute -top-4 -right-3 rounded-lg border-2 bg-cream-tile px-2 py-0.5 text-[12px] font-extrabold uppercase tracking-wide ${fb.tone === 'trap' ? 'border-ruby text-ruby' : 'border-navy text-navy'}`}>
+              {fb.tone === 'trap' ? 'ловушка!' : 'обошёл'}
+            </span>
+          )}
         </motion.div>
-        {(fb?.tone === 'trap' || fb?.tone === 'dodged') && (
-          <span key={fb.text} data-testid="family-trap"
-            className={`zn-stamp ml-auto mb-3 shrink-0 rounded-lg border-2 bg-cream-tile px-2 py-0.5 text-[12px] font-extrabold uppercase tracking-wide ${fb.tone === 'trap' ? 'border-ruby text-ruby' : 'border-navy text-navy'}`}>
-            {fb.tone === 'trap' ? 'ловушка!' : 'обошёл'}
-          </span>
-        )}
       </div>
 
       <Board tree={tree} filled={filled} looks={round.looks} ownerLook={round.ownerLook} ownerRu={round.ownerRu} boardRef={boardRef} near={near}
         onFrame={roundDone ? undefined : (r, el) => { place(r, el) }} glow={glow} bad={bad} />
 
-      <div className="shrink-0 min-h-[92px] ab-short:min-h-[80px] flex items-center gap-3">
+      <div className="shrink-0 min-h-[56px] flex items-center gap-3">
         {roundDone ? (
           <div className="w-full zn-pop">
-            <Button onClick={nextRound}>{ri + 1 < rounds.length ? `Альбом: ${rounds[ri + 1].ownerRu}` : 'Готово'}</Button>
+            <Button onClick={nextRound}>{ri + 1 < rounds.length ? `Дальше: альбом ${ri + 2} из ${rounds.length}` : 'Готово'}</Button>
           </div>
-        ) : photo && (
-          <>
-            <DragPhoto key={`${ri}-${ci}`} board={boardRef} disabled={busy} shake={shake} onNear={setNear}
-              onDrop={(r, el) => place(r as Role, el)}>
-              <div className="w-[64px] h-[64px] rounded bg-gold-wash flex items-end justify-center overflow-hidden"><Portrait look={round.looks[photo]} female={ROLES[photo].female} size={64} /></div>
-            </DragPhoto>
-            {fresh
-              ? <NewWord key={fresh} word={phrase(fresh)} className="min-w-0" />
-              : <div className="text-[13px] leading-snug text-jewelInk-soft">
-                {fotoWord && <WordTag word={fotoWord} className="mr-1 align-middle" testId="foto-tag" />}
-                Кого показывают? Тащи фото в рамку — или просто нажми на рамку.
-              </div>}
-          </>
-        )}
+        ) : photo && (fresh
+          ? <NewWord key={fresh} word={phrase(fresh)} className="min-w-0" />
+          : <div className="text-[13px] leading-snug text-jewelInk-soft">
+            {fotoWord && <WordTag word={fotoWord} className="mr-1 align-middle" testId="foto-tag" />}
+            Кого показывают? Тащи фото в рамку — или просто нажми на рамку.
+          </div>)}
       </div>
 
       <Tip>
@@ -391,10 +401,10 @@ function Album({ lessonId, rng, onEnd }: { lessonId: number; rng: () => number; 
 // ── Сцена ─────────────────────────────────────────────────────────────────────────────────────────
 
 const MODE_TEXT: Record<FamilyMode, { title: string; text: string }> = {
-  parents: { title: 'Семейный альбом', text: 'Нино показывает родителей — и бабушку с дедушкой. Слушай, кого она называет, и клади фото в нужную рамку. Осторожно: одно слово — ловушка.' },
-  siblings: { title: 'Брат и сестра', text: 'В альбоме прибавилось людей: брат и сестра. Бабушка с дедушкой на месте, сверху. Слушай, кого называют, и раскладывай фото по рамкам.' },
+  parents: { title: 'Семейный альбом', text: `${albumsLine('parents')} В каждом — родители и бабушка с дедушкой. Слушай, кого называют, и клади фото в нужную рамку. Осторожно: одно слово — ловушка.` },
+  siblings: { title: 'Брат и сестра', text: `${albumsLine('siblings')} В альбомах прибавилось людей: брат и сестра. Бабушка с дедушкой на месте, сверху. Слушай, кого называют, и раскладывай фото по рамкам.` },
   full: { title: 'Вся семья', text: 'У брата Нино своя семья, у сестры — муж. Девять рамок: смотри на линии родства и слушай Нино.' },
-  album: { title: 'Семейный альбом', text: 'Листаем альбом Нино: она показывает на фото и спрашивает «кто это?». Отвечай по-грузински, серия даёт бонус.' }
+  album: { title: 'Семейный альбом', text: 'Листаем альбом Нино: она показывает на фото и спрашивает «кто это?». Отвечай по-грузински, серия даёт бонус. Последняя страница — про тебя.' }
 }
 
 type Result = { title: string; text: string }

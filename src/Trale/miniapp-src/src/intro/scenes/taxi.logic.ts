@@ -34,13 +34,13 @@ function navTurn(d: Exclude<Nav, 'stop'>): TaxiTurn {
   }
 }
 
-/** Твой дом: попроси остановить. */
-const stopTurn = (): TaxiTurn => ({
+/** Приехали по адресу (в Батуми — твой дом): попроси остановить. */
+const stopTurn = (dest: City): TaxiTurn => ({
   nav: 'stop',
-  her: [note('Вот твой дом! Попроси таксиста остановить.')],
+  her: [note(dest === BATUMI ? 'Вот твой дом! Попроси таксиста остановить.' : `Вот и ${dest.ru}, нужный адрес! Попроси таксиста остановить.`)],
   opts: [
     ok(P('gaachere'), 2),
-    no(P('pirdapir'), 'Таксист: «Прямо? Так мы проедем мимо твоего дома!»'),
+    no(P('pirdapir'), dest === BATUMI ? 'Таксист: «Прямо? Так мы проедем мимо твоего дома!»' : 'Таксист: «Прямо? Так мы проедем мимо!»'),
     no(P('nakhvamdis'), 'Таксист: «До свидания? Сначала давай остановимся!»')
   ]
 })
@@ -119,7 +119,7 @@ export function taxiTurns(mode: TaxiMode, dest: City, me: GeoName, lessonId: num
   // (слова уже знакомы) и в конце вопрос о цене.
   const turn = (d: Exclude<Nav, 'stop'>) => (can(DIR[d]) ? navTurn(d) : null)
   const randomTurn = () => turn(pick(['right', 'left', 'straight'] as const, rng))
-  const stop = can('gaachere') ? stopTurn() : null
+  const stop = can('gaachere') ? stopTurn(dest) : null
   const price = can('ramdeni_ghirs') ? priceTurn() : null
   const plan: (TaxiTurn | null)[] = mode === 'where'
     ? [known(greet), known(confirm), turn('right'), known(from), turn('left'), known(live), turn('straight'), known(name), stop, known(bye)]

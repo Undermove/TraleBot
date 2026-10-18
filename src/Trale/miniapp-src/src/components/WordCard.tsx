@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { api, VocabularyItem } from '../api'
 import AudioPlayer from './AudioPlayer'
+import { lessonAudio } from './lessonAudio'
 import LoaderLetter from './LoaderLetter'
 import MasteryIndicator from './MasteryIndicator'
 import { VerbHint } from '../verbs/parts'
@@ -51,6 +52,8 @@ export default function WordCard({ item, isSelected, onClose, onToggleSelect, on
   const sheetRef = useRef<HTMLDivElement>(null)
 
   const { georgian, russian } = sides(item)
+  // Своя запись у стартовых слов; у слов из уроков — запись урока.
+  const audioUrl = item.audioUrl ?? lessonAudio(georgian)
 
   // Slide-up on mount
   useEffect(() => {
@@ -118,9 +121,9 @@ export default function WordCard({ item, isSelected, onClose, onToggleSelect, on
                 {russian}
               </div>
             </div>
-            {item.audioUrl && (
+            {audioUrl && (
               <div className="shrink-0 mt-1">
-                <AudioPlayer url={item.audioUrl} />
+                <AudioPlayer url={audioUrl} />
               </div>
             )}
           </div>

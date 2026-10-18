@@ -57,6 +57,8 @@ describe('AboutMe scene', () => {
     fireEvent.click(screen.getByText('Начать'))
     await step()
     expect(screen.getByTestId('aboutme-question').textContent).toContain('რა გქვია?')
+    // Счётчик — сколько вопросов уже отвечено, а не сколько строк в карточке: имя ещё не сказано.
+    expect(screen.getByTestId('aboutme-filled').textContent).toBe('ответы: 0 из 5')
     fireEvent.click(screen.getByTestId('aboutme-name'))
     await step()
     fireEvent.click(screen.getByTestId(`opt-${COUNTRIES[2].base}`))
@@ -73,7 +75,7 @@ describe('AboutMe scene', () => {
     await step()
     fireEvent.click(screen.getByTestId(`opt-${LOVES[2].geo}`))
     await step()
-    expect(screen.getByTestId('aboutme-filled').textContent).toBe('5 / 5')
+    expect(screen.getByTestId('aboutme-filled').textContent).toBe('ответы: 5 из 5')
     fireEvent.click(screen.getByText('Готово, прочитать рассказ'))
     const lines = screen.getAllByTestId('story-line')
     expect(lines).toHaveLength(5)

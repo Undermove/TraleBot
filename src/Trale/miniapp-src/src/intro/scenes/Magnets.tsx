@@ -9,7 +9,7 @@ import { geoName, plural, saveName, savedName, type Rng } from '../story'
 import { GameEnd, GameIntro, Pill, RuleCard, Tip } from '../ui'
 import type { SceneProps, StepOf } from './types'
 import Stickers from './Stickers'
-import type { EndingsResult } from './Endings.logic'
+import { ROUND_NOUN, roundsIn, type EndingsResult } from './Endings.logic'
 import {
   MAGNET_RU, activeOrder, finished, hint, praise, startBelt, tap, tick, toolsOf, transform, xOf,
   type Belt, type Item, type MagnetSet, type Tool
@@ -35,6 +35,8 @@ export default function Magnets({ step, fraction, onExit, onDone, rng = Math.ran
   const [round, setRound] = useState(0)
   const [result, setResult] = useState<EndingsResult | null>(null)
   const title = TITLE[set]
+  const total = roundsIn(set)
+  const count = `${total} ${plural(total, ...ROUND_NOUN[set])}`
 
   const end = (b: EndingsResult) => { setResult(b); setPhase('end'); sound.win() }
 
@@ -45,10 +47,10 @@ export default function Magnets({ step, fraction, onExit, onDone, rng = Math.ran
           <GameIntro
             title={title}
             text={set === 'name'
-              ? 'Сначала напечатаем твоё имя грузинскими буквами. Потом бейджи гостей: прилепи к имени наклейку ი — или «как есть», если ი не нужна.'
-              : set === 'from' ? 'Нино спрашивает, откуда ты. Ответ — на бирке чемодана: прилепи к стране наклейку -დან — «из».'
-                : set === 'in' ? 'Нино спрашивает, где ты живёшь. Ответ — на адресе открытки: прилепи к городу наклейку -ში — «в».'
-                  : 'Чемоданы и открытки вперемешку: «откуда» — на бирке, «где живёшь» — на открытке. Прилепи нужную наклейку.'}
+              ? `Сначала напечатаем твоё имя грузинскими буквами. Потом ${count} гостей: Нино спрашивает, как их зовут, — прилепи к имени гостя наклейку ი или оставь «как есть», если ი не нужна.`
+              : set === 'from' ? `Нино спрашивает, откуда ты. Ответ — на бирке чемодана, впереди ${count}: прилепи к стране наклейку -დან — «из».`
+                : set === 'in' ? `Нино спрашивает, где ты живёшь. Ответ — на адресе открытки, впереди ${count}: прилепи к городу наклейку -ში — «в».`
+                  : `Чемоданы и открытки вперемешку, всего ${count}: «откуда» — на бирке, «где живёшь» — на открытке. Прилепи нужную наклейку.`}
             chips={set === 'name' ? [{ geo: 'ი', ru: 'на согласную' }] : toolsOf(set).map(t => ({ geo: `-${t}`, ru: MAGNET_RU[t] }))}
             onStart={() => setPhase(set === 'name' ? 'me' : 'belt')}
           />

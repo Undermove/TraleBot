@@ -96,6 +96,20 @@ export const met = (lessonId: number, id: string) => knows(lessonId, id) || INTR
 /** Слово сцены встречается впервые именно в этом уроке — сцена знакомит с ним (показывает перевод, даёт послушать). */
 export const firstMet = (lessonId: number, id: string) => met(lessonId, id) && !met(lessonId - 1, id)
 
+/**
+ * До какого урока под кнопками ответа — русский перевод, а не только как читается: весь второй акт
+ * (имена). Раньше перевод пропадал сразу с 7-го урока — вместе с новыми словами и игрой на память.
+ */
+export const RU_UNDER_REPLIES_UNTIL = 12
+
+const RU_BY_GEO: ReadonlyMap<string, string> = new Map(Object.values(PHRASES).map(p => [p.geo.replace('…', '').trim(), p.ru]))
+
+/** Перевод реплики для подсказки под кнопкой: если это фраза урока, и урок ещё во втором акте. */
+export function replyRu(lessonId: number, geo: string): string | undefined {
+  if (lessonId < 1 || lessonId > RU_UNDER_REPLIES_UNTIL) return undefined
+  return RU_BY_GEO.get(geo.trim())
+}
+
 /** Сколько вопросов в проверке в конце урока. */
 export const EXAM_SIZE = 5
 

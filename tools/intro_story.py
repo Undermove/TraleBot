@@ -2,7 +2,8 @@
 """
 Модуль «Знакомство»: собирает из src/Trale/miniapp-src/src/intro/story.json
   - теорию всех уроков в MiniAppContentProvider.cs (BuildIntroModule),
-  - вопросы проверки Lessons/GeorgianVocabIntro/questions.json (урок 1) и questions{N}.json (уроки 2..N).
+  - вопросы проверки Lessons/GeorgianVocabIntro/questions.json (урок 1) и questions{N}.json (уроки 2..N),
+  - слова уроков для словаря ученика Lessons/GeorgianVocabIntro/words.json.
 
 Запуск из корня репозитория: python3 tools/intro_story.py
 Скрипт детерминированный (свой генератор случайных чисел), повторный запуск даёт те же файлы.
@@ -291,6 +292,20 @@ def write_questions():
         (LESSONS_DIR / ("questions.json" if lesson["id"] == 1 else f'questions{lesson["id"]}.json')).write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def write_words():
+    """Слова урока — фразы урока и слова сцены: после засчитанного урока они попадают в словарь ученика."""
+    lessons = []
+    for lesson in L:
+        ids = list(dict.fromkeys(lesson["new"] + lesson.get("scene", [])))
+        lessons.append({"id": lesson["id"], "after": 0, "words": [{"word": clean(P[i]["geo"]), "translation": P[i]["ru"]} for i in ids]})
+    out = {
+        "about": "Слова уроков «Знакомства» (intro): фразы урока и слова сцены. Собирается из story.json скриптом tools/intro_story.py. "
+                 "После засчитанного урока сервер кладёт их в словарь ученика (POST /api/miniapp/vocabulary/intro-words).",
+        "wordLessons": lessons,
+    }
+    (LESSONS_DIR / "words.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
 def write_theory():
     src = PROVIDER.read_text(encoding="utf-8")
     start = src.index("    private static ModuleDto BuildIntroModule()")
@@ -326,6 +341,7 @@ def write_registry():
 
 if __name__ == "__main__":
     write_questions()
+    write_words()
     write_theory()
     write_registry()
     print(f"intro: {len(L)} lessons")

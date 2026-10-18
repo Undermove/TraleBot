@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { CITIES, firstMet, myName, phrase, type City, type Phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { GameEnd, GameIntro, NewWord, Pill, RuleCard } from '../ui'
 import { hush, speak, speakLine, speakUrl } from '../voice'
 import type { Opt, Say } from './chatScripts'
 import { cashFare, discountFor, driverAudio, fareAt, heroAudio, lari, priceAudio, priceLine, taxiTurns, toPay, type Nav, type TaxiMode, type TaxiTurn } from './taxi.logic'
@@ -202,8 +202,8 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
       <div className="flex-1 min-h-0 flex flex-col" data-testid="taxi-scene">
         <GameIntro title="Такси по Батуми" hero
           text={mode === 'where'
-            ? 'Таксист попался болтливый: всю дорогу расспрашивает. Отвечай — за хороший разговор скидка. Он обязательно спросит, где ты живёшь. А дорогу показывает навигатор в телефоне — подсказывай таксисту, куда поворачивать.'
-            : 'Опять болтливый таксист. Теперь он спросит, кем ты работаешь. Каждый хороший ответ — скидка. Приедешь — спроси, сколько с тебя: таксист назовёт цену по-грузински.'}
+            ? `Таксист попался болтливый: за дорогу ${n} вопросов. Отвечай — за хороший разговор скидка. Он обязательно спросит, где ты живёшь. А дорогу показывает навигатор в телефоне — подсказывай таксисту, куда поворачивать.`
+            : `Опять болтливый таксист: за дорогу ${n} вопросов. Теперь он спросит, кем ты работаешь. Каждый хороший ответ — скидка. Приедешь — спроси, сколько с тебя: таксист назовёт цену по-грузински.`}
           chips={mode === 'where' ? [{ geo: 'ბათუმში', ru: 'в Батуми' }, { geo: 'ქუთაისში', ru: 'в Кутаиси' }] : [{ geo: 'მე ვარ სტუდენტი', ru: 'я студент' }, { geo: 'ვმუშაობ', ru: 'я работаю' }]}
           onStart={() => setPhase('dest')} />
       </div>
@@ -256,7 +256,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
   const ex = turns[Math.min(at, n - 1)]
   const ready = turn === 'you'
   return (
-    <GameFrame title="Таксист спрашивает" eyebrow={`в ${dest.ru} · вопрос ${Math.min(at + 1, n)} из ${n}`} fraction={fraction} onExit={onExit}>
+    <GameFrame title="Таксист спрашивает" eyebrow={`такси в ${dest.ru}`} fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="taxi-scene">
         <div className="relative flex-1 min-h-[270px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="taxi-cab">
           {/* Лобовое стекло: улица едет навстречу. */}
@@ -290,6 +290,7 @@ export default function Taxi({ lesson, step, fraction, onExit, onDone, rng = Mat
               </motion.div>
             )}
           </AnimatePresence>
+          <div className="absolute top-2 left-2 z-30"><Pill testId="taxi-progress">вопрос {Math.min(at + 1, n)} из {n}</Pill></div>
           {/* Счётчик на панели. */}
           <div ref={meter} className="absolute right-[7%] bottom-[9%] z-20 rounded-lg border-[1.5px] border-jewelInk bg-[#15241A] px-2 py-1 text-right" data-testid="taxi-meter" style={{ boxShadow: '2px 2px 0 #15100A' }}>
             <div className="font-mono text-[15px] font-bold text-[#7CF59A] leading-none tabular-nums" data-testid="taxi-fare">{lari(fare)}</div>

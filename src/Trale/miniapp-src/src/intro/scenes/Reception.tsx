@@ -3,8 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
-import { JOBS, firstMet, met, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard } from '../ui'
+import { JOBS, firstMet, met, phrase, replyRu } from '../story'
+import { Banner, GameEnd, GameIntro, NewWord, Pill, RuleCard } from '../ui'
 import { TreatIcon, pleaseAudio, pleaseLine, type Treat } from './party/Treats'
 import { hush, speak, speakUrl } from '../voice'
 import { JobIcon } from './Party'
@@ -31,6 +31,9 @@ const INTRO_TEXT: Record<ReceptionMode, string> = {
   ask: 'Сегодня гости только здороваются. Спроси имя и откуда гость — и найди его бронь.',
   full: 'Большой заезд: кто-то рассказывает всё сам, кого-то надо расспросить. В бронях теперь и профессия.'
 }
+
+/** Сколько гостей за смену и что значат звёзды в углу — до правил режима. */
+const SHIFT_SIZE = `За смену придут ${GUESTS} гостей, каждый оставит отзыв в звёздах.`
 
 function endRule(mode: ReceptionMode) {
   if (mode === 'names') {
@@ -73,6 +76,7 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
   const [errMiss, setErrMiss] = useState(0)
   const [served, setServed] = useState<Treat | null>(null)
   const [fresh, setFresh] = useState<string | null>(null)
+  const [quietNote, setQuietNote] = useState(false)
   const shown = useRef<string[]>([])
   const keysGiven = useRef(0)
   const introduce = (id: string | undefined) => {
@@ -103,6 +107,10 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
     setStage('enter'); setLines([]); setHeard([]); setBusy(true); setGiven(null); setMisses(0); setBad(null)
     setPassOk(false); setErr(null); setServed(null); setFresh(null)
     setTip(at === 0 ? 'Гость заходит. Послушай, что он скажет.' : 'Следующий гость.')
+    // Первый гость, который не назвал имя, — сказать об этом заранее, а не только после ошибки.
+    const quiet = mode === 'names' && g.told.length === 0 && at > 0 && shift[at - 1].told.length > 0
+    setQuietNote(quiet)
+    if (quiet) window.setTimeout(() => { if (alive.current) setQuietNote(false) }, 3600)
     ;(async () => {
       await new Promise(r => window.setTimeout(r, 1100))
       if (off || !alive.current) return
@@ -227,7 +235,7 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
     return (
       <GameFrame title={title} eyebrow="игра урока" fraction={fraction} onExit={onExit}>
         <div className="flex-1 min-h-0 flex flex-col" data-testid="reception-scene">
-          <GameIntro title="Ресепшн у моря" text={`${INTRO_TEXT[mode]}${SHIFT_INTRO[lesson.id] ? ` ${SHIFT_INTRO[lesson.id]}` : ''}`} onStart={start} hero />
+          <GameIntro title="Ресепшн у моря" text={`${INTRO_TEXT[mode]} ${SHIFT_SIZE}${SHIFT_INTRO[lesson.id] ? ` ${SHIFT_INTRO[lesson.id]}` : ''}`} onStart={start} hero />
         </div>
       </GameFrame>
     )
@@ -245,13 +253,17 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
   const avg = stars.length ? stars.reduce((a, b) => a + b, 0) / stars.length : 5
 
   return (
-    <GameFrame title={title} eyebrow={`гость ${at + 1} из ${GUESTS}`} fraction={fraction} onExit={onExit}>
+    <GameFrame title={title} eyebrow="смена на ресепшне" fraction={fraction} onExit={onExit}>
       <div className="flex-1 min-h-0 flex flex-col gap-2.5" data-testid="reception-scene">
         <div className="relative shrink-0 h-[300px] ab-short:h-[230px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="reception-lobby">
           <Lobby given={given} rooms={g.desk.map(d => d.room)} />
-          {/* Отзывы — звёздами в углу. */}
-          <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold" data-testid="reception-rating">
-            <StarIcon /> {avg.toFixed(1)}
+          {quietNote && <Banner testId="reception-quiet" text={`Дальше гости не называют имя — спроси: ${phrase('ra_gkvia').geo} (${cyr(phrase('ra_gkvia').geo)})`} />}
+          {/* Какой гость по счёту и отзывы звёздами — в правом углу (слева реплики). */}
+          <div className="absolute top-2 right-2 z-30 flex flex-col items-end gap-1">
+            <Pill testId="reception-guest-count">гость {at + 1} из {GUESTS}</Pill>
+            <div className="flex items-center gap-1 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[12px] font-extrabold" data-testid="reception-rating">
+              <StarIcon /> {avg.toFixed(1)}
+            </div>
           </div>
 
           {/* Гость: входит из двери слева, стоит у стойки, с ключом уходит к лестнице справа. */}
@@ -375,7 +387,7 @@ export default function Reception({ lesson, step, fraction, onExit, onDone, rng 
                 whileTap={busy ? undefined : { scale: 0.95 }} transition={{ type: 'spring', stiffness: 420, damping: 24 }}>
                 {o.treat && <TreatIcon t={o.treat} size={34} />}
                 <span className="block font-geo font-bold text-[14px] leading-tight">{o.geo}</span>
-                <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{o.treat && firstMet(lesson.id, o.treat) ? phrase(o.treat).ru : cyr(o.geo)}</span>
+                <span className="block text-[10.5px] font-semibold text-jewelInk-hint leading-tight">{o.treat && firstMet(lesson.id, o.treat) ? phrase(o.treat).ru : replyRu(lesson.id, o.geo) ?? cyr(o.geo)}</span>
               </motion.button>
             ))}
           </div>
