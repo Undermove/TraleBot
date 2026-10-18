@@ -22,6 +22,9 @@ namespace Application.Translation.Pipeline;
 /// <item>the verb base, no model and no key needed: an exact Georgian form or masdar, a Russian gloss,
 ///   or a Russian verb form matched by the plain-Russian meanings stored with every catalog form;</item>
 /// <item>the translation cache — a text that was looked up before, or a remembered verdict about it;</item>
+/// <item>the content check (<see cref="IContentGuard"/>): a text the app does not translate at all is
+///   answered "not something to translate" and remembered; when the check is not available or fails,
+///   the text goes on;</item>
 /// <item>the classifier (cheap model, one call): is the text something to translate at all, is it a
 ///   verb, and for a Russian verb — its infinitive, which is tried against the verb base again;</item>
 /// <item>for a verb that is still unknown — the analyst (the cheap agent with the Wiktionary tool): a
@@ -65,6 +68,7 @@ public class GeorgianTranslationPipeline(
     IVerbGenerationSwitch generationSwitch,
     IWordTranslator wordTranslator,
     IDictionaryLookup dictionary,
+    IContentGuard contentGuard,
     ITraleDbContext dbContext,
     IOptions<TranslationAgentOptions> options,
     ILogger<GeorgianTranslationPipeline> logger) : ITranslationModule
@@ -83,6 +87,7 @@ public class GeorgianTranslationPipeline(
         public ModelUsage Generator { get; set; } = ModelUsage.None;
         public ModelUsage Reviewer { get; set; } = ModelUsage.None;
         public ModelUsage Translator { get; set; } = ModelUsage.None;
+        public ModelUsage Guard { get; set; } = ModelUsage.None;
     }
 
     public async Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct)
@@ -94,10 +99,11 @@ public class GeorgianTranslationPipeline(
         // One line per request: which steps ran, what the models cost and how long it all took. The
         // looked-up text is the only user input in it.
         logger.LogInformation(
-            "Translation of {Word}: path {Path}, {Outcome}, {ElapsedMs} ms, model calls {ModelCalls} (classifier {ClassifierUsage}, analyst {AnalystUsage}, generator {GeneratorUsage}, reviewer {ReviewerUsage}, translator {TranslatorUsage})",
+            "Translation of {Word}: path {Path}, {Outcome}, {ElapsedMs} ms, model calls {ModelCalls} (classifier {ClassifierUsage}, analyst {AnalystUsage}, generator {GeneratorUsage}, reviewer {ReviewerUsage}, translator {TranslatorUsage}, guard {GuardUsage})",
             wordToTranslate, string.Join(">", trace.Steps), result.GetType().Name, stopwatch.ElapsedMilliseconds,
-            trace.Classifier.Calls + trace.Analyst.Calls + trace.Generator.Calls + trace.Reviewer.Calls + trace.Translator.Calls,
-            Tokens(trace.Classifier), Tokens(trace.Analyst), Tokens(trace.Generator), Tokens(trace.Reviewer), Tokens(trace.Translator));
+            trace.Classifier.Calls + trace.Analyst.Calls + trace.Generator.Calls + trace.Reviewer.Calls + trace.Translator.Calls + trace.Guard.Calls,
+            Tokens(trace.Classifier), Tokens(trace.Analyst), Tokens(trace.Generator), Tokens(trace.Reviewer), Tokens(trace.Translator),
+            Tokens(trace.Guard));
         return result;
     }
 
@@ -127,7 +133,7 @@ public class GeorgianTranslationPipeline(
         // 2. The cache.
         var agentOn = agentSwitch.IsOn;
         var cached = await cache.FindAsync(key, direction, ct);
-        if (cached is { Source: TranslationCache.SourceNotTranslatable })
+        if (cached is { Source: TranslationCache.SourceNotTranslatable or TranslationCache.SourceRefused })
         {
             trace.Steps.Add("cache");
             await cache.RecordHitAsync(cached, classified: true, ct);
@@ -142,6 +148,13 @@ public class GeorgianTranslationPipeline(
         {
             trace.Steps.Add("cache");
             return await ServeCached(translation, settled, ct);
+        }
+
+        // The content check: once per text, before any model or translator sees it.
+        if (await Refused(key, trace, ct))
+        {
+            await cache.StoreVerdictAsync(key, direction, TranslationCache.SourceRefused, ct, replace: cached);
+            return new TranslationResult.NotTranslatable();
         }
 
         // 3 and 4. The models — unless the open lexicon alone names the verb and the source has its table.
@@ -380,6 +393,39 @@ public class GeorgianTranslationPipeline(
             trace.Steps.Add("generator-failed");
             logger.LogWarning("Verb generation failed: {Error}", Describe(e));
             return (null, false);
+        }
+    }
+
+    /// <summary>
+    /// Whether the content check refuses the text. A check that is off, slow or broken refuses nothing:
+    /// the text is translated as it was before the check existed.
+    /// </summary>
+    private async Task<bool> Refused(string key, Trace trace, CancellationToken ct)
+    {
+        if (!contentGuard.IsAvailable)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var timeout = Timeout(options.Value.ContentGuardTimeoutSeconds, ct);
+            var verdict = await contentGuard.CheckAsync(key, timeout.Token);
+            trace.Guard += verdict.Usage ?? ModelUsage.None;
+            if (verdict.Refusal == null)
+            {
+                return false;
+            }
+
+            trace.Steps.Add("refused");
+            logger.LogWarning("Translation of {Word} refused by the content check: {Reason}", key, verdict.Refusal);
+            return true;
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            trace.Steps.Add("guard-failed");
+            logger.LogWarning("Content check failed: {Error}", Describe(e));
+            return false;
         }
     }
 

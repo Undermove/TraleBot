@@ -21,6 +21,9 @@ public class TranslationCache(ITraleDbContext dbContext)
     /// <summary>A verdict without a translation: the classifier is sure the text is not something to translate.</summary>
     public const string SourceNotTranslatable = "not-translatable";
 
+    /// <summary>A verdict without a translation: the content check refused the text (<c>IContentGuard</c>).</summary>
+    public const string SourceRefused = "refused";
+
     /// <summary>
     /// A verdict without a translation: the models have had their say about the text (not a verb, or the
     /// verb proposal did not hold) and the plain translator had nothing — next time only the translator is asked.

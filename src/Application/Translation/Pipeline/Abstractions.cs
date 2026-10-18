@@ -126,3 +126,19 @@ public interface IWordTranslator
 }
 
 public class TranslationAgentException(string message) : Exception(message);
+
+/// <param name="Refusal">Why the text is not translated (the names of the checks it failed), or null when it may be.</param>
+public record ContentVerdict(string? Refusal, ModelUsage? Usage = null);
+
+/// <summary>
+/// The check before any translation: is the text something the app translates at all. Ordinary rude
+/// words and swearing pass — they belong in a dictionary; what is refused is content about children
+/// and sex, threats, hate against a group and requests to write something instead of translating.
+/// </summary>
+public interface IContentGuard
+{
+    bool IsAvailable { get; }
+
+    /// <summary>Throws when the check could not be made; the caller then lets the text through.</summary>
+    Task<ContentVerdict> CheckAsync(string text, CancellationToken ct);
+}
