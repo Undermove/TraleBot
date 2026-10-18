@@ -4,7 +4,7 @@ import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import { cyr } from '../../verbs/types'
 import { phrase, type Rng } from '../story'
-import { Bubble, Face, Pill, Tip, say } from '../ui'
+import { DragDemo, Bubble, Face, Pill, Tip, say } from '../ui'
 import { Transformed } from './Magnets'
 import { MAGNET_RU, type MagnetSet, type Tool } from './Magnets.logic'
 import { ROUND_NOUN, advance, choose, current, startGame, toolsFor, why, type EndingsResult, type Game, type Round } from './Endings.logic'
@@ -115,6 +115,9 @@ export default function Stickers({ set, rng = Math.random, onEnd }: { set: Magne
 
       <Tip>{tip || (g.at === 0 ? firstTip : '')}</Tip>
 
+      {g.at === 0 && !solved && (
+        <DragDemo from={() => document.querySelector('[data-testid="sticker-sheet"]')} to={[() => slot.current]} label="Тащи нужную наклейку к слову" />
+      )}
       {/* Лист наклеек: каждую можно оторвать и тащить. */}
       <div className="shrink-0 relative rounded-2xl border-[1.5px] border-jewelInk px-3 py-3 flex justify-center gap-5" data-testid="sticker-sheet"
         style={{ background: 'repeating-linear-gradient(45deg, #FDFAEF 0 10px, #F6EEDC 10px 20px)', boxShadow: '3px 3px 0 #15100A' }}>

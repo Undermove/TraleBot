@@ -1,4 +1,6 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { motion } from 'framer-motion'
 import { DictIcon } from '../alphabet/words/WordIntro'
 import Button from '../components/Button'
 import Mascot from '../components/Mascot'
@@ -345,4 +347,86 @@ export function Banner({ icon, text, testId = 'banner' }: { icon?: React.ReactNo
 /** Плашка «наступил вечер». */
 export function TimeBanner({ part, text }: { part: DayPart; text: string }) {
   return <Banner icon={<TimeIcon part={part} size={22} />} text={text} testId="time-banner" />
+}
+
+// ── Показ механики: рука тащит предмет к цели ─────────────────────────────────────────────────────
+
+type Box = { x: number; y: number; w: number; h: number }
+const boxOf = (el: Element | null | undefined): Box | null => {
+  if (!el) return null
+  const r = el.getBoundingClientRect()
+  return r.width ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height } : null
+}
+
+export function FingerIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" aria-hidden>
+      <path d="M8 2.5a1.6 1.6 0 0 1 3.2 0V9l3.6 0.9a2 2 0 0 1 1.5 2.3l-0.8 4.2A2.4 2.4 0 0 1 13.1 18.5H9.4a2.4 2.4 0 0 1-2-1.1L4.2 12.6a1.4 1.4 0 0 1 2.2-1.7L8 12.4Z"
+        fill="#FDFAEF" stroke={INK} strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+/**
+ * Первый раз в игре «перетаскивания»: призрачная рука берёт предмет и тащит к цели — по кругу,
+ * пока человек сам не коснётся экрана. Целей несколько — по очереди (фото, потом чемодан).
+ * Рисуется поверх всего (портал), координаты — по экрану, поэтому сцене ничего не нужно знать.
+ */
+export function DragDemo({ from, to, label, testId = 'drag-demo' }: {
+  from: () => Element | null
+  /** Куда тащить: элементы (по очереди) или сдвиг от предмета (бокал — вверх). */
+  to: Array<() => Element | null> | { dx: number; dy: number }
+  label: string
+  testId?: string
+}) {
+  const [gone, setGone] = useState(false)
+  const [loop, setLoop] = useState(0)
+  const [pts, setPts] = useState<{ a: Box; b: Box } | null>(null)
+  // Первое касание — человек понял, рука уходит.
+  useEffect(() => {
+    const off = () => setGone(true)
+    window.addEventListener('pointerdown', off, { once: true, capture: true })
+    return () => window.removeEventListener('pointerdown', off, { capture: true })
+  }, [])
+  // Где предмет и цель — пересчитываем на каждом круге: сцена могла сдвинуться.
+  useEffect(() => {
+    if (gone) return
+    const measure = () => {
+      const a = boxOf(from())
+      let b: Box | null = null
+      if (Array.isArray(to)) b = boxOf(to[loop % to.length]())
+      else if (a) b = { ...a, x: a.x + to.dx, y: a.y + to.dy }
+      setPts(a && b ? { a, b } : null)
+    }
+    const t = window.setTimeout(measure, 60)
+    return () => window.clearTimeout(t)
+  }, [loop, gone]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (gone || typeof document === 'undefined') return null
+  const ghost = pts && { w: Math.min(pts.a.w, 120), h: Math.min(pts.a.h, 120) }
+  return createPortal(
+    <div className="fixed inset-0 z-[60] pointer-events-none" data-testid={testId} aria-hidden>
+      {pts && ghost && (
+        <motion.div key={loop} className="absolute left-0 top-0"
+          initial={{ x: pts.a.x, y: pts.a.y, opacity: 0 }}
+          animate={{ x: [pts.a.x, pts.a.x, pts.b.x, pts.b.x, pts.b.x], y: [pts.a.y, pts.a.y, pts.b.y, pts.b.y, pts.b.y], opacity: [0, 1, 1, 1, 0] }}
+          transition={{ duration: 2.6, times: [0, 0.18, 0.66, 0.8, 1], ease: 'easeInOut', delay: loop ? 0.5 : 1 }}
+          onAnimationComplete={() => setLoop(l => l + 1)}>
+          {/* Призрак предмета — едет под пальцем. */}
+          <div className="absolute rounded-lg border-2 border-dashed border-jewelInk bg-cream/55"
+            style={{ width: ghost.w, height: ghost.h, left: -ghost.w / 2, top: -ghost.h / 2, transform: 'rotate(-4deg)' }} />
+          <motion.div className="absolute" style={{ left: -2, top: 0 }}
+            animate={{ scale: [1, 0.82, 0.82, 1, 1] }} transition={{ duration: 2.6, times: [0, 0.18, 0.66, 0.8, 1], delay: loop ? 0.5 : 1 }}>
+            <span className="block drop-shadow-[2px_3px_0_rgba(21,16,10,0.35)]"><FingerIcon size={40} /></span>
+          </motion.div>
+        </motion.div>
+      )}
+      {pts && (
+        <div className="absolute inset-x-0 flex justify-center px-4"
+          style={{ top: Math.max(8, Math.min(pts.a.y, pts.b.y) - Math.max(pts.a.h, 40) / 2 - 40) }}>
+          <div className="rounded-full bg-jewelInk/80 text-cream px-3 py-1 text-[13px] font-extrabold text-center zn-pop" data-testid={`${testId}-label`}>{label}</div>
+        </div>
+      )}
+    </div>,
+    document.body
+  )
 }

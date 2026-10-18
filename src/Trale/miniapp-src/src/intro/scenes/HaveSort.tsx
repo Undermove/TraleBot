@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, floater, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { firstMet, met, phrase, plural } from '../story'
-import { GameEnd, GameIntro, NewWord, Pill, RuleCard, WordTag, say } from '../ui'
+import { DragDemo, GameEnd, GameIntro, NewWord, Pill, RuleCard, WordTag, say } from '../ui'
 import { hush, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import { DECK_SIZE, haveDeck, hintFor, isOver, sceneIdOf, send, sentence, sentenceAudio, sideOf, startState, verbOf, type Card, type HaveState, type Side } from './HaveSort.logic'
@@ -139,6 +139,9 @@ export default function HaveSort({ lesson, step, fraction, onExit, onDone, rng =
             </AnimatePresence>
           </div>
 
+          {hs.i === 0 && c && !said && (
+            <DragDemo from={() => document.querySelector('[data-testid="have-card"]')} to={[() => photo.current, () => bag.current]} label="Тащи на фото или в чемодан" />
+          )}
           <div className="absolute inset-x-0 bottom-0 h-[54%] grid grid-cols-2 gap-2.5">
             <Target side="alive" refEl={photo} near={near === 'alive'} onClick={() => { haptic('tap'); void decide('alive') }}>
               <FamilyPhoto people={people} />

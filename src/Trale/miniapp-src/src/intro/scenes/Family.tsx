@@ -5,7 +5,7 @@ import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { useLater } from '../../verbs/games/useLater'
 import Button from '../../components/Button'
 import { firstMet, met, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, Pill, Reply, RoundCard, RuleCard, Tip, WordTag, type Look, type Mood } from '../ui'
+import { DragDemo, GameEnd, GameIntro, NewWord, Pill, Reply, RoundCard, RuleCard, Tip, WordTag, type Look, type Mood } from '../ui'
 import { cyr } from '../../verbs/types'
 import { hush, speak, speakUrl } from '../voice'
 import Passerby from './walk/Passerby'
@@ -223,7 +223,7 @@ function Placing({ mode, lessonId, rng, onEnd }: {
       {cover && <RoundCard {...albumCard(mode, ri)} go="Открыть альбом" onGo={() => setCover(false)} testId="album-card" />}
       <div className="flex items-center gap-2">
         <Pill testId="family-round">{rounds.length > 1 ? `альбом ${ri + 1} из ${rounds.length}` : `альбом ${round.ownerRu}`}</Pill>
-        <Pill testId="family-photo">фото {Math.min(ci + 1, round.order.length)} из {round.order.length}</Pill>
+        <Pill testId="family-photo-count">фото {Math.min(ci + 1, round.order.length)} из {round.order.length}</Pill>
         <div className="flex-1" />
         <Pill testId="family-score">★ {first.current}</Pill>
       </div>
@@ -260,6 +260,10 @@ function Placing({ mode, lessonId, rng, onEnd }: {
           </div>
         ) : photo && (
           <>
+            {/* Первое фото — рука показывает, что его тащат в рамку. */}
+            {ri === 0 && ci === 0 && !cover && (
+              <DragDemo from={() => document.querySelector('[data-testid="family-photo"]')} to={[() => boardRef.current]} label="Тащи фото в рамку" />
+            )}
             <DragPhoto key={`${ri}-${ci}`} board={boardRef} disabled={busy} shake={shake} onNear={setNear}
               onDrop={(r, el) => place(r as Role, el)}>
               <div className="w-[64px] h-[64px] rounded bg-gold-wash flex items-end justify-center overflow-hidden"><Portrait look={round.looks[photo]} female={ROLES[photo].female} size={64} /></div>

@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { met as metWord, phrase } from '../story'
-import { GameEnd, GameIntro, NewWord, RuleCard, TimeBanner, TimeIcon, TimeLine } from '../ui'
+import { FingerIcon, GameEnd, GameIntro, NewWord, RuleCard, TimeBanner, TimeIcon, TimeLine } from '../ui'
 import { hush, speak } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
@@ -433,11 +433,3 @@ export function SpeechBubble({ id, hint, mine, tail }: { id: string; hint: boole
   )
 }
 
-function FingerIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden>
-      <path d="M8 2.5a1.6 1.6 0 0 1 3.2 0V9l3.6 0.9a2 2 0 0 1 1.5 2.3l-0.8 4.2A2.4 2.4 0 0 1 13.1 18.5H9.4a2.4 2.4 0 0 1-2-1.1L4.2 12.6a1.4 1.4 0 0 1 2.2-1.7L8 12.4Z"
-        fill="#FDFAEF" stroke="#15100A" strokeWidth="1.4" strokeLinejoin="round" />
-    </svg>
-  )
-}

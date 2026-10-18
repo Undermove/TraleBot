@@ -4,7 +4,7 @@ import GameFrame from '../../alphabet/games/GameFrame'
 import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import { firstMet, met, myName, phrase, type Phrase } from '../story'
-import { GameEnd, GameIntro, NewWord } from '../ui'
+import { DragDemo, GameEnd, GameIntro, NewWord } from '../ui'
 import { hush, speakLine, speakUrl } from '../voice'
 import type { Opt, Say } from './chatScripts'
 import { BEATS, THEME_RU, TOASTS, dishUrl, guestWarmth, guests, toastOpts, type Guest } from './supra.logic'
@@ -290,6 +290,10 @@ export default function Supra({ lesson, fraction, onExit, onDone, rng = Math.ran
           {/* Твой бокал: тянешь вверх — поднимаешь. */}
           {beat.kind === 'toast' && (stage === 'raise' || stage === 'toastAnswer' || stage === 'cheer') && (
             <MyGlass up={stage !== 'raise'} onRaise={raised} />
+          )}
+          {/* Первый тост — рука показывает, что бокал тянут вверх. */}
+          {beat.kind === 'toast' && toasts === 0 && stage === 'raise' && (
+            <DragDemo from={() => document.querySelector('[data-testid="supra-raise"]')} to={{ dx: 0, dy: -90 }} label="Тяни бокал вверх" />
           )}
 
           <div className="absolute top-2 left-2 z-30 rounded-full bg-cream/90 border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="supra-toast-count">тосты {toasts}/{TOASTS.length}</div>
