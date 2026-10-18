@@ -112,13 +112,13 @@ export default function HaveSort({ lesson, step, fraction, onExit, onDone, rng =
           {hs.combo >= 2 && <motion.span key={hs.combo} initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="ml-auto shrink-0 rounded-full bg-gold border-[1.5px] border-jewelInk px-2 py-0.5 text-[11px] font-extrabold" data-testid="have-combo">серия ×{hs.combo}</motion.span>}
         </div>
 
-        <div className="shrink-0 flex items-center justify-between gap-2">
+        <div className="relative z-30 shrink-0 flex items-center justify-between gap-2">
           <Pill testId="have-progress">карточка {Math.min(hs.i + 1, deck.length)} из {deck.length}</Pill>
           <Pill testId="have-score">{hs.score} {plural(hs.score, 'очко', 'очка', 'очков')}</Pill>
         </div>
 
         {/* Карточка — посередине; цели — внизу. */}
-        <div className="relative flex-1 min-h-[300px]" data-testid="have-track">
+        <div className="relative flex-1 min-h-[300px] ab-short:min-h-[264px]" data-testid="have-track">
           <div className="absolute inset-x-0 top-0 h-[46%] flex items-center justify-center z-20">
             <AnimatePresence mode="popLayout">
               {c && !said && (

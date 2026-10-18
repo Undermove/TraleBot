@@ -5,7 +5,7 @@ import { burst, haptic, sound } from '../../alphabet/games/fx'
 import { cyr } from '../../verbs/types'
 import Button from '../../components/Button'
 import { JOBS, firstMet, met, phrase, plural } from '../story'
-import { GameEnd, GameIntro, NewWord, Pill, RoundCard, RuleCard, WordTag } from '../ui'
+import { GameEnd, GameIntro, NewWord, RoundCard, RuleCard, WordTag } from '../ui'
 import { hush, speak, speakLine, speakUrl } from '../voice'
 import type { SceneProps, StepOf } from './types'
 import {
@@ -83,7 +83,7 @@ export default function Detective({ lesson, step, fraction, onExit, onDone, rng 
             text="Здесь соседей не видно, пока они говорят: голоса доносятся с лестницы. Кто что сказал — угадывай по словам, а потом по списку реплик."
             go="Слушать" onGo={() => setBriefed(true)} />
         )}
-        {phase === 'play' && (cases[i].level < 3 || briefed) && <Hall key={`${round}-${i}`} puzzle={cases[i]} mode={mode} last={i + 1 >= PUZZLES} at={i} onSolved={solved} lessonId={lesson.id} first={i === 0 && round === 0} />}
+        {phase === 'play' && (cases[i].level < 3 || briefed) && <Hall key={`${round}-${i}`} puzzle={cases[i]} mode={mode} last={i + 1 >= PUZZLES} onSolved={solved} lessonId={lesson.id} first={i === 0 && round === 0} />}
         {phase === 'end' && (
           <GameEnd
             title="Все посылки у хозяев"
@@ -114,8 +114,8 @@ const answerAudio = (p: Puzzle['people'][number], mine: boolean) => {
   return mine ? `${AUDIO}det2/${v}-ki.m4a` : `${AUDIO}detective/${v}-ara.m4a`
 }
 
-function Hall({ puzzle, mode, last, at, onSolved, lessonId, first }: {
-  puzzle: Puzzle; mode: 'from' | 'jobs'; last: boolean; at: number; onSolved: (firstTry: boolean) => void; lessonId: number; first: boolean
+function Hall({ puzzle, mode, last, onSolved, lessonId, first }: {
+  puzzle: Puzzle; mode: 'from' | 'jobs'; last: boolean; onSolved: (firstTry: boolean) => void; lessonId: number; first: boolean
 }) {
   // Слова сцены: ამანათი — посылка, ეს შენია? — это твоё? В первом подъезде урока, где они впервые, — карточкой.
   const parcelWord = met(lessonId, 'amanati') ? phrase('amanati') : null
@@ -128,6 +128,9 @@ function Hall({ puzzle, mode, last, at, onSolved, lessonId, first }: {
   const [assign, setAssign] = useState<number[]>(() => Array(n).fill(-1))
   const [sel, setSel] = useState<number | null>(null)
   const [heard, setHeard] = useState(0)
+  // Новая реплика — список докручивается до неё (на низком экране он прокручивается).
+  const cluesBox = useRef<HTMLDivElement>(null)
+  useEffect(() => { const el = cluesBox.current; if (el) el.scrollTop = el.scrollHeight }, [heard])
   const [speaking, setSpeaking] = useState<number | null>(null)
   const [open, setOpen] = useState<number[]>([])
   const [hot, setHot] = useState<number | null>(null)
@@ -244,7 +247,7 @@ function Hall({ puzzle, mode, last, at, onSolved, lessonId, first }: {
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2" data-testid="detective-board">
-      <div className="relative shrink-0 h-[262px] ab-short:h-[214px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="detective-hall">
+      <div className="relative min-h-[170px] h-[262px] ab-short:h-[214px] rounded-2xl border-[1.5px] border-jewelInk overflow-hidden" style={{ boxShadow: '3px 3px 0 #15100A' }} data-testid="detective-hall">
         <Entrance />
         {puzzle.people.map((p, k) => {
           const isSpeaker = speaking !== null && speakerOf(puzzle.clues[speaking]) === k
@@ -306,12 +309,9 @@ function Hall({ puzzle, mode, last, at, onSolved, lessonId, first }: {
         </AnimatePresence>
       </div>
 
-      {/* Подслушанное — остаётся перед глазами. */}
-      <div className="shrink-0 flex flex-col gap-1" data-testid="clues">
-        <div className="flex items-center gap-2">
-          <Pill testId="detective-entrance">подъезд {at + 1} из {PUZZLES}</Pill>
-          <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-hint">{hidden ? 'Подслушано с лестницы' : 'Подслушано'} · {puzzle.clues.length} {plural(puzzle.clues.length, 'реплика', 'реплики', 'реплик')}</div>
-        </div>
+      {/* Подслушанное — остаётся перед глазами; не влезает — прокручивается, кнопка внизу всегда видна. */}
+      <div ref={cluesBox} className="flex-1 min-h-[72px] overflow-y-auto flex flex-col gap-1" data-testid="clues">
+        <div className="text-[11px] font-extrabold uppercase tracking-wider text-jewelInk-hint">{hidden ? 'Подслушано с лестницы' : 'Подслушано'} · {puzzle.clues.length} {plural(puzzle.clues.length, 'реплика', 'реплики', 'реплик')}</div>
         {puzzle.clues.slice(0, heard).map((c, k) => (
           <ClueLine key={k} clue={c} puzzle={puzzle} hot={hot === k} open={open.includes(k)} hidden={hidden}
             onToggle={() => setOpen(o => (o.includes(k) ? o.filter(x => x !== k) : [...o, k]))} />
@@ -320,7 +320,7 @@ function Hall({ puzzle, mode, last, at, onSolved, lessonId, first }: {
       </div>
 
       {/* Коробки на полу. */}
-      <div className="relative shrink-0 flex justify-center gap-3 min-h-[74px] items-end" data-testid="parcels">
+      <div className={`relative shrink-0 flex justify-center gap-3 items-end ${onFloor.length ? 'min-h-[74px]' : ''}`} data-testid="parcels">
         <AnimatePresence>
           {onFloor.map(o => (
             <motion.button key={o} type="button" layout data-testid={`parcel-${o}`} onClick={() => tapParcel(o)} disabled={done || listening}
@@ -331,7 +331,7 @@ function Hall({ puzzle, mode, last, at, onSolved, lessonId, first }: {
             </motion.button>
           ))}
         </AnimatePresence>
-        {!onFloor.length && !done && <div className="text-[12px] font-bold text-jewelInk-hint pb-6">Все коробки розданы</div>}
+        {!onFloor.length && !done && <div className="text-[12px] font-bold text-jewelInk-hint">Все коробки розданы</div>}
       </div>
 
       {/* Подсказка; рядом — слово сцены: впервые — карточкой «новое слово», потом — подписью. */}

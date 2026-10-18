@@ -96,7 +96,7 @@ describe('Detective scene', () => {
         expect(screen.queryByTestId('detective-board')).toBeNull()
         fireEvent.click(screen.getByTestId('hidden-card-go').querySelector('button')!)
       } else expect(screen.queryByTestId('hidden-card')).toBeNull()
-      expect(screen.getByTestId('detective-entrance').textContent).toBe(`подъезд ${i + 1} из 3`)
+      expect(screen.getByText(`подъезд ${i + 1} из 3`)).toBeTruthy()
       await act(async () => { await vi.advanceTimersByTimeAsync(9000) })
       expect(screen.getAllByTestId('clue')).toHaveLength(cases[i].clues.length)
       if (lessonId === 21 || i > 0) expect(screen.getByTestId('amanati-tag').textContent).toContain('ამანათი')
