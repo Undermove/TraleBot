@@ -617,7 +617,7 @@ public class GeorgianTranslationPipelineTests : TranslationPipelineTestBase
         await Translate("стол");
 
         Log.Lines.Should().ContainSingle().Which.Should().MatchRegex(
-            @"^Translation of стол: path not-a-verb>legacy, Success, \d+ ms, model calls 1 \(classifier 1x\d+/\d+, analyst 0x0/0, generator 0x0/0, reviewer 0x0/0\)$");
+            @"^Translation of стол: path not-a-verb>legacy, Success, \d+ ms, model calls 1 \(classifier 1x\d+/\d+, analyst 0x0/0, generator 0x0/0, reviewer 0x0/0, translator 0x0/0, guard 0x0/0\)$");
     }
 
     // ── 9. Failures degrade to the old translator ────────────────────────────────────────────────

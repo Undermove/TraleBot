@@ -66,6 +66,8 @@ public abstract class TranslationPipelineTestBase
                 services.RemoveAll<IGoogleApiTranslator>();
                 services.AddSingleton<IParsingUniversalTranslator>(External);
                 services.AddSingleton<IGoogleApiTranslator>(External);
+                services.RemoveAll<IDictionaryLookup>();
+                services.AddSingleton<IDictionaryLookup>(External);
 
                 // The English module's OpenAI service cannot even be constructed without a key
                 // (it creates its client in the constructor), and resolving ILanguageTranslator builds every module.
@@ -114,7 +116,9 @@ public abstract class TranslationPipelineTestBase
         Models.AnalystModel.Reset();
         Models.GeneratorModel.Reset();
         Models.ReviewerModel.Reset();
+        Models.TranslatorModel.Reset();
         Models.CanGenerate = true;
+        Models.CanTranslateWords = false;
         External.Reset();
         Wiktionary.Reset();
         Log.Reset();

@@ -86,6 +86,13 @@ public class FakeTranslationChatClients : ITranslationChatClients
     public FakeChatClient AnalystModel { get; } = new();
     public FakeChatClient GeneratorModel { get; } = new();
     public FakeChatClient ReviewerModel { get; } = new();
+    public FakeChatClient TranslatorModel { get; } = new();
+
+    /// <summary>
+    /// False = no word translator: plain words go to the old translator, as in the tests written before
+    /// it. <see cref="WordTranslationTests"/> switches it on.
+    /// </summary>
+    public bool CanTranslateWords { get; set; }
 
     /// <summary>False = the generator and reviewer roles are not configured: verbs with no table are just translated.</summary>
     public bool CanGenerate { get; set; } = true;
@@ -94,12 +101,14 @@ public class FakeTranslationChatClients : ITranslationChatClients
     public IChatClient? Analyst => Configured ? AnalystModel : null;
     public IChatClient? Generator => Configured && CanGenerate ? GeneratorModel : null;
     public IChatClient? Reviewer => Configured && CanGenerate ? ReviewerModel : null;
+    public IChatClient? Translator => Configured && CanTranslateWords ? TranslatorModel : null;
 
-    public int ModelCalls => ClassifierModel.Calls + AnalystModel.Calls + GeneratorModel.Calls + ReviewerModel.Calls;
+    public int ModelCalls =>
+        ClassifierModel.Calls + AnalystModel.Calls + GeneratorModel.Calls + ReviewerModel.Calls + TranslatorModel.Calls;
 }
 
 /// <summary>Stands in for the dictionary site and Google: the translator that was there before the pipeline.</summary>
-public class FakeExternalTranslator : IParsingUniversalTranslator, IGoogleApiTranslator
+public class FakeExternalTranslator : IParsingUniversalTranslator, IGoogleApiTranslator, IDictionaryLookup
 {
     public const string Definition = "перевод с внешнего сайта";
     public const string GoogleDefinition = "перевод гугла";
@@ -118,11 +127,21 @@ public class FakeExternalTranslator : IParsingUniversalTranslator, IGoogleApiTra
     /// <summary>A slow dictionary site: awaited before it answers.</summary>
     public Func<Task>? Before { get; set; }
 
+    /// <summary>The dictionary's pages by text, for the word translator's checks; any other text has no page.</summary>
+    public Dictionary<string, DictionaryEntry> Pages { get; } = new();
+
+    /// <summary>The dictionary site answers its pages with an error (an outage, throttling).</summary>
+    public bool PagesFail { get; set; }
+
+    public const string Example = "пример из словаря";
+
     public void Reset()
     {
         Calls = 0;
         Fails = false;
         Before = null;
+        PagesFail = false;
+        Pages.Clear();
         DictionaryMisses.Clear();
         Trail.Clear();
     }
@@ -140,6 +159,20 @@ public class FakeExternalTranslator : IParsingUniversalTranslator, IGoogleApiTra
             ? new TranslationResult.Failure()
             : new TranslationResult.Success(Definition, "", "");
     }
+
+    /// <summary>A page with these translations.</summary>
+    public void Page(string text, params string[] translations) => Pages[text] = new DictionaryEntry(true, translations);
+
+    Task<DictionaryEntry> IDictionaryLookup.LookupAsync(string text, CancellationToken ct)
+    {
+        Trail.Add($"page:{text}");
+        return PagesFail
+            ? throw new HttpRequestException("503")
+            : Task.FromResult(Pages.GetValueOrDefault(text, DictionaryEntry.Unknown));
+    }
+
+    Task<string> IDictionaryLookup.ExampleAsync(string text, string translation, CancellationToken ct) =>
+        Task.FromResult(Example);
 
     Task<TranslationResult> IGoogleApiTranslator.TranslateAsync(string requestWord, Language targetLanguage, CancellationToken ct)
     {

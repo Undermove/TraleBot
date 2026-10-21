@@ -9,11 +9,12 @@ using Microsoft.Extensions.Logging;
 namespace Infrastructure.Translation;
 
 public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory, ILoggerFactory logger)
-    : IParsingUniversalTranslator
+    : IParsingUniversalTranslator, IDictionaryLookup
 {
     private readonly ILogger _logger = logger.CreateLogger(typeof(GlosbeParsingTranslationService));
 
     const string DefinitionSearchPattern = "//main//section[1]//div//ul/li[1]//div//div/h3";
+    const string AllDefinitionsSearchPattern = "//main//section[1]//div//ul/li//div//div/h3";
     const string AdditionalSearchPattern = "//p//span";
     private const string ExampleElementsSearchPattern = "//div//div//div//div//div[contains(@class, \"w-1/2\")]";
 
@@ -29,6 +30,47 @@ public class GlosbeParsingTranslationService(IHttpClientFactory clientFactory, I
         var (additionalInfo, example) = await GetAdditionalInfoAndExampleForDefinition(definition, requestWord, ct);
         
         return new TranslationResult.Success(definition, additionalInfo, example);
+    }
+
+    public async Task<DictionaryEntry> LookupAsync(string text, CancellationToken ct)
+    {
+        string languagePrefix = text.DetectLanguage() == Language.Russian ? "ru/ka" : "ka/ru";
+        using var httpClient = clientFactory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://glosbe.com/{languagePrefix}/{text}");
+        request.Headers.Clear();
+        request.Headers.Add("User-Agent", "curl/8.4.0");
+        request.Headers.Add("Host", "glosbe.com");
+        request.Headers.Add("Accept", "*/*");
+        using var response = await httpClient.SendAsync(request, ct);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return DictionaryEntry.Unknown;
+        }
+
+        // Anything but a page or "no such page" (throttling, an outage) is not an answer about the word.
+        response.EnsureSuccessStatusCode();
+        var htmlDoc = new HtmlDocument();
+        htmlDoc.LoadHtml(await response.Content.ReadAsStringAsync(ct));
+        var translations = htmlDoc.DocumentNode.SelectNodes(AllDefinitionsSearchPattern)?
+            .Select(node => WebUtility.HtmlDecode(node.InnerText).Trim())
+            .Where(t => t.Length > 0)
+            .Distinct()
+            .ToList() ?? [];
+        return new DictionaryEntry(true, translations);
+    }
+
+    public async Task<string> ExampleAsync(string text, string translation, CancellationToken ct)
+    {
+        try
+        {
+            var (_, example) = await GetAdditionalInfoAndExampleForDefinition(translation, text, ct);
+            return example;
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            _logger.LogWarning("Glosbe example lookup failed: {Error}", e.GetType().Name);
+            return string.Empty;
+        }
     }
 
     private async Task<(bool isTranslated, string definition)> GetDefinition(string requestWord, CancellationToken ct)

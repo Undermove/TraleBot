@@ -38,6 +38,45 @@ public class TranslationAgentOptions
     /// <inheritdoc cref="ClassifierReasoning"/>
     public string GeneratorReasoning { get; set; } = string.Empty;
 
+    private string _wordTranslatorModel = string.Empty;
+    private string _wordTranslatorReasoning = string.Empty;
+
+    /// <summary>
+    /// The model that translates a plain word (not a verb) the way people say it, before the dictionary
+    /// site is trusted with it; empty = the analyst's model. Its answer is served only after the
+    /// dictionary confirms the Georgian word exists (see <c>GeorgianTranslationPipeline</c>).
+    /// </summary>
+    public string WordTranslatorModel
+    {
+        get => string.IsNullOrWhiteSpace(_wordTranslatorModel) ? AnalystModel : _wordTranslatorModel;
+        set => _wordTranslatorModel = value;
+    }
+
+    /// <summary>Reasoning of the word translator; empty = the analyst's.</summary>
+    public string WordTranslatorReasoning
+    {
+        get => string.IsNullOrWhiteSpace(_wordTranslatorReasoning) ? AnalystReasoning : _wordTranslatorReasoning;
+        set => _wordTranslatorReasoning = value;
+    }
+
+    /// <summary>Off: plain words are translated by the dictionary site and Google, as before.</summary>
+    public bool TranslateWordsWithModel { get; set; } = true;
+
+    /// <summary>
+    /// The model of the content check (OpenAI Decisions API) every new text goes through before it is
+    /// translated; empty = no check. See <see cref="IContentGuard"/>.
+    /// </summary>
+    public string ContentGuardModel { get; set; } = "gpt-6-luna";
+
+    /// <summary>
+    /// How sure the check must be to refuse. On 19.10.2026 the refused texts scored 1.0 and everything
+    /// else, swearing included, 0.0–0.03, so the threshold is far from both.
+    /// </summary>
+    public double ContentGuardThreshold { get; set; } = 0.9;
+
+    /// <summary>The check answered in 0.2–0.6 s on 19.10.2026; past this the text is let through unchecked.</summary>
+    public int ContentGuardTimeoutSeconds { get; set; } = 3;
+
     /// <inheritdoc cref="ClassifierReasoning"/>
     public string ReviewerReasoning { get; set; } = string.Empty;
 
@@ -94,6 +133,9 @@ public class TranslationAgentOptions
 
     /// <summary>The whole analysis run: every model turn and every tool call of it.</summary>
     public int AnalystTimeoutSeconds { get; set; } = 25;
+
+    /// <summary>The word translator's step: its call (or two, with the retry) and the dictionary checks.</summary>
+    public int WordTranslatorTimeoutSeconds { get; set; } = 20;
 
     /// <summary>One call of the generator. A strong model writing forty forms takes its time.</summary>
     public int GeneratorTimeoutSeconds { get; set; } = 60;

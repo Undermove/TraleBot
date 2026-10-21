@@ -22,12 +22,20 @@ namespace Application.Translation.Pipeline;
 /// <item>the verb base, no model and no key needed: an exact Georgian form or masdar, a Russian gloss,
 ///   or a Russian verb form matched by the plain-Russian meanings stored with every catalog form;</item>
 /// <item>the translation cache — a text that was looked up before, or a remembered verdict about it;</item>
+/// <item>the content check (<see cref="IContentGuard"/>): a text the app does not translate at all is
+///   answered "not something to translate" and remembered; when the check is not available or fails,
+///   the text goes on;</item>
 /// <item>the classifier (cheap model, one call): is the text something to translate at all, is it a
 ///   verb, and for a Russian verb — its infinitive, which is tried against the verb base again;</item>
 /// <item>for a verb that is still unknown — the analyst (the cheap agent with the Wiktionary tool): a
 ///   verb the source has a table for is stored from the table by <see cref="VerbProposalResolver"/>;</item>
 /// <item>for a verb with no table anywhere — <see cref="VerbGenerationService"/>: a strong model writes
 ///   the record, a second model approves it, it is stored; the next request stops at step 1 or 2;</item>
+/// <item>a word or a short phrase that is not a verb — the word translator (<see cref="IWordTranslator"/>):
+///   a model gives the everyday translation, with the dictionary site's entries as a hint, and the
+///   dictionary confirms the Georgian word exists. A confirmed answer is cached; one the dictionary
+///   cannot confirm either way is served with a note and not cached; one the dictionary contradicts
+///   (it knows the text, but not the word the model gave, even after one retry) is dropped;</item>
 /// <item>everything else — the translator that was here before (<see cref="GeorgianTranslationModule"/>:
 ///   dictionary site, then Google). Its answer is not cached — nobody has checked it; only the
 ///   models' verdict "not a verb" is, so they are not asked about the same text twice.</item>
@@ -36,9 +44,9 @@ namespace Application.Translation.Pipeline;
 /// of a model or tool step — no key, quota, timeout, malformed output — falls through to the last step,
 /// so the user gets what they would have got without the models.
 /// <para>
-/// The models are for verbs only. For anything else — a noun, an adjective, a phrase, a sentence — the
-/// one thing a model says is "this is not a verb", and the text goes to the translator that was here
-/// before, unchanged; a text of more than three words is a sentence and reaches no model at all.
+/// The verb models are for verbs only; a noun, an adjective or a short phrase goes to the word
+/// translator, and when it has no confirmed answer, to the translator that was here before, unchanged.
+/// A text of more than three words is a sentence and reaches no model at all.
 /// "Not something to translate" is answered only for a single token the classifier is sure is not a
 /// word (or, for a verb-looking one, the strong model is) AND the dictionary site does not know either;
 /// a phrase of several words is never refused, and any doubt is translated the old way.
@@ -58,6 +66,9 @@ public class GeorgianTranslationPipeline(
     VerbProposalResolver resolver,
     VerbGenerationService generation,
     IVerbGenerationSwitch generationSwitch,
+    IWordTranslator wordTranslator,
+    IDictionaryLookup dictionary,
+    IContentGuard contentGuard,
     ITraleDbContext dbContext,
     IOptions<TranslationAgentOptions> options,
     ILogger<GeorgianTranslationPipeline> logger) : ITranslationModule
@@ -75,6 +86,8 @@ public class GeorgianTranslationPipeline(
         public ModelUsage Analyst { get; set; } = ModelUsage.None;
         public ModelUsage Generator { get; set; } = ModelUsage.None;
         public ModelUsage Reviewer { get; set; } = ModelUsage.None;
+        public ModelUsage Translator { get; set; } = ModelUsage.None;
+        public ModelUsage Guard { get; set; } = ModelUsage.None;
     }
 
     public async Task<TranslationResult> Translate(string wordToTranslate, CancellationToken ct)
@@ -86,10 +99,11 @@ public class GeorgianTranslationPipeline(
         // One line per request: which steps ran, what the models cost and how long it all took. The
         // looked-up text is the only user input in it.
         logger.LogInformation(
-            "Translation of {Word}: path {Path}, {Outcome}, {ElapsedMs} ms, model calls {ModelCalls} (classifier {ClassifierUsage}, analyst {AnalystUsage}, generator {GeneratorUsage}, reviewer {ReviewerUsage})",
+            "Translation of {Word}: path {Path}, {Outcome}, {ElapsedMs} ms, model calls {ModelCalls} (classifier {ClassifierUsage}, analyst {AnalystUsage}, generator {GeneratorUsage}, reviewer {ReviewerUsage}, translator {TranslatorUsage}, guard {GuardUsage})",
             wordToTranslate, string.Join(">", trace.Steps), result.GetType().Name, stopwatch.ElapsedMilliseconds,
-            trace.Classifier.Calls + trace.Analyst.Calls + trace.Generator.Calls + trace.Reviewer.Calls,
-            Tokens(trace.Classifier), Tokens(trace.Analyst), Tokens(trace.Generator), Tokens(trace.Reviewer));
+            trace.Classifier.Calls + trace.Analyst.Calls + trace.Generator.Calls + trace.Reviewer.Calls + trace.Translator.Calls + trace.Guard.Calls,
+            Tokens(trace.Classifier), Tokens(trace.Analyst), Tokens(trace.Generator), Tokens(trace.Reviewer), Tokens(trace.Translator),
+            Tokens(trace.Guard));
         return result;
     }
 
@@ -119,7 +133,7 @@ public class GeorgianTranslationPipeline(
         // 2. The cache.
         var agentOn = agentSwitch.IsOn;
         var cached = await cache.FindAsync(key, direction, ct);
-        if (cached is { Source: TranslationCache.SourceNotTranslatable })
+        if (cached is { Source: TranslationCache.SourceNotTranslatable or TranslationCache.SourceRefused })
         {
             trace.Steps.Add("cache");
             await cache.RecordHitAsync(cached, classified: true, ct);
@@ -134,6 +148,13 @@ public class GeorgianTranslationPipeline(
         {
             trace.Steps.Add("cache");
             return await ServeCached(translation, settled, ct);
+        }
+
+        // The content check: once per text, before any model or translator sees it.
+        if (await Refused(key, trace, ct))
+        {
+            await cache.StoreVerdictAsync(key, direction, TranslationCache.SourceRefused, ct, replace: cached);
+            return new TranslationResult.NotTranslatable();
         }
 
         // 3 and 4. The models — unless the open lexicon alone names the verb and the source has its table.
@@ -163,6 +184,23 @@ public class GeorgianTranslationPipeline(
             if (answer != null)
             {
                 return answer;
+            }
+        }
+        else if (agentOn && translation == null && CanBeVerb(key) && WordTranslatorOn)
+        {
+            // The models settled earlier that this is not a verb and the cache keeps only that verdict —
+            // from before the word translator, or from a time it had no confirmed answer: it is asked now.
+            if (await budget.TrySpendAsync(ModelSpend.Request, ct))
+            {
+                var answer = await TranslateWord(key, isRussian, direction, cached, trace, ct);
+                if (answer != null)
+                {
+                    return answer;
+                }
+            }
+            else
+            {
+                trace.Steps.Add("over-daily-budget");
             }
         }
 
@@ -217,9 +255,9 @@ public class GeorgianTranslationPipeline(
 
         if (!classification.IsVerb || !CanBeVerb(key))
         {
-            // Not a verb: the models have nothing more to say, the old translator answers as it always did.
+            // Not a verb: the word translator, and if it has no confirmed answer, the old translator.
             trace.Steps.Add("not-a-verb");
-            return (null, true);
+            return (WordTranslatorOn ? await TranslateWord(key, isRussian, direction, cached, trace, ct) : null, true);
         }
 
         var question = key;
@@ -357,6 +395,213 @@ public class GeorgianTranslationPipeline(
             return (null, false);
         }
     }
+
+    /// <summary>
+    /// Whether the content check refuses the text. A check that is off, slow or broken refuses nothing:
+    /// the text is translated as it was before the check existed.
+    /// </summary>
+    private async Task<bool> Refused(string key, Trace trace, CancellationToken ct)
+    {
+        if (!contentGuard.IsAvailable)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var timeout = Timeout(options.Value.ContentGuardTimeoutSeconds, ct);
+            var verdict = await contentGuard.CheckAsync(key, timeout.Token);
+            trace.Guard += verdict.Usage ?? ModelUsage.None;
+            if (verdict.Refusal == null)
+            {
+                return false;
+            }
+
+            trace.Steps.Add("refused");
+            logger.LogWarning("Translation of {Word} refused by the content check: {Reason}", key, verdict.Refusal);
+            return true;
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            trace.Steps.Add("guard-failed");
+            logger.LogWarning("Content check failed: {Error}", Describe(e));
+            return false;
+        }
+    }
+
+    private bool WordTranslatorOn => options.Value.TranslateWordsWithModel && wordTranslator.IsAvailable;
+
+    /// <summary>An answer of more words than this is not checked word by word: it is served unconfirmed.</summary>
+    private const int MaxWordsToConfirm = 4;
+
+    public const string UnconfirmedWordNote = "в словаре не нашлось — перевод нейросети, лучше перепроверить";
+
+    /// <summary>
+    /// A plain word or a short phrase: the model translates it the way people say it, the dictionary
+    /// site is the second opinion. Null — no answer here, the old translator is next.
+    /// </summary>
+    private async Task<TranslationResult?> TranslateWord(
+        string key, bool isRussian, TranslationDirection direction, TranslationCacheEntry? cached, Trace trace, CancellationToken ct)
+    {
+        try
+        {
+            using var timeout = Timeout(options.Value.WordTranslatorTimeoutSeconds, ct);
+            var entry = await LookUp(key, timeout.Token);
+            var question = new WordQuestion(key, isRussian, entry?.Translations ?? []);
+            var answer = await wordTranslator.TranslateAsync(question, timeout.Token);
+            trace.Translator += answer.Usage ?? ModelUsage.None;
+            var check = await Check(answer, isRussian, entry, timeout.Token);
+            if (check.Problem != null)
+            {
+                // One retry, told what the dictionary did not find. Never a second one.
+                trace.Steps.Add("word-retry");
+                answer = await wordTranslator.TranslateAsync(question with { Feedback = check.Problem }, timeout.Token);
+                trace.Translator += answer.Usage ?? ModelUsage.None;
+                check = await Check(answer, isRussian, entry, timeout.Token);
+            }
+
+            if (answer.Translation == null)
+            {
+                trace.Steps.Add("word-none");
+                return null;
+            }
+
+            if (check.Confirmed)
+            {
+                trace.Steps.Add("word-agent");
+                var result = await WordAnswer(key, isRussian, answer, entry, confirmed: true, ct);
+                await cache.StoreAsync(key, direction, result, TranslationCache.SourceWordAgent, classified: true, ct, replace: cached);
+                return result;
+            }
+
+            if (check.Problem != null)
+            {
+                // The dictionary knows the text but not the word the model gave, twice: its own entry wins.
+                trace.Steps.Add("word-rejected");
+                return null;
+            }
+
+            // Nothing to check against (a form or a slang word the dictionary does not have, or the site
+            // is down): the model's answer is still better than machine translation, and it says so.
+            trace.Steps.Add("word-unconfirmed");
+            if (cached is not { Source: TranslationCache.SourceNoTranslation })
+            {
+                // Not the answer — it is asked for again next time; only that the text is not a verb.
+                await cache.StoreVerdictAsync(key, direction, TranslationCache.SourceNoTranslation, ct, replace: cached);
+            }
+
+            return await WordAnswer(key, isRussian, answer, entry, confirmed: false, ct);
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            trace.Steps.Add("word-failed");
+            logger.LogWarning("Word translator failed: {Error}", Describe(e));
+            return null;
+        }
+    }
+
+    /// <summary>The dictionary's page for the text; null when the site could not be asked.</summary>
+    private async Task<DictionaryEntry?> LookUp(string text, CancellationToken ct)
+    {
+        try
+        {
+            return await dictionary.LookupAsync(text, ct);
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            logger.LogWarning("Dictionary site failed: {Error}", Describe(e));
+            return null;
+        }
+    }
+
+    /// <param name="Confirmed">The dictionary agrees: the answer is among its entries, or (Georgian answer) every word of it is in the dictionary.</param>
+    /// <param name="Problem">The dictionary contradicts the answer — what to tell the model on the retry; null when it does not.</param>
+    private sealed record WordCheck(bool Confirmed, string? Problem);
+
+    private async Task<WordCheck> Check(WordTranslation answer, bool isRussian, DictionaryEntry? entry, CancellationToken ct)
+    {
+        if (answer.Translation == null)
+        {
+            return new WordCheck(false, null);
+        }
+
+        if (!isRussian)
+        {
+            // Russian is the model's own language; what needs to exist is the Georgian text, and the
+            // dictionary having a page for it is that.
+            return new WordCheck(entry is { Known: true }, null);
+        }
+
+        if (answer.Translation.DetectLanguage() != Language.Georgian)
+        {
+            return new WordCheck(false, "the translation must be Georgian, in Georgian script");
+        }
+
+        if (entry != null && entry.Translations.Any(t => SameText(t, answer.Translation)))
+        {
+            return new WordCheck(true, null);
+        }
+
+        var words = Words(answer.Translation);
+        if (words.Count > MaxWordsToConfirm)
+        {
+            return new WordCheck(false, null);
+        }
+
+        var pages = new List<DictionaryEntry>();
+        foreach (var word in words)
+        {
+            var page = await LookUp(word, ct);
+            if (page == null)
+            {
+                return new WordCheck(false, null);
+            }
+
+            pages.Add(page);
+        }
+
+        var missing = words.Where((_, i) => !pages[i].Known).ToList();
+        if (missing.Count == 0)
+        {
+            return new WordCheck(true, null);
+        }
+
+        // A one-word answer the dictionary has never heard of is a made-up or misspelled word. In a
+        // phrase, an unknown word may be a form the dictionary lacks — that is only "unconfirmed",
+        // unless the dictionary knows the asked text and so has something to compare with.
+        return words.Count == 1 || entry is { Translations.Count: > 0 }
+            ? new WordCheck(false, $"the dictionary has no Georgian word «{missing[0]}»; give a word that exists")
+            : new WordCheck(false, null);
+    }
+
+    private async Task<TranslationResult.Success> WordAnswer(
+        string key, bool isRussian, WordTranslation answer, DictionaryEntry? entry, bool confirmed, CancellationToken ct)
+    {
+        var translation = answer.Translation!;
+        // A Georgian alternative is named only when the dictionary lists it for this text too.
+        var alternatives = answer.Alternatives
+            .Where(a => !SameText(a, translation))
+            .Where(a => !isRussian || entry?.Translations.Any(t => SameText(t, a)) == true)
+            .ToList();
+        string?[] parts =
+        [
+            answer.Note,
+            alternatives.Count == 0 ? null : $"ещё: {string.Join(", ", alternatives)}",
+            confirmed ? null : UnconfirmedWordNote
+        ];
+        var info = string.Join("; ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+        var example = confirmed ? await dictionary.ExampleAsync(key, translation, ct) : string.Empty;
+        return new TranslationResult.Success(translation, info + Transcription(isRussian ? translation : key), example);
+    }
+
+    private static IReadOnlyList<string> Words(string text) =>
+        text.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select(w => w.Trim('?', '!', ',', '.', ';', ':', '«', '»', '"'))
+            .Where(w => w.Length > 0)
+            .ToList();
+
+    private static bool SameText(string a, string b) =>
+        string.Equals(a.Trim().TrimEnd('.', '!', '?'), b.Trim().TrimEnd('.', '!', '?'), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The agents know two languages, and a verb is a word or two; a phrase is for the plain translator.</summary>
     private static bool CanBeVerb(string key) =>
