@@ -77,6 +77,17 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     }
 
     [Test]
+    public async Task An_empty_query_offers_the_first_phrases_a_newcomer_needs()
+    {
+        var answer = await Ask(920004, "");
+
+        answer.Results.Should().HaveCount(InlineTranslation.Starters.Length);
+        var first = (InlineQueryResultArticle)answer.Results.First();
+        ((InputTextMessageContent)first.InputMessageContent).MessageText.Should().Be("მადლობა [мадлоба] — спасибо");
+        Models.ModelCalls.Should().Be(0);
+    }
+
+    [Test]
     public async Task A_sent_card_is_acknowledged_without_writing_to_anybody()
     {
         using var client = App.CreateClient();

@@ -6,6 +6,7 @@ using Application.Translation.Languages;
 using Application.Translation.Pipeline;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -20,8 +21,7 @@ namespace Infrastructure.Telegram.Inline;
 /// see the bot, which is the point. Nothing is saved to anybody's dictionary.
 /// </summary>
 public partial class InlineTranslation(
-    ILanguageTranslator translator,
-    TranslationRequester requester,
+    IServiceScopeFactory scopes,
     ITraleDbContext db,
     ITelegramBotClient client,
     BotConfiguration config,
@@ -32,8 +32,29 @@ public partial class InlineTranslation(
 
     public const string ButtonText = "Учить грузинский в TraleBot";
 
-    /// <summary>A person types on: an answer later than this is for a query they have already left.</summary>
+    /// <summary>
+    /// A person types on: an answer later than this is for a query they have already left. A lookup that
+    /// takes longer is not stopped — it ends in the translation cache, and the same text asked again
+    /// (Telegram asks again in <see cref="NothingCacheSeconds"/>) is answered from there at once.
+    /// </summary>
     private static readonly TimeSpan AnswerWithin = TimeSpan.FromSeconds(7);
+
+    /// <summary>A lookup left running has this long to finish; model steps have their own, shorter timeouts.</summary>
+    private static readonly TimeSpan LookupAtMost = TimeSpan.FromMinutes(3);
+
+    /// <summary>
+    /// What an empty «@bot » offers: the phrases a newcomer needs first. The Georgian is checked by hand;
+    /// the transcription is computed like everywhere else.
+    /// </summary>
+    public static readonly (string Georgian, string Russian)[] Starters =
+    [
+        ("მადლობა", "спасибо"),
+        ("გამარჯობა", "здравствуйте"),
+        ("გთხოვთ", "пожалуйста (прошу)"),
+        ("ბოდიში", "извините"),
+        ("რა ღირს?", "сколько стоит?"),
+        ("ნახვამდის", "до свидания")
+    ];
 
     private const int MaxLength = 100;
 
@@ -42,7 +63,7 @@ public partial class InlineTranslation(
     /// depend on who asks. Short for "nothing found", so that a fixed translator is seen soon.
     /// </summary>
     private const int CacheSeconds = 3600;
-    private const int NothingCacheSeconds = 10;
+    private const int NothingCacheSeconds = 5;
 
     [GeneratedRegex(@"[ა-ჿ]")]
     private static partial Regex GeorgianLetter();
@@ -80,28 +101,27 @@ public partial class InlineTranslation(
 
     private async Task<InlineQueryResult[]> CardsFor(string text, long telegramId, CancellationToken ct)
     {
+        if (text.Length == 0)
+        {
+            return Starters.Select((p, i) => Card($"s{i}", p.Georgian, p.Russian)).ToArray<InlineQueryResult>();
+        }
+
         var isGeorgian = GeorgianLetter().IsMatch(text);
         if (text.Length < 2 || text.Length > MaxLength || !(isGeorgian || CyrillicLetter().IsMatch(text)))
         {
             return [];
         }
 
-        // The per-user caps on model calls: a registered person spends their own; anybody else, the overall ones.
-        requester.UserId = await db.Users.Where(u => u.TelegramId == telegramId).Select(u => (Guid?)u.Id).FirstOrDefaultAsync(ct);
-
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(AnswerWithin);
-        TranslationResult result;
-        try
+        var userId = await db.Users.Where(u => u.TelegramId == telegramId).Select(u => (Guid?)u.Id).FirstOrDefaultAsync(ct);
+        var lookup = Lookup(text, userId);
+        if (await Task.WhenAny(lookup, Task.Delay(AnswerWithin, ct)) != lookup)
         {
-            result = await translator.Translate(text, Language.Georgian, timeout.Token);
-        }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
-        {
-            logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s", text, AnswerWithin.TotalSeconds);
+            logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s, left to finish into the cache",
+                text, AnswerWithin.TotalSeconds);
             return [];
         }
 
+        var result = await lookup;
         if (result is not TranslationResult.Success success || string.IsNullOrWhiteSpace(success.Definition))
         {
             return [];
@@ -109,19 +129,41 @@ public partial class InlineTranslation(
 
         var georgian = isGeorgian ? text : success.Definition.Trim();
         var russian = isGeorgian ? success.Definition.Trim() : text;
-        var line = $"{georgian} [{GeorgianTranscriptionExtension.GetTranscription(georgian)}] — {russian}";
+        return [Card("t", georgian, russian)];
+    }
 
-        return
-        [
-            new InlineQueryResultArticle(
-                id: "t",
-                title: $"{georgian} [{GeorgianTranscriptionExtension.GetTranscription(georgian)}]",
-                inputMessageContent: new InputTextMessageContent(line))
-            {
-                Description = russian,
-                ReplyMarkup = new InlineKeyboardMarkup(
-                    InlineKeyboardButton.WithUrl(ButtonText, $"https://t.me/{config.BotName}?start={StartParameter}"))
-            }
-        ];
+    /// <summary>
+    /// The lookup in a scope of its own, not tied to the webhook request: when the answer is late it
+    /// still finishes, and its result is in the cache for the next query.
+    /// </summary>
+    private Task<TranslationResult> Lookup(string text, Guid? userId) => Task.Run(async () =>
+    {
+        using var scope = scopes.CreateScope();
+        // The per-user caps on model calls: a registered person spends their own; anybody else, the overall ones.
+        scope.ServiceProvider.GetRequiredService<TranslationRequester>().UserId = userId;
+        using var atMost = new CancellationTokenSource(LookupAtMost);
+        try
+        {
+            return await scope.ServiceProvider.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, atMost.Token);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(e, "Inline translation of {Text} failed", text);
+            return new TranslationResult.Failure();
+        }
+    });
+
+    private InlineQueryResultArticle Card(string id, string georgian, string russian)
+    {
+        var transcription = GeorgianTranscriptionExtension.GetTranscription(georgian);
+        return new InlineQueryResultArticle(
+            id: id,
+            title: $"{georgian} [{transcription}]",
+            inputMessageContent: new InputTextMessageContent($"{georgian} [{transcription}] — {russian}"))
+        {
+            Description = russian,
+            ReplyMarkup = new InlineKeyboardMarkup(
+                InlineKeyboardButton.WithUrl(ButtonText, $"https://t.me/{config.BotName}?start={StartParameter}"))
+        };
     }
 }
