@@ -29,19 +29,8 @@ public partial class InlineTranslation(
 
     public const string ButtonText = "Учить грузинский в TraleBot";
 
-    /// <summary>
-    /// Above the (empty) list while a lookup is still running, one at random: Bombora is busy, and a
-    /// space added in a moment shows the answer. Telegram lets nothing move there — a new line each
-    /// time is what there is.
-    /// </summary>
-    public static readonly string[] PendingButtonTexts =
-    [
-        "Бомбора листает словарь… добавь пробел",
-        "Бомбора спрашивает у бабушки… добавь пробел",
-        "Бомбора грызёт грузинские буквы… добавь пробел",
-        "Бомбора бежит за переводом… добавь пробел",
-        "Бомбора советуется с хинкали… добавь пробел"
-    ];
+    /// <summary>Above the (empty) list while a lookup is still running: a space added in a moment shows the answer.</summary>
+    public const string PendingButtonText = "Переводим… добавь пробел";
 
     public const string RussianTitle = "Перевод";
     public const string GeorgianTitle = "По-грузински";
@@ -101,7 +90,7 @@ public partial class InlineTranslation(
                 results,
                 cacheTime: results.Length > 0 ? CacheSeconds : NothingCacheSeconds,
                 isPersonal: false,
-                button: new InlineQueryResultsButton(pending ? PendingButtonTexts[Random.Shared.Next(PendingButtonTexts.Length)] : ButtonText) { StartParameter = StartParameter },
+                button: new InlineQueryResultsButton(pending ? PendingButtonText : ButtonText) { StartParameter = StartParameter },
                 cancellationToken: ct);
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)

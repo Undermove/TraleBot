@@ -111,9 +111,9 @@ public class InlineTranslationTests : TranslationPipelineTestBase
         var again = await Ask(920006, "кошка принесла котят");
 
         first.Results.Should().BeEmpty();
-        first.Button!.Text.Should().BeOneOf(InlineTranslation.PendingButtonTexts,
+        first.Button!.Text.Should().Be(InlineTranslation.PendingButtonText,
             because: "Telegram drops an answer after a few seconds, so the person is told the lookup goes on");
-        again.Button!.Text.Should().BeOneOf(InlineTranslation.PendingButtonTexts);
+        again.Button!.Text.Should().Be(InlineTranslation.PendingButtonText);
         Models.ClassifierModel.Calls.Should().Be(1, because: "the second query waits for the lookup already running");
     }
 
