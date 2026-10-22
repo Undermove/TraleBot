@@ -1,10 +1,6 @@
 using System.Text.RegularExpressions;
 using Application.Common;
-using Application.Common.Interfaces.TranslationService;
-using Application.Translation;
-using Application.Translation.Languages;
 using Application.Translation.Pipeline;
-using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,26 +8,23 @@ using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.InlineQueryResults;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.Inline;
 
 /// <summary>
-/// The bot in inline mode: «@bot спасибо» in any chat offers a card «მადლობა [мадлоба] — спасибо» to
-/// send there. Every sent card carries «via @bot» and a button into the bot — the people in that chat
-/// see the bot, which is the point. A whole message is translated, not just a word — people write to
-/// a landlord or a taxi driver — and Georgian typed in Latin letters («gamarjoba») is read too, the way
-/// Georgians often answer. Nothing is saved to anybody's dictionary.
+/// The bot in inline mode, for someone who writes with Georgians: «@bot xval movalt 5 saatze» in any
+/// chat shows what the message says, «@bot буду в пять» gives the answer ready to send — in Georgian
+/// letters or in Latin ones, the way Georgians chat. Each option is one plain text: what is sent is
+/// exactly what the person would have typed. Nothing is saved to anybody's dictionary.
 /// </summary>
 public partial class InlineTranslation(
     IServiceScopeFactory scopes,
     IMemoryCache memory,
     ITraleDbContext db,
     ITelegramBotClient client,
-    BotConfiguration config,
     ILogger<InlineTranslation> logger)
 {
-    /// <summary>The ?start= of every link out of an inline card: users who came this way are counted by it.</summary>
+    /// <summary>The ?start= of the button above the options: users who came this way are counted by it.</summary>
     public const string StartParameter = "inline";
 
     public const string ButtonText = "Учить грузинский в TraleBot";
@@ -39,40 +32,29 @@ public partial class InlineTranslation(
     /// <summary>Above the (empty) list while a lookup is still running: what to do to see its answer.</summary>
     public const string PendingButtonText = "Перевожу… добавь пробел через пару секунд";
 
+    public const string RussianTitle = "Перевод";
+    public const string GeorgianTitle = "По-грузински";
+    public const string GeorgianLettersTitle = "Грузинскими буквами";
+    public const string LatinTitle = "Латиницей, как пишут грузины";
+
     /// <summary>
     /// Telegram drops an answer to an inline query after a few seconds («query is too old»). A lookup
     /// that takes longer is not stopped: it finishes into <see cref="Done"/>, and the same text asked
-    /// again is answered from there at once. One phrase model call takes about 2 s.
+    /// again is answered from there at once. One model call takes about 2 s.
     /// </summary>
     private static readonly TimeSpan AnswerWithin = TimeSpan.FromSeconds(4);
 
-    /// <summary>
-    /// How long a looked-up text is kept here, so that typing on and back is not a model call each time.
-    /// </summary>
+    /// <summary>How long a looked-up text is kept here, so that typing on and back is not a model call each time.</summary>
     private static readonly TimeSpan Done = TimeSpan.FromHours(1);
 
     /// <summary>A lookup left running has this long to finish; model steps have their own, shorter timeouts.</summary>
-    private static readonly TimeSpan LookupAtMost = TimeSpan.FromMinutes(3);
-
-    /// <summary>
-    /// What an empty «@bot » offers: the phrases a newcomer needs first. The Georgian is checked by hand;
-    /// the transcription is computed like everywhere else.
-    /// </summary>
-    public static readonly (string Georgian, string Russian)[] Starters =
-    [
-        ("მადლობა", "спасибо"),
-        ("გამარჯობა", "здравствуйте"),
-        ("გთხოვთ", "пожалуйста (прошу)"),
-        ("ბოდიში", "извините"),
-        ("რა ღირს?", "сколько стоит?"),
-        ("ნახვამდის", "до свидания")
-    ];
+    private static readonly TimeSpan LookupAtMost = TimeSpan.FromMinutes(1);
 
     private const int MaxLength = 250;
 
     /// <summary>
     /// How long Telegram may reuse an answer for the same text, for everybody — a translation does not
-    /// depend on who asks. Short for "nothing found", so that a fixed translator is seen soon.
+    /// depend on who asks. Next to nothing for "no options", so that a lookup still running is seen soon.
     /// </summary>
     private const int CacheSeconds = 3600;
     private const int NothingCacheSeconds = 1;
@@ -93,15 +75,15 @@ public partial class InlineTranslation(
         var pending = false;
         try
         {
-            (results, pending) = await CardsFor(text, query.From.Id, ct);
+            (results, pending) = await OptionsFor(text, query.From.Id, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
         {
-            // Inline has no chat to say «something broke» in: the person sees no card and the button.
+            // Inline has no chat to say «something broke» in: the person sees no options and the button.
             logger.LogWarning(e, "Inline translation of {Text} failed", text);
         }
 
-        logger.LogInformation("Inline query {Text}: {Count} card(s){Pending}", text, results.Length, pending ? ", still looking up" : "");
+        logger.LogInformation("Inline query {Text}: {Count} option(s){Pending}", text, results.Length, pending ? ", still looking up" : "");
         try
         {
             await client.AnswerInlineQueryAsync(
@@ -120,31 +102,23 @@ public partial class InlineTranslation(
         }
     }
 
-    /// <summary>A card was sent to a chat (Telegram tells it when inline feedback is on in BotFather).</summary>
+    /// <summary>An option was sent to a chat (Telegram tells it when inline feedback is on in BotFather).</summary>
     public void Chosen(ChosenInlineResult chosen) =>
-        logger.LogInformation("Inline card sent: {Text}", chosen.Query.Trim());
+        logger.LogInformation("Inline option {Option} sent for {Text}", chosen.ResultId, chosen.Query.Trim());
 
-    /// <returns>The cards, and whether a lookup for the text is still running.</returns>
-    private async Task<(InlineQueryResult[] Cards, bool Pending)> CardsFor(string text, long telegramId, CancellationToken ct)
+    /// <returns>The options, and whether a lookup for the text is still running.</returns>
+    private async Task<(InlineQueryResult[] Options, bool Pending)> OptionsFor(string text, long telegramId, CancellationToken ct)
     {
-        if (text.Length == 0)
-        {
-            return (Starters.Select((p, i) => Card($"s{i}", p.Georgian, p.Russian)).ToArray<InlineQueryResult>(), false);
-        }
-
         var hasGeorgian = GeorgianLetter().IsMatch(text);
         var hasCyrillic = CyrillicLetter().IsMatch(text);
         // Latin may be Georgian typed the way Georgians chat; only the model can tell it from English.
         var hasLatin = LatinLetter().IsMatch(text);
-        // A text in one script only is kept as typed on its side of the card. A mixed one («sad xar и
-        // kargad, shen?») is the model's to read: both sides of the card are its.
-        var isRussian = hasCyrillic && !hasGeorgian && !hasLatin;
         if (text.Length < 2 || text.Length > MaxLength || !(hasGeorgian || hasCyrillic || hasLatin))
         {
             return ([], false);
         }
 
-        var lookup = await LookupOnce(text, isRussian, telegramId, ct);
+        var lookup = await LookupOnce(text, telegramId, ct);
         if (await Task.WhenAny(lookup, Task.Delay(AnswerWithin, ct)) != lookup)
         {
             logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s, left to finish",
@@ -152,12 +126,33 @@ public partial class InlineTranslation(
             return ([], true);
         }
 
-        if (await lookup is not { Georgian: { } georgian, Russian: { } russian })
+        if (await lookup is not { } t)
         {
             return ([], false);
         }
 
-        return ([Card("t", georgian, russian)], false);
+        // Only what differs from what was typed: a Russian text needs no Russian option, and so on.
+        // A text in one script only is that script; a mixed one gets every option.
+        var russianOnly = hasCyrillic && !hasGeorgian && !hasLatin;
+        var georgianOnly = hasGeorgian && !hasCyrillic && !hasLatin;
+        var latinOnly = hasLatin && !hasCyrillic && !hasGeorgian;
+        var options = new List<InlineQueryResult>();
+        if (!russianOnly && t.Russian != null)
+        {
+            options.Add(Option("ru", RussianTitle, t.Russian));
+        }
+
+        if (!georgianOnly && t.Georgian != null)
+        {
+            options.Add(Option("ka", russianOnly ? GeorgianTitle : GeorgianLettersTitle, t.Georgian));
+        }
+
+        if (!latinOnly && t.Latin != null)
+        {
+            options.Add(Option("lat", LatinTitle, t.Latin));
+        }
+
+        return (options.ToArray(), false);
     }
 
     /// <summary>
@@ -165,7 +160,7 @@ public partial class InlineTranslation(
     /// lookup, and a finished one is answered from memory for <see cref="Done"/>. A failed lookup is
     /// forgotten at once, so that the next query tries again.
     /// </summary>
-    private async Task<Task<PhraseTranslation?>> LookupOnce(string text, bool isRussian, long telegramId, CancellationToken ct)
+    private async Task<Task<PhraseTranslation?>> LookupOnce(string text, long telegramId, CancellationToken ct)
     {
         var key = "inline:" + text.ToLowerInvariant();
         if (memory.TryGetValue(key, out Task<PhraseTranslation?>? known) && known != null)
@@ -174,11 +169,11 @@ public partial class InlineTranslation(
         }
 
         var userId = await db.Users.Where(u => u.TelegramId == telegramId).Select(u => (Guid?)u.Id).FirstOrDefaultAsync(ct);
-        var lookup = Lookup(text, isRussian, userId);
+        var lookup = Lookup(text, userId);
         memory.Set(key, lookup, Done);
-        _ = lookup.ContinueWith(t =>
+        _ = lookup.ContinueWith(l =>
         {
-            if (t.Result is not { Georgian: not null, Russian: not null })
+            if (l.Result == null)
             {
                 memory.Remove(key);
             }
@@ -188,10 +183,10 @@ public partial class InlineTranslation(
 
     /// <summary>
     /// The lookup in a scope of its own, not tied to the webhook request: when the answer is late it
-    /// still finishes. A message is translated whole by one fast model (<see cref="IPhraseTranslator"/>),
-    /// with the content check running alongside; without that model, by the bot's translator.
+    /// still finishes. One fast model reads the message whole (<see cref="IPhraseTranslator"/>), with
+    /// the content check running alongside.
     /// </summary>
-    private Task<PhraseTranslation?> Lookup(string text, bool isRussian, Guid? userId) => Task.Run<PhraseTranslation?>(async () =>
+    private Task<PhraseTranslation?> Lookup(string text, Guid? userId) => Task.Run<PhraseTranslation?>(async () =>
     {
         using var scope = scopes.CreateScope();
         var services = scope.ServiceProvider;
@@ -201,22 +196,7 @@ public partial class InlineTranslation(
         try
         {
             var phrases = services.GetRequiredService<IPhraseTranslator>();
-            if (!phrases.IsAvailable)
-            {
-                // The bot's translator: Russian and Georgian letters only, the other side in Definition.
-                if (isRussian || IsGeorgianOnly(text))
-                {
-                    if (await services.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, atMost.Token) is
-                        TranslationResult.Success { Definition: var definition } && !string.IsNullOrWhiteSpace(definition))
-                    {
-                        return isRussian ? new PhraseTranslation(definition.Trim(), text) : new PhraseTranslation(text, definition.Trim());
-                    }
-                }
-
-                return null;
-            }
-
-            if (!await services.GetRequiredService<ModelBudget>().TrySpendAsync(ModelSpend.Request, atMost.Token))
+            if (!phrases.IsAvailable || !await services.GetRequiredService<ModelBudget>().TrySpendAsync(ModelSpend.Request, atMost.Token))
             {
                 return null;
             }
@@ -229,10 +209,7 @@ public partial class InlineTranslation(
                 return null;
             }
 
-            // What was typed is kept as typed: only the side the model writes comes from it.
-            return isRussian ? translation with { Russian = text }
-                : IsGeorgianOnly(text) ? translation with { Georgian = text }
-                : translation;
+            return translation is { Russian: null, Georgian: null, Latin: null } ? null : translation;
         }
         catch (Exception e)
         {
@@ -240,9 +217,6 @@ public partial class InlineTranslation(
             return null;
         }
     });
-
-    private static bool IsGeorgianOnly(string text) =>
-        GeorgianLetter().IsMatch(text) && !CyrillicLetter().IsMatch(text) && !LatinLetter().IsMatch(text);
 
     /// <summary>The content check; a check that cannot be made lets the text through, as in the bot.</summary>
     private async Task<string?> Refusal(IContentGuard guard, string text, CancellationToken ct)
@@ -263,17 +237,7 @@ public partial class InlineTranslation(
         }
     }
 
-    private InlineQueryResultArticle Card(string id, string georgian, string russian)
-    {
-        var transcription = GeorgianTranscriptionExtension.GetTranscription(georgian);
-        return new InlineQueryResultArticle(
-            id: id,
-            title: $"{georgian} [{transcription}]",
-            inputMessageContent: new InputTextMessageContent($"{georgian} [{transcription}] — {russian}"))
-        {
-            Description = russian,
-            ReplyMarkup = new InlineKeyboardMarkup(
-                InlineKeyboardButton.WithUrl(ButtonText, $"https://t.me/{config.BotName}?start={StartParameter}"))
-        };
-    }
+    /// <summary>One option: the list shows what it is and the text; the chat gets the text alone.</summary>
+    private static InlineQueryResultArticle Option(string id, string title, string text) =>
+        new(id, title, new InputTextMessageContent(text)) { Description = text };
 }

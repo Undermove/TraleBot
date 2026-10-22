@@ -143,15 +143,16 @@ public interface IContentGuard
     Task<ContentVerdict> CheckAsync(string text, CancellationToken ct);
 }
 
-/// <param name="Georgian">The message in Georgian script: the translation of a Russian text, the text itself
-/// written in Georgian letters when it came in Latin ones; null when the text is not Russian or Georgian.</param>
+/// <param name="Georgian">The message in Georgian letters; null when the text is not Russian or Georgian.</param>
+/// <param name="Latin">The same Georgian in Latin letters, the way Georgians type in chats («xval movalt»).</param>
 /// <param name="Russian">The message in Russian.</param>
-public record PhraseTranslation(string? Georgian, string? Russian, ModelUsage? Usage = null);
+public record PhraseTranslation(string? Georgian, string? Latin, string? Russian, ModelUsage? Usage = null);
 
 /// <summary>
-/// One fast model call that translates a whole message between Russian and Georgian — for inline mode,
-/// where Telegram waits a few seconds only. Georgian may come in Latin letters, the way Georgians often
-/// type («gamarjoba, rogor xar?»). Not a dictionary: nothing is checked against a source and nothing is stored.
+/// One fast model call that reads a whole chat message — Russian, Georgian, or Georgian typed in Latin
+/// letters the way Georgians often do — and gives it in Russian, in Georgian letters and in Latin ones.
+/// For inline mode, where Telegram waits a few seconds only. Not a dictionary: nothing is checked
+/// against a source and nothing is stored.
 /// </summary>
 public interface IPhraseTranslator
 {
