@@ -132,11 +132,14 @@ public partial class InlineTranslation(
             return (Starters.Select((p, i) => Card($"s{i}", p.Georgian, p.Russian)).ToArray<InlineQueryResult>(), false);
         }
 
-        var isGeorgian = GeorgianLetter().IsMatch(text);
-        var isRussian = !isGeorgian && CyrillicLetter().IsMatch(text);
+        var hasGeorgian = GeorgianLetter().IsMatch(text);
+        var hasCyrillic = CyrillicLetter().IsMatch(text);
         // Latin may be Georgian typed the way Georgians chat; only the model can tell it from English.
-        var isLatin = !isGeorgian && !isRussian && LatinLetter().IsMatch(text);
-        if (text.Length < 2 || text.Length > MaxLength || !(isGeorgian || isRussian || isLatin))
+        var hasLatin = LatinLetter().IsMatch(text);
+        // A text in one script only is kept as typed on its side of the card. A mixed one («sad xar и
+        // kargad, shen?») is the model's to read: both sides of the card are its.
+        var isRussian = hasCyrillic && !hasGeorgian && !hasLatin;
+        if (text.Length < 2 || text.Length > MaxLength || !(hasGeorgian || hasCyrillic || hasLatin))
         {
             return ([], false);
         }
@@ -201,7 +204,7 @@ public partial class InlineTranslation(
             if (!phrases.IsAvailable)
             {
                 // The bot's translator: Russian and Georgian letters only, the other side in Definition.
-                if (isRussian || GeorgianLetter().IsMatch(text))
+                if (isRussian || IsGeorgianOnly(text))
                 {
                     if (await services.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, atMost.Token) is
                         TranslationResult.Success { Definition: var definition } && !string.IsNullOrWhiteSpace(definition))
@@ -228,7 +231,7 @@ public partial class InlineTranslation(
 
             // What was typed is kept as typed: only the side the model writes comes from it.
             return isRussian ? translation with { Russian = text }
-                : GeorgianLetter().IsMatch(text) ? translation with { Georgian = text }
+                : IsGeorgianOnly(text) ? translation with { Georgian = text }
                 : translation;
         }
         catch (Exception e)
@@ -237,6 +240,9 @@ public partial class InlineTranslation(
             return null;
         }
     });
+
+    private static bool IsGeorgianOnly(string text) =>
+        GeorgianLetter().IsMatch(text) && !CyrillicLetter().IsMatch(text) && !LatinLetter().IsMatch(text);
 
     /// <summary>The content check; a check that cannot be made lets the text through, as in the bot.</summary>
     private async Task<string?> Refusal(IContentGuard guard, string text, CancellationToken ct)

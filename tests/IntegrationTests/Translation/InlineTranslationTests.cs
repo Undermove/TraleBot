@@ -90,6 +90,18 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     }
 
     [Test]
+    public async Task A_mixed_text_gets_both_sides_from_the_model_not_the_text_as_typed()
+    {
+        Models.ClassifierModel.AnswerWith("""{"georgian":"სად ხარ და კარგად, შენ?","russian":"Где ты? И хорошо, а ты?"}""");
+
+        var answer = await Ask(920009, "sad xar и kargad, shen?");
+
+        var card = (InlineQueryResultArticle)answer.Results.Should().ContainSingle().Which;
+        card.Description.Should().Be("Где ты? И хорошо, а ты?",
+            because: "a Russian word in Latin Georgian does not make the text Russian");
+    }
+
+    [Test]
     public async Task English_gets_no_card()
     {
         Models.ClassifierModel.AnswerWith("""{"georgian":null,"russian":null}""");

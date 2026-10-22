@@ -26,6 +26,9 @@ public class MafPhraseTranslator(
         - Georgian typed in Latin letters, the way Georgians often chat («gamarjoba, rogor xar?», «sad xar»,
           «ra ghirs», with x/kh for ხ, sh for შ, ch for ჩ/ჭ, ts for ც/წ, gh for ღ, q for ყ, k' or k for კ/ქ):
           write the same text in correct Georgian script and give natural Russian;
+        - a mix of these (e.g. Latin Georgian with a Russian word in between): translate it as one message —
+          the whole of it in Georgian (Russian words translated, no Cyrillic left) and the whole of it in
+          Russian (no Georgian or Latin left);
         - anything else (English, other languages, gibberish): no translation.
         Keep the meaning and the tone; do not add or explain anything.
         Answer with JSON:
