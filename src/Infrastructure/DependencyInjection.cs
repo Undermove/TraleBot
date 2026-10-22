@@ -95,6 +95,7 @@ public static class DependencyInjection
         services.AddSingleton<IGeorgianQuestionsLoaderFactory, GeorgianQuestionsLoaderFactory>();
 
         services.AddScoped<IDialogProcessor, TelegramDialogProcessor>();
+        services.AddScoped<Infrastructure.Telegram.Inline.InlineTranslation>();
         services.AddScoped<IBotCommand, StartCommand>();
         services.AddScoped<IBotCommand, StopCommand>();
         // Before everything that reads the text as a word or a quiz answer: a button press is never one.

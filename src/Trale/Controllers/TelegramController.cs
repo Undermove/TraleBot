@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Application.Common.Interfaces;
 using Infrastructure.Telegram;
+using Infrastructure.Telegram.Inline;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot.Types;
@@ -16,7 +17,8 @@ namespace Trale.Controllers;
 public class TelegramController(
     BotConfiguration configuration,
     ILoggerFactory logger,
-    IDialogProcessor dialogProcessor)
+    IDialogProcessor dialogProcessor,
+    InlineTranslation inlineTranslation)
     : Controller
 {
     private readonly ILogger _logger = logger.CreateLogger(typeof(TelegramController));
@@ -27,6 +29,19 @@ public class TelegramController(
         if (IsWebhookToken(token))
         {
             _logger.LogInformation("Request type: {RequestType}", request.Type);
+
+            // Inline mode has no chat and no message: it is answered by itself, not by the bot commands.
+            if (request.InlineQuery != null)
+            {
+                return inlineTranslation.AnswerAsync(request.InlineQuery, cancellationToken);
+            }
+
+            if (request.ChosenInlineResult != null)
+            {
+                inlineTranslation.Chosen(request.ChosenInlineResult);
+                return Task.CompletedTask;
+            }
+
             return dialogProcessor.ProcessCommand(request, cancellationToken);
         }
         

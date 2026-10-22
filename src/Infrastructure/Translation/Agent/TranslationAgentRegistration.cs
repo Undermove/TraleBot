@@ -24,6 +24,7 @@ public static class TranslationAgentRegistration
         services.AddScoped<IVerbGenerator, MafVerbGenerator>();
         services.AddScoped<IVerbReviewer, MafVerbReviewer>();
         services.AddScoped<IWordTranslator, MafWordTranslator>();
+        services.AddScoped<IPhraseTranslator, MafPhraseTranslator>();
         services.AddHttpClient(OpenAiDecisionsContentGuard.HttpClientName);
         services.AddScoped<IContentGuard, OpenAiDecisionsContentGuard>();
 
