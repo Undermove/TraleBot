@@ -144,13 +144,12 @@ public interface IContentGuard
 }
 
 /// <param name="Georgian">The message in Georgian letters; null when the text is not Russian or Georgian.</param>
-/// <param name="Latin">The same Georgian in Latin letters, the way Georgians type in chats («xval movalt»).</param>
 /// <param name="Russian">The message in Russian.</param>
-public record PhraseTranslation(string? Georgian, string? Latin, string? Russian, ModelUsage? Usage = null);
+public record PhraseTranslation(string? Georgian, string? Russian, ModelUsage? Usage = null);
 
 /// <summary>
 /// One fast model call that reads a whole chat message — Russian, Georgian, or Georgian typed in Latin
-/// letters the way Georgians often do — and gives it in Russian, in Georgian letters and in Latin ones.
+/// letters the way Georgians often do — and gives it in Russian and in Georgian letters.
 /// For inline mode, where Telegram waits a few seconds only. Not a dictionary: nothing is checked
 /// against a source and nothing is stored.
 /// </summary>

@@ -13,9 +13,9 @@ namespace Infrastructure.Telegram.Inline;
 
 /// <summary>
 /// The bot in inline mode, for someone who writes with Georgians: «@bot xval movalt 5 saatze» in any
-/// chat shows what the message says, «@bot буду в пять» gives the answer ready to send — in Georgian
-/// letters or in Latin ones, the way Georgians chat. Each option is one plain text: what is sent is
-/// exactly what the person would have typed. Nothing is saved to anybody's dictionary.
+/// chat shows what the message says, «@bot буду в пять» gives the answer in Georgian ready to send.
+/// Georgian typed in Latin letters, the way Georgians chat, is read too. Each option is one plain text:
+/// what is sent is exactly what the person would have typed. Nothing is saved to anybody's dictionary.
 /// </summary>
 public partial class InlineTranslation(
     IServiceScopeFactory scopes,
@@ -29,13 +29,23 @@ public partial class InlineTranslation(
 
     public const string ButtonText = "Учить грузинский в TraleBot";
 
-    /// <summary>Above the (empty) list while a lookup is still running: what to do to see its answer.</summary>
-    public const string PendingButtonText = "Перевожу… добавь пробел через пару секунд";
+    /// <summary>
+    /// Above the (empty) list while a lookup is still running, one at random: Bombora is busy, and a
+    /// space added in a moment shows the answer. Telegram lets nothing move there — a new line each
+    /// time is what there is.
+    /// </summary>
+    public static readonly string[] PendingButtonTexts =
+    [
+        "Бомбора листает словарь… добавь пробел",
+        "Бомбора спрашивает у бабушки… добавь пробел",
+        "Бомбора грызёт грузинские буквы… добавь пробел",
+        "Бомбора бежит за переводом… добавь пробел",
+        "Бомбора советуется с хинкали… добавь пробел"
+    ];
 
     public const string RussianTitle = "Перевод";
     public const string GeorgianTitle = "По-грузински";
     public const string GeorgianLettersTitle = "Грузинскими буквами";
-    public const string LatinTitle = "Латиницей, как пишут грузины";
 
     /// <summary>
     /// Telegram drops an answer to an inline query after a few seconds («query is too old»). A lookup
@@ -91,7 +101,7 @@ public partial class InlineTranslation(
                 results,
                 cacheTime: results.Length > 0 ? CacheSeconds : NothingCacheSeconds,
                 isPersonal: false,
-                button: new InlineQueryResultsButton(pending ? PendingButtonText : ButtonText) { StartParameter = StartParameter },
+                button: new InlineQueryResultsButton(pending ? PendingButtonTexts[Random.Shared.Next(PendingButtonTexts.Length)] : ButtonText) { StartParameter = StartParameter },
                 cancellationToken: ct);
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -135,7 +145,6 @@ public partial class InlineTranslation(
         // A text in one script only is that script; a mixed one gets every option.
         var russianOnly = hasCyrillic && !hasGeorgian && !hasLatin;
         var georgianOnly = hasGeorgian && !hasCyrillic && !hasLatin;
-        var latinOnly = hasLatin && !hasCyrillic && !hasGeorgian;
         var options = new List<InlineQueryResult>();
         if (!russianOnly && t.Russian != null)
         {
@@ -145,11 +154,6 @@ public partial class InlineTranslation(
         if (!georgianOnly && t.Georgian != null)
         {
             options.Add(Option("ka", russianOnly ? GeorgianTitle : GeorgianLettersTitle, t.Georgian));
-        }
-
-        if (!latinOnly && t.Latin != null)
-        {
-            options.Add(Option("lat", LatinTitle, t.Latin));
         }
 
         return (options.ToArray(), false);
@@ -209,7 +213,7 @@ public partial class InlineTranslation(
                 return null;
             }
 
-            return translation is { Russian: null, Georgian: null, Latin: null } ? null : translation;
+            return translation is { Russian: null, Georgian: null } ? null : translation;
         }
         catch (Exception e)
         {

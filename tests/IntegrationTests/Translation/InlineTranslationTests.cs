@@ -10,8 +10,8 @@ namespace IntegrationTests.Translation;
 
 /// <summary>
 /// Inline mode for someone who writes with Georgians: «@bot …» in any chat. The options are plain texts
-/// ready to send — the Russian of a Georgian message, the Georgian of a Russian one in Georgian or Latin
-/// letters — and only those that differ from what was typed.
+/// ready to send — the Russian of a Georgian message (Georgian or Latin letters), the Georgian of a Russian one
+/// — and only those that differ from what was typed.
 /// </summary>
 public class InlineTranslationTests : TranslationPipelineTestBase
 {
@@ -41,15 +41,13 @@ public class InlineTranslationTests : TranslationPipelineTestBase
             .Select(a => (a.Title, ((InputTextMessageContent)a.InputMessageContent).MessageText));
 
     [Test]
-    public async Task A_russian_message_is_offered_in_georgian_and_in_latin_letters_ready_to_send()
+    public async Task A_russian_message_is_offered_in_georgian_ready_to_send()
     {
-        Models.ClassifierModel.AnswerWith("""{"georgian":"ხვალ ხუთზე მოვალ","latin":"xval xutze moval","russian":"Буду завтра в пять"}""");
+        Models.ClassifierModel.AnswerWith("""{"georgian":"ხვალ ხუთზე მოვალ","russian":"Буду завтра в пять"}""");
 
         var answer = await Ask(920001, "Буду завтра в пять");
 
-        Options(answer).Should().Equal(
-            (InlineTranslation.GeorgianTitle, "ხვალ ხუთზე მოვალ"),
-            (InlineTranslation.LatinTitle, "xval xutze moval"));
+        Options(answer).Should().Equal((InlineTranslation.GeorgianTitle, "ხვალ ხუთზე მოვალ"));
         answer.Results.Cast<InlineQueryResultArticle>().Should().OnlyContain(a => a.ReplyMarkup == null,
             because: "what goes to the chat is the text alone, as if the person had typed it");
         answer.Button!.StartParameter.Should().Be(InlineTranslation.StartParameter);
@@ -60,7 +58,7 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     [Test]
     public async Task Georgian_typed_in_latin_letters_gets_its_russian_and_its_georgian_letters()
     {
-        Models.ClassifierModel.AnswerWith("""{"georgian":"ხვალ მოვალთ 5 საათზე","latin":"xval movalt 5 saatze","russian":"Завтра придём в 5 часов"}""");
+        Models.ClassifierModel.AnswerWith("""{"georgian":"ხვალ მოვალთ 5 საათზე","russian":"Завтра придём в 5 часов"}""");
 
         var answer = await Ask(920002, "xval movalt 5 saatze");
 
@@ -70,20 +68,19 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task A_mixed_text_gets_every_option()
+    public async Task A_mixed_text_gets_both_options()
     {
-        Models.ClassifierModel.AnswerWith("""{"georgian":"სად ხარ და კარგად, შენ?","latin":"sad xar da kargad, shen?","russian":"Где ты? И хорошо, а ты?"}""");
+        Models.ClassifierModel.AnswerWith("""{"georgian":"სად ხარ და კარგად, შენ?","russian":"Где ты? И хорошо, а ты?"}""");
 
         var answer = await Ask(920003, "sad xar и kargad, shen?");
 
-        Options(answer).Select(o => o.Title).Should().Equal(
-            InlineTranslation.RussianTitle, InlineTranslation.GeorgianLettersTitle, InlineTranslation.LatinTitle);
+        Options(answer).Select(o => o.Title).Should().Equal(InlineTranslation.RussianTitle, InlineTranslation.GeorgianLettersTitle);
     }
 
     [Test]
     public async Task English_gets_no_options()
     {
-        Models.ClassifierModel.AnswerWith("""{"georgian":null,"latin":null,"russian":null}""");
+        Models.ClassifierModel.AnswerWith("""{"georgian":null,"russian":null}""");
 
         var answer = await Ask(920004, "where is the pharmacy");
 
@@ -107,16 +104,16 @@ public class InlineTranslationTests : TranslationPipelineTestBase
         {
             await Task.Delay(TimeSpan.FromSeconds(10));
             return new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant,
-                """{"georgian":null,"latin":null,"russian":null}""");
+                """{"georgian":null,"russian":null}""");
         };
 
         var first = await Ask(920006, "кошка принесла котят");
         var again = await Ask(920006, "кошка принесла котят");
 
         first.Results.Should().BeEmpty();
-        first.Button!.Text.Should().Be(InlineTranslation.PendingButtonText,
+        first.Button!.Text.Should().BeOneOf(InlineTranslation.PendingButtonTexts,
             because: "Telegram drops an answer after a few seconds, so the person is told the lookup goes on");
-        again.Button!.Text.Should().Be(InlineTranslation.PendingButtonText);
+        again.Button!.Text.Should().BeOneOf(InlineTranslation.PendingButtonTexts);
         Models.ClassifierModel.Calls.Should().Be(1, because: "the second query waits for the lookup already running");
     }
 

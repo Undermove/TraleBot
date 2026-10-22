@@ -34,12 +34,10 @@ public class MafPhraseTranslator(
         Answer with JSON (null in every field for anything that is not Russian or Georgian):
         - georgian: the message in Georgian letters (your translation for a Russian text, the text itself
           for Georgian);
-        - latin: that Georgian in Latin letters the way Georgians type in chats: x for ხ, sh, ch, ts, dz,
-          zh, gh for ღ, q for ყ, no apostrophes or diacritics («xval movalt 5 saatze»);
         - russian: the message in natural Russian (the text itself for Russian).
         """;
 
-    private sealed record Output(string? Georgian, string? Latin, string? Russian);
+    private sealed record Output(string? Georgian, string? Russian);
 
     public bool IsAvailable => clients.Classifier != null;
 
@@ -51,7 +49,7 @@ public class MafPhraseTranslator(
         var response = await ModelCalls.Run(() => agent.RunAsync<Output>(
             $"Text: {text}", options: ModelCalls.RunOptions(options.Value.ClassifierReasoning), cancellationToken: ct));
         return new PhraseTranslation(
-            Clean(response.Result?.Georgian), Clean(response.Result?.Latin), Clean(response.Result?.Russian), ModelCalls.Usage(response));
+            Clean(response.Result?.Georgian), Clean(response.Result?.Russian), ModelCalls.Usage(response));
     }
 
     private static string? Clean(string? text)
