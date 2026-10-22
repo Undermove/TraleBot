@@ -67,7 +67,7 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     [Test]
     public async Task A_whole_message_is_translated_by_one_model_call()
     {
-        Models.ClassifierModel.AnswerWith("""{"translation":"კატას ფანჯარაზე სძინავს"}""");
+        Models.ClassifierModel.AnswerWith("""{"georgian":"კატას ფანჯარაზე სძინავს","russian":"Кошка спит на окне"}""");
 
         var answer = await Ask(920006, "Кошка спит на окне");
 
@@ -78,11 +78,33 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     }
 
     [Test]
-    public async Task Text_that_is_neither_russian_nor_georgian_gets_no_cards_and_no_lookup()
+    public async Task Georgian_typed_in_latin_letters_is_shown_in_georgian_script_with_the_russian()
+    {
+        Models.ClassifierModel.AnswerWith("""{"georgian":"გამარჯობა, როგორ ხარ?","russian":"Привет, как дела?"}""");
+
+        var answer = await Ask(920007, "gamarjoba, rogor xar?");
+
+        var card = (InlineQueryResultArticle)answer.Results.Should().ContainSingle().Which;
+        ((InputTextMessageContent)card.InputMessageContent).MessageText.Should()
+            .Be($"გამარჯობა, როგორ ხარ? [{Cyrillic("გამარჯობა, როგორ ხარ?")}] — Привет, как дела?");
+    }
+
+    [Test]
+    public async Task English_gets_no_card()
+    {
+        Models.ClassifierModel.AnswerWith("""{"georgian":null,"russian":null}""");
+
+        var answer = await Ask(920008, "where is the pharmacy");
+
+        answer.Results.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task Text_without_letters_gets_no_cards_and_no_lookup()
     {
         await SeedCatalogWithout();
 
-        var answer = await Ask(920002, "hello");
+        var answer = await Ask(920002, "12345");
 
         answer.Results.Should().BeEmpty();
         answer.Button!.Text.Should().Be(InlineTranslation.ButtonText);

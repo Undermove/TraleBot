@@ -20,7 +20,8 @@ namespace Infrastructure.Telegram.Inline;
 /// The bot in inline mode: «@bot спасибо» in any chat offers a card «მადლობა [мадлоба] — спасибо» to
 /// send there. Every sent card carries «via @bot» and a button into the bot — the people in that chat
 /// see the bot, which is the point. A whole message is translated, not just a word — people write to
-/// a landlord or a taxi driver. Nothing is saved to anybody's dictionary.
+/// a landlord or a taxi driver — and Georgian typed in Latin letters («gamarjoba») is read too, the way
+/// Georgians often answer. Nothing is saved to anybody's dictionary.
 /// </summary>
 public partial class InlineTranslation(
     IServiceScopeFactory scopes,
@@ -82,6 +83,9 @@ public partial class InlineTranslation(
     [GeneratedRegex(@"[а-яё]", RegexOptions.IgnoreCase)]
     private static partial Regex CyrillicLetter();
 
+    [GeneratedRegex(@"[a-z]", RegexOptions.IgnoreCase)]
+    private static partial Regex LatinLetter();
+
     public async Task AnswerAsync(InlineQuery query, CancellationToken ct)
     {
         var text = query.Query.Trim();
@@ -129,12 +133,15 @@ public partial class InlineTranslation(
         }
 
         var isGeorgian = GeorgianLetter().IsMatch(text);
-        if (text.Length < 2 || text.Length > MaxLength || !(isGeorgian || CyrillicLetter().IsMatch(text)))
+        var isRussian = !isGeorgian && CyrillicLetter().IsMatch(text);
+        // Latin may be Georgian typed the way Georgians chat; only the model can tell it from English.
+        var isLatin = !isGeorgian && !isRussian && LatinLetter().IsMatch(text);
+        if (text.Length < 2 || text.Length > MaxLength || !(isGeorgian || isRussian || isLatin))
         {
             return ([], false);
         }
 
-        var lookup = await LookupOnce(text, !isGeorgian, telegramId, ct);
+        var lookup = await LookupOnce(text, isRussian, telegramId, ct);
         if (await Task.WhenAny(lookup, Task.Delay(AnswerWithin, ct)) != lookup)
         {
             logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s, left to finish",
@@ -142,13 +149,11 @@ public partial class InlineTranslation(
             return ([], true);
         }
 
-        if (await lookup is not { } translation)
+        if (await lookup is not { Georgian: { } georgian, Russian: { } russian })
         {
             return ([], false);
         }
 
-        var georgian = isGeorgian ? text : translation;
-        var russian = isGeorgian ? translation : text;
         return ([Card("t", georgian, russian)], false);
     }
 
@@ -157,10 +162,10 @@ public partial class InlineTranslation(
     /// lookup, and a finished one is answered from memory for <see cref="Done"/>. A failed lookup is
     /// forgotten at once, so that the next query tries again.
     /// </summary>
-    private async Task<Task<string?>> LookupOnce(string text, bool isRussian, long telegramId, CancellationToken ct)
+    private async Task<Task<PhraseTranslation?>> LookupOnce(string text, bool isRussian, long telegramId, CancellationToken ct)
     {
         var key = "inline:" + text.ToLowerInvariant();
-        if (memory.TryGetValue(key, out Task<string?>? known) && known != null)
+        if (memory.TryGetValue(key, out Task<PhraseTranslation?>? known) && known != null)
         {
             return known;
         }
@@ -170,7 +175,7 @@ public partial class InlineTranslation(
         memory.Set(key, lookup, Done);
         _ = lookup.ContinueWith(t =>
         {
-            if (t.Result == null)
+            if (t.Result is not { Georgian: not null, Russian: not null })
             {
                 memory.Remove(key);
             }
@@ -183,7 +188,7 @@ public partial class InlineTranslation(
     /// still finishes. A message is translated whole by one fast model (<see cref="IPhraseTranslator"/>),
     /// with the content check running alongside; without that model, by the bot's translator.
     /// </summary>
-    private Task<string?> Lookup(string text, bool isRussian, Guid? userId) => Task.Run(async () =>
+    private Task<PhraseTranslation?> Lookup(string text, bool isRussian, Guid? userId) => Task.Run<PhraseTranslation?>(async () =>
     {
         using var scope = scopes.CreateScope();
         var services = scope.ServiceProvider;
@@ -195,10 +200,17 @@ public partial class InlineTranslation(
             var phrases = services.GetRequiredService<IPhraseTranslator>();
             if (!phrases.IsAvailable)
             {
-                return await services.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, atMost.Token) is
-                    TranslationResult.Success { Definition: var definition } && !string.IsNullOrWhiteSpace(definition)
-                    ? definition.Trim()
-                    : null;
+                // The bot's translator: Russian and Georgian letters only, the other side in Definition.
+                if (isRussian || GeorgianLetter().IsMatch(text))
+                {
+                    if (await services.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, atMost.Token) is
+                        TranslationResult.Success { Definition: var definition } && !string.IsNullOrWhiteSpace(definition))
+                    {
+                        return isRussian ? new PhraseTranslation(definition.Trim(), text) : new PhraseTranslation(text, definition.Trim());
+                    }
+                }
+
+                return null;
             }
 
             if (!await services.GetRequiredService<ModelBudget>().TrySpendAsync(ModelSpend.Request, atMost.Token))
@@ -207,14 +219,17 @@ public partial class InlineTranslation(
             }
 
             var check = Refusal(services.GetRequiredService<IContentGuard>(), text, atMost.Token);
-            var translation = await phrases.TranslateAsync(text, isRussian, atMost.Token);
+            var translation = await phrases.TranslateAsync(text, atMost.Token);
             if (await check is { } refusal)
             {
                 logger.LogInformation("Inline translation of {Text} refused: {Refusal}", text, refusal);
                 return null;
             }
 
-            return translation.Translation;
+            // What was typed is kept as typed: only the side the model writes comes from it.
+            return isRussian ? translation with { Russian = text }
+                : GeorgianLetter().IsMatch(text) ? translation with { Georgian = text }
+                : translation;
         }
         catch (Exception e)
         {
