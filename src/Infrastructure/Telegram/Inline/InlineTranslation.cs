@@ -19,7 +19,8 @@ namespace Infrastructure.Telegram.Inline;
 /// <summary>
 /// The bot in inline mode: «@bot спасибо» in any chat offers a card «მადლობა [мадлоба] — спасибо» to
 /// send there. Every sent card carries «via @bot» and a button into the bot — the people in that chat
-/// see the bot, which is the point. Nothing is saved to anybody's dictionary.
+/// see the bot, which is the point. A whole message is translated, not just a word — people write to
+/// a landlord or a taxi driver. Nothing is saved to anybody's dictionary.
 /// </summary>
 public partial class InlineTranslation(
     IServiceScopeFactory scopes,
@@ -40,13 +41,12 @@ public partial class InlineTranslation(
     /// <summary>
     /// Telegram drops an answer to an inline query after a few seconds («query is too old»). A lookup
     /// that takes longer is not stopped: it finishes into <see cref="Done"/>, and the same text asked
-    /// again is answered from there at once. A phrase goes through three models and takes about 10 s.
+    /// again is answered from there at once. One phrase model call takes about 2 s.
     /// </summary>
     private static readonly TimeSpan AnswerWithin = TimeSpan.FromSeconds(4);
 
     /// <summary>
-    /// How long a looked-up text is kept here. The pipeline's own cache keeps words, not the model's
-    /// unconfirmed phrases — those would otherwise be looked up anew on every query.
+    /// How long a looked-up text is kept here, so that typing on and back is not a model call each time.
     /// </summary>
     private static readonly TimeSpan Done = TimeSpan.FromHours(1);
 
@@ -67,7 +67,7 @@ public partial class InlineTranslation(
         ("ნახვამდის", "до свидания")
     ];
 
-    private const int MaxLength = 100;
+    private const int MaxLength = 250;
 
     /// <summary>
     /// How long Telegram may reuse an answer for the same text, for everybody — a translation does not
@@ -134,7 +134,7 @@ public partial class InlineTranslation(
             return ([], false);
         }
 
-        var lookup = await LookupOnce(text, telegramId, ct);
+        var lookup = await LookupOnce(text, !isGeorgian, telegramId, ct);
         if (await Task.WhenAny(lookup, Task.Delay(AnswerWithin, ct)) != lookup)
         {
             logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s, left to finish",
@@ -142,13 +142,13 @@ public partial class InlineTranslation(
             return ([], true);
         }
 
-        if (await lookup is not TranslationResult.Success success || string.IsNullOrWhiteSpace(success.Definition))
+        if (await lookup is not { } translation)
         {
             return ([], false);
         }
 
-        var georgian = isGeorgian ? text : success.Definition.Trim();
-        var russian = isGeorgian ? success.Definition.Trim() : text;
+        var georgian = isGeorgian ? text : translation;
+        var russian = isGeorgian ? translation : text;
         return ([Card("t", georgian, russian)], false);
     }
 
@@ -157,20 +157,20 @@ public partial class InlineTranslation(
     /// lookup, and a finished one is answered from memory for <see cref="Done"/>. A failed lookup is
     /// forgotten at once, so that the next query tries again.
     /// </summary>
-    private async Task<Task<TranslationResult>> LookupOnce(string text, long telegramId, CancellationToken ct)
+    private async Task<Task<string?>> LookupOnce(string text, bool isRussian, long telegramId, CancellationToken ct)
     {
         var key = "inline:" + text.ToLowerInvariant();
-        if (memory.TryGetValue(key, out Task<TranslationResult>? known) && known != null)
+        if (memory.TryGetValue(key, out Task<string?>? known) && known != null)
         {
             return known;
         }
 
         var userId = await db.Users.Where(u => u.TelegramId == telegramId).Select(u => (Guid?)u.Id).FirstOrDefaultAsync(ct);
-        var lookup = Lookup(text, userId);
+        var lookup = Lookup(text, isRussian, userId);
         memory.Set(key, lookup, Done);
         _ = lookup.ContinueWith(t =>
         {
-            if (t.Result is not TranslationResult.Success)
+            if (t.Result == null)
             {
                 memory.Remove(key);
             }
@@ -178,23 +178,69 @@ public partial class InlineTranslation(
         return lookup;
     }
 
-    /// <summary>The lookup in a scope of its own, not tied to the webhook request: when the answer is late it still finishes.</summary>
-    private Task<TranslationResult> Lookup(string text, Guid? userId) => Task.Run(async () =>
+    /// <summary>
+    /// The lookup in a scope of its own, not tied to the webhook request: when the answer is late it
+    /// still finishes. A message is translated whole by one fast model (<see cref="IPhraseTranslator"/>),
+    /// with the content check running alongside; without that model, by the bot's translator.
+    /// </summary>
+    private Task<string?> Lookup(string text, bool isRussian, Guid? userId) => Task.Run(async () =>
     {
         using var scope = scopes.CreateScope();
+        var services = scope.ServiceProvider;
         // The per-user caps on model calls: a registered person spends their own; anybody else, the overall ones.
-        scope.ServiceProvider.GetRequiredService<TranslationRequester>().UserId = userId;
+        services.GetRequiredService<TranslationRequester>().UserId = userId;
         using var atMost = new CancellationTokenSource(LookupAtMost);
         try
         {
-            return await scope.ServiceProvider.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, atMost.Token);
+            var phrases = services.GetRequiredService<IPhraseTranslator>();
+            if (!phrases.IsAvailable)
+            {
+                return await services.GetRequiredService<ILanguageTranslator>().Translate(text, Language.Georgian, atMost.Token) is
+                    TranslationResult.Success { Definition: var definition } && !string.IsNullOrWhiteSpace(definition)
+                    ? definition.Trim()
+                    : null;
+            }
+
+            if (!await services.GetRequiredService<ModelBudget>().TrySpendAsync(ModelSpend.Request, atMost.Token))
+            {
+                return null;
+            }
+
+            var check = Refusal(services.GetRequiredService<IContentGuard>(), text, atMost.Token);
+            var translation = await phrases.TranslateAsync(text, isRussian, atMost.Token);
+            if (await check is { } refusal)
+            {
+                logger.LogInformation("Inline translation of {Text} refused: {Refusal}", text, refusal);
+                return null;
+            }
+
+            return translation.Translation;
         }
         catch (Exception e)
         {
             logger.LogWarning(e, "Inline translation of {Text} failed", text);
-            return new TranslationResult.Failure();
+            return null;
         }
     });
+
+    /// <summary>The content check; a check that cannot be made lets the text through, as in the bot.</summary>
+    private async Task<string?> Refusal(IContentGuard guard, string text, CancellationToken ct)
+    {
+        if (!guard.IsAvailable)
+        {
+            return null;
+        }
+
+        try
+        {
+            return (await guard.CheckAsync(text, ct)).Refusal;
+        }
+        catch (Exception e) when (!ct.IsCancellationRequested)
+        {
+            logger.LogWarning("Inline content check of {Text} failed ({Error}); the text goes through", text, e.GetType().Name);
+            return null;
+        }
+    }
 
     private InlineQueryResultArticle Card(string id, string georgian, string russian)
     {

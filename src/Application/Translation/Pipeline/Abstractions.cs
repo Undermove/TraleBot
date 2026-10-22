@@ -142,3 +142,18 @@ public interface IContentGuard
     /// <summary>Throws when the check could not be made; the caller then lets the text through.</summary>
     Task<ContentVerdict> CheckAsync(string text, CancellationToken ct);
 }
+
+/// <param name="Translation">The translation of the whole text, or null when the model has none.</param>
+public record PhraseTranslation(string? Translation, ModelUsage? Usage = null);
+
+/// <summary>
+/// One fast model call that translates a whole message between Russian and Georgian — for inline mode,
+/// where Telegram waits a few seconds only. Not a dictionary: nothing is checked against a source and
+/// nothing is stored.
+/// </summary>
+public interface IPhraseTranslator
+{
+    bool IsAvailable { get; }
+
+    Task<PhraseTranslation> TranslateAsync(string text, bool isRussian, CancellationToken ct);
+}

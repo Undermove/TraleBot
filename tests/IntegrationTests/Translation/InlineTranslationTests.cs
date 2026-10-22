@@ -65,6 +65,19 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     }
 
     [Test]
+    public async Task A_whole_message_is_translated_by_one_model_call()
+    {
+        Models.ClassifierModel.AnswerWith("""{"translation":"კატას ფანჯარაზე სძინავს"}""");
+
+        var answer = await Ask(920006, "Кошка спит на окне");
+
+        var card = (InlineQueryResultArticle)answer.Results.Should().ContainSingle().Which;
+        ((InputTextMessageContent)card.InputMessageContent).MessageText.Should()
+            .Be($"კატას ფანჯარაზე სძინავს [{Cyrillic("კატას ფანჯარაზე სძინავს")}] — Кошка спит на окне");
+        Models.ModelCalls.Should().Be(1, because: "Telegram waits a few seconds only: one fast call, not the dictionary pipeline");
+    }
+
+    [Test]
     public async Task Text_that_is_neither_russian_nor_georgian_gets_no_cards_and_no_lookup()
     {
         await SeedCatalogWithout();
