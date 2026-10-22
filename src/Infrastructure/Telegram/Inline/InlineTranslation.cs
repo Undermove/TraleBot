@@ -6,6 +6,7 @@ using Application.Translation.Languages;
 using Application.Translation.Pipeline;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
@@ -22,6 +23,7 @@ namespace Infrastructure.Telegram.Inline;
 /// </summary>
 public partial class InlineTranslation(
     IServiceScopeFactory scopes,
+    IMemoryCache memory,
     ITraleDbContext db,
     ITelegramBotClient client,
     BotConfiguration config,
@@ -32,12 +34,21 @@ public partial class InlineTranslation(
 
     public const string ButtonText = "Учить грузинский в TraleBot";
 
+    /// <summary>Above the (empty) list while a lookup is still running: what to do to see its answer.</summary>
+    public const string PendingButtonText = "Перевожу… добавь пробел через пару секунд";
+
     /// <summary>
-    /// A person types on: an answer later than this is for a query they have already left. A lookup that
-    /// takes longer is not stopped — it ends in the translation cache, and the same text asked again
-    /// (Telegram asks again in <see cref="NothingCacheSeconds"/>) is answered from there at once.
+    /// Telegram drops an answer to an inline query after a few seconds («query is too old»). A lookup
+    /// that takes longer is not stopped: it finishes into <see cref="Done"/>, and the same text asked
+    /// again is answered from there at once. A phrase goes through three models and takes about 10 s.
     /// </summary>
-    private static readonly TimeSpan AnswerWithin = TimeSpan.FromSeconds(7);
+    private static readonly TimeSpan AnswerWithin = TimeSpan.FromSeconds(4);
+
+    /// <summary>
+    /// How long a looked-up text is kept here. The pipeline's own cache keeps words, not the model's
+    /// unconfirmed phrases — those would otherwise be looked up anew on every query.
+    /// </summary>
+    private static readonly TimeSpan Done = TimeSpan.FromHours(1);
 
     /// <summary>A lookup left running has this long to finish; model steps have their own, shorter timeouts.</summary>
     private static readonly TimeSpan LookupAtMost = TimeSpan.FromMinutes(3);
@@ -63,7 +74,7 @@ public partial class InlineTranslation(
     /// depend on who asks. Short for "nothing found", so that a fixed translator is seen soon.
     /// </summary>
     private const int CacheSeconds = 3600;
-    private const int NothingCacheSeconds = 5;
+    private const int NothingCacheSeconds = 1;
 
     [GeneratedRegex(@"[ა-ჿ]")]
     private static partial Regex GeorgianLetter();
@@ -75,9 +86,10 @@ public partial class InlineTranslation(
     {
         var text = query.Query.Trim();
         InlineQueryResult[] results = [];
+        var pending = false;
         try
         {
-            results = await CardsFor(text, query.From.Id, ct);
+            (results, pending) = await CardsFor(text, query.From.Id, ct);
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -85,57 +97,88 @@ public partial class InlineTranslation(
             logger.LogWarning(e, "Inline translation of {Text} failed", text);
         }
 
-        logger.LogInformation("Inline query {Text}: {Count} card(s)", text, results.Length);
-        await client.AnswerInlineQueryAsync(
-            query.Id,
-            results,
-            cacheTime: results.Length > 0 ? CacheSeconds : NothingCacheSeconds,
-            isPersonal: false,
-            button: new InlineQueryResultsButton(ButtonText) { StartParameter = StartParameter },
-            cancellationToken: ct);
+        logger.LogInformation("Inline query {Text}: {Count} card(s){Pending}", text, results.Length, pending ? ", still looking up" : "");
+        try
+        {
+            await client.AnswerInlineQueryAsync(
+                query.Id,
+                results,
+                cacheTime: results.Length > 0 ? CacheSeconds : NothingCacheSeconds,
+                isPersonal: false,
+                button: new InlineQueryResultsButton(pending ? PendingButtonText : ButtonText) { StartParameter = StartParameter },
+                cancellationToken: ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            // Usually «query is too old»: the person has typed on. A failed webhook would only make
+            // Telegram send the same old query again.
+            logger.LogWarning("Inline answer to {Text} not accepted: {Error}", text, e.Message);
+        }
     }
 
     /// <summary>A card was sent to a chat (Telegram tells it when inline feedback is on in BotFather).</summary>
     public void Chosen(ChosenInlineResult chosen) =>
         logger.LogInformation("Inline card sent: {Text}", chosen.Query.Trim());
 
-    private async Task<InlineQueryResult[]> CardsFor(string text, long telegramId, CancellationToken ct)
+    /// <returns>The cards, and whether a lookup for the text is still running.</returns>
+    private async Task<(InlineQueryResult[] Cards, bool Pending)> CardsFor(string text, long telegramId, CancellationToken ct)
     {
         if (text.Length == 0)
         {
-            return Starters.Select((p, i) => Card($"s{i}", p.Georgian, p.Russian)).ToArray<InlineQueryResult>();
+            return (Starters.Select((p, i) => Card($"s{i}", p.Georgian, p.Russian)).ToArray<InlineQueryResult>(), false);
         }
 
         var isGeorgian = GeorgianLetter().IsMatch(text);
         if (text.Length < 2 || text.Length > MaxLength || !(isGeorgian || CyrillicLetter().IsMatch(text)))
         {
-            return [];
+            return ([], false);
         }
 
-        var userId = await db.Users.Where(u => u.TelegramId == telegramId).Select(u => (Guid?)u.Id).FirstOrDefaultAsync(ct);
-        var lookup = Lookup(text, userId);
+        var lookup = await LookupOnce(text, telegramId, ct);
         if (await Task.WhenAny(lookup, Task.Delay(AnswerWithin, ct)) != lookup)
         {
-            logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s, left to finish into the cache",
+            logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s, left to finish",
                 text, AnswerWithin.TotalSeconds);
-            return [];
+            return ([], true);
         }
 
-        var result = await lookup;
-        if (result is not TranslationResult.Success success || string.IsNullOrWhiteSpace(success.Definition))
+        if (await lookup is not TranslationResult.Success success || string.IsNullOrWhiteSpace(success.Definition))
         {
-            return [];
+            return ([], false);
         }
 
         var georgian = isGeorgian ? text : success.Definition.Trim();
         var russian = isGeorgian ? success.Definition.Trim() : text;
-        return [Card("t", georgian, russian)];
+        return ([Card("t", georgian, russian)], false);
     }
 
     /// <summary>
-    /// The lookup in a scope of its own, not tied to the webhook request: when the answer is late it
-    /// still finishes, and its result is in the cache for the next query.
+    /// One lookup per text on this instance: a query for a text already being looked up waits for that
+    /// lookup, and a finished one is answered from memory for <see cref="Done"/>. A failed lookup is
+    /// forgotten at once, so that the next query tries again.
     /// </summary>
+    private async Task<Task<TranslationResult>> LookupOnce(string text, long telegramId, CancellationToken ct)
+    {
+        var key = "inline:" + text.ToLowerInvariant();
+        if (memory.TryGetValue(key, out Task<TranslationResult>? known) && known != null)
+        {
+            return known;
+        }
+
+        var userId = await db.Users.Where(u => u.TelegramId == telegramId).Select(u => (Guid?)u.Id).FirstOrDefaultAsync(ct);
+        var lookup = Lookup(text, userId);
+        memory.Set(key, lookup, Done);
+        _ = lookup.ContinueWith(t =>
+        {
+            if (t.Result is not TranslationResult.Success)
+            {
+                memory.Remove(key);
+            }
+        }, TaskScheduler.Default);
+        return lookup;
+    }
+
+    /// <summary>The lookup in a scope of its own, not tied to the webhook request: when the answer is late it still finishes.</summary>
     private Task<TranslationResult> Lookup(string text, Guid? userId) => Task.Run(async () =>
     {
         using var scope = scopes.CreateScope();

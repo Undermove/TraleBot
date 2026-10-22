@@ -88,6 +88,27 @@ public class InlineTranslationTests : TranslationPipelineTestBase
     }
 
     [Test]
+    public async Task A_slow_lookup_is_answered_in_time_with_a_hint_and_is_not_started_twice()
+    {
+        await SeedCatalogWithout();
+        Models.ClassifierModel.Respond = async (_, _) =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(10));
+            return new Microsoft.Extensions.AI.ChatMessage(Microsoft.Extensions.AI.ChatRole.Assistant,
+                """{"notTranslatable":true,"isVerb":false,"russianInfinitive":null}""");
+        };
+
+        var first = await Ask(920005, "кошка принесла котят");
+        var again = await Ask(920005, "кошка принесла котят");
+
+        first.Results.Should().BeEmpty();
+        first.Button!.Text.Should().Be(InlineTranslation.PendingButtonText,
+            because: "Telegram drops an answer after a few seconds, so the person is told the lookup goes on");
+        again.Button!.Text.Should().Be(InlineTranslation.PendingButtonText);
+        Models.ClassifierModel.Calls.Should().Be(1, because: "the second query waits for the lookup already running");
+    }
+
+    [Test]
     public async Task A_sent_card_is_acknowledged_without_writing_to_anybody()
     {
         using var client = App.CreateClient();
