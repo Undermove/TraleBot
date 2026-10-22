@@ -76,11 +76,15 @@ const lab = new URLSearchParams(window.location.search).has('alphabet-lab')
 // ?intro-lab — стенд сцен «Знакомства» (intro/IntroLab.tsx).
 const IntroLab = React.lazy(() => import('./intro/IntroLab'))
 const introLab = new URLSearchParams(window.location.search).has('intro-lab')
+// ?screen=inline&q=… — перевод для инлайна (кнопка над вариантами, пока перевод ищется); без уроков и прогресса.
+const InlineTranslateScreen = React.lazy(() => import('./inline/InlineTranslateScreen'))
+const inlineScreen = new URLSearchParams(window.location.search).get('screen') === 'inline'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {lab ? <React.Suspense fallback={null}><AlphabetLab /></React.Suspense>
       : introLab ? <React.Suspense fallback={null}><IntroLab /></React.Suspense>
+      : inlineScreen ? <React.Suspense fallback={null}><InlineTranslateScreen /></React.Suspense>
       : <App />}
   </React.StrictMode>
 )

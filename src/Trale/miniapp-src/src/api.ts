@@ -136,6 +136,24 @@ export type VocabularyQuizMode = 'all' | 'new' | 'weak' | 'custom' | 'starter'
 
 import { CatalogDto } from './types'
 
+/** Вариант перевода для инлайна: что это и текст, который уйдёт в чат. */
+export interface InlineOption {
+  id: string
+  title: string
+  text: string
+}
+
+/**
+ * Перевод для экрана поверх чата (inline/InlineTranslateScreen.tsx). Сервер ждёт пару секунд и
+ * отвечает pending, если перевод ещё ищется, — экран спрашивает снова.
+ */
+export function inlineTranslation(text: string) {
+  return request<{ status: 'pending' | 'done'; options: InlineOption[] }>('/api/miniapp/inline/translate', {
+    method: 'POST',
+    body: JSON.stringify({ text })
+  })
+}
+
 export const api = {
   content: () => request<CatalogDto>('/api/miniapp/content'),
 

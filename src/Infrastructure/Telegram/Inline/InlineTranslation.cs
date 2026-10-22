@@ -22,6 +22,7 @@ public partial class InlineTranslation(
     IMemoryCache memory,
     ITraleDbContext db,
     ITelegramBotClient client,
+    BotConfiguration config,
     ILogger<InlineTranslation> logger)
 {
     /// <summary>The ?start= of the button above the options: users who came this way are counted by it.</summary>
@@ -30,18 +31,23 @@ public partial class InlineTranslation(
     public const string ButtonText = "Учить грузинский в TraleBot";
 
     /// <summary>
-    /// Above the (empty) list while a lookup is still running, one at random: Bombora is busy, and a
-    /// space added in a moment shows the answer. Telegram lets nothing move there — a new line each
-    /// time is what there is.
+    /// Above the (empty) list while a lookup is still running, one at random. With the mini-app on, the
+    /// button opens the mini-app screen that waits for the translation (<see cref="ScreenUrl"/>): Bombora
+    /// at work, then the options with «Вставить в чат». Without it, a space added in a moment shows the answer.
     /// </summary>
     public static readonly string[] PendingButtonTexts =
     [
-        "Бомбора листает словарь… добавь пробел",
-        "Бомбора спрашивает у бабушки… добавь пробел",
-        "Бомбора грызёт грузинские буквы… добавь пробел",
-        "Бомбора бежит за переводом… добавь пробел",
-        "Бомбора советуется с хинкали… добавь пробел"
+        "Бомбора листает словарь… посмотреть",
+        "Бомбора спрашивает у бабушки… посмотреть",
+        "Бомбора грызёт грузинские буквы… посмотреть",
+        "Бомбора бежит за переводом… посмотреть",
+        "Бомбора советуется с хинкали… посмотреть"
     ];
+
+    public const string PendingButtonTextWithoutMiniApp = "Перевожу… добавь пробел через пару секунд";
+
+    /// <summary>One option of the answer: what it is, and the text that goes to the chat.</summary>
+    public record Option(string Id, string Title, string Text);
 
     public const string RussianTitle = "Перевод";
     public const string GeorgianTitle = "По-грузински";
@@ -85,7 +91,9 @@ public partial class InlineTranslation(
         var pending = false;
         try
         {
-            (results, pending) = await OptionsFor(text, query.From.Id, ct);
+            var (options, stillLooking) = await OptionsAsync(text, query.From.Id, AnswerWithin, ct);
+            results = options.Select(Article).ToArray<InlineQueryResult>();
+            pending = stillLooking;
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -101,7 +109,7 @@ public partial class InlineTranslation(
                 results,
                 cacheTime: results.Length > 0 ? CacheSeconds : NothingCacheSeconds,
                 isPersonal: false,
-                button: new InlineQueryResultsButton(pending ? PendingButtonTexts[Random.Shared.Next(PendingButtonTexts.Length)] : ButtonText) { StartParameter = StartParameter },
+                button: Button(text, pending),
                 cancellationToken: ct);
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -116,9 +124,15 @@ public partial class InlineTranslation(
     public void Chosen(ChosenInlineResult chosen) =>
         logger.LogInformation("Inline option {Option} sent for {Text}", chosen.ResultId, chosen.Query.Trim());
 
+    /// <summary>
+    /// The options for a text, waiting at most <paramref name="wait"/> for them; also what the mini-app
+    /// screen asks again and again while Bombora works.
+    /// </summary>
     /// <returns>The options, and whether a lookup for the text is still running.</returns>
-    private async Task<(InlineQueryResult[] Options, bool Pending)> OptionsFor(string text, long telegramId, CancellationToken ct)
+    public async Task<(IReadOnlyList<Option> Options, bool Pending)> OptionsAsync(
+        string text, long telegramId, TimeSpan wait, CancellationToken ct)
     {
+        text = text.Trim();
         var hasGeorgian = GeorgianLetter().IsMatch(text);
         var hasCyrillic = CyrillicLetter().IsMatch(text);
         // Latin may be Georgian typed the way Georgians chat; only the model can tell it from English.
@@ -129,10 +143,10 @@ public partial class InlineTranslation(
         }
 
         var lookup = await LookupOnce(text, telegramId, ct);
-        if (await Task.WhenAny(lookup, Task.Delay(AnswerWithin, ct)) != lookup)
+        if (await Task.WhenAny(lookup, Task.Delay(wait, ct)) != lookup)
         {
             logger.LogInformation("Inline translation of {Text} did not finish in {Seconds} s, left to finish",
-                text, AnswerWithin.TotalSeconds);
+                text, wait.TotalSeconds);
             return ([], true);
         }
 
@@ -145,18 +159,18 @@ public partial class InlineTranslation(
         // A text in one script only is that script; a mixed one gets every option.
         var russianOnly = hasCyrillic && !hasGeorgian && !hasLatin;
         var georgianOnly = hasGeorgian && !hasCyrillic && !hasLatin;
-        var options = new List<InlineQueryResult>();
+        var options = new List<Option>();
         if (!russianOnly && t.Russian != null)
         {
-            options.Add(Option("ru", RussianTitle, t.Russian));
+            options.Add(new Option("ru", RussianTitle, t.Russian));
         }
 
         if (!georgianOnly && t.Georgian != null)
         {
-            options.Add(Option("ka", russianOnly ? GeorgianTitle : GeorgianLettersTitle, t.Georgian));
+            options.Add(new Option("ka", russianOnly ? GeorgianTitle : GeorgianLettersTitle, t.Georgian));
         }
 
-        return (options.ToArray(), false);
+        return (options, false);
     }
 
     /// <summary>
@@ -242,6 +256,24 @@ public partial class InlineTranslation(
     }
 
     /// <summary>One option: the list shows what it is and the text; the chat gets the text alone.</summary>
-    private static InlineQueryResultArticle Option(string id, string title, string text) =>
-        new(id, title, new InputTextMessageContent(text)) { Description = text };
+    private static InlineQueryResultArticle Article(Option option) =>
+        new(option.Id, option.Title, new InputTextMessageContent(option.Text)) { Description = option.Text };
+
+    /// <summary>The mini-app screen that waits for the translation of <paramref name="text"/>; null without the mini-app.</summary>
+    public string? ScreenUrl(string text) =>
+        config.MiniAppEnabled && !string.IsNullOrEmpty(config.HostAddress)
+            ? $"{config.NormalizedHost()}/?screen=inline&q={Uri.EscapeDataString(text)}"
+            : null;
+
+    private InlineQueryResultsButton Button(string text, bool pending)
+    {
+        if (!pending)
+        {
+            return new InlineQueryResultsButton(ButtonText) { StartParameter = StartParameter };
+        }
+
+        return ScreenUrl(text) is { } url
+            ? new InlineQueryResultsButton(PendingButtonTexts[Random.Shared.Next(PendingButtonTexts.Length)]) { WebApp = new WebAppInfo { Url = url } }
+            : new InlineQueryResultsButton(PendingButtonTextWithoutMiniApp) { StartParameter = StartParameter };
+    }
 }
