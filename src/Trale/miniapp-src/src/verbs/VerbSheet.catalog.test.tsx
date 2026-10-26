@@ -44,8 +44,8 @@ describe('VerbSheet on catalog verbs', () => {
   })
 
   it('shows a partial verb with the tenses it has, says which are missing, and still offers to learn it', async () => {
-    // «хотеть»: только настоящее и имперфект.
-    await open(verbByLemma('უნდა'))
+    // «ходить»: только настоящее и имперфект.
+    await open(verbByLemma('დადის'))
 
     expect(screen.getByTestId('verb-tense-imperfect')).toBeTruthy()
     for (const missing of ['aorist', 'optative', 'conditional', 'future']) expect(screen.queryByTestId(`verb-tense-${missing}`)).toBeNull()
@@ -56,6 +56,24 @@ describe('VerbSheet on catalog verbs', () => {
     fireEvent.click(screen.getByTestId('verb-rare-toggle'))
     expect(screen.getByTestId('verb-tense-presentSubjunctive')).toBeTruthy()
     expect(screen.queryByTestId('verb-tense-perfect')).toBeNull()
+  })
+
+  it('shows in place of a tense the verb lacks what is said instead, and which tenses were written in by grammar', async () => {
+    // «знать»: «узнал» — другой глагол; будущее и «знал бы» вписаны по грамматике.
+    const know = verbByLemma('იცის')
+    await open(know)
+
+    expect(screen.getByTestId('verb-no-tense-aorist').textContent).toContain(know.noTense!.aorist!.instead[0])
+    expect(screen.getByTestId('verb-no-tense-aorist').textContent).toContain('своей формы нет')
+    expect(screen.getByTestId('verb-no-tense-optative')).toBeTruthy()
+    expect(screen.getByTestId('verb-tense-future').textContent).toContain(know.tenses.future![0][0])
+    expect(screen.queryByTestId('verb-partial')).toBeNull()
+    expect(screen.getByTestId('verb-supplemented').textContent).toContain('будущее')
+
+    // На другом лице — форма этого лица: «ты узнал(а)», не «я».
+    fireEvent.click(screen.getByTestId('verb-person-1'))
+    expect(screen.getByTestId('verb-no-tense-aorist').textContent).toContain(know.noTense!.aorist!.instead[1])
+    expect(screen.getByTestId('verb-no-tense-aorist').textContent).toContain('ты узнал(а)')
   })
 
   it('has no «missing tenses» note on a full verb', async () => {

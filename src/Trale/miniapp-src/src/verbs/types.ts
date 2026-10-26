@@ -42,6 +42,10 @@ export interface VerbDto extends VerbSummaryDto {
   sentences: VerbSentenceDto[]
   /** Нет у глагола, формы которого составила модель. */
   source: string | null
+  /** Времена, которых в таблице Викисловаря нет: вписаны по грамматике и сверены с корпусами. */
+  supplemented?: TenseKey[] | null
+  /** Времена, которых у глагола нет вовсе («знать» — нет «узнал»): что говорят вместо них — по шесть лиц, как в tenses. */
+  noTense?: Partial<Record<TenseKey, { instead: string[]; ru: string[] }>> | null
   /** generated — таблицы в источнике нет: запись составила одна модель и одобрила вторая; учится и играется как любой глагол. Нет поля — verified. */
   status?: 'verified' | 'generated'
   /** У глагола, добавленного по запросу: на чём держатся формы и перевод (что сверено с источниками). */

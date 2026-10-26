@@ -49,6 +49,7 @@ import { fileURLToPath } from 'url'
 import { analyze } from './analyze.mjs'
 import { formatJson } from './format.mjs'
 import { meaningsOf } from './meanings.mjs'
+import { loadAttested } from './attested.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = name => JSON.parse(readFileSync(resolve(here, name), 'utf8'))
@@ -68,6 +69,9 @@ const titles = read('titles.json')
 const objectPerson = read('object-person.json')
 const prodLookups = read('prod-lookups.json').words
 const wanted = read('wanted.json')
+// Времена, которых нет в таблице Викисловаря, вписанные руками по грамматике (см. ниже, «дополнения»).
+const supplements = read('supplements.json').verbs
+const attested = loadAttested(resolve(here, '../../src/Trale/Verbs/attested.bloom'))
 
 const LIMIT = 200
 const MIN_CORPUS = 100
@@ -100,6 +104,48 @@ function score(v) {
 const isCommon = v => {
   const f = frequency[v.lemma] ?? {}
   return (f.tatoeba ?? 0) >= 1 || (f.lessons ?? 0) >= 1 || (f.subs ?? 0) >= 1 || (f.web ?? 0) + (f.news ?? 0) + (f.wiki ?? 0) >= MIN_CORPUS
+}
+
+// ── дополнения ───────────────────────────────────────────────────────────────────────────────
+// supplements.json: у «знать» и «хотеть» таблица Викисловаря — только настоящее и имперфект. Ряды,
+// вписанные по грамматике, добавляются к таблице до отбора и проверяются тут же:
+//  • клетку, которая в источнике есть, дополнение не трогает — источник важнее;
+//  • ряд берётся, только если не меньше половины его форм встречается в корпусах (attested.bloom) —
+//    то же правило, что для времён, которые дописывает модель;
+//  • у каждой записи — evidence и ссылки на источники, по которым она сверена.
+// noTense — времени у глагола нет вовсе: карточка показывает, что говорят вместо него.
+const MIN_ATTESTED = 0.5
+const GEO_WORDS = /^[ა-ჰ]+$/
+for (const [lemma, s] of Object.entries(supplements)) {
+  const v = raw.find(r => r.lemma === lemma)
+  if (!v) { fail.push(`supplements.json: глагола ${lemma} нет в verbs.raw.json`); continue }
+  if (!s.evidence || !Array.isArray(s.sources) || !s.sources.length || !s.sources.every(u => /^https?:\/\//.test(u)))
+    fail.push(`supplements.json: у ${lemma} нужны evidence и ссылки на источники (sources)`)
+  const added = []
+  for (const [tense, row] of Object.entries(s.tenses ?? {})) {
+    if (!ALL_TENSES.includes(tense)) { fail.push(`supplements.json: ${lemma} — неизвестное время ${tense}`); continue }
+    if (!complete(row)) { fail.push(`supplements.json: ${lemma}.${tense} — не шесть заполненных клеток`); continue }
+    const forms = row.flat()
+    const seen = forms.filter(attested).length
+    if (seen < forms.length * MIN_ATTESTED)
+      fail.push(`supplements.json: ${lemma}.${tense} — в корпусах встретилось ${seen} из ${forms.length} форм, нужно не меньше половины`)
+    const own = v.tenses[tense]
+    if (own?.some((cell, person) => cell.length && cell.join() !== row[person].join()))
+      fail.push(`supplements.json: ${lemma}.${tense} — расходится с таблицей Викисловаря; клетки источника не переписываются`)
+    if (own && complete(own)) { fail.push(`supplements.json: ${lemma}.${tense} — в источнике ряд уже полный, запись лишняя`); continue }
+    v.tenses[tense] = row.map((cell, person) => (own?.[person]?.length ? own[person] : cell))
+    added.push(tense)
+  }
+  for (const [tense, no] of Object.entries(s.noTense ?? {})) {
+    if (!ALL_TENSES.includes(tense)) fail.push(`supplements.json: ${lemma} — noTense: неизвестное время ${tense}`)
+    if (v.tenses[tense]?.some(cell => cell.length)) fail.push(`supplements.json: ${lemma} — noTense.${tense}, а формы этого времени есть`)
+    const six = row => Array.isArray(row) && row.length === 6 && row.every(x => typeof x === 'string' && x.length)
+    if (!six(no.instead) || !no.instead.every(f => GEO_WORDS.test(f)) || !six(no.ru) || !no.why)
+      fail.push(`supplements.json: ${lemma} — у noTense.${tense} нужны instead и ru по шесть лиц (instead по-грузински) и why`)
+    else if (no.instead.filter(attested).length < 6 * MIN_ATTESTED)
+      fail.push(`supplements.json: ${lemma} — noTense.${tense}: в корпусах встретилось меньше половины форм instead`)
+  }
+  if (added.length) v.notes.push(`дополнено по грамматике (supplements.json): ${added.join(', ')}`)
 }
 
 // ── отбор ────────────────────────────────────────────────────────────────────────────────────
@@ -203,7 +249,9 @@ const verbs = analysed.map(entry => {
     title: titleOf(v),
     ru: ru[v.lemma] ?? null,
     kind: a.kind,
-    reason: a.reason,
+    // У дополненного глагола объяснение пишет тот, кто вписал времена: «в источнике есть только часть
+    // времён» о нём уже неправда.
+    reason: supplements[v.lemma]?.reason ?? a.reason,
     root: a.root,
     oddTenses: a.oddTenses,
     model: model ? { id: model.v.lemma, title: titleOf(model.v), ru: ru[model.v.lemma] ?? null } : null,
@@ -211,6 +259,12 @@ const verbs = analysed.map(entry => {
     // «Кто кого»: падеж того, кого (acc — «вижу тебя», dat — «показываю тебе»); нет — у глагола этого нет.
     ...(objectPerson[v.lemma] ? { objectPerson: objectPerson[v.lemma].case } : {}),
     tenses: v.tenses,
+    // Времена из supplements.json (вписаны по грамматике, не из Викисловаря) и времена, которых у
+    // глагола нет вовсе, — с тем, что говорят вместо них.
+    ...(supplements[v.lemma] ? {
+      supplemented: Object.keys(supplements[v.lemma].tenses ?? {}),
+      ...(supplements[v.lemma].noTense ? { noTense: supplements[v.lemma].noTense } : {})
+    } : {}),
     // Что значит каждая форма по-русски: время → шесть фраз («я хочу», «ты хочешь», …).
     meanings: plain.meanings,
     // Пометки для времён, чьи фразы по-русски совпадают («я писал(а)»: один раз или долго).
@@ -349,7 +403,8 @@ const review = `# Глаголы каталога — таблица для вы
 
 Как вычеркнуть: добавить строку \`"лемма": "почему"\` (лемма — третий столбец) в \`scripts/verbs/verbs.skip.json\` и пересобрать с \`--force\`.
 Как поправить перевод: \`scripts/verbs/ru.json\`. Формы руками не правятся — они из Викисловаря (ссылка в строке);
-если форма неверна, глагол вычёркивается целиком.
+если форма неверна, глагол вычёркивается целиком. Исключение — \`scripts/verbs/supplements.json\`: времена, которых в
+таблице Викисловаря нет, вписанные по грамматике и проверенные по корпусам (пометка «дополнено» в последнем столбце).
 
 Шесть форм в строке — это «я» в шести временах карточки: настоящее, аорист, имперфект, оптатив, условное, будущее.
 Последний столбец — на что обратить внимание.

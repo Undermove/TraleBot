@@ -13,7 +13,7 @@ import type { LearnerDto, PlannedScene, SceneType, VerbLevelKey, VerbMemoryDto }
 
 const WRITE = verbRu('писать')           // по образцу, полная таблица: все игры
 const GO = verbByLemma('მიდის')           // особый, с комиксом
-const WANT = verbRu('хотеть')            // неполный: части времён нет
+const WANT = verbRu('ходить')            // неполный: части времён нет
 
 const BEGINNER: LearnerDto = { level: 'beginner', canType: false, dictionarySize: 3, dictionaryVerbs: 1, verbsLearned: 0 }
 const TYPIST: LearnerDto = { level: 'intermediate', canType: true, dictionarySize: 120, dictionaryVerbs: 14, verbsLearned: 3 }
@@ -256,7 +256,7 @@ describe('planSession: прогон от нового глагола до экз
     ['писать, новичок', WRITE, BEGINNER],
     ['писать, умеет печатать', WRITE, TYPIST],
     ['идти (с комиксом), новичок', GO, BEGINNER],
-    ['хотеть (неполный), новичок', WANT, BEGINNER]
+    ['ходить (неполный), новичок', WANT, BEGINNER]
   ] as const)('%s: доходит до экзамена, не нарушая потолков', (_name, verb, learner) => {
     const sim = simulate(verb, learner, 40)
     const all = sim.sessions.map(types)

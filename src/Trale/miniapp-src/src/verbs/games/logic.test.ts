@@ -63,11 +63,11 @@ describe('which games a verb gets', () => {
   })
 
   it('offers no games for a verb with only two tenses — the row is simply absent on its card', () => {
-    // «хотеть»: в источнике только настоящее и имперфект.
-    const want = verbByLemma('უნდა')
+    // «ходить»: в источнике только настоящее и имперфект.
+    const walk = verbByLemma('დადის')
 
-    expect(CARD_TENSES.filter(t => want.tenses[t])).toEqual(['present', 'imperfect'])
-    expect(availableGames(want)).toEqual([])
+    expect(CARD_TENSES.filter(t => walk.tenses[t])).toEqual(['present', 'imperfect'])
+    expect(availableGames(walk)).toEqual([])
   })
 })
 

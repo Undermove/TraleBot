@@ -16,6 +16,8 @@ const toDto = (v: Entry): VerbDto => ({
   tenses: v.tenses as VerbDto['tenses'],
   meanings: v.meanings as VerbDto['meanings'], meaningChips: v.meaningChips as VerbDto['meaningChips'],
   sentences: v.sentences ?? [], source: v.source ?? null,
+  supplemented: ('supplemented' in v ? v.supplemented : null) as VerbDto['supplemented'],
+  noTense: ('noTense' in v ? v.noTense : null) as VerbDto['noTense'],
   status: 'verified'
 })
 

@@ -5,7 +5,8 @@
 
 Как вычеркнуть: добавить строку `"лемма": "почему"` (лемма — третий столбец) в `scripts/verbs/verbs.skip.json` и пересобрать с `--force`.
 Как поправить перевод: `scripts/verbs/ru.json`. Формы руками не правятся — они из Викисловаря (ссылка в строке);
-если форма неверна, глагол вычёркивается целиком.
+если форма неверна, глагол вычёркивается целиком. Исключение — `scripts/verbs/supplements.json`: времена, которых в
+таблице Викисловаря нет, вписанные по грамматике и проверенные по корпусам (пометка «дополнено» в последнем столбце).
 
 Шесть форм в строке — это «я» в шести временах карточки: настоящее, аорист, имперфект, оптатив, условное, будущее.
 Последний столбец — на что обратить внимание.
@@ -15,12 +16,12 @@
 | 1 | ყოფნა | არის | быть | to be | особый | ვარ | ვიყავი | — | ვიყო | ვიქნებოდი | ვიქნები | [wikt](https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A0%E1%83%98%E1%83%A1#Georgian) |  |
 | 2 | ქონა | აქვს | иметь | to have | особый | მაქვს | — | მქონდა | — | მექნებოდა | მექნება | [wikt](https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A5%E1%83%95%E1%83%A1#Georgian) | перевод: про неодушевлённое («у меня есть что-то»); про людей, животных и машины — ჰყავს; в таблице 1 ряд(а) без подписи времени — пропущены |
 | 3 | სვლა | მიდის | идти, уходить | (intransitive, with preverb მი- (mi-)) to go; (intransitive, with preverb წა- (c̣a-)) to … | особый | მივდივარ | წავედი | მივდიოდი | წავიდე | წავიდოდი | წავალ | [wikt](https://en.wiktionary.org/wiki/%E1%83%9B%E1%83%98%E1%83%93%E1%83%98%E1%83%A1#Georgian) |  |
-| 4 | ნდომა | უნდა | хотеть | to want | особый | მინდა | — | მინდოდა | — | — | — | [wikt](https://en.wiktionary.org/wiki/%E1%83%A3%E1%83%9C%E1%83%93%E1%83%90#Georgian) |  |
+| 4 | ნდომა | უნდა | хотеть | to want | особый | მინდა | მომინდა | მინდოდა | მომინდეს | მომინდებოდა | მომინდება | [wikt](https://en.wiktionary.org/wiki/%E1%83%A3%E1%83%9C%E1%83%93%E1%83%90#Georgian) | дополнено по грамматике (supplements.json): future, conditional, aorist, optative |
 | 5 | კეთება | აკეთებს | делать | (transitive, with preverb გა- (ga-)) to make; (transitive, with preverb შე- (še-)) to men… | образец | ვაკეთებ | გავაკეთე | ვაკეთებდი | გავაკეთო | გავაკეთებდი | გავაკეთებ | [wikt](https://en.wiktionary.org/wiki/%E1%83%90%E1%83%99%E1%83%94%E1%83%97%E1%83%94%E1%83%91%E1%83%A1#Georgian) |  |
 | 6 | ხედვა | ხედავს | видеть | (transitive) to see (to perceive with the eyes, or as if by sight); (transitive) to see, … | особый | ვხედავ | დავინახე | ვხედავდი | დავინახო | დავინახავდი | დავინახავ | [wikt](https://en.wiktionary.org/wiki/%E1%83%AE%E1%83%94%E1%83%93%E1%83%90%E1%83%95%E1%83%A1#Georgian) |  |
 | 7 | წერა | წერს | писать | (transitive) to write | образец | ვწერ | დავწერე | ვწერდი | დავწერო | დავწერდი | დავწერ | [wikt](https://en.wiktionary.org/wiki/%E1%83%AC%E1%83%94%E1%83%A0%E1%83%A1#Georgian) |  |
 | 8 | სიყვარული | უყვარს | любить | (intransitive) to love | особый | მიყვარს | — | მიყვარდა | — | მეყვარებოდა | მეყვარება | [wikt](https://en.wiktionary.org/wiki/%E1%83%A3%E1%83%A7%E1%83%95%E1%83%90%E1%83%A0%E1%83%A1#Georgian) | таблица-матрица «кто × кого»: взята строка с объектом 3-го лица, клетки с другим объектом не используются; в таблице 1 ряд(а) без подписи времени — пропущены |
-| 9 | ცოდნა | იცის | знать | (transitive) to know | особый | ვიცი | — | ვიცოდი | — | — | — | [wikt](https://en.wiktionary.org/wiki/%E1%83%98%E1%83%AA%E1%83%98%E1%83%A1#Georgian) |  |
+| 9 | ცოდნა | იცის | знать | (transitive) to know | особый | ვიცი | — | ვიცოდი | — | მეცოდინებოდა | მეცოდინება | [wikt](https://en.wiktionary.org/wiki/%E1%83%98%E1%83%AA%E1%83%98%E1%83%A1#Georgian) | дополнено по грамматике (supplements.json): future, conditional, perfect, pluperfect |
 | 10 | ცხოვრება | ცხოვრობს | жить | (intransitive) to live, reside; to survive | образец | ვცხოვრობ | ვიცხოვრე | ვცხოვრობდი | ვიცხოვრო | ვიცხოვრებდი | ვიცხოვრებ | [wikt](https://en.wiktionary.org/wiki/%E1%83%AA%E1%83%AE%E1%83%9D%E1%83%95%E1%83%A0%E1%83%9D%E1%83%91%E1%83%A1#Georgian) |  |
 | 11 | კითხვა | კითხულობს | читать | (transitive, with preverb წა- (c̣a-) in non-present tenses) to read (to look at and inter… | особенность | ვკითხულობ | წავიკითხე | ვკითხულობდი | წავიკითხო | წავიკითხავდი | წავიკითხავ | [wikt](https://en.wiktionary.org/wiki/%E1%83%99%E1%83%98%E1%83%97%E1%83%AE%E1%83%A3%E1%83%9A%E1%83%9D%E1%83%91%E1%83%A1#Georgian) |  |
 | 12 | ღება | იღებს | брать | (transitive, with preverb ა- (a-)) to take; (transitive, with preverb ამო- (amo-)) to rem… | образец | ვიღებ | ავიღე | ვიღებდი | ავიღო | ავიღებდი | ავიღებ | [wikt](https://en.wiktionary.org/wiki/%E1%83%98%E1%83%A6%E1%83%94%E1%83%91%E1%83%A1#Georgian) |  |

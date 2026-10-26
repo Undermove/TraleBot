@@ -10,8 +10,8 @@ import { CATALOG as catalogVerbs, seeded, verbByLemma } from '../testing/catalog
 // Формы и фразы — из настоящего каталога (src/Trale/Verbs/verbs.json).
 const writeVerb = verbByLemma('წერს')
 const write = buildItems(writeVerb)
-// «хотеть»: у глагола только настоящее и имперфект.
-const want = buildItems(verbByLemma('უნდა'))
+// «ходить»: у глагола только настоящее и имперфект.
+const want = buildItems(verbByLemma('დადის'))
 const withoutSentences = catalogVerbs.map(buildItems).find(items => items.every(i => !i.sentences.length))!
 const withTwins = catalogVerbs.map(buildItems).find(items => new Set(items.map(i => i.form)).size < items.length)!
 

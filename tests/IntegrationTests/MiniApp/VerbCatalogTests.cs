@@ -478,6 +478,23 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Card_of_to_know_has_the_tenses_written_in_by_grammar_and_says_what_is_said_for_the_ones_it_lacks()
+    {
+        var know = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("იცის", CancellationToken.None)))!)!;
+
+        know["tenses"]!["future"]![0]![0]!.GetValue<string>().Should().Be("მეცოდინება",
+            because: "the Wiktionary table of 'to know' stops at the imperfect; the future is written in by grammar");
+        know["supplemented"]!.AsArray().Select(t => t!.GetValue<string>()).Should().Contain("future");
+        know["tenses"]!.AsObject().ContainsKey("aorist").Should().BeFalse(because: "'to know' has no past «did»");
+        know["noTense"]!["aorist"]!["instead"]![0]!.GetValue<string>().Should().Be("გავიგე");
+        know["meanings"]!["future"]![0]!.GetValue<string>().Should().Be("я буду знать");
+
+        var formsOfFuture = await InScope(sp => sp.GetRequiredService<ITraleDbContext>().VerbForms
+            .CountAsync(f => f.Verb.Lemma == "იცის" && f.Tense == "future"));
+        formsOfFuture.Should().Be(6, because: "a learner who meets მეცოდინება in a text is led to 'to know'");
+    }
+
+    [Test]
     public async Task Card_says_what_each_main_form_means_in_plain_Russian()
     {
         var want = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("უნდა", CancellationToken.None)))!)!;
@@ -486,7 +503,9 @@ public class VerbCatalogTests : TestBase
         want["meanings"]!["present"]!.AsArray().Select(m => m!.GetValue<string>())
             .Should().Equal("я хочу", "ты хочешь", "он хочет", "мы хотим", "вы хотите", "они хотят");
         want["meanings"]!["imperfect"]![0]!.GetValue<string>().Should().Be("я хотел(а)");
-        want["meaningChips"]!.AsObject().Should().BeEmpty(because: "with two tenses no phrase repeats, so no note is needed");
+        want["meanings"]!["aorist"]![0]!.GetValue<string>().Should().Be("я захотел(а)",
+            because: "the past «did» of 'to want' is მომინდა — «захотел», not a second «хотел» with a note");
+        want["meaningChips"]!.AsObject().Should().BeEmpty(because: "no phrase of 'to want' repeats, so no note is needed");
 
         write["meanings"]!["future"]![3]!.GetValue<string>().Should().Be("мы будем писать");
         write["meanings"]!.AsObject().Select(t => t.Key).Should().BeEquivalentTo(

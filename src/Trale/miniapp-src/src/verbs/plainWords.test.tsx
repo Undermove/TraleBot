@@ -103,7 +103,8 @@ describe('what a form means, in plain Russian', () => {
 
   it('gives every ladder form its phrase', () => {
     const items = buildItems(want)
-    expect(items.slice(0, 2).map(i => i.meaning.text)).toEqual(['я хочу', 'я хотел(а)'])
+    // «захотел» — своя фраза, а не «хотел» с пометкой: прошедшее «сделал» у «хотеть» — это «захотел».
+    expect(items.slice(0, 2).map(i => i.meaning.text)).toEqual(['я хочу', 'я захотел(а)'])
   })
 })
 

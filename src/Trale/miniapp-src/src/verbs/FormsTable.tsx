@@ -23,14 +23,33 @@ export default function FormsTable({ verb, person, onPerson, highlight, initialR
   const [rare, setRare] = useState(initialRare)
   // У неполных глаголов («хотеть», «знать») части времён нет вовсе: такие строки не рисуем прочерками.
   const has = (t: TenseKey) => !!verb.tenses[t]?.some(variants => variants.length)
-  const mainTenses = CARD_TENSES.filter(has)
+  // Времени у глагола нет вовсе («знать» — нет «узнал»): строка на своём месте говорит, что сказать вместо.
+  const none = (t: TenseKey) => !has(t) && !!verb.noTense?.[t]
+  const mainTenses = CARD_TENSES.filter(t => has(t) || none(t))
   const rareTenses = RARE_TENSES.filter(has)
   // Непроверенные времена глагола от нейросети: сервер держит их отдельно от tenses, в заданиях их нет.
   const unverified = [...CARD_TENSES, ...RARE_TENSES].filter(t => !!verb.unverified?.[t]?.some(variants => variants.length))
-  const absent = CARD_TENSES.filter(t => !has(t) && !unverified.includes(t))
+  const absent = CARD_TENSES.filter(t => !has(t) && !none(t) && !unverified.includes(t))
+
+  const insteadRow = (t: TenseKey) => {
+    const no = verb.noTense![t]!
+    return (
+      <div key={t} data-testid={`verb-no-tense-${t}`} className="flex items-center justify-between gap-3 px-4 py-2.5 border-t border-cream-edge">
+        <span className="min-w-0">
+          <span className="block text-[14px] font-bold text-jewelInk-mid">{no.ru[person]}</span>
+          <span className="block text-[11px] text-jewelInk-hint">{TENSES[t].name} · своей формы нет, говорят так</span>
+        </span>
+        <span className="text-right">
+          <span className="block font-geo text-[17px] font-bold text-jewelInk-mid">{no.instead[person]}</span>
+          <span className="block text-[11px] text-jewelInk-hint">{cyr(no.instead[person])}</span>
+        </span>
+      </div>
+    )
+  }
 
   const rows = (tenses: TenseKey[]) =>
     tenses.map(t => {
+      if (none(t)) return insteadRow(t)
       const odd = verb.oddTenses.includes(t)
       const hit = highlight?.tense === t && highlight.person === person
       return (
