@@ -165,6 +165,18 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             card["objectPerson"] = objectPerson.DeepClone();
         }
 
+        // Tenses written in by grammar where the Wiktionary table has none (scripts/verbs/supplements.json),
+        // and tenses the verb does not have at all, with what is said instead: only verbs that have them.
+        if (entry["supplemented"] is { } supplemented)
+        {
+            card["supplemented"] = supplemented.DeepClone();
+        }
+
+        if (entry["noTense"] is { } noTense)
+        {
+            card["noTense"] = noTense.DeepClone();
+        }
+
         verb.CardJson = card.ToJsonString(Json);
     }
 

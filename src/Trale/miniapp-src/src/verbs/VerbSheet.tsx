@@ -283,6 +283,11 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
               Источник форм: Викисловарь (CC BY-SA)
             </a>
           )}
+          {verb.supplemented && verb.supplemented.length > 0 && (
+            <div data-testid="verb-supplemented" className="text-[11px] text-jewelInk-hint text-center">
+              {verb.supplemented.map(t => TENSES[t].name.toLowerCase()).join(', ')} — по грамматике, сверено с корпусами текстов
+            </div>
+          )}
           {/* Глагол, который составила одна модель и одобрила вторая: одна тихая строка, без предупреждений. */}
           {verb.status === 'generated' && (
             <div data-testid="verb-model-made" className="text-[11px] text-jewelInk-hint text-center">составлено нейросетью</div>

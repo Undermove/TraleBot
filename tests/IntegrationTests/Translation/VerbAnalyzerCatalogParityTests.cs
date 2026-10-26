@@ -32,7 +32,12 @@ public class VerbAnalyzerCatalogParityTests
         analysis.Kind.Should().Be(verb["kind"]!.GetValue<string>());
         analysis.Root.Should().Be(verb["root"]!.GetValue<string>());
         analysis.OddTenses.Should().Equal(verb["oddTenses"].Deserialize<string[]>());
-        analysis.Reason.Should().Be(verb["reason"]!.GetValue<string>());
+        // A verb with tenses written in by grammar (scripts/verbs/supplements.json) carries the explanation
+        // of whoever wrote them in: the port has nothing to derive it from, and no runtime verb gets one.
+        if (verb["supplemented"] == null)
+        {
+            analysis.Reason.Should().Be(verb["reason"]!.GetValue<string>());
+        }
     }
 
     [Test]
