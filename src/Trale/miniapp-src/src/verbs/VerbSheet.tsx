@@ -11,6 +11,7 @@ import { useSheetDrag } from './ui/useSheetDrag'
 import SessionEntry from './session/SessionEntry'
 import FormsTable from './FormsTable'
 import FamilyNote from './family/FamilyNote'
+import ConfusableNote, { ConfusableIcon } from './ConfusableNote'
 import DirectionGlyph from './family/DirectionGlyph'
 import { TOWARD_RU } from './family/types'
 import WhoWhomSheet from './whoWhom/WhoWhomSheet'
@@ -81,6 +82,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
   const [whoWhom, setWhoWhom] = useState(false)
   // Не сбрасывается при переходе по семье: открыл направления — ходишь по ним, панель остаётся.
   const [familyOpen, setFamilyOpen] = useState(false)
+  const [confusableOpen, setConfusableOpen] = useState(false)
   const [visible, setVisible] = useState(false)
   const [hint, setHint] = useState(() => !hintSeen(PERSON_HINT))
 
@@ -180,18 +182,26 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             {/* Особенности глагола значками сразу под заголовком: что за глагол, видно до таблицы.
                 Каждый значок раскрывает своё — как устроен, или правило «кто кого». */}
             <div className="mt-2.5 flex flex-wrap justify-center gap-1.5" data-testid="verb-traits">
-              <button onClick={() => { setWhy(!why); setFamilyOpen(false) }} data-testid="verb-why" aria-expanded={why}
+              <button onClick={() => { setWhy(!why); setFamilyOpen(false); setConfusableOpen(false) }} data-testid="verb-why" aria-expanded={why}
                 className={`jewel-pressable inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-jewelInk pl-2 pr-3 py-1 text-[12px] font-bold text-jewelInk ${KINDS[verb.kind].chip}`}
                 style={{ boxShadow: '2px 2px 0 #15100A' }}>
                 <KindIcon kind={verb.kind} />
                 <span>{KIND_TRAIT[verb.kind]}{verb.kind === 'pattern' && verb.model && <> <span className="font-geo">{verb.model.title}</span></>}</span>
               </button>
               {verb.family && (
-                <button onClick={() => { setFamilyOpen(!familyOpen); setWhy(false) }} data-testid="verb-family-badge" aria-expanded={familyOpen}
+                <button onClick={() => { setFamilyOpen(!familyOpen); setWhy(false); setConfusableOpen(false) }} data-testid="verb-family-badge" aria-expanded={familyOpen}
                   className="jewel-pressable inline-flex items-center gap-1 rounded-full border-[1.5px] border-jewelInk bg-cream-tile pl-0.5 pr-3 py-0 text-[12px] font-bold text-jewelInk"
                   style={{ boxShadow: '2px 2px 0 #15100A' }}>
                   <DirectionGlyph direction={verb.family.role === 'member' ? verb.family.direction : 'none'} toward={verb.family.role === 'member' ? verb.family.toward : 'there'} size={28} />
                   <span>{verb.family.role === 'member' ? (verb.family.directionRu ? `${verb.family.directionRu}, ${TOWARD_RU[verb.family.toward]}` : TOWARD_RU[verb.family.toward]) : 'направления'}</span>
+                </button>
+              )}
+              {verb.confusable && verb.confusable.length > 1 && (
+                <button onClick={() => { setConfusableOpen(!confusableOpen); setWhy(false); setFamilyOpen(false) }} data-testid="verb-confusable-badge" aria-expanded={confusableOpen}
+                  className="jewel-pressable inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-jewelInk bg-cream-tile pl-2 pr-3 py-1 text-[12px] font-bold text-jewelInk"
+                  style={{ boxShadow: '2px 2px 0 #15100A' }}>
+                  <ConfusableIcon />
+                  не путать
                 </button>
               )}
               {hasWhoWhom(verb) && (
@@ -210,6 +220,7 @@ export default function VerbSheet({ verbId: initialVerbId, highlight: initialHig
             <FamilyNote verb={verb} onOpenVerb={setVerbId} show="member" />
             <FamilyNote verb={verb} onOpenVerb={setVerbId} show="base" />
           </>}
+          {confusableOpen && <ConfusableNote verb={verb} onOpenVerb={id => { setConfusableOpen(false); setVerbId(id) }} />}
           {why && (
             <div data-testid="verb-why-panel" className={`text-left rounded-xl border border-jewelInk/40 p-3 ${KINDS[verb.kind].chip}`}>
               <div className="text-[13px] text-jewelInk-soft">{verb.reason}</div>
