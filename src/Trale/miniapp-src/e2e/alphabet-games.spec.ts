@@ -275,11 +275,12 @@ function examOf(lesson: number) {
 }
 
 /** Короткая проверка: вопросы, которые урок играет. */
-async function exam(page: Page, lesson: number) {
+async function exam(page: Page, lesson: number, wrongAt = -1) {
   const qs = examOf(lesson)
-  for (const q of qs) {
+  for (const [i, q] of qs.entries()) {
     await expect(page.getByText(q.question)).toBeVisible()
-    await page.getByRole('button', { name: new RegExp(`^[a-z]\\s*${q.options[q.answerIndex].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).click()
+    const pick = i === wrongAt ? (q.answerIndex + 1) % q.options.length : q.answerIndex
+    await page.getByRole('button', { name: new RegExp(`^[a-z]\\s*${q.options[pick].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) }).click()
     await page.getByRole('button', { name: 'проверить' }).click()
     await page.getByRole('button', { name: /дальше →|итог →/ }).click()
   }
@@ -321,6 +322,27 @@ for (const size of [{ width: 375, height: 667 }, { width: 390, height: 844 }]) {
       await fits(page, 'finale')
       await shotOnce(page, '9-finale')
       await page.getByRole('button', { name: 'открыть словарь' }).click()
+    })
+
+    test('words lesson 12 with one slip in the check: still passed — the same party, a quiet line with the right answer, next lesson first', async ({ page }) => {
+      test.setTimeout(90_000)
+      await setup(page, [1], 12)
+      await openModule(page)
+      await page.getByTestId('lesson-btn-12').click()
+      await page.getByRole('button', { name: 'Начать' }).click()
+      await playGames(page)
+      await exam(page, 12, 1)
+      await expect(page.getByTestId('alphabet-finale')).toBeVisible()
+      await expect(page.getByTestId('finale-slip')).toContainText('Одна небольшая ошибка')
+      await expect(page.getByTestId('finale-slip')).toContainText(examOf(12)[1].explanation)
+      await page.waitForTimeout(4000)
+      await fits(page, 'finale with a slip')
+      await shotOnce(page, '9b-finale-slip')
+      await page.getByRole('button', { name: 'итог →' }).click()
+      await expect(page.getByRole('heading', { name: 'Молодец' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'следующий урок →' })).toBeVisible()
+      await expect(page.getByRole('button', { name: 'повторить ошибку' })).toBeVisible()
+      await shotOnce(page, '9c-result-slip')
     })
 
     test('late words lesson 23 (after კ ც წ): a dialogue with Bombora among the word games', async ({ page }) => {

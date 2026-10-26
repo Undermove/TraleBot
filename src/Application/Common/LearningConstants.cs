@@ -38,6 +38,16 @@ public static class LearningConstants
         /// с id 12 и дальше; «алфавит пройден» — значит пройдены все уроки букв.
         /// </summary>
         public const int AlphabetLetterLessons = 11;
+
+        /// <summary>
+        /// Mistakes a lesson check forgives. In the alphabet — the beginner's first lessons — one slip still
+        /// passes the lesson: one wrong tap out of four was where newcomers dropped off. Elsewhere — none.
+        /// The mini-app mirrors this rule (src/lessonPass.ts).
+        /// </summary>
+        public static int MistakesAllowed(string moduleId) => moduleId == Alphabet ? 1 : 0;
+
+        public static bool LessonPassed(string moduleId, int correct, int total) =>
+            total > 0 && correct <= total && correct >= total - MistakesAllowed(moduleId);
     }
 
     public static class Levels

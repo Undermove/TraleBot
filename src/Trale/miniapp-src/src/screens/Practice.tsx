@@ -12,6 +12,7 @@ import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
 import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
 import AlphabetInterlude, { ALPHABET_MODULE, alphabetExam, useAlphabetLesson } from '../alphabet/AlphabetInterlude'
 import IntroInterlude, { useIntroLesson } from '../intro/IntroInterlude'
+import { lessonPassed } from '../lessonPass'
 import { INTRO_MODULE, introExam } from '../intro/story'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -247,7 +248,7 @@ export default function Practice({
     reportAnswer(isCorrect)
 
     if (index + 1 >= total) {
-      const isPerfect = newCorrectCount === total
+      const isPerfect = lessonPassed(moduleId, newCorrectCount, total)
       let xpEarned = isPerfect ? 20 : 0
       if (authenticated) {
         try {
@@ -259,7 +260,7 @@ export default function Practice({
           applyOfflineProgress(isPerfect, xpEarned)
         }
       }
-      alphabet.finish({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions, verbs: uniqueVerbs(questions) }, newCorrectCount === total, navigate)
+      alphabet.finish({ kind: 'result', moduleId, lessonId, correct: newCorrectCount, total, xpEarned, wrongQuestions: newWrongQuestions, verbs: uniqueVerbs(questions) }, isPerfect, navigate)
       return
     }
     alphabet.afterQuestion(index + 1)
@@ -296,7 +297,7 @@ export default function Practice({
   async function next() {
     if (index + 1 >= total) {
       const finalCorrect = correctCount
-      const isPerfect = finalCorrect === total
+      const isPerfect = lessonPassed(moduleId, finalCorrect, total)
       let xpEarned = isPerfect ? 20 : 0
 
       if (authenticated) {

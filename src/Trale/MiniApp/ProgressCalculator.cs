@@ -23,12 +23,13 @@ public class ProgressCalculator : IProgressCalculator
             lessons = new List<int>();
         }
 
-        var isPerfect = correct == total;
+        // Passed: all right, or — in the alphabet — with one slip (LearningConstants.Modules.MistakesAllowed).
+        var passed = LearningConstants.Modules.LessonPassed(moduleId, correct, total);
         var wasFirst = lessonId > 0 && !lessons.Contains(lessonId);
 
         // XP economy: incentivize 100% and replays
         int xpEarned;
-        if (isPerfect)
+        if (passed)
         {
             xpEarned = wasFirst
                 ? LearningConstants.XpRewards.PerfectFirstAttempt
@@ -45,9 +46,9 @@ public class ProgressCalculator : IProgressCalculator
 
         RegisterActivity(progress);
 
-        // Record completion — only on 100%, skip "vocabulary" pseudo-module
+        // Record completion — only when passed, skip "vocabulary" pseudo-module
         var lessonCompleted = false;
-        if (isPerfect && lessonId > 0 && moduleId != "vocabulary")
+        if (passed && lessonId > 0 && moduleId != "vocabulary")
         {
             if (!lessons.Contains(lessonId))
             {

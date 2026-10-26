@@ -6,6 +6,7 @@ import Header from '../components/Header'
 import { CatalogDto, QuizQuestion, Screen } from '../types'
 import LessonVerbsLine from '../verbs/lesson/LessonVerbsLine'
 import type { VerbFormHitDto } from '../verbs/types'
+import { lessonPassed, mistakesAllowed } from '../lessonPass'
 
 interface Props {
   catalog: CatalogDto
@@ -33,16 +34,19 @@ export default function Result({
 }: Props) {
   const pct = Math.round((correct / total) * 100)
   const isPerfect = correct === total
+  // В «Алфавите» урок засчитан и с одной ошибкой (lessonPass.ts): это тоже успех, а не «ещё раз».
+  const passed = moduleId !== 'vocabulary' && lessonPassed(moduleId, correct, total)
+  const slipped = passed && !isPerfect
 
   // Find next lesson for "Next Lesson" button — only on 100%
   const module = catalog.modules.find((m) => m.id === moduleId)
   // Следующий — по порядку в модуле, а не id + 1 (в «Алфавите» после урока букв идут его уроки слов с id 12+).
   const nextLesson = module ? module.lessons[module.lessons.findIndex((l) => l.id === lessonId) + 1] ?? null : null
-  const isGreat = isPerfect
+  const isGreat = isPerfect || passed
   const isOK = pct >= 80 && !isGreat
 
   const mood: 'cheer' | 'happy' | 'think' = isGreat ? 'cheer' : isOK ? 'happy' : 'think'
-  const title = isGreat ? 'Отлично' : isOK ? 'Неплохо' : 'Ещё раз'
+  const title = slipped ? 'Молодец' : isGreat ? 'Отлично' : isOK ? 'Неплохо' : 'Ещё раз'
   const stampVariant: 'great' | 'ok' | 'retry' = isGreat ? 'great' : isOK ? 'ok' : 'retry'
 
   const backTarget: Screen = moduleId === 'vocabulary'
@@ -94,8 +98,10 @@ export default function Result({
         <div className="mt-2 font-sans text-[14px] text-jewelInk-mid">
           {moduleId === 'vocabulary'
             ? 'квиз по словарю завершён'
-            : isPerfect
+            : isGreat
             ? `страница ${lessonId} закрыта`
+            : mistakesAllowed(moduleId) > 0
+            ? `страница ${lessonId} — можно ошибиться только раз`
             : `страница ${lessonId} — нужно 100%`}
         </div>
 
@@ -111,10 +117,14 @@ export default function Result({
         {/* Comment */}
         <div className="mt-8 text-center max-w-[320px]">
           <p className="font-sans text-[14px] text-jewelInk-soft leading-snug">
-            {isGreat &&
+            {isGreat && !slipped &&
               'Так держать. Блокнот пополняется с каждой страницей.'}
+            {slipped &&
+              'Одна ошибка — не страшно, урок засчитан. Повторить её можно сейчас или потом.'}
             {isOK &&
-              'Ответь правильно на все вопросы, чтобы закрыть страницу.'}
+              (mistakesAllowed(moduleId) > 0
+                ? 'Чтобы закрыть страницу, можно ошибиться только один раз.'
+                : 'Ответь правильно на все вопросы, чтобы закрыть страницу.')}
             {!isOK &&
               !isGreat &&
               'Перечитай теорию и попробуй ответить на все вопросы.'}
@@ -136,6 +146,22 @@ export default function Result({
             </Button>
             <Button variant="ghost" onClick={() => navigate({ kind: 'dashboard' })}>
               на главную
+            </Button>
+          </>
+        ) : slipped && nextLesson ? (
+          // Засчитан с ошибкой: дальше — главное, повторить ошибку — по желанию.
+          <>
+            <Button
+              variant="green"
+              onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId: nextLesson.id })}
+            >
+              следующий урок →
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigate({ kind: 'practice-mistakes', moduleId, lessonId, wrongQuestions: wrongQuestions ?? [] })}
+            >
+              повторить ошибку
             </Button>
           </>
         ) : wrongQuestions && wrongQuestions.length > 0 ? (
