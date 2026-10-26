@@ -706,7 +706,23 @@
      "form": "ჰქონდა"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A5%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A5%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "აქვს",
+     "title": "ქონა",
+     "ru": "иметь",
+     "present": ["მაქვს"],
+     "note": "у меня есть — вещь, всё неживое"
+    },
+    {
+     "id": "ჰყავს",
+     "title": "ყოლა",
+     "ru": "иметь (кого-то)",
+     "present": ["მყავს"],
+     "note": "у меня есть — кто-то живой: человек, животное; и машина"
+    }
+   ]
   },
   {
    "lemma": "მიდის",
@@ -1753,7 +1769,23 @@
      "form": "ვხედავ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%AE%E1%83%94%E1%83%93%E1%83%90%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%AE%E1%83%94%E1%83%93%E1%83%90%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ხედავს",
+     "title": "ხედვა",
+     "ru": "видеть",
+     "present": ["ვხედავ"],
+     "note": "заметить глазами, само получается"
+    },
+    {
+     "id": "უყურებს",
+     "title": "ყურება",
+     "ru": "смотреть",
+     "present": ["ვუყურებ"],
+     "note": "нарочно, на что-то: фильм, матч"
+    }
+   ]
   },
   {
    "lemma": "წერს",
@@ -1858,7 +1890,30 @@
      "form": "წერს"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%AC%E1%83%94%E1%83%A0%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%AC%E1%83%94%E1%83%A0%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "წერს",
+     "title": "წერა",
+     "ru": "писать",
+     "present": ["ვწერ"],
+     "note": "само действие, без «кому»"
+    },
+    {
+     "id": "სწერს",
+     "title": "წერა",
+     "ru": "писать (кому-то)",
+     "present": ["ვწერ"],
+     "note": "письмо, сообщение"
+    },
+    {
+     "id": "აწერს",
+     "title": "წერა",
+     "ru": "писать (на чём-то)",
+     "present": ["ვაწერ"],
+     "note": "с მო- — подписать, расписаться; с და- — написать на чём-то"
+    }
+   ]
   },
   {
    "lemma": "უყვარს",
@@ -3074,7 +3129,23 @@
      "form": "ვიყიდე"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A7%E1%83%98%E1%83%93%E1%83%A3%E1%83%9A%E1%83%9D%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A7%E1%83%98%E1%83%93%E1%83%A3%E1%83%9A%E1%83%9D%E1%83%91%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ყიდულობს",
+     "title": "ყიდვა",
+     "ru": "покупать",
+     "present": ["ვყიდულობ"],
+     "note": "корень ყიდ — тот же, что у «продавать»"
+    },
+    {
+     "id": "ყიდის",
+     "title": "გაყიდვა",
+     "ru": "продавать",
+     "present": ["ვყიდი"],
+     "note": "корень ყიდ — тот же, что у «покупать»"
+    }
+   ]
   },
   {
    "lemma": "ლაპარაკობს",
@@ -3684,7 +3755,23 @@
      "form": "გვყავს"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%B0%E1%83%A7%E1%83%90%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%B0%E1%83%A7%E1%83%90%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "აქვს",
+     "title": "ქონა",
+     "ru": "иметь",
+     "present": ["მაქვს"],
+     "note": "у меня есть — вещь, всё неживое"
+    },
+    {
+     "id": "ჰყავს",
+     "title": "ყოლა",
+     "ru": "иметь (кого-то)",
+     "present": ["მყავს"],
+     "note": "у меня есть — кто-то живой: человек, животное; и машина"
+    }
+   ]
   },
   {
    "lemma": "დადის",
@@ -4600,7 +4687,30 @@
      "form": "მისწეროთ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A1%E1%83%AC%E1%83%94%E1%83%A0%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A1%E1%83%AC%E1%83%94%E1%83%A0%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "წერს",
+     "title": "წერა",
+     "ru": "писать",
+     "present": ["ვწერ"],
+     "note": "само действие, без «кому»"
+    },
+    {
+     "id": "სწერს",
+     "title": "წერა",
+     "ru": "писать (кому-то)",
+     "present": ["ვწერ"],
+     "note": "письмо, сообщение"
+    },
+    {
+     "id": "აწერს",
+     "title": "წერა",
+     "ru": "писать (на чём-то)",
+     "present": ["ვაწერ"],
+     "note": "с მო- — подписать, расписаться; с და- — написать на чём-то"
+    }
+   ]
   },
   {
    "lemma": "ამზადებს",
@@ -4782,7 +4892,23 @@
      "form": "უყურო"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A3%E1%83%A7%E1%83%A3%E1%83%A0%E1%83%94%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A3%E1%83%A7%E1%83%A3%E1%83%A0%E1%83%94%E1%83%91%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ხედავს",
+     "title": "ხედვა",
+     "ru": "видеть",
+     "present": ["ვხედავ"],
+     "note": "заметить глазами, само получается"
+    },
+    {
+     "id": "უყურებს",
+     "title": "ყურება",
+     "ru": "смотреть",
+     "present": ["ვუყურებ"],
+     "note": "нарочно, на что-то: фильм, матч"
+    }
+   ]
   },
   {
    "lemma": "პოულობს",
@@ -5026,7 +5152,23 @@
     }
    ],
    "source": "https://en.wiktionary.org/wiki/%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%98%E1%83%A1#Georgian",
-   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%95%E1%83%90&oldid=88047085","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjE6IuGDkuGDkOGDp+GDmOGDk+GDleGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://www.ganmarteba.ge/word/%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%95%E1%83%90"]
+   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%95%E1%83%90&oldid=88047085","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjE6IuGDkuGDkOGDp+GDmOGDk+GDleGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://www.ganmarteba.ge/word/%E1%83%92%E1%83%90%E1%83%A7%E1%83%98%E1%83%93%E1%83%95%E1%83%90"],
+   "confusable": [
+    {
+     "id": "ყიდულობს",
+     "title": "ყიდვა",
+     "ru": "покупать",
+     "present": ["ვყიდულობ"],
+     "note": "корень ყიდ — тот же, что у «продавать»"
+    },
+    {
+     "id": "ყიდის",
+     "title": "გაყიდვა",
+     "ru": "продавать",
+     "present": ["ვყიდი"],
+     "note": "корень ყიდ — тот же, что у «покупать»"
+    }
+   ]
   },
   {
    "lemma": "ირჩევს",
@@ -5880,7 +6022,23 @@
      "form": "გააჩერე"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ჩერდება",
+     "title": "გაჩერება",
+     "ru": "останавливаться",
+     "present": ["ვჩერდები"],
+     "note": "останавливаешься сам"
+    },
+    {
+     "id": "აჩერებს",
+     "title": "გაჩერება",
+     "ru": "останавливать",
+     "present": ["ვაჩერებ"],
+     "note": "останавливаешь кого-то или что-то"
+    }
+   ]
   },
   {
    "lemma": "ნიშნავს",
@@ -6158,7 +6316,23 @@
      "form": "გაიღვიძა"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%98%E1%83%A6%E1%83%95%E1%83%98%E1%83%AB%E1%83%94%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%98%E1%83%A6%E1%83%95%E1%83%98%E1%83%AB%E1%83%94%E1%83%91%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "იღვიძებს",
+     "title": "ღვიძება",
+     "ru": "просыпаться",
+     "present": ["ვიღვიძებ"],
+     "note": "просыпаешься сам"
+    },
+    {
+     "id": "აღვიძებს",
+     "title": "ღვიძება",
+     "ru": "будить",
+     "present": ["ვაღვიძებ"],
+     "note": "будишь кого-то"
+    }
+   ]
   },
   {
    "lemma": "უგზავნის",
@@ -6403,7 +6577,23 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%98%E1%83%97%E1%83%AE%E1%83%9D%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%98%E1%83%97%E1%83%AE%E1%83%9D%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ითხოვს",
+     "title": "თხოვნა",
+     "ru": "просить, требовать",
+     "present": ["ვითხოვ"],
+     "note": "что-то; ещё — брать взаймы"
+    },
+    {
+     "id": "სთხოვს",
+     "title": "თხოვნა",
+     "ru": "просить (у кого-то)",
+     "present": ["ვთხოვ"],
+     "note": "кого-то: გთხოვ — «прошу тебя», оно же «пожалуйста»"
+    }
+   ]
   },
   {
    "lemma": "იცვამს",
@@ -6566,7 +6756,23 @@
     }
    ],
    "source": "https://en.wiktionary.org/wiki/%E1%83%A9%E1%83%94%E1%83%A0%E1%83%93%E1%83%94%E1%83%91%E1%83%90#Georgian",
-   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%93%E1%83%94%E1%83%91%E1%83%90&oldid=88244198","https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%90&oldid=85680467","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjQ6IuGDkuGDkOGDqeGDlOGDoOGDlOGDkeGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://www.ganmarteba.ge/word/%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%90"]
+   "titleSources": ["https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%93%E1%83%94%E1%83%91%E1%83%90&oldid=88244198","https://en.wiktionary.org/w/index.php?title=%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%90&oldid=85680467","http://ena.ge/explanatory-online?ls=YToyOntzOjEyOiJ3b3JkX21ldGF1cmkiO3M6MjQ6IuGDkuGDkOGDqeGDlOGDoOGDlOGDkeGDkCI7czoxMToid29yZF9zdGF0aWEiO3M6MDoiIjt9","https://www.ganmarteba.ge/word/%E1%83%92%E1%83%90%E1%83%A9%E1%83%94%E1%83%A0%E1%83%94%E1%83%91%E1%83%90"],
+   "confusable": [
+    {
+     "id": "ჩერდება",
+     "title": "გაჩერება",
+     "ru": "останавливаться",
+     "present": ["ვჩერდები"],
+     "note": "останавливаешься сам"
+    },
+    {
+     "id": "აჩერებს",
+     "title": "გაჩერება",
+     "ru": "останавливать",
+     "present": ["ვაჩერებ"],
+     "note": "останавливаешь кого-то или что-то"
+    }
+   ]
   },
   {
    "lemma": "ამთავრებს",
@@ -6722,7 +6928,23 @@
      "form": "გააღო"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A6%E1%83%94%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A6%E1%83%94%E1%83%91%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "აღებს",
+     "title": "ღება",
+     "ru": "открывать",
+     "present": ["ვაღებ"],
+     "note": "только «открыть»"
+    },
+    {
+     "id": "ხსნის",
+     "title": "ხსნა",
+     "ru": "открывать",
+     "present": ["ვხსნი"],
+     "note": "с გა- — тоже «открыть», с მო- — снять, развязать, с ა- — объяснить"
+    }
+   ]
   },
   {
    "lemma": "იძინებს",
@@ -7075,7 +7297,23 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%AE%E1%83%A1%E1%83%9C%E1%83%98%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%AE%E1%83%A1%E1%83%9C%E1%83%98%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "აღებს",
+     "title": "ღება",
+     "ru": "открывать",
+     "present": ["ვაღებ"],
+     "note": "только «открыть»"
+    },
+    {
+     "id": "ხსნის",
+     "title": "ხსნა",
+     "ru": "открывать",
+     "present": ["ვხსნი"],
+     "note": "с გა- — тоже «открыть», с მო- — снять, развязать, с ა- — объяснить"
+    }
+   ]
   },
   {
    "lemma": "შემოდის",
@@ -8031,7 +8269,23 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%AE%E1%83%A3%E1%83%A0%E1%83%90%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%AE%E1%83%A3%E1%83%A0%E1%83%90%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ხურავს",
+     "title": "ხურვა",
+     "ru": "закрывать",
+     "present": ["ვხურავ"],
+     "note": "с და-; ещё — покрыть крышей"
+    },
+    {
+     "id": "კეტავს",
+     "title": "დაკეტვა",
+     "ru": "запирать, закрывать",
+     "present": ["ვკეტავ"],
+     "note": "на замок, на засов"
+    }
+   ]
   },
   {
    "lemma": "გამოთქვამს",
@@ -8809,7 +9063,23 @@
      "form": "ვთხოვ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A1%E1%83%97%E1%83%AE%E1%83%9D%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A1%E1%83%97%E1%83%AE%E1%83%9D%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ითხოვს",
+     "title": "თხოვნა",
+     "ru": "просить, требовать",
+     "present": ["ვითხოვ"],
+     "note": "что-то; ещё — брать взаймы"
+    },
+    {
+     "id": "სთხოვს",
+     "title": "თხოვნა",
+     "ru": "просить (у кого-то)",
+     "present": ["ვთხოვ"],
+     "note": "кого-то: გთხოვ — «прошу тебя», оно же «пожалуйста»"
+    }
+   ]
   },
   {
    "lemma": "უკრავს",
@@ -9763,7 +10033,30 @@
      "form": "ლოცულობდა"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%9A%E1%83%9D%E1%83%AA%E1%83%A3%E1%83%9A%E1%83%9D%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%9A%E1%83%9D%E1%83%AA%E1%83%A3%E1%83%9A%E1%83%9D%E1%83%91%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ლოცულობს",
+     "title": "ლოცვა",
+     "ru": "молиться",
+     "present": ["ვლოცულობ"],
+     "note": "само действие"
+    },
+    {
+     "id": "ულოცავს",
+     "title": "ლოცვა",
+     "ru": "поздравлять",
+     "present": ["ვულოცავ"],
+     "note": "кого-то (с მი-); корень тот же, что у «молиться»"
+    },
+    {
+     "id": "ლოცავს",
+     "title": "ლოცვა",
+     "ru": "благословлять",
+     "present": ["ვლოცავ"],
+     "note": "кого-то; корень тот же, что у «молиться»"
+    }
+   ]
   },
   {
    "lemma": "ითვლის",
@@ -11116,7 +11409,30 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%A3%E1%83%9A%E1%83%9D%E1%83%AA%E1%83%90%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%A3%E1%83%9A%E1%83%9D%E1%83%AA%E1%83%90%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ლოცულობს",
+     "title": "ლოცვა",
+     "ru": "молиться",
+     "present": ["ვლოცულობ"],
+     "note": "само действие"
+    },
+    {
+     "id": "ულოცავს",
+     "title": "ლოცვა",
+     "ru": "поздравлять",
+     "present": ["ვულოცავ"],
+     "note": "кого-то (с მი-); корень тот же, что у «молиться»"
+    },
+    {
+     "id": "ლოცავს",
+     "title": "ლოცვა",
+     "ru": "благословлять",
+     "present": ["ვლოცავ"],
+     "note": "кого-то; корень тот же, что у «молиться»"
+    }
+   ]
   },
   {
    "lemma": "ყრის",
@@ -11324,7 +11640,30 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%AC%E1%83%94%E1%83%A0%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%AC%E1%83%94%E1%83%A0%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "წერს",
+     "title": "წერა",
+     "ru": "писать",
+     "present": ["ვწერ"],
+     "note": "само действие, без «кому»"
+    },
+    {
+     "id": "სწერს",
+     "title": "წერა",
+     "ru": "писать (кому-то)",
+     "present": ["ვწერ"],
+     "note": "письмо, сообщение"
+    },
+    {
+     "id": "აწერს",
+     "title": "წერა",
+     "ru": "писать (на чём-то)",
+     "present": ["ვაწერ"],
+     "note": "с მო- — подписать, расписаться; с და- — написать на чём-то"
+    }
+   ]
   },
   {
    "lemma": "იცდის",
@@ -11914,7 +12253,23 @@
      "form": "გააღვიძეთ"
     }
    ],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A6%E1%83%95%E1%83%98%E1%83%AB%E1%83%94%E1%83%91%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%90%E1%83%A6%E1%83%95%E1%83%98%E1%83%AB%E1%83%94%E1%83%91%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "იღვიძებს",
+     "title": "ღვიძება",
+     "ru": "просыпаться",
+     "present": ["ვიღვიძებ"],
+     "note": "просыпаешься сам"
+    },
+    {
+     "id": "აღვიძებს",
+     "title": "ღვიძება",
+     "ru": "будить",
+     "present": ["ვაღვიძებ"],
+     "note": "будишь кого-то"
+    }
+   ]
   },
   {
    "lemma": "სადილობს",
@@ -12028,7 +12383,30 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%9A%E1%83%9D%E1%83%AA%E1%83%90%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%9A%E1%83%9D%E1%83%AA%E1%83%90%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ლოცულობს",
+     "title": "ლოცვა",
+     "ru": "молиться",
+     "present": ["ვლოცულობ"],
+     "note": "само действие"
+    },
+    {
+     "id": "ულოცავს",
+     "title": "ლოცვა",
+     "ru": "поздравлять",
+     "present": ["ვულოცავ"],
+     "note": "кого-то (с მი-); корень тот же, что у «молиться»"
+    },
+    {
+     "id": "ლოცავს",
+     "title": "ლოცვა",
+     "ru": "благословлять",
+     "present": ["ვლოცავ"],
+     "note": "кого-то; корень тот же, что у «молиться»"
+    }
+   ]
   },
   {
    "lemma": "ტრიალებს",
@@ -12117,7 +12495,23 @@
    "alt": [],
    "notForParse": [],
    "sentences": [],
-   "source": "https://en.wiktionary.org/wiki/%E1%83%99%E1%83%94%E1%83%A2%E1%83%90%E1%83%95%E1%83%A1#Georgian"
+   "source": "https://en.wiktionary.org/wiki/%E1%83%99%E1%83%94%E1%83%A2%E1%83%90%E1%83%95%E1%83%A1#Georgian",
+   "confusable": [
+    {
+     "id": "ხურავს",
+     "title": "ხურვა",
+     "ru": "закрывать",
+     "present": ["ვხურავ"],
+     "note": "с და-; ещё — покрыть крышей"
+    },
+    {
+     "id": "კეტავს",
+     "title": "დაკეტვა",
+     "ru": "запирать, закрывать",
+     "present": ["ვკეტავ"],
+     "note": "на замок, на засов"
+    }
+   ]
   },
   {
    "lemma": "ბეჭდავს",

@@ -177,6 +177,13 @@ public class VerbCatalogSeeder(ITraleDbContext dbContext)
             card["noTense"] = noTense.DeepClone();
         }
 
+        // Verbs that sound alike in Russian but mean slightly different things (scripts/verbs/confusables.json):
+        // the whole group, each with its "I" form and how it differs.
+        if (entry["confusable"] is { } confusable)
+        {
+            card["confusable"] = confusable.DeepClone();
+        }
+
         verb.CardJson = card.ToJsonString(Json);
     }
 

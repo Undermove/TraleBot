@@ -18,6 +18,7 @@ const toDto = (v: Entry): VerbDto => ({
   sentences: v.sentences ?? [], source: v.source ?? null,
   supplemented: ('supplemented' in v ? v.supplemented : null) as VerbDto['supplemented'],
   noTense: ('noTense' in v ? v.noTense : null) as VerbDto['noTense'],
+  confusable: ('confusable' in v ? v.confusable : null) as VerbDto['confusable'],
   status: 'verified'
 })
 

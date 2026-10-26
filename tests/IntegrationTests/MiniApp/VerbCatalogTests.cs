@@ -495,6 +495,18 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Card_of_a_verb_that_sounds_like_another_in_Russian_says_how_they_differ()
+    {
+        var see = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("ხედავს", CancellationToken.None)))!)!;
+
+        var group = see["confusable"]!.AsArray();
+        group.Select(m => m!["id"]!.GetValue<string>()).Should().Equal("ხედავს", "უყურებს");
+        group[1]!["present"]![0]!.GetValue<string>().Should().Be("ვუყურებ",
+            because: "the card shows the other verb by its «I» form, the one a learner meets");
+        group.Should().OnlyContain(m => m!["note"]!.GetValue<string>().Length > 0);
+    }
+
+    [Test]
     public async Task Card_says_what_each_main_form_means_in_plain_Russian()
     {
         var want = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("უნდა", CancellationToken.None)))!)!;

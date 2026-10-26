@@ -58,6 +58,29 @@ describe('VerbSheet on catalog verbs', () => {
     expect(screen.queryByTestId('verb-tense-perfect')).toBeNull()
   })
 
+  it('marks verbs that sound alike in Russian: the badge opens how each differs, and another one opens in the same card', async () => {
+    // «иметь»: вещь — აქვს, кто-то живой — ჰყავს.
+    const have = verbByLemma('აქვს')
+    const haveSomeone = verbByLemma('ჰყავს')
+    await open(have)
+    expect(screen.queryByTestId('verb-confusable')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('verb-confusable-badge'))
+    expect(screen.getByTestId('verb-confusable-self').textContent).toContain(have.tenses.present![0][0])
+    expect(screen.getByTestId('verb-confusable-other').textContent).toContain(haveSomeone.tenses.present![0][0])
+    expect(screen.getByTestId('verb-confusable-other').textContent).toContain('живой')
+
+    api.fetchVerb.mockResolvedValue(haveSomeone)
+    fireEvent.click(screen.getByTestId('verb-confusable-other'))
+    await waitFor(() => expect(api.fetchVerb).toHaveBeenLastCalledWith(haveSomeone.id))
+    expect(await screen.findByText(haveSomeone.ru)).toBeTruthy()
+  })
+
+  it('shows no such badge on a verb nothing is confused with', async () => {
+    await open(verbByLemma('მიდის'))
+    expect(screen.queryByTestId('verb-confusable-badge')).toBeNull()
+  })
+
   it('shows in place of a tense the verb lacks what is said instead, and which tenses were written in by grammar', async () => {
     // «знать»: «узнал» — другой глагол; будущее и «знал бы» вписаны по грамматике.
     const know = verbByLemma('იცის')

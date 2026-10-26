@@ -22,6 +22,9 @@
 //                       («вижу тебя» — გხედავ). case — падеж по-русски: acc «вижу тебя», dat «показываю
 //                       тебе». attested — формы «меня / тебя / нас» по правилу, встреченные в корпусах
 //                       (attested.bloom); список вычитан руками, сборка требует хотя бы две такие формы
+//   confusables.json    { groups: [{ лемма: "в чём разница" }] } — глаголы, которые по-русски звучат похоже,
+//                       а значат чуть разное («видеть» и «смотреть»); разница написана по толкованиям
+//                       Викисловаря (en в verbs.raw.json), на карточке — значок «не путать»
 //   sentences.stoplist.json  слова, которых не должно быть в примерах (страны и темы, которые здесь
 //                       не к месту); сборка падает, если такое слово нашлось
 //
@@ -71,6 +74,7 @@ const prodLookups = read('prod-lookups.json').words
 const wanted = read('wanted.json')
 // Времена, которых нет в таблице Викисловаря, вписанные руками по грамматике (см. ниже, «дополнения»).
 const supplements = read('supplements.json').verbs
+const confusables = read('confusables.json').groups
 const attested = loadAttested(resolve(here, '../../src/Trale/Verbs/attested.bloom'))
 
 const LIMIT = 200
@@ -296,6 +300,28 @@ for (const [lemma, entry] of Object.entries(objectPerson)) {
   if (!verbs.some(v => v.lemma === lemma)) fail.push(`object-person.json: глагола ${lemma} нет в каталоге`)
   if (!['acc', 'dat'].includes(entry.case)) fail.push(`object-person.json: у ${lemma} case должен быть acc или dat`)
   if (!Array.isArray(entry.attested) || entry.attested.length < 2) fail.push(`object-person.json: у ${lemma} меньше двух форм, встреченных в корпусах`)
+}
+
+// Не путать: у каждого глагола группы — вся группа (он сам тоже, чтобы строки стояли в одном порядке
+// на всех карточках) с формой «я» и строкой разницы.
+const groupOf = new Map()
+for (const [i, group] of confusables.entries()) {
+  const members = Object.entries(group)
+  if (members.length < 2) fail.push(`confusables.json: в группе ${i + 1} меньше двух глаголов`)
+  for (const [lemma, note] of members) {
+    if (!verbs.some(v => v.lemma === lemma)) fail.push(`confusables.json: глагола ${lemma} нет в каталоге`)
+    if (typeof note !== 'string' || !note.trim()) fail.push(`confusables.json: у ${lemma} нет строки разницы`)
+    if (groupOf.has(lemma)) fail.push(`confusables.json: ${lemma} стоит в двух группах`)
+    groupOf.set(lemma, members)
+  }
+}
+for (const v of verbs) {
+  const members = groupOf.get(v.lemma)
+  if (!members) continue
+  v.confusable = members.map(([lemma, note]) => {
+    const o = verbs.find(x => x.lemma === lemma)
+    return o && { id: lemma, title: o.title, ru: o.ru, present: o.tenses.present[0], note }
+  }).filter(Boolean)
 }
 
 const orphans = [...pinned.keys()].filter(lemma => !verbs.some(v => v.lemma === lemma))

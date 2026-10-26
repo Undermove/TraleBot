@@ -46,6 +46,8 @@ export interface VerbDto extends VerbSummaryDto {
   supplemented?: TenseKey[] | null
   /** Времена, которых у глагола нет вовсе («знать» — нет «узнал»): что говорят вместо них — по шесть лиц, как в tenses. */
   noTense?: Partial<Record<TenseKey, { instead: string[]; ru: string[] }>> | null
+  /** Глаголы, которые по-русски звучат похоже («видеть» и «смотреть»): вся группа, сам глагол тоже, — с формой «я» и тем, в чём разница. */
+  confusable?: { id: string; title: string; ru: string; present: string[]; note: string }[] | null
   /** generated — таблицы в источнике нет: запись составила одна модель и одобрила вторая; учится и играется как любой глагол. Нет поля — verified. */
   status?: 'verified' | 'generated'
   /** У глагола, добавленного по запросу: на чём держатся формы и перевод (что сверено с источниками). */
