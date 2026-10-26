@@ -9,15 +9,17 @@ import { lessonInfo, positionOf, wordsUpToLesson } from '../lessons'
 import { useLater } from '../../verbs/games/useLater'
 import { api } from '../../api'
 import { DictChip } from '../words/WordIntro'
+import type { QuizQuestion } from '../../types'
 
 /**
- * Праздник конца урока (только если урок засчитан).
+ * Праздник конца урока (только если урок засчитан). Засчитан с одной ошибкой — праздник тот же, а под ним
+ * тихая строка: ошибка небольшая, вот как правильно.
  * Урок букв: три новые буквы влетают в «Мой алфавит», конфетти, Бомбора прыгает.
  * Урок слов: счётчик слов догоняет новое число; слова урока по-настоящему ложатся в «Словарь» (сервер сам
  * решает, какие, — POST vocabulary/alphabet-words) и по одному влетают в чип «Словарь», есть кнопка открыть
  * словарь. Не вышло (нет сети, нет входа) — праздник без этой части.
  */
-export default function Finale({ lessonId, onNext, onVocabulary }: { lessonId: number; onNext: () => void; onVocabulary: () => void }) {
+export default function Finale({ lessonId, slips = [], onNext, onVocabulary }: { lessonId: number; slips?: QuizQuestion[]; onNext: () => void; onVocabulary: () => void }) {
   const info = lessonInfo(lessonId)
   const lesson = lessonId
   const wordsLesson = info.kind === 'words'
@@ -151,6 +153,15 @@ export default function Finale({ lessonId, onNext, onVocabulary }: { lessonId: n
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {slips.length > 0 && (
+        <div className="mt-3 w-full max-w-[360px] rounded-2xl border border-jewelInk/30 bg-cream-tile px-3 py-2.5 text-left" data-testid="finale-slip">
+          <div className="text-[13px] font-extrabold">Одна небольшая ошибка — не страшно, урок засчитан</div>
+          {slips.map(q => (
+            <div key={q.id} className="mt-1 text-[13px] text-jewelInk-mid">{q.explanation || `${q.question} — ${q.options[q.answerIndex]}`}</div>
+          ))}
         </div>
       )}
 

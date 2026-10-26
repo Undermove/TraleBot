@@ -95,7 +95,7 @@ export function useAlphabetLesson(moduleId: string, lessonId: number, questions:
     /** Доля урока для полоски сверху: игры — первые 80%, проверка — остальное. */
     progress: (index: number, total: number) => (on ? Math.min(at, steps.length) / Math.max(1, steps.length) * 0.8 + (at >= steps.length ? (index / Math.max(1, total)) * 0.2 : 0) : index / Math.max(1, total)),
     afterQuestion(_n: number) { /* игры — до проверки */ },
-    /** Урок закончен (прогресс уже отправлен): засчитан — праздник, иначе сразу итог. */
+    /** Урок закончен (прогресс уже отправлен): засчитан (в том числе с одной ошибкой) — праздник, иначе сразу итог. */
     finish(result: Result, perfect: boolean, navigate: (s: Screen) => void) {
       if (on) { lessonFlow.done(result.correct); lessonFlow.end(perfect ? 'lesson_complete' : 'lesson_fail', result.correct) }
       if (on && perfect) setFinale(result)
@@ -119,7 +119,7 @@ export default function AlphabetInterlude({ scene, lessonId, fraction, onExit, o
 }) {
   const { lesson, pool } = useMemo(() => wordGamesFor(lessonId), [lessonId])
   if (scene.kind === 'finale')
-    return <Finale lessonId={lessonId} onNext={onDone} onVocabulary={() => navigate({ kind: 'vocabulary-list' })} />
+    return <Finale lessonId={lessonId} slips={scene.result.wrongQuestions ?? []} onNext={onDone} onVocabulary={() => navigate({ kind: 'vocabulary-list' })} />
   const step = scene.step
   const common = { lesson: lesson.stage, fraction, onExit, onDone }
   switch (step.kind) {
