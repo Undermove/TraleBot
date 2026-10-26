@@ -83,12 +83,23 @@ public class AlphabetLessonWordsTests : TestBase
     [Test]
     public async Task A_lesson_that_did_not_count_adds_nothing()
     {
-        (await Post("progress/lesson-complete", new { moduleId = "alphabet-progressive", lessonId = 12, correct = 3, total = 4 }))
+        // Two mistakes out of four: the alphabet forgives only one.
+        (await Post("progress/lesson-complete", new { moduleId = "alphabet-progressive", lessonId = 12, correct = 2, total = 4 }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await Post("vocabulary/alphabet-words", new { lessonId = 12 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await Post("vocabulary/alphabet-words", new { lessonId = 99 })).StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await Dictionary()).Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task A_lesson_passed_with_one_slip_still_puts_its_words_into_the_dictionary()
+    {
+        (await Post("progress/lesson-complete", new { moduleId = "alphabet-progressive", lessonId = 12, correct = 3, total = 4 }))
+            .StatusCode.Should().Be(HttpStatusCode.OK);
+
+        (await Post("vocabulary/alphabet-words", new { lessonId = 12 })).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await Dictionary()).Should().HaveCount(3);
     }
 
     [Test]
