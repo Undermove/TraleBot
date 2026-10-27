@@ -228,6 +228,7 @@
   "ხურავს": { "web": 95, "news": 114, "wiki": 130, "subs": 0, "tatoeba": 4, "lessons": 2 },
   "ჰპარავს": { "web": 5.3, "news": 7.5, "wiki": 3.7, "subs": 0, "tatoeba": 0, "lessons": 0 },
   "ჰყავს": { "web": 2044, "news": 2038, "wiki": 1637, "subs": 56, "tatoeba": 80, "lessons": 80 },
-  "იცნობს": { "web": 466, "news": 484, "wiki": 169, "subs": 13, "tatoeba": 21, "lessons": 0 }
+  "იცნობს": { "web": 466, "news": 484, "wiki": 169, "subs": 13, "tatoeba": 21, "lessons": 0 },
+  "ჯდება": { "web": 391, "news": 262, "wiki": 117, "subs": 4, "tatoeba": 12, "lessons": 22 }
  }
 }
