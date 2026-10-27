@@ -79,6 +79,17 @@ function similarVerbs(verb, verbs, max = 6) {
 
 const verbLink = (v) => `<a href="${v.path}">${esc(v.gloss)} — ${ka(v.lemma)}</a>`
 
+// Откуда формы: из таблицы Викисловаря, а времена из supplemented вписаны по грамматике и сверены
+// с корпусами (scripts/verbs/supplements.json). У глагола без таблицы в Викисловаре — все времена.
+function formsSource(verb) {
+  const article = `<a href="${esc(verb.source)}" rel="noopener nofollow">Викисловарь, статья ${ka(verb.lemma)}</a> (CC BY-SA 4.0)`
+  const added = (verb.supplemented ?? []).filter((t) => verb.tenses[t])
+  if (!added.length) return `Формы: ${article}.`
+  const byGrammar = 'вписаны по грамматике и сверены с корпусами текстов'
+  if (ALL_TENSES.every((t) => !verb.tenses[t] || added.includes(t))) return `Значение: ${article}; таблицы спряжения там нет, формы ${byGrammar}.`
+  return `Формы: ${article}; времена ${added.map((t) => `«${esc(TENSES[t].name.toLowerCase())}»`).join(', ')} ${byGrammar}.`
+}
+
 function behaviour(verb, byLemma, verbs) {
   const parts = []
   const model = verb.model ? byLemma.get(verb.model.id) : null
@@ -153,7 +164,7 @@ ${sentences.map((s) => `<div class="ex"><p class="k">${ka(s.ka)}</p><p class="tr
 ${rare.length ? `<h2 id="rare">Редкие времена</h2>
 <details><summary>Показать ещё ${rare.length}: ${rare.map((t) => esc(TENSES[t].name.toLowerCase())).join(', ')}</summary><div class="in"><p>Эти формы нужны реже. Сначала хватит шести времён выше.</p><div class="tenses">${rare.map((t) => tenseCard(verb, verb.tenses, t, { level: 'h3', id: `t-${t}` })).join('')}</div></div></details>` : ''}
 ${verb.alt.length ? `<h2 id="alt">Этот же глагол с другими приставками</h2>${altBlocks(verb)}` : ''}
-<p class="sources">Источники. Формы: <a href="${esc(verb.source)}" rel="noopener nofollow">Викисловарь, статья ${ka(verb.lemma)}</a> (CC BY-SA 4.0).${sentences.some((s) => !s.source) ? ' Примеры: <a href="https://tatoeba.org" rel="noopener nofollow">Tatoeba</a> (CC BY 2.0 FR), ссылка у каждого предложения.' : ''} Русские фразы к формам — TraleBot. В транскрипции знак ’ после буквы — резкий звук без выдоха, подробнее в <a href="/grammar/alphabet/">алфавите</a>.</p>
+<p class="sources">Источники. ${formsSource(verb)}${sentences.some((s) => !s.source) ? ' Примеры: <a href="https://tatoeba.org" rel="noopener nofollow">Tatoeba</a> (CC BY 2.0 FR), ссылка у каждого предложения.' : ''} Русские фразы к формам — TraleBot. В транскрипции знак ’ после буквы — резкий звук без выдоха, подробнее в <a href="/grammar/alphabet/">алфавите</a>.</p>
 </article>`
 
   const prev = verbs[verb.rank - 2]
