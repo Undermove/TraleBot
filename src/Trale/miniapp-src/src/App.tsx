@@ -41,6 +41,7 @@ import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
 import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
 import { parseVerbsSectionLink } from './verbs/section/link'
 import { campaignKeyFromUrl, campaignOpenSettled } from './campaignOpen'
+import { appEvents } from './analytics/appEvents'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -121,6 +122,7 @@ export default function App() {
   const [onboardingHint, setOnboardingHint] = useState<string | null>(null)
   // Ссылка вела в раздел «Глаголы», а человек ещё не выбрал уровень: откроем раздел сразу после выбора.
   const [afterOnboarding, setAfterOnboarding] = useState<Screen | null>(null)
+  useEffect(() => appEvents.screen(screen.kind), [screen.kind])
 
   // Load catalog + progress from backend on mount
   useEffect(() => {
@@ -185,10 +187,12 @@ export default function App() {
         // user (level but no XP) gets the welcome lesson, and the dashboard hub is
         // revealed only once that first XP is earned. See entryFlow.resolveEntryScreen.
         setScreen(deepLink ?? resolveEntryScreen({ hasLevel, progress: loadedProgress, catalog: catalogData }))
+        appEvents.ready(Boolean(meData?.authenticated))
       })
       .catch(() => {
         if (cancelled) return
         setLoadError(true)
+        appEvents.failed()
       })
     return () => {
       cancelled = true

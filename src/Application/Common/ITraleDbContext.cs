@@ -30,6 +30,7 @@ public interface ITraleDbContext
     DbSet<VerbSession> VerbSessions { get; }
     DbSet<VerbSectionVisit> VerbSectionVisits { get; }
     DbSet<LessonEvent> LessonEvents { get; }
+    DbSet<AppEvent> AppEvents { get; }
     DbSet<WaitlistEntry> WaitlistEntries { get; }
     DbSet<TranslationCacheEntry> TranslationCache { get; }
     DbSet<BroadcastCampaign> BroadcastCampaigns { get; }

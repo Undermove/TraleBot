@@ -1063,6 +1063,47 @@ public class MiniAppController : Controller
         return NoContent();
     }
 
+    public class AppEventsRequest
+    {
+        public List<AppEventDto>? Events { get; set; }
+    }
+
+    public class AppEventDto
+    {
+        public string? Event { get; set; }
+        public string? Target { get; set; }
+        public int? Value { get; set; }
+        public string? Platform { get; set; }
+        public string? StartParam { get; set; }
+    }
+
+    /// <summary>
+    /// Mini-app events outside lessons, a small batch at a time (<see cref="Application.MiniApp.Commands.RecordAppEvents"/>):
+    /// opened, loaded, screen shown, paywall, hidden. Unknown events are dropped silently, past the per-day cap
+    /// nothing is stored; always 204 for a signed-in person.
+    /// </summary>
+    [HttpPost("app-events")]
+    public async Task<IActionResult> RecordAppEvents([FromBody] AppEventsRequest? request, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null)
+        {
+            return Unauthorized(new { error = "not_authenticated" });
+        }
+
+        var items = (request?.Events ?? [])
+            .Take(Application.MiniApp.Commands.RecordAppEvents.MaxBatch)
+            .Where(e => e != null)
+            .Select(e => new Application.MiniApp.Commands.AppEventInput(e.Event, e.Target, e.Value, e.Platform, e.StartParam))
+            .ToList();
+        if (items.Count > 0)
+        {
+            await _mediator.Send(new Application.MiniApp.Commands.RecordAppEvents { UserId = user.Id, Items = items }, ct);
+        }
+
+        return NoContent();
+    }
+
     [HttpDelete("vocabulary/{id}")]
     public async Task<IActionResult> DeleteVocabularyEntry(Guid id, CancellationToken ct)
     {
