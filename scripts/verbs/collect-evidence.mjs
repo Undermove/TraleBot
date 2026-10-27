@@ -24,10 +24,15 @@ import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from '
 import { dirname, resolve, join } from 'path'
 import { fileURLToPath } from 'url'
 import { formatJson } from './format.mjs'
+import { handWritten } from './hand-written.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const arg = name => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : null }
-const raw = JSON.parse(readFileSync(resolve(here, 'verbs.raw.json'), 'utf8')).verbs
+// Плюс глаголы без таблицы в Викисловаре, чьи формы вписаны руками (supplements.json, поле verb).
+const raw = [
+  ...JSON.parse(readFileSync(resolve(here, 'verbs.raw.json'), 'utf8')).verbs,
+  ...handWritten(JSON.parse(readFileSync(resolve(here, 'supplements.json'), 'utf8')).verbs, { withForms: true })
+]
 const freqFile = resolve(here, 'frequency.json')
 const previous = existsSync(freqFile) ? JSON.parse(readFileSync(freqFile, 'utf8')).verbs : {}
 const wordsOf = text => text.match(/[ა-ჰ]+/g) ?? []

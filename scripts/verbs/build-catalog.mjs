@@ -53,6 +53,7 @@ import { analyze } from './analyze.mjs'
 import { formatJson } from './format.mjs'
 import { meaningsOf } from './meanings.mjs'
 import { loadAttested } from './attested.mjs'
+import { handWritten } from './hand-written.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = name => JSON.parse(readFileSync(resolve(here, name), 'utf8'))
@@ -85,8 +86,10 @@ const PROD_BOOST = 1
 // будущее), но без которых каталог «самых употребимых» бессмыслен: иметь, хотеть, знать, ходить —
 // из первой десятки по всем источникам; «болит» и «голоден» — из наших уроков; «любить» — в таблице
 // Викисловаря нет аориста и оптатива (ряды оставлены пустыми), есть настоящее и будущее. Берём как
-// есть, с честной пометкой в карточке: лучше половина парадигмы «знать», чем ничего.
-const PARTIAL_OK = new Set(['აქვს', 'ჰყავს', 'უნდა', 'იცის', 'დადის', 'სტკივა', 'შია', 'უყვარს'])
+// есть, с честной пометкой в карточке: лучше половина парадигмы «знать», чем ничего. «Знать кого-то»
+// (იცნობს) таблицы в Викисловаре не имеет вовсе, формы вписаны руками (supplements.json); без него
+// не сказать «я знаю тебя» — у იცის формы «кого» нет.
+const PARTIAL_OK = new Set(['აქვს', 'ჰყავს', 'უნდა', 'იცის', 'იცნობს', 'დადის', 'სტკივა', 'შია', 'უყვარს'])
 const CARD = ['present', 'aorist', 'imperfect', 'optative', 'conditional', 'future']
 const ALL_TENSES = ['present', 'imperfect', 'presentSubjunctive', 'future', 'conditional', 'futureSubjunctive', 'aorist', 'optative', 'perfect', 'pluperfect', 'perfectSubjunctive']
 
@@ -118,6 +121,11 @@ const isCommon = v => {
 //    то же правило, что для времён, которые дописывает модель;
 //  • у каждой записи — evidence и ссылки на источники, по которым она сверена.
 // noTense — времени у глагола нет вовсе: карточка показывает, что говорят вместо него.
+// Глагол без таблицы в Викисловаре (поле verb): в выгрузке его нет, все формы — из той же записи.
+for (const v of handWritten(supplements)) {
+  if (raw.some(r => r.lemma === v.lemma)) fail.push(`supplements.json: ${v.lemma} есть в verbs.raw.json — поле verb лишнее`)
+  else raw.push(v)
+}
 const MIN_ATTESTED = 0.5
 const GEO_WORDS = /^[ა-ჰ]+$/
 for (const [lemma, s] of Object.entries(supplements)) {

@@ -507,6 +507,19 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Knowing_someone_has_its_own_card_with_who_whom_and_points_to_knowing_something()
+    {
+        var knowSomeone = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("იცნობს", CancellationToken.None)))!)!;
+
+        knowSomeone["objectPerson"]!.GetValue<string>().Should().Be("acc",
+            because: "«я знаю тебя» is გიცნობ — the form of 'to know a fact' (იცის) has no «whom»");
+        knowSomeone["tenses"]!["present"]![0]![0]!.GetValue<string>().Should().Be("ვიცნობ");
+        knowSomeone["noTense"]!["aorist"]!["instead"]![0]!.GetValue<string>().Should().Be("გავიცანი",
+            because: "in the past the verb means «got acquainted», so the card says what to use instead");
+        knowSomeone["confusable"]!.AsArray().Select(m => m!["id"]!.GetValue<string>()).Should().Equal("იცის", "იცნობს");
+    }
+
+    [Test]
     public async Task Card_says_what_each_main_form_means_in_plain_Russian()
     {
         var want = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("უნდა", CancellationToken.None)))!)!;
