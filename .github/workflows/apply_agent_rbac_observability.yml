@@ -1,4 +1,4 @@
-name: Apply agent read-only access to Loki
+name: Apply agent read-only access to observability (Loki, Prometheus, Grafana)
 
 on:
   workflow_dispatch:
@@ -22,9 +22,9 @@ jobs:
           kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
           context: microk8s
 
-      # Только права к Loki: база и приложение не трогаются (в отличие от Deploy Database).
+      # Только права к observability: база и приложение не трогаются (в отличие от Deploy Database).
       - name: Apply RBAC
-        run: kubectl apply -f ./deploy/agent-rbac-loki.yml
+        run: kubectl apply -f ./deploy/agent-rbac-observability.yml
 
-      - name: Show Loki pods
-        run: kubectl get pods -n loki
+      - name: Show observability pods
+        run: kubectl get pods -n observability
