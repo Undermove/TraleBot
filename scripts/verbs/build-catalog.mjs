@@ -133,6 +133,14 @@ for (const [lemma, s] of Object.entries(supplements)) {
   if (!v) { fail.push(`supplements.json: глагола ${lemma} нет в verbs.raw.json`); continue }
   if (!s.evidence || !Array.isArray(s.sources) || !s.sources.length || !s.sources.every(u => /^https?:\/\//.test(u)))
     fail.push(`supplements.json: у ${lemma} нужны evidence и ссылки на источники (sources)`)
+  if (s.verb?.tables) {
+    // Формы из таблиц Викисловаря (см. hand-written.mjs): проверяем только, что таблицы названы и ряды полные.
+    if (!Array.isArray(s.verb.tables) || !s.verb.tables.every(u => s.sources?.includes(u)))
+      fail.push(`supplements.json: у ${lemma} verb.tables — ссылки на таблицы, они же должны быть в sources`)
+    for (const [tense, row] of Object.entries(s.tenses ?? {}))
+      if (!ALL_TENSES.includes(tense) || !complete(row)) fail.push(`supplements.json: ${lemma}.${tense} — неизвестное время или не шесть клеток`)
+    continue
+  }
   const added = []
   for (const [tense, row] of Object.entries(s.tenses ?? {})) {
     if (!ALL_TENSES.includes(tense)) { fail.push(`supplements.json: ${lemma} — неизвестное время ${tense}`); continue }
@@ -264,6 +272,8 @@ const verbs = analysed.map(entry => {
     // У дополненного глагола объяснение пишет тот, кто вписал времена: «в источнике есть только часть
     // времён» о нём уже неправда.
     reason: supplements[v.lemma]?.reason ?? a.reason,
+    // Объяснение написано руками (supplements.json) — анализатор такого не выводит (VerbAnalyzerCatalogParityTests).
+    ...(supplements[v.lemma]?.reason ? { reasonFrom: 'supplements.json' } : {}),
     root: a.root,
     oddTenses: a.oddTenses,
     model: model ? { id: model.v.lemma, title: titleOf(model.v), ru: ru[model.v.lemma] ?? null } : null,
@@ -274,7 +284,7 @@ const verbs = analysed.map(entry => {
     // Времена из supplements.json (вписаны по грамматике, не из Викисловаря) и времена, которых у
     // глагола нет вовсе, — с тем, что говорят вместо них.
     ...(supplements[v.lemma] ? {
-      supplemented: Object.keys(supplements[v.lemma].tenses ?? {}),
+      ...(supplements[v.lemma].verb?.tables ? {} : { supplemented: Object.keys(supplements[v.lemma].tenses ?? {}) }),
       ...(supplements[v.lemma].noTense ? { noTense: supplements[v.lemma].noTense } : {})
     } : {}),
     // Что значит каждая форма по-русски: время → шесть фраз («я хочу», «ты хочешь», …).

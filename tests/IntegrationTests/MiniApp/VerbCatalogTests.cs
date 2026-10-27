@@ -520,6 +520,17 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public async Task Sitting_down_is_one_card_with_another_root_for_we_you_they()
+    {
+        var sit = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("ჯდება", CancellationToken.None)))!)!;
+
+        sit["tenses"]!["aorist"]!.AsArray().Select(c => c![0]!.GetValue<string>())
+            .Should().Equal(new[] { "დავჯექი", "დაჯექი", "დაჯდა", "დავსხედით", "დასხედით", "დასხდნენ" },
+                because: "one sits down with ჯდ-, several with სხდ- — Wiktionary keeps them as two half-tables");
+        sit.AsObject().ContainsKey("supplemented").Should().BeFalse(because: "the forms are copied from the source tables, not written by grammar");
+    }
+
+    [Test]
     public async Task Card_says_what_each_main_form_means_in_plain_Russian()
     {
         var want = JsonNode.Parse((await InScope(sp => sp.GetRequiredService<VerbQueries>().GetCardJsonAsync("უნდა", CancellationToken.None)))!)!;
