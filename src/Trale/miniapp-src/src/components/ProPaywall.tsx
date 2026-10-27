@@ -3,6 +3,7 @@ import Mascot from './Mascot'
 import LoaderLetter from './LoaderLetter'
 import PaywallDeclineQuestion from './PaywallDeclineQuestion'
 import { api, feedback } from '../api'
+import { appEvents } from '../analytics/appEvents'
 
 export type PaywallTrigger = 'module' | 'vocabulary_limit'
 
@@ -46,6 +47,7 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
   const closing = useRef(false)
 
   useEffect(() => {
+    appEvents.paywall(trigger)
     feedback.paywallQuestionDue().then((r) => { questionDue.current = r.due }).catch(() => {})
   }, [])
 

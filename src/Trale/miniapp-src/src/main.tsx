@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import { reportCampaignOpenFromUrl } from './campaignOpen'
+import { appEvents } from './analytics/appEvents'
 import './index.css'
 
 // Apply Telegram safe-area insets as CSS variables so content doesn't overlap
@@ -69,6 +70,9 @@ if (tg) {
 // Opened by the button of an owner broadcast (?c=…) — tell the server once, before routing
 // rewrites the address.
 reportCampaignOpenFromUrl()
+
+// Скрипт запустился — сразу, пока человек не закрыл приложение на загрузке (analytics/appEvents.ts).
+appEvents.opened()
 
 // ?alphabet-lab=… — стенд сцен алфавита для проверки вёрстки (e2e/alphabet-fit.spec.ts); отдельный кусок бандла.
 const AlphabetLab = React.lazy(() => import('./alphabet/lab/Lab'))
