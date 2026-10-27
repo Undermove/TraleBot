@@ -1,0 +1,30 @@
+name: Apply agent read-only access to Loki
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_DATA }}
+          context: microk8s
+
+      # Только права к Loki: база и приложение не трогаются (в отличие от Deploy Database).
+      - name: Apply RBAC
+        run: kubectl apply -f ./deploy/agent-rbac-loki.yml
+
+      - name: Show Loki pods
+        run: kubectl get pods -n loki
