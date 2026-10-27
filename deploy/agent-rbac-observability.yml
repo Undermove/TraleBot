@@ -1,0 +1,39 @@
+# Read-only доступ учётки agent-readonly к инструментам наблюдения (аддон observability у microk8s:
+# Loki, Prometheus, Grafana — все в namespace observability). Агент пробрасывает порт до пода и
+# читает через HTTP API: логи (LogQL, их собирает promtail со stdout подов) и метрики (PromQL).
+# Логи подов в tralebot-prod живут только до следующей выкатки, а в Loki — за прошлые дни.
+#
+# Роль в namespace observability, учётка — из tralebot-prod (см. agent-rbac.yml).
+# Ничего, кроме списка подов и проброса порта, в этом namespace не разрешено; секреты (пароль
+# Grafana) не читаются.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-portforward-observability
+  namespace: observability
+rules:
+  # list нужен чтобы найти под для `kubectl port-forward`.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["create"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-portforward-observability
+  namespace: observability
+subjects:
+  - kind: ServiceAccount
+    name: agent-readonly
+    namespace: tralebot-prod
+roleRef:
+  kind: Role
+  name: agent-portforward-observability
+  apiGroup: rbac.authorization.k8s.io
