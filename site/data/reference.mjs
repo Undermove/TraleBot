@@ -8,6 +8,8 @@
 const not = (...words) => (ru) => !words.some((w) => ru.toLowerCase().includes(w))
 // Примеры «Знакомства» в теории идут с разбором по словам в скобках: «Как дела? (როგორ — как, …)». В диалоге — без разбора.
 const plain = (xs) => xs.map((x) => ({ ...x, ru: x.ru.replace(/\s*\([^()]+ — .*$/, '') }))
+// Числа уроков идут по правилам, а не по порядку: сортируем по числу в скобках перевода, «одиннадцать (11)».
+const byNumber = (a, b) => parseInt(a.ru.match(/\((\d+)/)[1]) - parseInt(b.ru.match(/\((\d+)/)[1])
 const has = (...words) => (ru) => words.some((w) => ru.toLowerCase().includes(w))
 
 const CTA = {
@@ -110,7 +112,7 @@ export function referenceDefs(S, link) {
       blocks: [
         { h2: 'Цена и покупка', id: 'price', items: [...S.list('shopping', 4), ...S.lexicon('cafe-4'), ...S.lexicon('shopping-4')], where: not('фрукты', 'овощи') },
         { h2: 'Как это звучит', id: 'dialogue', short: 'Диалог', dialogue: true, items: [...S.examples('shopping', 5), ...S.examples('shopping', 4), ...S.examples('shopping', 3), ...S.examples('shopping', 1), ...S.examples('shopping', 2)] },
-        { h2: 'Деньги', id: 'money', items: S.lexicon('numbers-4'), where: has('лари', 'тетри') },
+        { h2: 'Деньги', id: 'money', items: S.lexicon('numbers-11'), where: has('лари', 'тетри') },
         { html: `<p>Продукты — на странице <a href="/words/food/">«Еда и продукты»</a>, цены — в <a href="/words/numbers/">числах</a>. «Покупаю» — форма глагола ${link.verb('покупать')}.</p>` }
       ]
     },
@@ -158,12 +160,12 @@ export function referenceDefs(S, link) {
       lead: 'Счёт до десяти, до двадцати, десятки до ста, сотни и порядковые числа.',
       cta: CTA.words, related: ['/words/days/', '/phrases/shopping/', '/phrases/cafe/'],
       blocks: [
-        { h2: 'Счёт от 1 до 10', id: 'n1', short: '1–10', items: S.lexicon('numbers-1') },
-        { h2: 'От 11 до 20', id: 'n11', short: '11–20', items: S.lexicon('numbers-2') },
-        { h2: 'Десятки от 21 до 100', id: 'n21', short: '21–100', note: 'Грузинский считает двадцатками. В скобках видно, из чего сложено число: 30 — это двадцать и десять, 40 — два по двадцать.', items: S.lexicon('numbers-3') },
-        { h2: 'Сотни, тысяча, миллион', id: 'n100', short: '100+', items: S.lexicon('numbers-4'), where: has('двести', 'триста', 'тысяча', 'миллион') },
-        { h2: 'Первый, второй, третий', id: 'ordinal', short: 'Порядковые', items: S.lexicon('numbers-4'), where: has('первый', 'второй', 'третий', 'четвёртый', 'пятый') },
-        { h2: 'Числа в разговоре', id: 'examples', short: 'Примеры', dialogue: true, items: [...S.examples('numbers', 1), ...S.examples('numbers', 4), ...S.examples('shopping', 3), ...S.examples('shopping', 2)] }
+        { h2: 'Счёт от 1 до 10', id: 'n1', short: '1–10', items: S.lexicon('numbers-4') },
+        { h2: 'От 11 до 20', id: 'n11', short: '11–20', items: [...S.lexicon('numbers-5'), ...S.lexicon('numbers-6'), ...S.lexicon('numbers-7')].filter((i) => /\((1\d|20)\b/.test(i.ru)).sort(byNumber) },
+        { h2: 'Десятки от 21 до 100', id: 'n21', short: '21–100', note: 'Грузинский считает двадцатками. В скобках видно, из чего сложено число: 30 — это двадцать и десять, 40 — два по двадцать.', items: [...S.lexicon('numbers-7'), ...S.lexicon('numbers-8').filter((i) => /\(21\b/.test(i.ru)), ...S.lexicon('numbers-11').filter((i) => /\(100\)/.test(i.ru))].sort(byNumber) },
+        { h2: 'Сотни, тысяча, миллион', id: 'n100', short: '100+', items: S.lexicon('numbers-11'), where: has('двести', 'триста', 'тысяча', 'миллион') },
+        { h2: 'Первый, второй, третий', id: 'ordinal', short: 'Порядковые', items: S.lexicon('numbers-11'), where: has('первый', 'второй', 'третий', 'четвёртый', 'пятый') },
+        { h2: 'Числа в разговоре', id: 'examples', short: 'Примеры', dialogue: true, items: [...S.examples('numbers', 4), ...S.examples('numbers', 11), ...S.examples('shopping', 3), ...S.examples('shopping', 2)] }
       ]
     },
     {
@@ -175,7 +177,7 @@ export function referenceDefs(S, link) {
       lead: 'Семь дней недели: как пишутся и как читаются.',
       cta: CTA.words, related: ['/words/numbers/', '/words/pronouns/', '/phrases/greetings/'],
       blocks: [
-        { h2: '', id: 'days', items: S.lexicon('numbers-4'), where: has('понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье') },
+        { h2: '', id: 'days', items: S.lexicon('numbers-11'), where: has('понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье') },
         { html: '<p>В названиях от понедельника до четверга слышны числа от двух до пяти — сравни с таблицей <a href="/words/numbers/">чисел</a>.</p>' }
       ]
     },

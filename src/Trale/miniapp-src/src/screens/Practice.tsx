@@ -12,6 +12,7 @@ import LessonVerbChip from '../verbs/lesson/LessonVerbChip'
 import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
 import AlphabetInterlude, { ALPHABET_MODULE, alphabetExam, useAlphabetLesson } from '../alphabet/AlphabetInterlude'
 import IntroInterlude, { useIntroLesson } from '../intro/IntroInterlude'
+import NumbersInterlude, { isNumbersGameLesson, useNumbersLesson } from '../numbers/NumbersInterlude'
 import { lessonPassed } from '../lessonPass'
 import { INTRO_MODULE, introExam } from '../intro/story'
 
@@ -71,8 +72,12 @@ export default function Practice({
   // Модуль «Знакомство»: урок — цепочка сцен истории (новая фраза, правило, игра), короткая проверка, праздник.
   const intro = useIntroLesson(moduleId, lessonId, questions)
   const alphabetFlow = useAlphabetLesson(moduleId, lessonId, questions, index)
-  // Ход урока с играми — у того модуля, что включён; у остальных модулей оба ничего не делают.
-  const alphabet = intro.on ? intro : alphabetFlow
+  // Модуль «Числа», уроки 1–10: уровень с игрой, потом короткая проверка.
+  const numbersFlow = useNumbersLesson(moduleId, lessonId, questions)
+  // Ход урока с играми — у того модуля, что включён; у остальных модулей они ничего не делают.
+  const alphabet = intro.on ? intro : numbersFlow.on ? numbersFlow : alphabetFlow
+  // Выход из урока: обычно — к его теории; у уровней «Чисел» теории нет, выходим к модулю.
+  const exitTo: Screen = isNumbersGameLesson(moduleId, lessonId) ? { kind: 'module', moduleId } : { kind: 'lesson-theory', moduleId, lessonId }
   // После проверки объяснение может оказаться под нижней кнопкой (длинная карточка, длинные варианты) —
   // прокручиваем к нему.
   useEffect(() => {
@@ -182,7 +187,7 @@ export default function Practice({
           </Button>
           <Button
             variant="ghost"
-            onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
+            onClick={() => navigate(exitTo)}
           >
             ← назад
           </Button>
@@ -200,6 +205,16 @@ export default function Practice({
         onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
         onDone={() => intro.sceneDone(navigate)}
         navigate={navigate}
+      />
+    )
+  }
+
+  if (numbersFlow.scene) {
+    return (
+      <NumbersInterlude
+        lessonId={lessonId}
+        onExit={() => navigate({ kind: 'module', moduleId })}
+        onDone={() => numbersFlow.sceneDone()}
       />
     )
   }
@@ -356,7 +371,7 @@ export default function Practice({
         <div className="mn-kilim" />
         <div className="px-5 py-3 flex items-center gap-3">
           <button
-            onClick={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
+            onClick={() => navigate(exitTo)}
             className="shrink-0 w-11 h-11 rounded-xl bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-75"
             style={{ boxShadow: '2px 2px 0 #15100A' }}
             aria-label="Назад"

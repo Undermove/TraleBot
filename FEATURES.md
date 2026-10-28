@@ -165,7 +165,7 @@ Location: `src/Trale/miniapp-src/src/`. The test greps the base file name (e.g. 
 
 ### Static audio assets (`public/audio/`)
 - `alphabet/` — 33 Georgian letter TTS clips (a–zh, ka-GE Natia voice); audio plays the full letter **name** (ანი/ბანი/განი…), not the isolated sound. Not used by `alphabet-progressive` any more: isolated letter names are too unclear to tell similar letters apart, the module plays a whole word instead (`cafe/wqali`).
-- `numbers/` — 20 Georgian number TTS clips (erti–otsi, 1–20, ka-GE Piper voice), used by `audio-choice` lesson 5 in `numbers`.
+- `numbers/n/` — Georgian numbers 1–99 (`<n>.m4a`, ElevenLabs voice Alice), played by the «Числа» games and the `audio-choice` questions of lessons 1–10.
 - `intro/` — 15 Georgian phrase TTS clips (ka-GE Natia voice), used by `audio-choice` lesson 6 in `intro`.
 - `pronouns/` — 20 Georgian pronoun TTS clips (ka-GE Piper/Natia voice), used by `audio-choice` lesson 6 in `pronouns`.
 - `present-tense/` — 20 Georgian present-tense verb TTS clips (ka-GE Piper voice), used by `audio-choice` lesson 6 in `present-tense`.
@@ -412,6 +412,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddQueuedTranslations` | Adds `QueuedTranslations` — the durable record of a translation that outlived its request (bot or mini-app): user, word, chat and message to answer, state (pending → answering → done / failed), outcome and saved word, `VerbLookup`, `NoticeSent`, a nullable `Stage` (for progress reports; not written yet), the lease (`LeaseOwner`, `LeaseUntilUtc`) and `Attempts`. Indexed by (user, word key, created) and by created; rows older than 7 days are cleared when a new one is written. The queue's own tables (schema `hangfire`) are not an EF migration — Hangfire creates them. |
 | `AddTranslationCache` | Adds `TranslationCache` (normalised key + direction unique, definition / additional info / example, source, classified flag, hit count, timestamps): repeated Georgian lookups are answered from the DB instead of the external dictionary sites. |
 | `AddAppEvents` | Adds `AppEvents` — mini-app moments outside lessons: event (`app_open`, `app_ready`, `app_error`, `screen`, `paywall`, `app_hide`), target (screen or paywall trigger), value (ms to load / seconds open), Telegram platform, start parameter, date; indexed by (event, date) and (user, date). |
+| `RemapNumbersLessonProgress` | Data only: «Числа» went from 5 lessons to 11, so `CompletedLessonsJson.numbers` is remapped — old 1 (1–10) → 1–4, old 2 (11–20) → 5–6, old 3 (21–100) → 7–10, old 4 (100+, ordinals, days) → 11; old 5 (listening 1–20) has no counterpart. |
 
 ---
 
@@ -423,7 +424,7 @@ Registered in `ModuleRegistry` (mini-app catalog) or exposed via Telegram comman
 | ID | Folder | Lessons | Theory |
 |---|---|---|---|
 | `alphabet-progressive` | `GeorgianAlphabetProgressive` | 11 lessons × 3 new letters (ა დ რ · ე ი ს · ვ მ ნ · ლ ჩ ხ · თ ო შ · ბ გ ქ · კ ც წ · ტ უ ფ · პ ღ ძ · ზ ყ ჭ · ჟ ჯ ჰ — the order that unlocks the most frequent words of the other modules earliest; ~70 Georgian words, the base vocabulary of the course: და, არა, რა, სად, მე, შენ, მინდა, სახლი, მადლობა, numbers…), 10–12 questions each, served in authored order (`"ordered": true` in the lesson file — `GeorgianQuestionsLoader` keeps the order instead of shuffling). Each letter: a «Новая буква …» question that carries its one-line explanation, then Russian words with the learned letters already Georgian («ბაнაн», «მოлოкო»; tagged `mixed-script`); the last questions of a lesson are real Georgian words made only of learned letters: a word is first taught (its meaning is in the question text, the check is reading), then recalled later in the lesson or in the next lessons — a question never asks a meaning the learner has not been shown in an earlier question. No phonetics terms, pronunciation in Cyrillic only; similar letters told apart by word pairs (ქარი / კარი, პური / ფური); one audio-choice question in L11, on a whole word. Guarded by `AlphabetProgressiveReadabilityTests` | ✅ |
-| `numbers` | `GeorgianNumbers` | 5 (lesson 5 = audio-choice) | ✅ |
+| `numbers` | `GeorgianNumbers` | 11 — lessons 1–10 are game levels (`miniapp-src/src/numbers/engine.ts`, mounted by `NumbersInterlude.tsx` before a 4-question check; theory screen skipped), 11 = 100+, ordinals, days | ✅ |
 | `intro` | `GeorgianVocabIntro` | 8 (L6 = audio-choice; L7 = SOS-phrases: Help/I don't understand/Slowly/Repeat/Doctor; L8 = navigation: Where is?/How much?/Ambulance/Police) | ✅ |
 | `pronouns` | `GeorgianPronouns` | 6 (lesson 6 = audio-choice) | ✅ |
 | `present-tense` | `GeorgianPresentTense` | 7 (L6 audio-choice; L7 sentence-builder — SOV конструктор) | ✅ |
