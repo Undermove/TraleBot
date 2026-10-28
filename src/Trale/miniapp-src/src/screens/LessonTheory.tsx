@@ -6,6 +6,7 @@ import { CatalogDto, ProgressState, Screen, TheoryBlockDto } from '../types'
 import LessonOpener from '../alphabet/opener/LessonOpener'
 import IntroOpener from '../intro/IntroOpener'
 import { INTRO_MODULE } from '../intro/story'
+import { isNumbersGameLesson } from '../numbers/NumbersInterlude'
 import { lessonFlow } from '../analytics/lessonEvents'
 
 interface Props {
@@ -28,6 +29,12 @@ export default function LessonTheory({
   const theory = lesson?.theory
 
   const [showReveal, setShowReveal] = useState(false)
+
+  // «Числа» 1–10: объяснение — сама игра уровня, отдельный экран теории не нужен.
+  const numbersGame = isNumbersGameLesson(moduleId, lessonId)
+  useEffect(() => {
+    if (numbersGame) navigate({ kind: 'practice', moduleId, lessonId })
+  }, [numbersGame, moduleId, lessonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Аналитика: стартовый экран урока алфавита — шаг 0 его хода.
   useEffect(() => {
@@ -52,6 +59,8 @@ export default function LessonTheory({
       return () => clearTimeout(timer)
     }
   }, [theory, moduleId, lessonId])
+
+  if (numbersGame) return <div className="min-h-full bg-cream" />
 
   if (!module || !lesson || !theory) {
     return (

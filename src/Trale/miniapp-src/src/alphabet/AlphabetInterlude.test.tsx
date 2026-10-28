@@ -134,7 +134,7 @@ describe('alphabet lesson as a chain of games', () => {
   })
 
   it('leaves other modules untouched', async () => {
-    render(<Practice moduleId="numbers" lessonId={1} progress={defaultProgress} setProgress={() => {}} authenticated navigate={() => {}} />)
+    render(<Practice moduleId="numbers" lessonId={11} progress={defaultProgress} setProgress={() => {}} authenticated navigate={() => {}} />)
     await waitFor(() => expect(screen.getByText('Вопрос 1')).toBeTruthy())
     expect(screen.queryByTestId('intro-skip')).toBeNull()
   })
