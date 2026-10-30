@@ -123,6 +123,8 @@ export interface VocabularyWordPair {
   wordId: string
   georgian: string
   russian: string
+  /** «я»-форма глагола: კითხვა — и «читать», и «спрашивать», в скобках видно, какой из них */
+  hint?: string | null
 }
 
 export interface VocabularyQuizResponse {

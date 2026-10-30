@@ -76,6 +76,14 @@ if (ruPath) {
   }
 }
 
+// Переводы, которые сборка привязала неверно — чаще всего через масдар, общий у двух глаголов
+// (კითხვა — и «читать», и «спрашивать»). Список ведётся руками, у каждой пары — причина.
+const skip = JSON.parse(readFileSync(resolve(here, 'lexicon-ru.skip.json'), 'utf8'))
+for (const [lemma, { ru }] of Object.entries(skip)) {
+  if (!verbs.has(lemma)) { console.error(`lexicon-ru.skip.json: ${lemma} нет в выгрузке — опечатка?`); process.exit(1) }
+  for (const r of ru) verbs.get(lemma).ru.delete(r)
+}
+
 const rows = [...verbs.entries()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).map(([lemma, v]) => [
   lemma,
   v.vn,

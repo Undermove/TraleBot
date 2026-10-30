@@ -69,6 +69,18 @@ public class VerbCatalogTests : TestBase
     }
 
     [Test]
+    public void Lexicon_does_not_give_a_verb_the_translation_of_another_verb_with_the_same_verbal_noun()
+    {
+        // კითხვა names both «читать» (კითხულობს) and «спрашивать» (ჰკითხავს); the Russian Wiktionary
+        // translates the noun, and the build once gave «читать» to both — scripts/verbs/lexicon-ru.skip.json
+        var lexicon = VerbLexicon.Load(Path.Combine(AppContext.BaseDirectory, "Verbs"));
+
+        lexicon.FindByRussian("читать").Select(v => v.Lemma).Should().Contain("კითხულობს").And.NotContain("ჰკითხავს");
+        lexicon.FindByRussian("забывать").Select(v => v.Lemma).Should().NotContain("დაავიწყებს");
+        lexicon.FindByRussian("терять").Select(v => v.Lemma).Should().Contain("დაკარგავს").And.NotContain("დაიკარგება");
+    }
+
+    [Test]
     public async Task Seeding_twice_writes_nothing_the_second_time()
     {
         var second = await InScope(sp =>
