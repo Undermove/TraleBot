@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
 using Application.Common.Interfaces.MiniApp;
+using Application.Verbs;
 using Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -120,7 +121,8 @@ public class GenerateVocabularyQuiz : IRequest<GenerateVocabularyQuizResult>
                 {
                     WordId = entry.Id,
                     Georgian = ge,
-                    Russian = ru
+                    Russian = ru,
+                    Hint = VerbEntryHint.Of(entry)
                 };
             }).ToList();
 
@@ -234,4 +236,7 @@ public class WordPairDto
     public Guid WordId { get; init; }
     public string Georgian { get; init; } = string.Empty;
     public string Russian { get; init; } = string.Empty;
+
+    /// <summary>The «я» form shown in brackets after <see cref="Georgian"/> when it is a name of an action (<see cref="VerbEntryHint"/>).</summary>
+    public string? Hint { get; init; }
 }

@@ -907,7 +907,8 @@ public class MiniAppController : Controller
             {
                 wordId = wp.WordId,
                 georgian = wp.Georgian,
-                russian = wp.Russian
+                russian = wp.Russian,
+                hint = wp.Hint
             }),
             allGeorgian = result.AllGeorgian,
             allRussian = result.AllRussian

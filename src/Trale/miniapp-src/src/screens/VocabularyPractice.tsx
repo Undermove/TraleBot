@@ -83,6 +83,9 @@ export default function VocabularyPractice({
         }
 
         const pairs = r.wordPairs ?? []
+        // У глагола грузинская сторона — название действия, а оно бывает общим у двух глаголов:
+        // «კითხვა (ვკითხულობ)» — читать, «კითხვა (ვეკითხები)» — спрашивать.
+        const withHint = (p: VocabularyWordPair) => (p.hint ? `${p.georgian} (${p.hint})` : p.georgian)
         const poolRu = r.allRussian ?? []
         const poolGe = r.allGeorgian ?? []
 
@@ -95,7 +98,7 @@ export default function VocabularyPractice({
           const options = shuffle([...distractors, p.russian])
           items.push({
             wordId: p.wordId,
-            prompt: p.georgian,
+            prompt: withHint(p),
             correct: p.russian,
             options,
             direction: 'ge-to-ru',
@@ -121,7 +124,7 @@ export default function VocabularyPractice({
         for (const p of pairs) {
           items.push({
             wordId: p.wordId,
-            prompt: p.georgian,
+            prompt: withHint(p),
             correct: p.russian,
             direction: 'ge-to-ru',
             type: 'type-in',

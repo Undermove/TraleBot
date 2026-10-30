@@ -1,4 +1,5 @@
 using Application.Common.Extensions;
+using Application.Verbs;
 using Domain.Entities;
 using Domain.Quiz;
 
@@ -139,7 +140,7 @@ public class QuizCreator : IQuizCreator
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
-            Question = entry.Definition,
+            Question = GeorgianPrompt(entry),
             Answer = entry.Word,
             Variants = CreateVariantsFromSpareWordsForReverseQuiz(entry, otherEntries, rnd),
             Example = entry.Example
@@ -170,7 +171,8 @@ public class QuizCreator : IQuizCreator
     private static string[] CreateVariantsFromSpareWordsForReverseQuiz(VocabularyEntry entry, ICollection<VocabularyEntry> otherEntries, Random rnd)
     {
         var spareWordsDefinition = SpareWords.Select(tuple => tuple.word).ToArray();
-        var userWords = otherEntries.Select(ve => ve.Word).ToArray();
+        // An entry with the same Georgian word (კითხვა is both «читать» and «спрашивать») is a second right answer, not a distractor
+        var userWords = otherEntries.Where(ve => ve.Definition != entry.Definition).Select(ve => ve.Word).ToArray();
         var combinedWords = spareWordsDefinition.Concat(userWords).ToArray();
         
         return combinedWords
@@ -183,13 +185,16 @@ public class QuizCreator : IQuizCreator
             .ToArray();
     }
 
+    private static string GeorgianPrompt(VocabularyEntry entry) =>
+        VerbEntryHint.Of(entry) is { } form ? $"{entry.Definition} ({form})" : entry.Definition;
+
     private static QuizQuestion ReverseQuizQuestion(VocabularyEntry entry, int orderInQuiz)
     {
         return new QuizQuestionWithTypeAnswer
         {
             Id = Guid.NewGuid(),
             VocabularyEntry = entry,
-            Question = entry.Definition,
+            Question = GeorgianPrompt(entry),
             Answer = entry.Word,
             Example = entry.Example
                 // remove word from example to avoid spoiling of correct answer
