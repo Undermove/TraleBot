@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { adminVerbs as mocked, type ModelMadeVerbDto, type VerbTenseRowDto } from '../api'
-import VerbReviewScreen from './VerbReviewScreen'
+import { adminVerbs as mocked, type ModelMadeVerbDto, type VerbTenseRowDto } from '../../api'
+import VerbReviewScreen from '../../screens/VerbReviewScreen'
 
-vi.mock('../api', async () => ({
-  ...(await vi.importActual<typeof import('../api')>('../api')),
+vi.mock('../../api', async () => ({
+  ...(await vi.importActual<typeof import('../../api')>('../../api')),
   adminVerbs: { modelMade: vi.fn(), confirmTense: vi.fn(), editTense: vi.fn(), removeTense: vi.fn(), regenerate: vi.fn(), approve: vi.fn(), unapprove: vi.fn() }
 }))
 const api = vi.mocked(mocked)
