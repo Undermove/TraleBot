@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import Header from '../components/Header'
 import LoaderLetter from '../components/LoaderLetter'
 import TenseBlock from '../components/admin/TenseBlock'
+import VerbFixPaste from '../components/admin/VerbFixPaste'
+import type { VerbFix } from '../components/admin/verbFix'
 import {
   day, inQueueOrder, matchesFilter, matchesSearch, missingText, needsAttention, rank, statusText, tenseName, type ReviewFilter
 } from '../components/admin/verbReview'
@@ -188,6 +190,29 @@ export default function VerbReviewScreen({ lemma, navigate }: Props) {
         const r = await call()
         return done + (r.progressReset ? `; у учеников сброшен прогресс по изменённым формам: ${r.progressReset}` : '')
       })
+    // Исправление одним текстом: шаги по очереди теми же запросами, что и кнопки; на ошибке — стоп, сделанное остаётся.
+    const applyFix = (fix: VerbFix) =>
+      run('применяю исправление…', async () => {
+        let reset = 0
+        const done: string[] = []
+        try {
+          for (const e of fix.edits) {
+            reset += (await adminVerbs.editTense(v.lemma, e.tense, e.cells)).progressReset
+            done.push(`${tenseName(e.tense)}: исправлено`)
+          }
+          for (const t of fix.confirm) {
+            await adminVerbs.confirmTense(v.lemma, t)
+            done.push(`${tenseName(t)}: подтверждено`)
+          }
+          if (fix.approve) {
+            reset += (await adminVerbs.approve(v.lemma)).progressReset ?? 0
+            done.push('глагол проверен')
+          }
+        } catch (e) {
+          return [...done, `дальше не вышло: ${errorText(e)}`].join('; ')
+        }
+        return done.join('; ') + (reset ? `; у учеников сброшен прогресс по изменённым формам: ${reset}` : '')
+      })
 
     return (
       <div className="flex flex-col gap-3" data-testid="verb-review-verb">
@@ -216,6 +241,8 @@ export default function VerbReviewScreen({ lemma, navigate }: Props) {
             </div>
           )}
         </div>
+
+        <VerbFixPaste verb={v} busy={busy} onApply={applyFix} />
 
         {v.tenses.map(t => (
           <TenseBlock
