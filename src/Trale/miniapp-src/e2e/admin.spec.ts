@@ -159,10 +159,10 @@ const kit = {
   limits: { questions: 6, options: 6, botOptions: 4, optionLength: 64, questionLength: 300 },
 }
 
-interface Calls { prepared: any[]; sent: string[]; userQueries: URLSearchParams[]; back: number }
+interface Calls { prepared: any[]; sent: string[]; userQueries: URLSearchParams[]; back: number; verbs: { path: string; body: any }[] }
 
 async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: string } = {}): Promise<Calls> {
-  const calls: Calls = { prepared: [], sent: [], userQueries: [], back: 0 }
+  const calls: Calls = { prepared: [], sent: [], userQueries: [], back: 0, verbs: [] }
   const owner = opts.owner ?? true
   await page.addInitScript(() => {
     ;(window as any).Telegram = {
@@ -223,6 +223,10 @@ async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: 
     if (path.startsWith('feedback/threads/')) return ok({ ...thread, telegramId: Number(path.split('/')[2]) })
     if (path === 'feedback') return ok(feedbackOverview)
     if (path === 'verbs/model-made') return ok({ count: 3, verbs: [modelMade('жить', [], true), modelMade('писать', []), modelMade('танцевать', ['future', 'aorist'])] })
+    if (path.startsWith('verbs/tense/') || path === 'verbs/approve') {
+      calls.verbs.push({ path, body: route.request().postDataJSON() })
+      return ok({ ok: true, progressReset: path === 'verbs/tense/edit' ? 1 : 0 })
+    }
     if (path === 'stats') return ok({ totalUsers: 848, activeUsers: 808, proUsers: 6, trialUsers: 17, freeUsers: 825, newUsersToday: 3, newUsersWeek: 21, newUsersMonth: 64,
       totalRevenueStars: 1500, revenueWeekStars: 100, totalPurchases: 6, totalRefunds: 1, totalVocabularyEntries: 9100, averageVocabularyPerUser: 10.7, conversionPostTrialPct: 0.7 })
     if (path === 'signups') return ok({ days: 30, points: Array.from({ length: 30 }, (_, i) => ({ date: daysAgo(29 - i).slice(0, 10), count: (i * 5) % 7 })) })
@@ -626,6 +630,27 @@ test('«Ещё»: verbs, payments and system; one verb is a focused screen', asy
   await expect(page.getByTestId('admin-system').locator('svg rect')).toHaveCount(0)
   await fits(page)
   await shot(page, 'admin-26-system')
+})
+
+test('a whole fix of a verb is pasted as one text: what changes is shown first, then every step goes to the server in turn', async ({ page }) => {
+  const calls = await setup(page)
+  await page.goto('/?playwright=1&screen=verb-review&verb=' + encodeURIComponent(modelMade('танцевать', []).lemma))
+  const dance = modelMade('танцевать', [])
+  // Формы — из настоящего каталога: будущее «исправляется» на само себя с одной пустой клеткой.
+  const future = dance.tenses.find(t => t.tense === 'future')!.cells
+  const fixed = [...future.slice(0, 5), '—']
+  await page.getByRole('button', { name: 'Вставить исправление' }).click()
+  await page.getByLabel('Текст исправления').fill(`глагол: ${dance.lemma}\nБудущее: ${fixed.join(' ')}\nподтвердить: Прошедшее: сделал\nглагол проверен`)
+  await expect(page.getByTestId('verb-fix-preview')).toContainText(`${future[5]} → —`)
+  await fits(page)
+  await shot(page, 'admin-27-verb-fix')
+  await page.getByRole('button', { name: 'Применить' }).click()
+  await expect(page.getByTestId('verb-review-note')).toHaveText('Будущее: исправлено; Прошедшее: сделал: подтверждено; глагол проверен; у учеников сброшен прогресс по изменённым формам: 1')
+  expect(calls.verbs).toEqual([
+    { path: 'verbs/tense/edit', body: { lemma: dance.lemma, tense: 'future', cells: [...future.slice(0, 5), null] } },
+    { path: 'verbs/tense/confirm', body: { lemma: dance.lemma, tense: 'aorist' } },
+    { path: 'verbs/approve', body: { lemma: dance.lemma, confirmAll: false } },
+  ])
 })
 
 test('someone who is not the owner sees «Нет доступа.» on every admin address and nothing else', async ({ page }) => {
