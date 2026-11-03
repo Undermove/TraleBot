@@ -3,8 +3,8 @@ using Application.Common.Interfaces;
 namespace Application.Notifications.Holidays;
 
 /// <summary>
-/// V1 Georgian holiday catalog (see design-specs/82-holiday-calendar.md): 9 fixed
-/// dates + movable Julian Easter. Stateless lookup — callers compute the Tbilisi
+/// V1 Georgian holiday catalog (see design-specs/82-holiday-calendar.md): 8 fixed
+/// dates + movable Julian Easter + Tbilisoba on the date City Hall announces each year. Stateless lookup — callers compute the Tbilisi
 /// (UTC+4) date and ask whether that day is a holiday.
 /// </summary>
 public class HolidayCalendarService : IHolidayCalendarService
@@ -82,16 +82,6 @@ public class HolidayCalendarService : IHolidayCalendarService
                 "⛪",
                 "Со Светицховлоба!",
                 "«სვეტიცხოველი» (свэтицховэли) — «животворящий столп», знаменитый собор в Мцхете. По преданию там хранится хитон Христа 🙏"),
-            [(11, 4)] = new(
-                "tbilisoba",
-                "Тбилисоба",
-                "თბილისობა",
-                "თბილისობა გილოცავ!",
-                "Тбилисоба гилоцав!",
-                "Поздравляю с Тбилисоба!",
-                "🍇",
-                "С Тбилисоба!",
-                "Тбилисоба — осенний праздник города: вино, сбор винограда «რთველი» (ртвэли), музыка. Впервые отметили в 1979 году 🍷"),
             [(11, 23)] = new(
                 "giorgoba",
                 "Гиоргоба",
@@ -116,6 +106,25 @@ public class HolidayCalendarService : IHolidayCalendarService
         "Христос Воскресе!",
         "На грузинскую Пасху яйца красят в красный корнем марены «ენდრო» (эндро), а на «ქრისტე აღდგა!» отвечают «ჭეშმარიტად აღდგა!» (чэшмаритад агдга) «Воистину воскрес!» 🥚");
 
+    // Tbilisoba has no fixed date: City Hall announces it every year (2025 — Sep 20–21,
+    // 2026 — Oct 3–4). Greet on the first day; years without an announced date get no push.
+    private static readonly Holiday Tbilisoba = new(
+        "tbilisoba",
+        "Тбилисоба",
+        "თბილისობა",
+        "თბილისობა გილოცავ!",
+        "Тбилисоба гилоцав!",
+        "Поздравляю с Тбилисоба!",
+        "🍇",
+        "С Тбилисоба!",
+        "Тбилисоба — осенний праздник города: вино, сбор винограда «რთველი» (ртвэли), музыка. Впервые отметили в 1979 году 🍷");
+
+    private static readonly IReadOnlyDictionary<int, DateOnly> TbilisobaDates = new Dictionary<int, DateOnly>
+    {
+        [2025] = new(2025, 9, 20),
+        [2026] = new(2026, 10, 3),
+    };
+
     public Holiday? GetHolidayFor(DateOnly tbilisiDate)
     {
         if (FixedHolidays.TryGetValue((tbilisiDate.Month, tbilisiDate.Day), out var fixedHoliday))
@@ -124,14 +133,18 @@ public class HolidayCalendarService : IHolidayCalendarService
         if (tbilisiDate == JulianEaster.For(tbilisiDate.Year))
             return Easter;
 
+        if (TbilisobaDates.TryGetValue(tbilisiDate.Year, out var tbilisoba) && tbilisiDate == tbilisoba)
+            return Tbilisoba;
+
         return null;
     }
 
     public IReadOnlyList<Holiday> AllHolidays()
     {
-        var all = new List<Holiday>(FixedHolidays.Count + 1);
+        var all = new List<Holiday>(FixedHolidays.Count + 2);
         all.AddRange(FixedHolidays.Values);
         all.Add(Easter);
+        all.Add(Tbilisoba);
         return all;
     }
 }
