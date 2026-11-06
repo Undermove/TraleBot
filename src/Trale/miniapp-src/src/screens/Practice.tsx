@@ -13,6 +13,7 @@ import { uniqueVerbs } from '../verbs/lesson/lessonVerbs'
 import AlphabetInterlude, { ALPHABET_MODULE, alphabetExam, useAlphabetLesson } from '../alphabet/AlphabetInterlude'
 import IntroInterlude, { useIntroLesson } from '../intro/IntroInterlude'
 import NumbersInterlude, { isNumbersGameLesson, useNumbersLesson } from '../numbers/NumbersInterlude'
+import MyDayInterlude, { isMyDayLesson, useMyDayLesson } from '../myday/MyDayInterlude'
 import { lessonPassed } from '../lessonPass'
 import { INTRO_MODULE, introExam } from '../intro/story'
 
@@ -74,10 +75,12 @@ export default function Practice({
   const alphabetFlow = useAlphabetLesson(moduleId, lessonId, questions, index)
   // Модуль «Числа», уроки 1–10: уровень с игрой, потом короткая проверка.
   const numbersFlow = useNumbersLesson(moduleId, lessonId, questions)
+  // Модуль «Мой день»: урок — игра, потом короткая проверка.
+  const myDayFlow = useMyDayLesson(moduleId, lessonId, questions)
   // Ход урока с играми — у того модуля, что включён; у остальных модулей они ничего не делают.
-  const alphabet = intro.on ? intro : numbersFlow.on ? numbersFlow : alphabetFlow
-  // Выход из урока: обычно — к его теории; у уровней «Чисел» теории нет, выходим к модулю.
-  const exitTo: Screen = isNumbersGameLesson(moduleId, lessonId) ? { kind: 'module', moduleId } : { kind: 'lesson-theory', moduleId, lessonId }
+  const alphabet = intro.on ? intro : numbersFlow.on ? numbersFlow : myDayFlow.on ? myDayFlow : alphabetFlow
+  // Выход из урока: обычно — к его теории; у уровней «Чисел» и уроков «Моего дня» теории нет, выходим к модулю.
+  const exitTo: Screen = isNumbersGameLesson(moduleId, lessonId) || isMyDayLesson(moduleId, lessonId) ? { kind: 'module', moduleId } : { kind: 'lesson-theory', moduleId, lessonId }
   // После проверки объяснение может оказаться под нижней кнопкой (длинная карточка, длинные варианты) —
   // прокручиваем к нему.
   useEffect(() => {
@@ -205,6 +208,16 @@ export default function Practice({
         onExit={() => navigate({ kind: 'lesson-theory', moduleId, lessonId })}
         onDone={() => intro.sceneDone(navigate)}
         navigate={navigate}
+      />
+    )
+  }
+
+  if (myDayFlow.scene) {
+    return (
+      <MyDayInterlude
+        lessonId={lessonId}
+        onExit={() => navigate({ kind: 'module', moduleId })}
+        onDone={() => myDayFlow.sceneDone()}
       />
     )
   }

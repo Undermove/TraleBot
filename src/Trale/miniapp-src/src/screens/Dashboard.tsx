@@ -104,7 +104,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   }, [isPro])
 
   // Section data — defined early so unlock logic can reference them
-  const basicsIds = ['alphabet-progressive', 'intro', 'numbers']
+  const basicsIds = ['alphabet-progressive', 'intro', 'numbers', 'my-day']
   const grammarIds = ['pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives']
   const vocabIds = ['cafe', 'shopping', 'taxi', 'doctor', 'emergency']
   const advancedIds = [
@@ -345,7 +345,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       {/* ══ Module sections ══ */}
       {(() => {
         const moduleIcons: Record<string, string> = {
-          'alphabet-progressive': 'ა', 'alphabet': 'ა', 'numbers': '①',
+          'alphabet-progressive': 'ა', 'alphabet': 'ა', 'numbers': '①', 'my-day': 'დ',
           'postpositions': 'შ', 'adjectives': 'ლ',
           'verb-classes': 'ზ', 'version-vowels': 'უ', 'preverbs': 'და', 'imperfect': 'დ',
           'aorist': 'მ', 'pronoun-declension': 'ი', 'conditionals': 'თ',
@@ -357,7 +357,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
 
         const moduleGeoLabels: Record<string, string> = {
           'alphabet-progressive': 'ანბანი', 'alphabet': 'ანბანი',
-          'numbers': 'რიცხვები', 'postpositions': 'თანდებულები', 'adjectives': 'ზედსართავები',
+          'numbers': 'რიცხვები', 'my-day': 'ჩემი დღე', 'postpositions': 'თანდებულები', 'adjectives': 'ზედსართავები',
           'verb-classes': 'ზმნის კლასები', 'version-vowels': 'ვერსია', 'preverbs': 'პრევერბები',
           'imperfect': 'უწყვეტელი', 'aorist': 'წყვეტილი', 'pronoun-declension': 'ბრუნვა',
           'conditionals': 'პირობითი', 'imperative': 'ბრძანება',
@@ -368,7 +368,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         }
 
         const moduleAccents: Record<string, 'navy' | 'ruby' | 'gold'> = {
-          'alphabet': 'navy', 'verbs-of-movement': 'ruby', 'cases': 'navy',
+          'alphabet': 'navy', 'my-day': 'ruby', 'verbs-of-movement': 'ruby', 'cases': 'navy',
           'pronouns': 'ruby', 'present-tense': 'navy', 'cafe': 'gold',
           'taxi': 'ruby', 'doctor': 'ruby', 'shopping': 'gold',
           'intro': 'navy', 'emergency': 'ruby', 'my-vocabulary': 'gold',
