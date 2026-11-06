@@ -7,6 +7,7 @@ import LessonOpener from '../alphabet/opener/LessonOpener'
 import IntroOpener from '../intro/IntroOpener'
 import { INTRO_MODULE } from '../intro/story'
 import { isNumbersGameLesson } from '../numbers/NumbersInterlude'
+import { isMyDayLesson } from '../myday/MyDayInterlude'
 import { lessonFlow } from '../analytics/lessonEvents'
 
 interface Props {
@@ -31,7 +32,8 @@ export default function LessonTheory({
   const [showReveal, setShowReveal] = useState(false)
 
   // «Числа» 1–10: объяснение — сама игра уровня, отдельный экран теории не нужен.
-  const numbersGame = isNumbersGameLesson(moduleId, lessonId)
+  // «Мой день» — так же: урок начинается сразу с игры.
+  const numbersGame = isNumbersGameLesson(moduleId, lessonId) || isMyDayLesson(moduleId, lessonId)
   useEffect(() => {
     if (numbersGame) navigate({ kind: 'practice', moduleId, lessonId })
   }, [numbersGame, moduleId, lessonId]) // eslint-disable-line react-hooks/exhaustive-deps

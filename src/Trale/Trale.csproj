@@ -107,6 +107,9 @@
       <Content Update="Lessons\GeorgianNumbers\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
+      <Content Update="Lessons\GeorgianMyDay\**\*.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
       <Content Update="Lessons\GeorgianPostpositions\**\*.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>

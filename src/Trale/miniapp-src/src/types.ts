@@ -138,7 +138,7 @@ export interface AlphabetLetterDto {
 
 // Modules that require Pro access. Free modules: alphabet-progressive, verbs-of-movement, my-vocabulary.
 export const PRO_MODULE_IDS: ReadonlySet<string> = new Set([
-  'intro', 'numbers',
+  'intro', 'numbers', 'my-day',
   'pronouns', 'present-tense', 'cases', 'postpositions', 'adjectives',
   'cafe', 'shopping', 'taxi', 'doctor', 'emergency',
   'verb-classes', 'version-vowels', 'preverbs', 'imperfect', 'aorist',

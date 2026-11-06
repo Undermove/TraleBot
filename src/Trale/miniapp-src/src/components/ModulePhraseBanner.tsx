@@ -33,6 +33,12 @@ const PHRASE_MAP: Record<string, ModulePhrase> = {
     translation: 'Десять, двадцать, сто — считаем!',
   },
 
+  // Мой день
+  'my-day': {
+    georgian: 'დილით ყავას ვსვამ',
+    translation: 'Утром пью кофе',
+  },
+
   // Фаза 3: Грамматика
   'pronouns': {
     georgian: 'მე, შენ, ის — ჩვენ',
