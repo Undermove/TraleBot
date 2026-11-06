@@ -66,7 +66,7 @@ public class ReferralBonusTextTests
 
         Text(sent.Single()).ShouldBe(expected);
         var markup = sent.Single().GetType().GetProperty("ReplyMarkup")?.GetValue(sent.Single()) as InlineKeyboardMarkup;
-        markup!.InlineKeyboard.Single().Single().WebApp!.Url.ShouldBe("https://test.tralebot.com/");
+        markup!.InlineKeyboard.Single().Single().WebApp!.Url.ShouldBe("https://test.tralebot.com/?src=push_referral");
     }
 
     [Test]

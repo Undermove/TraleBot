@@ -13,7 +13,7 @@ public class NotificationTriggerConfiguration : IEntityTypeConfiguration<Notific
         builder.Property(x => x.UserId).IsRequired();
         builder.Property(x => x.Source).IsRequired().HasMaxLength(100);
         builder.Property(x => x.LastSentAt).IsRequired();
-        builder.Property(x => x.Variant).IsRequired(false).HasMaxLength(10);
+        builder.Property(x => x.Variant).IsRequired(false).HasMaxLength(32);
 
         // UserId stores the Telegram ID (long), not the User PK (Guid). No FK relationship:
         // HasPrincipalKey(TelegramId) would promote TelegramId to an alternate key, breaking

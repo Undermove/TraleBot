@@ -22,6 +22,17 @@ describe('app events tracker', () => {
     expect(batches[0][0].value).toBeGreaterThanOrEqual(0)
   })
 
+  it('takes the push tag from the button address when there is no start_param', () => {
+    window.history.replaceState(null, '', '/?screen=feed&src=push_coins')
+    appEvents.opened()
+    expect(batches[0][0]).toMatchObject({ event: 'app_open', startParam: 'push_coins' })
+    window.history.replaceState(null, '', '/?src=bad%20tag')
+    __setAppEventSender(b => { batches.push(b) })
+    appEvents.opened()
+    expect(batches[1][0].startParam).toBeUndefined()
+    window.history.replaceState(null, '', '/')
+  })
+
   it('marks a load where the server did not know the person', () => {
     appEvents.ready(false)
     appEvents.ready(true)

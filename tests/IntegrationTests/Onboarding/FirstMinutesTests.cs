@@ -158,7 +158,7 @@ public class FirstMinutesTests : TestBase
         message.Text.Should().Be("Это Бомбора 🐶 Первая грузинская буква всё ещё ждёт тебя — это одна минута. Заглянешь?");
         var button = Buttons(message).Should().ContainSingle().Subject;
         button.Text.Should().Be("🚀 Узнать первую букву");
-        button.WebApp!.Url.Should().Be($"{SignedMiniApp.Host}/");
+        button.WebApp!.Url.Should().Be($"{SignedMiniApp.Host}/?src=push_first_open");
     }
 
     [Test]

@@ -50,6 +50,18 @@ function enabled(): boolean {
   } catch { return false }
 }
 
+/**
+ * По какой ссылке открыли: start_param Telegram (t.me/…?startapp=…) или метка ?src= на кнопке пуша
+ * (push_holiday, push_return_miss…) — так видно, сколько людей вернулось по каждому пушу.
+ */
+function openSource(t: any): string | null {
+  try {
+    if (t?.initDataUnsafe?.start_param) return String(t.initDataUnsafe.start_param)
+    const src = new URLSearchParams(window.location.search).get('src')
+    return src && /^[a-z0-9_-]{1,64}$/.test(src) ? src : null
+  } catch { return null }
+}
+
 function sinceLoad(): number {
   try { return Math.round(performance.now()) } catch { return 0 }
 }
@@ -100,7 +112,7 @@ export const appEvents = {
       event: 'app_open',
       value: sinceLoad(),
       ...(t?.platform ? { platform: String(t.platform) } : {}),
-      ...(t?.initDataUnsafe?.start_param ? { startParam: String(t.initDataUnsafe.start_param) } : {})
+      ...(openSource(t) ? { startParam: openSource(t)! } : {})
     }, true)
   },
   /** Первый экран получил данные; target «no-auth» — сервер не узнал человека, приложение открылось гостем. */
