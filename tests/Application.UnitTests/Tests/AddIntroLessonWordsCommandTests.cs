@@ -12,7 +12,7 @@ using Shouldly;
 namespace Application.UnitTests.Tests;
 
 /// <summary>
-/// After a counted «Знакомство» lesson its phrases and scene words go into the dictionary from the server's own
+/// After a counted «Знакомство» lesson the words of its phrases and scene go into the dictionary from the server's own
 /// list: only for a counted intro lesson, without duplicates, earlier counted lessons included.
 /// </summary>
 public class AddIntroLessonWordsCommandTests : CommandTestsBase
@@ -22,7 +22,7 @@ public class AddIntroLessonWordsCommandTests : CommandTestsBase
         public IReadOnlyList<AlphabetWordLesson> WordLessons { get; } =
         [
             new(1, 0, [new("გამარჯობა", "здравствуй"), new("ნახვამდის", "до свидания")]),
-            new(3, 0, [new("როგორ ხარ?", "как дела?"), new("პური", "хлеб")])
+            new(3, 0, [new("როგორ", "как"), new("პური", "хлеб")])
         ];
 
         public IReadOnlyList<AlphabetWord> WordsOf(int lessonId) => WordLessons.FirstOrDefault(l => l.Id == lessonId)?.Words ?? [];
@@ -67,7 +67,7 @@ public class AddIntroLessonWordsCommandTests : CommandTestsBase
         var result = (await Add(3)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();
 
         result.AddedCount.ShouldBe(4);
-        result.Words.Select(w => w.Word).ShouldBe(["როგორ ხარ?", "პური"]);
+        result.Words.Select(w => w.Word).ShouldBe(["როგორ", "პური"]);
         (await Dictionary()).Single(e => e.Word == "პური").Definition.ShouldBe("хлеб");
 
         var again = (await Add(3)).ShouldBeOfType<AddAlphabetLessonWordsResult.Success>();

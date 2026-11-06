@@ -15,8 +15,8 @@ const EXPLAIN_DICT_UNTIL = 3
 
 /**
  * Праздник после урока без ошибок: что теперь умеешь (новые фразы урока), где ты в истории
- * (акт и сколько уроков акта позади) и что дальше. Урок засчитан — его фразы и слова сцены сервер
- * кладёт в личный словарь: они влетают в значок «Словарь», рядом — «открыть словарь».
+ * (акт и сколько уроков акта позади) и что дальше. Урок засчитан — слова из его фраз и сцены сервер
+ * кладёт в личный словарь (отдельными словами, не фразами): они влетают в значок «Словарь», рядом — «открыть словарь».
  */
 export default function StoryFinale({ lesson, onNext, onVocabulary }: { lesson: IntroLesson; onNext: () => void; onVocabulary?: () => void }) {
   const act = actOf(lesson)
@@ -46,8 +46,10 @@ export default function StoryFinale({ lesson, onNext, onVocabulary }: { lesson: 
     const quick = reducedMotion()
     void (async () => {
       await new Promise(r => setTimeout(r, quick ? 0 : 900))
-      for (let i = 0; i < all.length && alive; i++) {
-        void flyGhost(cards.current[all[i].id] ?? null, chip.current, all[i].geo, 420, 'font-geo text-[15px]')
+      // В словарь идут отдельные слова, не фразы: каждое вылетает из карточки фразы, где оно встретилось.
+      for (let i = 0; i < saved.length && alive; i++) {
+        const from = all.find(p => p.geo.includes(saved[i].slice(0, -1))) ?? all[0]
+        void flyGhost(from ? cards.current[from.id] ?? null : null, chip.current, saved[i], 420, 'font-geo text-[15px]')
         await new Promise(r => setTimeout(r, quick ? 0 : 260))
         if (!alive) return
         haptic('tap'); sound.snap(i)

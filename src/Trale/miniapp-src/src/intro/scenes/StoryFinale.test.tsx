@@ -2,7 +2,7 @@ import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { setMuted } from '../../alphabet/games/fx'
-import { introLesson, newPhrases, sceneWords } from '../story'
+import { introLesson } from '../story'
 import StoryFinale from './StoryFinale'
 
 vi.mock('../../api', () => ({ api: { addIntroWords: vi.fn() } }))
@@ -16,15 +16,16 @@ describe('StoryFinale', () => {
   it('слова урока уходят в словарь: счётчик растёт, в первых уроках — как его найти, кнопка открывает словарь', async () => {
     vi.useFakeTimers()
     const lesson = introLesson(3)
-    const all = [...newPhrases(lesson), ...sceneWords(lesson)]
-    addIntroWords.mockResolvedValue({ words: all.map(p => ({ word: p.geo, translation: p.ru, added: true })), added: all.length })
+    // В словарь идут отдельные слова из фраз урока, не сами фразы.
+    const words = [['როგორ', 'как'], ['კარგად', 'хорошо'], ['მადლობა', 'спасибо'], ['პური', 'хлеб']]
+    addIntroWords.mockResolvedValue({ words: words.map(([word, translation]) => ({ word, translation, added: true })), added: words.length })
     const onVocabulary = vi.fn()
     render(<StoryFinale lesson={lesson} onNext={() => {}} onVocabulary={onVocabulary} />)
     await act(async () => { await vi.advanceTimersByTimeAsync(100) })
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     expect(addIntroWords).toHaveBeenCalledWith(3)
     expect(screen.getByTestId('finale-dict').textContent).toContain('в твоём словаре')
-    expect(screen.getByTestId('dict-count').textContent).toBe(String(all.length))
+    expect(screen.getByTestId('dict-count').textContent).toBe(String(words.length))
     expect(screen.getByTestId('finale-dict-tip')).toBeTruthy()
     fireEvent.click(screen.getByTestId('finale-open-dict'))
     expect(onVocabulary).toHaveBeenCalled()

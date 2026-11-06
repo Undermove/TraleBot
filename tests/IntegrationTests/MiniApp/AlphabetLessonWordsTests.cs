@@ -103,20 +103,29 @@ public class AlphabetLessonWordsTests : TestBase
     }
 
     [Test]
-    public async Task A_counted_intro_lesson_puts_its_phrases_and_scene_words_into_the_dictionary()
+    public async Task A_counted_intro_lesson_puts_the_words_of_its_phrases_and_scene_into_the_dictionary()
     {
-        // Урок 3 «Знакомства»: როგორ ხარ?, კარგად, მადლობა и слова сцены пекарни.
+        // Урок 3 «Знакомства»: из როგორ ხარ? и კარგად, მადლობა — их слова, плюс слова сцены пекарни.
         var words = new IntroLessonWords().WordsOf(3);
         (await Post("progress/lesson-complete", new { moduleId = "intro", lessonId = 3, correct = 5, total = 5 }))
             .StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = JsonNode.Parse(await (await Post("vocabulary/intro-words", new { lessonId = 3 })).Content.ReadAsStringAsync())!;
         body["words"]!.AsArray().Select(w => w!["word"]!.GetValue<string>()).Should().Equal(words.Select(w => w.Word));
-        words.Select(w => w.Word).Should().Contain(["როგორ ხარ?", "პური"]);
+        words.Select(w => w.Word).Should().Contain(["როგორ", "კარგად", "მადლობა", "პური"]);
         (await Dictionary()).Select(e => e.Word).Should().BeEquivalentTo(words.Select(w => w.Word));
 
         (await Post("vocabulary/intro-words", new { lessonId = 4 })).StatusCode.Should().Be(HttpStatusCode.Conflict);
         (await Post("vocabulary/intro-words", new { lessonId = 99 })).StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public void The_intro_dictionary_gets_single_words_not_phrases()
+    {
+        // Словарь — про слова: целую фразу неудобно учить карточкой и проходить в квизе.
+        var words = new IntroLessonWords().WordLessons.SelectMany(l => l.Words).ToList();
+        words.Should().NotBeEmpty();
+        words.Where(w => w.Word.Contains(' ') || w.Word.IndexOfAny(['?', '!', ',', '.', '…']) >= 0).Should().BeEmpty();
     }
 
     [Test]
