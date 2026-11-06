@@ -42,7 +42,7 @@ public class AddAlphabetLessonWords : IRequest<AddAlphabetLessonWordsResult>
 }
 
 /// <summary>
-/// After a counted «Знакомство» lesson its phrases and scene words go into the learner's dictionary — the same way
+/// After a counted «Знакомство» lesson the words of its phrases and scene (single words, not whole phrases) go into the learner's dictionary — the same way
 /// as the alphabet words (<see cref="AddAlphabetLessonWords"/>): from the server's own list, no translator, no
 /// limits; words already there are left as is, earlier counted lessons' words are added too.
 /// </summary>
