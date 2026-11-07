@@ -18,7 +18,8 @@ namespace Application.Admin;
 /// Nothing here runs by itself. Two separate manual steps:
 /// 1. <see cref="PrepareAsync"/> picks recipients (a random sample or everyone left) and writes
 ///    them down as Pending rows — no message leaves;
-/// 2. <see cref="SendBatchAsync"/> sends a bounded batch of Pending rows and stops.
+/// 2. <see cref="SendBatchAsync"/> sends a bounded batch of Pending rows and stops — or
+///    <see cref="RequestSendAllAsync"/> asks the background sender to send them all, batch by batch.
 ///
 /// "Never twice" rests on the unique (campaign, user) row plus an atomic Pending → Sending claim
 /// before each send. A row whose send did not report back stays Sending and is not retried.
@@ -384,6 +385,64 @@ public partial class BroadcastCampaignService(
         return result;
     }
 
+    /// <summary>Messages the background sender sends per campaign at one go, before it looks again.</summary>
+    public const int BackgroundBatchSize = 25;
+
+    /// <summary>
+    /// "Send to everyone picked": the server sends the campaign's Pending messages by itself
+    /// (<see cref="SendRequestedAsync"/>), so the admin page may be closed. Only marks the request —
+    /// no message leaves here. Null — no such campaign.
+    /// </summary>
+    public async Task<CampaignStatus?> RequestSendAllAsync(string key, CancellationToken ct)
+    {
+        var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
+        if (campaign == null) return null;
+        campaign.SendAllRequestedAtUtc ??= DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        _logger.LogInformation("Campaign {Key}: sending to everyone picked requested", key);
+        return await GetStatusAsync(key, ct);
+    }
+
+    /// <summary>Stops the background sending of the campaign; what is left stays Pending. Null — no such campaign.</summary>
+    public async Task<CampaignStatus?> StopSendAllAsync(string key, CancellationToken ct)
+    {
+        var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
+        if (campaign == null) return null;
+        campaign.SendAllRequestedAtUtc = null;
+        await db.SaveChangesAsync(ct);
+        _logger.LogInformation("Campaign {Key}: sending to everyone stopped", key);
+        return await GetStatusAsync(key, ct);
+    }
+
+    /// <summary>
+    /// One round of the background sender: a batch of every campaign asked to be sent to everyone.
+    /// A campaign with no one left waiting is finished — its request is cleared and it is returned in
+    /// <see cref="CampaignSendRound.Finished"/> exactly once, even with several replicas sending.
+    /// </summary>
+    public async Task<CampaignSendRound> SendRequestedAsync(CancellationToken ct)
+    {
+        var requested = await db.BroadcastCampaigns.AsNoTracking()
+            .Where(c => c.SendAllRequestedAtUtc != null)
+            .OrderBy(c => c.SendAllRequestedAtUtc)
+            .Select(c => new { c.Id, c.Key })
+            .ToListAsync(ct);
+
+        var round = new CampaignSendRound();
+        foreach (var campaign in requested)
+        {
+            if (ct.IsCancellationRequested) break;
+            var batch = await SendBatchAsync(campaign.Key, BackgroundBatchSize, ct);
+            round.Sent += batch.Sent + batch.Blocked + batch.Rejected + batch.Unknown;
+            round.RetryAfterSeconds = Math.Max(round.RetryAfterSeconds, batch.RetryAfterSeconds);
+            if (batch.Status is { Pending: 0 } && await db.TryFinishCampaignSendAllAsync(campaign.Id, CancellationToken.None))
+            {
+                _logger.LogInformation("Campaign {Key}: everyone picked has been sent to", campaign.Key);
+                round.Finished.Add(batch.Status);
+            }
+        }
+        return round;
+    }
+
     public async Task<CampaignStatus?> GetStatusAsync(string key, CancellationToken ct)
     {
         var campaign = await db.BroadcastCampaigns.AsNoTracking().FirstOrDefaultAsync(c => c.Key == key, ct);
@@ -419,6 +478,7 @@ public partial class BroadcastCampaignService(
             ButtonText = campaign.ButtonText,
             ButtonQuery = campaign.ButtonQuery,
             CreatedAtUtc = campaign.CreatedAtUtc,
+            SendingAll = campaign.SendAllRequestedAtUtc != null,
             Total = rows.Count,
             Sample = rows.Count(r => r.IsSample),
             Pending = rows.Count(r => r.Status == BroadcastDeliveryStatus.Pending),
@@ -725,8 +785,21 @@ public class CampaignSendResult
     public string? Error { get; init; }
 }
 
+/// <summary>What one round of the background sender did.</summary>
+public class CampaignSendRound
+{
+    /// <summary>Messages tried in this round, whatever Telegram answered.</summary>
+    public int Sent { get; set; }
+    /// <summary>Telegram asked to slow down: wait this long before the next round.</summary>
+    public int RetryAfterSeconds { get; set; }
+    /// <summary>Campaigns that have no one left waiting — the owner is told about each once.</summary>
+    public List<CampaignStatus> Finished { get; } = [];
+}
+
 public class CampaignStatus
 {
+    /// <summary>The server is sending it to everyone picked by itself (<see cref="BroadcastCampaign.SendAllRequestedAtUtc"/>).</summary>
+    public bool SendingAll { get; init; }
     public string Key { get; init; } = "";
     public BroadcastAudience Audience { get; init; }
     public string Message { get; init; } = "";

@@ -136,6 +136,9 @@ namespace Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("SendAllRequestedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("SurveyJson")
                         .HasColumnType("jsonb");
 

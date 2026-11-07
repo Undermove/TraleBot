@@ -90,6 +90,25 @@ public class TraleDbContext : DbContext, ITraleDbContext
         await SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<bool> TryFinishCampaignSendAllAsync(Guid campaignId, CancellationToken cancellationToken)
+    {
+        if (Database.IsNpgsql())
+        {
+            var affected = await Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE "BroadcastCampaigns" SET "SendAllRequestedAtUtc" = NULL
+                WHERE "Id" = {campaignId} AND "SendAllRequestedAtUtc" IS NOT NULL
+                """, cancellationToken);
+            return affected == 1;
+        }
+
+        // Non-relational providers (EF in-memory unit tests): single-threaded, no atomicity needed.
+        var campaign = await BroadcastCampaigns.FirstOrDefaultAsync(c => c.Id == campaignId, cancellationToken);
+        if (campaign is not { SendAllRequestedAtUtc: not null }) return false;
+        campaign.SendAllRequestedAtUtc = null;
+        await SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<bool> TryClaimBroadcastDeliveryAsync(Guid deliveryId, CancellationToken cancellationToken)
     {
         if (Database.IsNpgsql())

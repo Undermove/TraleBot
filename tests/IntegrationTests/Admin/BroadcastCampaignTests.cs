@@ -409,12 +409,14 @@ public class BroadcastCampaignTests : TestBase
         await AccessEnded(4);
         await Prepare("left-pending", "accessEnded", sampleSize: null);
 
-        // A full copy of the application with every background worker running.
+        // A full copy of the application with every background worker running — the campaign sender too:
+        // it only sends what the owner asked to send to everyone.
         await using var fresh = new TraleTestApplication(await InScope(sp =>
-            Task.FromResult(sp.GetRequiredService<TraleDbContext>().Database.GetConnectionString()!)));
+            Task.FromResult(sp.GetRequiredService<TraleDbContext>().Database.GetConnectionString()!)),
+            services => services.AddHostedService<Trale.HostedServices.CampaignSendWorker>());
         var telegram = (TelegramClientFake)fresh.Services.GetRequiredService<ITelegramBotClient>();
-        fresh.Services.GetServices<IHostedService>().Should().NotContain(s => s.GetType().Name.Contains("Broadcast") || s.GetType().Name.Contains("Campaign"));
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        fresh.Services.GetServices<IHostedService>().Should().Contain(s => s is Trale.HostedServices.CampaignSendWorker);
+        await Task.Delay(TimeSpan.FromSeconds(7));
 
         telegram.Requests.OfType<SendMessageRequest>().Should().BeEmpty();
         (await Deliveries("left-pending")).Should().OnlyContain(d => d.Status == BroadcastDeliveryStatus.Pending);
@@ -513,6 +515,98 @@ public class BroadcastCampaignTests : TestBase
         var row = (await Deliveries("rejected")).Single(d => d.TelegramId == people[0].TelegramId);
         row.Status.Should().Be(BroadcastDeliveryStatus.Rejected);
         row.Error.Should().Be("400: chat not found");
+    }
+
+    // ── Sent by the server ───────────────────────────────────────────────────
+
+    private Task<CampaignSendRound> RoundWith(ICampaignMessageSender sender) => InScope(sp =>
+        new BroadcastCampaignService(sp.GetRequiredService<ITraleDbContext>(), sender, NullLoggerFactory.Instance)
+            .SendRequestedAsync(CancellationToken.None));
+
+    [Test]
+    public async Task Send_all_only_marks_the_campaign_and_sends_nothing_itself()
+    {
+        await AccessEnded(3);
+        await Prepare("marked", "accessEnded", sampleSize: null);
+        var mark = _telegram.Requests.Count;
+
+        var (code, body) = await Call(HttpMethod.Post, "campaigns/marked/send-all");
+
+        code.Should().Be(HttpStatusCode.OK);
+        body.GetProperty("sendingAll").GetBoolean().Should().BeTrue();
+        body.GetProperty("pending").GetInt32().Should().Be(3);
+        SentSince(mark).Should().BeEmpty();
+        (await Call(HttpMethod.Post, "campaigns/nope/send-all")).Code.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task Two_replicas_send_everyone_once_and_report_the_end_once()
+    {
+        var people = await AccessEnded(60);
+        await Prepare("both-pods", "accessEnded", sampleSize: null);
+        await Prepare("not-asked", "accessEnded", sampleSize: null);
+        await Call(HttpMethod.Post, "campaigns/both-pods/send-all");
+        var sender = new ScriptedSender();
+
+        var finished = new ConcurrentBag<string>();
+        for (var i = 0; i < 10 && finished.IsEmpty; i++)
+        {
+            var rounds = await Task.WhenAll(RoundWith(sender), RoundWith(sender));
+            foreach (var f in rounds.SelectMany(r => r.Finished)) finished.Add(f.Key);
+        }
+        (await RoundWith(sender)).Sent.Should().Be(0, "nothing is left to send");
+
+        finished.Should().Equal("both-pods");
+        sender.Attempts.Should().HaveCount(60).And.OnlyHaveUniqueItems();
+        sender.Attempts.Should().BeEquivalentTo(people.Select(p => p.TelegramId));
+        (await Deliveries("not-asked")).Should().OnlyContain(d => d.Status == BroadcastDeliveryStatus.Pending,
+            "a campaign nobody asked to send to everyone is not touched");
+        (await Status("both-pods")).GetProperty("sendingAll").GetBoolean().Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Stop_leaves_the_rest_waiting()
+    {
+        await AccessEnded(30);
+        await Prepare("stopped", "accessEnded", sampleSize: null);
+        await Call(HttpMethod.Post, "campaigns/stopped/send-all");
+        var sender = new ScriptedSender();
+        await RoundWith(sender);
+
+        var (code, body) = await Call(HttpMethod.Post, "campaigns/stopped/stop");
+        await RoundWith(sender);
+
+        code.Should().Be(HttpStatusCode.OK);
+        body.GetProperty("sendingAll").GetBoolean().Should().BeFalse();
+        sender.Attempts.Should().HaveCount(BroadcastCampaignService.BackgroundBatchSize);
+        body.GetProperty("pending").GetInt32().Should().Be(30 - BroadcastCampaignService.BackgroundBatchSize);
+    }
+
+    [Test]
+    public async Task The_worker_sends_everyone_with_the_page_closed_and_tells_the_owner()
+    {
+        var people = await AccessEnded(30);
+        await Prepare("by-worker", "accessEnded", sampleSize: null);
+        await Call(HttpMethod.Post, "campaigns/by-worker/send-all");
+        var mark = _telegram.Requests.Count;
+
+        var worker = ActivatorUtilities.CreateInstance<Trale.HostedServices.CampaignSendWorker>(_app.Services);
+        await worker.StartAsync(CancellationToken.None);
+        try
+        {
+            for (var i = 0; i < 300 && !SentSince(mark).Any(m => m.ChatId.Identifier == Owner); i++)
+                await Task.Delay(100);
+        }
+        finally
+        {
+            await worker.StopAsync(CancellationToken.None);
+        }
+
+        var sent = SentSince(mark);
+        sent.Where(m => m.ChatId.Identifier != Owner).Select(m => m.ChatId.Identifier!.Value)
+            .Should().BeEquivalentTo(people.Select(p => p.TelegramId));
+        sent.Where(m => m.ChatId.Identifier == Owner).Should().ContainSingle()
+            .Which.Text.Should().Contain("by-worker").And.Contain("Дошло: 30 из 30");
     }
 
     // ── Measuring ────────────────────────────────────────────────────────────

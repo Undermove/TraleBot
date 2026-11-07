@@ -802,6 +802,27 @@ public class AdminController : Controller
         });
     }
 
+    /// <summary>The server sends the campaign to everyone picked by itself, batch by batch — the page may be
+    /// closed; the owner gets a bot message when it is done. Only marks the request: nothing leaves here.</summary>
+    [HttpPost("campaigns/{key}/send-all")]
+    public async Task<IActionResult> CampaignSendAll(
+        string key, [FromServices] BroadcastCampaignService campaigns, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var status = await campaigns.RequestSendAllAsync(key, ct);
+        return status == null ? NotFound(new { error = "no_such_campaign" }) : Ok(MapCampaignStatus(status));
+    }
+
+    /// <summary>Stops the server sending the campaign; whoever has not got it yet stays waiting.</summary>
+    [HttpPost("campaigns/{key}/stop")]
+    public async Task<IActionResult> CampaignStop(
+        string key, [FromServices] BroadcastCampaignService campaigns, CancellationToken ct)
+    {
+        if (!await IsOwnerAsync(ct)) return NotFound();
+        var status = await campaigns.StopSendAllAsync(key, ct);
+        return status == null ? NotFound(new { error = "no_such_campaign" }) : Ok(MapCampaignStatus(status));
+    }
+
     [HttpGet("campaigns/{key}")]
     public async Task<IActionResult> CampaignStatus(
         string key, [FromServices] BroadcastCampaignService campaigns, CancellationToken ct)
@@ -813,7 +834,7 @@ public class AdminController : Controller
 
     private static object? MapCampaignStatus(CampaignStatus? s) => s == null ? null : new
     {
-        s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc,
+        s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc, s.SendingAll,
         s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened,
         s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen,
         // In the order of the buttons, also before anyone has answered — this is how the survey builder gets a survey back.
