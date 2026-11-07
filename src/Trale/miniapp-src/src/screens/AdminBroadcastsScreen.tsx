@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import AdminPage, { Empty, phaseOf, type AdminPhase } from '../components/admin/AdminPage'
+import { readClipboard } from '../admin/pastedBroadcast'
 import { adminCampaigns, type CampaignListItemDto } from '../api'
 import { audienceName, day } from '../admin/words'
 import { adminBack } from '../admin/adminNav'
@@ -27,6 +28,10 @@ export default function AdminBroadcastsScreen({ navigate }: { navigate: (s: Scre
       <button type="button" onClick={() => navigate({ kind: 'admin-broadcast' })} data-testid="broadcast-new"
         className="jewel-btn jewel-btn-gold w-full mb-4 font-sans text-[16px] font-extrabold">
         Новая рассылка
+      </button>
+      <button type="button" onClick={async () => navigate({ kind: 'admin-broadcast', paste: await readClipboard() })} data-testid="broadcast-paste-clipboard"
+        className="w-full min-h-[52px] mb-4 rounded-xl border-[1.5px] border-jewelInk font-sans text-[15px] font-extrabold text-jewelInk">
+        Вставить готовую из буфера
       </button>
 
       {saved && (

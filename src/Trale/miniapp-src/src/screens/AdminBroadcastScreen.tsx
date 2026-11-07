@@ -3,7 +3,7 @@ import AdminPage, { phaseOf, type AdminPhase } from '../components/admin/AdminPa
 import { AUDIENCES, audienceName } from '../admin/words'
 import { adminBack, setInnerBack } from '../admin/adminNav'
 import { draft as drafts, useDraft, useFocusMode } from '../admin/useKept'
-import { parsePastedBroadcast } from '../admin/pastedBroadcast'
+import { parsePastedBroadcast, readClipboard } from '../admin/pastedBroadcast'
 import { adminCampaigns, ApiError, type CampaignAudience, type CampaignStatusDto } from '../api'
 import type { Screen } from '../types'
 
@@ -19,6 +19,8 @@ interface Props {
   campaignKey?: string
   /** Открыть с черновиком, сохранённым на этом устройстве. */
   useDraft?: boolean
+  /** Готовая рассылка из буфера (кнопка в списке рассылок): разобралась — сразу на отправку, нет — открыто поле с ошибкой. */
+  pasted?: string
   navigate: (s: Screen) => void
 }
 
@@ -70,7 +72,7 @@ function Preview({ message, buttonText }: { message: string; buttonText: string 
 
 interface Draft { step: number; message: string; hasButton: boolean; buttonText: string; destination: string; customQuery: string; giftDays: number; audience: CampaignAudience; sampleFirst: boolean; sampleSize: number; ownName: string }
 
-export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft, navigate }: Props) {
+export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft, pasted: fromList, navigate }: Props) {
   const [saved] = useState(() => (withDraft && !campaignKey ? drafts.read<Draft>('broadcast') : null))
   const [phase, setPhase] = useState<AdminPhase>(campaignKey ? 'loading' : 'ready')
   const [step, setStep] = useState(campaignKey ? 5 : saved?.step ?? 1)
@@ -147,9 +149,10 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     sampleSize: sample, dryRun, ...extra
   })
 
-  const applyPaste = () => {
-    const r = parsePastedBroadcast(pasted)
-    if (typeof r === 'string') { setPasteProblem(r); return }
+  /** Заполняет все шаги из готового текста и открывает отправку; не разобралось — поле с текстом и ошибкой. */
+  const applyPaste = (raw: string) => {
+    const r = parsePastedBroadcast(raw)
+    if (typeof r === 'string') { setPasting(true); setPasted(raw); setPasteProblem(raw.trim() ? r : null); return }
     setMessage(r.message)
     setHasButton(r.button !== null)
     if (r.button) setButtonText(r.button)
@@ -166,6 +169,9 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     setPasteProblem(null)
     go(STEPS.length)
   }
+
+  useEffect(() => { if (fromList !== undefined && !campaignKey) applyPaste(fromList) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const pasteFromClipboard = async () => applyPaste(await readClipboard())
 
   async function run(work: () => Promise<string | null>) {
     setBusy(true)
@@ -257,18 +263,18 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
             <div className={`${small} text-right tabular-nums`}>{text.length} / 4000</div>
 
             {!pasting ? (
-              <button type="button" className={action} onClick={() => setPasting(true)} data-testid="broadcast-paste-open">Вставить готовую рассылку</button>
+              <button type="button" className={action} onClick={pasteFromClipboard} data-testid="broadcast-paste-open">Вставить готовую из буфера</button>
             ) : (
               <div className="jewel-tile px-4 py-3" data-testid="broadcast-paste">
                 <div className="relative z-[1] flex flex-col gap-2">
                   <div className="font-sans text-[15px] font-extrabold text-jewelInk">Готовая рассылка</div>
-                  <div className={small}>Вставь целиком блок «имя / кому / кнопка… --- текст» — все шаги заполнятся, и откроется отправка.</div>
+                  <div className={small}>Буфер прочитать не вышло или в нём не рассылка. Вставь сюда блок «имя / кому / кнопка… --- текст» долгим нажатием — все шаги заполнятся, и откроется отправка.</div>
                   <textarea className={field} rows={8} value={pasted} aria-label="Готовая рассылка" placeholder={'кому: inactiveLong\nкнопка: Открыть\n---\nТекст сообщения'}
                     onChange={e => { setPasted(e.target.value); setPasteProblem(null) }} />
                   {pasteProblem && <div className="font-sans text-[13px] text-ruby" data-testid="broadcast-paste-problem">{pasteProblem}</div>}
                   <div className="flex gap-2">
                     <button type="button" className={secondary} onClick={() => { setPasting(false); setPasteProblem(null) }}>Отмена</button>
-                    <button type="button" className={primary} disabled={!pasted.trim()} onClick={applyPaste} data-testid="broadcast-paste-apply">Заполнить</button>
+                    <button type="button" className={primary} disabled={!pasted.trim()} onClick={() => applyPaste(pasted)} data-testid="broadcast-paste-apply">Заполнить</button>
                   </div>
                 </div>
               </div>

@@ -45,7 +45,7 @@ export type Screen =
   /** Рассылки: список кампаний. */
   | { kind: 'admin-broadcasts' }
   /** Одна рассылка: без key — новая, по шагам; с key — её отправка и досылка. */
-  | { kind: 'admin-broadcast'; key?: string; draft?: boolean }
+  | { kind: 'admin-broadcast'; key?: string; draft?: boolean; paste?: string }
   /** Вкладка «Ещё»: глаголы, оплаты, система. */
   | { kind: 'admin-more' }
   | { kind: 'admin-payments' }

@@ -31,6 +31,11 @@ const KEYS: Record<string, keyof PastedBroadcast> = {
   'имя': 'name', 'кому': 'audience', 'проба': 'sample', 'подарок': 'giftDays', 'кнопка': 'button', 'адрес': 'query'
 }
 
+/** Текст из буфера обмена; '' — если клиент Telegram читать буфер не даёт (тогда вставляют долгим нажатием в поле). */
+export async function readClipboard(): Promise<string> {
+  try { return (await navigator.clipboard.readText()) ?? '' } catch { return '' }
+}
+
 /** Разбирает вставленный текст; строка — что не так, одной фразой. */
 export function parsePastedBroadcast(raw: string): PastedBroadcast | string {
   const lines = raw.replace(/\r\n?/g, '\n').split('\n')
