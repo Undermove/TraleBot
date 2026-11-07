@@ -8,7 +8,7 @@ import AdminBroadcastScreen from '../AdminBroadcastScreen'
 
 vi.mock('../../api', async () => ({
   ...(await vi.importActual<typeof import('../../api')>('../../api')),
-  adminCampaigns: { list: vi.fn(), audiences: vi.fn(), prepare: vi.fn(), send: vi.fn(), status: vi.fn() }
+  adminCampaigns: { list: vi.fn(), audiences: vi.fn(), prepare: vi.fn(), send: vi.fn(), status: vi.fn(), sendAll: vi.fn(), stop: vi.fn() }
 }))
 vi.mock('../../components/LoaderLetter', () => ({ default: () => null }))
 const api = vi.mocked(mocked)
@@ -283,20 +283,32 @@ describe('AdminBroadcastScreen — готовая рассылка одним к
     expect(title()).toBe('Текст')
   })
 
-  it('sends to everyone picked with one confirmation, batch after batch, until no one is waiting', async () => {
+  it('hands sending everyone to the server with one confirmation and shows how it goes until it is done', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    api.status.mockResolvedValue({ ...status, pending: 60 })
-    const left = [35, 10, 0]
-    api.send.mockImplementation(async () => {
-      const pending = left.shift()!
-      return { sent: 25, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: { ...status, pending } }
-    })
+    api.status.mockResolvedValueOnce({ ...status, pending: 60 }).mockResolvedValueOnce({ ...status, pending: 60 })
+    api.sendAll.mockResolvedValue({ ...status, pending: 60, sendingAll: true })
     render(<AdminBroadcastScreen navigate={navigate} campaignKey={KEY} />)
     await userEvent.click(await screen.findByTestId('broadcast-send-all'))
-    await waitFor(() => expect(screen.getByTestId('broadcast-note').textContent).toContain('Готово. Отправлено 75'), { timeout: 5000 })
-    expect(api.send).toHaveBeenCalledTimes(3)
+
+    expect(api.sendAll).toHaveBeenCalledWith(KEY)
+    expect(api.send).not.toHaveBeenCalled()
     expect(confirm).toHaveBeenCalledTimes(1)
+    expect((await screen.findByTestId('broadcast-sending')).textContent).toContain('можно закрыть')
+
+    api.status.mockResolvedValue({ ...status, pending: 0, sent: 60, sendingAll: false })
+    await waitFor(() => expect(screen.getByTestId('broadcast-note').textContent).toContain('Готово. Дошло 60'), { timeout: 5000 })
+    expect(screen.queryByTestId('broadcast-sending')).toBeNull()
     vi.useRealTimers()
+  })
+
+  it('stops the server sending and leaves the rest waiting', async () => {
+    api.status.mockResolvedValue({ ...status, pending: 40, sent: 20, sendingAll: true })
+    api.stop.mockResolvedValue({ ...status, pending: 40, sent: 20, sendingAll: false })
+    render(<AdminBroadcastScreen navigate={navigate} campaignKey={KEY} />)
+    await userEvent.click(await screen.findByTestId('broadcast-stop'))
+    expect(api.stop).toHaveBeenCalledWith(KEY)
+    expect(screen.getByTestId('broadcast-note').textContent).toContain('ждут 40')
+    expect(screen.getByTestId('broadcast-send-all')).toBeTruthy()
   })
 })
 

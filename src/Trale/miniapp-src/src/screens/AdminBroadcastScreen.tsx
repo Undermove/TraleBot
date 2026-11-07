@@ -214,28 +214,38 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     return `Отправлено ${r.sent}, заблокировали бота ${r.blocked}, отказ ${r.rejected}, без ответа ${r.unknown}. Осталось ${r.status.pending}.${wait}`
   })
 
-  // Всем выбранным подряд, порциями по 25: одно подтверждение вместо нажатия на каждую порцию.
-  // Если Telegram просит подождать — ждёт; если порция не сдвинулась совсем — останавливается.
+  // Всем выбранным — рассылает сервер, порциями: мини-апп можно закрыть, бот напишет, когда закончит.
   const sendAll = () => run(async () => {
     if (!key) return null
     const current = await adminCampaigns.status(key)
     setStatus(current)
     if (current.pending === 0) return 'Отправлять некого: все выбранные уже получили сообщение.'
     const gift = current.giftDays > 0 ? `\n\nС подарком: ${current.giftDays} дн. доступа тому, кто откроет кнопку.` : ''
-    if (!confirm(`ОТПРАВИТЬ всем выбранным: ${current.pending} сообщений подряд?\n\n${current.message}${gift}\n\nЭто настоящая отправка через бота.`)) return null
-    const done = { sent: 0, blocked: 0, rejected: 0, unknown: 0 }
-    for (;;) {
-      const r = await adminCampaigns.send(key, BATCH)
-      done.sent += r.sent; done.blocked += r.blocked; done.rejected += r.rejected; done.unknown += r.unknown
-      setStatus(r.status)
-      setNote(`Отправляю… дошло ${done.sent}, осталось ${r.status.pending}.`)
-      if (r.status.pending === 0) break
-      const moved = r.sent + r.blocked + r.rejected + r.unknown
-      if (moved === 0 && r.retryAfterSeconds === 0) return `Остановился: Telegram не принял порцию. Дошло ${done.sent}, осталось ${r.status.pending} — попробуй ещё раз позже.`
-      await new Promise(resolve => setTimeout(resolve, Math.max(r.retryAfterSeconds, 1) * 1000))
-    }
-    return `Готово. Отправлено ${done.sent}, заблокировали бота ${done.blocked}, отказ ${done.rejected}, без ответа ${done.unknown}.`
+    if (!confirm(`ОТПРАВИТЬ всем выбранным: ${current.pending} сообщений?\n\n${current.message}${gift}\n\nЭто настоящая отправка через бота.`)) return null
+    setStatus(await adminCampaigns.sendAll(key))
+    return null
   })
+
+  const stopSending = () => run(async () => {
+    if (!key) return null
+    const s = await adminCampaigns.stop(key)
+    setStatus(s)
+    return `Остановил. Дошло ${s.sent}, ждут ${s.pending} — можно продолжить позже.`
+  })
+
+  // Пока сервер рассылает — обновлять счётчики; закончил — сказать итог.
+  const sending = status?.sendingAll === true
+  useEffect(() => {
+    if (!key || !sending) return
+    const timer = setInterval(() => {
+      adminCampaigns.status(key).then(s => {
+        setStatus(s)
+        if (!s.sendingAll && s.pending === 0)
+          setNote(`Готово. Дошло ${s.sent}, заблокировали бота ${s.blocked}, отказ ${s.rejected}, без ответа ${s.unknown}.`)
+      }).catch(() => {})
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [key, sending])
 
   const close = () => {
     if (unsaved && !confirm('Закрыть рассылку? Черновик останется на этом устройстве — к нему можно вернуться из списка рассылок.')) return
@@ -395,13 +405,24 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
               {frozen ? `Выбрать всех остальных (${audienceName(audience)})` : sampleFirst ? 'Выбрать пробную группу' : `Выбрать всех (${audienceName(audience)})`}
             </button>
 
-            <div className="mn-eyebrow mt-2">3. Отправь — по {BATCH} за нажатие</div>
-            <button type="button" className={action} style={{ background: '#F5B820' }} disabled={busy || !waiting} onClick={sendBatch} data-testid="broadcast-send">
-              Отправить следующие {BATCH}
-            </button>
-            <button type="button" className={action} disabled={busy || !waiting} onClick={sendAll} data-testid="broadcast-send-all">
-              Отправить всем выбранным{waiting && status ? ` (${status.pending})` : ''}
-            </button>
+            <div className="mn-eyebrow mt-2">3. Отправь</div>
+            {sending ? (
+              <>
+                <div className="font-sans text-[15px] text-jewelInk tabular-nums" data-testid="broadcast-sending">
+                  Рассылается: дошло {status!.sent}, ждут {status!.pending}. Мини-апп можно закрыть — бот напишет, когда закончит.
+                </div>
+                <button type="button" className={action} disabled={busy} onClick={stopSending} data-testid="broadcast-stop">Остановить</button>
+              </>
+            ) : (
+              <>
+                <button type="button" className={action} style={{ background: '#F5B820' }} disabled={busy || !waiting} onClick={sendAll} data-testid="broadcast-send-all">
+                  Отправить всем выбранным{waiting && status ? ` (${status.pending})` : ''}
+                </button>
+                <button type="button" className={action} disabled={busy || !waiting} onClick={sendBatch} data-testid="broadcast-send">
+                  Отправить только следующие {BATCH}
+                </button>
+              </>
+            )}
             {!waiting && (
               <div className={small} data-testid="broadcast-send-hint">
                 {frozen ? 'Все выбранные уже получили сообщение. Можно выбрать остальных или ещё одну группу.' : 'Отправка откроется, когда выберешь получателей.'}

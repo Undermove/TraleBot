@@ -572,6 +572,8 @@ export interface CampaignStatusDto {
   message: string
   buttonText: string | null
   buttonQuery: string | null
+  /** Сервер сейчас сам рассылает её всем выбранным. */
+  sendingAll?: boolean
   total: number
   sample: number
   pending: number
@@ -634,6 +636,12 @@ export const adminCampaigns = {
       `/api/admin/campaigns/${encodeURIComponent(key)}/send`,
       { method: 'POST', body: JSON.stringify({ limit }) }
     ),
+  /** Сервер сам рассылает всем выбранным, порциями; мини-апп можно закрыть — бот напишет, когда закончит. */
+  sendAll: (key: string) =>
+    request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}/send-all`, { method: 'POST' }),
+  /** Остановить рассылку сервером; кто не получил — остаются ждать. */
+  stop: (key: string) =>
+    request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}/stop`, { method: 'POST' }),
   status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`),
   /** Все кампании, отправленные людям, новые сверху. surveys — только опросы или только обычные рассылки. */
   list: (surveys?: boolean) =>

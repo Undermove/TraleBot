@@ -38,6 +38,11 @@ public class BroadcastCampaign
     /// see <see cref="IsGiftSurvey"/>.</summary>
     public string? SurveyJson { get; set; }
 
+    /// <summary>When the owner asked the server to send it to everyone picked; null — nothing is being sent by
+    /// itself. Set by the "send to everyone" button, cleared by the sender when no one is left waiting or by
+    /// "stop". The background sender works through such campaigns whether or not the admin page stays open.</summary>
+    public DateTime? SendAllRequestedAtUtc { get; set; }
+
     public bool IsSurvey => SurveyJson != null;
 
     public SurveyForm? Survey => SurveyForm.FromJson(SurveyJson);

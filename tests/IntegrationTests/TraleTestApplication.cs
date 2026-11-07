@@ -54,6 +54,11 @@ public class TraleTestApplication : WebApplicationFactory<Program>
 			services.RemoveAll<IPrometheusResolver>();
 			services.AddSingleton<IPrometheusResolver, PrometheusResolverFake>();
 
+			// The campaign sender would send, from every test application at once, campaigns that a test
+			// sends itself; a test that needs it adds it back.
+			foreach (var worker in services.Where(d => d.ImplementationType == typeof(Trale.HostedServices.CampaignSendWorker)).ToList())
+				services.Remove(worker);
+
 			_configure?.Invoke(services);
 		});
 		return base.CreateHost(builder);
