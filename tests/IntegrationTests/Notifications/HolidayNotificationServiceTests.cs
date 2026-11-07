@@ -150,6 +150,33 @@ public class HolidayNotificationServiceTests : TestBase
             because: "concurrent dispatch runs must collapse to a single holiday trigger via the unique (UserId, Source) index");
     }
 
+    [Test]
+    public async Task DispatchAsync_EveryRealHoliday_FitsTheTriggerRowAndIsSent()
+    {
+        // The holiday key is stored as the trigger variant: a key longer than the column
+        // ("svetitskhovloba", "independence") failed the insert and nobody got that push.
+        var holidays = new HolidayCalendarService().AllHolidays();
+        for (var i = 0; i < holidays.Count; i++)
+        {
+            var telegramId = HolidayTelegramId + 100 + i;
+            await SeedActiveUserAsync(telegramId);
+
+            await using (var scope = WithStubbedHoliday(holidays[i]).Services.CreateAsyncScope())
+            {
+                var dispatcher = scope.ServiceProvider.GetRequiredService<IHolidayNotificationService>();
+                await dispatcher.DispatchAsync(CancellationToken.None);
+            }
+
+            await using var verifyScope = _testServer.Services.CreateAsyncScope();
+            var db = verifyScope.ServiceProvider.GetRequiredService<ITraleDbContext>();
+            var variant = await db.NotificationTriggers
+                .Where(t => t.UserId == telegramId && t.Source == "holiday")
+                .Select(t => t.Variant)
+                .SingleOrDefaultAsync();
+            variant.Should().Be(holidays[i].Key);
+        }
+    }
+
     private async Task SeedActiveUserAsync(long telegramId, bool notificationsEnabled = true)
     {
         await using var scope = _testServer.Services.CreateAsyncScope();

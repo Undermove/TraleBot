@@ -193,7 +193,7 @@ public class TelegramNotificationService : IUserNotificationService
 
     private InlineKeyboardMarkup BuildStreakMilestoneKeyboard()
     {
-        var url = _botConfig.NormalizedHost() + "/";
+        var url = _botConfig.NormalizedHost() + "/?src=push_streak";
         return new InlineKeyboardMarkup(new[]
         {
             new[]
@@ -253,7 +253,7 @@ public class TelegramNotificationService : IUserNotificationService
 
     private InlineKeyboardMarkup BuildCoinsStaleKeyboard()
     {
-        var url = $"{_botConfig.NormalizedHost()}/?screen=feed";
+        var url = $"{_botConfig.NormalizedHost()}/?screen=feed&src=push_coins";
         return new InlineKeyboardMarkup(new[]
         {
             new[]
@@ -318,7 +318,7 @@ public class TelegramNotificationService : IUserNotificationService
 
     private InlineKeyboardMarkup BuildHolidayPushKeyboard()
     {
-        var url = _botConfig.NormalizedHost() + "/";
+        var url = _botConfig.NormalizedHost() + "/?src=push_holiday";
         return new InlineKeyboardMarkup(new[]
         {
             new[]
@@ -400,7 +400,7 @@ public class TelegramNotificationService : IUserNotificationService
         // No mini-app in this environment — there is nothing to open, so nothing to remind about.
         if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return;
 
-        var keyboard = FirstStepMessage.Keyboard(_botConfig.NormalizedHost() + "/");
+        var keyboard = FirstStepMessage.Keyboard(_botConfig.NormalizedHost() + "/?src=push_first_open");
 
         try
         {
@@ -438,7 +438,7 @@ public class TelegramNotificationService : IUserNotificationService
     private InlineKeyboardMarkup? BuildReferralBonusKeyboard()
     {
         if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return null;
-        var url = _botConfig.NormalizedHost() + "/";
+        var url = _botConfig.NormalizedHost() + "/?src=push_referral";
         return new InlineKeyboardMarkup(new[]
         {
             new[]
@@ -457,12 +457,12 @@ public class TelegramNotificationService : IUserNotificationService
         string url, label;
         if (variant == "feed")
         {
-            url = $"{host}/?screen=feed";
+            url = $"{host}/?screen=feed&src=push_return_feed";
             label = "Покормить Бомбору 🦴";
         }
         else
         {
-            url = $"{host}/?screen=practice&moduleId={moduleId}&lessonId={lessonId}";
+            url = $"{host}/?screen=practice&moduleId={moduleId}&lessonId={lessonId}&src=push_return_{variant}";
             label = "Продолжить урок 📖";
         }
         return new InlineKeyboardMarkup(new[]

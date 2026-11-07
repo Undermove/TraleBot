@@ -507,8 +507,8 @@ namespace Persistence.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<string>("Variant")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.HasKey("Id");
 

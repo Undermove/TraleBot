@@ -413,6 +413,7 @@ Location: `src/Persistence/Migrations/`. Test greps the migration class name (af
 | `AddTranslationCache` | Adds `TranslationCache` (normalised key + direction unique, definition / additional info / example, source, classified flag, hit count, timestamps): repeated Georgian lookups are answered from the DB instead of the external dictionary sites. |
 | `AddAppEvents` | Adds `AppEvents` — mini-app moments outside lessons: event (`app_open`, `app_ready`, `app_error`, `screen`, `paywall`, `app_hide`), target (screen or paywall trigger), value (ms to load / seconds open), Telegram platform, start parameter, date; indexed by (event, date) and (user, date). |
 | `RemapNumbersLessonProgress` | Data only: «Числа» went from 5 lessons to 11, so `CompletedLessonsJson.numbers` is remapped — old 1 (1–10) → 1–4, old 2 (11–20) → 5–6, old 3 (21–100) → 7–10, old 4 (100+, ordinals, days) → 11; old 5 (listening 1–20) has no counterpart. |
+| `WidenNotificationTriggerVariant` | `NotificationTriggers.Variant` 10 → 32 chars: holiday keys longer than 10 (`svetitskhovloba`, `independence`, `language-day`) failed the claim insert, so those holiday pushes never went out. |
 
 ---
 

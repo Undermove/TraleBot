@@ -21,6 +21,9 @@ namespace Infrastructure.UnitTests.HostedServices;
 [TestFixture]
 public class HourlyNotificationWorkerTests
 {
+    // 09:00 Tbilisi — the only hour the holiday dispatcher runs.
+    private static readonly DateTime HolidayHour = new(2026, 11, 4, 5, 0, 0, DateTimeKind.Utc);
+
     private static HourlyNotificationWorker BuildWorker(IServiceScopeFactory scopeFactory)
         => new(scopeFactory, NullLogger<HourlyNotificationWorker>.Instance);
 
@@ -84,11 +87,27 @@ public class HourlyNotificationWorkerTests
         var sp = BuildProvider(holiday.Object, coins.Object, streak.Object);
         var worker = BuildWorker(sp.GetRequiredService<IServiceScopeFactory>());
 
-        await worker.RunOnceAsync(CancellationToken.None);
+        await worker.RunOnceAsync(HolidayHour, CancellationToken.None);
 
         holiday.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
         coins.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
         streak.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task RunOnceAsync_OutsideTheTbilisiMorning_SkipsTheHolidayPush()
+    {
+        // 20:00 UTC on 3 Nov = 00:00 Tbilisi on 4 Nov (Tbilisoba): the push used to go out at night.
+        var holiday = new Mock<IHolidayNotificationService>(MockBehavior.Strict);
+        var coins = new Mock<ICoinsNotificationService>();
+        var streak = new Mock<IStreakNotificationService>();
+        var sp = BuildProvider(holiday.Object, coins.Object, streak.Object);
+        var worker = BuildWorker(sp.GetRequiredService<IServiceScopeFactory>());
+
+        await worker.RunOnceAsync(new DateTime(2026, 11, 3, 20, 0, 0, DateTimeKind.Utc), CancellationToken.None);
+
+        holiday.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Never);
+        coins.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -104,7 +123,7 @@ public class HourlyNotificationWorkerTests
         services.AddSingleton(reminder.Object);
         var worker = BuildWorker(services.BuildServiceProvider().GetRequiredService<IServiceScopeFactory>());
 
-        await worker.RunOnceAsync(CancellationToken.None);
+        await worker.RunOnceAsync(HolidayHour, CancellationToken.None);
 
         reminder.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -125,7 +144,7 @@ public class HourlyNotificationWorkerTests
         var sp = BuildProvider(holiday.Object, coins.Object, streak.Object);
         var worker = BuildWorker(sp.GetRequiredService<IServiceScopeFactory>());
 
-        await Should.NotThrowAsync(() => worker.RunOnceAsync(CancellationToken.None));
+        await Should.NotThrowAsync(() => worker.RunOnceAsync(HolidayHour, CancellationToken.None));
         coins.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
         streak.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -145,7 +164,7 @@ public class HourlyNotificationWorkerTests
         var sp = BuildProvider(holiday.Object, coins.Object, streak.Object);
         var worker = BuildWorker(sp.GetRequiredService<IServiceScopeFactory>());
 
-        await Should.NotThrowAsync(() => worker.RunOnceAsync(CancellationToken.None));
+        await Should.NotThrowAsync(() => worker.RunOnceAsync(HolidayHour, CancellationToken.None));
         streak.Verify(s => s.DispatchAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -166,7 +185,7 @@ public class HourlyNotificationWorkerTests
         var sp = BuildProvider(holiday.Object, coins.Object, streak.Object);
         var worker = BuildWorker(sp.GetRequiredService<IServiceScopeFactory>());
 
-        await Should.ThrowAsync<OperationCanceledException>(() => worker.RunOnceAsync(cts.Token));
+        await Should.ThrowAsync<OperationCanceledException>(() => worker.RunOnceAsync(HolidayHour, cts.Token));
     }
 
     [Test]

@@ -89,7 +89,7 @@ public class TelegramNotificationServiceTests
         var button = markup.InlineKeyboard.SelectMany(r => r).Single();
         button.WebApp.ShouldNotBeNull();
         // Deep-links straight into the lesson screen, not just the app.
-        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=practice&moduleId=alphabet&lessonId=7");
+        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=practice&moduleId=alphabet&lessonId=7&src=push_return_miss");
     }
 
     [Test]
@@ -102,7 +102,7 @@ public class TelegramNotificationServiceTests
 
         var button = ReflectMarkup(captured.Single())!.InlineKeyboard.SelectMany(r => r).Single();
         button.WebApp.ShouldNotBeNull();
-        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=feed");
+        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=feed&src=push_return_feed");
     }
 
     [Test]
@@ -260,7 +260,7 @@ public class TelegramNotificationServiceTests
         markup.ShouldNotBeNull();
         var button = markup.InlineKeyboard.SelectMany(r => r).Single();
         button.WebApp.ShouldNotBeNull();
-        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=feed");
+        button.WebApp.Url.ShouldBe($"{TestHost}/?screen=feed&src=push_coins");
         button.Url.ShouldBeNull(); // WebApp button, not a plain URL
     }
 

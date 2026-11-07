@@ -67,12 +67,20 @@ public class HourlyNotificationWorker(
     /// failure doesn't block the others. The dispatcher's own logic decides whether the
     /// current tick is actually a send-worthy moment.
     /// </summary>
-    public async Task RunOnceAsync(CancellationToken ct)
+    public Task RunOnceAsync(CancellationToken ct) => RunOnceAsync(DateTime.UtcNow, ct);
+
+    /// <summary>
+    /// Same fan-out for a given moment. The holiday dispatcher only checks "is today a holiday",
+    /// so the 09:00 Tbilisi guard lives here: without it the push went out on the first tick of
+    /// the Tbilisi day, at night.
+    /// </summary>
+    public async Task RunOnceAsync(DateTime nowUtc, CancellationToken ct)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var sp = scope.ServiceProvider;
 
-        await DispatchSafelyAsync<IHolidayNotificationService>(sp, "Holiday", ct);
+        if (Application.Notifications.TbilisiMorningWindow.IsHolidayPushHour(nowUtc))
+            await DispatchSafelyAsync<IHolidayNotificationService>(sp, "Holiday", ct);
         await DispatchSafelyAsync<ICoinsNotificationService>(sp, "Coins", ct);
         await DispatchSafelyAsync<IStreakNotificationService>(sp, "Streak", ct);
         await DispatchSafelyAsync<IFirstOpenReminderService>(sp, "FirstOpenReminder", ct);
