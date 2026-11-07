@@ -249,3 +249,53 @@ describe('AdminBroadcastScreen — открытая рассылка', () => {
     expect(screen.queryByTestId('broadcast-send')).toBeNull()
   })
 })
+
+describe('AdminBroadcastScreen — готовая рассылка одним куском', () => {
+  const READY = 'имя: myday-back\nкому: inactiveLong\nпроба: 50\nподарок: 7\nкнопка: Посмотреть первую серию\nадрес: moduleId=my-day&lessonId=1\n---\nНовый модуль — «Мой день»'
+
+  it('fills every step from the pasted text and picks the sample with exactly those parameters', async () => {
+    api.prepare.mockImplementation(async body => picked('myday-back', 50, body.dryRun))
+    api.status.mockResolvedValue({ ...status, key: 'myday-back', pending: 50 })
+    render(<AdminBroadcastScreen navigate={navigate} />)
+    await userEvent.click(screen.getByTestId('broadcast-paste-open'))
+    await userEvent.click(screen.getByLabelText('Готовая рассылка'))
+    await userEvent.paste(READY)
+    await userEvent.click(screen.getByTestId('broadcast-paste-apply'))
+
+    expect(title()).toBe('Отправка')
+    expect(screen.getByTestId('broadcast-summary').textContent)
+      .toBe('Кнопка ведёт: /?moduleId=my-day&lessonId=1. Подарок: 7 дн. доступа. Кому: не занимались больше 30 дней — 512 чел., сначала пробной группе из 50')
+    await userEvent.click(screen.getByTestId('broadcast-pick'))
+    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
+    expect(api.prepare).toHaveBeenLastCalledWith({
+      key: 'myday-back', newBroadcast: false, audience: 'inactiveLong', message: 'Новый модуль — «Мой день»',
+      buttonText: 'Посмотреть первую серию', buttonQuery: 'moduleId=my-day&lessonId=1', giftDays: 7, sampleSize: 50, dryRun: false
+    })
+  })
+
+  it('says what is wrong with a broken paste and stays on the first step', async () => {
+    render(<AdminBroadcastScreen navigate={navigate} />)
+    await userEvent.click(screen.getByTestId('broadcast-paste-open'))
+    await userEvent.click(screen.getByLabelText('Готовая рассылка'))
+    await userEvent.paste('кому: всем\n---\nПривет')
+    await userEvent.click(screen.getByTestId('broadcast-paste-apply'))
+    expect(screen.getByTestId('broadcast-paste-problem').textContent).toContain('Кому')
+    expect(title()).toBe('Текст')
+  })
+
+  it('sends to everyone picked with one confirmation, batch after batch, until no one is waiting', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    api.status.mockResolvedValue({ ...status, pending: 60 })
+    const left = [35, 10, 0]
+    api.send.mockImplementation(async () => {
+      const pending = left.shift()!
+      return { sent: 25, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: { ...status, pending } }
+    })
+    render(<AdminBroadcastScreen navigate={navigate} campaignKey={KEY} />)
+    await userEvent.click(await screen.findByTestId('broadcast-send-all'))
+    await waitFor(() => expect(screen.getByTestId('broadcast-note').textContent).toContain('Готово. Отправлено 75'), { timeout: 5000 })
+    expect(api.send).toHaveBeenCalledTimes(3)
+    expect(confirm).toHaveBeenCalledTimes(1)
+    vi.useRealTimers()
+  })
+})
