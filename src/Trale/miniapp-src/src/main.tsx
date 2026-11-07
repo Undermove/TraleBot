@@ -71,6 +71,17 @@ if (tg) {
 // rewrites the address.
 reportCampaignOpenFromUrl()
 
+// Приложение открыто со времён прошлой сборки, а её куски после выката уже удалены — перезагрузиться на новую.
+// Один раз за сессию, чтобы не зациклиться, если кусок не грузится по другой причине.
+window.addEventListener('vite:preloadError', (event) => {
+  try {
+    if (sessionStorage.getItem('reloaded-for-new-build')) return
+    sessionStorage.setItem('reloaded-for-new-build', '1')
+  } catch { return }
+  event.preventDefault()
+  window.location.reload()
+})
+
 // Скрипт запустился — сразу, пока человек не закрыл приложение на загрузке (analytics/appEvents.ts).
 appEvents.opened()
 
