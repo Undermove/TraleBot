@@ -85,11 +85,19 @@ app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>
     {
-        // Comic frames live under a content hash (/stories/<id>/<hash>/f1-800.webp): the same URL
-        // never serves different bytes, so the browser may keep them for good.
-        if (context.Context.Request.Path.StartsWithSegments("/stories"))
+        // Comic frames (/stories/<id>/<hash>/f1-800.webp) and the mini-app build (/assets/index-<hash>.js) live
+        // under a content hash: the same URL never serves different bytes, so the browser may keep them for good.
+        var path = context.Context.Request.Path;
+        if (path.StartsWithSegments("/stories") || path.StartsWithSegments("/assets"))
         {
             context.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        }
+        // A page names the build by its hash. Kept without asking, an old page after a release points at a
+        // build that is gone, and the mini-app opens on a blank screen until reloaded — so pages are checked
+        // every time (an unchanged one comes back as a short 304).
+        else if (context.File.Name.EndsWith(".html", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Context.Response.Headers.CacheControl = "no-cache";
         }
     }
 });
