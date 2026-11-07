@@ -299,3 +299,28 @@ describe('AdminBroadcastScreen — готовая рассылка одним к
     vi.useRealTimers()
   })
 })
+
+describe('AdminBroadcastScreen — вставка из буфера одним нажатием', () => {
+  const READY = 'имя: myday-active\nкому: activeLately\nподарок: 7\nкнопка: Посмотреть первую серию\nадрес: moduleId=my-day&lessonId=1\n---\nНовый модуль — «Мой день»'
+
+  it('reads the clipboard on the first step and goes straight to sending', async () => {
+    vi.stubGlobal('navigator', { ...navigator, clipboard: { readText: vi.fn(async () => READY) } })
+    render(<AdminBroadcastScreen navigate={navigate} />)
+    await userEvent.click(screen.getByTestId('broadcast-paste-open'))
+    await waitFor(() => expect(title()).toBe('Отправка'))
+    expect(screen.getByTestId('broadcast-summary').textContent).toContain('Кому: занимались за последние 30 дней')
+  })
+
+  it('opens straight on sending with the text the list button read from the clipboard', async () => {
+    render(<AdminBroadcastScreen navigate={navigate} pasted={READY} />)
+    await waitFor(() => expect(title()).toBe('Отправка'))
+    expect(screen.getByTestId('broadcast-summary').textContent).toContain('Подарок: 7 дн. доступа')
+  })
+
+  it('shows the field with the reason when the clipboard holds something else', async () => {
+    render(<AdminBroadcastScreen navigate={navigate} pasted="просто текст" />)
+    expect(await screen.findByTestId('broadcast-paste-problem')).toBeTruthy()
+    expect((screen.getByLabelText('Готовая рассылка') as HTMLTextAreaElement).value).toBe('просто текст')
+    expect(title()).toBe('Текст')
+  })
+})

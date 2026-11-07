@@ -568,7 +568,7 @@ export default function App() {
     case 'admin-broadcasts':
       return admin(<AdminBroadcastsScreen navigate={navigate} />)
     case 'admin-broadcast':
-      return admin(<AdminBroadcastScreen campaignKey={screen.key} useDraft={screen.draft} navigate={navigate} />)
+      return admin(<AdminBroadcastScreen campaignKey={screen.key} useDraft={screen.draft} pasted={screen.paste} navigate={navigate} />)
     case 'admin-more':
       return admin(<AdminMoreScreen navigate={navigate} />)
     case 'admin-payments':
