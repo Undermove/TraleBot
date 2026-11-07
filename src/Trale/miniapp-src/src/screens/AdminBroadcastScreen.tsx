@@ -3,6 +3,7 @@ import AdminPage, { phaseOf, type AdminPhase } from '../components/admin/AdminPa
 import { AUDIENCES, audienceName } from '../admin/words'
 import { adminBack, setInnerBack } from '../admin/adminNav'
 import { draft as drafts, useDraft, useFocusMode } from '../admin/useKept'
+import { parsePastedBroadcast } from '../admin/pastedBroadcast'
 import { adminCampaigns, ApiError, type CampaignAudience, type CampaignStatusDto } from '../api'
 import type { Screen } from '../types'
 
@@ -10,7 +11,8 @@ import type { Screen } from '../types'
 // подарок → кому → отправка (сначала себе, потом людям порциями по 25). Имя кампании даёт сервер;
 // своё можно задать на шаге «Кому». Открытая по имени — сразу на отправке: дослать выбранным, выбрать
 // остальных или ещё одну группу. Группа добавляется в ту же кампанию, поэтому сообщение и подарок
-// человек получает один раз, в какой бы группе он ни оказался.
+// человек получает один раз, в какой бы группе он ни оказался. Готовую рассылку можно вставить одним куском
+// текста (формат — в admin/pastedBroadcast.ts): все шаги заполнятся, и откроется отправка.
 
 interface Props {
   /** Имя существующей кампании — открыть её отправку. */
@@ -92,6 +94,10 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
   const [another, setAnother] = useState<CampaignAudience | null>(null)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  /** Поле «Вставить готовую рассылку» открыто. */
+  const [pasting, setPasting] = useState(false)
+  const [pasted, setPasted] = useState('')
+  const [pasteProblem, setPasteProblem] = useState<string | null>(null)
 
   const frozen = key !== null
   // Пошаговый сценарий занимает весь экран — панель вкладок на это время спрятана.
@@ -141,6 +147,26 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     sampleSize: sample, dryRun, ...extra
   })
 
+  const applyPaste = () => {
+    const r = parsePastedBroadcast(pasted)
+    if (typeof r === 'string') { setPasteProblem(r); return }
+    setMessage(r.message)
+    setHasButton(r.button !== null)
+    if (r.button) setButtonText(r.button)
+    const known = DESTINATIONS.find(d => d.id !== 'custom' && d.query === r.query)
+    setDestination(known?.id ?? 'custom')
+    setCustomQuery(known ? '' : r.query)
+    setGiftDays(r.giftDays)
+    setAudience(r.audience)
+    setSampleFirst(r.sample !== null)
+    if (r.sample !== null) setSampleSize(r.sample)
+    setOwnName(r.name)
+    setPasting(false)
+    setPasted('')
+    setPasteProblem(null)
+    go(STEPS.length)
+  }
+
   async function run(work: () => Promise<string | null>) {
     setBusy(true)
     setNote(null)
@@ -182,6 +208,29 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     return `Отправлено ${r.sent}, заблокировали бота ${r.blocked}, отказ ${r.rejected}, без ответа ${r.unknown}. Осталось ${r.status.pending}.${wait}`
   })
 
+  // Всем выбранным подряд, порциями по 25: одно подтверждение вместо нажатия на каждую порцию.
+  // Если Telegram просит подождать — ждёт; если порция не сдвинулась совсем — останавливается.
+  const sendAll = () => run(async () => {
+    if (!key) return null
+    const current = await adminCampaigns.status(key)
+    setStatus(current)
+    if (current.pending === 0) return 'Отправлять некого: все выбранные уже получили сообщение.'
+    const gift = current.giftDays > 0 ? `\n\nС подарком: ${current.giftDays} дн. доступа тому, кто откроет кнопку.` : ''
+    if (!confirm(`ОТПРАВИТЬ всем выбранным: ${current.pending} сообщений подряд?\n\n${current.message}${gift}\n\nЭто настоящая отправка через бота.`)) return null
+    const done = { sent: 0, blocked: 0, rejected: 0, unknown: 0 }
+    for (;;) {
+      const r = await adminCampaigns.send(key, BATCH)
+      done.sent += r.sent; done.blocked += r.blocked; done.rejected += r.rejected; done.unknown += r.unknown
+      setStatus(r.status)
+      setNote(`Отправляю… дошло ${done.sent}, осталось ${r.status.pending}.`)
+      if (r.status.pending === 0) break
+      const moved = r.sent + r.blocked + r.rejected + r.unknown
+      if (moved === 0 && r.retryAfterSeconds === 0) return `Остановился: Telegram не принял порцию. Дошло ${done.sent}, осталось ${r.status.pending} — попробуй ещё раз позже.`
+      await new Promise(resolve => setTimeout(resolve, Math.max(r.retryAfterSeconds, 1) * 1000))
+    }
+    return `Готово. Отправлено ${done.sent}, заблокировали бота ${done.blocked}, отказ ${done.rejected}, без ответа ${done.unknown}.`
+  })
+
   const close = () => {
     if (unsaved && !confirm('Закрыть рассылку? Черновик останется на этом устройстве — к нему можно вернуться из списка рассылок.')) return
     navigate(adminBack())
@@ -206,6 +255,24 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
             <div className={small}>Что напишет бот. Можно несколько абзацев.</div>
             <textarea className={field} rows={8} autoFocus value={message} maxLength={4000} aria-label="Текст сообщения" placeholder="Текст сообщения" onChange={e => setMessage(e.target.value)} />
             <div className={`${small} text-right tabular-nums`}>{text.length} / 4000</div>
+
+            {!pasting ? (
+              <button type="button" className={action} onClick={() => setPasting(true)} data-testid="broadcast-paste-open">Вставить готовую рассылку</button>
+            ) : (
+              <div className="jewel-tile px-4 py-3" data-testid="broadcast-paste">
+                <div className="relative z-[1] flex flex-col gap-2">
+                  <div className="font-sans text-[15px] font-extrabold text-jewelInk">Готовая рассылка</div>
+                  <div className={small}>Вставь целиком блок «имя / кому / кнопка… --- текст» — все шаги заполнятся, и откроется отправка.</div>
+                  <textarea className={field} rows={8} value={pasted} aria-label="Готовая рассылка" placeholder={'кому: inactiveLong\nкнопка: Открыть\n---\nТекст сообщения'}
+                    onChange={e => { setPasted(e.target.value); setPasteProblem(null) }} />
+                  {pasteProblem && <div className="font-sans text-[13px] text-ruby" data-testid="broadcast-paste-problem">{pasteProblem}</div>}
+                  <div className="flex gap-2">
+                    <button type="button" className={secondary} onClick={() => { setPasting(false); setPasteProblem(null) }}>Отмена</button>
+                    <button type="button" className={primary} disabled={!pasted.trim()} onClick={applyPaste} data-testid="broadcast-paste-apply">Заполнить</button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -325,6 +392,9 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
             <div className="mn-eyebrow mt-2">3. Отправь — по {BATCH} за нажатие</div>
             <button type="button" className={action} style={{ background: '#F5B820' }} disabled={busy || !waiting} onClick={sendBatch} data-testid="broadcast-send">
               Отправить следующие {BATCH}
+            </button>
+            <button type="button" className={action} disabled={busy || !waiting} onClick={sendAll} data-testid="broadcast-send-all">
+              Отправить всем выбранным{waiting && status ? ` (${status.pending})` : ''}
             </button>
             {!waiting && (
               <div className={small} data-testid="broadcast-send-hint">
