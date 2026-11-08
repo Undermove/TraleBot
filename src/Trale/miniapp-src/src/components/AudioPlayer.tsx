@@ -21,6 +21,9 @@ export default function AudioPlayer({ url, onPlayed, onError }: AudioPlayerProps
     audioRef.current = audio
 
     const onEnded = () => {
+      // Отпустить файл: иначе iPhone держит плеер на экране блокировки и после выхода из мини-аппа.
+      audio.removeAttribute('src')
+      audio.load()
       setState('played')
       if (!playedOnceRef.current) {
         playedOnceRef.current = true
@@ -51,6 +54,7 @@ export default function AudioPlayer({ url, onPlayed, onError }: AudioPlayerProps
 
     if (state === 'idle' || state === 'played') {
       setState('loading')
+      if (!audio.getAttribute('src')) audio.src = url
       audio.currentTime = 0
       audio
         .play()
@@ -58,7 +62,8 @@ export default function AudioPlayer({ url, onPlayed, onError }: AudioPlayerProps
         .catch(() => setState('error'))
     } else if (state === 'playing') {
       audio.pause()
-      audio.currentTime = 0
+      audio.removeAttribute('src')
+      audio.load()
       setState('idle')
     }
     // loading and error: no-op on tap

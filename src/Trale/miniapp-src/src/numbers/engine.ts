@@ -2,7 +2,7 @@
 // Модуль «Числа»: десять уровней. Перед игрой — интерактивный объяснятор (как устроены числа этого промежутка),
 // внутри уровня подсказки постепенно исчезают. Записи чисел 1–99 — public/audio/numbers/n/<число>.m4a
 // (ElevenLabs «Alice», eleven_v4, ka). Вибрация и выключатель звука — общие с играми алфавита (alphabet/games/fx).
-import { haptic, isMuted, playClip } from '../alphabet/games/fx'
+import { haptic, isMuted, playClip, registerAudioContext } from '../alphabet/games/fx'
 
 // ───────── Общее: транскрипция, звук, вибрация ─────────
 const CYR = { 'ა':'а','ბ':'б','გ':'г','დ':'д','ე':'э','ვ':'в','ზ':'з','თ':'т','ი':'и','კ':'к’','ლ':'л','მ':'м','ნ':'н','ო':'о','პ':'п’','ჟ':'ж','რ':'р','ს':'с','ტ':'т’','უ':'у','ფ':'п','ქ':'к','ღ':'гх','ყ':'къ','შ':'ш','ჩ':'ч','ც':'ц','ძ':'дз','წ':'ц’','ჭ':'ч’','ხ':'х','ჯ':'дж','ჰ':'х' };
@@ -31,7 +31,7 @@ async function decode(n) {
 async function unlock() {
   if (ac) { if (ac.state === 'suspended') ac.resume().catch(() => {}); return; }
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
-  ac = new C(); try { await ac.resume(); } catch {}
+  ac = new C(); registerAudioContext(ac); try { await ac.resume(); } catch {}
   Object.keys(raw).forEach(n => decode(+n));
 }
 function say(n) {
