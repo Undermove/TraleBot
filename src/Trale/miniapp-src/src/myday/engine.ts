@@ -5,7 +5,7 @@
 // подсказками по одной у нужного элемента.
 // Всё перетаскивается пальцем, тап — тоже ход. Записи — public/audio/myday/<id>.m4a (ElevenLabs «Alice»,
 // eleven_v4, ka). Вибрация и выключатель звука — общие с играми алфавита (alphabet/games/fx).
-import { haptic, isMuted, playClip } from '../alphabet/games/fx'
+import { haptic, isMuted, playClip, registerAudioContext } from '../alphabet/games/fx'
 import { ICON, EAR, BACK } from './icons'
 import { bomboraBody, bomboraHead, bomboraRig, catBody } from './puppets'
 
@@ -36,7 +36,7 @@ async function decode(id) {
 async function unlock() {
   if (ac) { if (ac.state === 'suspended') ac.resume().catch(() => {}); return }
   const C = window.AudioContext || window.webkitAudioContext; if (!C) return
-  ac = new C(); try { await ac.resume() } catch {}
+  ac = new C(); registerAudioContext(ac); try { await ac.resume() } catch {}
   Object.keys(raw).forEach(decode)
 }
 function say(id) {

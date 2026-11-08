@@ -61,6 +61,7 @@ function context(): AudioContext | null {
     if (!Ctor) return null
     playbackSession()
     ctx = new Ctor()
+    registerAudioContext(ctx!)
     return ctx
   } catch { return null }
 }
@@ -97,7 +98,13 @@ let unlocked = false
 export async function unlockAudio(): Promise<void> {
   if (unlocked) return
   playbackSession()
-  const tag = (() => { try { const el = new Audio(SILENT_WAV); el.setAttribute('playsinline', ''); return safePlay(el).catch(() => {}) } catch { return Promise.resolve() } })()
+  const tag = (() => {
+    try {
+      const el = new Audio(SILENT_WAV)
+      el.setAttribute('playsinline', '')
+      return safePlay(el).catch(() => {}).finally(() => releaseAudio(el))
+    } catch { return Promise.resolve() }
+  })()
   const a = context()
   if (a) {
     try {
@@ -135,6 +142,19 @@ function withAudio(play: (a: AudioContext) => void) {
 
 // ───────────── Записи (буквы) ─────────────
 
+// iPhone держит плеер «TraleBot» на экране блокировки, пока у страницы есть <audio> с записью, —
+// даже доигравшей. Поэтому доигравшая запись отпускает файл (следующий раз он берётся из кеша),
+// а свёрнутый мини-апп глушит всё: записи, контексты WebAudio и карточку «Сейчас играет».
+
+/** Отпустить файл записи — для iOS это конец воспроизведения, плеер с экрана блокировки уходит. */
+export function releaseAudio(el: HTMLAudioElement) {
+  try { el.pause(); el.removeAttribute('src'); el.load() } catch { /* уже отпущена */ }
+}
+
+const contexts = new Set<AudioContext>()
+/** Контекст WebAudio, который надо усыплять, когда мини-апп свёрнут; будится первым касанием. */
+export function registerAudioContext(a: AudioContext) { contexts.add(a) }
+
 const clips = new Map<string, HTMLAudioElement>()
 function clip(url: string): HTMLAudioElement | null {
   try {
@@ -143,10 +163,27 @@ function clip(url: string): HTMLAudioElement | null {
       el = new Audio(url)
       el.preload = 'auto'
       el.setAttribute('playsinline', '')
+      el.addEventListener('ended', () => releaseAudio(el!))
       clips.set(url, el)
     }
+    if (!el.getAttribute('src')) el.src = url
     return el
   } catch { return null }
+}
+
+/** Мини-апп свёрнут: ничего не играет и не числится играющим. */
+export function silenceForBackground() {
+  for (const el of clips.values()) releaseAudio(el)
+  for (const a of contexts) { try { if (a.state === 'running') void a.suspend().catch(() => {}) } catch { /* закрыт */ } }
+  try {
+    const ms = (navigator as any).mediaSession
+    if (ms) { ms.metadata = null; ms.playbackState = 'none' }
+  } catch { /* нет API */ }
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') silenceForBackground() })
+  window.addEventListener('pagehide', silenceForBackground)
 }
 
 /** Сыграть запись (уважает выключатель звука). */
