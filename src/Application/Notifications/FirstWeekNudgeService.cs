@@ -127,7 +127,7 @@ public class FirstWeekNudgeService(
             // The offer stands in for the day-7 message.
             await db.TryClaimNotificationTriggerAsync(user.TelegramId, day7, "offer", nowUtc, Never, ct);
 
-            await notificationService.SendEngagedOfferAsync(user, EngagedOffer.Text(done.Count, nowUtc, prices), ct);
+            await notificationService.SendEngagedOfferAsync(user, EngagedOffer.Text(done.Count, nowUtc, prices), EngagedOffer.Button(nowUtc, prices), ct);
         }
     }
 

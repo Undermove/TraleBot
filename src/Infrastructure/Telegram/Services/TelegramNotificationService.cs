@@ -435,13 +435,13 @@ public class TelegramNotificationService : IUserNotificationService
         await Task.Delay(BulkSendDelay, ct);
     }
 
-    public async Task SendEngagedOfferAsync(Domain.Entities.User user, string text, CancellationToken ct)
+    public async Task SendEngagedOfferAsync(Domain.Entities.User user, string text, string button, CancellationToken ct)
     {
         if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return;
 
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithWebApp("Купить по цене для своих", new WebAppInfo { Url = $"{_botConfig.NormalizedHost()}/?paywall=1&src=push_engaged_offer" }) }
+            new[] { InlineKeyboardButton.WithWebApp(button, new WebAppInfo { Url = $"{_botConfig.NormalizedHost()}/?paywall=1&src=push_engaged_offer" }) }
         });
 
         try

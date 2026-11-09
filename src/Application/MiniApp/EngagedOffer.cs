@@ -23,6 +23,9 @@ public static class EngagedOffer
         return withTime ? $"{t.Day} {Months[t.Month - 1]}, {t:HH:mm}" : $"{t.Day} {Months[t.Month - 1]}";
     }
 
+    public static string Button(DateTime nowUtc, PriceSchedule prices) =>
+        prices.HasRisen(nowUtc) ? "Купить по сниженной цене" : "Купить по старой цене";
+
     public static string Text(int lessons, DateTime nowUtc, PriceSchedule prices)
     {
         var quarter = SubscriptionPlans.ByPlan(SubscriptionPlan.Quarter)!;
@@ -46,13 +49,13 @@ public static class EngagedOffer
         return $"""
             {head}
 
-            Для тебя — цена «для своих» на 72 часа, до {TbilisiDate(nowUtc + PriceSchedule.OfferLasts, withTime: true)} по Тбилиси:
+            Специально для тебя — сниженная цена на 72 часа, до {TbilisiDate(nowUtc + PriceSchedule.OfferLasts, withTime: true)} по Тбилиси:
             • 3 месяца — {quarter.StarsPrice} ⭐ вместо {SubscriptionPlans.RaisedPrice(quarter)} ⭐
             • год — {year.StarsPrice} ⭐ вместо {SubscriptionPlans.RaisedPrice(year)} ⭐
 
             {freeDays}
 
-            Купи сейчас по цене для своих — кнопка ниже.
+            Купи сейчас по сниженной цене — кнопка ниже.
             """;
     }
 }

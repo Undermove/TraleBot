@@ -254,7 +254,7 @@ export const api = {
     pricesRiseAtUtc?: string | null
     /** Платил до повышения: старые цены навсегда. */
     keepsOldPrices?: boolean
-    /** Старая цена «для своих» втянувшемуся новичку — до этого момента; null — предложения нет. */
+    /** Сниженная (старая) цена втянувшемуся новичку — до этого момента; null — предложения нет. */
     offerEndsAtUtc?: string | null }>('/api/miniapp/plans'),
 
   purchase: (plan: string) =>

@@ -359,7 +359,7 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
                 </div>
               ) : offerEndsAt ? (
                 <div className="font-sans text-[13px] text-jewelInk text-center" data-testid="paywall-offer">
-                  Цена для своих — до {tbilisiDay(offerEndsAt, true)} по Тбилиси. Купи сейчас, потом цена станет обычной.
+                  Специально для тебя — сниженная цена до {tbilisiDay(offerEndsAt, true)} по Тбилиси. Купи сейчас, потом цена станет обычной.
                 </div>
               ) : riseAt ? (
                 <div className="font-sans text-[13px] text-jewelInk text-center" data-testid="paywall-price-rise">

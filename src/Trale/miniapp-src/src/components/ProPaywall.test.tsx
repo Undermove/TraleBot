@@ -147,7 +147,7 @@ describe('ProPaywall — повышение цен', () => {
   it('shows a newcomer the price for their own until the offer ends', async () => {
     api.plans.mockResolvedValue({ plans: [month(100, 149)], pricesRiseAtUtc: null, keepsOldPrices: false, offerEndsAtUtc: '2026-12-12T14:00:00Z' } as never)
     await open()
-    expect(screen.getByTestId('paywall-offer').textContent).toBe('Цена для своих — до 12 декабря, 18:00 по Тбилиси. Купи сейчас, потом цена станет обычной.')
+    expect(screen.getByTestId('paywall-offer').textContent).toBe('Специально для тебя — сниженная цена до 12 декабря, 18:00 по Тбилиси. Купи сейчас, потом цена станет обычной.')
     expect(screen.getByTestId('paywall-regular-price').textContent).toBe('149 ⭐')
   })
 })

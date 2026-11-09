@@ -30,8 +30,8 @@ public class FirstWeekNudgeServiceTests : CommandTestsBase
         _sender.Setup(s => s.SendFirstWeekNudgeAsync(It.IsAny<User>(), It.IsAny<FirstWeekNudge>(), It.IsAny<CancellationToken>()))
             .Callback<User, FirstWeekNudge, CancellationToken>((u, n, _) => _sent.Add((u.TelegramId, n)))
             .Returns(Task.CompletedTask);
-        _sender.Setup(s => s.SendEngagedOfferAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback<User, string, CancellationToken>((u, t, _) => _offers.Add((u.TelegramId, t)))
+        _sender.Setup(s => s.SendEngagedOfferAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<User, string, string, CancellationToken>((u, t, b, _) => _offers.Add((u.TelegramId, t + "\n[" + b + "]")))
             .Returns(Task.CompletedTask);
         var content = new Mock<IMiniAppContentProvider>();
         // In the alphabet the words lesson 12 comes right after letters lesson 1.
@@ -213,7 +213,8 @@ public class FirstWeekNudgeServiceTests : CommandTestsBase
         offer.Text.ShouldContain("Уроков за неделю: 6");
         offer.Text.ShouldContain("3 месяца — 249 ⭐ вместо 349 ⭐");
         offer.Text.ShouldContain("до 23 ноября, 16:00 по Тбилиси");
-        offer.Text.ShouldContain("Купи сейчас");
+        offer.Text.ShouldContain("Купи сейчас по сниженной цене");
+        offer.Text.ShouldContain("[Купить по сниженной цене]");
         SentTo(user).ShouldBeEmpty("the offer stands in for the day-7 message");
         Context.NotificationTriggers.Single(t => t.UserId == user.TelegramId && t.Source == Application.MiniApp.PriceSchedule.OfferSource)
             .LastSentAt.ShouldBe(Now);
@@ -234,6 +235,7 @@ public class FirstWeekNudgeServiceTests : CommandTestsBase
         text.ShouldContain("С 1 декабря цены вырастут");
         text.ShouldContain("3 месяца — 249 ⭐ (потом 349 ⭐)");
         text.ShouldContain("навсегда");
+        text.ShouldContain("[Купить по старой цене]");
     }
 
     [Test]
