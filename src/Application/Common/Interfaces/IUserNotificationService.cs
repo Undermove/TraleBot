@@ -67,4 +67,10 @@ public interface IUserNotificationService
     /// first message. 403 → user flagged inactive; 429 → single retry after the suggested delay.
     /// </summary>
     Task SendFirstOpenReminderAsync(User user, CancellationToken ct);
+
+    /// <summary>
+    /// A first-week message (see <c>FirstWeekNudgeService</c>): the text and one web-app button straight into
+    /// the lesson, tagged <c>src=push_first_week_d&lt;day&gt;</c>. 403 → user flagged inactive; 429 → single retry.
+    /// </summary>
+    Task SendFirstWeekNudgeAsync(User user, Application.Notifications.FirstWeekNudge nudge, CancellationToken ct);
 }

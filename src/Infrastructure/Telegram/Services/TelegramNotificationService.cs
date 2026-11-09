@@ -435,6 +435,39 @@ public class TelegramNotificationService : IUserNotificationService
         await Task.Delay(BulkSendDelay, ct);
     }
 
+    public async Task SendFirstWeekNudgeAsync(Domain.Entities.User user, Application.Notifications.FirstWeekNudge nudge, CancellationToken ct)
+    {
+        if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return;
+
+        var url = $"{_botConfig.NormalizedHost()}/?screen=practice&moduleId={Uri.EscapeDataString(nudge.ModuleId)}&lessonId={nudge.LessonId}&src=push_first_week_d{nudge.Day}";
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithWebApp("Открыть урок", new WebAppInfo { Url = url }) }
+        });
+
+        try
+        {
+            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: nudge.Text, replyMarkup: keyboard, cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "First-week message for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: nudge.Text, replyMarkup: keyboard, cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation("First-week message for {TelegramId} blocked (403); marking user inactive", user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
     private InlineKeyboardMarkup? BuildReferralBonusKeyboard()
     {
         if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return null;
