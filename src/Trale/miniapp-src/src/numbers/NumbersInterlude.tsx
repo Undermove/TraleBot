@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { QuizQuestion, Screen } from '../types'
 import { NUMBER_LEVELS, mountLevel } from './engine'
+import { gameLessonFinished, gameLessonPlayed, useGameLessonEvents } from '../analytics/useGameLessonEvents'
 import './numbers.css'
 
 // Урок «Чисел» 1..10 — уровень с игрой (engine.ts): объяснятор, игра, итог. Потом короткая проверка вопросами
@@ -18,6 +19,7 @@ export function useNumbersLesson(moduleId: string, lessonId: number, questions: 
   const on = isNumbersGameLesson(moduleId, lessonId)
   const [played, setPlayed] = useState(false)
   const scene = on && questions.length && !played ? { kind: 'level' as const } : null
+  useGameLessonEvents(on, moduleId, lessonId, questions.length > 0, played)
 
   return {
     on,
@@ -25,8 +27,11 @@ export function useNumbersLesson(moduleId: string, lessonId: number, questions: 
     /** Игра — первые 80% полоски урока, проверка — остальное. */
     progress: (index: number, total: number) => (on ? 0.8 + (index / Math.max(1, total)) * 0.2 : index / Math.max(1, total)),
     afterQuestion(_n: number) { /* игра — до проверки */ },
-    finish(result: Result, _perfect: boolean, navigate: (s: Screen) => void) { navigate(result) },
-    sceneDone() { setPlayed(true) }
+    finish(result: Result, perfect: boolean, navigate: (s: Screen) => void) {
+      if (on) gameLessonFinished(result.correct, perfect)
+      navigate(result)
+    },
+    sceneDone() { if (on) gameLessonPlayed(); setPlayed(true) }
   }
 }
 
