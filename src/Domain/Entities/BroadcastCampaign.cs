@@ -84,5 +84,9 @@ public enum BroadcastAudience
     /// <summary>Studied in the last 30 days (a lesson answer, a word added, a quiz or a verb session), or registered within them.</summary>
     ActiveLately = 5,
     /// <summary>No such trace for more than 30 days.</summary>
-    InactiveLong = 6
+    InactiveLong = 6,
+    /// <summary>Paid at least once (a payment that was not refunded) — not a gift of access.</summary>
+    Paid = 7,
+    /// <summary>Never paid; a gift of access does not count as paying.</summary>
+    NeverPaid = 8
 }

@@ -17,6 +17,7 @@ interface Plan {
   id: string
   payloadId: string
   stars: number
+  regularStars?: number
   durationDays: number | null
   title: string
   description: string
@@ -30,6 +31,13 @@ const QUESTION_WAIT_MS = 2000
 // Default/recommended plan highlighted first by the UI.
 const RECOMMENDED_PLAN = 'Year'
 
+const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+/** «1 декабря» — день по Тбилиси (UTC+4, без перехода на летнее время). */
+export function tbilisiDay(utc: string): string {
+  const d = new Date(new Date(utc).getTime() + 4 * 3600_000)
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
+}
+
 /**
  * Pro paywall bottom sheet with tier selection.
  * Opens Telegram Stars invoice natively inside the mini-app via
@@ -40,6 +48,8 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
   const [state, setState] = useState<State>('loading-plans')
   const [plans, setPlans] = useState<Plan[]>([])
   const [selectedPlan, setSelectedPlan] = useState<string>(RECOMMENDED_PLAN)
+  const [riseAt, setRiseAt] = useState<string | null>(null)
+  const [keepsOldPrices, setKeepsOldPrices] = useState(false)
   // «Что смутило?»: сервер заранее говорит, есть ли что спросить, если шторку закроют не купив,
   // — тогда закрытие не ждёт ответа сети, когда спрашивать нечего. Сам показ сервер запоминает при закрытии.
   const questionDue = useRef(false)
@@ -63,6 +73,8 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
       .plans()
       .then((r) => {
         setPlans(r.plans)
+        setRiseAt(r.pricesRiseAtUtc ?? null)
+        setKeepsOldPrices(r.keepsOldPrices === true)
         setState('default')
         if (!r.plans.some((p) => p.id === RECOMMENDED_PLAN) && r.plans.length > 0) {
           setSelectedPlan(r.plans[0].id)
@@ -337,6 +349,17 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
                 ))}
               </div>
 
+              {/* Цены: благодарность тем, кто уже платил, или когда цены вырастут */}
+              {keepsOldPrices ? (
+                <div className="font-sans text-[13px] text-jewelInk text-center" data-testid="paywall-price-thanks">
+                  Спасибо, что ты с нами с самого начала! Для тебя цены не вырастут — навсегда.
+                </div>
+              ) : riseAt ? (
+                <div className="font-sans text-[13px] text-jewelInk text-center" data-testid="paywall-price-rise">
+                  С {tbilisiDay(riseAt)} цены вырастут. Купи сейчас — заплатишь по нынешней цене.
+                </div>
+              ) : null}
+
               {/* Plans */}
               <div className="flex flex-col gap-2">
                 {plans.map((p) => {
@@ -365,9 +388,14 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
                         <div className="font-sans text-[15px] font-extrabold text-jewelInk">{p.title}</div>
                         <div className="font-sans text-[11px] text-jewelInk-mid mt-0.5">
                           {perMonthLabel(p)}
+                          {riseAt && !keepsOldPrices && p.regularStars && p.regularStars > p.stars
+                            ? ` · с ${tbilisiDay(riseAt)} — ${p.regularStars} ⭐` : ''}
                         </div>
                       </div>
-                      <div className="font-sans text-[18px] font-extrabold text-jewelInk whitespace-nowrap">
+                      <div className="font-sans text-[18px] font-extrabold text-jewelInk whitespace-nowrap text-right">
+                        {!riseAt && p.regularStars && p.regularStars > p.stars && (
+                          <s className="block font-sans text-[12px] font-bold text-jewelInk-mid" data-testid="paywall-regular-price">{p.regularStars} ⭐</s>
+                        )}
                         {p.stars} <span className="text-[15px]">⭐</span>
                       </div>
                     </button>

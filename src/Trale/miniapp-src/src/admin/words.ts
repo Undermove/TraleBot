@@ -9,6 +9,8 @@ export const AUDIENCES: { id: CampaignAudience; name: string }[] = [
   { id: 'proLapsed', name: 'подписка закончилась' },
   { id: 'activeLately', name: 'занимались за последние 30 дней' },
   { id: 'inactiveLong', name: 'не занимались больше 30 дней' },
+  { id: 'paid', name: 'платили хоть раз' },
+  { id: 'neverPaid', name: 'ни разу не платили' },
   { id: 'owner', name: 'только я (посмотреть)' }
 ]
 

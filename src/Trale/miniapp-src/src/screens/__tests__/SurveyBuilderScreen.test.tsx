@@ -61,7 +61,7 @@ let navigate: Mock<(s: Screen) => void>
 beforeEach(() => {
   ;[...Object.values(campaigns), ...Object.values(surveys), ...Object.values(feedback)].forEach(f => (f as ReturnType<typeof vi.fn>).mockReset())
   surveys.presets.mockResolvedValue(kit)
-  campaigns.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512 })
+  campaigns.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512, paid: 8, neverPaid: 565 })
   feedback.overview.mockResolvedValue(listed([]))
   navigate = vi.fn<(s: Screen) => void>()
   window.scrollTo = vi.fn() as never

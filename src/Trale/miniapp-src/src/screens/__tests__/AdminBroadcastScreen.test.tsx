@@ -25,7 +25,7 @@ let navigate: Mock<(s: Screen) => void>
 let confirm: Mock<(text: string) => boolean>
 beforeEach(() => {
   Object.values(api).forEach(f => f.mockReset())
-  api.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512 })
+  api.audiences.mockResolvedValue({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512, paid: 8, neverPaid: 565 })
   navigate = vi.fn<(s: Screen) => void>()
   confirm = vi.fn<(text: string) => boolean>(() => true)
   vi.stubGlobal('confirm', confirm)

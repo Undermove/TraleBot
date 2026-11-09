@@ -39,6 +39,19 @@ public static class SubscriptionPlans
         new(SubscriptionPlan.Lifetime, "Stars_Pro_Lifetime", 1399, null, "Навсегда",  "Про-доступ навсегда"),
     };
 
+    /// <summary>Prices from <see cref="PriceSchedule.RiseAtUtc"/> on, for everyone who has not paid before.</summary>
+    private static readonly IReadOnlyDictionary<SubscriptionPlan, int> Raised = new Dictionary<SubscriptionPlan, int>
+    {
+        [SubscriptionPlan.Month] = 149,
+        [SubscriptionPlan.Quarter] = 349,
+        [SubscriptionPlan.HalfYear] = 649,
+        [SubscriptionPlan.Year] = 1199,
+    };
+
+    /// <summary>The plan's price after the rise; a plan that does not go up keeps its price.</summary>
+    public static int RaisedPrice(SubscriptionPlanInfo plan) =>
+        Raised.TryGetValue(plan.Plan, out var stars) ? stars : plan.StarsPrice;
+
     public static SubscriptionPlanInfo? ByPayload(string payload) =>
         Known.FirstOrDefault(p => p.PayloadId == payload);
 
