@@ -2,6 +2,7 @@ using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.MiniApp;
+using Application.MiniApp;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,10 @@ namespace Application.Notifications;
 /// the existing base gets nothing. While someone is in their first week, <see cref="DailyReturnNotificationService"/>
 /// leaves them to these messages.
 ///
+/// On day 7 whoever studies in earnest — <see cref="EngagedOffer.MinLessons"/> lessons on <see cref="EngagedOffer.MinDays"/>
+/// different days, no payment, no running Pro — gets the offer of the old prices (<see cref="EngagedOffer"/>,
+/// trigger <see cref="PriceSchedule.OfferSource"/>) instead of the day-7 message, whenever they last studied.
+///
 /// Once per day and person: the trigger <c>first_week_d1</c> / <c>_d3</c> / <c>_d7</c> is claimed before
 /// sending and never expires, so neither a second run nor a second instance sends it again. A day that was
 /// missed by more than a day (the worker was down) is skipped.
@@ -27,6 +32,7 @@ public class FirstWeekNudgeService(
     ITraleDbContext db,
     IMiniAppContentProvider content,
     IUserNotificationService notificationService,
+    PriceSchedule prices,
     ILoggerFactory loggerFactory) : IFirstWeekNudgeService
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<FirstWeekNudgeService>();
@@ -51,6 +57,9 @@ public class FirstWeekNudgeService(
     public async Task DispatchAsync(DateTime nowUtc, CancellationToken ct)
     {
         var switchedOnAt = await SwitchedOnAtAsync(db, nowUtc, ct);
+
+        if (switchedOnAt <= nowUtc - TimeSpan.FromDays(7))
+            await OfferToEngagedAsync(nowUtc, switchedOnAt, ct);
 
         foreach (var day in Days)
         {
@@ -87,6 +96,39 @@ public class FirstWeekNudgeService(
 
         // The sender flags people who have blocked the bot as inactive — keep that.
         await db.SaveChangesAsync(ct);
+    }
+
+    private async Task OfferToEngagedAsync(DateTime nowUtc, DateTime switchedOnAt, CancellationToken ct)
+    {
+        var registeredBefore = nowUtc - TimeSpan.FromDays(7);
+        var registeredAfter = registeredBefore - TimeSpan.FromDays(1);
+        var day7 = SourceFor(7);
+
+        var due = await db.Users
+            .Where(u => u.IsActive && u.NotificationsEnabled
+                        && u.RegisteredAtUtc >= switchedOnAt
+                        && u.RegisteredAtUtc <= registeredBefore
+                        && u.RegisteredAtUtc > registeredAfter
+                        && !db.Payments.Any(p => p.UserId == u.Id)
+                        && !db.NotificationTriggers.Any(t => t.UserId == u.TelegramId && (t.Source == day7 || t.Source == PriceSchedule.OfferSource)))
+            .ToListAsync(ct);
+
+        foreach (var user in due.Where(u => !u.HasActivePro(nowUtc)))
+        {
+            var done = await db.LessonEvents
+                .Where(e => e.UserId == user.Id && e.Event == "lesson_complete" && e.ModuleId != "onboarding" && e.CreatedAtUtc >= user.RegisteredAtUtc)
+                .Select(e => e.CreatedAtUtc)
+                .ToListAsync(ct);
+            if (done.Count < EngagedOffer.MinLessons || done.Select(at => at.Date).Distinct().Count() < EngagedOffer.MinDays)
+                continue;
+
+            if (!await db.TryClaimNotificationTriggerAsync(user.TelegramId, PriceSchedule.OfferSource, null, nowUtc, Never, ct))
+                continue;
+            // The offer stands in for the day-7 message.
+            await db.TryClaimNotificationTriggerAsync(user.TelegramId, day7, "offer", nowUtc, Never, ct);
+
+            await notificationService.SendEngagedOfferAsync(user, EngagedOffer.Text(done.Count, nowUtc, prices), ct);
+        }
     }
 
     /// <summary>The day's message: the next lesson of the module the person has gone furthest in

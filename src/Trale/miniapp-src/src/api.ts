@@ -253,7 +253,9 @@ export const api = {
     /** До повышения — когда цены вырастут; после — null. */
     pricesRiseAtUtc?: string | null
     /** Платил до повышения: старые цены навсегда. */
-    keepsOldPrices?: boolean }>('/api/miniapp/plans'),
+    keepsOldPrices?: boolean
+    /** Старая цена «для своих» втянувшемуся новичку — до этого момента; null — предложения нет. */
+    offerEndsAtUtc?: string | null }>('/api/miniapp/plans'),
 
   purchase: (plan: string) =>
     request<{ ok: boolean; alreadyPro?: boolean; invoiceLink?: string }>('/api/miniapp/purchase', {
