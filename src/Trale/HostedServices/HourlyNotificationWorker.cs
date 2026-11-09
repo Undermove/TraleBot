@@ -84,6 +84,7 @@ public class HourlyNotificationWorker(
         await DispatchSafelyAsync<ICoinsNotificationService>(sp, "Coins", ct);
         await DispatchSafelyAsync<IStreakNotificationService>(sp, "Streak", ct);
         await DispatchSafelyAsync<IFirstOpenReminderService>(sp, "FirstOpenReminder", ct);
+        await DispatchSafelyAsync<IFirstWeekNudgeService>(sp, "FirstWeekNudge", ct);
     }
 
     private async Task DispatchSafelyAsync<TService>(IServiceProvider sp, string contextName, CancellationToken ct)
@@ -124,6 +125,7 @@ public class HourlyNotificationWorker(
             ICoinsNotificationService c => c.DispatchAsync(ct),
             IStreakNotificationService s => s.DispatchAsync(ct),
             IFirstOpenReminderService f => f.DispatchAsync(ct),
+            IFirstWeekNudgeService w => w.DispatchAsync(ct),
             _ => throw new InvalidOperationException(
                 $"Unsupported dispatcher type {typeof(TService).FullName}"),
         };

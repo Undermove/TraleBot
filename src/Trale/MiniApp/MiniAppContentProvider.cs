@@ -24,6 +24,17 @@ public class MiniAppContentProvider : IMiniAppContentProvider, ITraleMiniAppCont
 
     public CatalogDto GetCatalog() => _catalog;
 
+    public IReadOnlyList<LessonOutline> LessonOrder(string moduleId) =>
+        _catalog.Modules.FirstOrDefault(m => m.Id == moduleId)?.Lessons
+            .Select(l => new LessonOutline(l.Id, WithReading(l.Title), WithReading(l.Theory.Goal))).ToList()
+        ?? (IReadOnlyList<LessonOutline>)[];
+
+    public string? ModuleTitle(string moduleId) => _catalog.Modules.FirstOrDefault(m => m.Id == moduleId)?.Title;
+
+    /// <summary>Every Georgian word gets its Cyrillic reading in brackets: «Слова: და (да), არა (ара)».</summary>
+    public static string WithReading(string text) =>
+        System.Text.RegularExpressions.Regex.Replace(text, "[\u10D0-\u10FF]+", m => $"{m.Value} ({CyrOf(m.Value)})");
+
     public List<AlphabetQuizQuestionDto> GetAlphabetLessonQuestions(int lessonId)
     {
         if (!_alphabetLessonLetters.TryGetValue(lessonId, out var letters))

@@ -40,9 +40,13 @@ public class DailyReturnNotificationService(
 
         if (progressList.Count == 0) return;
 
+        // The first week belongs to FirstWeekNudgeService (days 1, 3, 7 with the next lesson) — once it is on.
+        var firstWeekSince = await FirstWeekNudgeService.SwitchedOnAtAsync(db, now, ct);
+        var firstWeekFrom = now - FirstWeekNudgeService.FirstWeek;
         var userIds = progressList.Select(p => p.UserId).ToList();
         var users = await db.Users
-            .Where(u => userIds.Contains(u.Id) && u.IsActive && u.NotificationsEnabled)
+            .Where(u => userIds.Contains(u.Id) && u.IsActive && u.NotificationsEnabled
+                        && !(u.RegisteredAtUtc >= firstWeekSince && u.RegisteredAtUtc > firstWeekFrom))
             .ToListAsync(ct);
 
         if (users.Count == 0) return;
