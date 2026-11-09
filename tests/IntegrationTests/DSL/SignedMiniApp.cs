@@ -19,7 +19,8 @@ public static class SignedMiniApp
     private const string Token = "integration-test-token";
     public const string Host = "https://test.tralebot.example";
 
-    public static TraleTestApplication WithSignedLogin(this TraleTestApplication app, long ownerTelegramId)
+    /// <param name="configure">Last word on the services, after the signed-login defaults.</param>
+    public static TraleTestApplication WithSignedLogin(this TraleTestApplication app, long ownerTelegramId, Action<IServiceCollection>? configure = null)
     {
         using var scope = app.Services.CreateScope();
         var connectionString = scope.ServiceProvider.GetRequiredService<TraleDbContext>().Database.GetConnectionString()!;
@@ -44,6 +45,8 @@ public static class SignedMiniApp
             {
                 services.Remove(worker);
             }
+
+            configure?.Invoke(services);
         });
     }
 

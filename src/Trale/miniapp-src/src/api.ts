@@ -244,10 +244,16 @@ export const api = {
       id: string
       payloadId: string
       stars: number
+      /** Цена для всех после повышения; карточка зачёркивает её, когда этот человек платит меньше. */
+      regularStars?: number
       durationDays: number | null
       title: string
       description: string
-    }> }>('/api/miniapp/plans'),
+    }>
+    /** До повышения — когда цены вырастут; после — null. */
+    pricesRiseAtUtc?: string | null
+    /** Платил до повышения: старые цены навсегда. */
+    keepsOldPrices?: boolean }>('/api/miniapp/plans'),
 
   purchase: (plan: string) =>
     request<{ ok: boolean; alreadyPro?: boolean; invoiceLink?: string }>('/api/miniapp/purchase', {
@@ -564,7 +570,7 @@ export interface FeedbackOptionCount {
   count: number
 }
 
-export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner' | 'activeLately' | 'inactiveLong'
+export type CampaignAudience = 'accessEnded' | 'onTrial' | 'paying' | 'proLapsed' | 'owner' | 'activeLately' | 'inactiveLong' | 'paid' | 'neverPaid'
 
 export interface CampaignStatusDto {
   key: string

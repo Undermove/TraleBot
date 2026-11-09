@@ -116,3 +116,31 @@ describe('ProPaywall — «Что смутило?»', () => {
     expect(feedback.paywallQuestion).not.toHaveBeenCalled()
   })
 })
+
+describe('ProPaywall — повышение цен', () => {
+  const month = (stars: number, regularStars: number) =>
+    ({ id: 'Month', payloadId: 'Stars_Pro_Month', stars, regularStars, durationDays: 30, title: '1 месяц', description: '30 дней' })
+
+  it('before the rise says when prices go up and what the month will cost', async () => {
+    api.plans.mockResolvedValue({ plans: [month(100, 149)], pricesRiseAtUtc: '2026-11-30T20:00:00Z', keepsOldPrices: false } as never)
+    await open()
+    expect(screen.getByTestId('paywall-price-rise').textContent).toBe('С 1 декабря цены вырастут. Купи сейчас — заплатишь по нынешней цене.')
+    expect(screen.getByText(/с 1 декабря — 149 ⭐/)).toBeTruthy()
+  })
+
+  it('thanks whoever paid before and shows their old price under the crossed-out new one', async () => {
+    api.plans.mockResolvedValue({ plans: [month(100, 149)], pricesRiseAtUtc: null, keepsOldPrices: true } as never)
+    await open()
+    expect(screen.getByTestId('paywall-price-thanks').textContent).toContain('Для тебя цены не вырастут — навсегда')
+    expect(screen.getByTestId('paywall-regular-price').textContent).toBe('149 ⭐')
+    expect(screen.queryByTestId('paywall-price-rise')).toBeNull()
+  })
+
+  it('after the rise a new buyer just sees the price', async () => {
+    api.plans.mockResolvedValue({ plans: [month(149, 149)], pricesRiseAtUtc: null, keepsOldPrices: false } as never)
+    await open()
+    expect(screen.queryByTestId('paywall-price-thanks')).toBeNull()
+    expect(screen.queryByTestId('paywall-price-rise')).toBeNull()
+    expect(screen.queryByTestId('paywall-regular-price')).toBeNull()
+  })
+})

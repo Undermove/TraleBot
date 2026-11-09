@@ -517,6 +517,32 @@ public class BroadcastCampaignTests : TestBase
         row.Error.Should().Be("400: chat not found");
     }
 
+    [Test]
+    public async Task Paid_means_a_real_payment_not_a_gift_of_access()
+    {
+        var payers = await AccessEnded(2);
+        await AddUsers(3, 100, u => { u.IsPro = true; u.SubscriptionPlan = SubscriptionPlan.Month; u.SubscribedUntil = DateTime.UtcNow.AddDays(9); }); // gifted
+        var refunded = await AccessEnded(1);
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            foreach (var (user, refundedAt) in payers.Select(u => (u, (DateTime?)null)).Append((refunded[0], DateTime.UtcNow)))
+                db.Payments.Add(new Payment
+                {
+                    Id = Guid.NewGuid(), UserId = user.Id, TelegramPaymentChargeId = Guid.NewGuid().ToString(), PayloadId = "Stars_Pro_Month",
+                    Plan = SubscriptionPlan.Month, Amount = 100, Currency = "XTR", PurchasedAtUtc = DateTime.UtcNow.AddDays(-40), RefundedAtUtc = refundedAt
+                });
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+
+        var (_, counts) = await Call(HttpMethod.Get, "campaigns/audiences");
+
+        counts.GetProperty("paid").GetInt32().Should().Be(2);
+        counts.GetProperty("neverPaid").GetInt32().Should().Be(5, "the owner, three with gifted access and one refunded");
+        await Prepare("thanks", "paid", sampleSize: null);
+        (await Deliveries("thanks")).Select(d => d.UserId).Should().BeEquivalentTo(payers.Select(u => u.Id));
+    }
+
     // ── Sent by the server ───────────────────────────────────────────────────
 
     private Task<CampaignSendRound> RoundWith(ICampaignMessageSender sender) => InScope(sp =>

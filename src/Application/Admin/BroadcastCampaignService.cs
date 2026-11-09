@@ -62,8 +62,9 @@ public partial class BroadcastCampaignService(
         var users = await LoadReachableUsersAsync(ct);
         var now = DateTime.UtcNow;
         var lastActive = await LoadLastActivityAsync(ct);
+        var payers = await LoadPayersAsync(ct);
         return Enum.GetValues<BroadcastAudience>()
-            .ToDictionary(a => a, a => users.Count(u => IsIn(u, a, now, ownerTelegramId, lastActive)));
+            .ToDictionary(a => a, a => users.Count(u => IsIn(u, a, now, ownerTelegramId, lastActive, payers)));
     }
 
     /// <summary>
@@ -242,7 +243,8 @@ public partial class BroadcastCampaignService(
         var now = DateTime.UtcNow;
         var users = await LoadReachableUsersAsync(ct);
         var lastActive = await LoadLastActivityAsync(ct);
-        var audience = users.Where(u => IsIn(u, draft.Audience, now, ownerTelegramId, lastActive)).ToList();
+        var payers = await LoadPayersAsync(ct);
+        var audience = users.Where(u => IsIn(u, draft.Audience, now, ownerTelegramId, lastActive, payers)).ToList();
 
         var alreadyPicked = campaign == null
             ? new HashSet<Guid>()
@@ -670,10 +672,14 @@ public partial class BroadcastCampaignService(
     /// same ones the mini-app's paywall uses, so "access ended" here is exactly "sees the paywall".</summary>
     /// <param name="lastActive">When each person last did something (<see cref="LoadLastActivityAsync"/>);
     /// needed only for the audiences by activity.</param>
+    /// <param name="payers">Who has a payment that was not refunded; needed only for <see cref="BroadcastAudience.Paid"/>
+    /// and <see cref="BroadcastAudience.NeverPaid"/>.</param>
     public static bool IsIn(
         User user, BroadcastAudience audience, DateTime now, long ownerTelegramId,
-        IReadOnlyDictionary<Guid, DateTime>? lastActive = null) => audience switch
+        IReadOnlyDictionary<Guid, DateTime>? lastActive = null, IReadOnlySet<Guid>? payers = null) => audience switch
     {
+        BroadcastAudience.Paid => payers?.Contains(user.Id) == true,
+        BroadcastAudience.NeverPaid => payers?.Contains(user.Id) == false,
         BroadcastAudience.ActiveLately => LastActive(user, lastActive) > now.AddDays(-ActivityWindowDays),
         BroadcastAudience.InactiveLong => LastActive(user, lastActive) <= now.AddDays(-ActivityWindowDays),
         BroadcastAudience.AccessEnded => !user.IsPro && !user.HasActiveTrial(now),
@@ -688,6 +694,9 @@ public partial class BroadcastCampaignService(
         lastActive != null && lastActive.TryGetValue(user.Id, out var at) && at > user.RegisteredAtUtc ? at : user.RegisteredAtUtc;
 
     private Task<Dictionary<Guid, DateTime>> LoadLastActivityAsync(CancellationToken ct) => UserActivity.LoadLastAsync(db, ct);
+
+    private async Task<IReadOnlySet<Guid>> LoadPayersAsync(CancellationToken ct) =>
+        (await db.Payments.AsNoTracking().Where(p => p.RefundedAtUtc == null).Select(p => p.UserId).Distinct().ToListAsync(ct)).ToHashSet();
 
     private static string? Trim(string? error) => error is { Length: > 500 } ? error[..500] : error;
 }

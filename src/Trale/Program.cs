@@ -48,6 +48,7 @@ builder.Services.AddHostedService<Trale.HostedServices.PendingReferralsWorker>()
 builder.Services.AddHostedService<ReturnPushWorker>();
 builder.Services.AddHostedService<HourlyNotificationWorker>();
 builder.Services.AddHostedService<CampaignSendWorker>();
+builder.Services.AddSingleton(new Application.MiniApp.PriceSchedule());
 builder.Services.AddHostedService<FinishTranslationsOnShutdown>();
 
 // The address is 1402 everywhere (Docker, k8s, the dev bot). A second local instance — the real

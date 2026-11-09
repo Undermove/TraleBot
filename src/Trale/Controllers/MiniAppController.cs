@@ -178,24 +178,35 @@ public class MiniAppController : Controller
     }
 
     [HttpGet("plans")]
-    public async Task<IActionResult> GetPlans(CancellationToken ct)
+    public async Task<IActionResult> GetPlans([FromServices] PriceSchedule prices, CancellationToken ct)
     {
         // Resolve caller so whitelisted test users see the 1⭐ test price in the
         // plan cards, matching what Purchase() will then charge them. Anonymous /
         // unresolved callers fall through to normal SubscriptionPlans prices.
         var user = await ResolveUserAsync(ct);
         var applyTestPricing = user != null && TestPricingTelegramIds.Contains(user.TelegramId);
+        var keepsOldPrices = user != null && await prices.KeepsOldPricesAsync(_dbContext, user.Id, ct);
+        var now = DateTime.UtcNow;
 
         var plans = SubscriptionPlans.All.Select(p => new
         {
             id = p.Plan.ToString(),
             payloadId = p.PayloadId,
-            stars = applyTestPricing ? TestPricingStars : p.StarsPrice,
+            stars = applyTestPricing ? TestPricingStars : prices.PriceFor(p, now, keepsOldPrices),
+            // The price for everyone after the rise — a card shows it crossed out when this person pays less.
+            regularStars = SubscriptionPlans.RaisedPrice(p),
             durationDays = p.DurationDays,
             title = p.Title,
             description = p.Description
         });
-        return Ok(new { plans });
+        return Ok(new
+        {
+            plans,
+            // Until the rise — when prices go up; null after it.
+            pricesRiseAtUtc = prices.HasRisen(now) ? (DateTime?)null : prices.RiseAtUtc,
+            // Paid before the rise: the old prices stay for good, and the paywall thanks them.
+            keepsOldPrices
+        });
     }
 
     public class PurchaseRequest
@@ -244,7 +255,7 @@ public class MiniAppController : Controller
     }
 
     [HttpPost("purchase")]
-    public async Task<IActionResult> Purchase([FromBody] PurchaseRequest req, CancellationToken ct)
+    public async Task<IActionResult> Purchase([FromBody] PurchaseRequest req, [FromServices] PriceSchedule prices, CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);
         if (user == null)
@@ -268,6 +279,8 @@ public class MiniAppController : Controller
         {
             return BadRequest(new { error = "invalid_plan" });
         }
+
+        plan = plan with { StarsPrice = prices.PriceFor(plan, DateTime.UtcNow, await prices.KeepsOldPricesAsync(_dbContext, user.Id, ct)) };
 
         if (TestPricingTelegramIds.Contains(user.TelegramId))
         {
