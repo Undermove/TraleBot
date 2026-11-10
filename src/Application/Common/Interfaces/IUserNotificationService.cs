@@ -69,14 +69,20 @@ public interface IUserNotificationService
     Task SendFirstOpenReminderAsync(User user, CancellationToken ct);
 
     /// <summary>
-    /// A first-week message (see <c>FirstWeekNudgeService</c>): the text and one web-app button straight into
-    /// the lesson, tagged <c>src=push_first_week_d&lt;day&gt;</c>. 403 → user flagged inactive; 429 → single retry.
-    /// </summary>
-    /// <summary>
     /// The day-7 offer of the old prices (see <c>EngagedOffer</c>): the text and one web-app button that opens the
     /// paywall, tagged <c>src=push_engaged_offer</c>. 403 → user flagged inactive; 429 → single retry.
     /// </summary>
     Task SendEngagedOfferAsync(User user, string text, string button, CancellationToken ct);
 
+    /// <summary>
+    /// A first-week message (see <c>FirstWeekNudgeService</c>): the text and one web-app button straight into
+    /// the lesson, tagged <c>src=push_first_week_d&lt;day&gt;</c>. 403 → user flagged inactive; 429 → single retry.
+    /// </summary>
     Task SendFirstWeekNudgeAsync(User user, Application.Notifications.FirstWeekNudge nudge, CancellationToken ct);
+
+    /// <summary>
+    /// The tip to pin the chat with the bot (see <c>PinChatTip</c>): plain text, no button. Sent from the
+    /// lesson-complete request, so no bulk delay and no retry. 403 → user flagged inactive.
+    /// </summary>
+    Task SendPinChatTipAsync(User user, CancellationToken ct);
 }
