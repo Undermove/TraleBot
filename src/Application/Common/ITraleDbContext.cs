@@ -69,6 +69,14 @@ public interface ITraleDbContext
     Task<bool> TryFinishCampaignSendAllAsync(Guid campaignId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Atomically turns a campaign whose scheduled time has come into one being sent to everyone: clears the
+    /// schedule and sets the "send to everyone" request. Returns <c>true</c> only for the one caller that made
+    /// the move — only that caller picks the recipients. Inside a transaction the row stays locked until the
+    /// commit, so a second replica waits and then finds nothing to start.
+    /// </summary>
+    Task<bool> TryStartScheduledCampaignAsync(Guid campaignId, DateTime now, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Atomically marks a campaign's gift as given to this recipient. Returns <c>true</c> only for
     /// the one caller that made the mark — only that caller may change the user's access. This is
     /// what keeps repeated opens, two replicas or two parallel requests from giving the gift twice.

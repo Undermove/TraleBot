@@ -1,5 +1,6 @@
 import type { CampaignAudience } from '../api'
 import { AUDIENCES } from './words'
+import { findZone, wallToUtc, ZONES } from './schedule'
 
 // Готовая рассылка одним куском текста — чтобы не набирать её по шагам. Сверху параметры «ключ: значение»,
 // после строки «---» — само сообщение:
@@ -10,10 +11,14 @@ import { AUDIENCES } from './words'
 //   подарок: 7
 //   кнопка: Посмотреть первую серию
 //   адрес: moduleId=my-day&lessonId=1
+//   когда: 28.11.2026 12:00
+//   пояс: Тбилиси
 //   ---
 //   Текст сообщения, сколько угодно абзацев.
 //
 // Обязательны «кому» и текст. Без «кнопки» — сообщение без кнопки; без «пробы» — сразу всем.
+// «когда» — день и час, в который рассылка уйдёт сама (на экране отправки останется нажать «Запланировать»);
+// без «пояса» время считается по Тбилиси.
 
 export interface PastedBroadcast {
   name: string
@@ -25,10 +30,15 @@ export interface PastedBroadcast {
   button: string | null
   query: string
   message: string
+  /** Когда отправить саму: день (ГГГГ-ММ-ДД), время (ЧЧ:ММ) и пояс; null — время не задано. */
+  when: { date: string; time: string; zone: string } | null
 }
 
-const KEYS: Record<string, keyof PastedBroadcast> = {
-  'имя': 'name', 'кому': 'audience', 'проба': 'sample', 'подарок': 'giftDays', 'кнопка': 'button', 'адрес': 'query'
+type Field = keyof PastedBroadcast | 'zone'
+
+const KEYS: Record<string, Field> = {
+  'имя': 'name', 'кому': 'audience', 'проба': 'sample', 'подарок': 'giftDays', 'кнопка': 'button', 'адрес': 'query',
+  'когда': 'when', 'пояс': 'zone'
 }
 
 /** Текст из буфера обмена; '' — если клиент Telegram читать буфер не даёт (тогда вставляют долгим нажатием в поле). */
@@ -42,7 +52,7 @@ export function parsePastedBroadcast(raw: string): PastedBroadcast | string {
   const cut = lines.findIndex(l => l.trim() === '---')
   if (cut < 0) return 'Нет строки «---» между параметрами и текстом сообщения.'
 
-  const fields: Partial<Record<keyof PastedBroadcast, string>> = {}
+  const fields: Partial<Record<Field, string>> = {}
   for (const line of lines.slice(0, cut)) {
     if (!line.trim()) continue
     const m = /^\s*([^:]+?)\s*:\s*(.*?)\s*$/.exec(line)
@@ -75,5 +85,18 @@ export function parsePastedBroadcast(raw: string): PastedBroadcast | string {
   if (!(Number.isInteger(giftDays) && giftDays >= 0 && giftDays <= 30)) return 'Подарок — число дней от 0 до 30.'
   if (giftDays > 0 && !button) return 'Подарок получают по кнопке — добавь строку «кнопка: …».'
 
-  return { name, audience, sample, giftDays, button, query, message }
+  let when: PastedBroadcast['when'] = null
+  if (fields.zone && !fields.when) return 'Пояс есть, а времени нет — добавь строку «когда: 28.11.2026 12:00».'
+  if (fields.when) {
+    const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})\s+(\d{1,2}):(\d{2})$/.exec(fields.when)
+    const zone = fields.zone ? findZone(fields.zone) : ZONES[0].id
+    if (!zone) return `Пояс — один из: ${ZONES.map(z => z.name).join(', ')} — или имя вида Europe/Paris.`
+    const date = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : ''
+    const time = m ? `${m[4].padStart(2, '0')}:${m[5]}` : ''
+    if (!m || !wallToUtc(date, time, zone)) return 'Когда — день и время вида 28.11.2026 12:00.'
+    if (sample !== null) return 'По расписанию рассылка уходит всей группе — убери строку «проба».'
+    when = { date, time, zone }
+  }
+
+  return { name, audience, sample, giftDays, button, query, message, when }
 }

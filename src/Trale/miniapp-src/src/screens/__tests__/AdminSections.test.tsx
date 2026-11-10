@@ -288,6 +288,16 @@ describe('AdminBroadcastsScreen', () => {
     picked: 553, pending: 478, sent: 73, opened: 21, gifted: 14, state: 'running', ...over
   })
 
+  it('a scheduled campaign says when it goes out by itself, by the clock of its zone', async () => {
+    campaigns.list.mockResolvedValue({ campaigns: [item('prices-last-days', { state: 'scheduled', audience: 'neverPaid', picked: 0, pending: 0, scheduledAtUtc: '2026-11-28T08:00:00Z', scheduledTimeZone: 'Asia/Tbilisi' })] })
+    render(<AdminBroadcastsScreen navigate={navigate} />)
+
+    const row = await screen.findByTestId('broadcast-prices-last-days')
+    expect(row.textContent).toContain('запланирована')
+    expect(row.textContent).toContain('ни разу не платили · уйдёт сама 28.11.2026 12:00 (Тбилиси)с кнопкой «Открыть» · подарок 3 дн.')
+    expect(row.textContent).not.toContain('открыли по кнопке')
+  })
+
   it('lists campaigns with how far each got, and opens one or starts a new one', async () => {
     campaigns.list.mockResolvedValue({ campaigns: [item('broadcast-2026-10'), item('broadcast-2026-09', { state: 'done', pending: 0, buttonText: null, giftDays: 0 }), item('draft', { state: 'draft', picked: 0, pending: 0 })] })
     render(<AdminBroadcastsScreen navigate={navigate} />)

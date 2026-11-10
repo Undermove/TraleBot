@@ -43,6 +43,15 @@ public class BroadcastCampaign
     /// "stop". The background sender works through such campaigns whether or not the admin page stays open.</summary>
     public DateTime? SendAllRequestedAtUtc { get; set; }
 
+    /// <summary>When the campaign goes out by itself; null — it is not scheduled. At that moment the background
+    /// sender picks everyone in <see cref="Audience"/> who is not in the campaign yet and sends to all picked.
+    /// The recipients are decided then, not when the owner set the time: whoever left the audience in between
+    /// (paid, for one) gets nothing, whoever joined it does. Cleared when the sending starts or by "stop".</summary>
+    public DateTime? ScheduledAtUtc { get; set; }
+
+    /// <summary>The time zone the owner named the moment in ("Asia/Tbilisi") — only to show it back the same way.</summary>
+    public string? ScheduledTimeZone { get; set; }
+
     public bool IsSurvey => SurveyJson != null;
 
     public SurveyForm? Survey => SurveyForm.FromJson(SurveyJson);

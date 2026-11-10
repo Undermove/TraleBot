@@ -11,8 +11,8 @@ namespace Trale.HostedServices;
 
 /// <summary>
 /// Sends the campaigns the owner asked to send to everyone picked ("send to everyone" in the admin),
-/// batch by batch, so the admin page does not have to stay open. Sends nothing else: a campaign
-/// without that request is never touched. When a campaign has no one left waiting, the owner gets
+/// batch by batch, so the admin page does not have to stay open, and starts the campaigns whose
+/// scheduled time has come. Sends nothing else: a campaign without that request or a due time is never touched. When a campaign has no one left waiting, the owner gets
 /// a bot message with how it went. After a restart it carries on where it stopped — the request
 /// and every recipient's state are in the database.
 /// </summary>
@@ -36,6 +36,14 @@ public class CampaignSendWorker(
             var wait = IdleInterval;
             try
             {
+                // Scheduled campaigns whose time has come get their recipients and join the ones being sent.
+                // Its own scope: it loads every reachable user, which the sending below has no use for.
+                await using (var startScope = scopeFactory.CreateAsyncScope())
+                {
+                    await startScope.ServiceProvider.GetRequiredService<BroadcastCampaignService>()
+                        .StartScheduledAsync(DateTime.UtcNow, OwnerTelegramId, stoppingToken);
+                }
+
                 await using var scope = scopeFactory.CreateAsyncScope();
                 var campaigns = scope.ServiceProvider.GetRequiredService<BroadcastCampaignService>();
                 var round = await campaigns.SendRequestedAsync(stoppingToken);
@@ -62,9 +70,11 @@ public class CampaignSendWorker(
         logger.LogInformation("CampaignSendWorker stopped");
     }
 
+    private long OwnerTelegramId => botConfig.OwnerTelegramId != 0 ? botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
+
     private Task TellOwnerAsync(ICampaignMessageSender sender, CampaignStatus s)
     {
-        var owner = botConfig.OwnerTelegramId != 0 ? botConfig.OwnerTelegramId : DefaultOwnerTelegramId;
+        var owner = OwnerTelegramId;
         var text = $"Рассылка «{s.Key}» разослана.\nДошло: {s.Sent} из {s.Total}"
                    + (s.Blocked > 0 ? $"\nЗаблокировали бота: {s.Blocked}" : "")
                    + (s.Rejected > 0 ? $"\nTelegram не принял: {s.Rejected}" : "")

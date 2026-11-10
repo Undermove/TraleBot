@@ -15,6 +15,7 @@ public class BroadcastCampaignConfiguration : IEntityTypeConfiguration<Broadcast
         builder.Property(c => c.ButtonText).HasMaxLength(64);
         builder.Property(c => c.ButtonQuery).HasMaxLength(256);
         builder.Property(c => c.SurveyJson).HasColumnType("jsonb");
+        builder.Property(c => c.ScheduledTimeZone).HasMaxLength(64);
         builder.Ignore(c => c.IsSurvey);
         builder.Ignore(c => c.Survey);
     }

@@ -163,6 +163,8 @@ interface Calls { prepared: any[]; sent: string[]; userQueries: URLSearchParams[
 
 async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: string } = {}): Promise<Calls> {
   const calls: Calls = { prepared: [], sent: [], userQueries: [], back: 0, verbs: [] }
+  // Рассылка, которую назначили на время в этом тесте: сервер помнит её, пока расписание не отменят.
+  let scheduled: Record<string, any> | null = null
   const owner = opts.owner ?? true
   await page.addInitScript(() => {
     ;(window as any).Telegram = {
@@ -207,15 +209,26 @@ async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: 
     }
     if (/^users\/\d+$/.test(path)) return ok({ ...userCard, telegramId: Number(path.split('/')[1]) })
     if (path === 'payments') return ok(payments)
-    if (path === 'campaigns') return ok({ campaigns: campaignList })
+    if (path === 'campaigns') return ok({ campaigns: scheduled ? [{ ...campaignList[2], ...scheduled, createdAtUtc: at(9, '08:00'), picked: 0, pending: 0, state: 'scheduled' }, ...campaignList] : campaignList })
     if (path === 'campaigns/audiences') return ok({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512 })
     if (path === 'campaigns/prepare') {
       const body = route.request().postDataJSON()
       calls.prepared.push(body)
       const key = body.key || (body.newBroadcastSuffix ? `${BROADCAST}-${body.newBroadcastSuffix}` : `${BROADCAST}-2`)
+      // По расписанию: кампания записана со временем, получателей никто не выбирал.
+      if (body.sendAtUtc && !body.dryRun) {
+        scheduled = { key, audience: body.audience, message: body.message, buttonText: body.buttonText, giftDays: body.giftDays, scheduledAtUtc: body.sendAtUtc, scheduledTimeZone: body.sendAtTimeZone }
+        return ok({ key, dryRun: false, audienceTotal: 61, alreadyInCampaign: 0, picked: 0, leftForLater: 61, scheduledAtUtc: body.sendAtUtc })
+      }
       return ok({ key, dryRun: body.dryRun, audienceTotal: 61, alreadyInCampaign: body.anotherAudience ? 21 : 0, picked: body.audience === 'owner' ? 1 : 40, leftForLater: 0 })
     }
     if (path.endsWith('/send')) { calls.sent.push(path.replace('campaigns/', '').replace('/send', '')); return ok({ sent: 1, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: campaignStatus }) }
+    if (scheduled && path === `campaigns/${scheduled.key}/stop`) {
+      const stopped = { ...campaignStatus, ...scheduled, total: 0, sample: 0, pending: 0, sent: 0, blocked: 0, opened: 0, gifted: 0, scheduledAtUtc: null, scheduledTimeZone: null }
+      scheduled = null
+      return ok(stopped)
+    }
+    if (scheduled && path === `campaigns/${scheduled.key}`) return ok({ ...campaignStatus, ...scheduled, total: 0, sample: 0, pending: 0, sent: 0, blocked: 0, opened: 0, gifted: 0 })
     if (path.startsWith('campaigns/')) return ok(campaignStatus)
     if (path === 'surveys/presets') return ok(kit)
     if (path.startsWith('feedback/surveys/')) return ok(surveyResults)
@@ -551,6 +564,68 @@ test('a new broadcast is a focused flow: no tab bar, steps, the main button pinn
   await shot(page, 'admin-18-broadcast-running')
   await telegramBack(page)
   await expect(title(page)).toHaveText('Рассылки')
+})
+
+test('a broadcast is scheduled for a day, an hour and a time zone, shows up as scheduled and can be called off', async ({ page }) => {
+  const calls = await setup(page)
+  await openAdmin(page)
+  await tab(page, 'broadcasts').click()
+  await page.getByTestId('broadcast-new').click()
+  await page.getByLabel('Текст сообщения').fill('До повышения цен осталось 3 дня.')
+  for (let i = 0; i < 3; i++) await page.getByTestId('broadcast-next').click()
+  await page.getByTestId('broadcast-audience-activeLately').click()
+  await page.getByRole('radio', { name: /Сразу всем/ }).click()
+  await page.getByTestId('broadcast-next').click()
+  await expect(page.getByTestId('broadcast-step-title')).toHaveText('Отправка')
+
+  // Сначала стоит завтра, полдень по Тбилиси; назначаем день, час и пояс — по часам Берлина.
+  const plan = page.getByTestId('broadcast-schedule')
+  await plan.scrollIntoViewIfNeeded()
+  await expect(page.getByTestId('broadcast-schedule-date')).not.toHaveValue('')
+  await expect(page.getByTestId('broadcast-schedule-time')).toHaveValue('12:00')
+  await expect(page.getByTestId('broadcast-schedule-zone')).toHaveValue('Asia/Tbilisi')
+  await page.getByTestId('broadcast-schedule-date').fill('2099-07-01')
+  await page.getByTestId('broadcast-schedule-time').fill('12:30')
+  await page.getByTestId('broadcast-schedule-zone').selectOption('Europe/Berlin')
+  await fits(page)
+  await shot(page, 'admin-19-broadcast-schedule')
+
+  let asked = ''
+  page.once('dialog', d => { asked = d.message(); void d.accept() })
+  await plan.click()
+  const state = page.getByTestId('broadcast-scheduled')
+  await expect(state).toContainText('Запланирована на 01.07.2099 12:30 (Берлин)')
+  expect(asked).toContain('ЗАПЛАНИРОВАТЬ на 01.07.2099 12:30 (Берлин)?')
+  expect(asked).toContain('До повышения цен осталось 3 дня.')
+  await expect(state).toContainText('Мини-апп можно закрыть')
+  await expect(page.getByTestId('broadcast-note')).toHaveCount(0)
+  // Пока она ждёт своего часа, на экране нет ни выбора получателей, ни отправки руками.
+  for (const gone of ['broadcast-schedule', 'broadcast-pick', 'broadcast-send-all', 'broadcast-another']) await expect(page.getByTestId(gone)).toHaveCount(0)
+  const sent = calls.prepared.at(-1) as Record<string, unknown>
+  expect(sent).toMatchObject({ audience: 'activeLately', sampleSize: null, dryRun: false, sendAtUtc: '2099-07-01T10:30:00.000Z', sendAtTimeZone: 'Europe/Berlin' })
+  expect(calls.sent).toEqual([])
+  await fits(page)
+  await shot(page, 'admin-20-broadcast-scheduled')
+
+  // В списке она «запланирована», со временем по тому же поясу.
+  await page.getByTestId('admin-close').click()
+  const row = page.getByTestId(`broadcast-${BROADCAST}-2`)
+  await expect(row).toContainText('запланирована')
+  await expect(row).toContainText('занимались за последние 30 дней · уйдёт сама 01.07.2099 12:30 (Берлин)')
+  await expect(row).toContainText('с кнопкой «Открыть TraleBot»')
+  await shot(page, 'admin-21-broadcasts-scheduled')
+
+  // Открыть и отменить: расписания больше нет, время можно назначить заново.
+  await row.click()
+  await expect(state).toContainText('01.07.2099 12:30 (Берлин)')
+  page.once('dialog', d => void d.accept())
+  await page.getByTestId('broadcast-schedule-cancel').click()
+  await expect(page.getByTestId('broadcast-note')).toHaveText('Расписание отменил. Сообщения не ушли.')
+  await expect(state).toHaveCount(0)
+  await expect(page.getByTestId('broadcast-schedule')).toBeVisible()
+  await expect(page.getByTestId('broadcast-pick')).toBeVisible()
+  await page.getByTestId('admin-close').click()
+  await expect(page.getByTestId(`broadcast-${BROADCAST}-2`)).toHaveCount(0)
 })
 
 test('the survey builder is a focused flow too, and keeps its draft', async ({ page }) => {

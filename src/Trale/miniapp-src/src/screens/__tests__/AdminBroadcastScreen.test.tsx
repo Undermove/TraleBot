@@ -312,6 +312,114 @@ describe('AdminBroadcastScreen — готовая рассылка одним к
   })
 })
 
+describe('AdminBroadcastScreen — отправка по расписанию', () => {
+  const LATER = 'имя: prices-last-days\nкому: neverPaid\nкнопка: Купить по старой цене\nадрес: paywall=1\nкогда: 28.11.2099 12:00\nпояс: Тбилиси\n---\nДо повышения цен осталось 3 дня.'
+  const AT = '2099-11-28T08:00:00.000Z'
+  const scheduled = { ...status, key: 'prices-last-days', audience: 'neverPaid', message: 'До повышения цен осталось 3 дня.', giftDays: 0, total: 0, pending: 0, scheduledAtUtc: AT, scheduledTimeZone: 'Asia/Tbilisi' } as CampaignStatusDto
+
+  it('a pasted broadcast with a time is scheduled by one button: nobody is picked, the server gets the moment in UTC', async () => {
+    api.prepare.mockImplementation(async body => picked('prices-last-days', body.dryRun ? 565 : 0, body.dryRun))
+    api.status.mockResolvedValue(scheduled)
+    render(<AdminBroadcastScreen navigate={navigate} pasted={LATER} />)
+
+    expect(title()).toBe('Отправка')
+    expect((screen.getByTestId('broadcast-schedule-date') as HTMLInputElement).value).toBe('2099-11-28')
+    expect((screen.getByTestId('broadcast-schedule-time') as HTMLInputElement).value).toBe('12:00')
+    expect((screen.getByTestId('broadcast-schedule-zone') as HTMLSelectElement).value).toBe('Asia/Tbilisi')
+    await userEvent.click(screen.getByTestId('broadcast-schedule'))
+
+    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
+    expect(confirm.mock.calls[0][0]).toContain('ЗАПЛАНИРОВАТЬ на 28.11.2099 12:00 (Тбилиси)?')
+    expect(confirm.mock.calls[0][0]).toContain('сейчас это 565 чел.')
+    expect(api.prepare).toHaveBeenLastCalledWith({
+      key: 'prices-last-days', newBroadcast: false, audience: 'neverPaid', message: 'До повышения цен осталось 3 дня.',
+      buttonText: 'Купить по старой цене', buttonQuery: 'paywall=1', giftDays: 0, sampleSize: null, dryRun: false,
+      sendAtUtc: AT, sendAtTimeZone: 'Asia/Tbilisi'
+    })
+    const state = await screen.findByTestId('broadcast-scheduled')
+    expect(state.textContent).toContain('Запланирована на 28.11.2099 12:00 (Тбилиси)')
+    expect(state.textContent).toContain('Мини-апп можно закрыть')
+    expect(screen.queryByTestId('broadcast-note')).toBeNull()
+    // Пока рассылка ждёт своего часа, выбирать и отправлять руками нечего.
+    for (const gone of ['broadcast-schedule', 'broadcast-pick', 'broadcast-send-all', 'broadcast-send', 'broadcast-another', 'broadcast-status'])
+      expect(screen.queryByTestId(gone)).toBeNull()
+    expect(screen.getByTestId('broadcast-send-me')).toBeTruthy()
+    expect(api.send).not.toHaveBeenCalled()
+    expect(api.sendAll).not.toHaveBeenCalled()
+  })
+
+  it('the day, the hour and the zone are chosen on the sending step: tomorrow at noon by Tbilisi to begin with; without a day there is nothing to schedule', async () => {
+    api.prepare.mockImplementation(async body => picked(KEY, body.dryRun ? 553 : 0, body.dryRun))
+    api.status.mockResolvedValue({ ...status, total: 0, pending: 0, scheduledAtUtc: '2099-07-01T10:30:00.000Z', scheduledTimeZone: 'Europe/Berlin' })
+    await toSending()
+    const day = new Date(Date.now() + 24 * 3600 * 1000)
+    expect((screen.getByLabelText('День отправки') as HTMLInputElement).value)
+      .toBe(`${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`)
+    expect((screen.getByLabelText('Время отправки') as HTMLInputElement).value).toBe('12:00')
+    expect((screen.getByLabelText('Часовой пояс') as HTMLSelectElement).value).toBe('Asia/Tbilisi')
+    await userEvent.clear(screen.getByLabelText('День отправки'))
+    expect((screen.getByTestId('broadcast-schedule') as HTMLButtonElement).disabled).toBe(true)
+
+    await userEvent.type(screen.getByLabelText('День отправки'), '2099-07-01')
+    await userEvent.clear(screen.getByLabelText('Время отправки'))
+    await userEvent.type(screen.getByLabelText('Время отправки'), '12:30')
+    await userEvent.selectOptions(screen.getByLabelText('Часовой пояс'), 'Europe/Berlin')
+    await userEvent.click(screen.getByTestId('broadcast-schedule'))
+
+    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
+    expect(api.prepare.mock.calls[1][0]).toMatchObject({ sampleSize: null, dryRun: false, sendAtUtc: '2099-07-01T10:30:00.000Z', sendAtTimeZone: 'Europe/Berlin' })
+    expect((await screen.findByTestId('broadcast-scheduled')).textContent).toContain('01.07.2099 12:30 (Берлин)')
+  })
+
+  it('a time that has passed is not sent to the server; a declined confirmation schedules nothing', async () => {
+    api.prepare.mockImplementation(async body => picked(KEY, 553, body.dryRun))
+    await toSending()
+    await userEvent.clear(screen.getByLabelText('День отправки'))
+    await userEvent.type(screen.getByLabelText('День отправки'), '2020-01-01')
+    await userEvent.click(screen.getByTestId('broadcast-schedule'))
+    expect(screen.getByTestId('broadcast-note').textContent).toContain('уже прошло')
+    expect(api.prepare).not.toHaveBeenCalled()
+
+    confirm.mockReturnValue(false)
+    await userEvent.clear(screen.getByLabelText('День отправки'))
+    await userEvent.type(screen.getByLabelText('День отправки'), '2099-01-01')
+    await userEvent.click(screen.getByTestId('broadcast-schedule'))
+    await waitFor(() => expect(confirm).toHaveBeenCalled())
+    expect(api.prepare).toHaveBeenCalledTimes(1)
+    expect(api.prepare.mock.calls[0][0]).toMatchObject({ dryRun: true })
+    expect(screen.queryByTestId('broadcast-scheduled')).toBeNull()
+  })
+
+  it('a scheduled broadcast opens with its time and can be called off', async () => {
+    api.status.mockResolvedValue(scheduled)
+    api.stop.mockResolvedValue({ ...scheduled, scheduledAtUtc: null, scheduledTimeZone: null })
+    render(<AdminBroadcastScreen navigate={navigate} campaignKey="prices-last-days" />)
+
+    expect((await screen.findByTestId('broadcast-scheduled')).textContent).toContain('28.11.2099 12:00 (Тбилиси)')
+    expect(screen.queryByTestId('broadcast-send-hint')).toBeNull()
+    await userEvent.click(screen.getByTestId('broadcast-schedule-cancel'))
+
+    expect(api.stop).toHaveBeenCalledWith('prices-last-days')
+    expect(screen.getByTestId('broadcast-note').textContent).toBe('Расписание отменил. Сообщения не ушли.')
+    expect(screen.queryByTestId('broadcast-scheduled')).toBeNull()
+    expect(screen.getByTestId('broadcast-schedule')).toBeTruthy()
+    expect(screen.getByTestId('broadcast-pick')).toBeTruthy()
+  })
+
+  it('when its hour comes while the screen is open, the screen shows the sending and then the result', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    api.status.mockResolvedValueOnce(scheduled)
+    render(<AdminBroadcastScreen navigate={navigate} campaignKey="prices-last-days" />)
+    await screen.findByTestId('broadcast-scheduled')
+
+    api.status.mockResolvedValue({ ...scheduled, scheduledAtUtc: null, total: 565, pending: 0, sent: 565 })
+    await vi.advanceTimersByTimeAsync(15000)
+    await waitFor(() => expect(screen.getByTestId('broadcast-note').textContent).toContain('Готово. Дошло 565'))
+    expect(screen.queryByTestId('broadcast-scheduled')).toBeNull()
+    vi.useRealTimers()
+  })
+})
+
 describe('AdminBroadcastScreen — вставка из буфера одним нажатием', () => {
   const READY = 'имя: myday-active\nкому: activeLately\nподарок: 7\nкнопка: Посмотреть первую серию\nадрес: moduleId=my-day&lessonId=1\n---\nНовый модуль — «Мой день»'
 

@@ -635,6 +635,191 @@ public class BroadcastCampaignTests : TestBase
             .Which.Text.Should().Contain("by-worker").And.Contain("Дошло: 30 из 30");
     }
 
+    // ── On a schedule ────────────────────────────────────────────────────────
+
+    private Task<(HttpStatusCode Code, JsonElement Body)> Schedule(string key, string audience, DateTime sendAtUtc,
+        bool dryRun = false, int? sampleSize = null, int giftDays = 0, int? giftOfferDays = null) =>
+        Call(HttpMethod.Post, "campaigns/prepare", new
+        {
+            key, audience, message = "Осталось три дня", buttonText = "Открыть", buttonQuery = "", sampleSize, dryRun,
+            giftDays, giftOfferDays, sendAtUtc, sendAtTimeZone = "Asia/Tbilisi"
+        });
+
+    private Task<IReadOnlyList<string>> StartScheduled(DateTime now) => InScope(sp =>
+        new BroadcastCampaignService(sp.GetRequiredService<ITraleDbContext>(), new ScriptedSender(), NullLoggerFactory.Instance)
+            .StartScheduledAsync(now, Owner, CancellationToken.None));
+
+    /// <summary>The campaign's time has come: as if the owner had scheduled it earlier for a minute ago.</summary>
+    private Task TimeHasCome(string key) => InScope(async sp =>
+    {
+        var db = sp.GetRequiredService<TraleDbContext>();
+        return await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""UPDATE "BroadcastCampaigns" SET "ScheduledAtUtc" = {DateTime.UtcNow.AddMinutes(-1)} WHERE "Key" = {key}""");
+    });
+
+    [Test]
+    public async Task Scheduling_saves_the_time_and_picks_nobody_until_it_comes()
+    {
+        await AccessEnded(4);
+        var at = DateTime.UtcNow.AddDays(18);
+        var mark = _telegram.Requests.Count;
+
+        var (dryCode, dry) = await Schedule("later", "accessEnded", at, dryRun: true);
+        (await Call(HttpMethod.Get, "campaigns/later")).Code.Should().Be(HttpStatusCode.NotFound, "a dry run saves nothing");
+        var (code, body) = await Schedule("later", "accessEnded", at);
+
+        dryCode.Should().Be(HttpStatusCode.OK);
+        dry.GetProperty("audienceTotal").GetInt32().Should().Be(4, "how many would get it if it went out now");
+        code.Should().Be(HttpStatusCode.OK, body.GetRawText());
+        body.GetProperty("picked").GetInt32().Should().Be(0);
+        var status = await Status("later");
+        status.GetProperty("scheduledAtUtc").GetDateTime().Should().BeCloseTo(at, TimeSpan.FromSeconds(1));
+        status.GetProperty("scheduledTimeZone").GetString().Should().Be("Asia/Tbilisi");
+        status.GetProperty("sendingAll").GetBoolean().Should().BeFalse();
+        (await Deliveries("later")).Should().BeEmpty();
+        var listed = (await Call(HttpMethod.Get, "campaigns")).Body.GetProperty("campaigns").EnumerateArray()
+            .Single(c => c.GetProperty("key").GetString() == "later");
+        listed.GetProperty("state").GetString().Should().Be("scheduled");
+        listed.GetProperty("scheduledAtUtc").GetDateTime().Should().BeCloseTo(at, TimeSpan.FromSeconds(1));
+
+        (await StartScheduled(DateTime.UtcNow)).Should().BeEmpty("its time has not come");
+        await RoundWith(new ScriptedSender());
+        (await Deliveries("later")).Should().BeEmpty();
+        SentSince(mark).Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task When_the_time_comes_it_goes_to_those_in_the_audience_at_that_moment()
+    {
+        var people = await AccessEnded(5);
+        var at = DateTime.UtcNow.AddDays(18);
+        (await Schedule("last-days", "neverPaid", at)).Code.Should().Be(HttpStatusCode.OK);
+
+        // Between scheduling and sending: one buys, one joins.
+        var newcomer = await AddUsers(1, registeredDaysAgo: 1);
+        await InScope(async sp =>
+        {
+            var db = sp.GetRequiredService<ITraleDbContext>();
+            db.Payments.Add(new Payment
+            {
+                Id = Guid.NewGuid(), UserId = people[0].Id, TelegramPaymentChargeId = Guid.NewGuid().ToString(), PayloadId = "Stars_Pro_Month",
+                Plan = SubscriptionPlan.Month, Amount = 100, Currency = "XTR", PurchasedAtUtc = DateTime.UtcNow
+            });
+            return await db.SaveChangesAsync(CancellationToken.None);
+        });
+
+        var started = await StartScheduled(at.AddSeconds(1));
+        var sender = new ScriptedSender();
+        for (var i = 0; i < 5 && (await RoundWith(sender)).Finished.Count == 0; i++) { }
+
+        started.Should().Equal("last-days");
+        var expected = people.Skip(1).Concat(newcomer).Select(u => u.TelegramId).Append(Owner);
+        sender.Attempts.Should().BeEquivalentTo(expected, "the one who bought gets nothing, the newcomer does");
+        var status = await Status("last-days");
+        status.GetProperty("scheduledAtUtc").ValueKind.Should().Be(JsonValueKind.Null);
+        status.GetProperty("sendingAll").GetBoolean().Should().BeFalse("everyone was sent, the request is closed");
+        status.GetProperty("sent").GetInt32().Should().Be(6);
+        (await StartScheduled(at.AddDays(1))).Should().BeEmpty("a campaign starts once");
+    }
+
+    [Test]
+    public async Task Two_replicas_start_a_scheduled_campaign_once()
+    {
+        var people = await AccessEnded(40);
+        var at = DateTime.UtcNow.AddHours(1);
+        await Schedule("one-start", "accessEnded", at);
+
+        var starts = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => StartScheduled(at.AddSeconds(1))));
+
+        starts.SelectMany(s => s).Should().Equal("one-start");
+        (await Deliveries("one-start")).Select(d => d.UserId).Should().BeEquivalentTo(people.Select(p => p.Id));
+        (await Status("one-start")).GetProperty("sendingAll").GetBoolean().Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Stop_takes_a_campaign_off_the_schedule()
+    {
+        await AccessEnded(3);
+        var at = DateTime.UtcNow.AddHours(1);
+        await Schedule("called-off", "accessEnded", at);
+
+        var (code, body) = await Call(HttpMethod.Post, "campaigns/called-off/stop");
+
+        code.Should().Be(HttpStatusCode.OK);
+        body.GetProperty("scheduledAtUtc").ValueKind.Should().Be(JsonValueKind.Null);
+        (await StartScheduled(at.AddSeconds(1))).Should().BeEmpty();
+        (await Deliveries("called-off")).Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task The_time_can_be_moved_and_only_the_last_one_counts()
+    {
+        await AccessEnded(3);
+        var first = DateTime.UtcNow.AddHours(1);
+        var second = DateTime.UtcNow.AddDays(2);
+        await Schedule("moved", "accessEnded", first);
+        (await Schedule("moved", "accessEnded", second)).Code.Should().Be(HttpStatusCode.OK);
+
+        (await StartScheduled(first.AddSeconds(1))).Should().BeEmpty();
+        (await StartScheduled(second.AddSeconds(1))).Should().Equal("moved");
+    }
+
+    [Test]
+    public async Task A_schedule_needs_a_future_time_and_the_whole_audience()
+    {
+        await AccessEnded(3);
+
+        var (past, pastBody) = await Schedule("bad-time", "accessEnded", DateTime.UtcNow.AddMinutes(-1));
+        var (far, _) = await Schedule("bad-time", "accessEnded", DateTime.UtcNow.AddDays(BroadcastCampaignService.MaxScheduleDays + 1));
+        var (sample, sampleBody) = await Schedule("bad-time", "accessEnded", DateTime.UtcNow.AddHours(1), sampleSize: 2);
+
+        past.Should().Be(HttpStatusCode.BadRequest);
+        pastBody.GetProperty("error").GetString().Should().Contain("уже прошло");
+        far.Should().Be(HttpStatusCode.BadRequest);
+        sample.Should().Be(HttpStatusCode.BadRequest);
+        sampleBody.GetProperty("error").GetString().Should().Contain("всей группе");
+        (await Call(HttpMethod.Get, "campaigns/bad-time")).Code.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Test]
+    public async Task The_gift_of_a_scheduled_campaign_is_offered_from_the_day_it_goes_out()
+    {
+        await AccessEnded(2);
+        var at = DateTime.UtcNow.AddDays(10);
+
+        await Schedule("gift-later", "accessEnded", at, giftDays: 7, giftOfferDays: 3);
+
+        (await Status("gift-later")).GetProperty("giftOfferEndsAtUtc").GetDateTime()
+            .Should().BeCloseTo(at.AddDays(3), TimeSpan.FromSeconds(1));
+    }
+
+    [Test]
+    public async Task The_worker_sends_a_scheduled_campaign_by_itself_and_tells_the_owner()
+    {
+        var people = await AccessEnded(6);
+        await Schedule("by-clock", "accessEnded", DateTime.UtcNow.AddHours(1));
+        await TimeHasCome("by-clock");
+        var mark = _telegram.Requests.Count;
+
+        var worker = ActivatorUtilities.CreateInstance<Trale.HostedServices.CampaignSendWorker>(_app.Services);
+        await worker.StartAsync(CancellationToken.None);
+        try
+        {
+            for (var i = 0; i < 300 && !SentSince(mark).Any(m => m.ChatId.Identifier == Owner); i++)
+                await Task.Delay(100);
+        }
+        finally
+        {
+            await worker.StopAsync(CancellationToken.None);
+        }
+
+        var sent = SentSince(mark);
+        sent.Where(m => m.ChatId.Identifier != Owner).Select(m => m.ChatId.Identifier!.Value)
+            .Should().BeEquivalentTo(people.Select(p => p.TelegramId));
+        sent.Where(m => m.ChatId.Identifier == Owner).Should().ContainSingle()
+            .Which.Text.Should().Contain("by-clock").And.Contain("Дошло: 6 из 6");
+    }
+
     // ── Measuring ────────────────────────────────────────────────────────────
 
     private async Task<HttpStatusCode> OpenByButton(User user, string key)
