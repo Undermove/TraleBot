@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { reportCampaignOpen } from './api'
-import { campaignKeyFromUrl, campaignOpenSettled, giftUntilText, pluralDays, reportCampaignOpenFromUrl, takeCampaignGift } from './campaignOpen'
+import { campaignKeyFromUrl, campaignOpenSettled, giftUntilText, lateCampaignOpen, pluralDays, reportCampaignOpenFromUrl, takeCampaignGift } from './campaignOpen'
 
 vi.mock('./api', () => ({ reportCampaignOpen: vi.fn(() => Promise.resolve({ ok: true })) }))
 const report = vi.mocked(reportCampaignOpen)
@@ -69,6 +69,44 @@ describe('campaign open', () => {
 
       expect(report).toHaveBeenCalledTimes(2)
       expect(takeCampaignGift()).toEqual({ days: 3, accessUntilUtc: '2026-10-10T12:00:00Z' })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a report that got through in time is not waited for again', async () => {
+    reportCampaignOpenFromUrl('?moduleId=my-day&lessonId=1&c=myday-back')
+    await campaignOpenSettled()
+    await expect(lateCampaignOpen()).resolves.toBe(false)
+  })
+
+  it('a slow report: the profile stops waiting, but the gift can still be waited for before the purchase screen', async () => {
+    vi.useFakeTimers()
+    try {
+      let arrive: (r: { ok: boolean }) => void = () => {}
+      report.mockReturnValueOnce(new Promise((resolve) => { arrive = resolve }) as never)
+      reportCampaignOpenFromUrl('?moduleId=my-day&lessonId=1&c=myday-back')
+      await vi.advanceTimersByTimeAsync(2600)
+      await campaignOpenSettled() // профиль дальше не ждёт
+
+      const late = lateCampaignOpen()
+      arrive({ ok: true })
+      await expect(late).resolves.toBe(true)
+      await expect(lateCampaignOpen()).resolves.toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('a report that never arrives does not hold the launch forever', async () => {
+    vi.useFakeTimers()
+    try {
+      report.mockReturnValueOnce(new Promise(() => {}) as never)
+      reportCampaignOpenFromUrl('?moduleId=my-day&lessonId=1&c=myday-back')
+      await vi.advanceTimersByTimeAsync(2600)
+      const late = lateCampaignOpen()
+      await vi.advanceTimersByTimeAsync(6100)
+      await expect(late).resolves.toBe(false)
     } finally {
       vi.useRealTimers()
     }

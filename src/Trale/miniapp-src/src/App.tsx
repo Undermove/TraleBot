@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { CatalogDto, ProgressState, Screen } from './types'
 import { defaultProgress, onProgressPublished, progressFromDto } from './progress'
 import { onOpenLessonModule } from './verbs/family/nav'
@@ -22,6 +22,7 @@ import Onboarding, { UserLevel } from './screens/Onboarding'
 import Welcome from './screens/Welcome'
 import Mascot from './components/Mascot'
 import LoaderLetter from './components/LoaderLetter'
+import ProPaywall from './components/ProPaywall'
 import VerbSheet from './verbs/VerbSheet'
 import { resolveVerbDeepLink } from './verbs/deepLink'
 import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
@@ -40,8 +41,9 @@ import AdminMoreScreen from './screens/AdminMoreScreen'
 import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
 import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
 import { parseVerbsSectionLink } from './verbs/section/link'
-import { campaignKeyFromUrl, campaignOpenSettled } from './campaignOpen'
+import { campaignKeyFromUrl, campaignOpenSettled, lateCampaignOpen } from './campaignOpen'
 import { appEvents } from './analytics/appEvents'
+import { needsPurchase } from './paidGate'
 
 function isInsideTelegram(): boolean {
   if (new URLSearchParams(window.location.search).get('playwright') === '1') return true
@@ -104,7 +106,10 @@ export default function App() {
   // Прогресс, начисленный не уроком (сессия глагола), приходит сюда — шапка обновляется сразу.
   useEffect(() => onProgressPublished(dto => setProgress(progressFromDto(dto))), [])
   // Ссылка «урок о приставках» из карточки глагола и из сессии — они открыты поверх экрана и навигации не знают.
-  useEffect(() => onOpenLessonModule(moduleId => { setScreen({ kind: 'module', moduleId }); window.scrollTo(0, 0) }), [])
+  // Через navigate, а не setScreen: модуль платный, и без доступа вместо него откроется экран покупки.
+  const navigateRef = useRef<(s: Screen) => void>(() => {})
+  navigateRef.current = navigate
+  useEffect(() => onOpenLessonModule(moduleId => navigateRef.current({ kind: 'module', moduleId })), [])
   const [catalog, setCatalog] = useState<CatalogDto | null>(null)
   const [authenticated, setAuthenticated] = useState(false)
   const [loadError, setLoadError] = useState(false)
@@ -122,6 +127,8 @@ export default function App() {
   const [onboardingHint, setOnboardingHint] = useState<string | null>(null)
   // Ссылка вела в раздел «Глаголы», а человек ещё не выбрал уровень: откроем раздел сразу после выбора.
   const [afterOnboarding, setAfterOnboarding] = useState<Screen | null>(null)
+  // Платный экран, куда человек шёл без доступа: поверх текущего экрана открыт экран покупки, после оплаты идём сюда.
+  const [paywallFor, setPaywallFor] = useState<Screen | null>(null)
   useEffect(() => appEvents.screen(screen.kind), [screen.kind])
 
   // Load catalog + progress from backend on mount
@@ -151,9 +158,11 @@ export default function App() {
           loadSeenHints(meData.uiHintsSeen)
         }
         const hasLevel = meData?.level === 'beginner' || meData?.level === 'intermediate'
+        // Доступ — из только что пришедшего профиля, а не из состояния: оно обновится лишь к следующей отрисовке.
+        const hasAccess = Boolean(meData?.isPro || (meData as any)?.isTrialActive)
         // ?screen=verb&verbId=… opens a verb card over the dictionary (see verbs/deepLink.ts).
         const verbLink = hasLevel
-          ? resolveVerbDeepLink(new URLSearchParams(window.location.search), Boolean(meData?.isPro || (meData as any)?.isTrialActive))
+          ? resolveVerbDeepLink(new URLSearchParams(window.location.search), hasAccess)
           : null
         // ?screen=verbs (кнопка рассылки, ссылка с меткой) или startapp=verbs_… — раздел «Глаголы» (verbs/section/link.ts).
         const sectionLink = verbLink ? null : parseVerbsSectionLink(
@@ -186,8 +195,28 @@ export default function App() {
         // A push deep-link wins; otherwise resolveEntryScreen decides — a brand-new
         // user (level but no XP) gets the welcome lesson, and the dashboard hub is
         // revealed only once that first XP is earned. See entryFlow.resolveEntryScreen.
-        setScreen(deepLink ?? resolveEntryScreen({ hasLevel, progress: loadedProgress, catalog: catalogData }))
-        appEvents.ready(Boolean(meData?.authenticated))
+        const entry = resolveEntryScreen({ hasLevel, progress: loadedProgress, catalog: catalogData })
+        if (deepLink === null || !needsPurchase(deepLink, hasAccess)) {
+          setScreen(deepLink ?? entry)
+          appEvents.ready(Boolean(meData?.authenticated))
+          return
+        }
+        // Ссылка в платный модуль, а доступа нет (см. paidGate.ts). Доступ мог открыть подарок кампании, если отметка
+        // об открытии по рассылке опоздала к профилю, — тогда дожидаемся её и спрашиваем профиль ещё раз.
+        lateCampaignOpen().then((came) => (came ? api.me() : null)).catch(() => null).then((late) => {
+          if (cancelled) return
+          if (late?.isPro || (late as any)?.isTrialActive) {
+            setIsPro(late?.isPro ?? false)
+            setIsTrialActive((late as any).isTrialActive ?? false)
+            setTrialDaysLeft((late as any).trialDaysLeft ?? 0)
+            setScreen(deepLink)
+          } else {
+            // Обычный вход, а поверх него экран покупки; после оплаты человек пойдёт туда, куда вела ссылка.
+            setPaywallFor(deepLink)
+            setScreen(entry)
+          }
+          appEvents.ready(Boolean(meData?.authenticated))
+        })
       })
       .catch(() => {
         if (cancelled) return
@@ -327,7 +356,16 @@ export default function App() {
     return <LandingScreen botUsername={catalog.botUsername} />
   }
 
+  /** Любой переход внутри приложения. В платный модуль без доступа не пускает: остаёмся на месте и открываем экран покупки. */
   function navigate(s: Screen) {
+    if (needsPurchase(s, isPro || isTrialActive)) {
+      setPaywallFor(s)
+      return
+    }
+    open(s)
+  }
+
+  function open(s: Screen) {
     if (s.kind === 'result') {
       setTodayLessons(incrementTodayLessons())
     }
@@ -409,206 +447,228 @@ export default function App() {
     </div>
   )
 
-  switch (screen.kind) {
-    case 'welcome': {
-      // После знакомства — первый урок алфавита (ა там уже знакома); если он пройден — урок, который предложил бы хаб.
-      const alphabetDone = (progress.completedLessons['alphabet-progressive'] ?? []).includes(1)
-      const hasAlphabet = catalog.modules.some((m) => m.id === 'alphabet-progressive' && m.lessons.some((l) => l.id === 1))
-      const nextRef = hasAlphabet && !alphabetDone
-        ? { moduleId: 'alphabet-progressive', lessonId: 1 }
-        : findFirstLesson(catalog, progress.completedLessons)
-      return (
-        <Welcome
-          onComplete={() => {
-            // The welcome lesson is recorded under its own "welcome" module id, so it
-            // awards the first XP (flipping the entry gate to the dashboard) without
-            // touching the real alphabet progression. Recorded the moment the celebration
-            // shows (or the intro is skipped) — closing the app there no longer loses it.
-            // Re-fetch me() afterwards: completing welcome unlocks the first onboarding
-            // hint, but the initial me() (taken before welcome) returned none.
-            api
-              .completeLesson({ moduleId: 'welcome', lessonId: 1, correct: 1, total: 1 })
-              .then((res) => setProgress(progressFromDto(res.progress)))
-              .then(() => api.me())
-              .then((meData) => setOnboardingHint((meData as any).onboardingHint ?? null))
-              .catch(() => {})
-          }}
-          onNext={() =>
-            navigate(nextRef ? { kind: 'lesson-theory', moduleId: nextRef.moduleId, lessonId: nextRef.lessonId } : { kind: 'dashboard' })
-          }
-          onBrowse={() => navigate({ kind: 'dashboard' })}
-        />
-      )
-    }
-    case 'onboarding':
-      return (
-        <Onboarding
-          vocabularyCount={vocabularyCount}
-          onSelect={(level) => {
-            setUserLevel(level)
-            if (authenticated) {
-              api.setLevel(level).catch(() => {})
+  const renderScreen = () => {
+    switch (screen.kind) {
+      case 'welcome': {
+        // После знакомства — первый урок алфавита (ა там уже знакома); если он пройден — урок, который предложил бы хаб.
+        const alphabetDone = (progress.completedLessons['alphabet-progressive'] ?? []).includes(1)
+        const hasAlphabet = catalog.modules.some((m) => m.id === 'alphabet-progressive' && m.lessons.some((l) => l.id === 1))
+        const nextRef = hasAlphabet && !alphabetDone
+          ? { moduleId: 'alphabet-progressive', lessonId: 1 }
+          : findFirstLesson(catalog, progress.completedLessons)
+        return (
+          <Welcome
+            onComplete={() => {
+              // The welcome lesson is recorded under its own "welcome" module id, so it
+              // awards the first XP (flipping the entry gate to the dashboard) without
+              // touching the real alphabet progression. Recorded the moment the celebration
+              // shows (or the intro is skipped) — closing the app there no longer loses it.
+              // Re-fetch me() afterwards: completing welcome unlocks the first onboarding
+              // hint, but the initial me() (taken before welcome) returned none.
+              api
+                .completeLesson({ moduleId: 'welcome', lessonId: 1, correct: 1, total: 1 })
+                .then((res) => setProgress(progressFromDto(res.progress)))
+                .then(() => api.me())
+                .then((meData) => setOnboardingHint((meData as any).onboardingHint ?? null))
+                .catch(() => {})
+            }}
+            onNext={() =>
+              navigate(nextRef ? { kind: 'lesson-theory', moduleId: nextRef.moduleId, lessonId: nextRef.lessonId } : { kind: 'dashboard' })
             }
-            // Fresh user → welcome lesson (one-letter quick win); the dashboard hub is
-            // revealed only after that first XP is earned.
-            navigate(afterOnboarding ?? resolveEntryScreen({ hasLevel: true, progress, catalog }))
-            setAfterOnboarding(null)
-          }}
-        />
-      )
-    case 'dashboard':
-      return (
-        <>
-          {proSuccessToast}
-          <Dashboard
+            onBrowse={() => navigate({ kind: 'dashboard' })}
+          />
+        )
+      }
+      case 'onboarding':
+        return (
+          <Onboarding
+            vocabularyCount={vocabularyCount}
+            onSelect={(level) => {
+              setUserLevel(level)
+              if (authenticated) {
+                api.setLevel(level).catch(() => {})
+              }
+              // Fresh user → welcome lesson (one-letter quick win); the dashboard hub is
+              // revealed only after that first XP is earned.
+              navigate(afterOnboarding ?? resolveEntryScreen({ hasLevel: true, progress, catalog }))
+              setAfterOnboarding(null)
+            }}
+          />
+        )
+      case 'dashboard':
+        return (
+          <>
+            {proSuccessToast}
+            <Dashboard
+              catalog={catalog}
+              progress={progress}
+              todayLessons={todayLessons}
+              userLevel={userLevel ?? 'beginner'}
+              isPro={isPro}
+              isTrialActive={isTrialActive}
+              trialDaysLeft={trialDaysLeft}
+              shouldShowReferralExtensionCta={shouldShowReferralExtensionCta}
+              onboardingHint={onboardingHint}
+              onHintSeen={(h) => api.markOnboardingHintSeen(h).catch(() => {})}
+              onHintDismiss={() => setOnboardingHint(null)}
+              onPurchaseSuccess={handleProPurchaseSuccess}
+              onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
+              navigate={navigate}
+            />
+          </>
+        )
+      case 'module':
+        return <ModuleMap catalog={catalog} moduleId={screen.moduleId} progress={progress} navigate={navigate} />
+      case 'lesson-theory':
+        return (
+          <LessonTheory
             catalog={catalog}
+            moduleId={screen.moduleId}
+            lessonId={screen.lessonId}
             progress={progress}
-            todayLessons={todayLessons}
-            userLevel={userLevel ?? 'beginner'}
-            isPro={isPro}
-            isTrialActive={isTrialActive}
-            trialDaysLeft={trialDaysLeft}
-            shouldShowReferralExtensionCta={shouldShowReferralExtensionCta}
-            onboardingHint={onboardingHint}
-            onHintSeen={(h) => api.markOnboardingHintSeen(h).catch(() => {})}
-            onHintDismiss={() => setOnboardingHint(null)}
-            onPurchaseSuccess={handleProPurchaseSuccess}
-            onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
             navigate={navigate}
           />
-        </>
-      )
-    case 'module':
-      return <ModuleMap catalog={catalog} moduleId={screen.moduleId} progress={progress} navigate={navigate} />
-    case 'lesson-theory':
-      return (
-        <LessonTheory
-          catalog={catalog}
-          moduleId={screen.moduleId}
-          lessonId={screen.lessonId}
-          progress={progress}
-          navigate={navigate}
-        />
-      )
-    case 'practice':
-      return (
-        <Practice
-          moduleId={screen.moduleId}
-          lessonId={screen.lessonId}
-          progress={progress}
-          setProgress={setProgress}
-          authenticated={authenticated}
-          navigate={navigate}
-        />
-      )
-    case 'result':
-      return (
-        <Result
-          catalog={catalog}
-          moduleId={screen.moduleId}
-          lessonId={screen.lessonId}
-          correct={screen.correct}
-          total={screen.total}
-          xpEarned={screen.xpEarned}
-          wrongQuestions={screen.wrongQuestions}
-          verbs={screen.verbs}
-          navigate={navigate}
-        />
-      )
-    case 'practice-mistakes':
-      return (
-        <PracticeMistakes
-          moduleId={screen.moduleId}
-          lessonId={screen.lessonId}
-          wrongQuestions={screen.wrongQuestions}
-          navigate={navigate}
-        />
-      )
-    case 'mistakes-result':
-      return (
-        <MistakesResult
-          moduleId={screen.moduleId}
-          lessonId={screen.lessonId}
-          corrected={screen.corrected}
-          total={screen.total}
-          remainingWrong={screen.remainingWrong}
-          navigate={navigate}
-        />
-      )
-    case 'profile':
-      return (
-        <>
-          {proSuccessToast}
-          <Profile
-            catalog={catalog}
+        )
+      case 'practice':
+        return (
+          <Practice
+            moduleId={screen.moduleId}
+            lessonId={screen.lessonId}
             progress={progress}
             setProgress={setProgress}
-            isPro={isPro}
-            isOwner={isOwner}
-            telegramId={telegramId}
-            onPurchaseSuccess={handleProPurchaseSuccess}
+            authenticated={authenticated}
             navigate={navigate}
           />
-        </>
-      )
-    case 'feedback':
-      return <FeedbackScreen progress={progress} campaign={screen.campaign} onBack={() => navigate(afterFeedback(screen))} />
-    case 'survey':
-      return <SurveyScreen progress={progress} surveyKey={screen.key} onBack={() => navigate(entryScreen())} />
-    case 'admin':
-      return admin(<AdminScreen navigate={navigate} />)
-    case 'admin-users':
-      return admin(<AdminUsersScreen navigate={navigate} />)
-    case 'admin-user':
-      return admin(<AdminUserScreen telegramId={screen.telegramId} navigate={navigate} />)
-    case 'admin-feedback':
-      return admin(<AdminFeedbackScreen view={screen.view} navigate={navigate} />)
-    case 'admin-survey':
-      return admin(<SurveyBuilderScreen resume={screen.resume} useDraft={screen.draft} navigate={navigate} />)
-    case 'admin-broadcasts':
-      return admin(<AdminBroadcastsScreen navigate={navigate} />)
-    case 'admin-broadcast':
-      return admin(<AdminBroadcastScreen campaignKey={screen.key} useDraft={screen.draft} pasted={screen.paste} navigate={navigate} />)
-    case 'admin-more':
-      return admin(<AdminMoreScreen navigate={navigate} />)
-    case 'admin-payments':
-      return admin(<AdminPaymentsScreen navigate={navigate} />)
-    case 'admin-system':
-      return admin(<AdminSystemScreen navigate={navigate} />)
-    case 'verb-review':
-      return admin(<VerbReviewScreen lemma={screen.lemma} navigate={navigate} />)
-    case 'vocabulary-list':
-      return (
-        <>
-          <VocabularyList progress={progress} navigate={navigate} initialFilter={screen.filter} />
-          {screen.verb && (
-            <VerbSheet
-              verbId={screen.verb.verbId}
-              highlight={screen.verb.highlight}
-              onClose={() => setScreen({ kind: 'vocabulary-list', filter: screen.filter })}
+        )
+      case 'result':
+        return (
+          <Result
+            catalog={catalog}
+            moduleId={screen.moduleId}
+            lessonId={screen.lessonId}
+            correct={screen.correct}
+            total={screen.total}
+            xpEarned={screen.xpEarned}
+            wrongQuestions={screen.wrongQuestions}
+            verbs={screen.verbs}
+            navigate={navigate}
+          />
+        )
+      case 'practice-mistakes':
+        return (
+          <PracticeMistakes
+            moduleId={screen.moduleId}
+            lessonId={screen.lessonId}
+            wrongQuestions={screen.wrongQuestions}
+            navigate={navigate}
+          />
+        )
+      case 'mistakes-result':
+        return (
+          <MistakesResult
+            moduleId={screen.moduleId}
+            lessonId={screen.lessonId}
+            corrected={screen.corrected}
+            total={screen.total}
+            remainingWrong={screen.remainingWrong}
+            navigate={navigate}
+          />
+        )
+      case 'profile':
+        return (
+          <>
+            {proSuccessToast}
+            <Profile
+              catalog={catalog}
+              progress={progress}
+              setProgress={setProgress}
+              isPro={isPro}
+              isOwner={isOwner}
+              telegramId={telegramId}
+              onPurchaseSuccess={handleProPurchaseSuccess}
+              navigate={navigate}
             />
-          )}
-        </>
-      )
-    case 'verbs':
-      return (
-        <>
-          {proSuccessToast}
-          <VerbsSection progress={progress} navigate={navigate} source={screen.source} onPurchaseSuccess={handleProPurchaseSuccess} />
-        </>
-      )
-    case 'vocabulary-quiz':
-      return (
-        <VocabularyPractice
-          mode={screen.mode}
-          wordIds={screen.wordIds}
-          progress={progress}
-          setProgress={setProgress}
-          authenticated={authenticated}
-          navigate={navigate}
-        />
-      )
-    default:
-      return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))} navigate={navigate} />
+          </>
+        )
+      case 'feedback':
+        return <FeedbackScreen progress={progress} campaign={screen.campaign} onBack={() => navigate(afterFeedback(screen))} />
+      case 'survey':
+        return <SurveyScreen progress={progress} surveyKey={screen.key} onBack={() => navigate(entryScreen())} />
+      case 'admin':
+        return admin(<AdminScreen navigate={navigate} />)
+      case 'admin-users':
+        return admin(<AdminUsersScreen navigate={navigate} />)
+      case 'admin-user':
+        return admin(<AdminUserScreen telegramId={screen.telegramId} navigate={navigate} />)
+      case 'admin-feedback':
+        return admin(<AdminFeedbackScreen view={screen.view} navigate={navigate} />)
+      case 'admin-survey':
+        return admin(<SurveyBuilderScreen resume={screen.resume} useDraft={screen.draft} navigate={navigate} />)
+      case 'admin-broadcasts':
+        return admin(<AdminBroadcastsScreen navigate={navigate} />)
+      case 'admin-broadcast':
+        return admin(<AdminBroadcastScreen campaignKey={screen.key} useDraft={screen.draft} pasted={screen.paste} navigate={navigate} />)
+      case 'admin-more':
+        return admin(<AdminMoreScreen navigate={navigate} />)
+      case 'admin-payments':
+        return admin(<AdminPaymentsScreen navigate={navigate} />)
+      case 'admin-system':
+        return admin(<AdminSystemScreen navigate={navigate} />)
+      case 'verb-review':
+        return admin(<VerbReviewScreen lemma={screen.lemma} navigate={navigate} />)
+      case 'vocabulary-list':
+        return (
+          <>
+            <VocabularyList progress={progress} navigate={navigate} initialFilter={screen.filter} />
+            {screen.verb && (
+              <VerbSheet
+                verbId={screen.verb.verbId}
+                highlight={screen.verb.highlight}
+                onClose={() => setScreen({ kind: 'vocabulary-list', filter: screen.filter })}
+              />
+            )}
+          </>
+        )
+      case 'verbs':
+        return (
+          <>
+            {proSuccessToast}
+            <VerbsSection progress={progress} navigate={navigate} source={screen.source} onPurchaseSuccess={handleProPurchaseSuccess} />
+          </>
+        )
+      case 'vocabulary-quiz':
+        return (
+          <VocabularyPractice
+            mode={screen.mode}
+            wordIds={screen.wordIds}
+            progress={progress}
+            setProgress={setProgress}
+            authenticated={authenticated}
+            navigate={navigate}
+          />
+        )
+      default:
+        return <Dashboard catalog={catalog} progress={progress} todayLessons={todayLessons} userLevel={userLevel ?? 'beginner'} isPro={isPro} isTrialActive={isTrialActive} trialDaysLeft={trialDaysLeft} onPurchaseSuccess={handleProPurchaseSuccess} onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))} navigate={navigate} />
+    }
   }
+
+  return (
+    <>
+      {renderScreen()}
+      {paywallFor && (
+        <ProPaywall
+          trigger="module"
+          onClose={() => setPaywallFor(null)}
+          onPurchaseSuccess={() => {
+            // Оплату подтвердил сам экран покупки. Доступ открываем сразу, не дожидаясь профиля:
+            // иначе следующий же шаг (урок → задания) снова упёрся бы в покупку.
+            setIsPro(true)
+            setPaywallFor(null)
+            handleProPurchaseSuccess()
+            open(paywallFor)
+          }}
+        />
+      )}
+    </>
+  )
 }

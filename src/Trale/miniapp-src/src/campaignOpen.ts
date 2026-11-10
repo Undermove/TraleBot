@@ -14,8 +14,12 @@ export function campaignKeyFromUrl(search: string): string | null {
 const WAIT_MS = 2500
 /** Отметка не дошла (сеть моргнула) — пробуем ещё раз: от неё зависит подарок кампании. */
 const RETRY_MS = 1500
+/** Сколько ещё ждём опоздавшую отметку, когда без подарка человек упирается в экран покупки. */
+const LATE_WAIT_MS = 6000
 
 let settled: Promise<void> = Promise.resolve()
+let finished: Promise<void> = Promise.resolve()
+let pending = false
 let gift: CampaignGiftDto | null = null
 
 export function reportCampaignOpenFromUrl(search: string = window.location.search) {
@@ -25,7 +29,10 @@ export function reportCampaignOpenFromUrl(search: string = window.location.searc
     const once = () => reportCampaignOpen(key).then(r => { gift = r.gift ?? null })
     // Если не дошло и со второго раза — подарок выдаст следующее открытие той же кнопкой: сервер отдаёт его
     // при первом дошедшем открытии, пока не вышел срок.
+    pending = true
     const report = once().catch(() => new Promise<void>(resolve => setTimeout(resolve, RETRY_MS)).then(once)).catch(() => {})
+      .then(() => { pending = false })
+    finished = report
     settled = Promise.race([report, new Promise<void>(resolve => setTimeout(resolve, WAIT_MS))])
   } catch {}
 }
@@ -35,6 +42,16 @@ export function reportCampaignOpenFromUrl(search: string = window.location.searc
  * открывает доступ, и первый же экран должен это знать.
  */
 export const campaignOpenSettled = () => settled
+
+/**
+ * Отметка опоздала: профиль уже загружен без неё, и подарка кампании в нём может не быть.
+ * Ждём её ещё немного — true, если дошла и профиль стоит спросить заново. Нужно там, где без
+ * подарка человек вместо обещанного урока увидел бы экран покупки.
+ */
+export function lateCampaignOpen(): Promise<boolean> {
+  if (!pending) return Promise.resolve(false)
+  return Promise.race([finished.then(() => true), new Promise<boolean>(resolve => setTimeout(() => resolve(false), LATE_WAIT_MS))])
+}
 
 /** Подарок, выданный в этот запуск, — посмотреть, не забирая. */
 export const peekCampaignGift = () => gift
