@@ -27,7 +27,6 @@ interface Props {
 }
 
 const STEPS = ['Текст', 'Кнопка', 'Подарок', 'Кому', 'Отправка']
-const BATCH = 25
 const PEOPLE = AUDIENCES.filter(a => a.id !== 'owner')
 /** Куда может вести кнопка — экраны мини-аппа по именам; адрес подставляется сам. */
 const DESTINATIONS = [
@@ -100,6 +99,8 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
   const [sendDate, setSendDate] = useState(tomorrow)
   const [sendTime, setSendTime] = useState('12:00')
   const [sendZone, setSendZone] = useState(ZONES[0].id)
+  /** Отправить не сейчас, а в назначенный день и час. */
+  const [sendLater, setSendLater] = useState(false)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   /** Поле «Вставить готовую рассылку» открыто. */
@@ -171,6 +172,7 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     if (r.sample !== null) setSampleSize(r.sample)
     setOwnName(r.name)
     if (r.when) { setSendDate(r.when.date); setSendTime(r.when.time); setSendZone(r.when.zone) }
+    setSendLater(r.when !== null)
     setPasting(false)
     setPasted('')
     setPasteProblem(null)
@@ -194,41 +196,30 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     return sent.sent === 1 ? 'Отправил тебе в чат с ботом — посмотри, как выглядит, и нажми кнопку.' : 'Telegram не принял сообщение. Попробуй ещё раз.'
   })
 
-  const choose = (to: CampaignAudience, sample: number | null, who: string, extra: object = {}) => run(async () => {
+  // Одной кнопкой: записать получателей и сразу отдать рассылку серверу — он шлёт порциями, мини-апп можно закрыть.
+  const sendNow = (to: CampaignAudience, sample: number | null, who: string, extra: object = {}) => run(async () => {
     const plan = await adminCampaigns.prepare(draft(to, sample, true, extra))
-    if (plan.picked === 0) return `Выбирать некого: в группе «${audienceName(to)}» все уже в этой рассылке.`
+    if (plan.picked === 0) return `Отправлять некому: в группе «${audienceName(to)}» нет никого, кто ещё не получил эту рассылку.`
     const already = plan.alreadyInCampaign > 0 ? ` Ещё ${plan.alreadyInCampaign} из этой группы уже в рассылке — второй раз они её не получат.` : ''
-    if (!confirm(`Выбрать ${who}: ${plan.picked} чел. (${audienceName(to)})?${already}\nСообщения пока НЕ уйдут — только список получателей.`)) return null
+    const gift = giftDays > 0 && button ? `\n\nС подарком: ${giftDays} дн. доступа тому, кто откроет кнопку.` : ''
+    if (!confirm(`ОТПРАВИТЬ ${who}: ${plan.picked} чел. (${audienceName(to)})?${already}\n\n${text}${gift}\n\nЭто настоящая отправка через бота.`)) return null
     const done = await adminCampaigns.prepare(draft(to, sample, false, extra))
     setKey(done.key)
     drafts.clear('broadcast')
-    setStatus(await adminCampaigns.status(done.key))
     setAnother(null)
-    return `Получатели записаны: ${done.picked} чел. Теперь отправляй порциями.`
+    // Получатели уже записаны: не запустилась отправка — на экране останется кнопка «Отправить — ждут N».
+    try { setStatus(await adminCampaigns.sendAll(done.key)) } catch (e) { setStatus(await adminCampaigns.status(done.key)); throw e }
+    return null
   })
 
-  const sendBatch = () => run(async () => {
-    if (!key) return null
-    const current = await adminCampaigns.status(key)
-    setStatus(current)
-    if (current.pending === 0) return 'Отправлять некого: все выбранные уже получили сообщение.'
-    const n = Math.min(BATCH, current.pending)
-    const gift = current.giftDays > 0 ? `\n\nС подарком: ${current.giftDays} дн. доступа тому, кто откроет кнопку.` : ''
-    if (!confirm(`ОТПРАВИТЬ ${n} сообщений?\n\n${current.message}${gift}\n\nЭто настоящая отправка через бота.`)) return null
-    const r = await adminCampaigns.send(key, BATCH)
-    setStatus(r.status)
-    const wait = r.retryAfterSeconds > 0 ? ` Telegram просит подождать ${r.retryAfterSeconds} с.` : ''
-    return `Отправлено ${r.sent}, заблокировали бота ${r.blocked}, отказ ${r.rejected}, без ответа ${r.unknown}. Осталось ${r.status.pending}.${wait}`
-  })
-
-  // Всем выбранным — рассылает сервер, порциями: мини-апп можно закрыть, бот напишет, когда закончит.
+  // Тем, кто уже выбран, но сообщения не получил (отправку остановили или она не запустилась).
   const sendAll = () => run(async () => {
     if (!key) return null
     const current = await adminCampaigns.status(key)
     setStatus(current)
     if (current.pending === 0) return 'Отправлять некого: все выбранные уже получили сообщение.'
     const gift = current.giftDays > 0 ? `\n\nС подарком: ${current.giftDays} дн. доступа тому, кто откроет кнопку.` : ''
-    if (!confirm(`ОТПРАВИТЬ всем выбранным: ${current.pending} сообщений?\n\n${current.message}${gift}\n\nЭто настоящая отправка через бота.`)) return null
+    if (!confirm(`ОТПРАВИТЬ ${current.pending} сообщений?\n\n${current.message}${gift}\n\nЭто настоящая отправка через бота.`)) return null
     setStatus(await adminCampaigns.sendAll(key))
     return null
   })
@@ -284,6 +275,10 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     navigate(adminBack())
   }
   const total = counts[audience]
+  // Никому ещё не уходила и не запланирована: одна главная кнопка — отправить сейчас или назначить время.
+  const fresh = !scheduledAt && (!frozen || status?.total === 0)
+  const asTrial = !frozen && sampleFirst && !sendLater
+  const sendAt = wallToUtc(sendDate, sendTime, sendZone)
   // Главная кнопка шага закреплена внизу экрана.
   const footer = !frozen && (step > 1 || step < STEPS.length) ? (
     <div className="flex gap-3">
@@ -401,7 +396,7 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
               {[true, false].map(first => (
                 <button key={String(first)} type="button" role="radio" aria-checked={first === sampleFirst} onClick={() => setSampleFirst(first)} className={option} style={pick(first === sampleFirst)}>
                   {first ? 'Сначала пробной группе' : 'Сразу всем'}
-                  <div className={`${small} font-normal`}>{first ? 'Случайные люди из группы; остальным — потом' : 'Всей группе, порциями по 25'}</div>
+                  <div className={`${small} font-normal`}>{first ? 'Случайные люди из группы; остальным — потом' : 'Всей группе'}</div>
                 </button>
               ))}
             </div>
@@ -425,58 +420,23 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
             <div className={small} data-testid="broadcast-summary">
               {button ? `Кнопка ведёт: ${destination === 'custom' ? `/?${query}` : DESTINATIONS.find(d => d.id === destination)!.name}. ` : 'Без кнопки. '}
               {giftDays > 0 && button ? `Подарок: ${giftDays} дн. доступа. ` : ''}
-              Кому: {audienceName(audience)}{total != null ? ` — ${total} чел.` : ''}{!frozen && sampleFirst ? `, сначала пробной группе из ${Math.min(sampleSize, total ?? sampleSize)}` : ''}
+              Кому: {audienceName(audience)}{total != null ? ` — ${total} чел.` : ''}{asTrial ? `, сначала пробной группе из ${Math.min(sampleSize, total ?? sampleSize)}` : ''}
             </div>
 
-            <div className="mn-eyebrow mt-2">1. Посмотри сам</div>
-            <button type="button" className={action} disabled={busy} onClick={sendToMe} data-testid="broadcast-send-me">Отправить себе</button>
+            <button type="button" className={action} disabled={busy} onClick={sendToMe} data-testid="broadcast-send-me">Сначала отправить себе</button>
 
-            {!scheduledAt && (
+            {fresh && (
               <>
-                <div className="mn-eyebrow mt-2">2. Выбери получателей — сообщения не уходят</div>
-                <button type="button" className={action} disabled={busy || waiting} data-testid="broadcast-pick"
-                  onClick={() => choose(audience, !frozen && sampleFirst ? sampleSize : null, frozen ? 'всех остальных' : sampleFirst ? 'пробную группу' : 'всех')}>
-                  {frozen ? `Выбрать всех остальных (${audienceName(audience)})` : sampleFirst ? 'Выбрать пробную группу' : `Выбрать всех (${audienceName(audience)})`}
-                </button>
-
-                <div className="mn-eyebrow mt-2">3. Отправь</div>
-              </>
-            )}
-            {scheduledAt ? null : sending ? (
-              <>
-                <div className="font-sans text-[15px] text-jewelInk tabular-nums" data-testid="broadcast-sending">
-                  Рассылается: дошло {status!.sent}, ждут {status!.pending}. Мини-апп можно закрыть — бот напишет, когда закончит.
+                <div className="mn-eyebrow mt-2">Когда отправить людям</div>
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Когда отправить">
+                  {[false, true].map(later => (
+                    <button key={String(later)} type="button" role="radio" aria-checked={later === sendLater} onClick={() => setSendLater(later)}
+                      className={`${option} min-w-0`} style={pick(later === sendLater)} data-testid={later ? 'broadcast-when-later' : 'broadcast-when-now'}>
+                      {later ? 'Позже' : 'Сейчас'}
+                    </button>
+                  ))}
                 </div>
-                <button type="button" className={action} disabled={busy} onClick={stopSending} data-testid="broadcast-stop">Остановить</button>
-              </>
-            ) : (
-              <>
-                <button type="button" className={action} style={{ background: '#F5B820' }} disabled={busy || !waiting} onClick={sendAll} data-testid="broadcast-send-all">
-                  Отправить всем выбранным{waiting && status ? ` (${status.pending})` : ''}
-                </button>
-                <button type="button" className={action} disabled={busy || !waiting} onClick={sendBatch} data-testid="broadcast-send">
-                  Отправить только следующие {BATCH}
-                </button>
-              </>
-            )}
-            {!waiting && !scheduledAt && (
-              <div className={small} data-testid="broadcast-send-hint">
-                {frozen ? 'Все выбранные уже получили сообщение. Можно выбрать остальных или ещё одну группу.' : 'Отправка откроется, когда выберешь получателей.'}
-              </div>
-            )}
-
-            {!sending && (
-              <>
-                <div className="mn-eyebrow mt-2">{scheduledAt ? '2. Уйдёт сама' : 'Или назначь время — уйдёт само'}</div>
-                {scheduledAt ? (
-                  <>
-                    <div className="font-sans text-[15px] text-jewelInk tabular-nums" data-testid="broadcast-scheduled">
-                      Запланирована на {scheduledText(scheduledAt, status!.scheduledTimeZone)}. Уйдёт сама всем, кто в этот момент будет в группе «{audienceName(audience)}».
-                      Мини-апп можно закрыть — бот напишет, когда разошлёт.
-                    </div>
-                    <button type="button" className={action} disabled={busy} onClick={cancelSchedule} data-testid="broadcast-schedule-cancel">Отменить расписание</button>
-                  </>
-                ) : (
+                {sendLater && (
                   <>
                     <div className="grid grid-cols-2 gap-2">
                       <input type="date" className={`${field} min-h-[48px] min-w-0`} value={sendDate} aria-label="День отправки" onChange={e => setSendDate(e.target.value)} data-testid="broadcast-schedule-date" />
@@ -487,23 +447,67 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
                         <option key={z.id} value={z.id}>по времени: {z.name}</option>
                       ))}
                     </select>
-                    <button type="button" className={action} disabled={busy || !sendDate || !sendTime} onClick={schedule} data-testid="broadcast-schedule">Запланировать</button>
-                    <div className={small}>Выбирать получателей не нужно: в назначенный час сообщение получит вся группа «{audienceName(audience)}» — кто будет в ней в этот момент.</div>
                   </>
                 )}
+                {sendLater ? (
+                  <button type="button" className={action} style={{ background: '#F5B820' }} disabled={busy || !sendAt} onClick={schedule} data-testid="broadcast-schedule">
+                    {sendAt ? `Запланировать на ${scheduledText(sendAt.toISOString(), sendZone)}` : 'Запланировать'}
+                  </button>
+                ) : (
+                  <button type="button" className={action} style={{ background: '#F5B820' }} disabled={busy} data-testid="broadcast-send-now"
+                    onClick={() => sendNow(audience, asTrial ? sampleSize : null, asTrial ? 'пробной группе' : 'всем')}>
+                    {asTrial ? `Отправить пробной группе — ${Math.min(sampleSize, total ?? sampleSize)} чел.` : `Отправить всем${total != null ? ` — ${total} чел.` : ''}`}
+                  </button>
+                )}
+                <div className={small} data-testid="broadcast-send-hint">
+                  {sendLater
+                    ? `В назначенный час сообщение получит вся группа «${audienceName(audience)}» — кто будет в ней в этот момент. Бот напишет, когда разошлёт.`
+                    : 'Покажу, сколько человек получит сообщение, и спрошу подтверждение. Дальше рассылка идёт сама: мини-апп можно закрыть, бот напишет, когда закончит.'}
+                </div>
               </>
             )}
 
+            {scheduledAt && (
+              <>
+                <div className="mn-eyebrow mt-2">Уйдёт сама</div>
+                <div className="font-sans text-[15px] text-jewelInk tabular-nums" data-testid="broadcast-scheduled">
+                  Запланирована на {scheduledText(scheduledAt, status!.scheduledTimeZone)}. Уйдёт сама всем, кто в этот момент будет в группе «{audienceName(audience)}».
+                  Мини-апп можно закрыть — бот напишет, когда разошлёт.
+                </div>
+                <button type="button" className={action} disabled={busy} onClick={cancelSchedule} data-testid="broadcast-schedule-cancel">Отменить расписание</button>
+              </>
+            )}
+
+            {!fresh && !scheduledAt && (sending ? (
+              <>
+                <div className="font-sans text-[15px] text-jewelInk tabular-nums mt-2" data-testid="broadcast-sending">
+                  Рассылается: дошло {status!.sent}, ждут {status!.pending}. Мини-апп можно закрыть — бот напишет, когда закончит.
+                </div>
+                <button type="button" className={action} disabled={busy} onClick={stopSending} data-testid="broadcast-stop">Остановить</button>
+              </>
+            ) : waiting ? (
+              <>
+                <button type="button" className={`${action} mt-2`} style={{ background: '#F5B820' }} disabled={busy} onClick={sendAll} data-testid="broadcast-send-all">
+                  Отправить — ждут {status!.pending} чел.
+                </button>
+                <div className={small} data-testid="broadcast-send-hint">Получатели записаны, но сообщения им ещё не ушли.</div>
+              </>
+            ) : (
+              <button type="button" className={`${action} mt-2`} disabled={busy} onClick={() => sendNow(audience, null, 'остальным')} data-testid="broadcast-send-rest">
+                Отправить остальным из группы «{audienceName(audience)}»
+              </button>
+            ))}
+
             {note && <div className="font-sans text-[14px] text-jewelInk" data-testid="broadcast-note">{note}</div>}
-            {status && !(scheduledAt && status.total === 0) && (
+            {status && status.total > 0 && (
               <div className={`${small} tabular-nums`} data-testid="broadcast-status">
-                Выбрано {status.total} · ждут {status.pending} · дошло {status.sent} · заблокировали {status.blocked} · отказ {status.rejected} · без
+                Получателей {status.total} · ждут {status.pending} · дошло {status.sent} · заблокировали {status.blocked} · отказ {status.rejected} · без
                 ответа Telegram {status.unknown}{status.buttonText ? ` · открыли по кнопке ${status.opened}` : ''}
                 {status.giftDays > 0 ? ` · подарков выдано ${status.gifted}` : ''}
               </div>
             )}
 
-            {frozen && !scheduledAt && (
+            {!fresh && !scheduledAt && !sending && !waiting && (
               <div className="jewel-tile px-4 py-3 mt-2" data-testid="broadcast-another">
                 <div className="relative z-[1] flex flex-col gap-2">
                   <div className="font-sans text-[15px] font-extrabold text-jewelInk">Дослать ещё одной группе</div>
@@ -520,16 +524,15 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
                     ))}
                   </div>
                   {another && (
-                    <button type="button" className={action} disabled={busy || waiting} data-testid="broadcast-pick-another"
-                      onClick={() => choose(another, null, 'ещё одну группу', { anotherAudience: true })}>
-                      Выбрать группу «{audienceName(another)}»
+                    <button type="button" className={action} disabled={busy} data-testid="broadcast-send-another"
+                      onClick={() => sendNow(another, null, 'ещё одной группе', { anotherAudience: true })}>
+                      Отправить группе «{audienceName(another)}»
                     </button>
                   )}
-                  {another && waiting && <div className={small}>Сначала отправь тем, кто уже выбран.</div>}
                 </div>
               </div>
             )}
-            {frozen && <div className={small}>{scheduledAt && status?.total === 0 ? 'Рассылка записана' : 'Получатели выбраны'} — текст, кнопку и подарок уже не поменять. Имя рассылки: {key}.</div>}
+            {frozen && <div className={small}>{status?.total === 0 ? 'Рассылка записана' : 'Получатели выбраны'} — текст, кнопку и подарок уже не поменять. Имя рассылки: {key}.</div>}
           </>
         )}
 

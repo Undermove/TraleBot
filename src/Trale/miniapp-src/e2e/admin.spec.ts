@@ -159,10 +159,10 @@ const kit = {
   limits: { questions: 6, options: 6, botOptions: 4, optionLength: 64, questionLength: 300 },
 }
 
-interface Calls { prepared: any[]; sent: string[]; userQueries: URLSearchParams[]; back: number; verbs: { path: string; body: any }[] }
+interface Calls { prepared: any[]; sent: string[]; started: string[]; userQueries: URLSearchParams[]; back: number; verbs: { path: string; body: any }[] }
 
 async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: string } = {}): Promise<Calls> {
-  const calls: Calls = { prepared: [], sent: [], userQueries: [], back: 0, verbs: [] }
+  const calls: Calls = { prepared: [], sent: [], started: [], userQueries: [], back: 0, verbs: [] }
   // Рассылка, которую назначили на время в этом тесте: сервер помнит её, пока расписание не отменят.
   let scheduled: Record<string, any> | null = null
   const owner = opts.owner ?? true
@@ -210,7 +210,7 @@ async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: 
     if (/^users\/\d+$/.test(path)) return ok({ ...userCard, telegramId: Number(path.split('/')[1]) })
     if (path === 'payments') return ok(payments)
     if (path === 'campaigns') return ok({ campaigns: scheduled ? [{ ...campaignList[2], ...scheduled, createdAtUtc: at(9, '08:00'), picked: 0, pending: 0, state: 'scheduled' }, ...campaignList] : campaignList })
-    if (path === 'campaigns/audiences') return ok({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512 })
+    if (path === 'campaigns/audiences') return ok({ accessEnded: 553, onTrial: 17, paying: 3, proLapsed: 0, owner: 1, activeLately: 61, inactiveLong: 512, paid: 8, neverPaid: 565 })
     if (path === 'campaigns/prepare') {
       const body = route.request().postDataJSON()
       calls.prepared.push(body)
@@ -222,6 +222,7 @@ async function setup(page: Page, opts: { owner?: boolean; fail?: string; slow?: 
       }
       return ok({ key, dryRun: body.dryRun, audienceTotal: 61, alreadyInCampaign: body.anotherAudience ? 21 : 0, picked: body.audience === 'owner' ? 1 : 40, leftForLater: 0 })
     }
+    if (path.endsWith('/send-all')) { calls.started.push(path.replace('campaigns/', '').replace('/send-all', '')); return ok({ ...campaignStatus, total: 40, sample: 0, pending: 40, sent: 0, blocked: 0, opened: 0, gifted: 0, sendingAll: true }) }
     if (path.endsWith('/send')) { calls.sent.push(path.replace('campaigns/', '').replace('/send', '')); return ok({ sent: 1, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: campaignStatus }) }
     if (scheduled && path === `campaigns/${scheduled.key}/stop`) {
       const stopped = { ...campaignStatus, ...scheduled, total: 0, sample: 0, pending: 0, sent: 0, blocked: 0, opened: 0, gifted: 0, scheduledAtUtc: null, scheduledTimeZone: null }
@@ -538,7 +539,9 @@ test('a new broadcast is a focused flow: no tab bar, steps, the main button pinn
 
   await expect(step).toHaveText('Отправка')
   await expect(page.getByTestId('broadcast-summary')).toHaveText('Кнопка ведёт: Раздел «Глаголы». Подарок: 3 дн. доступа. Кому: занимались за последние 30 дней — 61 чел., сначала пробной группе из 61')
-  await expect(page.getByTestId('broadcast-send')).toBeDisabled()
+  // Одна главная кнопка: сколько человек получит сообщение, написано прямо на ней.
+  await expect(page.getByTestId('broadcast-send-now')).toHaveText('Отправить пробной группе — 61 чел.')
+  await expect(page.getByTestId('broadcast-schedule')).toHaveCount(0)
   await page.getByTestId('broadcast-send-me').click()
   await expect(page.getByTestId('broadcast-note')).toContainText('Отправил тебе в чат с ботом')
   expect(calls.prepared).toHaveLength(1)
@@ -547,19 +550,28 @@ test('a new broadcast is a focused flow: no tab bar, steps, the main button pinn
   await fits(page)
   await shot(page, 'admin-17-broadcast-send')
 
-  // Получатели выбраны — черновика больше нет.
-  page.on('dialog', d => void d.accept())
-  await page.getByTestId('broadcast-pick').click()
+  // Одно нажатие и одно подтверждение: получатели записаны, рассылает сервер — черновика больше нет.
+  let sendAsked = ''
+  page.on('dialog', d => { sendAsked = d.message(); void d.accept() })
+  await page.getByTestId('broadcast-send-now').click()
+  await expect(page.getByTestId('broadcast-sending')).toContainText('дошло 0, ждут 40')
+  expect(sendAsked).toContain('ОТПРАВИТЬ пробной группе: 40 чел. (занимались за последние 30 дней)?')
+  expect(sendAsked).toContain('Это настоящая отправка через бота.')
+  expect(calls.started).toEqual([`${BROADCAST}-2`])
   await expect(page.getByTestId('broadcast-status')).toBeVisible()
+  for (const gone of ['broadcast-send-now', 'broadcast-when-later', 'broadcast-another']) await expect(page.getByTestId(gone)).toHaveCount(0)
+  await fits(page)
+  await shot(page, 'admin-17b-broadcast-sending')
   await page.getByTestId('admin-close').click()
   await expect(title(page)).toHaveText('Рассылки')
   await expect(page.getByTestId('broadcast-draft')).toHaveCount(0)
 
-  // Идущая рассылка: та же кампания для ещё одной группы.
+  // Рассылка, где часть получателей ещё ждёт: одна кнопка — дослать им.
   await page.getByTestId(`broadcast-${BROADCAST}`).click()
   await expect(step).toHaveText('Отправка')
   await expect(tabs(page)).toHaveCount(0)
-  await expect(page.getByTestId('broadcast-another')).toContainText('Это будет та же рассылка')
+  await expect(page.getByTestId('broadcast-send-all')).toHaveText('Отправить — ждут 25 чел.')
+  await expect(page.getByTestId('broadcast-send-now')).toHaveCount(0)
   await fits(page)
   await shot(page, 'admin-18-broadcast-running')
   await telegramBack(page)
@@ -578,7 +590,11 @@ test('a broadcast is scheduled for a day, an hour and a time zone, shows up as s
   await page.getByTestId('broadcast-next').click()
   await expect(page.getByTestId('broadcast-step-title')).toHaveText('Отправка')
 
-  // Сначала стоит завтра, полдень по Тбилиси; назначаем день, час и пояс — по часам Берлина.
+  // День и час появляются, когда выбрано «Позже»: сначала стоит завтра, полдень по Тбилиси; назначаем по часам Берлина.
+  await expect(page.getByTestId('broadcast-send-now')).toHaveText('Отправить всем — 61 чел.')
+  await expect(page.getByTestId('broadcast-schedule-date')).toHaveCount(0)
+  await page.getByTestId('broadcast-when-later').click()
+  await expect(page.getByTestId('broadcast-send-now')).toHaveCount(0)
   const plan = page.getByTestId('broadcast-schedule')
   await plan.scrollIntoViewIfNeeded()
   await expect(page.getByTestId('broadcast-schedule-date')).not.toHaveValue('')
@@ -587,6 +603,7 @@ test('a broadcast is scheduled for a day, an hour and a time zone, shows up as s
   await page.getByTestId('broadcast-schedule-date').fill('2099-07-01')
   await page.getByTestId('broadcast-schedule-time').fill('12:30')
   await page.getByTestId('broadcast-schedule-zone').selectOption('Europe/Berlin')
+  await expect(plan).toHaveText('Запланировать на 01.07.2099 12:30 (Берлин)')
   await fits(page)
   await shot(page, 'admin-19-broadcast-schedule')
 
@@ -600,7 +617,7 @@ test('a broadcast is scheduled for a day, an hour and a time zone, shows up as s
   await expect(state).toContainText('Мини-апп можно закрыть')
   await expect(page.getByTestId('broadcast-note')).toHaveCount(0)
   // Пока она ждёт своего часа, на экране нет ни выбора получателей, ни отправки руками.
-  for (const gone of ['broadcast-schedule', 'broadcast-pick', 'broadcast-send-all', 'broadcast-another']) await expect(page.getByTestId(gone)).toHaveCount(0)
+  for (const gone of ['broadcast-schedule', 'broadcast-send-now', 'broadcast-send-all', 'broadcast-send-rest', 'broadcast-another']) await expect(page.getByTestId(gone)).toHaveCount(0)
   const sent = calls.prepared.at(-1) as Record<string, unknown>
   expect(sent).toMatchObject({ audience: 'activeLately', sampleSize: null, dryRun: false, sendAtUtc: '2099-07-01T10:30:00.000Z', sendAtTimeZone: 'Europe/Berlin' })
   expect(calls.sent).toEqual([])
@@ -622,10 +639,59 @@ test('a broadcast is scheduled for a day, an hour and a time zone, shows up as s
   await page.getByTestId('broadcast-schedule-cancel').click()
   await expect(page.getByTestId('broadcast-note')).toHaveText('Расписание отменил. Сообщения не ушли.')
   await expect(state).toHaveCount(0)
+  await expect(page.getByTestId('broadcast-send-now')).toHaveText('Отправить всем — 61 чел.')
+  await page.getByTestId('broadcast-when-later').click()
   await expect(page.getByTestId('broadcast-schedule')).toBeVisible()
-  await expect(page.getByTestId('broadcast-pick')).toBeVisible()
   await page.getByTestId('admin-close').click()
   await expect(page.getByTestId(`broadcast-${BROADCAST}-2`)).toHaveCount(0)
+})
+
+/** Кладёт текст в буфер обмена страницы — как после кнопки «Скопировать блок». */
+const copied = (page: Page, text: string) => page.evaluate(t => {
+  Object.defineProperty(navigator, 'clipboard', { value: { readText: async () => t, writeText: async () => {} }, configurable: true })
+}, text)
+
+test('a ready broadcast is copied, pasted and goes with one button: scheduled if the text names the time, sent right away if it does not', async ({ page }) => {
+  const calls = await setup(page)
+  await openAdmin(page)
+  await tab(page, 'broadcasts').click()
+
+  // С временем в тексте: на экране одна главная кнопка — «Запланировать на …».
+  await copied(page, 'имя: prices-last-days\nкому: neverPaid\nкнопка: Купить по старой цене\nадрес: paywall=1\nкогда: 28.11.2099 12:00\nпояс: Тбилиси\n---\nДо повышения цен в TraleBot осталось 3 дня.')
+  await page.getByTestId('broadcast-paste-clipboard').click()
+  await expect(page.getByTestId('broadcast-step-title')).toHaveText('Отправка')
+  await expect(page.getByTestId('broadcast-summary')).toHaveText('Кнопка ведёт: Экран покупки. Кому: ни разу не платили — 565 чел.')
+  const plan = page.getByTestId('broadcast-schedule')
+  await expect(plan).toHaveText('Запланировать на 28.11.2099 12:00 (Тбилиси)')
+  for (const gone of ['broadcast-send-now', 'broadcast-send-all', 'broadcast-send-rest', 'broadcast-another', 'broadcast-status']) await expect(page.getByTestId(gone)).toHaveCount(0)
+  await fits(page)
+  await shot(page, 'admin-21b-broadcast-pasted-schedule')
+  let asked = ''
+  page.once('dialog', d => { asked = d.message(); void d.accept() })
+  await plan.click()
+  await expect(page.getByTestId('broadcast-scheduled')).toContainText('Запланирована на 28.11.2099 12:00 (Тбилиси)')
+  expect(asked).toContain('ЗАПЛАНИРОВАТЬ на 28.11.2099 12:00 (Тбилиси)?')
+  expect(calls.prepared.at(-1)).toMatchObject({ key: 'prices-last-days', audience: 'neverPaid', sampleSize: null, dryRun: false, sendAtUtc: '2099-11-28T08:00:00.000Z', sendAtTimeZone: 'Asia/Tbilisi' })
+  expect(calls.started).toEqual([])
+  await page.getByTestId('admin-close').click()
+  await expect(page.getByTestId('broadcast-prices-last-days')).toContainText('запланирована')
+
+  // Без времени: одна главная кнопка — «Отправить всем»; одно подтверждение, дальше рассылает сервер.
+  await copied(page, 'имя: prices-rise\nкому: neverPaid\nкнопка: Купить по старой цене\nадрес: paywall=1\n---\nС 1 декабря цены в TraleBot вырастут примерно на 50%.')
+  await page.getByTestId('broadcast-paste-clipboard').click()
+  await expect(page.getByTestId('broadcast-step-title')).toHaveText('Отправка')
+  const send = page.getByTestId('broadcast-send-now')
+  await expect(send).toHaveText('Отправить всем — 565 чел.')
+  await expect(page.getByTestId('broadcast-schedule')).toHaveCount(0)
+  await fits(page)
+  await shot(page, 'admin-21c-broadcast-pasted-send')
+  page.once('dialog', d => { asked = d.message(); void d.accept() })
+  await send.click()
+  await expect(page.getByTestId('broadcast-sending')).toContainText('Мини-апп можно закрыть')
+  expect(asked).toContain('ОТПРАВИТЬ всем: 40 чел. (ни разу не платили)?')
+  expect(asked).toContain('С 1 декабря цены в TraleBot вырастут примерно на 50%.')
+  expect(calls.prepared.at(-1)).toMatchObject({ key: 'prices-rise', audience: 'neverPaid', sampleSize: null, dryRun: false })
+  expect(calls.started).toEqual(['prices-rise'])
 })
 
 test('the survey builder is a focused flow too, and keeps its draft', async ({ page }) => {

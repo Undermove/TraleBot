@@ -95,20 +95,21 @@ describe('AdminBroadcastScreen — новая рассылка', () => {
     expect(navigate).toHaveBeenCalledWith({ kind: 'admin-broadcasts' })
   })
 
-  it('opened with a draft, continues from the step where it was left; picking recipients clears the draft', async () => {
+  it('opened with a draft, continues from the step where it was left; sending clears the draft', async () => {
     localStorage.setItem('trale_admin_draft_broadcast', JSON.stringify({
       step: 4, message: 'Из черновика', hasButton: true, buttonText: 'Открыть', destination: 'verbs', customQuery: '', giftDays: 7,
       audience: 'activeLately', sampleFirst: false, sampleSize: 100, ownName: ''
     }))
     api.prepare.mockResolvedValueOnce(picked(KEY, 61, true)).mockResolvedValueOnce(picked(KEY, 61, false))
-    api.status.mockResolvedValue(status)
+    api.sendAll.mockResolvedValue({ ...status, sendingAll: true })
     render(<AdminBroadcastScreen useDraft navigate={navigate} />)
 
     expect(title()).toBe('Кому')
     expect(screen.getByTestId('broadcast-audience-activeLately').getAttribute('aria-checked')).toBe('true')
     await next()
     expect(screen.getByTestId('broadcast-summary').textContent).toBe('Кнопка ведёт: Раздел «Глаголы». Подарок: 7 дн. доступа. Кому: занимались за последние 30 дней — 61 чел.')
-    await userEvent.click(screen.getByTestId('broadcast-pick'))
+    expect(screen.getByTestId('broadcast-send-now').textContent).toBe('Отправить всем — 61 чел.')
+    await userEvent.click(screen.getByTestId('broadcast-send-now'))
     await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
     await waitFor(() => expect(localStorage.getItem('trale_admin_draft_broadcast')).toBeNull())
   })
@@ -126,9 +127,11 @@ describe('AdminBroadcastScreen — новая рассылка', () => {
     await toSending()
     expect(screen.getByTestId('broadcast-summary').textContent).toBe('Кнопка ведёт: Раздел «Глаголы». Подарок: 3 дн. доступа. Кому: доступ закончился — 553 чел., сначала пробной группе из 100')
     expect(screen.getByTestId('broadcast-preview').textContent).toBe('Новые уроки про падежиОткрыть глаголы')
-    expect((screen.getByTestId('broadcast-send') as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByTestId('broadcast-send-hint').textContent).toBe('Отправка откроется, когда выберешь получателей.')
-    expect(screen.queryByTestId('broadcast-another')).toBeNull()
+    // Одна главная кнопка; день и час появляются, только если выбрать «Позже».
+    expect(screen.getByTestId('broadcast-send-now').textContent).toBe('Отправить пробной группе — 100 чел.')
+    expect(screen.getByTestId('broadcast-when-now').getAttribute('aria-checked')).toBe('true')
+    for (const gone of ['broadcast-schedule', 'broadcast-schedule-date', 'broadcast-send-all', 'broadcast-send-rest', 'broadcast-another', 'broadcast-status'])
+      expect(screen.queryByTestId(gone)).toBeNull()
 
     await userEvent.click(screen.getByTestId('broadcast-send-me'))
 
@@ -143,33 +146,51 @@ describe('AdminBroadcastScreen — новая рассылка', () => {
     expect(screen.getByTestId('broadcast-back')).toBeTruthy()
   })
 
-  it('recipients are picked after a confirmation; the server names the campaign; a batch asks again and says the gift', async () => {
+  it('one button sends: it asks once with the head count, the text and the gift, writes down the recipients and hands the sending to the server', async () => {
     api.prepare.mockResolvedValueOnce(picked(KEY, 100, true)).mockResolvedValueOnce(picked(KEY, 100, false))
-    api.status.mockResolvedValue(status)
-    api.send.mockResolvedValue({ sent: 25, blocked: 0, rejected: 0, unknown: 0, retryAfterSeconds: 0, status: { ...status, pending: 75, sent: 25, opened: 4, gifted: 3 } })
+    api.sendAll.mockResolvedValue({ ...status, sendingAll: true })
     await toSending()
 
-    await userEvent.click(screen.getByTestId('broadcast-pick'))
+    await userEvent.click(screen.getByTestId('broadcast-send-now'))
 
-    await waitFor(() => expect((screen.getByTestId('broadcast-send') as HTMLButtonElement).disabled).toBe(false))
-    expect(confirm.mock.calls[0][0]).toContain('Выбрать пробную группу: 100 чел. (доступ закончился)?')
-    expect(confirm.mock.calls[0][0]).toContain('НЕ уйдут')
+    expect((await screen.findByTestId('broadcast-sending')).textContent).toContain('дошло 0, ждут 100')
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(confirm.mock.calls[0][0]).toContain('ОТПРАВИТЬ пробной группе: 100 чел. (доступ закончился)?')
+    expect(confirm.mock.calls[0][0]).toContain('Новые уроки про падежи')
+    expect(confirm.mock.calls[0][0]).toContain('С подарком: 3 дн. доступа')
+    expect(confirm.mock.calls[0][0]).toContain('Это настоящая отправка через бота.')
     expect(api.prepare.mock.calls.map(c => c[0])).toMatchObject([
       { key: '', newBroadcast: true, audience: 'accessEnded', sampleSize: 100, dryRun: true },
       { key: '', newBroadcast: true, audience: 'accessEnded', sampleSize: 100, dryRun: false }
     ])
+    expect(api.sendAll).toHaveBeenCalledWith(KEY)
     expect(api.send).not.toHaveBeenCalled()
     expect(screen.queryByTestId('broadcast-back')).toBeNull()
     expect(screen.getByText(/Имя рассылки: broadcast-2026-10\./)).toBeTruthy()
-
-    await userEvent.click(screen.getByTestId('broadcast-send'))
-    await waitFor(() => expect(api.send).toHaveBeenCalledWith(KEY, 25))
-    expect(confirm.mock.calls[1][0]).toContain('ОТПРАВИТЬ 25 сообщений?')
-    expect(confirm.mock.calls[1][0]).toContain('С подарком: 3 дн. доступа')
-    expect(screen.getByTestId('broadcast-status').textContent).toBe('Выбрано 100 · ждут 75 · дошло 25 · заблокировали 0 · отказ 0 · без ответа Telegram 0 · открыли по кнопке 4 · подарков выдано 3')
+    expect(screen.getByTestId('broadcast-status').textContent).toBe('Получателей 100 · ждут 100 · дошло 0 · заблокировали 0 · отказ 0 · без ответа Telegram 0 · открыли по кнопке 0 · подарков выдано 0')
+    for (const gone of ['broadcast-send-now', 'broadcast-schedule', 'broadcast-when-later', 'broadcast-another'])
+      expect(screen.queryByTestId(gone)).toBeNull()
   })
 
-  it('a declined confirmation picks nobody; an own name and an own address go as typed', async () => {
+  it('if the sending did not start after the recipients were written down, one button is left to start it', async () => {
+    api.prepare.mockResolvedValueOnce(picked(KEY, 100, true)).mockResolvedValueOnce(picked(KEY, 100, false))
+    api.sendAll.mockRejectedValueOnce(new ApiError(500, '')).mockResolvedValue({ ...status, sendingAll: true })
+    api.status.mockResolvedValue(status)
+    await toSending()
+
+    await userEvent.click(screen.getByTestId('broadcast-send-now'))
+
+    expect((await screen.findByTestId('broadcast-send-all')).textContent).toBe('Отправить — ждут 100 чел.')
+    expect(screen.getByTestId('broadcast-send-hint').textContent).toBe('Получатели записаны, но сообщения им ещё не ушли.')
+    expect(screen.getByTestId('broadcast-note')).toBeTruthy()
+    expect(screen.queryByTestId('broadcast-send-now')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('broadcast-send-all'))
+    expect(await screen.findByTestId('broadcast-sending')).toBeTruthy()
+    expect(api.prepare).toHaveBeenCalledTimes(2)
+  })
+
+  it('a declined confirmation sends nothing; an own name and an own address go as typed', async () => {
     confirm.mockReturnValue(false)
     api.prepare.mockResolvedValue(picked('autumn-news', 553, true))
     render(<AdminBroadcastScreen navigate={navigate} />)
@@ -189,20 +210,24 @@ describe('AdminBroadcastScreen — новая рассылка', () => {
     await userEvent.type(screen.getByLabelText('Имя кампании'), 'autumn-news')
     await next()
 
-    await userEvent.click(screen.getByTestId('broadcast-pick'))
+    expect(screen.getByTestId('broadcast-send-now').textContent).toBe('Отправить всем — 553 чел.')
+    await userEvent.click(screen.getByTestId('broadcast-send-now'))
 
     await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(1))
     expect(api.prepare.mock.calls[0][0]).toMatchObject({
       key: 'autumn-news', newBroadcast: false, buttonQuery: 'moduleId=cases&lessonId=1', giftDays: 0, sampleSize: null, dryRun: true
     })
-    expect((screen.getByTestId('broadcast-send') as HTMLButtonElement).disabled).toBe(true)
+    expect(confirm.mock.calls[0][0]).toContain('ОТПРАВИТЬ всем: 553 чел. (доступ закончился)?')
+    expect(api.sendAll).not.toHaveBeenCalled()
+    expect(screen.getByTestId('broadcast-send-now')).toBeTruthy()
     expect(screen.getByTestId('broadcast-back')).toBeTruthy()
   })
 })
 
 describe('AdminBroadcastScreen — открытая рассылка', () => {
   it('opens on its sending with what is already done, and sends the rest of the group under the same name', async () => {
-    api.status.mockResolvedValueOnce({ ...status, pending: 0, sent: 100, opened: 30, gifted: 20 }).mockResolvedValue({ ...status, total: 553, pending: 453, sent: 100 })
+    api.status.mockResolvedValue({ ...status, pending: 0, sent: 100, opened: 30, gifted: 20 })
+    api.sendAll.mockResolvedValue({ ...status, total: 553, pending: 453, sent: 100, sendingAll: true })
     api.prepare.mockResolvedValueOnce(picked(KEY, 453, true, 100)).mockResolvedValueOnce(picked(KEY, 453, false, 100))
     render(<AdminBroadcastScreen campaignKey={KEY} navigate={navigate} />)
 
@@ -211,32 +236,36 @@ describe('AdminBroadcastScreen — открытая рассылка', () => {
     expect(screen.getByTestId('broadcast-preview').textContent).toBe('Новые уроки про падежиОткрыть глаголы')
     expect(screen.getByTestId('broadcast-summary').textContent).toContain('Кнопка ведёт: Раздел «Глаголы». Подарок: 3 дн. доступа. Кому: доступ закончился — 553 чел.')
     expect(screen.getByTestId('broadcast-status').textContent).toContain('дошло 100 · заблокировали 0 · отказ 0 · без ответа Telegram 0 · открыли по кнопке 30 · подарков выдано 20')
-    expect(screen.getByTestId('broadcast-send-hint').textContent).toContain('Можно выбрать остальных или ещё одну группу')
+    expect(screen.getByTestId('broadcast-send-rest').textContent).toBe('Отправить остальным из группы «доступ закончился»')
+    for (const gone of ['broadcast-send-now', 'broadcast-send-all', 'broadcast-schedule', 'broadcast-when-later']) expect(screen.queryByTestId(gone)).toBeNull()
     expect(screen.queryByTestId('broadcast-next')).toBeNull()
 
-    await userEvent.click(screen.getByTestId('broadcast-pick'))
-    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
-    expect(confirm.mock.calls[0][0]).toContain('Выбрать всех остальных: 453 чел.')
+    await userEvent.click(screen.getByTestId('broadcast-send-rest'))
+    await waitFor(() => expect(api.sendAll).toHaveBeenCalledWith(KEY))
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(confirm.mock.calls[0][0]).toContain('ОТПРАВИТЬ остальным: 453 чел.')
     expect(confirm.mock.calls[0][0]).toContain('Ещё 100 из этой группы уже в рассылке — второй раз они её не получат.')
     expect(api.prepare.mock.calls[1][0]).toMatchObject({ key: KEY, newBroadcast: false, audience: 'accessEnded', sampleSize: null, dryRun: false, buttonQuery: 'screen=verbs', giftDays: 3 })
-    await waitFor(() => expect(screen.getByTestId('broadcast-status').textContent).toContain('Выбрано 553 · ждут 453'))
+    await waitFor(() => expect(screen.getByTestId('broadcast-status').textContent).toContain('Получателей 553 · ждут 453'))
   })
 
   it('one more group joins the same campaign — the screen says nobody gets the message or the gift twice', async () => {
     api.status.mockResolvedValue({ ...status, pending: 0, sent: 100 })
     api.prepare.mockResolvedValueOnce(picked(KEY, 40, true, 21)).mockResolvedValueOnce(picked(KEY, 40, false, 21))
+    api.sendAll.mockResolvedValue({ ...status, total: 140, pending: 40, sent: 100, sendingAll: true })
     render(<AdminBroadcastScreen campaignKey={KEY} navigate={navigate} />)
 
     const another = await screen.findByTestId('broadcast-another')
     expect(another.textContent).toContain('Это будет та же рассылка: кто уже получил сообщение, второй раз его не получит, и подарок достаётся человеку один раз')
     expect(within(another).queryByRole('radio', { name: /доступ закончился/ })).toBeNull()
-    expect(screen.queryByTestId('broadcast-pick-another')).toBeNull()
+    expect(screen.queryByTestId('broadcast-send-another')).toBeNull()
 
     await userEvent.click(within(another).getByRole('radio', { name: 'занимались за последние 30 дней · 61' }))
-    await userEvent.click(screen.getByTestId('broadcast-pick-another'))
+    expect(screen.getByTestId('broadcast-send-another').textContent).toBe('Отправить группе «занимались за последние 30 дней»')
+    await userEvent.click(screen.getByTestId('broadcast-send-another'))
 
-    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
-    expect(confirm.mock.calls[0][0]).toContain('Выбрать ещё одну группу: 40 чел. (занимались за последние 30 дней)?')
+    await waitFor(() => expect(api.sendAll).toHaveBeenCalledWith(KEY))
+    expect(confirm.mock.calls[0][0]).toContain('ОТПРАВИТЬ ещё одной группе: 40 чел. (занимались за последние 30 дней)?')
     expect(confirm.mock.calls[0][0]).toContain('Ещё 21 из этой группы уже в рассылке')
     expect(api.prepare.mock.calls[1][0]).toMatchObject({ key: KEY, audience: 'activeLately', anotherAudience: true, sampleSize: null, dryRun: false })
     expect(api.send).not.toHaveBeenCalled()
@@ -253,9 +282,9 @@ describe('AdminBroadcastScreen — открытая рассылка', () => {
 describe('AdminBroadcastScreen — готовая рассылка одним куском', () => {
   const READY = 'имя: myday-back\nкому: inactiveLong\nпроба: 50\nподарок: 7\nкнопка: Посмотреть первую серию\nадрес: moduleId=my-day&lessonId=1\n---\nНовый модуль — «Мой день»'
 
-  it('fills every step from the pasted text and picks the sample with exactly those parameters', async () => {
+  it('fills every step from the pasted text and one button sends the sample with exactly those parameters', async () => {
     api.prepare.mockImplementation(async body => picked('myday-back', 50, body.dryRun))
-    api.status.mockResolvedValue({ ...status, key: 'myday-back', pending: 50 })
+    api.sendAll.mockResolvedValue({ ...status, key: 'myday-back', total: 50, pending: 50, sendingAll: true })
     render(<AdminBroadcastScreen navigate={navigate} />)
     await userEvent.click(screen.getByTestId('broadcast-paste-open'))
     await userEvent.click(screen.getByLabelText('Готовая рассылка'))
@@ -265,8 +294,9 @@ describe('AdminBroadcastScreen — готовая рассылка одним к
     expect(title()).toBe('Отправка')
     expect(screen.getByTestId('broadcast-summary').textContent)
       .toBe('Кнопка ведёт: /?moduleId=my-day&lessonId=1. Подарок: 7 дн. доступа. Кому: не занимались больше 30 дней — 512 чел., сначала пробной группе из 50')
-    await userEvent.click(screen.getByTestId('broadcast-pick'))
-    await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
+    expect(screen.getByTestId('broadcast-send-now').textContent).toBe('Отправить пробной группе — 50 чел.')
+    await userEvent.click(screen.getByTestId('broadcast-send-now'))
+    await waitFor(() => expect(api.sendAll).toHaveBeenCalledWith('myday-back'))
     expect(api.prepare).toHaveBeenLastCalledWith({
       key: 'myday-back', newBroadcast: false, audience: 'inactiveLong', message: 'Новый модуль — «Мой день»',
       buttonText: 'Посмотреть первую серию', buttonQuery: 'moduleId=my-day&lessonId=1', giftDays: 7, sampleSize: 50, dryRun: false
@@ -326,6 +356,10 @@ describe('AdminBroadcastScreen — отправка по расписанию', 
     expect((screen.getByTestId('broadcast-schedule-date') as HTMLInputElement).value).toBe('2099-11-28')
     expect((screen.getByTestId('broadcast-schedule-time') as HTMLInputElement).value).toBe('12:00')
     expect((screen.getByTestId('broadcast-schedule-zone') as HTMLSelectElement).value).toBe('Asia/Tbilisi')
+    // Время пришло вместе с текстом: главная кнопка уже «Запланировать», отправки «сейчас» на экране нет.
+    expect(screen.getByTestId('broadcast-when-later').getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByTestId('broadcast-schedule').textContent).toBe('Запланировать на 28.11.2099 12:00 (Тбилиси)')
+    expect(screen.queryByTestId('broadcast-send-now')).toBeNull()
     await userEvent.click(screen.getByTestId('broadcast-schedule'))
 
     await waitFor(() => expect(api.prepare).toHaveBeenCalledTimes(2))
@@ -341,7 +375,7 @@ describe('AdminBroadcastScreen — отправка по расписанию', 
     expect(state.textContent).toContain('Мини-апп можно закрыть')
     expect(screen.queryByTestId('broadcast-note')).toBeNull()
     // Пока рассылка ждёт своего часа, выбирать и отправлять руками нечего.
-    for (const gone of ['broadcast-schedule', 'broadcast-pick', 'broadcast-send-all', 'broadcast-send', 'broadcast-another', 'broadcast-status'])
+    for (const gone of ['broadcast-schedule', 'broadcast-when-now', 'broadcast-send-now', 'broadcast-send-all', 'broadcast-send-rest', 'broadcast-another', 'broadcast-status'])
       expect(screen.queryByTestId(gone)).toBeNull()
     expect(screen.getByTestId('broadcast-send-me')).toBeTruthy()
     expect(api.send).not.toHaveBeenCalled()
@@ -352,6 +386,9 @@ describe('AdminBroadcastScreen — отправка по расписанию', 
     api.prepare.mockImplementation(async body => picked(KEY, body.dryRun ? 553 : 0, body.dryRun))
     api.status.mockResolvedValue({ ...status, total: 0, pending: 0, scheduledAtUtc: '2099-07-01T10:30:00.000Z', scheduledTimeZone: 'Europe/Berlin' })
     await toSending()
+    expect(screen.queryByLabelText('День отправки')).toBeNull()
+    await userEvent.click(screen.getByTestId('broadcast-when-later'))
+    expect(screen.queryByTestId('broadcast-send-now')).toBeNull()
     const day = new Date(Date.now() + 24 * 3600 * 1000)
     expect((screen.getByLabelText('День отправки') as HTMLInputElement).value)
       .toBe(`${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`)
@@ -374,6 +411,7 @@ describe('AdminBroadcastScreen — отправка по расписанию', 
   it('a time that has passed is not sent to the server; a declined confirmation schedules nothing', async () => {
     api.prepare.mockImplementation(async body => picked(KEY, 553, body.dryRun))
     await toSending()
+    await userEvent.click(screen.getByTestId('broadcast-when-later'))
     await userEvent.clear(screen.getByLabelText('День отправки'))
     await userEvent.type(screen.getByLabelText('День отправки'), '2020-01-01')
     await userEvent.click(screen.getByTestId('broadcast-schedule'))
@@ -402,8 +440,10 @@ describe('AdminBroadcastScreen — отправка по расписанию', 
     expect(api.stop).toHaveBeenCalledWith('prices-last-days')
     expect(screen.getByTestId('broadcast-note').textContent).toBe('Расписание отменил. Сообщения не ушли.')
     expect(screen.queryByTestId('broadcast-scheduled')).toBeNull()
+    // Рассылка осталась записанной без получателей: её можно отправить сейчас или назначить другое время.
+    expect(screen.getByTestId('broadcast-send-now').textContent).toBe('Отправить всем — 565 чел.')
+    await userEvent.click(screen.getByTestId('broadcast-when-later'))
     expect(screen.getByTestId('broadcast-schedule')).toBeTruthy()
-    expect(screen.getByTestId('broadcast-pick')).toBeTruthy()
   })
 
   it('when its hour comes while the screen is open, the screen shows the sending and then the result', async () => {
