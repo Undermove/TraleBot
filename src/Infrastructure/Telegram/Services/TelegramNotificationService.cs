@@ -435,6 +435,19 @@ public class TelegramNotificationService : IUserNotificationService
         await Task.Delay(BulkSendDelay, ct);
     }
 
+    public async Task SendPinChatTipAsync(Domain.Entities.User user, string text, CancellationToken ct)
+    {
+        try
+        {
+            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: text, cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation("Pin-chat tip for {TelegramId} blocked (403); marking user inactive", user.TelegramId);
+            user.IsActive = false;
+        }
+    }
+
     public async Task SendEngagedOfferAsync(Domain.Entities.User user, string text, string button, CancellationToken ct)
     {
         if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return;
