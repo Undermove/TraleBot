@@ -37,8 +37,9 @@ public class CompleteLessonProgress : IRequest<CompleteLessonProgressResult>
                 progress, request.ModuleId, request.LessonId, request.Correct, request.Total);
             await dbContext.SaveChangesAsync(ct);
 
-            if (update.LessonCompleted && PinChatTip.IsFirstLesson(progress.CompletedLessonsJson))
-                await SendPinChatTipAsync(request.UserId, ct);
+            var lessonsDone = PinChatTip.LessonsDone(progress.CompletedLessonsJson);
+            if (update.LessonCompleted && lessonsDone >= PinChatTip.MinLessons)
+                await SendPinChatTipAsync(request.UserId, lessonsDone, ct);
 
             return new CompleteLessonProgressResult.Success(
                 update.XpEarned,
@@ -46,7 +47,7 @@ public class CompleteLessonProgress : IRequest<CompleteLessonProgressResult>
         }
 
         /// <summary>Once per person; a failure to send never fails the lesson.</summary>
-        private async Task SendPinChatTipAsync(Guid userId, CancellationToken ct)
+        private async Task SendPinChatTipAsync(Guid userId, int lessonsDone, CancellationToken ct)
         {
             try
             {
@@ -55,7 +56,12 @@ public class CompleteLessonProgress : IRequest<CompleteLessonProgressResult>
                 if (!await dbContext.TryClaimNotificationTriggerAsync(user.TelegramId, PinChatTip.Source, null, DateTime.UtcNow, DateTime.UnixEpoch, ct))
                     return;
 
-                await notificationService.SendPinChatTipAsync(user, ct);
+                var platform = await dbContext.AppEvents
+                    .Where(e => e.UserId == userId && e.Platform != null)
+                    .OrderByDescending(e => e.CreatedAtUtc)
+                    .Select(e => e.Platform)
+                    .FirstOrDefaultAsync(ct);
+                await notificationService.SendPinChatTipAsync(user, PinChatTip.Text(lessonsDone, platform), ct);
                 await dbContext.SaveChangesAsync(ct);
             }
             catch (Exception ex)

@@ -435,11 +435,11 @@ public class TelegramNotificationService : IUserNotificationService
         await Task.Delay(BulkSendDelay, ct);
     }
 
-    public async Task SendPinChatTipAsync(Domain.Entities.User user, CancellationToken ct)
+    public async Task SendPinChatTipAsync(Domain.Entities.User user, string text, CancellationToken ct)
     {
         try
         {
-            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: Application.MiniApp.PinChatTip.Text, cancellationToken: ct);
+            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: text, cancellationToken: ct);
         }
         catch (ApiRequestException ex) when (ex.ErrorCode == 403)
         {

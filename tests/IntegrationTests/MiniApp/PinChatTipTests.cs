@@ -13,7 +13,8 @@ using Telegram.Bot.Requests;
 namespace IntegrationTests.MiniApp;
 
 /// <summary>
-/// Right after the first finished lesson the bot asks, once, to pin the chat — so people do not lose it.
+/// Once a person has got into it (the third finished lesson) the bot asks, once, to pin the chat — and says how
+/// on the Telegram client they use.
 /// </summary>
 public class PinChatTipTests : TestBase
 {
@@ -51,42 +52,49 @@ public class PinChatTipTests : TestBase
             .EnsureSuccessStatusCode();
     }
 
+    private async Task Opened(User user, string platform)
+    {
+        await using var scope = _app.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ITraleDbContext>();
+        db.AppEvents.Add(new AppEvent { Id = Guid.NewGuid(), UserId = user.Id, Event = "app_open", Platform = platform, CreatedAtUtc = DateTime.UtcNow });
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
+
     private List<SendMessageRequest> SentTo(User user) =>
         _telegram.Requests.OfType<SendMessageRequest>().Where(m => m.ChatId.Identifier == user.TelegramId).ToList();
 
     [Test]
-    public async Task The_first_finished_lesson_brings_the_tip_to_pin_the_chat_and_later_lessons_do_not()
+    public async Task The_third_finished_lesson_brings_the_tip_for_the_persons_telegram_and_later_lessons_do_not()
     {
         var user = await NewUser();
+        await Opened(user, "ios");
 
         await Finish(user, 1);
+        await Finish(user, 12);
+        await Finish(user, 12);
+        await Finish(user, 2, correct: 1);
+        SentTo(user).Should().BeEmpty("two lessons are finished so far");
+
+        await Finish(user, 2);
 
         var tip = SentTo(user).Should().ContainSingle().Subject;
-        tip.Text.Should().Be(PinChatTip.Text);
-        tip.Text.Should().StartWith("Первый урок пройден 👏 Закрепи этот чат");
-        tip.Text.Should().Contain("iPhone").And.Contain("Android").And.Contain("Компьютер");
+        tip.Text.Should().Be("""
+            Уроков пройдено: 3 👏 Чтобы не искать Бомбору среди других чатов, закрепи этот чат 📌
+
+            Он всегда будет наверху списка, и следующий урок откроется в одно касание.
+
+            Как закрепить на iPhone: в списке чатов смахни этот чат вправо и нажми «Закрепить».
+            """);
         tip.ReplyMarkup.Should().BeNull();
 
-        await Finish(user, 12);
-        await Finish(user, 1);
+        await Finish(user, 13);
+        await Finish(user, 1, moduleId: "numbers");
 
         SentTo(user).Should().ContainSingle("the tip comes once");
     }
 
     [Test]
-    public async Task A_lesson_that_did_not_count_brings_nothing_and_the_tip_comes_with_the_one_that_did()
-    {
-        var user = await NewUser();
-
-        await Finish(user, 1, correct: 1);
-        SentTo(user).Should().BeEmpty();
-
-        await Finish(user, 1);
-        SentTo(user).Should().ContainSingle();
-    }
-
-    [Test]
-    public async Task Whoever_already_has_lessons_or_switched_notifications_off_gets_nothing()
+    public async Task Whoever_already_has_lessons_gets_the_tip_with_the_next_new_one()
     {
         var old = await NewUser();
         await using (var scope = _app.Services.CreateAsyncScope())
@@ -94,21 +102,46 @@ public class PinChatTipTests : TestBase
             var db = scope.ServiceProvider.GetRequiredService<ITraleDbContext>();
             db.MiniAppUserProgresses.Add(new MiniAppUserProgress
             {
-                Id = Guid.NewGuid(), UserId = old.Id, CompletedLessonsJson = """{"alphabet-progressive":[1,12]}""",
+                Id = Guid.NewGuid(), UserId = old.Id, CompletedLessonsJson = """{"alphabet-progressive":[1,12,2,13],"onboarding":[1]}""",
                 CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
             });
             await db.SaveChangesAsync(CancellationToken.None);
         }
+        await Opened(old, "ios");
+        await Opened(old, "android");
+
+        await Finish(old, 1);
+        SentTo(old).Should().BeEmpty("a lesson taken again is not a new one");
+
+        await Finish(old, 3);
+
+        var tip = SentTo(old).Should().ContainSingle().Subject;
+        tip.Text.Should().StartWith("Уроков пройдено: 5 👏");
+        tip.Text.Should().EndWith("Как закрепить на Android: в списке чатов зажми этот чат и нажми на булавку сверху.");
+    }
+
+    [Test]
+    public void The_way_to_pin_follows_the_telegram_client_and_all_three_are_listed_when_it_is_unknown()
+    {
+        PinChatTip.Text(3, "tdesktop").Should().EndWith("Как закрепить: нажми на этот чат правой кнопкой и выбери «Закрепить».");
+        PinChatTip.Text(3, "macos").Should().Contain("правой кнопкой").And.NotContain("iPhone");
+        PinChatTip.Text(3, null).Should().Contain("• iPhone:").And.Contain("• Android:").And.Contain("• Компьютер:");
+        PinChatTip.Text(3, "something-new").Should().Contain("• iPhone:");
+    }
+
+    [Test]
+    public async Task Whoever_switched_notifications_off_gets_nothing()
+    {
         var silent = await NewUser(u => u.NotificationsEnabled = false);
 
-        await Finish(old, 2);
         await Finish(silent, 1);
+        await Finish(silent, 12);
+        await Finish(silent, 2);
 
-        SentTo(old).Should().BeEmpty();
         SentTo(silent).Should().BeEmpty();
         await using var check = _app.Services.CreateAsyncScope();
         (await check.ServiceProvider.GetRequiredService<ITraleDbContext>().NotificationTriggers
-            .AnyAsync(t => t.Source == PinChatTip.Source && (t.UserId == old.TelegramId || t.UserId == silent.TelegramId)))
+            .AnyAsync(t => t.Source == PinChatTip.Source && t.UserId == silent.TelegramId))
             .Should().BeFalse();
     }
 }

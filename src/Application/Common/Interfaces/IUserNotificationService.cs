@@ -84,5 +84,5 @@ public interface IUserNotificationService
     /// The tip to pin the chat with the bot (see <c>PinChatTip</c>): plain text, no button. Sent from the
     /// lesson-complete request, so no bulk delay and no retry. 403 → user flagged inactive.
     /// </summary>
-    Task SendPinChatTipAsync(User user, CancellationToken ct);
+    Task SendPinChatTipAsync(User user, string text, CancellationToken ct);
 }
