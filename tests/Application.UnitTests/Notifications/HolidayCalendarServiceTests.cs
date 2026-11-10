@@ -99,10 +99,18 @@ public class HolidayCalendarServiceTests
         holiday.Translation.ShouldBe("Поздравляю со Светицховлоба!");
     }
 
+    [TestCase(2026, 11, 4)]
+    [TestCase(2026, 10, 4)]
+    [TestCase(2027, 10, 2)]
+    public void GetHolidayFor_NotAnnouncedTbilisobaDay_ReturnsNull(int year, int month, int day)
+    {
+        _sut.GetHolidayFor(new DateOnly(year, month, day)).ShouldBeNull();
+    }
+
     [Test]
     public void GetHolidayFor_Tbilisoba_ReturnsTbilisobaEntry()
     {
-        var holiday = _sut.GetHolidayFor(new DateOnly(2026, 11, 4));
+        var holiday = _sut.GetHolidayFor(new DateOnly(2026, 10, 3));
 
         holiday.ShouldNotBeNull();
         holiday.Key.ShouldBe("tbilisoba");
