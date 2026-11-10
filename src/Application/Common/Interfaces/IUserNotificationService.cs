@@ -72,5 +72,11 @@ public interface IUserNotificationService
     /// A first-week message (see <c>FirstWeekNudgeService</c>): the text and one web-app button straight into
     /// the lesson, tagged <c>src=push_first_week_d&lt;day&gt;</c>. 403 → user flagged inactive; 429 → single retry.
     /// </summary>
+    /// <summary>
+    /// The day-7 offer of the old prices (see <c>EngagedOffer</c>): the text and one web-app button that opens the
+    /// paywall, tagged <c>src=push_engaged_offer</c>. 403 → user flagged inactive; 429 → single retry.
+    /// </summary>
+    Task SendEngagedOfferAsync(User user, string text, string button, CancellationToken ct);
+
     Task SendFirstWeekNudgeAsync(User user, Application.Notifications.FirstWeekNudge nudge, CancellationToken ct);
 }

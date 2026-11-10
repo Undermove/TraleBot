@@ -161,7 +161,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
     {
         // The first-week messages were switched on long ago; this person registered three days ago.
         await new FirstWeekNudgeService(Context, Mock.Of<Application.Common.Interfaces.MiniApp.IMiniAppContentProvider>(),
-            _notificationServiceMock.Object, NullLoggerFactory.Instance).DispatchAsync(DateTime.UtcNow.AddDays(-30), CancellationToken.None);
+            _notificationServiceMock.Object, new Application.MiniApp.PriceSchedule(), NullLoggerFactory.Instance).DispatchAsync(DateTime.UtcNow.AddDays(-30), CancellationToken.None);
         var user = await SeedEligibleUser();
         user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-3);
         await Context.SaveChangesAsync();
@@ -175,7 +175,7 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
     public async Task DispatchAsync_PersonPastTheFirstWeek_StillGetsTheReturnPush()
     {
         await new FirstWeekNudgeService(Context, Mock.Of<Application.Common.Interfaces.MiniApp.IMiniAppContentProvider>(),
-            _notificationServiceMock.Object, NullLoggerFactory.Instance).DispatchAsync(DateTime.UtcNow.AddDays(-30), CancellationToken.None);
+            _notificationServiceMock.Object, new Application.MiniApp.PriceSchedule(), NullLoggerFactory.Instance).DispatchAsync(DateTime.UtcNow.AddDays(-30), CancellationToken.None);
         var user = await SeedEligibleUser();
         user.RegisteredAtUtc = DateTime.UtcNow.AddDays(-9);
         await Context.SaveChangesAsync();

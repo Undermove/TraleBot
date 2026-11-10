@@ -33,9 +33,10 @@ const RECOMMENDED_PLAN = 'Year'
 
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 /** «1 декабря» — день по Тбилиси (UTC+4, без перехода на летнее время). */
-export function tbilisiDay(utc: string): string {
+export function tbilisiDay(utc: string, withTime = false): string {
   const d = new Date(new Date(utc).getTime() + 4 * 3600_000)
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
+  const time = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${withTime ? `, ${time}` : ''}`
 }
 
 /**
@@ -50,6 +51,7 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
   const [selectedPlan, setSelectedPlan] = useState<string>(RECOMMENDED_PLAN)
   const [riseAt, setRiseAt] = useState<string | null>(null)
   const [keepsOldPrices, setKeepsOldPrices] = useState(false)
+  const [offerEndsAt, setOfferEndsAt] = useState<string | null>(null)
   // «Что смутило?»: сервер заранее говорит, есть ли что спросить, если шторку закроют не купив,
   // — тогда закрытие не ждёт ответа сети, когда спрашивать нечего. Сам показ сервер запоминает при закрытии.
   const questionDue = useRef(false)
@@ -75,6 +77,7 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
         setPlans(r.plans)
         setRiseAt(r.pricesRiseAtUtc ?? null)
         setKeepsOldPrices(r.keepsOldPrices === true)
+        setOfferEndsAt(r.offerEndsAtUtc ?? null)
         setState('default')
         if (!r.plans.some((p) => p.id === RECOMMENDED_PLAN) && r.plans.length > 0) {
           setSelectedPlan(r.plans[0].id)
@@ -353,6 +356,10 @@ export default function ProPaywall({ trigger, onClose, onPurchaseSuccess }: Prop
               {keepsOldPrices ? (
                 <div className="font-sans text-[13px] text-jewelInk text-center" data-testid="paywall-price-thanks">
                   Спасибо, что ты с нами с самого начала! Для тебя цены не вырастут — навсегда.
+                </div>
+              ) : offerEndsAt ? (
+                <div className="font-sans text-[13px] text-jewelInk text-center" data-testid="paywall-offer">
+                  Специально для тебя — сниженная цена до {tbilisiDay(offerEndsAt, true)} по Тбилиси. Купи сейчас, потом цена станет обычной.
                 </div>
               ) : riseAt ? (
                 <div className="font-sans text-[13px] text-jewelInk text-center" data-testid="paywall-price-rise">

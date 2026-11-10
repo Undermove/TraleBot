@@ -187,12 +187,15 @@ public class MiniAppController : Controller
         var applyTestPricing = user != null && TestPricingTelegramIds.Contains(user.TelegramId);
         var keepsOldPrices = user != null && await prices.KeepsOldPricesAsync(_dbContext, user.Id, ct);
         var now = DateTime.UtcNow;
+        // The offer of the old prices to a newcomer who studies in earnest — it matters only after the rise.
+        var offerEndsAt = user != null && !keepsOldPrices && prices.HasRisen(now)
+            ? await prices.OfferEndsAtAsync(_dbContext, user.TelegramId, now, ct) : null;
 
         var plans = SubscriptionPlans.All.Select(p => new
         {
             id = p.Plan.ToString(),
             payloadId = p.PayloadId,
-            stars = applyTestPricing ? TestPricingStars : prices.PriceFor(p, now, keepsOldPrices),
+            stars = applyTestPricing ? TestPricingStars : prices.PriceFor(p, now, keepsOldPrices || offerEndsAt != null),
             // The price for everyone after the rise — a card shows it crossed out when this person pays less.
             regularStars = SubscriptionPlans.RaisedPrice(p),
             durationDays = p.DurationDays,
@@ -205,7 +208,9 @@ public class MiniAppController : Controller
             // Until the rise — when prices go up; null after it.
             pricesRiseAtUtc = prices.HasRisen(now) ? (DateTime?)null : prices.RiseAtUtc,
             // Paid before the rise: the old prices stay for good, and the paywall thanks them.
-            keepsOldPrices
+            keepsOldPrices,
+            // The old prices for a while, offered to a newcomer who studies in earnest; null — no offer running.
+            offerEndsAtUtc = offerEndsAt
         });
     }
 
@@ -280,7 +285,9 @@ public class MiniAppController : Controller
             return BadRequest(new { error = "invalid_plan" });
         }
 
-        plan = plan with { StarsPrice = prices.PriceFor(plan, DateTime.UtcNow, await prices.KeepsOldPricesAsync(_dbContext, user.Id, ct)) };
+        var oldPrices = await prices.KeepsOldPricesAsync(_dbContext, user.Id, ct)
+                        || await prices.OfferEndsAtAsync(_dbContext, user.TelegramId, DateTime.UtcNow, ct) != null;
+        plan = plan with { StarsPrice = prices.PriceFor(plan, DateTime.UtcNow, oldPrices) };
 
         if (TestPricingTelegramIds.Contains(user.TelegramId))
         {

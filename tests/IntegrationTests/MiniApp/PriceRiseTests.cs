@@ -122,4 +122,37 @@ public class PriceRiseTests : TestBase
         Stars(await Plans(app, refunded), "Month").Should().Be(149);
         Stars(await Plans(app, paidAfter), "Month").Should().Be(149);
     }
+
+    private static async Task Offered(TraleTestApplication app, User user, DateTime at)
+    {
+        await using var scope = app.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ITraleDbContext>();
+        db.NotificationTriggers.Add(new NotificationTrigger
+        {
+            Id = Guid.NewGuid(), UserId = user.TelegramId, Source = PriceSchedule.OfferSource, LastSentAt = at
+        });
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
+
+    [Test]
+    public async Task A_running_offer_gives_the_old_price_in_the_cards_and_the_invoice_until_it_ends()
+    {
+        await using var app = App(DateTime.UtcNow.AddDays(-10));
+        var offered = await NewUser(app);
+        var madeAt = DateTime.UtcNow.AddHours(-10);
+        await Offered(app, offered, madeAt);
+        var expired = await NewUser(app);
+        await Offered(app, expired, DateTime.UtcNow.AddHours(-73));
+
+        var plans = await Plans(app, offered);
+
+        Stars(plans, "Quarter").Should().Be(249);
+        plans.GetProperty("offerEndsAtUtc").GetDateTime().Should().BeCloseTo(madeAt + PriceSchedule.OfferLasts, TimeSpan.FromSeconds(1));
+        (await InvoiceStars(app, offered, "Year")).Should().Be(849);
+
+        var after = await Plans(app, expired);
+        Stars(after, "Quarter").Should().Be(349);
+        after.GetProperty("offerEndsAtUtc").ValueKind.Should().Be(JsonValueKind.Null);
+        (await InvoiceStars(app, expired, "Year")).Should().Be(1199);
+    }
 }
