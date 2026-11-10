@@ -121,9 +121,10 @@ public class AdminController : Controller
             campaigns = all.Where(c => surveys == null || c.IsSurvey == surveys).Select(c => new
             {
                 c.Key, c.IsSurvey, c.Message, audience = AudienceName(c.Audience), c.CreatedAtUtc, c.ButtonText, c.GiftDays,
-                c.Picked, c.Pending, c.Sent, c.Opened, c.Gifted,
-                // draft — nobody picked yet; running — picked people still wait; done — everyone picked was handled.
-                state = c.Picked == 0 ? "draft" : c.Pending > 0 ? "running" : "done"
+                c.Picked, c.Pending, c.Sent, c.Opened, c.Gifted, c.ScheduledAtUtc, c.ScheduledTimeZone,
+                // scheduled — goes out by itself at its time; draft — nobody picked yet; running — picked people
+                // still wait; done — everyone picked was handled.
+                state = c.ScheduledAtUtc != null ? "scheduled" : c.Picked == 0 ? "draft" : c.Pending > 0 ? "running" : "done"
             })
         });
     }
@@ -733,6 +734,11 @@ public class AdminController : Controller
         /// <summary>The survey builder starting a new survey: with an empty <see cref="Key"/> the server names the
         /// campaign itself — <c>survey-2026-10-&lt;slug&gt;</c>, with a number when taken — and returns the key.</summary>
         public string? NewSurveySlug { get; set; }
+        /// <summary>Send by itself at this moment (UTC) instead of picking recipients now: the campaign is saved with
+        /// its time, and the server picks everyone in the audience and sends when the time comes. Null — as before.</summary>
+        public DateTime? SendAtUtc { get; set; }
+        /// <summary>The time zone the owner chose the moment in ("Asia/Tbilisi") — to show it back the same way.</summary>
+        public string? SendAtTimeZone { get; set; }
     }
 
     /// <summary>Ready-made surveys for the survey builder and the answer buttons it offers by one tap.</summary>
@@ -772,7 +778,8 @@ public class AdminController : Controller
             Key = req.Key, Audience = audience, Message = req.Message,
             ButtonText = req.ButtonText, ButtonQuery = req.ButtonQuery,
             GiftDays = req.GiftDays, GiftOfferDays = req.GiftOfferDays, Survey = req.Survey,
-            AnotherAudience = req.AnotherAudience
+            AnotherAudience = req.AnotherAudience,
+            SendAtUtc = req.SendAtUtc, SendAtTimeZone = req.SendAtTimeZone
         };
         var unnamed = string.IsNullOrWhiteSpace(req.Key);
         var result = unnamed && req.NewSurveySlug != null
@@ -835,6 +842,7 @@ public class AdminController : Controller
     private static object? MapCampaignStatus(CampaignStatus? s) => s == null ? null : new
     {
         s.Key, audience = AudienceName(s.Audience), s.Message, s.ButtonText, s.ButtonQuery, s.CreatedAtUtc, s.SendingAll,
+        s.ScheduledAtUtc, s.ScheduledTimeZone,
         s.Total, s.Sample, s.Pending, s.Sent, s.Blocked, s.Rejected, s.Unknown, s.Opened,
         s.GiftDays, s.GiftOfferEndsAtUtc, s.Gifted, s.PlayedVerbSession, s.FinishedVerbSession, s.PaidAfterOpen,
         // In the order of the buttons, also before anyone has answered — this is how the survey builder gets a survey back.

@@ -582,6 +582,10 @@ export interface CampaignStatusDto {
   buttonQuery: string | null
   /** Сервер сейчас сам рассылает её всем выбранным. */
   sendingAll?: boolean
+  /** Когда уйдёт сама (UTC); null — время не назначено. Получателей сервер выбирает в этот момент. */
+  scheduledAtUtc?: string | null
+  /** Пояс, в котором владелец назначал время (Asia/Tbilisi). */
+  scheduledTimeZone?: string | null
   total: number
   sample: number
   pending: number
@@ -611,6 +615,8 @@ export interface CampaignPrepareDto {
   alreadyInCampaign: number
   picked: number
   leftForLater: number
+  /** Рассылка записана на это время (UTC): получатели пока не выбраны. */
+  scheduledAtUtc?: string | null
 }
 
 export const adminCampaigns = {
@@ -637,6 +643,10 @@ export const adminCampaigns = {
     anotherAudience?: boolean
     /** Конструктор начинает новый опрос: при пустом key сервер сам называет кампанию и возвращает имя в ответе. */
     newSurveySlug?: string | null
+    /** Отправить саму в этот момент (UTC, ISO с «Z») вместо выбора получателей сейчас: сервер выберет всю группу, когда время придёт. */
+    sendAtUtc?: string | null
+    /** Пояс, в котором назначено время, — чтобы показать его так же. */
+    sendAtTimeZone?: string | null
   }) => request<CampaignPrepareDto>('/api/admin/campaigns/prepare', { method: 'POST', body: JSON.stringify(body) }),
   /** Отправить следующую порцию уже выбранных получателей. */
   send: (key: string, limit: number) =>
@@ -647,7 +657,7 @@ export const adminCampaigns = {
   /** Сервер сам рассылает всем выбранным, порциями; мини-апп можно закрыть — бот напишет, когда закончит. */
   sendAll: (key: string) =>
     request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}/send-all`, { method: 'POST' }),
-  /** Остановить рассылку сервером; кто не получил — остаются ждать. */
+  /** Остановить рассылку сервером и снять её с расписания; кто не получил — остаются ждать. */
   stop: (key: string) =>
     request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}/stop`, { method: 'POST' }),
   status: (key: string) => request<CampaignStatusDto>(`/api/admin/campaigns/${encodeURIComponent(key)}`),
@@ -669,8 +679,11 @@ export interface CampaignListItemDto {
   sent: number
   opened: number
   gifted: number
-  /** draft — получателей ещё не выбирали; running — выбранные ждут отправки; done — все выбранные обработаны. */
-  state: 'draft' | 'running' | 'done'
+  scheduledAtUtc?: string | null
+  scheduledTimeZone?: string | null
+  /** scheduled — уйдёт сама в назначенное время; draft — получателей ещё не выбирали; running — выбранные ждут отправки;
+   *  done — все выбранные обработаны. */
+  state: 'scheduled' | 'draft' | 'running' | 'done'
 }
 
 // ── Админка: обзор, люди, оплаты ──

@@ -4,6 +4,7 @@ import { AUDIENCES, audienceName } from '../admin/words'
 import { adminBack, setInnerBack } from '../admin/adminNav'
 import { draft as drafts, useDraft, useFocusMode } from '../admin/useKept'
 import { parsePastedBroadcast, readClipboard } from '../admin/pastedBroadcast'
+import { scheduledText, tomorrow, wallToUtc, zoneName, ZONES } from '../admin/schedule'
 import { adminCampaigns, ApiError, type CampaignAudience, type CampaignStatusDto } from '../api'
 import type { Screen } from '../types'
 
@@ -11,7 +12,8 @@ import type { Screen } from '../types'
 // подарок → кому → отправка (сначала себе, потом людям порциями по 25). Имя кампании даёт сервер;
 // своё можно задать на шаге «Кому». Открытая по имени — сразу на отправке: дослать выбранным, выбрать
 // остальных или ещё одну группу. Группа добавляется в ту же кампанию, поэтому сообщение и подарок
-// человек получает один раз, в какой бы группе он ни оказался. Готовую рассылку можно вставить одним куском
+// человек получает один раз, в какой бы группе он ни оказался. Вместо отправки руками рассылке можно назначить
+// день, час и пояс: тогда сервер сам выберет всю группу и разошлёт в этот момент. Готовую рассылку можно вставить одним куском
 // текста (формат — в admin/pastedBroadcast.ts): все шаги заполнятся, и откроется отправка.
 
 interface Props {
@@ -94,6 +96,10 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
   const [status, setStatus] = useState<CampaignStatusDto | null>(null)
   /** Ещё одна группа для той же кампании. */
   const [another, setAnother] = useState<CampaignAudience | null>(null)
+  /** Когда отправить саму: день и время по часам выбранного пояса. */
+  const [sendDate, setSendDate] = useState(tomorrow)
+  const [sendTime, setSendTime] = useState('12:00')
+  const [sendZone, setSendZone] = useState(ZONES[0].id)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   /** Поле «Вставить готовую рассылку» открыто. */
@@ -164,6 +170,7 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     setSampleFirst(r.sample !== null)
     if (r.sample !== null) setSampleSize(r.sample)
     setOwnName(r.name)
+    if (r.when) { setSendDate(r.when.date); setSendTime(r.when.time); setSendZone(r.when.zone) }
     setPasting(false)
     setPasted('')
     setPasteProblem(null)
@@ -233,19 +240,44 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
     return `Остановил. Дошло ${s.sent}, ждут ${s.pending} — можно продолжить позже.`
   })
 
-  // Пока сервер рассылает — обновлять счётчики; закончил — сказать итог.
+  // По расписанию: получателей сейчас никто не выбирает — сервер выберет всю группу, когда придёт время, и разошлёт сам.
+  const schedule = () => run(async () => {
+    const at = wallToUtc(sendDate, sendTime, sendZone)
+    if (!at) return 'Выбери день и время отправки.'
+    if (at.getTime() <= Date.now()) return 'Это время уже прошло. Назначь время в будущем.'
+    const time = { sendAtUtc: at.toISOString(), sendAtTimeZone: sendZone }
+    const plan = await adminCampaigns.prepare(draft(audience, null, true, time))
+    const text = scheduledText(time.sendAtUtc, sendZone)
+    const gift = giftDays > 0 && button ? `\n\nС подарком: ${giftDays} дн. доступа тому, кто откроет кнопку.` : ''
+    if (!confirm(`ЗАПЛАНИРОВАТЬ на ${text}?\n\n${message.trim()}${gift}\n\nУйдёт само всем, кто в этот момент будет в группе «${audienceName(audience)}» — сейчас это ${plan.picked} чел.`)) return null
+    const done = await adminCampaigns.prepare(draft(audience, null, false, time))
+    setKey(done.key)
+    drafts.clear('broadcast')
+    setStatus(await adminCampaigns.status(done.key))
+    return null
+  })
+
+  const cancelSchedule = () => run(async () => {
+    if (!key) return null
+    if (!confirm('Отменить отправку по расписанию? Сообщения не уйдут.')) return null
+    setStatus(await adminCampaigns.stop(key))
+    return 'Расписание отменил. Сообщения не ушли.'
+  })
+
+  // Пока сервер рассылает или рассылка ждёт своего часа — обновлять счётчики; закончил — сказать итог.
   const sending = status?.sendingAll === true
+  const scheduledAt = status?.scheduledAtUtc ?? null
   useEffect(() => {
-    if (!key || !sending) return
+    if (!key || !(sending || scheduledAt)) return
     const timer = setInterval(() => {
       adminCampaigns.status(key).then(s => {
         setStatus(s)
-        if (!s.sendingAll && s.pending === 0)
+        if (!s.sendingAll && !s.scheduledAtUtc && s.pending === 0)
           setNote(`Готово. Дошло ${s.sent}, заблокировали бота ${s.blocked}, отказ ${s.rejected}, без ответа ${s.unknown}.`)
       }).catch(() => {})
-    }, 3000)
+    }, sending ? 3000 : 15000)
     return () => clearInterval(timer)
-  }, [key, sending])
+  }, [key, sending, scheduledAt])
 
   const close = () => {
     if (unsaved && !confirm('Закрыть рассылку? Черновик останется на этом устройстве — к нему можно вернуться из списка рассылок.')) return
@@ -399,14 +431,18 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
             <div className="mn-eyebrow mt-2">1. Посмотри сам</div>
             <button type="button" className={action} disabled={busy} onClick={sendToMe} data-testid="broadcast-send-me">Отправить себе</button>
 
-            <div className="mn-eyebrow mt-2">2. Выбери получателей — сообщения не уходят</div>
-            <button type="button" className={action} disabled={busy || waiting} data-testid="broadcast-pick"
-              onClick={() => choose(audience, !frozen && sampleFirst ? sampleSize : null, frozen ? 'всех остальных' : sampleFirst ? 'пробную группу' : 'всех')}>
-              {frozen ? `Выбрать всех остальных (${audienceName(audience)})` : sampleFirst ? 'Выбрать пробную группу' : `Выбрать всех (${audienceName(audience)})`}
-            </button>
+            {!scheduledAt && (
+              <>
+                <div className="mn-eyebrow mt-2">2. Выбери получателей — сообщения не уходят</div>
+                <button type="button" className={action} disabled={busy || waiting} data-testid="broadcast-pick"
+                  onClick={() => choose(audience, !frozen && sampleFirst ? sampleSize : null, frozen ? 'всех остальных' : sampleFirst ? 'пробную группу' : 'всех')}>
+                  {frozen ? `Выбрать всех остальных (${audienceName(audience)})` : sampleFirst ? 'Выбрать пробную группу' : `Выбрать всех (${audienceName(audience)})`}
+                </button>
 
-            <div className="mn-eyebrow mt-2">3. Отправь</div>
-            {sending ? (
+                <div className="mn-eyebrow mt-2">3. Отправь</div>
+              </>
+            )}
+            {scheduledAt ? null : sending ? (
               <>
                 <div className="font-sans text-[15px] text-jewelInk tabular-nums" data-testid="broadcast-sending">
                   Рассылается: дошло {status!.sent}, ждут {status!.pending}. Мини-апп можно закрыть — бот напишет, когда закончит.
@@ -423,14 +459,43 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
                 </button>
               </>
             )}
-            {!waiting && (
+            {!waiting && !scheduledAt && (
               <div className={small} data-testid="broadcast-send-hint">
                 {frozen ? 'Все выбранные уже получили сообщение. Можно выбрать остальных или ещё одну группу.' : 'Отправка откроется, когда выберешь получателей.'}
               </div>
             )}
 
+            {!sending && (
+              <>
+                <div className="mn-eyebrow mt-2">{scheduledAt ? '2. Уйдёт сама' : 'Или назначь время — уйдёт само'}</div>
+                {scheduledAt ? (
+                  <>
+                    <div className="font-sans text-[15px] text-jewelInk tabular-nums" data-testid="broadcast-scheduled">
+                      Запланирована на {scheduledText(scheduledAt, status!.scheduledTimeZone)}. Уйдёт сама всем, кто в этот момент будет в группе «{audienceName(audience)}».
+                      Мини-апп можно закрыть — бот напишет, когда разошлёт.
+                    </div>
+                    <button type="button" className={action} disabled={busy} onClick={cancelSchedule} data-testid="broadcast-schedule-cancel">Отменить расписание</button>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="date" className={`${field} min-h-[48px] min-w-0`} value={sendDate} aria-label="День отправки" onChange={e => setSendDate(e.target.value)} data-testid="broadcast-schedule-date" />
+                      <input type="time" className={`${field} min-h-[48px] min-w-0`} value={sendTime} aria-label="Время отправки" onChange={e => setSendTime(e.target.value)} data-testid="broadcast-schedule-time" />
+                    </div>
+                    <select className={`${field} min-h-[48px]`} value={sendZone} aria-label="Часовой пояс" onChange={e => setSendZone(e.target.value)} data-testid="broadcast-schedule-zone">
+                      {(ZONES.some(z => z.id === sendZone) ? ZONES : [...ZONES, { id: sendZone, name: zoneName(sendZone) }]).map(z => (
+                        <option key={z.id} value={z.id}>по времени: {z.name}</option>
+                      ))}
+                    </select>
+                    <button type="button" className={action} disabled={busy || !sendDate || !sendTime} onClick={schedule} data-testid="broadcast-schedule">Запланировать</button>
+                    <div className={small}>Выбирать получателей не нужно: в назначенный час сообщение получит вся группа «{audienceName(audience)}» — кто будет в ней в этот момент.</div>
+                  </>
+                )}
+              </>
+            )}
+
             {note && <div className="font-sans text-[14px] text-jewelInk" data-testid="broadcast-note">{note}</div>}
-            {status && (
+            {status && !(scheduledAt && status.total === 0) && (
               <div className={`${small} tabular-nums`} data-testid="broadcast-status">
                 Выбрано {status.total} · ждут {status.pending} · дошло {status.sent} · заблокировали {status.blocked} · отказ {status.rejected} · без
                 ответа Telegram {status.unknown}{status.buttonText ? ` · открыли по кнопке ${status.opened}` : ''}
@@ -438,7 +503,7 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
               </div>
             )}
 
-            {frozen && (
+            {frozen && !scheduledAt && (
               <div className="jewel-tile px-4 py-3 mt-2" data-testid="broadcast-another">
                 <div className="relative z-[1] flex flex-col gap-2">
                   <div className="font-sans text-[15px] font-extrabold text-jewelInk">Дослать ещё одной группе</div>
@@ -464,7 +529,7 @@ export default function AdminBroadcastScreen({ campaignKey, useDraft: withDraft,
                 </div>
               </div>
             )}
-            {frozen && <div className={small}>Получатели выбраны — текст, кнопку и подарок уже не поменять. Имя рассылки: {key}.</div>}
+            {frozen && <div className={small}>{scheduledAt && status?.total === 0 ? 'Рассылка записана' : 'Получатели выбраны'} — текст, кнопку и подарок уже не поменять. Имя рассылки: {key}.</div>}
           </>
         )}
 

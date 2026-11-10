@@ -42,6 +42,8 @@ public partial class BroadcastCampaignService(
     public const int MaxGiftOfferDays = 90;
     /// <summary>"Active" and "inactive" audiences: whether the person did anything in this many days.</summary>
     public const int ActivityWindowDays = 30;
+    /// <summary>How far ahead a campaign may be scheduled.</summary>
+    public const int MaxScheduleDays = 365;
     /// <summary>Pause between messages: 10 per second, three times under Telegram's bulk limit (~30/s),
     /// so the bot's own pushes and replies still fit.</summary>
     public static readonly TimeSpan SendDelay = TimeSpan.FromMilliseconds(100);
@@ -54,6 +56,9 @@ public partial class BroadcastCampaignService(
 
     [GeneratedRegex("^[A-Za-z0-9_.~%=&-]{0,256}$")]
     private static partial Regex ButtonQueryPattern();
+
+    [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9_+\-/]{1,63}$")]
+    private static partial Regex TimeZonePattern();
 
     /// <summary>How many people each audience has right now. Read-only.</summary>
     public async Task<IReadOnlyDictionary<BroadcastAudience, int>> CountAudiencesAsync(
@@ -91,7 +96,8 @@ public partial class BroadcastCampaignService(
             new CampaignDraft
             {
                 Key = key, MustBeNew = true, Audience = draft.Audience, Survey = draft.Survey,
-                ButtonText = draft.ButtonText, GiftDays = draft.GiftDays, GiftOfferDays = draft.GiftOfferDays
+                ButtonText = draft.ButtonText, GiftDays = draft.GiftDays, GiftOfferDays = draft.GiftOfferDays,
+                SendAtUtc = draft.SendAtUtc, SendAtTimeZone = draft.SendAtTimeZone
             },
             sampleSize, dryRun, ownerTelegramId, ct);
     }
@@ -119,7 +125,8 @@ public partial class BroadcastCampaignService(
             new CampaignDraft
             {
                 Key = key, MustBeNew = true, Audience = draft.Audience, Message = draft.Message, ButtonText = draft.ButtonText,
-                ButtonQuery = draft.ButtonQuery, GiftDays = draft.GiftDays, GiftOfferDays = draft.GiftOfferDays
+                ButtonQuery = draft.ButtonQuery, GiftDays = draft.GiftDays, GiftOfferDays = draft.GiftOfferDays,
+                SendAtUtc = draft.SendAtUtc, SendAtTimeZone = draft.SendAtTimeZone
             },
             sampleSize, dryRun, ownerTelegramId, ct);
     }
@@ -154,7 +161,8 @@ public partial class BroadcastCampaignService(
             deliveries.TryGetValue(c.Id, out var d);
             return new CampaignListItem(
                 c.Key, c.IsSurvey, c.Message, c.Audience, c.CreatedAtUtc, c.ButtonText, c.GiftDays,
-                d?.Picked ?? 0, d?.Pending ?? 0, d?.Sent ?? 0, d?.Opened ?? 0, d?.Gifted ?? 0);
+                d?.Picked ?? 0, d?.Pending ?? 0, d?.Sent ?? 0, d?.Opened ?? 0, d?.Gifted ?? 0,
+                c.ScheduledAtUtc, c.ScheduledTimeZone);
         }).ToList();
     }
 
@@ -163,6 +171,8 @@ public partial class BroadcastCampaignService(
     /// <paramref name="sampleSize"/> — take that many at random from those not picked yet;
     /// null — take everyone not picked yet (the "rest"). With <paramref name="dryRun"/> only counts.
     /// Safe to repeat: people already in the campaign are never picked again.
+    /// With <see cref="CampaignDraft.SendAtUtc"/> the campaign is scheduled instead: it is saved with its
+    /// time and nobody is picked — <see cref="StartScheduledAsync"/> picks the audience when the time comes.
     /// </summary>
     public async Task<CampaignPrepareResult> PrepareAsync(
         CampaignDraft draft, int? sampleSize, bool dryRun, long ownerTelegramId, CancellationToken ct)
@@ -189,6 +199,22 @@ public partial class BroadcastCampaignService(
         var giftOfferDays = draft.GiftOfferDays ?? DefaultGiftOfferDays;
         if (giftOfferDays is < 1 or > MaxGiftOfferDays)
             return CampaignPrepareResult.Fail($"Срок, пока подарок можно получить, — от 1 до {MaxGiftOfferDays} дней.");
+
+        var now = DateTime.UtcNow;
+        // A moment without a zone is taken as UTC — never as the server's local time.
+        DateTime? sendAt = draft.SendAtUtc is { } at
+            ? at.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(at, DateTimeKind.Utc) : at.ToUniversalTime()
+            : null;
+        var timeZone = string.IsNullOrWhiteSpace(draft.SendAtTimeZone) ? null : draft.SendAtTimeZone.Trim();
+        if (sendAt != null)
+        {
+            if (sampleSize != null)
+                return CampaignPrepareResult.Fail("По расписанию рассылка уходит всей группе. Пробной группе отправь сейчас, а остальным назначь время.");
+            if (sendAt <= now) return CampaignPrepareResult.Fail("Время отправки уже прошло. Назначь время в будущем.");
+            if (sendAt > now.AddDays(MaxScheduleDays))
+                return CampaignPrepareResult.Fail($"Назначить отправку можно не дальше чем на {MaxScheduleDays} дней вперёд.");
+            if (timeZone != null && !TimeZonePattern().IsMatch(timeZone)) return CampaignPrepareResult.Fail("Неизвестный часовой пояс.");
+        }
 
         string? surveyJson = null;
         if (draft.Survey != null)
@@ -222,6 +248,9 @@ public partial class BroadcastCampaignService(
         // campaign, so nobody gets the message or the gift twice — which is the reason to add, not to start anew.
         if (campaign != null && campaign.Audience != draft.Audience && !draft.AnotherAudience)
             return CampaignPrepareResult.Fail($"Кампания «{key}» уже заведена для другой аудитории ({campaign.Audience}). Возьми другое имя.");
+        // A scheduled campaign goes to the audience it was made for — that is whom the sender picks when the time comes.
+        if (campaign != null && campaign.Audience != draft.Audience && sendAt != null)
+            return CampaignPrepareResult.Fail($"Кампания «{key}» заведена для другой группы ({campaign.Audience}). Для этой группы назначь время отдельной рассылке.");
         // A button carries the number of its option, and answers are counted by the question's id and the
         // option's text: all would point at something else if the form changed under messages already picked.
         if (campaign != null && campaign.Survey?.ToJson() != surveyJson)
@@ -240,21 +269,14 @@ public partial class BroadcastCampaignService(
                 return CampaignPrepareResult.Fail($"У кампании «{key}» {waiting} получателей ждут отправки со старым текстом. Сначала отправь их.");
         }
 
-        var now = DateTime.UtcNow;
-        var users = await LoadReachableUsersAsync(ct);
-        var lastActive = await LoadLastActivityAsync(ct);
-        var payers = await LoadPayersAsync(ct);
-        var audience = users.Where(u => IsIn(u, draft.Audience, now, ownerTelegramId, lastActive, payers)).ToList();
-
-        var alreadyPicked = campaign == null
-            ? new HashSet<Guid>()
-            : (await db.BroadcastDeliveries.Where(d => d.CampaignId == campaign.Id).Select(d => d.UserId).ToListAsync(ct)).ToHashSet();
-        var candidates = audience.Where(u => !alreadyPicked.Contains(u.Id)).ToList();
+        var (audience, candidates) = await LoadCandidatesAsync(campaign?.Id, draft.Audience, now, ownerTelegramId, ct);
 
         // Random order, so the sample is not "the oldest accounts" or "the newest".
         var shuffled = candidates.ToArray();
         Random.Shared.Shuffle(shuffled);
-        var picked = sampleSize.HasValue ? shuffled.Take(sampleSize.Value).ToArray() : shuffled;
+        // A scheduled campaign picks nobody now: who is in the audience is decided when its time comes.
+        var picked = sendAt != null && !dryRun ? Array.Empty<User>()
+            : sampleSize.HasValue ? shuffled.Take(sampleSize.Value).ToArray() : shuffled;
 
         var result = new CampaignPrepareResult
         {
@@ -263,7 +285,8 @@ public partial class BroadcastCampaignService(
             AudienceTotal = audience.Count,
             AlreadyInCampaign = audience.Count - candidates.Count,
             Picked = picked.Length,
-            LeftForLater = candidates.Count - picked.Length
+            LeftForLater = candidates.Count - picked.Length,
+            ScheduledAtUtc = sendAt
         };
         if (dryRun) return result;
 
@@ -277,8 +300,16 @@ public partial class BroadcastCampaignService(
         campaign.ButtonQuery = buttonQuery;
         campaign.GiftDays = draft.GiftDays;
         campaign.SurveyJson = surveyJson;
-        // The offer runs from the day the campaign was created, whichever part a person is in.
-        campaign.GiftOfferEndsAtUtc = draft.GiftDays > 0 ? campaign.CreatedAtUtc.AddDays(giftOfferDays) : null;
+        // The offer runs from the day the campaign was created, whichever part a person is in; of a scheduled
+        // one — from the day it goes out. A later part never shortens what the earlier ones were promised.
+        var offerEnds = (sendAt ?? campaign.CreatedAtUtc).AddDays(giftOfferDays);
+        if (sendAt == null && campaign.GiftOfferEndsAtUtc > offerEnds) offerEnds = campaign.GiftOfferEndsAtUtc.Value;
+        campaign.GiftOfferEndsAtUtc = draft.GiftDays > 0 ? offerEnds : null;
+        if (sendAt != null)
+        {
+            campaign.ScheduledAtUtc = sendAt;
+            campaign.ScheduledTimeZone = timeZone;
+        }
 
         foreach (var user in picked)
         {
@@ -305,9 +336,72 @@ public partial class BroadcastCampaignService(
             return CampaignPrepareResult.Fail("Получателей этой кампании только что выбрал параллельный запрос. Обнови статус.");
         }
 
-        _logger.LogInformation("Campaign {Key}: picked {Picked} of {AudienceTotal} ({Audience}), sample={Sample}",
-            key, picked.Length, audience.Count, draft.Audience, sampleSize.HasValue);
+        if (sendAt != null)
+            _logger.LogInformation("Campaign {Key}: scheduled for {SendAt:u} ({Audience}, {AudienceTotal} people now)",
+                key, sendAt, draft.Audience, audience.Count);
+        else
+            _logger.LogInformation("Campaign {Key}: picked {Picked} of {AudienceTotal} ({Audience}), sample={Sample}",
+                key, picked.Length, audience.Count, draft.Audience, sampleSize.HasValue);
         return result;
+    }
+
+    /// <summary>Who is in the audience right now, and who of them is not in the campaign yet.</summary>
+    private async Task<(List<User> Audience, List<User> Candidates)> LoadCandidatesAsync(
+        Guid? campaignId, BroadcastAudience audience, DateTime now, long ownerTelegramId, CancellationToken ct)
+    {
+        var users = await LoadReachableUsersAsync(ct);
+        var lastActive = await LoadLastActivityAsync(ct);
+        var payers = await LoadPayersAsync(ct);
+        var inAudience = users.Where(u => IsIn(u, audience, now, ownerTelegramId, lastActive, payers)).ToList();
+
+        var alreadyPicked = campaignId == null
+            ? new HashSet<Guid>()
+            : (await db.BroadcastDeliveries.Where(d => d.CampaignId == campaignId).Select(d => d.UserId).ToListAsync(ct)).ToHashSet();
+        return (inAudience, inAudience.Where(u => !alreadyPicked.Contains(u.Id)).ToList());
+    }
+
+    /// <summary>
+    /// Starts the campaigns whose scheduled time has come: picks everyone who is in the audience now and not
+    /// in the campaign yet, and hands the campaign over to <see cref="SendRequestedAsync"/>. The recipients and
+    /// the "send to everyone" request are written in one transaction, so nobody sees a started campaign
+    /// without its recipients, and of several replicas exactly one starts it. Sends nothing itself.
+    /// Returns the keys of the campaigns started.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> StartScheduledAsync(DateTime now, long ownerTelegramId, CancellationToken ct)
+    {
+        var due = await db.BroadcastCampaigns.AsNoTracking()
+            .Where(c => c.ScheduledAtUtc != null && c.ScheduledAtUtc <= now)
+            .OrderBy(c => c.ScheduledAtUtc)
+            .Select(c => new { c.Id, c.Key, c.Audience })
+            .ToListAsync(ct);
+
+        var started = new List<string>();
+        foreach (var campaign in due)
+        {
+            await using var transaction = await db.BeginTransactionAsync(ct);
+            if (!await db.TryStartScheduledCampaignAsync(campaign.Id, now, ct)) continue;
+
+            var (audience, candidates) = await LoadCandidatesAsync(campaign.Id, campaign.Audience, now, ownerTelegramId, ct);
+            foreach (var user in candidates)
+            {
+                db.BroadcastDeliveries.Add(new BroadcastDelivery
+                {
+                    Id = Guid.NewGuid(),
+                    CampaignId = campaign.Id,
+                    UserId = user.Id,
+                    TelegramId = user.TelegramId,
+                    Status = BroadcastDeliveryStatus.Pending,
+                    CreatedAtUtc = now
+                });
+            }
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            _logger.LogInformation("Campaign {Key}: its time has come, picked {Picked} of {AudienceTotal} ({Audience})",
+                campaign.Key, candidates.Count, audience.Count, campaign.Audience);
+            started.Add(campaign.Key);
+        }
+        return started;
     }
 
     /// <summary>
@@ -405,12 +499,15 @@ public partial class BroadcastCampaignService(
         return await GetStatusAsync(key, ct);
     }
 
-    /// <summary>Stops the background sending of the campaign; what is left stays Pending. Null — no such campaign.</summary>
+    /// <summary>Stops the background sending of the campaign and takes it off the schedule; what is left stays
+    /// Pending. Null — no such campaign.</summary>
     public async Task<CampaignStatus?> StopSendAllAsync(string key, CancellationToken ct)
     {
         var campaign = await db.BroadcastCampaigns.FirstOrDefaultAsync(c => c.Key == key, ct);
         if (campaign == null) return null;
         campaign.SendAllRequestedAtUtc = null;
+        campaign.ScheduledAtUtc = null;
+        campaign.ScheduledTimeZone = null;
         await db.SaveChangesAsync(ct);
         _logger.LogInformation("Campaign {Key}: sending to everyone stopped", key);
         return await GetStatusAsync(key, ct);
@@ -481,6 +578,8 @@ public partial class BroadcastCampaignService(
             ButtonQuery = campaign.ButtonQuery,
             CreatedAtUtc = campaign.CreatedAtUtc,
             SendingAll = campaign.SendAllRequestedAtUtc != null,
+            ScheduledAtUtc = campaign.ScheduledAtUtc,
+            ScheduledTimeZone = campaign.ScheduledTimeZone,
             Total = rows.Count,
             Sample = rows.Count(r => r.IsSample),
             Pending = rows.Count(r => r.Status == BroadcastDeliveryStatus.Pending),
@@ -721,6 +820,10 @@ public class CampaignDraft
     public bool AnotherAudience { get; init; }
     /// <summary>Refuse when a campaign with this key already exists (see <see cref="BroadcastCampaignService.PrepareNewSurveyAsync"/>).</summary>
     public bool MustBeNew { get; init; }
+    /// <summary>Schedule the campaign for this moment instead of picking recipients now; null — pick now.</summary>
+    public DateTime? SendAtUtc { get; init; }
+    /// <summary>The time zone the owner named <see cref="SendAtUtc"/> in ("Asia/Tbilisi") — kept to show it back.</summary>
+    public string? SendAtTimeZone { get; init; }
 }
 
 /// <summary>A gift of access given by a campaign: how many days and until when the person now has access.</summary>
@@ -772,6 +875,8 @@ public class CampaignPrepareResult
     public int Picked { get; init; }
     /// <summary>In the audience, not picked yet.</summary>
     public int LeftForLater { get; init; }
+    /// <summary>The campaign was scheduled for this moment: nobody is picked until then.</summary>
+    public DateTime? ScheduledAtUtc { get; init; }
     public string? Error { get; init; }
 
     public static CampaignPrepareResult Fail(string error) => new() { Error = error };
@@ -780,7 +885,8 @@ public class CampaignPrepareResult
 /// <param name="Pending">Picked and not sent yet — above zero means the sending is unfinished.</param>
 public record CampaignListItem(
     string Key, bool IsSurvey, string Message, BroadcastAudience Audience, DateTime CreatedAtUtc, string? ButtonText, int GiftDays,
-    int Picked, int Pending, int Sent, int Opened, int Gifted);
+    int Picked, int Pending, int Sent, int Opened, int Gifted,
+    DateTime? ScheduledAtUtc = null, string? ScheduledTimeZone = null);
 
 public class CampaignSendResult
 {
@@ -809,6 +915,9 @@ public class CampaignStatus
 {
     /// <summary>The server is sending it to everyone picked by itself (<see cref="BroadcastCampaign.SendAllRequestedAtUtc"/>).</summary>
     public bool SendingAll { get; init; }
+    /// <summary>When the campaign goes out by itself; null — it is not scheduled.</summary>
+    public DateTime? ScheduledAtUtc { get; init; }
+    public string? ScheduledTimeZone { get; init; }
     public string Key { get; init; } = "";
     public BroadcastAudience Audience { get; init; }
     public string Message { get; init; } = "";
