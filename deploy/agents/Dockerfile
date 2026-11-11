@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 ENV TZ=Asia/Tbilisi
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# --- .NET 10 SDK (official Microsoft packages) ---------------------------------
+# --- .NET 11 SDK (official Microsoft packages) ---------------------------------
 # Needed so: (a) developer/qa agents can actually run `dotnet test` (previously
 # silently failed — no SDK in image), (b) the dotnet/skills LSP server
 # (roslyn-language-server) is usable by the developer/tech-lead/qa agents.
@@ -25,7 +25,7 @@ RUN curl -fsSL https://packages.microsoft.com/config/debian/12/packages-microsof
     && dpkg -i /tmp/packages-microsoft-prod.deb \
     && rm /tmp/packages-microsoft-prod.deb \
     && apt-get update \
-    && apt-get install -y dotnet-sdk-10.0 \
+    && apt-get install -y dotnet-sdk-11.0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Claude Code CLI

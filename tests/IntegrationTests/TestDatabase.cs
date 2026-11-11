@@ -74,9 +74,8 @@ public static class TestDatabase
         // Fixtures run side by side, each with its own application, connection pool and Hangfire workers,
         // hence far more connections than the default 100. fsync is off: a test database never has to
         // survive a crash, and the data lives in memory, so the run touches no disk at all.
-        var container = new PostgreSqlBuilder()
+        var container = new PostgreSqlBuilder("postgres:16.1")
             .WithAutoRemove(true)
-            .WithImage("postgres:16.1")
             .WithTmpfsMount("/var/lib/postgresql/data")
             .WithCommand("-c", "max_connections=1000", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off")
             .Build();

@@ -18,7 +18,7 @@
 
 ## Стек
 
-**Backend:** .NET 8, C#, Clean Architecture + CQRS, EF Core, PostgreSQL
+**Backend:** .NET 11, C#, Clean Architecture + CQRS, EF Core, PostgreSQL
 **Frontend:** React 18 + Vite + TypeScript + TailwindCSS, в `src/Trale/miniapp-src/`
 **Тесты:** xUnit, builder-паттерн для test data (`tests/*/DSL/`)
 

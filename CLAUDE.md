@@ -6,13 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TraleBot — Telegram mini-app for learning Georgian (ქართული). Прод бот: `@trale_bot`, лендинг: tralebot.com, локальный тест-бот: `@traletest_bot`.
 
-Главный продукт — мини-апп внутри Telegram WebApp. Бэкенд .NET 10 отдаёт REST API + контент уроков, фронт — React-SPA в `src/Trale/wwwroot/`. Что учит пользователя: алфавит, числа, грамматика (падежи, послелоги, спряжение, аорист, имперфект, условия), тематический словарь (кафе, шопинг, такси и т.д.), личный словарь с квизами.
+Главный продукт — мини-апп внутри Telegram WebApp. Бэкенд .NET 11 отдаёт REST API + контент уроков, фронт — React-SPA в `src/Trale/wwwroot/`. Что учит пользователя: алфавит, числа, грамматика (падежи, послелоги, спряжение, аорист, имперфект, условия), тематический словарь (кафе, шопинг, такси и т.д.), личный словарь с квизами.
 
 Монетизация — Telegram Stars (XTR), pay-once Pro. 6 launch-модулей бесплатны, остальные за Pro. Без hearts/lives и без gating контента (после оплаты — всё доступно).
 
 ## Architecture
 
-.NET 10 / C# / Clean Architecture, слои:
+.NET 11 / C# / Clean Architecture, слои:
 
 - **Domain** (`src/Domain/`) — сущности и доменная логика
 - **Application** (`src/Application/`) — use cases, команды/запросы (CQRS, миграция от MediatR к services по ARCHITECTURE.md)
