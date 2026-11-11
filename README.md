@@ -14,7 +14,7 @@
 
 ## Стек
 
-- **Backend:** .NET 10, C#, Clean Architecture (Domain / Application / Infrastructure / Persistence / Trale Web API), EF Core, PostgreSQL.
+- **Backend:** .NET 11, C#, Clean Architecture (Domain / Application / Infrastructure / Persistence / Trale Web API), EF Core, PostgreSQL.
 - **Mini-app:** React 18 + Vite + TypeScript + Tailwind, в `src/Trale/miniapp-src/`. Сборка статики в `src/Trale/wwwroot/`.
 - **Тесты:** xUnit (unit + integration с Testcontainers/Postgres), Playwright (E2E мини-аппа), vitest + @testing-library/react (компоненты).
 - **TTS:** Piper (локальный нейросетевой грузинский голос ka_GE-natia-medium).
