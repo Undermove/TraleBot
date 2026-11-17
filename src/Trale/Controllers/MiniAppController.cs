@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Common;
+using Application.DailyTask;
 using Application.MiniApp;
 using Application.MiniApp.Commands;
 using Application.MiniApp.Queries;
@@ -18,7 +19,9 @@ using Infrastructure.Telegram;
 using Infrastructure.Telegram.BotCommands.PaymentCommands;
 using MediatR;
 using Infrastructure.Telegram.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -1768,6 +1771,125 @@ public class MiniAppController : Controller
     };
 
     /// <summary>The caller when they may use the verbs section; otherwise the response to return.</summary>
+    // ── «Задание дня» ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Today's task, composed once a day from the learner's own forms and dictionary.
+    /// <c>available: false</c> when there is nothing to build it from.
+    /// </summary>
+    [HttpGet("daily-task")]
+    public async Task<IActionResult> GetDailyTask(
+        [FromServices] DailyTaskService daily, [FromServices] DailyTaskAudience audience, [FromServices] IWebHostEnvironment env, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        return Ok(await daily.GetAsync(user, DateTime.UtcNow, IsStand(env), ct));
+    }
+
+    public class DailyResultRequest
+    {
+        public string Day { get; set; } = "";
+        public List<string> WarmWrong { get; set; } = new();
+        public List<string> PairWrong { get; set; } = new();
+        public int Errors { get; set; }
+        public int CheckErrors { get; set; }
+        public int Seconds { get; set; }
+    }
+
+    /// <summary>The task is played to the end. Idempotent: a repeated report returns what was saved.</summary>
+    [HttpPost("daily-task/result")]
+    public async Task<IActionResult> SaveDailyTaskResult(
+        [FromBody] DailyResultRequest request,
+        [FromServices] DailyTaskService daily,
+        [FromServices] DailyTaskAudience audience,
+        [FromServices] IWebHostEnvironment env,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+        if (request == null || request.WarmWrong.Count > 50 || request.PairWrong.Count > 50)
+        {
+            return BadRequest(new { error = "invalid_result" });
+        }
+
+        var report = new DailyReport(request.Day, request.WarmWrong, request.PairWrong, Math.Max(0, request.Errors), Math.Max(0, request.CheckErrors));
+        var saved = await daily.SaveResultAsync(user, report, DateTime.UtcNow, IsStand(env), ct);
+        return saved == null
+            ? Conflict(new { error = "stale_day" })
+            : Ok(new { task = saved.Task, xpEarned = saved.XpEarned, progress = saved.Progress });
+    }
+
+    public class DailyOfferRequest
+    {
+        public string Day { get; set; } = "";
+        public string Outcome { get; set; } = "";
+    }
+
+    /// <summary>The "new" offered after the task was opened, or the one-minute module check ended.</summary>
+    [HttpPost("daily-task/offer")]
+    public async Task<IActionResult> ReportDailyTaskOffer(
+        [FromBody] DailyOfferRequest request,
+        [FromServices] DailyTaskService daily,
+        [FromServices] DailyTaskAudience audience,
+        [FromServices] IWebHostEnvironment env,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+        if (request == null || request.Outcome is not ("opened" or "passed" or "failed"))
+        {
+            return BadRequest(new { error = "invalid_outcome" });
+        }
+
+        var task = await daily.ReportOfferAsync(user, request.Day, request.Outcome, DateTime.UtcNow, IsStand(env), ct);
+        return task == null ? Conflict(new { error = "stale_day" }) : Ok(new { task });
+    }
+
+    public class DailyShiftRequest
+    {
+        public int Days { get; set; } = 1;
+    }
+
+    /// <summary>Local stand only: as if <c>days</c> days passed — the task of the "next day" is composed.</summary>
+    [HttpPost("daily-task/dev/next-day")]
+    public async Task<IActionResult> DailyTaskNextDay(
+        [FromBody] DailyShiftRequest request,
+        [FromServices] DailyTaskService daily,
+        [FromServices] DailyTaskAudience audience,
+        [FromServices] IWebHostEnvironment env,
+        CancellationToken ct)
+    {
+        if (!IsStand(env)) return NotFound();
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        await daily.DevShiftAsync(user.Id, Math.Clamp(request?.Days ?? 1, 1, 60), ct);
+        return Ok(new { task = await daily.GetAsync(user, DateTime.UtcNow, true, ct) });
+    }
+
+    /// <summary>Local stand only: today's reminder (the same message the hourly worker sends) — now.</summary>
+    [HttpPost("daily-task/dev/push")]
+    public async Task<IActionResult> DailyTaskPush(
+        [FromServices] DailyTaskReminderService reminder,
+        [FromServices] DailyTaskAudience audience,
+        [FromServices] IWebHostEnvironment env,
+        CancellationToken ct)
+    {
+        if (!IsStand(env)) return NotFound();
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        return Ok(new { ok = await reminder.RemindAsync(user, DateTime.UtcNow, force: true, ct) });
+    }
+
+    private static bool IsStand(IWebHostEnvironment env) => env.IsEnvironment("local") || env.IsDevelopment();
+
     private async Task<(User User, IActionResult Denied)> ResolveVerbsUserAsync(CancellationToken ct)
     {
         var user = await ResolveUserAsync(ct);

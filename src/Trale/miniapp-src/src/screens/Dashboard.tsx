@@ -12,6 +12,7 @@ import FeedingAnimation from '../components/FeedingAnimation'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
 import VerbsTile from '../verbs/section/VerbsTile'
+import DailyCard from '../daily/DailyCard'
 
 const XP_THRESHOLDS = Object.keys(XP_MILESTONES).map(Number)
 const STREAK_THRESHOLDS = Object.keys(STREAK_MILESTONES).map(Number)
@@ -307,6 +308,8 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 </button>
               </div>
 
+              {/* «Задание дня» — первым: короткое занятие из своего, потом «новое». */}
+              <DailyCard navigate={navigate} />
               {suggestion && (
                 <button
                   data-testid="dashboard-suggestion"

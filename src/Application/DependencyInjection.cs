@@ -107,6 +107,11 @@ public static class DependencyInjection
         services.AddScoped<LessonVerbAnnotator>();
         services.AddScoped<DictionaryVerbsQuery>();
         services.AddScoped<VerbProgressService>();
+        services.AddScoped<DailyTask.DailyTaskService>();
+        // «Задание дня»: the daily reminder; HourlyNotificationWorker ticks it.
+        services.AddScoped<DailyTask.DailyTaskReminderService>();
+        services.AddScoped<DailyTask.IDailyTaskReminderService>(
+            sp => sp.GetRequiredService<DailyTask.DailyTaskReminderService>());
         services.AddScoped<VerbLearningService>();
         services.AddScoped<MyVerbsQuery>();
         services.AddScoped<ModelMadeVerbsQuery>();

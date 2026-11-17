@@ -81,6 +81,12 @@ public interface IUserNotificationService
     Task SendFirstWeekNudgeAsync(User user, Application.Notifications.FirstWeekNudge nudge, CancellationToken ct);
 
     /// <summary>
+    /// The «Задание дня» reminder (see <c>DailyTaskReminderService</c>): today's task in Bombora's words and one
+    /// web-app button into it, tagged <c>src=push_daily_task</c>. 403 → user flagged inactive; 429 → single retry.
+    /// </summary>
+    Task SendDailyTaskReminderAsync(User user, string text, string button, CancellationToken ct);
+
+    /// <summary>
     /// The tip to pin the chat with the bot (see <c>PinChatTip</c>): plain text, no button. Sent from the
     /// lesson-complete request, so no bulk delay and no retry. 403 → user flagged inactive.
     /// </summary>

@@ -513,6 +513,39 @@ public class TelegramNotificationService : IUserNotificationService
         await Task.Delay(BulkSendDelay, ct);
     }
 
+    public async Task SendDailyTaskReminderAsync(Domain.Entities.User user, string text, string button, CancellationToken ct)
+    {
+        if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return;
+
+        var url = $"{_botConfig.NormalizedHost()}/?screen=daily&src=push_daily_task";
+        var keyboard = new InlineKeyboardMarkup(new[]
+        {
+            new[] { InlineKeyboardButton.WithWebApp(button, new WebAppInfo { Url = url }) }
+        });
+
+        try
+        {
+            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: text, replyMarkup: keyboard, cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 429)
+        {
+            var retryAfterSeconds = ex.Parameters?.RetryAfter ?? 1;
+            _logger.LogInformation(
+                "Daily task reminder for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
+                user.TelegramId, retryAfterSeconds);
+            await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
+            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: text, replyMarkup: keyboard, cancellationToken: ct);
+        }
+        catch (ApiRequestException ex) when (ex.ErrorCode == 403)
+        {
+            _logger.LogInformation("Daily task reminder for {TelegramId} blocked (403); marking user inactive", user.TelegramId);
+            user.IsActive = false;
+            return;
+        }
+
+        await Task.Delay(BulkSendDelay, ct);
+    }
+
     private InlineKeyboardMarkup? BuildReferralBonusKeyboard()
     {
         if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return null;
