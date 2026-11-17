@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Button from '../components/Button'
 import LoaderLetter from '../components/LoaderLetter'
-import { api, reportDailyOffer, saveDailyResult, type ProgressDto } from '../api'
+import { api, fetchDailyExtra, reportDailyOffer, saveDailyExtra, saveDailyResult, type ProgressDto } from '../api'
 import { publishProgress } from '../progress'
 import type { Screen } from '../types'
 import PlaySession from '../verbs/section/PlaySession'
@@ -11,13 +11,14 @@ import {
   buildReport, emptyRun, finaleTitle, flowOf, georgianWords, hasGeorgian, minuteQuestions, plural, streakLine,
   type DailyRun, type MinuteQuestion
 } from './logic'
-import { Check, Intro, PairsGame, Warm } from './steps'
+import { Back, Check, Intro, PairsGame, Warm } from './steps'
 import { cachedDaily, loadDaily, setDaily } from './store'
 import { DailyHeader, Geo, LinkButton, Page, Say, StepTitle } from './ui'
 import type { DailyNew, DailyTaskDto } from './types'
 
-// Экран «Задания дня»: вступление → разминка → пары → проверка → итог с «новым».
+// Экран «Задания дня»: вступление → разминка → пары → с русского на грузинский → проверка → итог с «новым».
 // Если задание уже сделано, экран сразу открывается итогом: так туда ведёт и карточка на главной.
+// С итога можно сыграть ещё раунд (те же шаги без разминки) — сколько угодно раз, пока есть что повторять.
 
 type Stage =
   | { kind: 'intro' }
@@ -32,6 +33,9 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
   const [loading, setLoading] = useState(!cachedDaily())
   const [stage, setStage] = useState<Stage>(() => (cachedDaily()?.done ? { kind: 'finale' } : { kind: 'intro' }))
   const [verb, setVerb] = useState<string | null>(null)
+  /** Раунд сверх задания, который сейчас играется. */
+  const [extra, setExtra] = useState<DailyTaskDto | null>(null)
+  const [extraState, setExtraState] = useState<'idle' | 'loading' | 'none' | 'failed'>('idle')
   const run = useRef<DailyRun>(emptyRun())
   const home = () => navigate({ kind: 'dashboard' })
 
@@ -63,15 +67,18 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
     )
   }
 
-  const flow = flowOf(task)
+  const play = extra ?? task
+  const flow = flowOf(play)
 
   async function save() {
     setStage({ kind: 'saving' })
     try {
-      const saved = await saveDailyResult(buildReport(task!, run.current))
+      const report = buildReport(play, run.current)
+      const saved = await (extra ? saveDailyExtra(report) : saveDailyResult(report))
       if (saved.progress) publishProgress(saved.progress as unknown as ProgressDto)
       setDaily(saved.task)
       setTask(saved.task)
+      setExtra(null)
       setStage({ kind: 'finale' })
     } catch {
       setStage({ kind: 'save-failed' })
@@ -96,22 +103,35 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
     }
   }
 
+  async function playExtra() {
+    setExtraState('loading')
+    try {
+      const { extra: round } = await fetchDailyExtra()
+      if (!round) return setExtraState('none')
+      setExtra(round)
+      setExtraState('idle')
+      setStage({ kind: 'intro' })
+    } catch {
+      setExtraState('failed')
+    }
+  }
+
   if (verb) return <PlaySession verbId={verb} onExit={home} />
 
   switch (stage.kind) {
     case 'intro':
-      return <Intro task={task} onExit={home} onStart={() => { run.current = emptyRun(); setStage({ kind: 'step', at: 0 }) }} />
+      return <Intro task={play} onExit={home} onStart={() => { run.current = emptyRun(); setStage({ kind: 'step', at: 0 }) }} />
 
     case 'step': {
       const head = { steps: flow.length, at: stage.at + 1, onExit: home }
       const step = flow[stage.at]
       if (step === 'warm') {
-        return <Warm {...head} rounds={task.warm} onDone={wrong => { run.current = { ...run.current, warmWrong: wrong }; next(stage.at) }} />
+        return <Warm {...head} rounds={play.warm} onDone={wrong => { run.current = { ...run.current, warmWrong: wrong }; next(stage.at) }} />
       }
       if (step === 'game') {
         return (
           <PairsGame
-            {...head} pairs={task.pairs} seconds={task.seconds}
+            {...head} key={extra ? `extra-${task.extras ?? 0}` : 'task'} pairs={play.pairs} seconds={play.seconds}
             onDone={r => {
               run.current = { ...run.current, errors: run.current.errors + r.errors, pairWrong: [...new Set([...run.current.pairWrong, ...r.wrong])], seconds: r.seconds }
               next(stage.at)
@@ -119,7 +139,10 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
           />
         )
       }
-      return <Check {...head} check={task.check} onDone={errors => { run.current = { ...run.current, checkErrors: errors }; next(stage.at) }} />
+      if (step === 'back') {
+        return <Back {...head} rounds={play.back ?? []} onDone={wrong => { run.current = { ...run.current, backWrong: wrong }; next(stage.at) }} />
+      }
+      return <Check {...head} check={play.check} onDone={errors => { run.current = { ...run.current, checkErrors: errors }; next(stage.at) }} />
     }
 
     case 'saving':
@@ -142,21 +165,32 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
         : null
 
     case 'finale':
-      return <Finale task={task} onOffer={takeOffer} onHome={home} />
+      return <Finale task={task} onOffer={takeOffer} onHome={home} onExtra={playExtra} extraState={extraState} />
   }
 }
 
 // ── Итог ─────────────────────────────────────────────────────────────────────
 
-function Finale({ task, onOffer, onHome }: { task: DailyTaskDto; onOffer: (o: DailyNew) => void; onHome: () => void }) {
+/** Опыт за раунд сверх задания (DailyTaskPlanner.XpExtra). */
+const EXTRA_XP = 10
+const MORE = 'Можно ещё: сыграй раунд на том, что давно не повторялось.'
+
+function Finale({ task, onOffer, onHome, onExtra, extraState }: {
+  task: DailyTaskDto; onOffer: (o: DailyNew) => void; onHome: () => void
+  onExtra: () => void; extraState: 'idle' | 'loading' | 'none' | 'failed'
+}) {
   const result = task.result
   const errors = result?.errors ?? 0
+  const extras = task.extras ?? 0
   const offer = task.offer && !task.offerTaken ? task.offer : null
-  const say = offer ? offer.say
-    : task.offer && task.offerTaken ? 'На сегодня всё. Завтра будет новое задание.'
-    : task.mode === 'review' ? 'Знакомое закреплено. Завтра, если игра пройдёт чисто, возьмём новое.'
-    : errors > 1 ? `Нового сегодня нет: в игре ${errors} ${plural(errors, 'ошибка', 'ошибки', 'ошибок')}. Завтра повторим эти формы ещё раз.`
-    : 'На сегодня всё. Завтра будет новое задание.'
+  const extraLabel = `Ещё раунд · +${EXTRA_XP} опыта`
+  const say = extraState === 'none' ? 'На сегодня повторено всё, что открыто. Завтра будет новое задание.'
+    : extraState === 'failed' ? 'Связь пропала, раунд не загрузился. Нажми ещё раз.'
+    : offer ? offer.say
+    : extras > 0 ? `Сверх задания: ${extras} ${plural(extras, 'раунд', 'раунда', 'раундов')}. Можно закрепить ещё: сыграй новый раунд.`
+    : task.mode === 'review' ? `Знакомое закреплено. Завтра, если игра пройдёт чисто, возьмём новое. ${MORE}`
+    : errors > 1 ? `Нового сегодня нет: в игре ${errors} ${plural(errors, 'ошибка', 'ошибки', 'ошибок')}. Эти формы повторим завтра. ${MORE}`
+    : `Задание дня закрыто. ${MORE}`
 
   return (
     <Page testId="daily-finale">
@@ -174,6 +208,7 @@ function Finale({ task, onOffer, onHome }: { task: DailyTaskDto; onOffer: (o: Da
       </div>
       <div className="px-5 mt-2 text-center text-[13px] font-semibold text-jewelInk-mid" data-testid="daily-stat">
         {errors === 0 ? 'Игра без ошибок' : `В игре ${errors} ${plural(errors, 'ошибка', 'ошибки', 'ошибок')}`}
+        {extras > 0 && ` · ещё ${extras} ${plural(extras, 'раунд', 'раунда', 'раундов')}`}
       </div>
       <div className="flex-1 min-h-[12px]" />
       {offer && (
@@ -190,10 +225,16 @@ function Finale({ task, onOffer, onHome }: { task: DailyTaskDto; onOffer: (o: Da
         {offer ? (
           <>
             <Button onClick={() => onOffer(offer)}>{offer.button}</Button>
+            {extraState !== 'none' && <LinkButton onClick={onExtra} testId="daily-extra">{extraLabel}</LinkButton>}
             <LinkButton onClick={onHome} testId="daily-home">На главную</LinkButton>
           </>
-        ) : (
+        ) : extraState === 'none' ? (
           <Button onClick={onHome}>На главную</Button>
+        ) : (
+          <>
+            <div data-testid="daily-extra"><Button onClick={onExtra} disabled={extraState === 'loading'}>{extraLabel}</Button></div>
+            <LinkButton onClick={onHome} testId="daily-home">На главную</LinkButton>
+          </>
         )}
       </div>
     </Page>

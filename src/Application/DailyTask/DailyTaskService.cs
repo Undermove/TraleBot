@@ -96,9 +96,11 @@ public class DailyTaskService(
             return new DailySaved(task with { Dev = dev }, 0, progressCalculator.SerializeProgress(progress));
         }
 
-        var warmWrong = report.WarmWrong.ToHashSet();
-        var pairWrong = report.PairWrong.ToHashSet();
-        var errors = Math.Max(report.Errors, pairWrong.Count);
+        // A miss on the way back counts against the form wherever it came from: the warm-up or the pairs.
+        var backWrong = report.BackWrong ?? [];
+        var warmWrong = report.WarmWrong.Concat(backWrong).ToHashSet();
+        var errors = Math.Max(report.Errors, report.PairWrong.Count);
+        var pairWrong = report.PairWrong.Concat(backWrong).ToHashSet();
 
         await ApplyFormsAsync(user.Id, task, warmWrong, pairWrong, now, ct);
         await ApplyWordsAsync(user.Id, task, pairWrong, now, ct);
@@ -122,6 +124,80 @@ public class DailyTaskService(
         await dbContext.SaveChangesAsync(ct);
 
         return new DailySaved(task with { Dev = dev }, DailyTaskPlanner.XpReward, progressCalculator.SerializeProgress(progress));
+    }
+
+    /// <summary>
+    /// One more round after the task is done: the round being played, or a new one from what was practised
+    /// longest ago. Null when today's task is not done yet or there is nothing left to build a round from.
+    /// </summary>
+    public async Task<DailyTaskDto?> ExtraAsync(User user, DateTime now, bool dev, CancellationToken ct)
+    {
+        var state = await LoadStateAsync(user.Id, now, ct);
+        if (state.TaskJson == null || state.Day != DateOnly.FromDateTime(now))
+        {
+            return null;
+        }
+
+        var task = Read(state.TaskJson);
+        if (!task.Done)
+        {
+            return null;
+        }
+
+        if (task.Extra != null)
+        {
+            return task.Extra with { Dev = dev };
+        }
+
+        var input = await InputAsync(user, state, now, ct);
+        // The main task's forms that went wrong were not moved and still look "long unseen" — they wait for tomorrow.
+        var skip = task.Pairs.Concat(task.Warm.Select(w => w.Item)).Select(i => i.Key).ToHashSet();
+        var extra = DailyTaskPlanner.Extra(input with { Seed = input.Seed + task.Extras + 1 }, skip);
+        if (extra == null)
+        {
+            return null;
+        }
+
+        state.TaskJson = Write(task with { Extra = extra });
+        state.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync(ct);
+        return extra with { Dev = dev };
+    }
+
+    /// <summary>The extra round played out: forms and words move as in the task, XP is credited. Null when no round is being played.</summary>
+    public async Task<DailySaved?> SaveExtraAsync(User user, DailyReport report, DateTime now, bool dev, CancellationToken ct)
+    {
+        var state = await LoadStateAsync(user.Id, now, ct);
+        if (state.TaskJson == null || state.Day?.ToString("yyyy-MM-dd") != report.Day)
+        {
+            return null;
+        }
+
+        var task = Read(state.TaskJson);
+        var progress = await MiniAppHelpers.LoadOrCreateProgressAsync(dbContext, user.Id, ct);
+        if (task.Extra is not { } extra)
+        {
+            return new DailySaved(task with { Dev = dev }, 0, progressCalculator.SerializeProgress(progress));
+        }
+
+        var backWrong = report.BackWrong ?? [];
+        var pairWrong = report.PairWrong.Concat(backWrong).ToHashSet();
+        await ApplyFormsAsync(user.Id, extra, [], pairWrong, now, ct);
+        await ApplyWordsAsync(user.Id, extra, pairWrong, now, ct);
+        progressCalculator.CreditPractice(progress, DailyTaskPlanner.XpExtra);
+        state.Accuracy = DailyTaskPlanner.NextAccuracy(state.Accuracy, Math.Max(report.Errors, report.PairWrong.Count));
+
+        var result = task.Result ?? new DailyResult(0, 0, progress.Streak);
+        task = task with
+        {
+            Extra = null,
+            Extras = task.Extras + 1,
+            Result = result with { XpEarned = result.XpEarned + DailyTaskPlanner.XpExtra, Streak = progress.Streak }
+        };
+        state.TaskJson = Write(task);
+        state.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync(ct);
+        return new DailySaved(task with { Dev = dev }, DailyTaskPlanner.XpExtra, progressCalculator.SerializeProgress(progress));
     }
 
     /// <summary>
@@ -195,8 +271,10 @@ public class DailyTaskService(
         await dbContext.SaveChangesAsync(ct);
     }
 
-    private async Task<DailyTaskDto> ComposeAsync(
-        User user, DailyTaskState state, DateTime now, CancellationToken ct)
+    private async Task<DailyTaskDto> ComposeAsync(User user, DailyTaskState state, DateTime now, CancellationToken ct) =>
+        DailyTaskPlanner.Compose(await InputAsync(user, state, now, ct));
+
+    private async Task<DailyInput> InputAsync(User user, DailyTaskState state, DateTime now, CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(now);
         var progress = await dbContext.MiniAppUserProgresses.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
@@ -210,7 +288,7 @@ public class DailyTaskService(
         var words = await LoadWordsAsync(user.Id, ct);
         var completed = ReadCompleted(progress?.CompletedLessonsJson);
 
-        var input = new DailyInput
+        return new DailyInput
         {
             Now = now,
             Away = away,
@@ -229,7 +307,6 @@ public class DailyTaskService(
             // Not HashCode.Combine: it is randomized per process, and the day's shuffle must not depend on a restart.
             Seed = user.Id.GetHashCode() ^ today.DayNumber
         };
-        return DailyTaskPlanner.Compose(input);
     }
 
     /// <summary>Opened forms with their text and meaning, and what is still closed in the started verbs.</summary>

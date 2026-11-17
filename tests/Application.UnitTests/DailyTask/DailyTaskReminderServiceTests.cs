@@ -59,15 +59,15 @@ public class DailyTaskReminderServiceTests : CommandTestsBase
 
     private void Reminded(User user, Times times) =>
         _sender.Verify(s => s.SendDailyTaskReminderAsync(
-            It.Is<User>(u => u.Id == user.Id), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), times);
+            It.Is<User>(u => u.Id == user.Id), It.IsAny<DailyPush>(), It.IsAny<CancellationToken>()), times);
 
     [Test]
-    public async Task The_owner_gets_todays_task_once_a_day_with_its_words_and_button()
+    public async Task The_owner_gets_todays_push_once_a_day_with_a_headline_and_button()
     {
         var owner = await Learner(Owner);
-        string? text = null, button = null;
-        _sender.Setup(s => s.SendDailyTaskReminderAsync(It.IsAny<User>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Callback<User, string, string, CancellationToken>((_, t, b, _) => { text = t; button = b; });
+        DailyPush? push = null;
+        _sender.Setup(s => s.SendDailyTaskReminderAsync(It.IsAny<User>(), It.IsAny<DailyPush>(), It.IsAny<CancellationToken>()))
+            .Callback<User, DailyPush, CancellationToken>((_, p, _) => push = p);
 
         await Sut().DispatchAsync(Evening, CancellationToken.None);
         await Sut().DispatchAsync(Evening.AddHours(1), CancellationToken.None);
@@ -75,8 +75,11 @@ public class DailyTaskReminderServiceTests : CommandTestsBase
         Reminded(owner, Times.Once());
         var task = Context.DailyTaskStates.Single(s => s.UserId == owner.Id);
         task.TaskJson.ShouldNotBeNull();
-        text.ShouldNotBeNullOrWhiteSpace();
-        button.ShouldBe("Повторить");
+        push.ShouldNotBeNull();
+        push.Headline.ShouldNotBeNullOrWhiteSpace();
+        push.Line.ShouldNotBeNullOrWhiteSpace();
+        push.Button.ShouldBe("Начать · 2 минуты");
+        Context.NotificationTriggers.Single(t => t.Source == DailyTaskReminderService.Source).Variant.ShouldBe(push.Variant);
 
         await Sut().DispatchAsync(Evening.AddDays(1), CancellationToken.None);
         Reminded(owner, Times.Exactly(2));

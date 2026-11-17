@@ -1796,7 +1796,13 @@ public class MiniAppController : Controller
         public int Errors { get; set; }
         public int CheckErrors { get; set; }
         public int Seconds { get; set; }
+        public List<string> BackWrong { get; set; } = new();
     }
+
+    private static DailyReport? ToReport(DailyResultRequest request) =>
+        request == null || request.WarmWrong.Count > 50 || request.PairWrong.Count > 50 || request.BackWrong.Count > 50
+            ? null
+            : new DailyReport(request.Day, request.WarmWrong, request.PairWrong, Math.Max(0, request.Errors), Math.Max(0, request.CheckErrors), request.BackWrong);
 
     /// <summary>The task is played to the end. Idempotent: a repeated report returns what was saved.</summary>
     [HttpPost("daily-task/result")]
@@ -1810,13 +1816,47 @@ public class MiniAppController : Controller
         var (user, denied) = await ResolveVerbsUserAsync(ct);
         if (denied != null) return denied;
         if (!audience.Includes(user.TelegramId)) return NotFound();
-        if (request == null || request.WarmWrong.Count > 50 || request.PairWrong.Count > 50)
+        if (ToReport(request) is not { } report)
         {
             return BadRequest(new { error = "invalid_result" });
         }
 
-        var report = new DailyReport(request.Day, request.WarmWrong, request.PairWrong, Math.Max(0, request.Errors), Math.Max(0, request.CheckErrors));
         var saved = await daily.SaveResultAsync(user, report, DateTime.UtcNow, IsStand(env), ct);
+        return saved == null
+            ? Conflict(new { error = "stale_day" })
+            : Ok(new { task = saved.Task, xpEarned = saved.XpEarned, progress = saved.Progress });
+    }
+
+    /// <summary>One more round after the task: the one being played or a new one; null — the task is not done or nothing is left.</summary>
+    [HttpPost("daily-task/extra")]
+    public async Task<IActionResult> GetDailyExtra(
+        [FromServices] DailyTaskService daily, [FromServices] DailyTaskAudience audience, [FromServices] IWebHostEnvironment env, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        return Ok(new { extra = await daily.ExtraAsync(user, DateTime.UtcNow, IsStand(env), ct) });
+    }
+
+    /// <summary>The extra round is played out.</summary>
+    [HttpPost("daily-task/extra/result")]
+    public async Task<IActionResult> SaveDailyExtraResult(
+        [FromBody] DailyResultRequest request,
+        [FromServices] DailyTaskService daily,
+        [FromServices] DailyTaskAudience audience,
+        [FromServices] IWebHostEnvironment env,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+        if (ToReport(request) is not { } report)
+        {
+            return BadRequest(new { error = "invalid_result" });
+        }
+
+        var saved = await daily.SaveExtraAsync(user, report, DateTime.UtcNow, IsStand(env), ct);
         return saved == null
             ? Conflict(new { error = "stale_day" })
             : Ok(new { task = saved.Task, xpEarned = saved.XpEarned, progress = saved.Progress });

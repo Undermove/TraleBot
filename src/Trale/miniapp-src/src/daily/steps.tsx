@@ -4,9 +4,10 @@ import Button from '../components/Button'
 import { bad, good, haptic } from '../verbs/ui/juice'
 import { allMatched, clock, newPairs, pairsHint, plural, tapPair, timeOut, type PairsState, type Side } from './logic'
 import { DailyHeader, Dots, Geo, LinkButton, Page, Rich, Say, Sheet, StepTitle } from './ui'
-import type { DailyItem, DailyTaskDto, DailyWarmRound } from './types'
+import { cyr } from '../verbs/types'
+import type { DailyBackRound, DailyItem, DailyTaskDto, DailyWarmRound } from './types'
 
-// Шаги занятия: вступление, разминка, игра «Собери пары» и проверка. Каждый шаг — один экран без прокрутки.
+// Шаги занятия: вступление, разминка, игра «Собери пары», обратный путь и проверка. Каждый шаг — один экран без прокрутки.
 
 interface StepProps { steps: number; at: number; onExit: () => void }
 
@@ -103,6 +104,68 @@ export function Warm({ rounds, onDone, ...head }: StepProps & { rounds: DailyWar
               style={{ boxShadow: '2px 2px 0 #15100A' }}
             >
               {o.ru}
+            </button>
+          )
+        })}
+      </div>
+    </Page>
+  )
+}
+
+// ── С русского на грузинский ─────────────────────────────────────────────────
+
+/** Обратный путь: значение по-русски, выбрать грузинскую форму. Ошибся — показываем верную и идём дальше. */
+export function Back({ rounds, onDone, ...head }: StepProps & { rounds: DailyBackRound[]; onDone: (wrong: string[]) => void }) {
+  const [i, setI] = useState(0)
+  const [picked, setPicked] = useState<number | null>(null)
+  const wrong = useRef<string[]>([])
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const round = rounds[i]
+  const right = round.options.find(o => o.ok)!.item
+  const pickedOk = picked !== null && round.options[picked].ok
+
+  function pick(at: number, el: Element) {
+    if (picked !== null) return
+    const ok = round.options[at].ok
+    setPicked(at)
+    if (ok) good(el)
+    else { bad(); wrong.current = [...wrong.current, round.item.key] }
+    timer.current = setTimeout(() => {
+      if (i === rounds.length - 1) return onDone(wrong.current)
+      setI(i + 1); setPicked(null)
+    }, ok ? 700 : 1800)
+  }
+
+  return (
+    <Page testId="daily-back">
+      <DailyHeader {...head} />
+      <StepTitle eyebrow="С русского на грузинский">Как сказать по-грузински</StepTitle>
+      <div className="flex-1 px-5 flex flex-col justify-center gap-4 py-3">
+        <div key={i} className="jewel-tile j-pop px-4 py-6 text-center" data-testid="daily-back-word" data-key={round.item.key}>
+          <div className={`font-extrabold leading-tight ${round.item.ru.length > 16 ? 'text-[24px]' : 'text-[30px]'}`}>{round.item.ru}</div>
+        </div>
+        <Dots count={rounds.length} at={i} />
+        <div className="min-h-[20px] text-center text-[13px] font-bold" data-testid="daily-back-note" aria-live="polite">
+          {picked !== null && (pickedOk
+            ? <span className="text-navy">Верно</span>
+            : <span className="text-ruby-deep">Правильно: {right.ka} ({cyr(right.ka)})</span>)}
+        </div>
+      </div>
+      <div className="px-5 flex flex-col gap-2.5">
+        {round.options.map((o, at) => {
+          const tone = picked === null ? 'bg-cream-tile'
+            : o.ok ? 'bg-navy-wash'
+            : at === picked ? 'bg-ruby-wash anim-shake' : 'bg-cream-tile opacity-50'
+          return (
+            <button
+              key={`${i}-${at}`} onClick={e => pick(at, e.currentTarget)} disabled={picked !== null}
+              data-testid="daily-back-option" data-ok={o.ok ? 'yes' : 'no'}
+              className={`min-h-[58px] rounded-xl border-[1.5px] border-jewelInk px-4 py-2 text-center ${tone}`}
+              style={{ boxShadow: '2px 2px 0 #15100A' }}
+            >
+              <Geo ka={o.item.ka} className={o.item.ka.length > 12 ? 'text-[18px]' : 'text-[21px]'} cyrClassName="text-[12px]" />
             </button>
           )
         })}

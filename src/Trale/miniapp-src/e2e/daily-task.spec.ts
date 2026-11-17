@@ -3,7 +3,8 @@ import { readFileSync, mkdirSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
-// «Задание дня» глазами человека: карточка на главной → вступление → разминка → пары → проверка → итог → «новое».
+// «Задание дня» глазами человека: карточка на главной → вступление → разминка → пары → с русского на грузинский →
+// проверка → итог → «новое» или ещё раунд.
 // Задания — настоящие ответы сервера на настоящем профиле (fixtures/daily, их пишет DailyTaskService), вопросы
 // минутной проверки — из файлов уроков «Знакомства»: грузинское здесь не пишется от руки.
 // DAILY_SHOTS=<папка> — сохранить снимки каждого шага (375×667) для проверки глазами.
@@ -17,6 +18,7 @@ const introQuestions = (lessonId: number) =>
 const TODAY = fixture('today.json')
 const CLEAN = fixture('after-result.json')
 const WITH_ERRORS = fixture('errors/after-result.json')
+const EXTRA = fixture('extra.json')
 const CHECK = {
   kind: 'check', title: 'Знакомство', line: 'проверка на минуту', button: 'Пройти проверку',
   say: 'Последний урок модуля «Знакомство» у тебя пройден, а 22 урока пропущены. Ответь без ошибок на 6 вопросов из них — и модуль закрыт.',
@@ -30,11 +32,14 @@ interface Mock {
   owner?: boolean
   results: any[]
   offers: any[]
+  extras: any[]
+  /** Сколько ещё раундов сервер готов дать. */
+  extraLeft?: number
   requests: string[]
 }
 
 async function setup(page: Page, task: any, patch: Partial<Mock> = {}): Promise<Mock> {
-  const mock: Mock = { task, access: true, owner: true, results: [], offers: [], requests: [], ...patch }
+  const mock: Mock = { task, access: true, owner: true, results: [], offers: [], extras: [], extraLeft: 1, requests: [], ...patch }
   await page.addInitScript(() => {
     ;(window as any).Telegram = {
       WebApp: {
@@ -77,6 +82,16 @@ async function setup(page: Page, task: any, patch: Partial<Mock> = {}): Promise<
       const played = report.pairWrong.length > 1 ? WITH_ERRORS : CLEAN
       mock.task = { ...played, dev: false }
       return route.fulfill({ json: { task: mock.task, xpEarned: 20, progress: { ...progress, xp: progress.xp + 20, streak: 3 } } })
+    }
+    if (path === 'daily-task/extra') {
+      return route.fulfill({ json: { extra: mock.extraLeft! > 0 ? EXTRA : null } })
+    }
+    if (path === 'daily-task/extra/result') {
+      mock.extras.push(body())
+      mock.extraLeft! -= 1
+      const extras = (mock.task.extras ?? 0) + 1
+      mock.task = { ...mock.task, extras, result: { ...mock.task.result, xpEarned: mock.task.result.xpEarned + 10 } }
+      return route.fulfill({ json: { task: mock.task, xpEarned: 10, progress: { ...progress, xp: progress.xp + 30, streak: 3 } } })
     }
     if (path === 'daily-task/offer') {
       mock.offers.push(body())
@@ -133,15 +148,32 @@ async function playPairs(page: Page, pairs: any[], mistakes = 0) {
   await expect(page.getByTestId('daily-game-say')).toHaveText('Все пары собраны.')
 }
 
-async function playCheck(page: Page) {
+/** С русского на грузинский: по раунду на значение; wrongFirst — в первом раунде ошибиться. */
+async function playBack(page: Page, rounds: any[], wrongFirst = false) {
+  await expect(page.getByTestId('daily-back')).toBeVisible({ timeout: 5000 })
+  for (let i = 0; i < rounds.length; i++) {
+    await expect(page.getByTestId('daily-back-word')).toHaveAttribute('data-key', rounds[i].item.key)
+    await expect(page.getByTestId('daily-back-word')).toHaveText(rounds[i].item.ru)
+    if (i === 0) {
+      // Варианты — грузинские, с транскрипцией.
+      await expect(page.getByTestId('daily-back-option').first().getByTestId('daily-cyr')).toBeVisible()
+      await shot(page, '35-back')
+    }
+    const wrong = wrongFirst && i === 0
+    await page.locator(`[data-testid="daily-back-option"][data-ok="${wrong ? 'no' : 'yes'}"]`).first().click()
+    if (wrong) await expect(page.getByTestId('daily-back-note')).toContainText(`Правильно: ${rounds[0].item.ka}`)
+  }
+}
+
+async function playCheck(page: Page, check: any = TODAY.check) {
   await expect(page.getByTestId('daily-check')).toBeVisible({ timeout: 5000 })
-  await expect(page.getByTestId('daily-check-say')).toHaveText(TODAY.check.intro)
+  await expect(page.getByTestId('daily-check-say')).toHaveText(check.intro)
   await shot(page, '4-check')
-  const wrong = TODAY.check.picks.findIndex((p: any) => !p.ok)
+  const wrong = check.picks.findIndex((p: any) => !p.ok)
   await page.getByTestId('daily-pick').nth(wrong).click()
-  await expect(page.getByTestId('daily-check-say')).toHaveText(TODAY.check.picks[wrong].message)
+  await expect(page.getByTestId('daily-check-say')).toHaveText(check.picks[wrong].message)
   await page.locator('[data-testid="daily-pick"][data-ok="yes"]').click()
-  await expect(page.getByTestId('daily-check-say')).toHaveText(TODAY.check.picks.find((p: any) => p.ok).message)
+  await expect(page.getByTestId('daily-check-say')).toHaveText(check.picks.find((p: any) => p.ok).message)
   await page.getByRole('button', { name: 'Готово' }).click()
 }
 
@@ -166,14 +198,15 @@ test.describe('Задание дня', () => {
     await expect(page.getByTestId('daily-why')).toBeHidden()
     await page.getByRole('button', { name: TODAY.button }).click()
 
-    await expect(page.getByTestId('daily-steps')).toHaveAttribute('data-steps', '3')
+    await expect(page.getByTestId('daily-steps')).toHaveAttribute('data-steps', '4')
     await playWarm(page)
     await playPairs(page, TODAY.pairs)
+    await playBack(page, TODAY.back)
     await playCheck(page)
 
     await expect(page.getByTestId('daily-finale')).toBeVisible()
     expect(mock.results).toHaveLength(1)
-    expect(mock.results[0]).toMatchObject({ day: TODAY.day, warmWrong: [], pairWrong: [], errors: 0, checkErrors: 1 })
+    expect(mock.results[0]).toMatchObject({ day: TODAY.day, warmWrong: [], pairWrong: [], backWrong: [], errors: 0, checkErrors: 1 })
     await expect(page.getByTestId('daily-streak')).toContainText('2')
     await expect(page.getByTestId('daily-xp')).toContainText('+20')
     await expect(page.getByTestId('daily-offer')).toHaveAttribute('data-kind', 'forms')
@@ -186,17 +219,19 @@ test.describe('Задание дня', () => {
     await expect.poll(() => mock.requests.some(r => r.startsWith(`verbs/${CLEAN.offer.verbId}`))).toBe(true)
   })
 
-  test('ошибки в разминке и в парах уходят на сервер, нового нет', async ({ page }) => {
+  test('ошибки в разминке, в парах и на обратном пути уходят на сервер, нового нет', async ({ page }) => {
     const mock = await setup(page, TODAY)
     await openFromCard(page)
     await page.getByRole('button', { name: TODAY.button }).click()
     await playWarm(page, true)
     await playPairs(page, TODAY.pairs, 2)
+    await playBack(page, TODAY.back, true)
     await playCheck(page)
 
     await expect(page.getByTestId('daily-finale')).toBeVisible()
     const report = mock.results[0]
     expect(report.warmWrong).toEqual([TODAY.warm[0].item.key])
+    expect(report.backWrong).toEqual([TODAY.back[0].item.key])
     expect(report.errors).toBe(2)
     expect(report.pairWrong).toEqual(expect.arrayContaining([TODAY.pairs[0].key, TODAY.pairs[1].key, TODAY.pairs[2].key]))
     await expect(page.getByTestId('daily-offer')).toHaveCount(0)
@@ -211,7 +246,7 @@ test.describe('Задание дня', () => {
     const mock = await setup(page, { ...TODAY, warm: [] })
     await openFromCard(page)
     await page.getByRole('button', { name: TODAY.button }).click()
-    await expect(page.getByTestId('daily-steps')).toHaveAttribute('data-steps', '2')
+    await expect(page.getByTestId('daily-steps')).toHaveAttribute('data-steps', '3')
     const first = TODAY.pairs[0]
     await page.locator(`[data-testid="daily-tile-l"][data-key="${first.key}"]`).click()
     await page.locator(`[data-testid="daily-tile-r"][data-key="${first.key}"]`).click()
@@ -221,6 +256,11 @@ test.describe('Задание дня', () => {
     await page.getByRole('button', { name: 'Сыграть ещё раз' }).click()
     await playPairs(page, TODAY.pairs)
     await page.clock.runFor(1500)
+    for (let i = 0; i < TODAY.back.length; i++) {
+      await expect(page.getByTestId('daily-back-word')).toHaveAttribute('data-key', TODAY.back[i].item.key)
+      await page.locator('[data-testid="daily-back-option"][data-ok="yes"]').click()
+      await page.clock.runFor(1000)
+    }
     await expect(page.getByTestId('daily-check')).toBeVisible()
     await page.locator('[data-testid="daily-pick"][data-ok="yes"]').click()
     await page.getByRole('button', { name: 'Готово' }).click()
@@ -263,6 +303,34 @@ test.describe('Задание дня', () => {
       await expect(page.getByTestId('daily-offer')).toHaveCount(0)
     })
   }
+
+  test('после задания — ещё раунд: пары → с русского на грузинский → проверка, +10 опыта, пока есть что повторять', async ({ page }) => {
+    const mock = await setup(page, { ...WITH_ERRORS, extras: 0 }, { extraLeft: 1 })
+    await openFromCard(page)
+    await expect(page.getByTestId('daily-finale')).toBeVisible()
+    await shot(page, '8-finale-extra')
+    await page.getByRole('button', { name: 'Ещё раунд · +10 опыта' }).click()
+
+    await expect(page.getByTestId('daily-chat')).toHaveText(EXTRA.chat)
+    await page.getByRole('button', { name: EXTRA.button }).click()
+    // Без разминки: пары, обратный путь, проверка.
+    await expect(page.getByTestId('daily-steps')).toHaveAttribute('data-steps', '3')
+    await playPairs(page, EXTRA.pairs)
+    await playBack(page, EXTRA.back)
+    await playCheck(page, EXTRA.check)
+
+    await expect(page.getByTestId('daily-finale')).toBeVisible()
+    expect(mock.results).toHaveLength(0)
+    expect(mock.extras).toHaveLength(1)
+    expect(mock.extras[0]).toMatchObject({ day: EXTRA.day, pairWrong: [], backWrong: [] })
+    await expect(page.getByTestId('daily-xp')).toContainText(`+${WITH_ERRORS.result.xpEarned + 10}`)
+    await expect(page.getByTestId('daily-stat')).toContainText('ещё 1 раунд')
+
+    // Повторять больше нечего — так и говорим, кнопки раунда нет.
+    await page.getByRole('button', { name: 'Ещё раунд · +10 опыта' }).click()
+    await expect(page.getByTestId('daily-finale-say')).toHaveText('На сегодня повторено всё, что открыто. Завтра будет новое задание.')
+    await expect(page.getByTestId('daily-extra')).toHaveCount(0)
+  })
 
   test('без доступа карточки нет', async ({ page }) => {
     await setup(page, TODAY, { access: false })

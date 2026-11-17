@@ -18,6 +18,11 @@ public record DailyWarmRound(DailyItem Item, IReadOnlyList<DailyOption> Options,
 
 public record DailyPick(DailyItem Item, bool Ok, string Message);
 
+/// <summary>The other way round: the meaning in Russian, the learner picks the Georgian form.</summary>
+public record DailyBackRound(DailyItem Item, IReadOnlyList<DailyBackOption> Options);
+
+public record DailyBackOption(DailyItem Item, bool Ok);
+
 public record DailyCheck(string Prompt, string Intro, IReadOnlyList<DailyPick> Picks);
 
 /// <summary>The "new" at the end: fresh forms of a verb, a course lesson or a one-minute module check.</summary>
@@ -47,6 +52,8 @@ public record DailyTaskDto
     public int Seconds { get; init; }
     public IReadOnlyList<DailyWarmRound> Warm { get; init; } = [];
     public IReadOnlyList<DailyItem> Pairs { get; init; } = [];
+    /// <summary>After the pairs: from Russian into Georgian; empty — no such step (tasks composed before it existed).</summary>
+    public IReadOnlyList<DailyBackRound> Back { get; init; } = [];
     public DailyCheck Check { get; init; } = new("", "", []);
     /// <summary>What will be offered at the end if the game goes clean.</summary>
     public DailyNew? Next { get; init; }
@@ -54,6 +61,12 @@ public record DailyTaskDto
     public DailyNew? Offer { get; init; }
     public bool OfferTaken { get; init; }
     public DailyResult? Result { get; init; }
+    /// <summary>The extra round being played after the task (a task of its own without warm-up and "new").</summary>
+    public DailyTaskDto? Extra { get; init; }
+    /// <summary>Extra rounds already played today.</summary>
+    public int Extras { get; init; }
+    /// <summary>The push of the day: a short headline, one line under it and the button.</summary>
+    public DailyPush? Push { get; init; }
     /// <summary>Local stand only: the mini-app shows the "next day" controls.</summary>
     public bool Dev { get; init; }
 }
@@ -67,7 +80,14 @@ public static class DailyMode
 
 /// <summary>What the mini-app reports when the task is played to the end.</summary>
 public record DailyReport(
-    string Day, IReadOnlyCollection<string> WarmWrong, IReadOnlyCollection<string> PairWrong, int Errors, int CheckErrors);
+    string Day, IReadOnlyCollection<string> WarmWrong, IReadOnlyCollection<string> PairWrong, int Errors, int CheckErrors,
+    IReadOnlyCollection<string>? BackWrong = null);
+
+/// <summary>
+/// The reminder in the bot: a bold headline that reads well in the chat list, one line under it and the button.
+/// Variant names the template, for the analysis of which ones bring people in.
+/// </summary>
+public record DailyPush(string Variant, string Headline, string Line, string Button);
 
 // What the planner is given.
 

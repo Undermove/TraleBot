@@ -30,6 +30,12 @@ export interface DailyPick {
   message: string
 }
 
+/** С русского на грузинский: значение по-русски, выбрать грузинскую форму. */
+export interface DailyBackRound {
+  item: DailyItem
+  options: { item: DailyItem; ok: boolean }[]
+}
+
 /** Новое в конце: формы глагола, урок курса или минутная проверка модуля. */
 export interface DailyNew {
   kind: 'forms' | 'lesson' | 'check'
@@ -77,6 +83,8 @@ export interface DailyTaskDto {
   warm: DailyWarmRound[]
   /** Пары для игры: грузинское — русское. */
   pairs: DailyItem[]
+  /** После пар — с русского на грузинский; пусто — шага нет (занятие собрано до него). */
+  back?: DailyBackRound[]
   check: { prompt: string; intro: string; picks: DailyPick[] }
   /** Что будет предложено в конце, если игра пройдёт чисто (не больше одной ошибки). */
   next: DailyNew | null
@@ -85,6 +93,8 @@ export interface DailyTaskDto {
   /** Предложение уже открывали или проверку уже прошли — повторно не зовём. */
   offerTaken: boolean
   result: DailyResult | null
+  /** Сколько раундов сверх задания уже сыграно сегодня. */
+  extras?: number
   /** Только на стенде: показать кнопки «следующий день». */
   dev: boolean
 }
@@ -100,6 +110,8 @@ export interface DailyReportDto {
   errors: number
   checkErrors: number
   seconds: number
+  /** Ключи, на которых ошиблись по пути с русского на грузинский. */
+  backWrong: string[]
 }
 
 export interface DailySavedDto {

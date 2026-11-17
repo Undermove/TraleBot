@@ -260,5 +260,219 @@
   "offer": null,
   "offerTaken": false,
   "result": null,
-  "dev": true
+  "dev": true,
+  "back": [
+    {
+      "item": {
+        "key": "v:აქვს:present:4",
+        "kind": "verb",
+        "ka": "გაქვთ",
+        "ru": "у вас есть",
+        "lemma": "აქვს",
+        "verbRu": "иметь",
+        "tense": "present",
+        "person": 4
+      },
+      "options": [
+        {
+          "item": {
+            "key": "v:აქვს:future:3",
+            "kind": "verb",
+            "ka": "გვექნება",
+            "ru": "у нас будет",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "future",
+            "person": 3
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:აქვს:imperfect:1",
+            "kind": "verb",
+            "ka": "გქონდა",
+            "ru": "у тебя было",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "imperfect",
+            "person": 1
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:აქვს:present:4",
+            "kind": "verb",
+            "ka": "გაქვთ",
+            "ru": "у вас есть",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "present",
+            "person": 4
+          },
+          "ok": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "key": "v:აქვს:imperfect:1",
+        "kind": "verb",
+        "ka": "გქონდა",
+        "ru": "у тебя было",
+        "lemma": "აქვს",
+        "verbRu": "иметь",
+        "tense": "imperfect",
+        "person": 1
+      },
+      "options": [
+        {
+          "item": {
+            "key": "v:აქვს:present:4",
+            "kind": "verb",
+            "ka": "გაქვთ",
+            "ru": "у вас есть",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "present",
+            "person": 4
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:აქვს:imperfect:1",
+            "kind": "verb",
+            "ka": "გქონდა",
+            "ru": "у тебя было",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "imperfect",
+            "person": 1
+          },
+          "ok": true
+        },
+        {
+          "item": {
+            "key": "v:აქვს:future:3",
+            "kind": "verb",
+            "ka": "გვექნება",
+            "ru": "у нас будет",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "future",
+            "person": 3
+          },
+          "ok": false
+        }
+      ]
+    },
+    {
+      "item": {
+        "key": "w:00000000-0000-4000-8000-000000000002",
+        "kind": "word",
+        "ka": "სახრახნისი",
+        "ru": "отвертка",
+        "lemma": null,
+        "verbRu": null,
+        "tense": null,
+        "person": null
+      },
+      "options": [
+        {
+          "item": {
+            "key": "w:00000000-0000-4000-8000-000000000002",
+            "kind": "word",
+            "ka": "სახრახნისი",
+            "ru": "отвертка",
+            "lemma": null,
+            "verbRu": null,
+            "tense": null,
+            "person": null
+          },
+          "ok": true
+        },
+        {
+          "item": {
+            "key": "v:აქვს:future:3",
+            "kind": "verb",
+            "ka": "გვექნება",
+            "ru": "у нас будет",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "future",
+            "person": 3
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:აქვს:present:4",
+            "kind": "verb",
+            "ka": "გაქვთ",
+            "ru": "у вас есть",
+            "lemma": "აქვს",
+            "verbRu": "иметь",
+            "tense": "present",
+            "person": 4
+          },
+          "ok": false
+        }
+      ]
+    },
+    {
+      "item": {
+        "key": "v:არის:aorist:4",
+        "kind": "verb",
+        "ka": "იყავით",
+        "ru": "вы были",
+        "lemma": "არის",
+        "verbRu": "быть",
+        "tense": "aorist",
+        "person": 4
+      },
+      "options": [
+        {
+          "item": {
+            "key": "v:არის:present:0",
+            "kind": "verb",
+            "ka": "ვარ",
+            "ru": "я есть",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "present",
+            "person": 0
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:არის:present:3",
+            "kind": "verb",
+            "ka": "ვართ",
+            "ru": "мы есть",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "present",
+            "person": 3
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:არის:aorist:4",
+            "kind": "verb",
+            "ka": "იყავით",
+            "ru": "вы были",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "aorist",
+            "person": 4
+          },
+          "ok": true
+        }
+      ]
+    }
+  ]
 }

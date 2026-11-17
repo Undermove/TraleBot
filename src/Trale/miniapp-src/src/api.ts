@@ -550,6 +550,16 @@ export function reportDailyOffer(report: import('./daily/types').DailyOfferRepor
   return request<{ task: import('./daily/types').DailyTaskDto }>('/api/miniapp/daily-task/offer', { method: 'POST', body: JSON.stringify(report) })
 }
 
+/** Ещё раунд после занятия: тот, что начат, или новый; null — занятие не сделано или повторять больше нечего. */
+export function fetchDailyExtra() {
+  return request<{ extra: import('./daily/types').DailyTaskDto | null }>('/api/miniapp/daily-task/extra', { method: 'POST' })
+}
+
+/** Итог ещё одного раунда. */
+export function saveDailyExtra(report: import('./daily/types').DailyReportDto) {
+  return request<import('./daily/types').DailySavedDto>('/api/miniapp/daily-task/extra/result', { method: 'POST', body: JSON.stringify(report) })
+}
+
 /** Только на стенде: перемотать дни вперёд и получить занятие нового дня. */
 export function devNextDay(days: number) {
   return request<{ task: import('./daily/types').DailyTaskDto }>('/api/miniapp/daily-task/dev/next-day', { method: 'POST', body: JSON.stringify({ days }) })
