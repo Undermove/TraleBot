@@ -27,7 +27,8 @@ public record DailySaved(DailyTaskDto Task, int XpEarned, object? Progress);
 public class DailyTaskService(
     ITraleDbContext dbContext,
     VerbProgressService verbProgress,
-    IProgressCalculator progressCalculator)
+    IProgressCalculator progressCalculator,
+    ICourseCatalog catalog)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -58,8 +59,7 @@ public class DailyTaskService(
         });
 
     /// <summary>Today's task; composed on the first call of the day.</summary>
-    public async Task<DailyTaskDto> GetAsync(
-        User user, IReadOnlyList<CourseModule> catalog, DateTime now, bool dev, CancellationToken ct)
+    public async Task<DailyTaskDto> GetAsync(User user, DateTime now, bool dev, CancellationToken ct)
     {
         var state = await LoadStateAsync(user.Id, now, ct);
         var today = DateOnly.FromDateTime(now);
@@ -68,7 +68,7 @@ public class DailyTaskService(
             return Read(state.TaskJson) with { Dev = dev };
         }
 
-        var task = await ComposeAsync(user, state, catalog, now, ct);
+        var task = await ComposeAsync(user, state, now, ct);
         state.Day = today;
         state.TaskJson = Write(task);
         state.UpdatedAtUtc = now;
@@ -196,7 +196,7 @@ public class DailyTaskService(
     }
 
     private async Task<DailyTaskDto> ComposeAsync(
-        User user, DailyTaskState state, IReadOnlyList<CourseModule> catalog, DateTime now, CancellationToken ct)
+        User user, DailyTaskState state, DateTime now, CancellationToken ct)
     {
         var today = DateOnly.FromDateTime(now);
         var progress = await dbContext.MiniAppUserProgresses.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == user.Id, ct);
@@ -225,7 +225,7 @@ public class DailyTaskService(
             Forms = forms,
             Unopened = unopened,
             Words = words,
-            Course = CoursePlanner.Next(catalog, completed, ReadCourse(state.CourseJson)),
+            Course = CoursePlanner.Next(catalog.Modules(), completed, ReadCourse(state.CourseJson)),
             // Not HashCode.Combine: it is randomized per process, and the day's shuffle must not depend on a restart.
             Seed = user.Id.GetHashCode() ^ today.DayNumber
         };

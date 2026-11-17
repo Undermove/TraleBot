@@ -18,7 +18,8 @@ namespace Application.Notifications;
 public class DailyReturnNotificationService(
     ITraleDbContext db,
     IUserNotificationService notificationService,
-    ILoggerFactory loggerFactory) : IDailyReturnNotificationService
+    ILoggerFactory loggerFactory,
+    DailyTask.DailyTaskAudience? dailyTask = null) : IDailyReturnNotificationService
 {
     private readonly ILogger _logger = loggerFactory.CreateLogger<DailyReturnNotificationService>();
     private const string Source = "daily_return";
@@ -57,6 +58,10 @@ public class DailyReturnNotificationService(
         foreach (var progress in progressList)
         {
             if (!userMap.TryGetValue(progress.UserId, out var user))
+                continue;
+
+            // Whoever has «Задание дня» gets its daily reminder instead (DailyTaskReminderService).
+            if (dailyTask?.Includes(user.TelegramId) == true)
                 continue;
 
             var completedLessons = ParseCompletedLessons(progress.CompletedLessonsJson);
