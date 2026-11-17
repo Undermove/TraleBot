@@ -3,6 +3,8 @@ export type Screen =
   | { kind: 'onboarding' }
   | { kind: 'welcome' }
   | { kind: 'dashboard' }
+  /** Вкладка «Курс»: все модули по разделам. */
+  | { kind: 'course' }
   | { kind: 'daily' }
   | { kind: 'module'; moduleId: string }
   | { kind: 'lesson-theory'; moduleId: string; lessonId: number }

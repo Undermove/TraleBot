@@ -333,6 +333,7 @@ const question = (page: Page) => page.getByTestId('paywall-question')
 
 async function openPaywall(page: Page) {
   await page.goto('/?playwright=1')
+  await page.getByTestId('home-tab-course').click()
   await page.getByTestId('module-tile-cases').click()
   await expect(paywall(page).getByText('1 месяц')).toBeVisible()
 }
@@ -420,7 +421,7 @@ test('«Написать подробнее» from a survey opens the screen tie
   await expect(page.getByTestId('feedback-sent')).toBeVisible()
   expect(calls.messages).toEqual([{ text: 'Дорого для раза в неделю', campaign: 'why-2026-10' }])
   await page.getByRole('button', { name: 'Вернуться' }).click()
-  await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+  await expect(page.getByTestId('home-tabs')).toBeVisible()
 })
 
 test('the daily limit is explained and the text stays', async ({ page }) => {
@@ -494,7 +495,7 @@ test.describe('форма опроса', () => {
       { questionId: 'q4', option: null, other: false, text: 'В аптеке вспомнил, как сказать «болит голова».' },
     ])
     await page.getByRole('button', { name: 'Вернуться' }).click()
-    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+    await expect(page.getByTestId('home-tabs')).toBeVisible()
   })
 
   test('someone who did not answer in the bot starts from the first question', async ({ page }) => {
@@ -543,7 +544,7 @@ test.describe('форма опроса', () => {
     await expect(page.getByTestId('survey-problem')).toContainText('Этот опрос уже закрыт или был отправлен не тебе.')
     await expect(page.getByTestId('survey-page')).toHaveCount(0)
     await page.getByRole('button', { name: 'Вернуться' }).click()
-    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+    await expect(page.getByTestId('home-tabs')).toBeVisible()
   })
 })
 
@@ -617,7 +618,7 @@ test.describe('опрос с подарком', () => {
 
     // «В приложение» запускает мини-апп заново: о новом доступе узнают все экраны.
     await page.getByRole('button', { name: 'В приложение' }).click()
-    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+    await expect(page.getByTestId('home-tabs')).toBeVisible()
     expect(new URL(page.url()).searchParams.get('screen')).toBeNull()
   })
 
@@ -687,7 +688,7 @@ test.describe('опрос с подарком', () => {
     await fits(page)
     await shot(page, 'paid-survey-9-already')
     await page.getByRole('button', { name: 'В приложение' }).click()
-    await expect(page.getByTestId('module-tile-cases')).toBeVisible()
+    await expect(page.getByTestId('home-tabs')).toBeVisible()
   })
 
   test('the owner’s trial walks the recipient’s screens and says that no days are given', async ({ page }) => {

@@ -309,7 +309,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
@@ -328,7 +327,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
@@ -355,7 +353,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
@@ -382,7 +379,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
@@ -418,7 +414,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
     <div className="flex flex-col min-h-full bg-cream">
       <Header
         progress={progress}
-        onBack={() => navigate({ kind: 'dashboard' })}
         eyebrow="ლექსიკონი"
         title="Мой словарь"
       />

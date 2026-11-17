@@ -185,7 +185,8 @@ test.describe('Задание дня', () => {
     await page.goto('/?playwright=1')
     const card = page.getByTestId('dashboard-daily')
     await expect(card).toBeVisible({ timeout: 10_000 })
-    await expect(card).toHaveAttribute('data-state', 'todo')
+    await expect(card).toHaveAttribute('data-state', 'next')
+    await expect(page.getByTestId('dashboard-today')).toHaveAttribute('data-next', 'review')
     await expect(page.getByTestId('dashboard-daily-title')).toHaveText(TODAY.title)
     await shot(page, '0-dashboard')
     await card.click()
@@ -238,7 +239,9 @@ test.describe('Задание дня', () => {
     await expect(page.getByTestId('daily-finale-say')).toContainText('Нового сегодня нет')
     await page.getByRole('button', { name: 'На главную' }).click()
     await expect(page.getByTestId('dashboard-daily')).toHaveAttribute('data-state', 'done')
-    await expect(page.getByTestId('dashboard-daily-title')).toHaveText('Сделано сегодня')
+    await expect(page.getByTestId('dashboard-daily-line')).toHaveText('Сделано на сегодня')
+    // Нового задание не предложило — вторым шагом остаётся следующий урок курса.
+    await expect(page.getByTestId('dashboard-today')).toHaveAttribute('data-next', 'new')
   })
 
   test('время вышло: несобранное — ошибки, можно сыграть ещё раз', async ({ page }) => {
@@ -272,9 +275,10 @@ test.describe('Задание дня', () => {
   test('уже сделано сегодня: карточка ведёт к «новому», потом — «сделано»', async ({ page }) => {
     const mock = await setup(page, CLEAN)
     await page.goto('/?playwright=1')
-    await expect(page.getByTestId('dashboard-daily')).toHaveAttribute('data-state', 'offer', { timeout: 10_000 })
-    await expect(page.getByTestId('dashboard-daily-title')).toHaveText(CLEAN.offer.title)
-    await page.getByTestId('dashboard-daily').click()
+    await expect(page.getByTestId('dashboard-daily')).toHaveAttribute('data-state', 'done', { timeout: 10_000 })
+    await expect(page.getByTestId('dashboard-today-new')).toHaveAttribute('data-state', 'next')
+    await expect(page.getByTestId('dashboard-today-new')).toContainText(CLEAN.offer.title)
+    await page.getByTestId('dashboard-suggestion').getByRole('button').click()
     await expect(page.getByTestId('daily-finale')).toBeVisible()
     await expect(page.getByTestId('daily-offer')).toBeVisible()
     expect(mock.results).toHaveLength(0)
@@ -335,14 +339,14 @@ test.describe('Задание дня', () => {
   test('без доступа карточки нет', async ({ page }) => {
     await setup(page, TODAY, { access: false })
     await page.goto('/?playwright=1')
-    await expect(page.getByTestId('dashboard-verbs-tile')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('home-tabs')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByTestId('dashboard-daily')).toHaveCount(0)
   })
 
   test('пока задание открыто только владельцу: остальным карточки нет', async ({ page }) => {
     await setup(page, TODAY, { owner: false })
     await page.goto('/?playwright=1')
-    await expect(page.getByTestId('dashboard-verbs-tile')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByTestId('home-tabs')).toBeVisible({ timeout: 10_000 })
     await expect(page.getByTestId('dashboard-daily')).toHaveCount(0)
   })
 

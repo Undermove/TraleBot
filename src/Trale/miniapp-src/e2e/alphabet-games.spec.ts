@@ -53,6 +53,7 @@ async function setup(page: Page, done: number[], lesson = 5) {
 
 async function openModule(page: Page) {
   await page.goto('/?playwright=1')
+  await page.getByTestId('home-tab-course').click()
   const tile = page.locator('[data-testid="module-tile-alphabet-progressive"]')
   await expect(tile).toBeVisible({ timeout: 15_000 })
   await tile.click()

@@ -60,6 +60,14 @@ public class RecordAppEventsCommandTests : CommandTestsBase
     }
 
     [Test]
+    public async Task A_tap_on_the_home_screen_or_a_tab_is_kept_with_what_was_tapped()
+    {
+        (await Send(Ev("tap", "tab-course"), Ev("tap", "module-alphabet-progressive"))).ShouldBe(2);
+
+        (await Stored()).Select(r => r.Target).ShouldBe(["tab-course", "module-alphabet-progressive"], ignoreOrder: true);
+    }
+
+    [Test]
     public async Task An_odd_platform_or_start_parameter_is_dropped_but_the_event_is_kept()
     {
         (await Send(Ev("app_open", null, 100, "iOS 18; <script>", "two words"))).ShouldBe(1);

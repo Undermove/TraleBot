@@ -83,7 +83,7 @@ export default function VerbsSection({ progress, navigate, source, onPurchaseSuc
   if (!section) {
     return (
       <div className="flex flex-col min-h-full bg-cream">
-        <Header progress={progress} onBack={() => navigate({ kind: 'dashboard' })} eyebrow="ზმნები" title="Глаголы" />
+        <Header progress={progress} eyebrow="ზმნები" title="Глаголы" />
         <div className="flex-1 flex flex-col items-center justify-center gap-3 px-8 text-center">
           {failed
             ? <div className="text-[14px] text-jewelInk-mid" data-testid="verbs-section-failed">Не получилось загрузить глаголы. Проверь связь и открой раздел ещё раз.</div>
@@ -121,7 +121,7 @@ export default function VerbsSection({ progress, navigate, source, onPurchaseSuc
 
   return (
     <div className="flex flex-col min-h-full bg-cream" data-testid="verbs-section" data-access={hasAccess}>
-      <Header progress={progress} onBack={() => navigate({ kind: 'dashboard' })} eyebrow="ზმნები" title="Глаголы" />
+      <Header progress={progress} eyebrow="ზმნები" title="Глаголы" />
       <div className="mn-kilim" />
 
       <div className="flex-1 px-5 pt-4 flex flex-col gap-4" style={{ paddingBottom: 'calc(var(--safe-b) + 28px)' }}>

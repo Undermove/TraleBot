@@ -165,6 +165,8 @@ test('the hub with all lessons stays one tap away from the win screen', async ({
 
   await page.getByTestId('welcome-browse').click()
 
+  await expect(page.getByTestId('home-tabs')).toBeVisible()
+  await page.getByTestId('home-tab-course').click()
   await expect(page.getByTestId('module-tile-alphabet-progressive')).toBeVisible()
 })
 
@@ -172,7 +174,9 @@ test('returning user with XP lands on the dashboard hub', async ({ page }) => {
   await setupApi(page, returningMe)
   await page.goto('/?playwright=1')
 
-  // The module grid is shown...
+  // The hub is shown, the module grid is one tab away...
+  await expect(page.getByTestId('dashboard-today')).toBeVisible()
+  await page.getByTestId('home-tab-course').click()
   await expect(page.getByTestId('module-tile-alphabet-progressive')).toBeVisible()
   await expect(page.getByTestId('module-tile-intro')).toBeVisible()
 

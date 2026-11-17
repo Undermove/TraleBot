@@ -28,7 +28,7 @@ export function waitsIn(o: AdminOverviewDto | null): Partial<Record<AdminTab, nu
 }
 
 /** Открыта ли клавиатура: фокус в поле ввода или окно заметно ниже обычного. */
-function useKeyboardOpen(): boolean {
+export function useKeyboardOpen(): boolean {
   const [open, setOpen] = useState(false)
   useEffect(() => {
     const typing = (el: EventTarget | null) => el instanceof HTMLElement && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button'].includes((el as HTMLInputElement).type)))

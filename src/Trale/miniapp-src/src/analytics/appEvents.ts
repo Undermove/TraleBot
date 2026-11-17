@@ -9,7 +9,7 @@
  * глотаются, ничего не ждёт. Выключен вне Telegram (нет initData), в тестах и на стендах ?alphabet-lab, ?intro-lab.
  */
 
-export type AppEventName = 'app_open' | 'app_ready' | 'app_error' | 'app_hide' | 'screen' | 'paywall'
+export type AppEventName = 'app_open' | 'app_ready' | 'app_error' | 'app_hide' | 'screen' | 'paywall' | 'tap'
 
 export interface AppEventDto {
   event: AppEventName
@@ -132,6 +132,10 @@ export const appEvents = {
   /** Открылась шторка покупки; target — что её открыло. */
   paywall(trigger: string) {
     track({ event: 'paywall', target: trigger })
+  },
+  /** Нажатие на главной или во вкладках: `tab-course`, `today-review`, `module-cases` — видно, чем люди уходят с главной. */
+  tap(target: string) {
+    track({ event: 'tap', target })
   }
 }
 

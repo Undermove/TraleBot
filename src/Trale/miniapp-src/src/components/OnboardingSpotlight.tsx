@@ -18,9 +18,9 @@ interface TargetConfig {
 const TARGETS: Record<string, TargetConfig> = {
   first_lesson: { selector: '[data-testid="dashboard-suggestion"]', caption: 'Жми сюда — пройдём первый урок 🎯' },
   next_lesson: { selector: '[data-testid="dashboard-suggestion"]', caption: 'Продолжим? Жми — откроется следующий урок' },
-  explore_module: { selector: '[data-testid^="module-tile-"]', caption: 'Загляни в другую тему — выбери модуль 👇' },
+  explore_module: { selector: '[data-testid="home-tab-course"]', caption: 'Все темы курса — здесь. Загляни и выбери модуль 👇' },
   feed_bombora: { selector: '[data-testid="dashboard-feed-button"]', caption: 'Жми сюда, чтобы покормить Бомбору 🍖' },
-  add_vocab: { selector: '[data-testid="module-tile-my-vocabulary"]', caption: 'Здесь твой словарь — заводи и тренируй слова' },
+  add_vocab: { selector: '[data-testid="home-tab-vocab"]', caption: 'Здесь твой словарь — заводи и тренируй слова' },
 }
 
 /**
