@@ -107,6 +107,7 @@ public static class DependencyInjection
         services.AddScoped<LessonVerbAnnotator>();
         services.AddScoped<DictionaryVerbsQuery>();
         services.AddScoped<VerbProgressService>();
+        services.AddScoped<DailyTask.DailyTaskService>();
         services.AddScoped<VerbLearningService>();
         services.AddScoped<MyVerbsQuery>();
         services.AddScoped<ModelMadeVerbsQuery>();

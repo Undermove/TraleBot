@@ -3,6 +3,7 @@ export type Screen =
   | { kind: 'onboarding' }
   | { kind: 'welcome' }
   | { kind: 'dashboard' }
+  | { kind: 'daily' }
   | { kind: 'module'; moduleId: string }
   | { kind: 'lesson-theory'; moduleId: string; lessonId: number }
   | { kind: 'practice'; moduleId: string; lessonId: number }

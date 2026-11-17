@@ -26,6 +26,7 @@ import ProPaywall from './components/ProPaywall'
 import VerbSheet from './verbs/VerbSheet'
 import { resolveVerbDeepLink } from './verbs/deepLink'
 import { closeTopOverlay, useHasOverlay } from './verbs/ui/overlayStack'
+import DailyTask from './daily/DailyTask'
 import { loadSeenHints } from './verbs/ui/hints'
 import VerbsSection from './screens/VerbsSection'
 import FeedbackScreen from './screens/FeedbackScreen'
@@ -83,6 +84,8 @@ function parseDeepLink(catalog: CatalogDto): Screen | null {
 
     if (target === 'feed') return { kind: 'dashboard' } // Bombora is fed on the dashboard
     if (target === 'vocabulary') return { kind: 'vocabulary-list' }
+    // ?screen=daily — кнопка сообщения бота о задании дня.
+    if (target === 'daily') return { kind: 'daily' }
     if (moduleId) {
       const mod = catalog.modules.find((m) => m.id === moduleId)
       if (!mod) return null
@@ -279,7 +282,8 @@ export default function App() {
         screen.kind === 'module' ||
         screen.kind === 'profile' ||
         screen.kind === 'vocabulary-list' ||
-        screen.kind === 'verbs'
+        screen.kind === 'verbs' ||
+        screen.kind === 'daily'
       ) {
         setScreen({ kind: 'dashboard' })
       } else if (screen.kind === 'feedback') {
@@ -629,6 +633,8 @@ export default function App() {
             )}
           </>
         )
+      case 'daily':
+        return <DailyTask navigate={navigate} />
       case 'verbs':
         return (
           <>

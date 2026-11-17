@@ -215,6 +215,56 @@ namespace Persistence.Migrations
                     b.ToTable("BroadcastDeliveries");
                 });
 
+            modelBuilder.Entity("Domain.Entities.DailyTaskState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Accuracy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CourseJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DoneDay")
+                        .HasColumnType("date");
+
+                    b.Property<int>("LastErrors")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LastNew")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("MissedJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TaskJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("DailyTaskStates");
+                });
+
             modelBuilder.Entity("Domain.Entities.FeedbackReply", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1539,6 +1589,17 @@ namespace Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.DailyTaskState", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Domain.Entities.FeedbackReply", b =>

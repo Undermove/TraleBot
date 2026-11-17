@@ -534,6 +534,32 @@ export function fetchVerbSection() {
   return request<import('./verbs/section/types').VerbSectionDto>('/api/miniapp/verbs/section')
 }
 
+// ── «Задание дня» ────────────────────────────────────────────────────────────
+/** Занятие на сегодня. Без доступа сервер отвечает 402 — карточки на главной тогда нет. */
+export function fetchDailyTask() {
+  return request<import('./daily/types').DailyTaskDto>('/api/miniapp/daily-task')
+}
+
+/** Итог занятия. Принимается один раз за день; повтор возвращает уже сохранённое. */
+export function saveDailyResult(report: import('./daily/types').DailyReportDto) {
+  return request<import('./daily/types').DailySavedDto>('/api/miniapp/daily-task/result', { method: 'POST', body: JSON.stringify(report) })
+}
+
+/** «Новое» после занятия: открыли (формы, урок) или чем закончилась минутная проверка. */
+export function reportDailyOffer(report: import('./daily/types').DailyOfferReportDto) {
+  return request<{ task: import('./daily/types').DailyTaskDto }>('/api/miniapp/daily-task/offer', { method: 'POST', body: JSON.stringify(report) })
+}
+
+/** Только на стенде: перемотать дни вперёд и получить занятие нового дня. */
+export function devNextDay(days: number) {
+  return request<{ task: import('./daily/types').DailyTaskDto }>('/api/miniapp/daily-task/dev/next-day', { method: 'POST', body: JSON.stringify({ days }) })
+}
+
+/** Только на стенде: прислать сообщение бота о задании дня. */
+export function devDailyPush() {
+  return request<{ ok: boolean }>('/api/miniapp/daily-task/dev/push', { method: 'POST' })
+}
+
 /** Раздел открыли: плиткой с главной (home), кнопкой рассылки (имя кампании) или по ссылке с меткой. */
 export function reportVerbSectionOpen(source: string) {
   return request<{ ok: boolean }>('/api/miniapp/verbs/section/open', { method: 'POST', body: JSON.stringify({ source }) })
