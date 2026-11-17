@@ -60,8 +60,8 @@ public class DailyReturnNotificationService(
             if (!userMap.TryGetValue(progress.UserId, out var user))
                 continue;
 
-            // Whoever has «Задание дня» gets its daily reminder instead (DailyTaskReminderService).
-            if (dailyTask?.Includes(user.TelegramId) == true)
+            // Whoever gets the «Задание дня» reminder (the listed people) gets it instead (DailyTaskReminderService).
+            if (dailyTask?.TelegramIds.Contains(user.TelegramId) == true)
                 continue;
 
             var completedLessons = ParseCompletedLessons(progress.CompletedLessonsJson);
