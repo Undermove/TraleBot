@@ -18,6 +18,7 @@ export default function GiftWarp({ from, onDone }: { from: DOMRect | null; onDon
   const cx = vw / 2, cy = vh * 0.44
   const fx = from ? from.left + from.width / 2 : cx
   const fy = from ? from.top + from.height / 2 : cy
+  const R = Math.hypot(vw, vh)
 
   useEffect(() => {
     let alive = true
@@ -64,13 +65,13 @@ export default function GiftWarp({ from, onDone }: { from: DOMRect | null; onDon
       >
         Ключ — в задании дня!
       </motion.div>
-      {/* Волна из подарка на весь экран. */}
-      <motion.div
-        className="absolute inset-0"
-        style={{ background: NAVY }}
-        initial={{ clipPath: `circle(0px at ${cx}px ${cy}px)` }}
-        animate={{ clipPath: phase === 'flood' ? `circle(${Math.hypot(vw, vh)}px at ${cx}px ${cy}px)` : `circle(0px at ${cx}px ${cy}px)` }}
-        transition={{ duration: 0.42, ease: [0.6, 0, 0.3, 1] }}
+      {/* Волна из подарка на весь экран: круг, который растёт (transform — его двигает видеокарта, без перерисовки). */}
+      <div
+        className="absolute rounded-full"
+        style={{
+          background: NAVY, width: 2 * R, height: 2 * R, left: cx - R, top: cy - R, willChange: 'transform',
+          transform: `scale(${phase === 'flood' ? 1 : 0})`, transition: 'transform .42s cubic-bezier(.6,0,.3,1)'
+        }}
       />
     </div>
   )
@@ -84,13 +85,16 @@ function irisIn() {
   const vw = window.innerWidth, vh = window.innerHeight
   const safeTop = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--safe-t')) || 0
   const x = vw - 34, y = safeTop + 36
+  const r = Math.hypot(vw, vh)
   const el = document.createElement('div')
   el.setAttribute('data-testid', 'gift-iris')
+  // Круг во весь экран сжимается в подарок: только transform — дёшево для телефона.
   Object.assign(el.style, {
-    position: 'fixed', inset: '0', zIndex: '96', pointerEvents: 'none', background: NAVY,
-    clipPath: `circle(${Math.hypot(vw, vh)}px at ${x}px ${y}px)`, transition: 'clip-path .55s cubic-bezier(.6,0,.3,1)'
+    position: 'fixed', zIndex: '96', pointerEvents: 'none', background: NAVY, borderRadius: '50%',
+    width: `${2 * r}px`, height: `${2 * r}px`, left: `${x - r}px`, top: `${y - r}px`,
+    transform: 'scale(1)', willChange: 'transform', transition: 'transform .55s cubic-bezier(.6,0,.3,1)'
   })
   document.body.appendChild(el)
-  requestAnimationFrame(() => requestAnimationFrame(() => { el.style.clipPath = `circle(0px at ${x}px ${y}px)`; buzz.soft() }))
+  requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transform = 'scale(0)'; buzz.soft() }))
   setTimeout(() => { buzz.light(); el.remove() }, 620)
 }

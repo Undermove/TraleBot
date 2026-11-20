@@ -106,8 +106,9 @@
 /* Свет изнутри и тень на полу. */
 .c3-beam {
   position: absolute; left: 12%; width: 76%; bottom: 40%; height: 280%; transform-origin: 50% 100%;
-  background: linear-gradient(to top, rgba(255, 244, 194, .95), rgba(252, 215, 109, .45) 45%, rgba(252, 215, 109, 0));
-  filter: blur(calc(var(--s) / 25)); opacity: 0; transform: scaleY(0); transition: transform .7s cubic-bezier(.2, .8, .3, 1) .15s, opacity .4s .15s;
+  /* Без filter: blur — размытие внутри 3D телефон перерисовывает каждый кадр; мягкость даёт сам градиент. */
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgba(255, 244, 194, .95), rgba(252, 215, 109, .4) 55%, rgba(252, 215, 109, 0) 100%);
+  opacity: 0; transform: scaleY(0); transition: transform .7s cubic-bezier(.2, .8, .3, 1) .15s, opacity .4s .15s;
 }
 .c3-open .c3-beam { opacity: 1; transform: scaleY(1); }
 .c3-ajar.c3-open .c3-beam { opacity: .7; transform: scaleY(.6); }

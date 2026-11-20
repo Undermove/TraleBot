@@ -569,9 +569,10 @@ input:focus-visible {
 
 /* Вкладка въезжает с той стороны, куда листали. */
 /* Сдвиг через left, а не transform: transform сделал бы блок опорой для всего «fixed» внутри (кнопки квиза, шторки). */
-@keyframes tab-in-right { from { left: 56px; opacity: .4; } to { left: 0; opacity: 1; } }
-@keyframes tab-in-left { from { left: -56px; opacity: .4; } to { left: 0; opacity: 1; } }
-.tab-in-right, .tab-in-left { position: relative; }
-.tab-in-right { animation: tab-in-right .26s cubic-bezier(.2, .8, .3, 1); }
-.tab-in-left { animation: tab-in-left .26s cubic-bezier(.2, .8, .3, 1); }
+/* Смена вкладки — только проявление (opacity делает видеокарта). Сдвиг через left пересчитывал раскладку
+   на каждом кадре (тормозило на телефоне), а через transform ломал position: fixed у кнопок внутри. */
+@keyframes tab-in-right { from { opacity: .35; } to { opacity: 1; } }
+@keyframes tab-in-left { from { opacity: .35; } to { opacity: 1; } }
+.tab-in-right { animation: tab-in-right .22s ease-out; }
+.tab-in-left { animation: tab-in-left .22s ease-out; }
 @media (prefers-reduced-motion: reduce) { .tab-in-right, .tab-in-left { animation: none; } }
