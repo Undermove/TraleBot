@@ -75,16 +75,17 @@
 .c3-open .c3-lid { transform: rotateX(108deg); }
 
 /* Ждёт: покачивается и подпрыгивает, как подарок. */
-.c3-idle .c3-body { animation: c3-idle 4.5s ease-in-out infinite; }
+.c3-idle .c3-body { animation: c3-idle 3.2s ease-in-out infinite; }
 @keyframes c3-idle {
-  0%, 100% { transform: rotateY(0) translateY(0); }
-  30% { transform: rotateY(12deg) translateY(0); }
-  55% { transform: rotateY(0) translateY(0); }
-  60% { transform: rotateY(-3deg) translateY(-14%); }
-  66% { transform: rotateY(2deg) translateY(0); }
+  0%, 70%, 100% { transform: rotateZ(0) translateY(0); }
+  74% { transform: rotateZ(-3deg) translateY(-3%); }
+  78% { transform: rotateZ(3deg) translateY(-3%); }
+  82% { transform: rotateZ(-2deg) translateY(-1%); }
+  86% { transform: rotateZ(1.500deg) translateY(0); }
+  90% { transform: rotateZ(0) translateY(0); }
 }
-.c3-idle .c3-lid { animation: c3-peek 4.5s ease-in-out infinite; }
-@keyframes c3-peek { 0%, 56%, 70%, 100% { transform: rotateX(0); } 61% { transform: rotateX(14deg); } }
+.c3-idle .c3-lid { animation: c3-peek 3.2s ease-in-out infinite; }
+@keyframes c3-peek { 0%, 72%, 88%, 100% { transform: rotateX(0); } 78% { transform: rotateX(10deg); } }
 
 .c3-knock { animation: c3-knock .42s cubic-bezier(.3, .7, .4, 1); }
 @keyframes c3-knock {

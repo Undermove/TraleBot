@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useMotionValueEvent, useTransform } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Gift3DHandle } from './Gift3D'
 import LootBox from './LootBox'
 import Padlock from './Padlock'
-import { buzz, reducedMotion, useTilt } from './sensors'
+import { buzz, reducedMotion } from './sensors'
 import { appEvents } from '../analytics/appEvents'
 import './today.css'
 
@@ -11,7 +11,7 @@ import './today.css'
 //  · locked — шаги дня ещё не пройдены: подарок крутится и ждёт; нажал — мотнулся «закрыто», Бомбора объясняет;
 //  · ready — всё пройдено: подарок светится и прыгает, нажал — распаковка (onOpen);
 //  · claimed — открыт сегодня: стоит раскрытым.
-// Бомбора — тамагочи: нажал — покормить (как раньше). Сцена чуть следует за наклоном телефона.
+// Бомбора — тамагочи: нажал — покормить (как раньше). За наклоном телефона сцена не следит — экономим батарею.
 
 export type GiftState = 'locked' | 'ready' | 'claimed'
 
@@ -39,12 +39,6 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
   const box = useRef<Gift3DHandle>(null)
   const still = useMemo(reducedMotion, [])
   const [hint, setHint] = useState<string | null>(null)
-  const tilt = useTilt(!still)
-  const [t, setT] = useState({ x: 0, y: 0 })
-  useMotionValueEvent(tilt.x, 'change', x => setT(v => ({ ...v, x })))
-  useMotionValueEvent(tilt.y, 'change', y => setT(v => ({ ...v, y })))
-  const farX = useTransform(tilt.x, v => v * -14)
-  const midX = useTransform(tilt.x, v => v * 6)
 
   useEffect(() => {
     if (!hint) return
@@ -66,7 +60,7 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
   return (
     <div className="relative w-full" style={{ height: 196 }} data-testid="today-stage">
       {!still && (
-        <motion.div className="absolute inset-0 overflow-hidden" style={{ x: farX }} aria-hidden="true">
+        <motion.div className="absolute inset-0 overflow-hidden" aria-hidden="true">
           {FLOAT.map((l, i) => (
             <span key={i} className="td-letter" style={{
               left: `${(i * 37 + 7) % 92}%`, top: `${(i * 53 + 11) % 80}%`, fontSize: 18 + (i % 4) * 7,
@@ -99,7 +93,7 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
 
       {/* Бомбора: нажал — покормить. */}
       <motion.button type="button" aria-label="Покормить Бомбору" onClick={() => { buzz.light(); onBombora() }}
-        className="absolute left-0 bottom-0 z-[1] active:scale-95 transition-transform" style={{ x: midX }} data-testid="today-bombora">
+        className="absolute left-0 bottom-0 z-[1] active:scale-95 transition-transform" data-testid="today-bombora">
         {mascot}
       </motion.button>
 
@@ -114,7 +108,7 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
           data-testid="gift-button"
           data-gift={gift}
         >
-          <LootBox ref={box} level={gift === 'claimed' ? rarity : 0} size={92} opened={gift === 'claimed'} ajar={gift === 'claimed'} idle={!still} tilt={t} />
+          <LootBox ref={box} level={gift === 'claimed' ? rarity : 0} size={92} opened={gift === 'claimed'} ajar={gift === 'claimed'} idle={!still} />
           {gift === 'locked' && onLocked && (
             <span key={jiggle} className={`absolute left-1/2 top-[46%] z-[2] -translate-x-1/2 -translate-y-1/2 ${jiggle ? 'td-lock-jiggle' : ''}`} data-testid="gift-lock">
               <Padlock size={34} />
