@@ -126,3 +126,31 @@
   .g3-idle .g3-cube, .g3-shaking .g3-cube, .g3-nope { animation: none; }
   .g3-spark { display: none; }
 }
+
+/* Тап перед открытием: подпрыгивает со сплющиванием; с каждым тапом щели светятся сильнее, крышка приподнимается. */
+.g3-knock { animation: g3-knock .42s cubic-bezier(.3, .7, .4, 1); }
+@keyframes g3-knock {
+  0% { transform: translateY(0) scale(1, 1) rotateZ(0); }
+  18% { transform: translateY(4%) scale(1.12, .84) rotateZ(0); }
+  45% { transform: translateY(-26%) scale(.94, 1.08) rotateZ(-7deg); }
+  70% { transform: translateY(0) scale(1.06, .94) rotateZ(4deg); }
+  100% { transform: translateY(0) scale(1, 1) rotateZ(0); }
+}
+.g3[data-charge="1"] .g3-face { box-shadow: 0 0 calc(var(--s) / 10) calc(var(--s) / 60) rgba(252, 215, 109, .8); }
+.g3[data-charge="2"] .g3-face { box-shadow: 0 0 calc(var(--s) / 6) calc(var(--s) / 30) rgba(252, 215, 109, .95); }
+.g3[data-charge="2"] .g3-lid { transform: translateY(-8%) rotateZ(-4deg); }
+.g3[data-charge="2"] .g3-beam { opacity: .5; transform: scaleY(.35); }
+.g3-open[data-charge] .g3-lid { transform: translateY(-190%) translateZ(calc(var(--s) * .4)) rotateX(-70deg) rotateZ(40deg) rotateY(120deg); }
+.g3-open[data-charge] .g3-beam { opacity: 1; transform: scaleY(1); }
+
+/* Приоткрыта (на главной, когда подарок забран): крышки нет, стенки чуть разошлись, внутри светится. */
+.g3-ajar.g3-open .g3-front { transform: translateZ(var(--h)) rotateX(0deg); }
+.g3-ajar.g3-open .g3-back { transform: rotateY(180deg) translateZ(var(--h)) rotateX(0deg); }
+.g3-ajar.g3-open .g3-right { transform: rotateY(90deg) translateZ(var(--h)) rotateX(0deg); }
+.g3-ajar.g3-open .g3-left { transform: rotateY(-90deg) translateZ(var(--h)) rotateX(0deg); }
+.g3-ajar.g3-open .g3-wall::after { opacity: 0; }
+.g3-ajar.g3-open .g3-beam { opacity: .7; transform: scaleY(.6); }
+.g3-ajar .g3-prize { display: none; }
+
+/* Грани и тень в 3D выходят за рамку коробки — касания ловит только сама кнопка, а не они. */
+.g3-scene, .g3-scene * { pointer-events: none; }

@@ -15,6 +15,8 @@ export interface Gift3DHandle {
   open: () => Promise<void>
   /** Покачаться «закрыто» — например, если нажали раньше времени. */
   nope: () => void
+  /** Тап по подарку перед открытием: подпрыгивает, щели разгораются сильнее (1, 2…). */
+  knock: (level: number) => void
 }
 
 interface Props {
@@ -27,6 +29,8 @@ interface Props {
   children?: React.ReactNode
   /** Наклон сцены (−1…1) — от телефона. */
   tilt?: { x: number; y: number }
+  /** Открыта, но «приоткрыта»: крышки нет, стенки чуть разошлись — компактно, для главной. */
+  ajar?: boolean
 }
 
 const LETTERS = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'თ', 'ი', 'კ', 'ლ', 'მ', 'ნ', 'ო', 'რ', 'ს', 'ქ', 'ღ', 'შ']
@@ -74,22 +78,26 @@ const Bow = () => (
   </svg>
 )
 
-const Gift3D = forwardRef<Gift3DHandle, Props>(function Gift3D({ size = 150, opened = false, idle = true, children, tilt }, ref) {
+const Gift3D = forwardRef<Gift3DHandle, Props>(function Gift3D({ size = 150, opened = false, idle = true, children, tilt, ajar = false }, ref) {
   const [state, setState] = useState<Gift3DState>(opened ? 'open' : 'closed')
   const [nope, setNope] = useState(0)
+  const [knocks, setKnocks] = useState(0)
   const root = useRef<HTMLDivElement>(null)
   const busy = useRef(false)
-  // Снаружи сказали «открыта» (например, подарок забрали в окне распаковки) — встать раскрытой.
-  useEffect(() => { if (opened) setState('open') }, [opened])
+  // Снаружи поменяли «открыта/закрыта» (подарок забрали в окне распаковки, на стенде — «подарок заново») — встать так же.
+  useEffect(() => { setState(opened ? 'open' : 'closed') }, [opened])
 
   useImperativeHandle(ref, () => ({
     async open() {
       if (busy.current || state === 'open') return
       busy.current = true
       if (reducedMotion()) { setState('open'); buzz.success(); busy.current = false; return }
-      setState('shaking')
-      ;[0, 110, 220, 330, 440, 550].forEach(t => setTimeout(buzz.tick, t))
-      await wait(700)
+      // Раскачали тапами — сразу лопается; нет — сначала трясётся сама.
+      if (knocks < 2) {
+        setState('shaking')
+        ;[0, 110, 220, 330, 440, 550].forEach(t => setTimeout(buzz.tick, t))
+        await wait(700)
+      }
       buzz.heavy()
       setState('open')
       sparkFountain(root.current, 26)
@@ -101,8 +109,14 @@ const Gift3D = forwardRef<Gift3DHandle, Props>(function Gift3D({ size = 150, ope
     nope() {
       buzz.rigid()
       setNope(n => n + 1)
+    },
+    knock(level) {
+      if (level >= 2) buzz.heavy(); else buzz.rigid()
+      setKnocks(level)
+      setNope(n => n + 1)
+      sparkFountain(root.current, 4 + level * 4)
     }
-  }), [state])
+  }), [state, knocks])
 
   const s = size
   const vars = {
@@ -121,14 +135,15 @@ const Gift3D = forwardRef<Gift3DHandle, Props>(function Gift3D({ size = 150, ope
   return (
     <div
       ref={root}
-      className={`g3 g3-${state} ${idle && state === 'closed' ? 'g3-idle' : ''}`}
+      className={`g3 g3-${state} ${ajar ? 'g3-ajar' : ''} ${idle && state === 'closed' && !knocks ? 'g3-idle' : ''}`}
       style={{ width: s * 1.6, height: s * 1.6, ...vars }}
       data-testid="gift3d"
       data-state={state}
+      data-charge={knocks}
     >
       <div className="g3-scene">
         <div className="g3-floor-shadow" />
-        <div key={nope} className={`g3-cube ${nope ? 'g3-nope' : ''}`}>
+        <div key={nope} className={`g3-cube ${nope ? (knocks ? 'g3-knock' : 'g3-nope') : ''}`}>
           {/* Свет изнутри — виден в щелях при тряске и столбом, когда открыта. */}
           <div className="g3-beam" />
           <div className="g3-face g3-bottom" />

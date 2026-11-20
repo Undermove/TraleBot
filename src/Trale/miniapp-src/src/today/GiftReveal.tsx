@@ -14,6 +14,8 @@ export function giftClaimed(day = utcDay()): boolean {
   try { return localStorage.getItem(key(day)) === '1' } catch { return false }
 }
 function claim(day: string) { try { localStorage.setItem(key(day), '1') } catch {} }
+/** Только для стенда: подарок снова не забран. */
+export function unclaimGift(day: string) { try { localStorage.removeItem(key(day)) } catch {} }
 
 interface Props {
   day: string
@@ -21,17 +23,26 @@ interface Props {
   xp: number | null
   streak: number
   onClose: () => void
+  /** Подарок лопнул — Бомбора радуется. */
+  onCheer: () => void
 }
 
-export default function GiftReveal({ day, xp, streak, onClose }: Props) {
+export default function GiftReveal({ day, xp, streak, onClose, onCheer }: Props) {
   const box = useRef<Gift3DHandle>(null)
   const [opened, setOpened] = useState(false)
+  // Подарок открываешь сам: три тапа — каждый подбрасывает его сильнее, на третьем он лопается.
+  const [taps, setTaps] = useState(0)
+  const TAPS = 3
 
   useEffect(() => { buzz.soft() }, [])
 
-  async function open() {
+  async function tap() {
     if (opened) return
+    const n = taps + 1
+    setTaps(n)
+    if (n < TAPS) { box.current?.knock(n); return }
     appEvents.tap('today-gift-unbox')
+    onCheer()
     await box.current?.open()
     setOpened(true)
     claim(day)
@@ -48,13 +59,19 @@ export default function GiftReveal({ day, xp, streak, onClose }: Props) {
     >
       <div className="mn-eyebrow text-ruby">Подарок дня</div>
       <div className="mt-1 h-[30px] font-sans text-[22px] font-extrabold text-jewelInk text-center">
-        {opened ? 'Это всё твоё!' : 'Маршрут пройден'}
+        {opened ? 'Это всё твоё!' : taps === 0 ? 'Тапай по подарку!' : taps === 1 ? 'Ещё!' : 'Ещё разок!'}
+      </div>
+      {/* Сколько тапов осталось. */}
+      <div className="mt-2 flex h-3 gap-2" aria-hidden="true" data-testid="gift-taps">
+        {!opened && Array.from({ length: TAPS }).map((_, i) => (
+          <span key={i} className={`h-3 w-3 rounded-full border-[1.5px] border-jewelInk transition-colors ${i < taps ? 'bg-gold' : 'bg-cream-deep'}`} />
+        ))}
       </div>
 
       <motion.button
         type="button"
-        onClick={open}
-        className="relative mt-4"
+        onClick={tap}
+        className="relative mt-2"
         aria-label="Открыть подарок"
         initial={reducedMotion() ? false : { y: 300, scale: 0.4, rotate: -30 }}
         animate={{ y: 0, scale: 1, rotate: 0 }}
@@ -79,9 +96,9 @@ export default function GiftReveal({ day, xp, streak, onClose }: Props) {
             <span className="relative z-[1]">Забрать</span>
           </button>
         ) : (
-          <button type="button" onClick={open} className="today-nudge jewel-btn bg-ruby text-cream w-full" data-testid="gift-reveal-open">
-            <span className="relative z-[1]">Открыть</span>
-          </button>
+          <div className="h-[56px] flex items-center justify-center font-sans text-[13px] font-bold text-jewelInk-mid" data-testid="gift-reveal-hint">
+            {taps < TAPS ? `${TAPS - taps} ${TAPS - taps === 1 ? 'тап' : 'тапа'} — и он твой` : ''}
+          </div>
         )}
       </div>
     </motion.div>

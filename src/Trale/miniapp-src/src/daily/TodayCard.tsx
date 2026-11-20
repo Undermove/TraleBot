@@ -6,8 +6,8 @@ import type { Screen } from '../types'
 import { days, formsAndWords, streakLine } from './logic'
 import { cachedDaily, loadDaily, onDaily, setDaily } from './store'
 import GiftHero, { GiftState } from '../today/GiftHero'
-import GiftReveal, { giftClaimed, utcDay } from '../today/GiftReveal'
-import TodayIntro, { shouldShowTodayIntro } from '../today/TodayIntro'
+import GiftReveal, { giftClaimed, unclaimGift, utcDay } from '../today/GiftReveal'
+import TodayIntro, { forgetTodayIntro, shouldShowTodayIntro } from '../today/TodayIntro'
 import type { DailyNew, DailyTaskDto } from './types'
 
 /** Следующий урок курса, как его находит главная: первый непройденный по порядку модулей. */
@@ -72,8 +72,8 @@ interface Props {
   playedToday?: boolean
   /** Ни одного пройденного урока: первый заход, кнопка — «первый урок». */
   firstTime?: boolean
-  /** Бомбора для сцены (настроение считает главная). Нет — карточка без сцены. */
-  mascot?: React.ReactNode
+  /** Бомбора для сцены (настроение считает главная; mood — если сцене есть чему радоваться). Нет — карточка без сцены. */
+  mascot?: (mood?: 'happy' | 'cheer') => React.ReactNode
   /** Что говорит Бомбора, когда торопить не о чем. */
   greeting?: string
   /** Есть опыт — человек учился до обновления: показать «что нового». */
@@ -94,6 +94,12 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   const [task, setTask] = useState<DailyTaskDto | null>(cachedDaily)
   const [claimedTick, setClaimedTick] = useState(0)
   const [reveal, setReveal] = useState(false)
+  const [cheer, setCheer] = useState(false)
+  useEffect(() => {
+    if (!cheer) return
+    const id = setTimeout(() => setCheer(false), 6000)
+    return () => clearTimeout(id)
+  }, [cheer])
   const [intro, setIntro] = useState(() => shouldShowTodayIntro(hasXp))
   const [devNote, setDevNote] = useState<string | null>(null)
 
@@ -171,10 +177,11 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   return (
     <>
       {mascot && (
-        <GiftHero mascot={mascot} say={say} gift={gift} lockedSay={lockedSay} onOpen={openGift} onBombora={() => onFeed?.()} />
+        <GiftHero mascot={mascot(cheer || gift !== 'locked' ? 'cheer' : undefined)} say={say} gift={gift} lockedSay={lockedSay} onOpen={openGift} onBombora={() => onFeed?.()} />
       )}
       {reveal && (
         <GiftReveal day={day} xp={task?.result ? task.result.xpEarned : null} streak={Math.max(streak, task?.result?.streak ?? 0)}
+          onCheer={() => setCheer(true)}
           onClose={() => { setReveal(false); setClaimedTick(t => t + 1) }} />
       )}
       {intro && <TodayIntro personal={Boolean(task)} onClose={() => setIntro(false)} />}
@@ -257,13 +264,17 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
         </div>
       </div>
       {task?.dev && (
-        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1 text-[12px] font-semibold text-jewelInk-hint" data-testid="daily-dev">
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-x-0.5 text-[11px] font-semibold text-jewelInk-hint [&>button]:min-h-[30px]" data-testid="daily-dev">
           <span>стенд:</span>
           <button className="min-h-[44px] px-1.5 underline" onClick={() => dev(() => devNextDay(1), 'наступил следующий день')}>+1 день</button>
           <span>·</span>
           <button className="min-h-[44px] px-1.5 underline" onClick={() => dev(() => devNextDay(7), 'прошла неделя')}>+7 дней</button>
           <span>·</span>
-          <button className="min-h-[44px] px-1.5 underline" onClick={() => dev(devDailyPush, 'сообщение отправлено')}>сообщение бота</button>
+          <button className="min-h-[44px] px-1.5 underline" onClick={() => dev(devDailyPush, 'сообщение отправлено')}>пуш</button>
+          <span>·</span>
+          <button className="min-h-[44px] px-1.5 underline" data-testid="dev-gift-again" onClick={() => { unclaimGift(day); setClaimedTick(t => t + 1); setDevNote(ready ? 'подарок снова закрыт' : 'подарок откроется, когда шаги пройдены') }}>подарок заново</button>
+          <span>·</span>
+          <button className="min-h-[44px] px-1.5 underline" onClick={() => { forgetTodayIntro(); setIntro(true) }}>что нового</button>
           {devNote && <span className="w-full text-center" data-testid="daily-dev-note">{devNote}</span>}
         </div>
       )}

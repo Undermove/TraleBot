@@ -21,6 +21,8 @@ export function shouldShowTodayIntro(hasXp: boolean): boolean {
 }
 
 function markSeen() { try { localStorage.setItem(KEY, '1') } catch {} }
+/** Только для стенда: показать «что нового» ещё раз. */
+export function forgetTodayIntro() { try { localStorage.removeItem(KEY) } catch {} }
 
 const INK = '#15100A'
 const Token = ({ label, icon, delay, onLand }: { label: string; icon: React.ReactNode; delay: number; onLand: () => void }) => (

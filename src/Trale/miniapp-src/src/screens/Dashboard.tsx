@@ -243,7 +243,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       )}
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
-      <section className="px-5 pt-1 pb-3 flex-1 min-h-0 flex flex-col justify-center">
+      <section className="px-5 pt-1 pb-3 flex-1 min-h-0 flex flex-col overflow-y-auto">
+        {/* my-auto: по центру, когда место есть; когда нет — от верха, а не под счётчики. */}
+        <div className="my-auto">
         {(() => {
           const { greeting, mascotMood: baseMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
           const availableXp = Math.max(0, progress.xp - progress.xpSpent)
@@ -289,20 +291,21 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 hasXp={progress.xp > 0}
                 onFeed={() => setTreatShopOpen(true)}
                 greeting={isHungry ? 'Я проголодался — покорми' : recentlyFed ? 'Вкусно! Спасибо' : greeting.line1}
-                mascot={
+                mascot={(mood) => (
                   <div className="relative" title={statusLine}>
-                    <Mascot mood={mascotMood} satietyTier={satietyTier} size={104} />
+                    <Mascot mood={mood ?? mascotMood} satietyTier={satietyTier} size={104} />
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1" aria-hidden="true">
                       {[0, 1, 2].map((i) => (
                         <div key={i} className={`w-2.5 h-2.5 rounded-full border-2 ${i < bowlFill ? 'bg-gold border-gold' : 'bg-cream-deep border-jewelInk/30'}`} />
                       ))}
                     </div>
                   </div>
-                }
+                )}
               />
             </>
           )
         })()}
+        </div>
       </section>
       </>)}
 
@@ -609,7 +612,8 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         </div>
       )}
 
-      <div style={{ height: 'calc(var(--safe-b) + 12px)' }} />
+      {/* Отступ под нижнюю панель — для ленты «Курса»; у «Сегодня» его уже даёт padding корня. */}
+      {view !== 'today' && <div style={{ height: 'calc(var(--safe-b) + 12px)' }} />}
 
       {/* Pro Paywall */}
       {paywall && (

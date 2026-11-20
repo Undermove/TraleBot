@@ -88,14 +88,25 @@ test('шаги пройдены: подарок светится, распако
   await expect(page.getByTestId('today-say')).toHaveText('Готово! Открывай подарок')
   await expect(page.getByTestId('dashboard-gift-cta')).toContainText('Открыть подарок')
 
+  // Подарок готов — Бомбора довольна, а не хмурится.
+  await expect(page.getByTestId('today-bombora').locator('svg').first()).toBeVisible()
   await gift.click()
   const reveal = page.getByTestId('gift-reveal')
-  await expect(reveal).toContainText('Маршрут пройден')
-  await page.getByTestId('gift-reveal-open').click()
+  // Открываешь сам: три тапа, каждый подбрасывает сильнее.
+  await expect(reveal).toContainText('Тапай по подарку!')
+  const box = page.getByTestId('gift-reveal-box')
+  await box.click()
+  await expect(reveal).toContainText('Ещё!')
+  await expect(page.getByTestId('gift3d').last()).toHaveAttribute('data-charge', '1')
+  await box.click()
+  await expect(reveal).toContainText('Ещё разок!')
+  await expect(page.getByTestId('gift-reveal-hint')).toHaveText('1 тап — и он твой')
+  await box.click()
   await expect(page.getByTestId('gift3d').last()).toHaveAttribute('data-state', 'open')
+  await expect(reveal).toContainText('Это всё твоё!')
   await expect(page.getByTestId('gift-prize')).toContainText('+20 опыта')
   await expect(page.getByTestId('gift-prize')).toContainText('3 дня подряд')
-  await expect.poll(() => haptics(page)).toEqual(expect.arrayContaining(['tick', 'impact:heavy', 'note:success']))
+  await expect.poll(() => haptics(page)).toEqual(expect.arrayContaining(['impact:rigid', 'impact:heavy', 'note:success']))
 
   await page.getByTestId('gift-reveal-close').click()
   await expect(reveal).toHaveCount(0)
@@ -198,6 +209,18 @@ test('демо: что нового → главная → закрытый по
   await swipe(page, 300, 120); await page.waitForTimeout(1300)
   await swipe(page, 100, 300); await page.waitForTimeout(1500)
   await page.getByTestId('gift-button').click(); await page.waitForTimeout(1800)
-  await page.getByTestId('gift-reveal-open').click(); await page.waitForTimeout(3200)
+  for (let i = 0; i < 3; i++) { await page.getByTestId('gift-reveal-box').click({ force: true }); await page.waitForTimeout(i < 2 ? 900 : 3200) }
   await page.getByTestId('gift-reveal-close').click(); await page.waitForTimeout(2500)
+})
+
+test('на стенде: «подарок заново» снова закрывает забранный подарок', async ({ page }) => {
+  await setup(page, { task: { ...DONE, dev: true } })
+  await page.route('**/api/miniapp/daily-task', r => r.fulfill({ json: { ...DONE, dev: true } }))
+  await page.addInitScript((day) => localStorage.setItem(`today-gift-${day}`, '1'), DONE.day)
+  await page.goto('/?playwright=1')
+  await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'claimed')
+  await page.waitForTimeout(1500)
+  if (process.env.HOME_TABS_SHOTS) await page.screenshot({ path: `${process.env.HOME_TABS_SHOTS}/gift-claimed.png` })
+  await page.getByTestId('dev-gift-again').click()
+  await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'ready')
 })
