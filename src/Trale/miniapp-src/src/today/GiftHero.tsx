@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useMotionValueEvent, useTransform } from 'framer-motion'
 import { Gift3DHandle } from './Gift3D'
 import LootBox from './LootBox'
+import Padlock from './Padlock'
 import { buzz, reducedMotion, useTilt } from './sensors'
 import { appEvents } from '../analytics/appEvents'
 import './today.css'
@@ -28,9 +29,12 @@ interface Props {
   rarity?: number
   /** Подпись на закрытой коробке. */
   lockChip?: string
+  /** Нажали на закрытый: замок щёлкает — и сразу в занятие (ключ от подарка). Нет — только объяснение. */
+  onLocked?: () => void
 }
 
-export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombora, rarity = 0, lockChip = 'в конце дня' }: Props) {
+export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombora, rarity = 0, lockChip = 'в конце дня', onLocked }: Props) {
+  const [jiggle, setJiggle] = useState(0)
   const box = useRef<Gift3DHandle>(null)
   const still = useMemo(reducedMotion, [])
   const [hint, setHint] = useState<string | null>(null)
@@ -51,7 +55,9 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
     if (gift === 'ready') { appEvents.tap('today-gift-open'); onOpen(); return }
     appEvents.tap(`today-gift-${gift}`)
     box.current?.nope()
+    setJiggle(j => j + 1)
     setHint(lockedSay)
+    if (onLocked) setTimeout(onLocked, 750)
   }
 
   const bubble = hint ?? say
@@ -107,6 +113,11 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
           data-gift={gift}
         >
           <LootBox ref={box} level={gift === 'claimed' ? rarity : 0} size={92} opened={gift === 'claimed'} ajar={gift === 'claimed'} idle={!still} tilt={t} />
+          {gift === 'locked' && onLocked && (
+            <span key={jiggle} className={`absolute left-1/2 top-[46%] z-[2] -translate-x-1/2 -translate-y-1/2 ${jiggle ? 'td-lock-jiggle' : ''}`} data-testid="gift-lock">
+              <Padlock size={34} />
+            </span>
+          )}
           {gift !== 'claimed' && (
             <span className={`absolute bottom-1 left-1/2 z-[2] whitespace-nowrap rounded-full px-2.5 py-1 font-sans text-[11px] font-extrabold ${gift === 'ready' ? 'td-tap bg-ruby text-cream' : 'bg-jewelInk/80 text-cream'}`}
               style={gift === 'ready' ? undefined : { transform: 'translateX(-50%)' }} data-testid="gift-hint">

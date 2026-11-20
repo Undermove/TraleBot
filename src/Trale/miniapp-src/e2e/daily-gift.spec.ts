@@ -84,7 +84,7 @@ function GIFT({ ready = false, opened = false, ready1 = false, streak = 3, guara
 const DONE = { ...TODAY, done: true, offerTaken: true, result: { errors: 0, xpEarned: 20, streak: 3 }, offer: null }
 const haptics = (page: Page) => page.evaluate(() => (window as any).__haptics as string[])
 
-test('до занятия: коробка закрыта на 2 минуты, таймер сгорания, что может выпасть; без процентов; кнопка ведёт в занятие', async ({ page }) => {
+test('до занятия: коробка закрыта на 2 минуты, таймер сгорания, что может выпасть; без процентов; кнопка — сразу в упражнение', async ({ page }) => {
   await setup(page)
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'locked')
@@ -96,7 +96,8 @@ test('до занятия: коробка закрыта на 2 минуты, т
   const sizes = await page.evaluate(() => ({ h: document.documentElement.scrollHeight, vh: window.innerHeight }))
   expect(sizes.h).toBeLessThanOrEqual(sizes.vh)
   await page.getByTestId('dashboard-suggestion').getByRole('button').click()
-  await expect(page.getByTestId('daily-chat').first()).toBeVisible()
+  await expect(page.getByTestId('daily-steps')).toBeVisible()
+  await expect(page.getByTestId('daily-intro')).toHaveCount(0)
 })
 
 test('недельный день: Бомбора обещает сундук', async ({ page }) => {
@@ -190,7 +191,6 @@ test('в занятии коробка ждёт в конце полоски', a
   await setup(page)
   await page.goto('/?playwright=1')
   await page.getByTestId('dashboard-suggestion').getByRole('button').click()
-  await page.getByTestId('daily-intro').getByRole('button', { name: TODAY.button }).click()
   await expect(page.getByTestId('daily-steps-gift')).toBeVisible()
 })
 
@@ -204,7 +204,6 @@ test('скриншоты флоу', async ({ page }) => {
   await page.waitForTimeout(900)
   await shot('1-home-locked')
   await page.getByTestId('dashboard-suggestion').getByRole('button').click()
-  await page.getByTestId('daily-intro').getByRole('button', { name: TODAY.button }).click()
   await page.waitForTimeout(600)
   await shot('2-lesson-gift-at-end')
 
@@ -214,7 +213,9 @@ test('скриншоты флоу', async ({ page }) => {
   await page.waitForTimeout(900)
   await shot('3-home-ready')
   await page.getByTestId('dashboard-gift-cta').getByRole('button').click()
-  await page.waitForTimeout(1200)
+  await page.waitForTimeout(450)
+  await shot('4a-unlock')
+  await page.waitForTimeout(800)
   await shot('4-unbox-start')
   const box = page.getByTestId('gift-reveal-box')
   await box.click(); await page.waitForTimeout(500)

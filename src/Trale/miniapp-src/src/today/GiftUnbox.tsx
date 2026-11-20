@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Gift3DHandle, sparkFountain } from './Gift3D'
 import LootBox from './LootBox'
+import Padlock from './Padlock'
+import './today.css'
 import PrizeIcon from './PrizeIcon'
 import { buzz, reducedMotion } from './sensors'
 import { appEvents } from '../analytics/appEvents'
@@ -37,6 +39,13 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
   const [up, setUp] = useState(false)
   const [phase, setPhase] = useState<'tap' | 'prize' | 'after'>('tap')
   const pending = useRef<Promise<void> | null>(null)
+
+  // Начало: замок, который висел на подарке, отщёлкивается — ключ (занятие) подошёл.
+  const [unlocked, setUnlocked] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => { setUnlocked(true); buzz.rigid() }, 650)
+    return () => clearTimeout(id)
+  }, [])
 
   useEffect(() => {
     buzz.soft()
@@ -77,7 +86,7 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
 
   const title = phase !== 'tap'
     ? (final >= 2 ? 'Вот это да!' : 'Твоё!')
-    : taps === 0 ? 'Тапай по подарку!' : up ? (shown === 1 ? 'Ого, сундучок!' : 'Ещё лучше!') : taps === 1 ? 'Ещё!' : 'Ещё разок!'
+    : taps === 0 ? (unlocked ? 'Тапай по подарку!' : 'Ключ подошёл!') : up ? (shown === 1 ? 'Ого, сундучок!' : 'Ещё лучше!') : taps === 1 ? 'Ещё!' : 'Ещё разок!'
 
   const g = result?.gift ?? gift
   const prize = result?.box.prize ?? null
@@ -122,6 +131,11 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
             transition={{ type: 'spring', stiffness: 200, damping: 14 }}
             data-testid="gift-reveal-box"
           >
+            {phase === 'tap' && box === 0 && taps === 0 && (
+              <span className={`absolute left-1/2 top-[46%] z-[2] ${unlocked ? 'td-unlock' : ''}`} style={{ transform: 'translate(-50%, -50%)' }} data-testid="gift-unlock">
+                <Padlock size={46} open={unlocked} />
+              </span>
+            )}
             <LootBox ref={cube} level={shown} pop size={phase === 'prize' ? 110 : 140} idle={phase === 'tap'} charge={Math.min(taps, 2)} opened={phase === 'prize'} ajar={phase === 'prize'} />
           </motion.button>
 

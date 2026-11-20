@@ -36,6 +36,8 @@ interface Mock {
   /** Сколько ещё раундов сервер готов дать. */
   extraLeft?: number
   requests: string[]
+  /** Подарок дня с сервера: null — его нет (404). */
+  gift?: any
 }
 
 async function setup(page: Page, task: any, patch: Partial<Mock> = {}): Promise<Mock> {
@@ -97,6 +99,16 @@ async function setup(page: Page, task: any, patch: Partial<Mock> = {}): Promise<
       mock.offers.push(body())
       mock.task = { ...mock.task, offerTaken: true }
       return route.fulfill({ json: { task: mock.task } })
+    }
+    if (path === 'daily-gift') {
+      if (!mock.gift) return route.fulfill({ status: 404, json: {} })
+      const ready = Boolean(mock.task?.done)
+      mock.gift = { ...mock.gift, boxes: mock.gift.boxes.map((b: any) => b.box === 0 ? { ...b, ready } : b) }
+      return route.fulfill({ json: mock.gift })
+    }
+    if (path === 'daily-gift/open') {
+      mock.gift = { ...mock.gift, boxes: mock.gift.boxes.map((b: any) => b.box === 0 ? { ...b, opened: true, rarity: 1, prize: 'freeze' } : b) }
+      return route.fulfill({ json: { gift: mock.gift, box: mock.gift.boxes[0] } })
     }
     const lesson = path.match(/^modules\/intro\/lessons\/(\d+)\/questions$/)
     if (lesson) return route.fulfill({ json: introQuestions(Number(lesson[1])) })
@@ -354,5 +366,53 @@ test.describe('Задание дня', () => {
     await setup(page, TODAY)
     await page.goto('/?playwright=1&screen=daily')
     await expect(page.getByTestId('daily-intro')).toBeVisible({ timeout: 10_000 })
+  })
+})
+
+test.describe('Подарок дня → занятие → распаковка', () => {
+  test.use({ viewport: { width: 375, height: 667 } })
+  const GIFT = {
+    day: '2026-11-20', streak: 3, odds: [0.565, 0.292, 0.115, 0.028], guaranteedIn: 4, freezes: 0, boostToday: false,
+    burnsAtUtc: new Date(Date.now() + 6 * 3600_000).toISOString(), friendDays: 7,
+    boxes: [
+      { box: 0, ready: false, opened: false, rarity: null, prize: null, friendLink: null },
+      { box: 1, ready: false, opened: false, rarity: null, prize: null, friendLink: null }
+    ]
+  }
+
+  test('тап по закрытому подарку: замок дёрнулся — и сразу первое упражнение; после занятия — распаковка', async ({ page }) => {
+    const mock = await setup(page, TODAY, { gift: GIFT })
+    await page.goto('/?playwright=1')
+    await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'locked')
+    await expect(page.getByTestId('gift-lock')).toBeVisible()
+    await page.getByTestId('gift-button').click()
+    await expect(page.getByTestId('today-say')).toHaveText('Ключ от подарка — в занятии. Погнали!')
+    // Без вступления — сразу разминка, в конце полоски подарок.
+    await expect(page.getByTestId('daily-warm-word')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('daily-intro')).toHaveCount(0)
+    await expect(page.getByTestId('daily-steps-gift')).toBeVisible()
+
+    await playWarm(page)
+    await playPairs(page, TODAY.pairs)
+    await playBack(page, TODAY.back)
+    await playCheck(page)
+
+    await expect(page.getByTestId('gift-reveal')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByTestId('gift-title')).toHaveText('Ключ подошёл!')
+    await expect(page.getByTestId('gift-title')).toHaveText('Тапай по подарку!')
+    const box = page.getByTestId('gift-reveal-box')
+    await expect.poll(() => mock.gift.boxes[0].opened).toBe(true)
+    await box.click()
+    await expect(page.getByTestId('gift-reveal').getByTestId('chest3d')).toHaveAttribute('data-model', 'wood')
+    await box.click()
+    await box.click()
+    await expect(page.getByTestId('gift-prize')).toHaveAttribute('data-prize', 'freeze')
+  })
+
+  test('кнопка «Забрать подарок» тоже ведёт сразу в упражнение', async ({ page }) => {
+    await setup(page, TODAY, { gift: GIFT })
+    await page.goto('/?playwright=1')
+    await page.getByTestId('dashboard-suggestion').getByRole('button').click()
+    await expect(page.getByTestId('daily-warm-word')).toBeVisible({ timeout: 5000 })
   })
 })

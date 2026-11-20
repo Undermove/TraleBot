@@ -178,11 +178,14 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
     : g && nudge && !firstTime ? (streak >= 1 ? `${streak} ${plural(streak, 'день', 'дня', 'дней')} подряд! Две минуты — и подарок твой` : 'Две минуты — и подарок твой')
     : nudge ? shortNudge(streak, firstTime, task ? steps.length : 1)
     : doneCount > 0 ? 'Ещё шаг — и подарок твой' : greeting
-  const lockedSay = firstTime ? 'Пройди первый урок — и подарок твой'
+  const lockedSay = g && task && !task.done ? 'Ключ от подарка — в занятии. Погнали!'
+    : firstTime ? 'Пройди первый урок — и подарок твой'
     : task ? (doneCount > 0 ? 'Остался один шаг — и открывай' : 'Пройди оба шага — и подарок твой')
     : 'Пройди урок — и подарок твой'
   const openGift = () => { setRevealBox(openBox); setReveal(true) }
   const playMore = () => navigate({ kind: 'daily', extra: true })
+  /** Ключ от подарка — занятие: сразу первое упражнение. */
+  const playForGift = () => navigate({ kind: 'daily', start: true })
 
   async function dev(action: () => Promise<{ task?: DailyTaskDto; ok?: boolean }>, note: string) {
     setDevNote('…')
@@ -199,7 +202,8 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
     <>
       {mascot && (
         <GiftHero mascot={mascot(cheer || gift !== 'locked' ? 'cheer' : undefined)} say={say} gift={gift} lockedSay={lockedSay} onOpen={openGift} onBombora={() => onFeed?.()}
-          rarity={box0?.rarity ?? 0} lockChip={g ? '2 минуты занятия' : 'в конце дня'} />
+          rarity={box0?.rarity ?? 0} lockChip={g ? (task?.mode === 'comeback' ? 'минута занятия' : '2 минуты занятия') : 'в конце дня'}
+          onLocked={g && task && !task.done ? () => { appEvents.tap('today-gift-locked-go'); playForGift() } : undefined} />
       )}
       {mascot && g && gift !== 'claimed' && <GiftStrip gift={g} burning={gift === 'locked'} />}
       {reveal && g && revealBox != null && (
@@ -267,7 +271,7 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
               </div>
             ) : g && mascot && gift === 'locked' && next ? (
               <div data-testid="dashboard-suggestion" className="today-nudge">
-                <Button onClick={() => { appEvents.tap('today-gift-claim'); next.go() }}>
+                <Button onClick={() => { appEvents.tap('today-gift-claim'); task && !task.done ? playForGift() : next.go() }}>
                   <span className="flex flex-col items-center leading-tight">
                     <span>Забрать подарок</span>
                     <span className="text-[11.500px] font-bold opacity-85" data-testid="dashboard-gift-sub">сначала {task?.mode === 'comeback' ? 'минута' : '2 минуты'} занятия</span>

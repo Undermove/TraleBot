@@ -30,10 +30,10 @@ type Stage =
   | { kind: 'finale' }
   | { kind: 'minute' }
 
-export default function DailyTask({ navigate, startExtra = false }: { navigate: (s: Screen) => void; startExtra?: boolean }) {
+export default function DailyTask({ navigate, startExtra = false, startNow = false }: { navigate: (s: Screen) => void; startExtra?: boolean; startNow?: boolean }) {
   const [task, setTask] = useState<DailyTaskDto | null>(cachedDaily)
   const [loading, setLoading] = useState(!cachedDaily())
-  const [stage, setStage] = useState<Stage>(() => (cachedDaily()?.done ? { kind: 'finale' } : { kind: 'intro' }))
+  const [stage, setStage] = useState<Stage>(() => (cachedDaily()?.done ? { kind: 'finale' } : startNow && cachedDaily() ? { kind: 'step', at: 0 } : { kind: 'intro' }))
   const [verb, setVerb] = useState<string | null>(null)
   /** Раунд сверх задания, который сейчас играется. */
   const [extra, setExtra] = useState<DailyTaskDto | null>(null)
@@ -55,6 +55,7 @@ export default function DailyTask({ navigate, startExtra = false }: { navigate: 
         if (!alive) return
         setTask(t)
         if (t?.done) setStage({ kind: 'finale' })
+        else if (t && startNow) setStage(s => (s.kind === 'intro' ? { kind: 'step', at: 0 } : s))
         if (t?.done && startExtra) playExtra()
       })
       .catch(() => {})

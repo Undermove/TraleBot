@@ -25,3 +25,20 @@
 }
 @keyframes td-glow { 0%, 100% { transform: translate(-50%, -50%) scale(.85); opacity: .7; } 50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .td-ready::before { animation: none; } }
+
+/* Замок на подарке: нажали — дёргается («закрыто, ключ — в занятии»). */
+.td-lock-jiggle { animation: td-lock .6s ease-out; }
+@keyframes td-lock {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0); }
+  15% { transform: translate(-50%, -50%) rotate(-18deg) scale(1.15); }
+  35% { transform: translate(-50%, -50%) rotate(14deg) scale(1.15); }
+  55% { transform: translate(-50%, -50%) rotate(-8deg); }
+  75% { transform: translate(-50%, -50%) rotate(4deg); }
+}
+/* В распаковке: замок отщёлкивается и улетает. */
+.td-unlock { animation: td-unlock .7s cubic-bezier(.3, 1.4, .5, 1) forwards; }
+@keyframes td-unlock {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  30% { transform: translate(-50%, -50%) scale(1.25) rotate(-10deg); opacity: 1; }
+  100% { transform: translate(-50%, -260%) scale(.6) rotate(40deg); opacity: 0; }
+}
