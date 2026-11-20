@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import GiftBox, { GiftBoxHandle } from './GiftBox'
+import Gift3D, { Gift3DHandle } from './Gift3D'
 import { buzz, reducedMotion } from './sensors'
 import { appEvents } from '../analytics/appEvents'
 import './today.css'
@@ -51,7 +51,8 @@ interface Props {
 export default function TodayIntro({ personal, onClose }: Props) {
   const slides = personal ? ['gift', 'inside', 'go'] : ['gift', 'go']
   const [i, setI] = useState(0)
-  const box = useRef<GiftBoxHandle>(null)
+  const box = useRef<Gift3DHandle>(null)
+  const [squish, setSquish] = useState(0)
   const slide = slides[i]
   const last = i === slides.length - 1
 
@@ -63,7 +64,13 @@ export default function TodayIntro({ personal, onClose }: Props) {
     setI(i + 1)
   }
 
-  const gulp = () => { buzz.soft(); box.current?.squash(true); setTimeout(() => box.current?.squash(false), 120) }
+  const gulp = () => { buzz.soft(); setSquish(n => n + 1) }
+  // Последний экран: подарок раскрывается сам — так видно, что будет в конце дня.
+  useEffect(() => {
+    if (slide !== 'go') return
+    const id = setTimeout(() => box.current?.open(), 500)
+    return () => clearTimeout(id)
+  }, [slide])
 
   return (
     <motion.div
@@ -80,22 +87,36 @@ export default function TodayIntro({ personal, onClose }: Props) {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="relative" style={{ width: 200, height: 220 }}>
-          <motion.div
-            className="absolute inset-x-0 bottom-0 flex justify-center"
-            initial={reducedMotion() ? false : { y: -320, rotate: -20 }}
-            animate={{ y: 0, rotate: 0 }}
-            transition={{ type: 'spring', stiffness: 240, damping: 13, mass: 1.1 }}
-            onAnimationComplete={() => buzz.heavy()}
-          >
-            <GiftBox ref={box} size={170} idle={slide !== 'inside'} />
-          </motion.div>
-          {slide === 'inside' && (
+        <div className="relative flex items-end justify-center" style={{ width: 240, height: 240 }}>
+          {slide === 'inside' ? (
             <>
+              <motion.div key={squish} className="jewel-tile w-full px-4 py-3 text-left"
+                initial={squish ? { scaleY: 0.9, scaleX: 1.05 } : { opacity: 0, y: 20 }} animate={{ scaleY: 1, scaleX: 1, opacity: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 12 }}>
+                <div className="relative z-[1] flex items-center gap-3">
+                  <div className="w-8 h-8 shrink-0 rounded-full border-[1.5px] border-jewelInk bg-gold flex items-center justify-center font-sans text-[14px] font-extrabold">1</div>
+                  <div>
+                    <div className="font-sans text-[11px] font-bold uppercase tracking-wider text-jewelInk-mid">Повторение</div>
+                    <div className="font-sans text-[15px] font-bold text-jewelInk">Собрано под тебя</div>
+                  </div>
+                </div>
+              </motion.div>
               <Token label="твои слова" icon={icons.words} delay={0.2} onLand={gulp} />
               <Token label="твои глаголы" icon={icons.verbs} delay={0.9} onLand={gulp} />
               <Token label="пройденные уроки" icon={icons.lessons} delay={1.6} onLand={gulp} />
             </>
+          ) : (
+            <motion.div
+              key={slide}
+              initial={reducedMotion() ? false : { y: -320, rotate: -20 }}
+              animate={{ y: 0, rotate: 0 }}
+              transition={{ type: 'spring', stiffness: 240, damping: 13, mass: 1.1 }}
+              onAnimationComplete={() => buzz.heavy()}
+            >
+              <Gift3D ref={box} size={130} idle={slide === 'gift'}>
+                <div className="rounded-2xl border-[2px] border-jewelInk bg-cream-tile px-4 py-2 text-center font-sans text-[20px] font-extrabold text-jewelInk whitespace-nowrap" style={{ boxShadow: '3px 3px 0 #15100A' }}>+20 <span className="text-[13px]">опыта</span></div>
+              </Gift3D>
+            </motion.div>
           )}
         </div>
 
@@ -109,18 +130,17 @@ export default function TodayIntro({ personal, onClose }: Props) {
             {slide === 'gift' && (<>
               <div className="mn-eyebrow text-ruby">Новая главная</div>
               <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Каждый день — подарок от Бомборы</h2>
-              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">Внутри занятие на пару минут. Нажми на коробку — и поехали.</p>
+              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">{personal ? 'Он ждёт в конце дня: пройди два коротких шага — повторение и новое — и открывай.' : 'Он ждёт в конце дня: пройди урок — и открывай.'}</p>
             </>)}
             {slide === 'inside' && (<>
               <div className="mn-eyebrow text-ruby">Собран под тебя</div>
-              <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Из того, что ты уже учил</h2>
-              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">Слова из твоего словаря, глаголы и пройденные уроки. Что начал забывать — повторим, что знаешь — закрепим. А в конце Бомбора подскажет, что пройти дальше.</p>
+              <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Повторение — из того, что ты уже учил</h2>
+              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">Слова из твоего словаря, глаголы и пройденные уроки. Что начал забывать — повторим, что знаешь — закрепим. Второй шаг — новое: Бомбора подскажет, что пройти дальше.</p>
             </>)}
             {slide === 'go' && (<>
-              <div className="mn-eyebrow text-ruby">Две минуты в день</div>
-              <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Один подарок в день держит серию</h2>
-              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">Увлёкся — бери ещё раунд или следующий урок. Курс, глаголы и словарь — во вкладках внизу.</p>
-              <p className="mt-3 font-sans text-[13px] font-bold text-jewelInk-hint">И попробуй потрясти телефон.</p>
+              <div className="mn-eyebrow text-ruby">Пара минут в день</div>
+              <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Открыл подарок — серия растёт</h2>
+              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">Увлёкся — бери ещё раунд. Курс, глаголы и словарь — во вкладках внизу, между ними можно листать свайпом.</p>
             </>)}
           </motion.div>
         </AnimatePresence>

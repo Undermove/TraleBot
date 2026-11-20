@@ -20,7 +20,7 @@ const ICONS: Record<HomeTab, (fill: string) => JSX.Element> = {
   // Карточки слов стопкой.
   vocab: fill => (<svg {...icon}><rect x="7" y="3.500" width="12.500" height="15" rx="2" /><rect x="4.500" y="6" width="12.500" height="14.500" rx="2" fill={fill} /><path d="M8 11h5.500M8 14.500h4" /></svg>)
 }
-const TABS: { id: HomeTab; name: string; screen: Screen }[] = [
+export const TABS: { id: HomeTab; name: string; screen: Screen }[] = [
   { id: 'today', name: 'Сегодня', screen: { kind: 'dashboard' } },
   { id: 'course', name: 'Курс', screen: { kind: 'course' } },
   { id: 'verbs', name: 'Глаголы', screen: { kind: 'verbs' } },

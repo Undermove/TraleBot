@@ -566,3 +566,12 @@ input:focus-visible {
   animation: today-halo 1.8s ease-out infinite;
 }
 @media (prefers-reduced-motion: reduce) { .today-nudge::after { animation: none; opacity: 0; } }
+
+/* Вкладка въезжает с той стороны, куда листали. */
+/* Сдвиг через left, а не transform: transform сделал бы блок опорой для всего «fixed» внутри (кнопки квиза, шторки). */
+@keyframes tab-in-right { from { left: 56px; opacity: .4; } to { left: 0; opacity: 1; } }
+@keyframes tab-in-left { from { left: -56px; opacity: .4; } to { left: 0; opacity: 1; } }
+.tab-in-right, .tab-in-left { position: relative; }
+.tab-in-right { animation: tab-in-right .26s cubic-bezier(.2, .8, .3, 1); }
+.tab-in-left { animation: tab-in-left .26s cubic-bezier(.2, .8, .3, 1); }
+@media (prefers-reduced-motion: reduce) { .tab-in-right, .tab-in-left { animation: none; } }

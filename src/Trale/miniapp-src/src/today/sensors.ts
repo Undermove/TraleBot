@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useMotionValue, useSpring, type MotionValue } from 'framer-motion'
 
 // Датчики телефона для главной: наклон (сцена чуть сдвигается за телефоном — как игрушка в руке)
-// и встряхивание (пасхалка). В Telegram 9.0+ — его DeviceOrientation и Accelerometer, иначе — события
+// В Telegram 9.0+ — его DeviceOrientation, иначе — события
 // браузера (Android отдаёт их без спроса; iOS спрашивает разрешение — там не просим, просто без наклона).
 // На компьютере наклон заменяет мышь.
 
@@ -57,49 +57,6 @@ export function useTilt(enabled = true): { x: MotionValue<number>; y: MotionValu
   }, [enabled])
 
   return { x, y }
-}
-
-/** Встряхивание: несколько резких рывков за полсекунды. Повтор — не раньше чем через 3 секунды. */
-export function useShake(onShake: () => void, enabled = true) {
-  const cb = useRef(onShake)
-  cb.current = onShake
-
-  useEffect(() => {
-    if (!enabled) return
-    let last: { x: number; y: number; z: number } | null = null
-    let jolts: number[] = []
-    let quietUntil = 0
-    const feed = (x: number, y: number, z: number) => {
-      const now = Date.now()
-      if (last) {
-        const jump = Math.abs(x - last.x) + Math.abs(y - last.y) + Math.abs(z - last.z)
-        if (jump > 14) jolts.push(now)
-      }
-      last = { x, y, z }
-      jolts = jolts.filter(t => now - t < 600)
-      if (jolts.length >= 3 && now > quietUntil) {
-        jolts = []
-        quietUntil = now + 3000
-        cb.current()
-      }
-    }
-    const app = tg()
-    const sensor = tgAtLeast('9.0') ? app?.Accelerometer : null
-    if (sensor?.start) {
-      const onChange = () => { if (sensor.x != null) feed(sensor.x, sensor.y, sensor.z) }
-      try {
-        sensor.start({ refresh_rate: 60 })
-        app.onEvent('accelerometerChanged', onChange)
-        return () => { try { app.offEvent('accelerometerChanged', onChange); sensor.stop() } catch {} }
-      } catch {}
-    }
-    const onMotion = (e: DeviceMotionEvent) => {
-      const a = e.accelerationIncludingGravity
-      if (a?.x != null && a.y != null && a.z != null) feed(a.x, a.y, a.z)
-    }
-    window.addEventListener('devicemotion', onMotion)
-    return () => window.removeEventListener('devicemotion', onMotion)
-  }, [enabled])
 }
 
 /** Вибрация в Telegram (или в браузере). */

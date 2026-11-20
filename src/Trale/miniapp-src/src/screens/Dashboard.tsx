@@ -220,7 +220,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   }, [progress.xp, progress.streak])
 
   return (
-    <div className="flex flex-col min-h-full bg-cream">
+    // «Сегодня» — ровно в окно, без прокрутки: всё нужное видно сразу. «Курс» — обычная лента.
+    <div className={view === 'today' ? 'flex flex-col bg-cream overflow-hidden' : 'flex flex-col min-h-full bg-cream'}
+      style={view === 'today' ? { height: '100dvh', paddingBottom: 'var(--safe-b)' } : undefined}>
       {view === 'course' && <Header progress={progress} eyebrow="კურსი" title="Курс" />}
       {view === 'today' && (<>
       {/* ══ Kilim + stats bar ══ */}
@@ -241,7 +243,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       )}
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
-      <section className="px-5 pt-1 pb-4">
+      <section className="px-5 pt-1 pb-3 flex-1 min-h-0 flex flex-col justify-center">
         {(() => {
           const { greeting, mascotMood: baseMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
           const availableXp = Math.max(0, progress.xp - progress.xpSpent)
@@ -285,6 +287,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 playedToday={todayLessons > 0 || progress.lastPlayedDate === localToday()}
                 firstTime={Object.values(progress.completedLessons).every(l => l.length === 0)}
                 hasXp={progress.xp > 0}
+                onFeed={() => setTreatShopOpen(true)}
                 greeting={isHungry ? 'Я проголодался — покорми' : recentlyFed ? 'Вкусно! Спасибо' : greeting.line1}
                 mascot={
                   <div className="relative" title={statusLine}>
@@ -600,9 +603,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       })()}
 
       {/* ══ Bottom kilim strip — symmetry with top ══ */}
-      <div className="mt-auto">
-        <div className="mn-kilim opacity-70" />
-      </div>
+      {view !== 'today' && (
+        <div className="mt-auto">
+          <div className="mn-kilim opacity-70" />
+        </div>
+      )}
 
       <div style={{ height: 'calc(var(--safe-b) + 12px)' }} />
 

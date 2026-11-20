@@ -39,6 +39,7 @@ import AdminSystemScreen from './screens/AdminSystemScreen'
 import { adminBack, adminLink, enterAdmin, goInnerBack, isAdminScreen, leaveAdmin, parseAdminLink, rememberScroll, scrollOf, tabEpoch } from './admin/adminNav'
 import AdminTabBar, { useKeyboardOpen } from './components/admin/AdminTabBar'
 import HomeTabBar, { HOME_TAB_BAR_HEIGHT, homeTabOf } from './components/HomeTabBar'
+import TabSwipe from './components/TabSwipe'
 import AdminMoreScreen from './screens/AdminMoreScreen'
 import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
 import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
@@ -694,7 +695,10 @@ export default function App() {
         // Экран вкладки: нижний отступ «безопасной зоны» растёт на высоту панели — всё, что прижато к низу
         // (кнопки квиза в словаре, шторки), встаёт над ней, а не под неё.
         <div className="contents" style={{ ['--safe-b' as any]: `calc(${rootSafeBottom()} + ${HOME_TAB_BAR_HEIGHT}px)` }}>
-          {renderScreen()}
+          <TabSwipe tab={tab} navigate={navigate} disabled={overlayOpen || keyboardOpen}
+            locked={isPro || isTrialActive ? undefined : VOCAB_LOCKED} onLocked={setPaywallFor}>
+            {renderScreen()}
+          </TabSwipe>
         </div>
       ) : renderScreen()}
       {tab && !overlayOpen && !keyboardOpen && (

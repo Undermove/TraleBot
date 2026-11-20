@@ -181,14 +181,15 @@ test('профиль — кружок справа вверху, кнопка «
 test('ещё не занимался сегодня — Бомбора говорит, что серия прервётся', async ({ page }) => {
   await setup(page)
   await page.goto('/?playwright=1')
-  await expect(page.getByTestId('today-say')).toHaveText('3 дня подряд! Открой подарок, не прерывай')
+  await expect(page.getByTestId('today-say')).toHaveText('3 дня подряд! Один урок — и подарок твой')
 })
 
-test('сегодня уже занимался — кнопка не торопит', async ({ page }) => {
+test('сегодня уже занимался — подарок дня готов', async ({ page }) => {
   await setup(page, { ...me, progress: { ...me.progress, lastPlayedAtUtc: new Date().toISOString() } })
   await page.goto('/?playwright=1')
-  await expect(page.getByTestId('dashboard-suggestion')).toBeVisible()
-  await expect(page.getByTestId('today-say')).not.toContainText('Открой подарок')
+  await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'ready')
+  await expect(page.getByTestId('dashboard-gift-cta')).toBeVisible()
+  await expect(page.getByTestId('today-say')).toHaveText('Готово! Открывай подарок')
 })
 
 test('новичок после знакомства: «Начать первый урок» и вкладки на месте', async ({ page }) => {
@@ -199,6 +200,6 @@ test('новичок после знакомства: «Начать первы�
   await page.getByText('посмотреть все уроки').click()
   await expect(page.getByTestId('home-tabs')).toBeVisible()
   await expect(page.getByTestId('dashboard-suggestion').getByRole('button')).toHaveText('Начать первый урок')
-  await expect(page.getByTestId('today-say')).toHaveText('Привет! Открой подарок — начнём')
+  await expect(page.getByTestId('today-say')).toHaveText('Привет! Пройди первый урок — там подарок')
   await shot(page, 'today-newcomer')
 })
