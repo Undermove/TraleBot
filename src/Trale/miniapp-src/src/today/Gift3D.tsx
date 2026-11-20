@@ -31,6 +31,8 @@ interface Props {
   tilt?: { x: number; y: number }
   /** Открыта, но «приоткрыта»: крышки нет, стенки чуть разошлись — компактно, для главной. */
   ajar?: boolean
+  /** Редкость 0..3 — цвет коробки. */
+  rarity?: number
 }
 
 const LETTERS = ['ა', 'ბ', 'გ', 'დ', 'ე', 'ვ', 'ზ', 'თ', 'ი', 'კ', 'ლ', 'მ', 'ნ', 'ო', 'რ', 'ს', 'ქ', 'ღ', 'შ']
@@ -78,7 +80,7 @@ const Bow = () => (
   </svg>
 )
 
-const Gift3D = forwardRef<Gift3DHandle, Props>(function Gift3D({ size = 150, opened = false, idle = true, children, tilt, ajar = false }, ref) {
+const Gift3D = forwardRef<Gift3DHandle, Props>(function Gift3D({ size = 150, opened = false, idle = true, children, tilt, ajar = false, rarity = 0 }, ref) {
   const [state, setState] = useState<Gift3DState>(opened ? 'open' : 'closed')
   const [nope, setNope] = useState(0)
   const [knocks, setKnocks] = useState(0)
@@ -135,7 +137,7 @@ const Gift3D = forwardRef<Gift3DHandle, Props>(function Gift3D({ size = 150, ope
   return (
     <div
       ref={root}
-      className={`g3 g3-${state} ${ajar ? 'g3-ajar' : ''} ${idle && state === 'closed' && !knocks ? 'g3-idle' : ''}`}
+      className={`g3 g3-${state} g3-r${rarity} ${ajar ? 'g3-ajar' : ''} ${idle && state === 'closed' && !knocks ? 'g3-idle' : ''}`}
       style={{ width: s * 1.6, height: s * 1.6, ...vars }}
       data-testid="gift3d"
       data-state={state}

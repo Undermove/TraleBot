@@ -23,9 +23,13 @@ interface Props {
   lockedSay: string
   onOpen: () => void
   onBombora: () => void
+  /** Редкость открытой коробки — её цвет. */
+  rarity?: number
+  /** Подпись на закрытой коробке. */
+  lockChip?: string
 }
 
-export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombora }: Props) {
+export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombora, rarity = 0, lockChip = 'в конце дня' }: Props) {
   const box = useRef<Gift3DHandle>(null)
   const still = useMemo(reducedMotion, [])
   const [hint, setHint] = useState<string | null>(null)
@@ -101,11 +105,11 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
           data-testid="gift-button"
           data-gift={gift}
         >
-          <Gift3D ref={box} size={92} opened={gift === 'claimed'} ajar={gift === 'claimed'} idle={!still} tilt={t} />
+          <Gift3D ref={box} size={92} opened={gift === 'claimed'} ajar={gift === 'claimed'} idle={!still} tilt={t} rarity={gift === 'claimed' ? rarity : 0} />
           {gift !== 'claimed' && (
             <span className={`absolute bottom-1 left-1/2 z-[2] whitespace-nowrap rounded-full px-2.5 py-1 font-sans text-[11px] font-extrabold ${gift === 'ready' ? 'td-tap bg-ruby text-cream' : 'bg-jewelInk/80 text-cream'}`}
               style={gift === 'ready' ? undefined : { transform: 'translateX(-50%)' }} data-testid="gift-hint">
-              {gift === 'ready' ? 'открой!' : 'в конце дня'}
+              {gift === 'ready' ? 'открой!' : lockChip}
             </span>
           )}
         </button>

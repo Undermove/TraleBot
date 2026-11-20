@@ -5,7 +5,8 @@ export type Screen =
   | { kind: 'dashboard' }
   /** Вкладка «Курс»: все модули по разделам. */
   | { kind: 'course' }
-  | { kind: 'daily' }
+  /** extra — сразу ещё один раунд (за второй коробкой). */
+  | { kind: 'daily'; extra?: boolean }
   | { kind: 'module'; moduleId: string }
   | { kind: 'lesson-theory'; moduleId: string; lessonId: number }
   | { kind: 'practice'; moduleId: string; lessonId: number }

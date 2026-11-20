@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Button from '../components/Button'
 import LoaderLetter from '../components/LoaderLetter'
+import GiftUnbox from '../today/GiftUnbox'
+import { cachedGift, loadGift, onGift, type DailyGiftDto } from '../today/gift'
 import { api, fetchDailyExtra, reportDailyOffer, saveDailyExtra, saveDailyResult, type ProgressDto } from '../api'
 import { publishProgress } from '../progress'
 import type { Screen } from '../types'
@@ -28,7 +30,7 @@ type Stage =
   | { kind: 'finale' }
   | { kind: 'minute' }
 
-export default function DailyTask({ navigate }: { navigate: (s: Screen) => void }) {
+export default function DailyTask({ navigate, startExtra = false }: { navigate: (s: Screen) => void; startExtra?: boolean }) {
   const [task, setTask] = useState<DailyTaskDto | null>(cachedDaily)
   const [loading, setLoading] = useState(!cachedDaily())
   const [stage, setStage] = useState<Stage>(() => (cachedDaily()?.done ? { kind: 'finale' } : { kind: 'intro' }))
@@ -37,6 +39,13 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
   const [extra, setExtra] = useState<DailyTaskDto | null>(null)
   const [extraState, setExtraState] = useState<'idle' | 'loading' | 'none' | 'failed'>('idle')
   const run = useRef<DailyRun>(emptyRun())
+  /** Подарок дня (если он есть у человека): коробка в конце полоски, распаковка сразу после итога. */
+  const [gift, setGiftState] = useState<DailyGiftDto | null>(cachedGift)
+  const [unbox, setUnbox] = useState<number | null>(null)
+  useEffect(() => {
+    loadGift().catch(() => {})
+    return onGift(setGiftState)
+  }, [])
   const home = () => navigate({ kind: 'dashboard' })
 
   useEffect(() => {
@@ -46,6 +55,7 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
         if (!alive) return
         setTask(t)
         if (t?.done) setStage({ kind: 'finale' })
+        if (t?.done && startExtra) playExtra()
       })
       .catch(() => {})
       .finally(() => alive && setLoading(false))
@@ -78,8 +88,13 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
       if (saved.progress) publishProgress(saved.progress as unknown as ProgressDto)
       setDaily(saved.task)
       setTask(saved.task)
+      const box = extra ? 1 : 0
       setExtra(null)
       setStage({ kind: 'finale' })
+      // Коробка за этот раунд готова — открываем сразу, без захода на главную.
+      const g = await loadGift().catch(() => null)
+      const b = g?.boxes.find(x => x.box === box)
+      if (b?.ready && !b.opened) setUnbox(box)
     } catch {
       setStage({ kind: 'save-failed' })
     }
@@ -123,7 +138,8 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
       return <Intro task={play} onExit={home} onStart={() => { run.current = emptyRun(); setStage({ kind: 'step', at: 0 }) }} />
 
     case 'step': {
-      const head = { steps: flow.length, at: stage.at + 1, onExit: home }
+      const box = gift?.boxes.find(b => b.box === (extra ? 1 : 0))
+      const head = { steps: flow.length, at: stage.at + 1, onExit: home, gift: Boolean(box && !box.opened) }
       const step = flow[stage.at]
       if (step === 'warm') {
         return <Warm {...head} rounds={play.warm} onDone={wrong => { run.current = { ...run.current, warmWrong: wrong }; next(stage.at) }} />
@@ -165,7 +181,14 @@ export default function DailyTask({ navigate }: { navigate: (s: Screen) => void 
         : null
 
     case 'finale':
-      return <Finale task={task} onOffer={takeOffer} onHome={home} onExtra={playExtra} extraState={extraState} />
+      return (
+        <>
+          <Finale task={task} onOffer={takeOffer} onHome={home} onExtra={playExtra} extraState={extraState} />
+          {unbox != null && gift && (
+            <GiftUnbox gift={gift} box={unbox} onCheer={() => {}} onClose={() => setUnbox(null)} onMore={() => { setUnbox(null); playExtra() }} />
+          )}
+        </>
+      )
   }
 }
 

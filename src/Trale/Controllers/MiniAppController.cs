@@ -1912,6 +1912,65 @@ public class MiniAppController : Controller
         return Ok(new { task = await daily.GetAsync(user, DateTime.UtcNow, true, ct) });
     }
 
+    /// <summary>The gift of the day: odds by the streak, today's boxes, freezes in stock.</summary>
+    [HttpGet("daily-gift")]
+    public async Task<IActionResult> GetDailyGift(
+        [FromServices] DailyGiftService gifts, [FromServices] DailyTaskAudience audience, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        return Ok(GiftResponse(await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
+    }
+
+    public class DailyGiftOpenRequest
+    {
+        public int Box { get; set; }
+    }
+
+    /// <summary>Opens a box of today: the prize is drawn once and given; a repeated open returns the same prize.</summary>
+    [HttpPost("daily-gift/open")]
+    public async Task<IActionResult> OpenDailyGift(
+        [FromBody] DailyGiftOpenRequest request,
+        [FromServices] DailyGiftService gifts,
+        [FromServices] DailyTaskAudience audience,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        var opened = await gifts.OpenAsync(user.Id, Math.Clamp(request?.Box ?? 0, 0, 1), DateTime.UtcNow, ct);
+        if (opened is not { } o) return Conflict(new { error = "not_ready" });
+        return Ok(new { gift = GiftResponse(o.Gift), box = o.Box });
+    }
+
+    /// <summary>Local stand only: today's boxes are closed again.</summary>
+    [HttpPost("daily-gift/dev/reset")]
+    public async Task<IActionResult> ResetDailyGift(
+        [FromServices] DailyGiftService gifts, [FromServices] DailyTaskAudience audience, [FromServices] IWebHostEnvironment env, CancellationToken ct)
+    {
+        if (!IsStand(env)) return NotFound();
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        await gifts.DevResetAsync(user.Id, ct);
+        return Ok(GiftResponse(await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
+    }
+
+    /// <summary>The gift with the share link of a friend gift (the bot's name lives here, not in the service).</summary>
+    private object GiftResponse(DailyGiftDto gift) => new
+    {
+        gift.Day, gift.Streak, gift.Odds, gift.GuaranteedIn, gift.Freezes, gift.BoostToday, gift.BurnsAtUtc, gift.FriendDays,
+        boxes = gift.Boxes.Select(b => new
+        {
+            b.Box, b.Ready, b.Opened, b.Rarity, b.Prize,
+            friendLink = b.FriendCode == null ? null : $"https://t.me/{_botConfig.BotName}?start={ActivateFriendGiftService.StartPrefix}{b.FriendCode}"
+        })
+    };
+
     /// <summary>Local stand only: today's reminder (the same message the hourly worker sends) — now.</summary>
     [HttpPost("daily-task/dev/push")]
     public async Task<IActionResult> DailyTaskPush(

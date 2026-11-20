@@ -105,7 +105,8 @@ public class DailyTaskService(
         await ApplyFormsAsync(user.Id, task, warmWrong, pairWrong, now, ct);
         await ApplyWordsAsync(user.Id, task, pairWrong, now, ct);
 
-        progressCalculator.CreditPractice(progress, DailyTaskPlanner.XpReward);
+        var xp = Boosted(progress, now) * DailyTaskPlanner.XpReward;
+        progressCalculator.CreditPractice(progress, xp);
 
         state.Accuracy = DailyTaskPlanner.NextAccuracy(state.Accuracy, errors);
         state.LastErrors = errors;
@@ -117,13 +118,13 @@ public class DailyTaskService(
         {
             Done = true,
             Offer = offer,
-            Result = new DailyResult(errors, DailyTaskPlanner.XpReward, progress.Streak)
+            Result = new DailyResult(errors, xp, progress.Streak)
         };
         state.TaskJson = Write(task);
         state.UpdatedAtUtc = now;
         await dbContext.SaveChangesAsync(ct);
 
-        return new DailySaved(task with { Dev = dev }, DailyTaskPlanner.XpReward, progressCalculator.SerializeProgress(progress));
+        return new DailySaved(task with { Dev = dev }, xp, progressCalculator.SerializeProgress(progress));
     }
 
     /// <summary>
@@ -184,7 +185,8 @@ public class DailyTaskService(
         var pairWrong = report.PairWrong.Concat(backWrong).ToHashSet();
         await ApplyFormsAsync(user.Id, extra, [], pairWrong, now, ct);
         await ApplyWordsAsync(user.Id, extra, pairWrong, now, ct);
-        progressCalculator.CreditPractice(progress, DailyTaskPlanner.XpExtra);
+        var xp = Boosted(progress, now) * DailyTaskPlanner.XpExtra;
+        progressCalculator.CreditPractice(progress, xp);
         state.Accuracy = DailyTaskPlanner.NextAccuracy(state.Accuracy, Math.Max(report.Errors, report.PairWrong.Count));
 
         var result = task.Result ?? new DailyResult(0, 0, progress.Streak);
@@ -192,12 +194,12 @@ public class DailyTaskService(
         {
             Extra = null,
             Extras = task.Extras + 1,
-            Result = result with { XpEarned = result.XpEarned + DailyTaskPlanner.XpExtra, Streak = progress.Streak }
+            Result = result with { XpEarned = result.XpEarned + xp, Streak = progress.Streak }
         };
         state.TaskJson = Write(task);
         state.UpdatedAtUtc = now;
         await dbContext.SaveChangesAsync(ct);
-        return new DailySaved(task with { Dev = dev }, DailyTaskPlanner.XpExtra, progressCalculator.SerializeProgress(progress));
+        return new DailySaved(task with { Dev = dev }, xp, progressCalculator.SerializeProgress(progress));
     }
 
     /// <summary>
@@ -257,6 +259,7 @@ public class DailyTaskService(
         if (progress != null)
         {
             progress.LastPlayedAtUtc -= shift;
+            progress.XpBoostDay = progress.XpBoostDay?.AddDays(-days);
             var activity = JsonSerializer.Deserialize<List<DateTime>>(progress.ActivityDaysJson ?? "[]") ?? [];
             progress.ActivityDaysJson = JsonSerializer.Serialize(activity.Select(d => d - shift));
         }
@@ -266,10 +269,15 @@ public class DailyTaskService(
         {
             state.Day = state.Day?.AddDays(-days);
             state.DoneDay = state.DoneDay?.AddDays(-days);
+            state.GiftJson = null;
         }
 
         await dbContext.SaveChangesAsync(ct);
     }
+
+    /// <summary>2 on the day the gift of the day doubled XP for, otherwise 1.</summary>
+    private static int Boosted(MiniAppUserProgress progress, DateTime now) =>
+        progress.XpBoostDay == DateOnly.FromDateTime(now) ? 2 : 1;
 
     private async Task<DailyTaskDto> ComposeAsync(User user, DailyTaskState state, DateTime now, CancellationToken ct) =>
         DailyTaskPlanner.Compose(await InputAsync(user, state, now, ct));

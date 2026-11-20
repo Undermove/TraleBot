@@ -9,7 +9,7 @@ import type { DailyBackRound, DailyItem, DailyTaskDto, DailyWarmRound } from './
 
 // Шаги занятия: вступление, разминка, игра «Собери пары», обратный путь и проверка. Каждый шаг — один экран без прокрутки.
 
-interface StepProps { steps: number; at: number; onExit: () => void }
+interface StepProps { steps: number; at: number; onExit: () => void; gift?: boolean }
 
 // ── Вступление ───────────────────────────────────────────────────────────────
 

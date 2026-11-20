@@ -570,6 +570,22 @@ export function devDailyPush() {
   return request<{ ok: boolean }>('/api/miniapp/daily-task/dev/push', { method: 'POST' })
 }
 
+// ── «Подарок дня» ─────────────────────────────────────────────────────────────
+/** Шансы по серии и коробки сегодня. */
+export function fetchDailyGift() {
+  return request<import('./today/gift').DailyGiftDto>('/api/miniapp/daily-gift')
+}
+
+/** Открыть коробку: приз разыгрывает сервер один раз, повтор вернёт тот же. 409 — коробка ещё не готова. */
+export function openDailyGift(box: number) {
+  return request<{ gift: import('./today/gift').DailyGiftDto; box: import('./today/gift').DailyGiftBox }>('/api/miniapp/daily-gift/open', { method: 'POST', body: JSON.stringify({ box }) })
+}
+
+/** Только на стенде: коробки сегодня снова закрыты. */
+export function devResetDailyGift() {
+  return request<import('./today/gift').DailyGiftDto>('/api/miniapp/daily-gift/dev/reset', { method: 'POST' })
+}
+
 /** Раздел открыли: плиткой с главной (home), кнопкой рассылки (имя кампании) или по ссылке с меткой. */
 export function reportVerbSectionOpen(source: string) {
   return request<{ ok: boolean }>('/api/miniapp/verbs/section/open', { method: 'POST', body: JSON.stringify({ source }) })

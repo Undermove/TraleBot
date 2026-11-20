@@ -38,6 +38,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
     public DbSet<UserVerb> UserVerbs { get; set; } = null!;
     public DbSet<VerbSession> VerbSessions { get; set; } = null!;
     public DbSet<DailyTaskState> DailyTaskStates { get; set; } = null!;
+    public DbSet<FriendGift> FriendGifts { get; set; } = null!;
     public DbSet<VerbSectionVisit> VerbSectionVisits { get; set; } = null!;
     public DbSet<LessonEvent> LessonEvents { get; set; } = null!;
     public DbSet<AppEvent> AppEvents { get; set; } = null!;
@@ -226,6 +227,7 @@ public class TraleDbContext : DbContext, ITraleDbContext
         modelBuilder.ApplyConfiguration(new UserVerbConfiguration());
         modelBuilder.ApplyConfiguration(new VerbSessionConfiguration());
         modelBuilder.ApplyConfiguration(new DailyTaskStateConfiguration());
+        modelBuilder.ApplyConfiguration(new FriendGiftConfiguration());
         modelBuilder.ApplyConfiguration(new VerbSectionVisitConfiguration());
         modelBuilder.ApplyConfiguration(new LessonEventConfiguration());
         modelBuilder.ApplyConfiguration(new AppEventConfiguration());

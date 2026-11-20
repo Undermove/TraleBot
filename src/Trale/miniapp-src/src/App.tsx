@@ -664,7 +664,7 @@ export default function App() {
           </>
         )
       case 'daily':
-        return <DailyTask navigate={navigate} />
+        return <DailyTask key={screen.extra ? 'extra' : 'daily'} navigate={navigate} startExtra={Boolean(screen.extra)} />
       case 'verbs':
         return (
           <>

@@ -34,10 +34,10 @@
 
 /* Стенки: петля у нижнего ребра — открываются наружу лепестками. Свет: справа темнее, слева светлее. */
 .g3-wall { transform-origin: 50% 100%; transition: transform .6s cubic-bezier(.3, 1.55, .5, 1); }
-.g3-front { background: linear-gradient(160deg, #2669BC, #1B5FB0 55%, #174F95); transform: translateZ(var(--h)); }
-.g3-back { background: #1B5FB0; transform: rotateY(180deg) translateZ(var(--h)); }
-.g3-right { background: linear-gradient(160deg, #1A579F, #134682); transform: rotateY(90deg) translateZ(var(--h)); }
-.g3-left { background: linear-gradient(160deg, #3A7FCC, #2C72C4); transform: rotateY(-90deg) translateZ(var(--h)); }
+.g3-front { background: linear-gradient(160deg, var(--gl, #2669BC), var(--gc, #1B5FB0) 55%, var(--gd, #174F95)); transform: translateZ(var(--h)); }
+.g3-back { background: var(--gc, #1B5FB0); transform: rotateY(180deg) translateZ(var(--h)); }
+.g3-right { background: linear-gradient(160deg, var(--gc, #1A579F), var(--gd, #134682)); transform: rotateY(90deg) translateZ(var(--h)); }
+.g3-left { background: linear-gradient(160deg, var(--gl, #3A7FCC), var(--gc, #2C72C4)); transform: rotateY(-90deg) translateZ(var(--h)); }
 .g3-open .g3-front { transform: translateZ(var(--h)) rotateX(-68deg); }
 .g3-open .g3-back { transform: rotateY(180deg) translateZ(var(--h)) rotateX(-68deg); transition-delay: .05s; }
 .g3-open .g3-right { transform: rotateY(90deg) translateZ(var(--h)) rotateX(-68deg); transition-delay: .1s; }
@@ -53,8 +53,8 @@
 }
 
 /* Лента и килим на стенках. */
-.g3-ribbon-v { position: absolute; top: 0; bottom: 0; left: 50%; width: 18%; transform: translateX(-50%); background: linear-gradient(90deg, #E01A3C 0 70%, #F04A64 70% 80%, #E01A3C 80%); border-left: calc(var(--s) / 70 + 1px) solid #15100A; border-right: calc(var(--s) / 70 + 1px) solid #15100A; }
-.g3-ribbon-h { position: absolute; left: 0; right: 0; top: 50%; height: 18%; transform: translateY(-50%); background: #E01A3C; border-top: calc(var(--s) / 70 + 1px) solid #15100A; border-bottom: calc(var(--s) / 70 + 1px) solid #15100A; }
+.g3-ribbon-v { position: absolute; top: 0; bottom: 0; left: 50%; width: 18%; transform: translateX(-50%); background: var(--gr, #E01A3C); border-left: calc(var(--s) / 70 + 1px) solid #15100A; border-right: calc(var(--s) / 70 + 1px) solid #15100A; }
+.g3-ribbon-h { position: absolute; left: 0; right: 0; top: 50%; height: 18%; transform: translateY(-50%); background: var(--gr, #E01A3C); border-top: calc(var(--s) / 70 + 1px) solid #15100A; border-bottom: calc(var(--s) / 70 + 1px) solid #15100A; }
 .g3-kilim {
   position: absolute; left: 0; right: 0; top: 58%; height: 12%;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12'%3E%3Cpath d='M0 6 L4 1 L8 6 L12 1 L16 6 M0 11 L4 6 L8 11 L12 6 L16 11' stroke='%23F5B820' stroke-width='2' fill='none'/%3E%3C/svg%3E");
@@ -63,8 +63,8 @@
 
 /* Крышка: чуть шире короба. Открылась — улетает кувырком. */
 .g3-lid { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.2, .8, .3, 1), opacity .8s ease-in; }
-.g3-lid-top { inset: -5%; background: linear-gradient(135deg, #5A9BE0, #3A7FCC); transform: rotateX(90deg) translateZ(calc(var(--h) + 1px)); }
-.g3-lid-side { inset: auto; left: -5%; width: 110%; top: -3%; height: 22%; background: linear-gradient(#4A8CD8, #3A7FCC); }
+.g3-lid-top { inset: -5%; background: linear-gradient(135deg, var(--gll, #5A9BE0), var(--gl, #3A7FCC)); transform: rotateX(90deg) translateZ(calc(var(--h) + 1px)); }
+.g3-lid-side { inset: auto; left: -5%; width: 110%; top: -3%; height: 22%; background: linear-gradient(var(--gll, #4A8CD8), var(--gl, #3A7FCC)); }
 .g3-lid-front { transform: translateZ(calc(var(--h) * 1.1)); }
 .g3-lid-back { transform: rotateY(180deg) translateZ(calc(var(--h) * 1.1)); }
 .g3-lid-right { transform: rotateY(90deg) translateZ(calc(var(--h) * 1.1)); background: linear-gradient(#2F6FB8, #245FA4); }
@@ -154,3 +154,10 @@
 
 /* Грани и тень в 3D выходят за рамку коробки — касания ловит только сама кнопка, а не они. */
 .g3-scene, .g3-scene * { pointer-events: none; }
+
+/* Редкость: коробка перекрашивается (обычный синий → редкий фиолетовый → эпический красный → легендарный золотой). */
+.g3-r1 { --gc: #7B33C2; --gd: #5A2192; --gl: #9C5BDB; --gll: #B57FE6; --gr: #F5B820; }
+.g3-r2 { --gc: #D0173A; --gd: #A61026; --gl: #F04A64; --gll: #F57A8E; --gr: #F5B820; }
+.g3-r3 { --gc: #E8A70D; --gd: #B98208; --gl: #FCD76D; --gll: #FFE59A; --gr: #E01A3C; }
+.g3-up .g3-scene { animation: g3-up .5s ease-out; }
+@keyframes g3-up { 0% { filter: brightness(2.2) saturate(.4); } 100% { filter: none; } }

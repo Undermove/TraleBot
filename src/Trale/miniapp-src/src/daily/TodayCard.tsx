@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { appEvents } from '../analytics/appEvents'
-import { devDailyPush, devNextDay, reportDailyOffer } from '../api'
+import { devDailyPush, devNextDay, devResetDailyGift, reportDailyOffer } from '../api'
 import Button from '../components/Button'
 import type { Screen } from '../types'
 import { days, formsAndWords, streakLine } from './logic'
@@ -9,6 +9,9 @@ import GiftHero, { GiftState } from '../today/GiftHero'
 import GiftReveal, { giftClaimed, unclaimGift, utcDay } from '../today/GiftReveal'
 import TodayIntro, { forgetTodayIntro, shouldShowTodayIntro } from '../today/TodayIntro'
 import type { DailyNew, DailyTaskDto } from './types'
+import GiftStrip from '../today/GiftStrip'
+import GiftUnbox from '../today/GiftUnbox'
+import { cachedGift, loadGift, onGift, setGift, type DailyGiftDto } from '../today/gift'
 
 /** Следующий урок курса, как его находит главная: первый непройденный по порядку модулей. */
 export interface CourseLesson {
@@ -94,6 +97,8 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   const [task, setTask] = useState<DailyTaskDto | null>(cachedDaily)
   const [claimedTick, setClaimedTick] = useState(0)
   const [reveal, setReveal] = useState(false)
+  /** Какую коробку распаковываем — запоминаем при нажатии: после ответа сервера она уже «открыта». */
+  const [revealBox, setRevealBox] = useState<number | null>(null)
   const [cheer, setCheer] = useState(false)
   useEffect(() => {
     if (!cheer) return
@@ -107,6 +112,10 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
     loadDaily().catch(() => {})
     return onDaily(setTask)
   }, [])
+  // Подарок дня с сервера (редкости, шансы, вторая коробка); нет — остаётся простой подарок на этом телефоне.
+  const [g, setG] = useState<DailyGiftDto | null>(cachedGift)
+  useEffect(() => onGift(setG), [])
+  useEffect(() => { loadGift().catch(() => {}) }, [task?.day, task?.done, task?.extras])
 
   const openDaily = () => navigate({ kind: 'daily' })
 
@@ -154,16 +163,25 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   // Задание дня ещё не сделано, а подарок помечен открытым (день перезапустили) — он снова закрыт.
   if (task && !task.done && giftClaimed(day)) unclaimGift(day)
   const claimed = ready && giftClaimed(day) && claimedTick >= 0
-  const gift: GiftState = !ready ? 'locked' : claimed ? 'claimed' : 'ready'
+  const localGift: GiftState = !ready ? 'locked' : claimed ? 'claimed' : 'ready'
+  // С сервера: коробка за задание, потом — вторая за ещё один раунд.
+  const box0 = g?.boxes.find(b => b.box === 0)
+  const box1 = g?.boxes.find(b => b.box === 1)
+  const openBox = box0?.ready && !box0.opened ? 0 : box1?.ready && !box1.opened ? 1 : null
+  const gift: GiftState = !g ? localGift : openBox != null ? 'ready' : box0?.opened ? 'claimed' : 'locked'
+  const moreBox = Boolean(g && box0?.opened && box1 && !box1.ready && !box1.opened)
   const doneCount = steps.filter(s => s.done).length
-  const say = gift === 'claimed' ? doneLine()
+  const say = g && gift === 'locked' && !firstTime && g.guaranteedIn === 0 ? 'Сегодня недельный подарок — минимум эпический!'
+    : moreBox ? 'Ещё раунд — и вторая коробка твоя'
+    : gift === 'claimed' ? doneLine()
     : gift === 'ready' ? 'Готово! Открывай подарок'
     : nudge ? shortNudge(streak, firstTime, task ? steps.length : 1)
     : doneCount > 0 ? 'Ещё шаг — и подарок твой' : greeting
   const lockedSay = firstTime ? 'Пройди первый урок — и подарок твой'
     : task ? (doneCount > 0 ? 'Остался один шаг — и открывай' : 'Пройди оба шага — и подарок твой')
     : 'Пройди урок — и подарок твой'
-  const openGift = () => setReveal(true)
+  const openGift = () => { setRevealBox(openBox); setReveal(true) }
+  const playMore = () => navigate({ kind: 'daily', extra: true })
 
   async function dev(action: () => Promise<{ task?: DailyTaskDto; ok?: boolean }>, note: string) {
     setDevNote('…')
@@ -179,9 +197,15 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   return (
     <>
       {mascot && (
-        <GiftHero mascot={mascot(cheer || gift !== 'locked' ? 'cheer' : undefined)} say={say} gift={gift} lockedSay={lockedSay} onOpen={openGift} onBombora={() => onFeed?.()} />
+        <GiftHero mascot={mascot(cheer || gift !== 'locked' ? 'cheer' : undefined)} say={say} gift={gift} lockedSay={lockedSay} onOpen={openGift} onBombora={() => onFeed?.()}
+          rarity={box0?.rarity ?? 0} lockChip={g ? '2 минуты занятия' : 'в конце дня'} />
       )}
-      {reveal && (
+      {mascot && g && gift !== 'claimed' && <GiftStrip gift={g} burning={gift === 'locked'} />}
+      {reveal && g && revealBox != null && (
+        <GiftUnbox gift={g} box={revealBox} onCheer={() => setCheer(true)}
+          onClose={() => setReveal(false)} onMore={() => { setReveal(false); playMore() }} />
+      )}
+      {reveal && (!g || revealBox == null) && (
         <GiftReveal day={day} xp={task?.result ? task.result.xpEarned : null} streak={Math.max(streak, task?.result?.streak ?? 0)}
           onCheer={() => setCheer(true)}
           onClose={() => { setReveal(false); setClaimedTick(t => t + 1) }} />
@@ -238,7 +262,20 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
           <div className="mt-3">
             {gift === 'ready' && mascot ? (
               <div data-testid="dashboard-gift-cta" className="today-nudge">
-                <Button variant="green" onClick={() => { appEvents.tap('today-gift-button'); openGift() }}>Открыть подарок</Button>
+                <Button variant="green" onClick={() => { appEvents.tap('today-gift-button'); openGift() }}>{openBox === 1 ? 'Открыть вторую коробку' : 'Открыть подарок'}</Button>
+              </div>
+            ) : g && mascot && gift === 'locked' && next ? (
+              <div data-testid="dashboard-suggestion" className="today-nudge">
+                <Button onClick={() => { appEvents.tap('today-gift-claim'); next.go() }}>
+                  <span className="flex flex-col items-center leading-tight">
+                    <span>Забрать подарок</span>
+                    <span className="text-[11.500px] font-bold opacity-85" data-testid="dashboard-gift-sub">сначала {task?.mode === 'comeback' ? 'минута' : '2 минуты'} занятия</span>
+                  </span>
+                </Button>
+              </div>
+            ) : moreBox ? (
+              <div data-testid="dashboard-gift-more" className="today-nudge">
+                <Button onClick={() => { appEvents.tap('today-gift-more'); playMore() }}>Ещё раунд → вторая коробка</Button>
               </div>
             ) : next ? (
               <div data-testid="dashboard-suggestion" className={nudge ? 'today-nudge' : ''}>
@@ -274,7 +311,11 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
           <span>·</span>
           <button className="min-h-[44px] px-1.5 underline" onClick={() => dev(devDailyPush, 'сообщение отправлено')}>пуш</button>
           <span>·</span>
-          <button className="min-h-[44px] px-1.5 underline" data-testid="dev-gift-again" onClick={() => { unclaimGift(day); setClaimedTick(t => t + 1); setDevNote(ready ? 'подарок снова закрыт' : 'подарок откроется, когда шаги пройдены') }}>подарок заново</button>
+          <button className="min-h-[44px] px-1.5 underline" data-testid="dev-gift-again" onClick={() => {
+            unclaimGift(day); setClaimedTick(t => t + 1)
+            if (g) devResetDailyGift().then(setGift).then(() => setDevNote('коробки снова закрыты')).catch(() => setDevNote('не получилось'))
+            else setDevNote(ready ? 'подарок снова закрыт' : 'подарок откроется, когда шаги пройдены')
+          }}>подарок заново</button>
           <span>·</span>
           <button className="min-h-[44px] px-1.5 underline" onClick={() => { forgetTodayIntro(); setIntro(true) }}>что нового</button>
           {devNote && <span className="w-full text-center" data-testid="daily-dev-note">{devNote}</span>}

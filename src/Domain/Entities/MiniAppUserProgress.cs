@@ -78,6 +78,12 @@ public class MiniAppUserProgress
     /// </summary>
     public int? LastTreatIndex { get; set; }
 
+    /// <summary>Streak freezes from the gift of the day: each one covers a missed day so the streak goes on.</summary>
+    public int StreakFreezes { get; set; }
+
+    /// <summary>The day (UTC) the task of the day and its extra rounds give double XP — a prize of the gift of the day.</summary>
+    public DateOnly? XpBoostDay { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }
