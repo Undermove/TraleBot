@@ -13,7 +13,7 @@ const TODAY = JSON.parse(readFileSync(resolve(here, 'fixtures/daily/today.json')
 
 test.use({ viewport: { width: 375, height: 667 }, ...(process.env.GIFT_VIDEO ? { video: { mode: 'on' as const, size: { width: 375, height: 667 } }, launchOptions: { slowMo: 350 } } : {}) })
 
-async function setup(page: Page, { task = TODAY as any, progressPatch = {} as any, gift = GIFT() as any, prize = { rarity: 2, prize: 'boost', friendLink: null as string | null } } = {}) {
+async function setup(page: Page, { task = TODAY as any, progressPatch = {} as any, gift = GIFT() as any, prize = { rarity: 2, prize: 'boost', days: null as number | null } } = {}) {
   const calls: string[] = []
   await page.addInitScript(() => {
     const handlers: Record<string, (() => void)[]> = {}
@@ -74,10 +74,10 @@ async function setup(page: Page, { task = TODAY as any, progressPatch = {} as an
 function GIFT({ ready = false, opened = false, ready1 = false, streak = 3, guaranteedIn = 4 } = {}) {
   return {
     day: '2026-11-20', streak, odds: [0.565, 0.292, 0.115, 0.028], guaranteedIn, freezes: 1, boostToday: false,
-    burnsAtUtc: new Date(Date.now() + 6 * 3600_000).toISOString(), friendDays: 7,
+    burnsAtUtc: new Date(Date.now() + 6 * 3600_000).toISOString(), invite: { link: 'https://t.me/TraleBot?start=ref_123456', friendDays: 60, myDays: 7 },
     boxes: [
-      { box: 0, ready, opened, rarity: opened ? 1 : null, prize: opened ? 'freeze' : null, friendLink: null },
-      { box: 1, ready: ready1, opened: false, rarity: null, prize: null, friendLink: null }
+      { box: 0, ready, opened, rarity: opened ? 1 : null, prize: opened ? 'freeze' : null, days: null },
+      { box: 1, ready: ready1, opened: false, rarity: null, prize: null, days: null }
     ]
   }
 }
@@ -146,7 +146,7 @@ test('распаковка: на тапах подарок превращает�
 })
 
 test('без подъёма: обычный приз — чурчхела для Бомборы', async ({ page }) => {
-  await setup(page, { task: DONE, gift: GIFT({ ready: true }), prize: { rarity: 0, prize: 'churchkhela', friendLink: null } })
+  await setup(page, { task: DONE, gift: GIFT({ ready: true }), prize: { rarity: 0, prize: 'churchkhela', days: null } })
   await page.goto('/?playwright=1')
   await page.getByTestId('dashboard-gift-cta').getByRole('button').click()
   const box = page.getByTestId('gift-reveal-box')
@@ -159,8 +159,8 @@ test('без подъёма: обычный приз — чурчхела для
   await expect(page.getByTestId('gift-reveal').getByTestId('lootbox')).toHaveAttribute('data-level', '0')
 })
 
-test('легендарный: подарок другу уходит одноразовой ссылкой через «переслать»', async ({ page }) => {
-  await setup(page, { task: DONE, gift: GIFT({ ready: true }), prize: { rarity: 3, prize: 'friend', friendLink: 'https://t.me/TraleBot?start=gift_abc234defg' } })
+test('позови друга: обычная реферальная ссылка через «переслать», без одноразовых кодов', async ({ page }) => {
+  await setup(page, { task: DONE, gift: GIFT({ ready: true }), prize: { rarity: 2, prize: 'friend', days: null } })
   await page.addInitScript(() => { (window as any).__links = [] })
   await page.goto('/?playwright=1')
   await page.evaluate(() => { (window as any).Telegram.WebApp.openTelegramLink = (u: string) => (window as any).__links.push(u) })
@@ -168,11 +168,23 @@ test('легендарный: подарок другу уходит однор�
   const box = page.getByTestId('gift-reveal-box')
   await page.waitForTimeout(300)
   for (let i = 0; i < 3; i++) await box.click()
-  await expect(page.getByTestId('gift-prize')).toContainText('Подарок другу')
-  await expect(page.getByTestId('gift-prize')).toContainText('7 дней полного доступа')
+  await expect(page.getByTestId('gift-prize')).toContainText('Позови друга')
+  await expect(page.getByTestId('gift-prize')).toContainText('Ему — 60 дней бесплатно, тебе — неделя')
   await page.getByTestId('gift-friend-share').click()
   const links = await page.evaluate(() => (window as any).__links as string[])
-  expect(decodeURIComponent(links[0])).toContain('start=gift_abc234defg')
+  expect(decodeURIComponent(links[0])).toContain('start=ref_123456')
+})
+
+test('первый сундук: золотой, +3 дня бесплатно', async ({ page }) => {
+  await setup(page, { task: DONE, gift: GIFT({ ready: true }), prize: { rarity: 3, prize: 'days', days: 3 } })
+  await page.goto('/?playwright=1')
+  await page.getByTestId('dashboard-gift-cta').getByRole('button').click()
+  const box = page.getByTestId('gift-reveal-box')
+  await page.waitForTimeout(300)
+  for (let i = 0; i < 3; i++) await box.click()
+  await expect(page.getByTestId('gift-reveal').getByTestId('chest3d')).toHaveAttribute('data-model', 'gold')
+  await expect(page.getByTestId('gift-prize')).toHaveAttribute('data-prize', 'days')
+  await expect(page.getByTestId('gift-prize')).toContainText('+3 дня бесплатно')
 })
 
 test('первая коробка открыта: на главной стоит открытым то, что выпало (сундучок), кнопка — «ещё раунд → вторая коробка»', async ({ page }) => {
@@ -234,7 +246,7 @@ test('скриншоты флоу', async ({ page }) => {
   await shot('9-home-claimed')
 
   await page.unrouteAll()
-  await setup(page, { task: DONE, gift: GIFT({ ready: true }), prize: { rarity: 3, prize: 'friend', friendLink: 'https://t.me/TraleBot?start=gift_abc' } })
+  await setup(page, { task: DONE, gift: GIFT({ ready: true }), prize: { rarity: 3, prize: 'days', days: 3 } })
   await page.goto('/?playwright=1')
   await page.waitForTimeout(800)
   await page.getByTestId('dashboard-gift-cta').getByRole('button').click()

@@ -12,7 +12,7 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    [Migration("20261120144130_AddDailyGift")]
+    [Migration("20261120200951_AddDailyGift")]
     partial class AddDailyGift
     {
         /// <inheritdoc />
@@ -315,46 +315,6 @@ namespace Persistence.Migrations
                     b.ToTable("FeedbackReplies");
                 });
 
-            modelBuilder.Entity("Domain.Entities.FriendGift", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ActivatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Days")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("GiverUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("RecipientUserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.HasIndex("GiverUserId");
-
-                    b.HasIndex("RecipientUserId")
-                        .IsUnique()
-                        .HasFilter("\"RecipientUserId\" IS NOT NULL");
-
-                    b.ToTable("FriendGifts");
-                });
-
             modelBuilder.Entity("Domain.Entities.GeorgianQuizSession", b =>
                 {
                     b.Property<Guid>("Id")
@@ -499,6 +459,9 @@ namespace Persistence.Migrations
                         .HasDefaultValue("{}");
 
                     b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("GiftDaysAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Hearts")

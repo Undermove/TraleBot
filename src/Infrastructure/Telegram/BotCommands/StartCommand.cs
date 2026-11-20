@@ -1,4 +1,3 @@
-using Application.DailyTask;
 using Application.MiniApp.Commands;
 using Application.Quizzes.Commands.CreateSharedQuiz;
 using Application.Users.Commands.CreateUser;
@@ -20,7 +19,6 @@ public class StartCommand(
     BotConfiguration botConfig,
     RecordReferralLinkService referralRecorder,
     RecordAcquisitionSourceService acquisitionRecorder,
-    ActivateFriendGiftService friendGifts,
     ILoggerFactory loggerFactory) : IBotCommand
 {
     private const string ReferralPrefix = "ref_";
@@ -70,7 +68,6 @@ public class StartCommand(
 
         var commandWithArgs = request.Text.Split(' ');
         var referralRecorded = false;
-        string? friendGiftNote = null;
         string? verbsSectionTag = null;
         if (ContainsArguments(commandWithArgs))
         {
@@ -80,15 +77,7 @@ public class StartCommand(
                 verbsSectionTag = RecordAcquisitionSourceService.Sanitize(arg);
             }
 
-            if (arg.StartsWith(ActivateFriendGiftService.StartPrefix, StringComparison.OrdinalIgnoreCase))
-            {
-                var (giftResult, giftDays, _) = await friendGifts.ExecuteAsync(
-                    user!.Id, arg[ActivateFriendGiftService.StartPrefix.Length..], DateTime.UtcNow, token);
-                _logger.LogInformation("Friend gift from /start: user {User} → {Result}", user.Id, giftResult);
-                friendGiftNote = FriendGiftText(giftResult, giftDays);
-                if (isNewUser) await acquisitionRecorder.ExecuteAsync(user.Id, "friend_gift", token);
-            }
-            else if (arg.StartsWith(ReferralPrefix, StringComparison.OrdinalIgnoreCase))
+            if (arg.StartsWith(ReferralPrefix, StringComparison.OrdinalIgnoreCase))
             {
                 if (long.TryParse(arg.AsSpan(ReferralPrefix.Length), out var referrerTelegramId))
                 {
@@ -219,21 +208,7 @@ $@"გამარჯობა снова, {request.UserName}! 👋
                     cancellationToken: token);
             }
         }
-
-        if (friendGiftNote != null)
-        {
-            await client.SendTextMessageAsync(request.UserTelegramId, friendGiftNote, cancellationToken: token);
-        }
     }
-
-    private static string? FriendGiftText(ActivateFriendGiftResult result, int days) => result switch
-    {
-        ActivateFriendGiftResult.Activated => $"🎁 Тебе подарок от друга: {days} дней полного доступа ко всему в TraleBot. Уже действует!",
-        ActivateFriendGiftResult.AlreadyTaken => "🎁 Этот подарок уже забрал кто-то другой. Но всё остальное тут твоё — заходи!",
-        ActivateFriendGiftResult.AlreadyGotOne => "🎁 Подарок от друга можно получить только один раз — свой ты уже получил.",
-        ActivateFriendGiftResult.OwnGift => "🎁 Это твой подарок — отправь его другу, чтобы он получил дни доступа.",
-        _ => null
-    };
 
     private async Task SendFirstQuestion(TelegramRequest request, CancellationToken token, CreateQuizFromShareableResult.SharedQuizCreated sharedQuizCreated)
     {

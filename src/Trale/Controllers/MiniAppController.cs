@@ -1921,7 +1921,7 @@ public class MiniAppController : Controller
         if (denied != null) return denied;
         if (!audience.Includes(user.TelegramId)) return NotFound();
 
-        return Ok(GiftResponse(await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
+        return Ok(GiftResponse(user, await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
     }
 
     public class DailyGiftOpenRequest
@@ -1943,7 +1943,7 @@ public class MiniAppController : Controller
 
         var opened = await gifts.OpenAsync(user.Id, Math.Clamp(request?.Box ?? 0, 0, 1), DateTime.UtcNow, ct);
         if (opened is not { } o) return Conflict(new { error = "not_ready" });
-        return Ok(new { gift = GiftResponse(o.Gift), box = o.Box });
+        return Ok(new { gift = GiftResponse(user, o.Gift), box = o.Box });
     }
 
     /// <summary>Local stand only: today's boxes are closed again.</summary>
@@ -1957,18 +1957,25 @@ public class MiniAppController : Controller
         if (!audience.Includes(user.TelegramId)) return NotFound();
 
         await gifts.DevResetAsync(user.Id, ct);
-        return Ok(GiftResponse(await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
+        return Ok(GiftResponse(user, await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
     }
 
-    /// <summary>The gift with the share link of a friend gift (the bot's name lives here, not in the service).</summary>
-    private object GiftResponse(DailyGiftDto gift) => new
+    /// <summary>
+    /// The gift as the mini-app shows it. «Invite a friend» goes through the usual referral link and its rewards
+    /// (the friend gets a longer trial, the inviter — days once the friend starts learning).
+    /// </summary>
+    private object GiftResponse(User user, DailyGiftDto gift) => new
     {
-        gift.Day, gift.Streak, gift.Odds, gift.GuaranteedIn, gift.Freezes, gift.BoostToday, gift.BurnsAtUtc, gift.FriendDays,
-        boxes = gift.Boxes.Select(b => new
+        gift.Day, gift.Streak, gift.Odds, gift.GuaranteedIn, gift.Freezes, gift.BoostToday, gift.BurnsAtUtc,
+        boxes = gift.Boxes,
+        invite = new
         {
-            b.Box, b.Ready, b.Opened, b.Rarity, b.Prize,
-            friendLink = b.FriendCode == null ? null : $"https://t.me/{_botConfig.BotName}?start={ActivateFriendGiftService.StartPrefix}{b.FriendCode}"
-        })
+            link = $"https://t.me/{_botConfig.BotName}?start=ref_{user.TelegramId}",
+            friendDays = Domain.Entities.User.TrialDays + Application.MiniApp.Commands.RecordReferralLinkService.RefereeTrialBonusDays,
+            myDays = user.HasActivePro()
+                ? Application.MiniApp.Commands.TryActivateReferralService.ReferrerProBonusDays
+                : Application.MiniApp.Commands.TryActivateReferralService.ReferrerTrialBonusDays
+        }
     };
 
     /// <summary>Local stand only: today's reminder (the same message the hourly worker sends) — now.</summary>

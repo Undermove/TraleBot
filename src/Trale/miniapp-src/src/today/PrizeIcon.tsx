@@ -2,7 +2,7 @@ import React from 'react'
 import type { Prize } from './gift'
 
 /** Картинка приза в стиле мини-аппа: эмаль, чёрный контур. */
-export default function PrizeIcon({ prize, size = 56 }: { prize: Prize; size?: number }) {
+export default function PrizeIcon({ prize, size = 56, days = 1 }: { prize: Prize; size?: number; days?: number }) {
   const ink = '#15100A'
   switch (prize) {
     case 'churchkhela':
@@ -27,6 +27,15 @@ export default function PrizeIcon({ prize, size = 56 }: { prize: Prize; size?: n
         <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">
           <rect x="4" y="10" width="52" height="40" rx="10" fill="#E01A3C" stroke={ink} strokeWidth="3" />
           <text x="30" y="38" textAnchor="middle" fontSize="22" fontWeight="800" fill="#FDFAEF" fontFamily="Manrope, system-ui, sans-serif">×2</text>
+        </svg>
+      )
+    case 'days':
+      return (
+        <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">
+          <rect x="6" y="10" width="48" height="44" rx="7" fill="#FDFAEF" stroke={ink} strokeWidth="3" />
+          <path d="M6 22 H54 V17 a7 7 0 0 0 -7 -7 H13 a7 7 0 0 0 -7 7 Z" fill="#E01A3C" stroke={ink} strokeWidth="3" strokeLinejoin="round" />
+          <path d="M19 5 V15 M41 5 V15" stroke={ink} strokeWidth="3.500" strokeLinecap="round" />
+          <text x="30" y="46" textAnchor="middle" fontSize="20" fontWeight="800" fill="#1B5FB0" fontFamily="Manrope, system-ui, sans-serif">+{days}</text>
         </svg>
       )
     case 'friend':

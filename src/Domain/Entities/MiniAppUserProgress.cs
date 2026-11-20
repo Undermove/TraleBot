@@ -84,6 +84,12 @@ public class MiniAppUserProgress
     /// <summary>The day (UTC) the task of the day and its extra rounds give double XP — a prize of the gift of the day.</summary>
     public DateOnly? XpBoostDay { get; set; }
 
+    /// <summary>
+    /// When the gift of the day last gave free days. Null — never: the very first box gives them for sure
+    /// (+3, the "wow"); after that +1 day drops at most once in <c>DailyGiftService.DaysCooldown</c>.
+    /// </summary>
+    public DateTime? GiftDaysAtUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

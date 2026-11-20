@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,9 +14,9 @@ namespace Application.DailyTask;
 /// <summary>One box of the day as the mini-app sees it. Rarity 0..3: обычный, редкий, эпический, легендарный.</summary>
 /// <param name="Box">0 — for the task of the day, 1 — for one more round after it.</param>
 /// <param name="Ready">It can be opened now (what it is for is done).</param>
-/// <param name="Prize">churchkhela · freeze · boost · friend.</param>
-/// <param name="FriendCode">The one-time code of a friend gift, for the share link.</param>
-public record DailyGiftBox(int Box, bool Ready, bool Opened, int? Rarity, string? Prize, string? FriendCode);
+/// <param name="Prize">churchkhela · freeze · boost · friend (invite a friend by the referral link) · days (free days for oneself).</param>
+/// <param name="Days">Free days given — for <c>days</c>.</param>
+public record DailyGiftBox(int Box, bool Ready, bool Opened, int? Rarity, string? Prize, int? Days);
 
 /// <param name="Streak">The streak the gift is counted for: today included once the day is played, otherwise what it becomes after today.</param>
 /// <param name="Odds">Chances of the four rarities for that streak.</param>
@@ -26,22 +25,28 @@ public record DailyGiftBox(int Box, bool Ready, bool Opened, int? Rarity, string
 /// <param name="BoostToday">Today the task gives double XP.</param>
 public record DailyGiftDto(
     string Day, int Streak, IReadOnlyList<double> Odds, int GuaranteedIn,
-    IReadOnlyList<DailyGiftBox> Boxes, int Freezes, bool BoostToday, DateTime BurnsAtUtc, int FriendDays);
+    IReadOnlyList<DailyGiftBox> Boxes, int Freezes, bool BoostToday, DateTime BurnsAtUtc);
 
 /// <summary>
 /// The gift of the day: a box at the end of the task (and a second one for one more round) with a prize of
 /// one of four rarities. Nobody loses — something always drops; a longer streak shifts the odds to the rare
-/// ones and every 7th day of the streak gives epic or better. Prizes are things of the app, not paid days:
-/// churchkhela for Bombora, a streak freeze, double XP tomorrow, and a one-time gift of access for a friend.
+/// ones and every 7th day of the streak gives epic or better. Prizes: churchkhela for Bombora, a streak freeze,
+/// double XP tomorrow or «invite a friend» (the usual referral — both get days, with its own anti-fraud caps),
+/// and free days for oneself. Free days are the "wow" that cannot be farmed: the very first box gives +3 for
+/// sure, later +1 drops at most once in <see cref="DaysCooldown"/> — until then the top box gives an invite.
 /// The draw happens on the server and is kept, so reopening the app cannot reroll it.
 /// Service per ARCHITECTURE.md.
 /// </summary>
 public class DailyGiftService(ITraleDbContext dbContext)
 {
-    public static readonly string[] Prizes = ["churchkhela", "freeze", "boost", "friend"];
+    /// <summary>Free days from the very first box — the strong first impression.</summary>
+    public const int FirstDays = 3;
 
-    /// <summary>Days of full access a friend gift gives.</summary>
-    public const int FriendDays = 7;
+    /// <summary>Free days later on.</summary>
+    public const int Days = 1;
+
+    /// <summary>Free days drop no more often than this.</summary>
+    public static readonly TimeSpan DaysCooldown = TimeSpan.FromDays(30);
 
     public const int MaxFreezes = 5;
 
@@ -50,7 +55,7 @@ public class DailyGiftService(ITraleDbContext dbContext)
 
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    private record Opened(int Box, int Rarity, string Prize, string? Code);
+    private record Opened(int Box, int Rarity, string Prize, int? Days);
 
     private record Stored(string Day, List<Opened> Boxes);
 
@@ -93,35 +98,33 @@ public class DailyGiftService(ITraleDbContext dbContext)
         if (state == null || current == null || !current.Ready) return null;
         if (current.Opened) return (view, current);
 
-        var rarity = Roll(Odds(view.Streak), (random ?? Random.Shared.NextDouble)());
-        string? code = null;
+        var rnd = random ?? Random.Shared.NextDouble;
         var today = DateOnly.FromDateTime(now);
-        switch (rarity)
+        var user = await dbContext.Users.FirstAsync(u => u.Id == userId, ct);
+        var (rarity, prize, days) = Draw(progress, user, view.Streak, now, rnd);
+        switch (prize)
         {
-            case 0:
+            case "churchkhela":
                 progress.TotalTreatsGiven += 1;
                 progress.LastFedAtUtc = now;
                 progress.LastTreatIndex = ChurchkhelaIndex;
                 break;
-            case 1:
+            case "freeze":
                 progress.StreakFreezes = Math.Min(MaxFreezes, progress.StreakFreezes + 1);
                 break;
-            case 2:
+            case "boost":
                 // Tomorrow; if tomorrow is already doubled, the day after.
                 var tomorrow = today.AddDays(1);
                 progress.XpBoostDay = progress.XpBoostDay is { } b && b >= tomorrow ? b.AddDays(1) : tomorrow;
                 break;
-            default:
-                code = NewCode();
-                dbContext.FriendGifts.Add(new FriendGift
-                {
-                    Id = Guid.NewGuid(), Code = code, GiverUserId = userId, Days = FriendDays, CreatedAtUtc = now
-                });
+            case "days":
+                user.ExtendAccessDays(days!.Value, now);
+                progress.GiftDaysAtUtc = now;
                 break;
         }
 
         var stored = Read(state.GiftJson, today);
-        stored.Boxes.Add(new Opened(box, rarity, Prizes[rarity], code));
+        stored.Boxes.Add(new Opened(box, rarity, prize, days));
         state.GiftJson = JsonSerializer.Serialize(stored, Json);
         state.UpdatedAtUtc = now;
         progress.UpdatedAtUtc = now;
@@ -152,13 +155,13 @@ public class DailyGiftService(ITraleDbContext dbContext)
         var boxes = ready.Select((r, i) =>
         {
             var o = stored.Boxes.FirstOrDefault(b => b.Box == i);
-            return new DailyGiftBox(i, r, o != null, o?.Rarity, o?.Prize, o?.Code);
+            return new DailyGiftBox(i, r, o != null, o?.Rarity, o?.Prize, o?.Days);
         }).ToList();
 
         return new DailyGiftDto(
             today.ToString("yyyy-MM-dd"), streak, Odds(streak), (7 - streak % 7) % 7, boxes,
             progress?.StreakFreezes ?? 0, progress?.XpBoostDay == today,
-            today.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc), FriendDays);
+            today.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
     }
 
     /// <summary>
@@ -189,63 +192,24 @@ public class DailyGiftService(ITraleDbContext dbContext)
         }
     }
 
-    private static string NewCode()
+    /// <summary>
+    /// What drops. The very first box ever: the golden one with +3 free days. Later the golden one gives +1 day,
+    /// but only once in <see cref="DaysCooldown"/>; within it, and for Lifetime (nothing to add to), the top roll
+    /// becomes «invite a friend». Epic is half double XP, half «invite a friend».
+    /// </summary>
+    public static (int Rarity, string Prize, int? Days) Draw(MiniAppUserProgress progress, User user, int streak, DateTime now, Func<double> rnd)
     {
-        const string alphabet = "abcdefghjkmnpqrstuvwxyz23456789";
-        return string.Create(10, 0, (span, _) =>
+        var canGiveDays = !user.IsLifetime;
+        if (progress.GiftDaysAtUtc == null && canGiveDays) return (3, "days", FirstDays);
+
+        var rarity = Roll(Odds(streak), rnd());
+        if (rarity == 3 && canGiveDays && now - progress.GiftDaysAtUtc >= DaysCooldown) return (3, "days", Days);
+        return rarity switch
         {
-            for (var i = 0; i < span.Length; i++) span[i] = alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
-        });
-    }
-}
-
-public enum ActivateFriendGiftResult
-{
-    Activated,
-    NotFound,
-    AlreadyTaken,
-    OwnGift,
-    AlreadyGotOne,
-    NothingToAdd
-}
-
-/// <summary>
-/// Someone opened <c>?start=gift_&lt;code&gt;</c>: gives them the gift's days — once per gift and once per person
-/// in a lifetime, never to the giver. Service per ARCHITECTURE.md.
-/// </summary>
-public class ActivateFriendGiftService(ITraleDbContext dbContext)
-{
-    public const string StartPrefix = "gift_";
-
-    public async Task<(ActivateFriendGiftResult Result, int Days, DateTime? Until)> ExecuteAsync(
-        Guid recipientUserId, string code, DateTime now, CancellationToken ct)
-    {
-        var gift = await dbContext.FriendGifts.FirstOrDefaultAsync(g => g.Code == code, ct);
-        if (gift == null) return (ActivateFriendGiftResult.NotFound, 0, null);
-        if (gift.RecipientUserId == recipientUserId) return (ActivateFriendGiftResult.AlreadyGotOne, gift.Days, null);
-        if (gift.RecipientUserId != null) return (ActivateFriendGiftResult.AlreadyTaken, gift.Days, null);
-        if (gift.GiverUserId == recipientUserId) return (ActivateFriendGiftResult.OwnGift, gift.Days, null);
-        if (await dbContext.FriendGifts.AnyAsync(g => g.RecipientUserId == recipientUserId, ct))
-        {
-            return (ActivateFriendGiftResult.AlreadyGotOne, gift.Days, null);
-        }
-
-        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Id == recipientUserId, ct);
-        var until = user?.ExtendAccessDays(gift.Days, now);
-        if (until == null) return (ActivateFriendGiftResult.NothingToAdd, gift.Days, null);
-
-        gift.RecipientUserId = recipientUserId;
-        gift.ActivatedAtUtc = now;
-        try
-        {
-            await dbContext.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateException)
-        {
-            // Two gifts opened at once by the same person: the unique index keeps only one.
-            return (ActivateFriendGiftResult.AlreadyGotOne, gift.Days, null);
-        }
-
-        return (ActivateFriendGiftResult.Activated, gift.Days, until);
+            0 => (0, "churchkhela", null),
+            1 => (1, "freeze", null),
+            3 => (3, "friend", null),
+            _ => (2, rnd() < 0.5 ? "boost" : "friend", null)
+        };
     }
 }

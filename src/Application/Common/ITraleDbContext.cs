@@ -29,7 +29,6 @@ public interface ITraleDbContext
     DbSet<UserVerb> UserVerbs { get; }
     DbSet<VerbSession> VerbSessions { get; }
     DbSet<DailyTaskState> DailyTaskStates { get; }
-    DbSet<FriendGift> FriendGifts { get; }
     DbSet<VerbSectionVisit> VerbSectionVisits { get; }
     DbSet<LessonEvent> LessonEvents { get; }
     DbSet<AppEvent> AppEvents { get; }

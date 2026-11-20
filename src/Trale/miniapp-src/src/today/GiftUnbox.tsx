@@ -90,16 +90,16 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
 
   const g = result?.gift ?? gift
   const prize = result?.box.prize ?? null
-  const text = prize ? prizeText(prize, g) : null
+  const text = prize ? prizeText(prize, g, result?.box) : null
   const weekPos = (g.streak - 1) % 7 + 1
   const second = g.boxes.find(b => b.box === 1)
   const canMore = box === 0 && second && !second.opened
 
   function share() {
-    if (!result?.box.friendLink) return
+    if (!result) return
     appEvents.tap('today-gift-friend-share')
     buzz.light()
-    shareReferral(result.box.friendLink, `Дарю тебе ${days(g.friendDays)} полного доступа в TraleBot — грузинский по паре минут в день. Подарок одноразовый, успей забрать!`)
+    shareReferral(g.invite.link, `Учу грузинский в TraleBot по паре минут в день. По моей ссылке у тебя будет ${days(g.invite.friendDays)} бесплатно — заходи!`)
   }
 
   return (
@@ -148,15 +148,15 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
                   style={{ borderColor: RARITY[final].color, boxShadow: '3px 3px 0 #15100A' }}
                   data-testid="gift-prize" data-prize={prize}
                 >
-                  <PrizeIcon prize={prize} />
+                  <PrizeIcon prize={prize} days={result?.box.days ?? 1} />
                   <div className="min-w-0 flex-1">
                     <div className="font-sans text-[17px] font-extrabold leading-tight text-jewelInk">{text.title}</div>
                     <div className="mt-0.5 font-sans text-[12.500px] font-semibold leading-snug text-jewelInk-mid">{text.line}</div>
                   </div>
                 </motion.div>
-                {prize === 'friend' && result?.box.friendLink && (
+                {prize === 'friend' && (
                   <button type="button" onClick={share} className="jewel-btn bg-ruby text-cream w-full" data-testid="gift-friend-share">
-                    <span className="relative z-[1]">Подарить другу</span>
+                    <span className="relative z-[1]">Позвать друга</span>
                   </button>
                 )}
                 <button type="button" onClick={() => { buzz.light(); setPhase('after') }} className="jewel-btn bg-navy text-cream w-full" data-testid="gift-reveal-close">

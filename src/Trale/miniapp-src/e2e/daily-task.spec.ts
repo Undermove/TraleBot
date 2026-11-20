@@ -373,10 +373,10 @@ test.describe('Подарок дня → занятие → распаковка
   test.use({ viewport: { width: 375, height: 667 } })
   const GIFT = {
     day: '2026-11-20', streak: 3, odds: [0.565, 0.292, 0.115, 0.028], guaranteedIn: 4, freezes: 0, boostToday: false,
-    burnsAtUtc: new Date(Date.now() + 6 * 3600_000).toISOString(), friendDays: 7,
+    burnsAtUtc: new Date(Date.now() + 6 * 3600_000).toISOString(), invite: { link: 'https://t.me/TraleBot?start=ref_123456', friendDays: 60, myDays: 7 },
     boxes: [
-      { box: 0, ready: false, opened: false, rarity: null, prize: null, friendLink: null },
-      { box: 1, ready: false, opened: false, rarity: null, prize: null, friendLink: null }
+      { box: 0, ready: false, opened: false, rarity: null, prize: null, days: null },
+      { box: 1, ready: false, opened: false, rarity: null, prize: null, days: null }
     ]
   }
 

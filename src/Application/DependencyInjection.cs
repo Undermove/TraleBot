@@ -109,7 +109,6 @@ public static class DependencyInjection
         services.AddScoped<VerbProgressService>();
         services.AddScoped<DailyTask.DailyTaskService>();
         services.AddScoped<DailyTask.DailyGiftService>();
-        services.AddScoped<DailyTask.ActivateFriendGiftService>();
         // «Задание дня»: the daily reminder; HourlyNotificationWorker ticks it.
         services.AddScoped<DailyTask.DailyTaskReminderService>();
         services.AddScoped<DailyTask.IDailyTaskReminderService>(

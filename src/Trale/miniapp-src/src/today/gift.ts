@@ -11,11 +11,12 @@ export interface DailyGiftBox {
   opened: boolean
   rarity: number | null
   prize: Prize | null
-  /** Подарок другу: одноразовая ссылка. */
-  friendLink: string | null
+  /** Сколько бесплатных дней дал приз «days». */
+  days: number | null
 }
 
-export type Prize = 'churchkhela' | 'freeze' | 'boost' | 'friend'
+/** friend — позвать друга по своей реферальной ссылке; days — бесплатные дни себе (редко, не чаще раза в месяц). */
+export type Prize = 'churchkhela' | 'freeze' | 'boost' | 'friend' | 'days'
 
 export interface DailyGiftDto {
   day: string
@@ -28,7 +29,8 @@ export interface DailyGiftDto {
   freezes: number
   boostToday: boolean
   burnsAtUtc: string
-  friendDays: number
+  /** Обычная рефералка: ссылка, сколько дней получит друг и сколько — ты, когда он начнёт заниматься. */
+  invite: { link: string; friendDays: number; myDays: number }
 }
 
 export const RARITY = [
@@ -44,17 +46,13 @@ export function plural(n: number, one: string, few: string, many: string) {
 }
 export const days = (n: number) => `${n} ${plural(n, 'день', 'дня', 'дней')}`
 
-/** Что может выпасть — для бегущей строки на главной. */
-export const TICKER = (friendDays: number) => [
-  'Подарок другу', 'Заморозка серии', '×2 опыта на завтра', 'Чурчхела для Бомборы'
-]
-
-export function prizeText(prize: Prize, gift: DailyGiftDto): { title: string; line: string } {
+export function prizeText(prize: Prize, gift: DailyGiftDto, box?: DailyGiftBox): { title: string; line: string } {
   switch (prize) {
     case 'churchkhela': return { title: 'Чурчхела для Бомборы', line: 'Любимое лакомство — Бомбора уже уплетает. В лавке она стоит 100 опыта' }
     case 'freeze': return { title: 'Заморозка серии', line: `Пропустишь день — серия не сгорит. Заморозок у тебя: ${gift.freezes}` }
     case 'boost': return { title: '×2 опыта на завтра', line: 'Завтра задание дня и раунды считаются вдвойне' }
-    case 'friend': return { title: 'Подарок другу', line: `Отправь другу — он получит ${days(gift.friendDays)} полного доступа. Один подарок на человека` }
+    case 'friend': return { title: 'Позови друга', line: `Ему — ${days(gift.invite.friendDays)} бесплатно, тебе — ${gift.invite.myDays === 7 ? 'неделя' : days(gift.invite.myDays)}, когда он начнёт заниматься` }
+    case 'days': return { title: `+${days(box?.days ?? 1)} бесплатно`, line: 'Полный доступ ко всему — уже действует' }
   }
 }
 

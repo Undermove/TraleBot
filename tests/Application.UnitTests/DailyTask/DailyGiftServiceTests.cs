@@ -13,13 +13,14 @@ public class DailyGiftServiceTests : CommandTestsBase
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>A learner who played today with <paramref name="streak"/> days in a row; <paramref name="done"/> — today's task finished.</summary>
-    private async Task<User> Learner(int streak = 3, bool done = true, int extras = 0)
+    private async Task<User> Learner(int streak = 3, bool done = true, int extras = 0, DateTime? giftDaysAt = null, bool firstBox = false)
     {
         var user = Create.User().Build();
         Context.Users.Add(user);
         Context.MiniAppUserProgresses.Add(new MiniAppUserProgress
         {
             Id = Guid.NewGuid(), UserId = user.Id, CompletedLessonsJson = "{}", Streak = streak, LastPlayedAtUtc = Now.AddHours(-1),
+            GiftDaysAtUtc = firstBox ? null : giftDaysAt ?? Now.AddDays(-5),
             CreatedAtUtc = Now, UpdatedAtUtc = Now
         });
         Context.DailyTaskStates.Add(new DailyTaskState
@@ -91,13 +92,57 @@ public class DailyGiftServiceTests : CommandTestsBase
     }
 
     [Test]
-    public async Task Epic_doubles_tomorrows_xp()
+    public async Task Epic_is_double_xp_tomorrow_or_an_invite()
     {
         var user = await Learner();
+        var rolls = new Queue<double>([0.9, 0.2]); // streak 3: [.565,.292,.115,.028] → эпический; затем половина — ×2
 
-        await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => 0.9); // streak 3: [.565,.292,.115,.028] → эпический
+        await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => rolls.Dequeue());
 
         Context.MiniAppUserProgresses.Single(p => p.UserId == user.Id).XpBoostDay.ShouldBe(DateOnly.FromDateTime(Now).AddDays(1));
+        var other = await Learner();
+        var rolls2 = new Queue<double>([0.9, 0.8]);
+        (await Sut.OpenAsync(other.Id, 0, Now, CancellationToken.None, () => rolls2.Dequeue()))!.Value.Box.Prize.ShouldBe("friend");
+    }
+
+    [Test]
+    public async Task The_very_first_box_is_golden_with_three_free_days()
+    {
+        var user = await Learner(firstBox: true);
+        user.RegisteredAtUtc = Now.AddDays(-90); // триал давно кончился
+
+        var opened = await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => 0.0);
+
+        opened!.Value.Box.Rarity.ShouldBe(3);
+        opened.Value.Box.Prize.ShouldBe("days");
+        opened.Value.Box.Days.ShouldBe(DailyGiftService.FirstDays);
+        user.HasMiniAppAccess(Now.AddDays(2.5)).ShouldBeTrue();
+        user.HasMiniAppAccess(Now.AddDays(3.5)).ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task Free_days_drop_at_most_once_a_month_otherwise_the_top_box_is_an_invite()
+    {
+        var recent = await Learner(giftDaysAt: Now.AddDays(-10));
+        var top = await Sut.OpenAsync(recent.Id, 0, Now, CancellationToken.None, () => 0.999);
+        top!.Value.Box.Rarity.ShouldBe(3);
+        top.Value.Box.Prize.ShouldBe("friend");
+
+        var long_ago = await Learner(giftDaysAt: Now.AddDays(-31));
+        var days = await Sut.OpenAsync(long_ago.Id, 0, Now, CancellationToken.None, () => 0.999);
+        days!.Value.Box.Prize.ShouldBe("days");
+        days.Value.Box.Days.ShouldBe(DailyGiftService.Days);
+        Context.MiniAppUserProgresses.Single(p => p.UserId == long_ago.Id).GiftDaysAtUtc.ShouldBe(Now);
+    }
+
+    [Test]
+    public async Task Lifetime_has_nothing_to_add_to_the_top_box_is_an_invite()
+    {
+        var user = await Learner(firstBox: true);
+        user.IsPro = true;
+        user.SubscriptionPlan = SubscriptionPlan.Lifetime;
+
+        (await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => 0.999))!.Value.Box.Prize.ShouldBe("friend");
     }
 
     [Test]
@@ -120,37 +165,5 @@ public class DailyGiftServiceTests : CommandTestsBase
         DailyGiftService.StreakOfToday(progress, DateOnly.FromDateTime(Now)).ShouldBe(1);
         progress.StreakFreezes = 1;
         DailyGiftService.StreakOfToday(progress, DateOnly.FromDateTime(Now)).ShouldBe(7);
-    }
-
-    private async Task<string> FriendCode(User giver)
-    {
-        var opened = await Sut.OpenAsync(giver.Id, 0, Now, CancellationToken.None, () => 0.999);
-        opened!.Value.Box.Prize.ShouldBe("friend");
-        return opened.Value.Box.FriendCode!;
-    }
-
-    [Test]
-    public async Task A_friend_gift_gives_days_once_and_a_person_takes_only_one_in_a_lifetime()
-    {
-        var giver = await Learner();
-        var code = await FriendCode(giver);
-        var friend = Create.User().Build();
-        friend.RegisteredAtUtc = Now.AddDays(-90); // trial over
-        var stranger = Create.User().Build();
-        Context.Users.AddRange(friend, stranger);
-        await Context.SaveChangesAsync();
-        var activate = new ActivateFriendGiftService(Context);
-
-        (await activate.ExecuteAsync(giver.Id, code, Now, CancellationToken.None)).Result.ShouldBe(ActivateFriendGiftResult.OwnGift);
-        var taken = await activate.ExecuteAsync(friend.Id, code, Now, CancellationToken.None);
-        taken.Result.ShouldBe(ActivateFriendGiftResult.Activated);
-        friend.HasMiniAppAccess(Now.AddDays(6)).ShouldBeTrue();
-        (await activate.ExecuteAsync(stranger.Id, code, Now, CancellationToken.None)).Result.ShouldBe(ActivateFriendGiftResult.AlreadyTaken);
-
-        // The same giver tomorrow, another code — the friend cannot take a second one.
-        var nextDay = await Learner();
-        var second = await FriendCode(nextDay);
-        (await activate.ExecuteAsync(friend.Id, second, Now, CancellationToken.None)).Result.ShouldBe(ActivateFriendGiftResult.AlreadyGotOne);
-        (await activate.ExecuteAsync(stranger.Id, second, Now, CancellationToken.None)).Result.ShouldBe(ActivateFriendGiftResult.Activated);
     }
 }
