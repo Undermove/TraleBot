@@ -151,6 +151,8 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   const day = task?.day ?? utcDay()
   // С заданием: повторение сделано и «новое» (если сервер его предложил) открыто. Урок курса вместо «нового» — уже по желанию.
   const ready = task ? task.done && (!task.offer || task.offerTaken) : playedToday
+  // Задание дня ещё не сделано, а подарок помечен открытым (день перезапустили) — он снова закрыт.
+  if (task && !task.done && giftClaimed(day)) unclaimGift(day)
   const claimed = ready && giftClaimed(day) && claimedTick >= 0
   const gift: GiftState = !ready ? 'locked' : claimed ? 'claimed' : 'ready'
   const doneCount = steps.filter(s => s.done).length
