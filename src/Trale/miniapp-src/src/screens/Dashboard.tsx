@@ -241,7 +241,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       )}
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
-      <section className="px-5 pt-3 pb-4">
+      <section className="px-5 pt-1 pb-4">
         {(() => {
           const { greeting, mascotMood: baseMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
           const availableXp = Math.max(0, progress.xp - progress.xpSpent)
@@ -277,51 +277,26 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           const bowlFill = Math.min(3, todayLessons)
           return (
             <>
-              {/* Bombora card — tappable → profile */}
-              <button
-                onClick={() => navigate({ kind: 'profile' })}
-                className="w-full flex flex-col items-center gap-2 text-center active:opacity-80 transition-opacity"
-              >
-                <div className="relative">
-                  <Mascot mood={mascotMood} satietyTier={satietyTier} size={120} />
-                  {/* Bowl indicator */}
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className={`w-3 h-3 rounded-full border-2 transition-all ${
-                          i < bowlFill ? 'bg-gold border-gold shadow-sm' : 'bg-cream-deep border-jewelInk/30'
-                        }`}
-                      />
-                    ))}
+              {/* Сцена «Сегодня»: Бомбора с репликой и подарок дня; под ними — план и большая кнопка. */}
+              <TodayCard
+                lesson={suggestion}
+                navigate={navigate}
+                streak={progress.streak}
+                playedToday={todayLessons > 0 || progress.lastPlayedDate === localToday()}
+                firstTime={Object.values(progress.completedLessons).every(l => l.length === 0)}
+                hasXp={progress.xp > 0}
+                greeting={isHungry ? 'Я проголодался — покорми' : recentlyFed ? 'Вкусно! Спасибо' : greeting.line1}
+                mascot={
+                  <div className="relative" title={statusLine}>
+                    <Mascot mood={mascotMood} satietyTier={satietyTier} size={104} />
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1" aria-hidden="true">
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} className={`w-2.5 h-2.5 rounded-full border-2 ${i < bowlFill ? 'bg-gold border-gold' : 'bg-cream-deep border-jewelInk/30'}`} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="font-sans font-extrabold text-[20px] leading-[1.1] text-jewelInk tracking-tight">
-                    {greeting.line1}
-                  </div>
-                  <div className={`mt-1 font-sans text-[13px] font-semibold ${statusTone}`}>
-                    {statusLine}
-                  </div>
-                </div>
-              </button>
-
-              {/* ── Feed button ── */}
-              <div className="mt-3 flex justify-center" onClick={(e) => e.stopPropagation()}>
-                <button
-                  data-testid="dashboard-feed-button"
-                  onClick={() => setTreatShopOpen(true)}
-                  className="px-4 py-2 rounded-xl font-sans text-[13px] font-extrabold bg-gold text-jewelInk border-[1.5px] border-jewelInk active:scale-95 transition-transform flex items-center gap-2"
-                  style={{ boxShadow: '2px 2px 0 #15100A' }}
-                >
-                  <span className="text-[16px] leading-none">🍖</span>
-                  <span>Покормить</span>
-                  <span className="text-jewelInk/70 font-bold">· ⭐ {availableXp}</span>
-                </button>
-              </div>
-
-              {/* «Сегодня» — единственный призыв главной: повторение и новое, одна кнопка к следующему шагу. */}
-              <TodayCard lesson={suggestion} navigate={navigate} streak={progress.streak} playedToday={todayLessons > 0 || progress.lastPlayedDate === localToday()} firstTime={Object.values(progress.completedLessons).every(l => l.length === 0)} />
+                }
+              />
             </>
           )
         })()}
@@ -797,7 +772,7 @@ function computeHero(
     greeting = { line1: 'Хорошее начало!', line2: 'Продолжим?' }
     mascotMood = 'happy'
   } else if (progress.streak >= 3) {
-    greeting = { line1: `${progress.streak} дней подряд!`, line2: 'Не останавливайся' }
+    greeting = { line1: `${progress.streak} ${pluralDays(progress.streak)} подряд!`, line2: 'Не останавливайся' }
     mascotMood = 'guide'
   } else {
     greeting = { line1: 'Бомбора ждёт!', line2: 'Погнали учиться' }

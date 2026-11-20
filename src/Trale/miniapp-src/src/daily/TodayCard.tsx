@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { appEvents } from '../analytics/appEvents'
 import { devDailyPush, devNextDay, reportDailyOffer } from '../api'
 import Button from '../components/Button'
 import type { Screen } from '../types'
 import { days, formsAndWords, streakLine } from './logic'
 import { cachedDaily, loadDaily, onDaily, setDaily } from './store'
+import TodayStage, { StageHandle } from '../today/TodayStage'
+import TodayIntro, { shouldShowTodayIntro } from '../today/TodayIntro'
 import type { DailyNew, DailyTaskDto } from './types'
 
 /** Следующий урок курса, как его находит главная: первый непройденный по порядку модулей. */
@@ -27,6 +29,39 @@ interface Step {
   go: () => void
 }
 
+const plural = (n: number, one: string, few: string, many: string) => {
+  const m10 = n % 10, m100 = n % 100
+  return m10 === 1 && m100 !== 11 ? one : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? few : many
+}
+
+/** Что внутри подарка — для фонтана при открытии. */
+function insideLabels(task: DailyTaskDto | null, next: { id: string; title: string } | null): string[] {
+  if (!task) return next ? ['урок'] : []
+  const words = task.pairs.filter(p => p.kind === 'word').length
+  const verbs = task.pairs.filter(p => p.kind === 'verb').length
+  const out: string[] = []
+  if (verbs) out.push(`${verbs} ${plural(verbs, 'форма', 'формы', 'форм')}`)
+  if (words) out.push(`${words} ${plural(words, 'слово', 'слова', 'слов')}`)
+  if (task.next) out.push(task.next.kind === 'lesson' ? 'урок' : task.next.kind === 'check' ? 'проверка' : 'новое')
+  return out
+}
+
+/** Реплика Бомборы, пока за день ничего не сделано: коротко, в пузырь. */
+function shortNudge(streak: number, firstTime: boolean): string {
+  if (firstTime) return 'Привет! Открой подарок — начнём'
+  if (streak >= 1) return `${streak} ${plural(streak, 'день', 'дня', 'дней')} подряд! Открой подарок, не прерывай`
+  return 'Тебе подарок! Открой'
+}
+
+/** Всё сделано: когда будет новый подарок (день задания — по UTC, как серия). */
+function doneLine(): string {
+  const now = new Date()
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)
+  const min = Math.max(1, Math.round((next - now.getTime()) / 60000))
+  const h = Math.floor(min / 60)
+  return h >= 1 ? `Новый подарок через ${h} ${plural(h, 'час', 'часа', 'часов')}` : `Новый подарок через ${min} мин`
+}
+
 const Check = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M5 12.5l4.5 4.500L19 7.500" />
@@ -47,6 +82,12 @@ interface Props {
   playedToday?: boolean
   /** Ни одного пройденного урока: первый заход, кнопка — «первый урок». */
   firstTime?: boolean
+  /** Бомбора для сцены (настроение считает главная). Нет — карточка без сцены. */
+  mascot?: React.ReactNode
+  /** Что говорит Бомбора, когда торопить не о чем. */
+  greeting?: string
+  /** Есть опыт — человек учился до обновления: показать «что нового». */
+  hasXp?: boolean
 }
 
 /** Строчка над кнопкой: зачем жать именно сейчас. Мягко, но прямо; после занятия — ничего. */
@@ -57,8 +98,10 @@ export function nudgeLine(streak: number, playedToday: boolean, firstTime: boole
   return 'Пара минут сегодня — и начнётся серия'
 }
 
-export default function TodayCard({ lesson, navigate, streak = 0, playedToday = false, firstTime = false }: Props) {
+export default function TodayCard({ lesson, navigate, streak = 0, playedToday = false, firstTime = false, mascot, greeting = 'Привет!', hasXp = false }: Props) {
   const [task, setTask] = useState<DailyTaskDto | null>(cachedDaily)
+  const stage = useRef<StageHandle>(null)
+  const [intro, setIntro] = useState(() => shouldShowTodayIntro(hasXp))
   const [devNote, setDevNote] = useState<string | null>(null)
 
   useEffect(() => {
@@ -105,6 +148,12 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   if (steps.length === 0) return null
   const next = steps.find(s => !s.done) ?? null
   const nudge = next && !steps.some(s => s.done) ? nudgeLine(streak, playedToday, firstTime) : null
+  // Коробка открыта, когда за сегодня уже что-то сделано: дальше кнопка ведёт сразу, без распаковки.
+  const opened = steps.some(s => s.done) || !next
+  const launch = (go: () => void) => (mascot && !opened && stage.current ? stage.current.open(go) : go())
+  const inside = insideLabels(task, next)
+  const say = !next ? doneLine() : nudge ? shortNudge(streak, firstTime) : opened ? 'Ещё немного?' : greeting
+  const words = (task?.pairs ?? []).filter(p => p.kind === 'word').map(p => ({ ka: p.ka, ru: p.ru }))
 
   async function dev(action: () => Promise<{ task?: DailyTaskDto; ok?: boolean }>, note: string) {
     setDevNote('…')
@@ -119,7 +168,12 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
 
   return (
     <>
-      <div className="jewel-tile mt-4 w-full px-4 pt-4 pb-4" data-testid="dashboard-today" data-next={next?.id ?? 'none'}>
+      {mascot && (
+        <TodayStage ref={stage} mascot={mascot} say={say} opened={opened} inside={inside} words={words}
+          onBoxGo={next ? () => { appEvents.tap('today-box'); launch(next.go) } : undefined} />
+      )}
+      {intro && <TodayIntro personal={Boolean(task)} onClose={() => setIntro(false)} />}
+      <div className="jewel-tile mt-3 w-full px-4 pt-4 pb-4" data-testid="dashboard-today" data-next={next?.id ?? 'none'}>
         <div className="relative z-[1]">
           <div className="flex items-baseline justify-between px-1">
             <div className="mn-eyebrow text-ruby">Сегодня</div>
@@ -170,10 +224,10 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
           <div className="mt-3">
             {next ? (
               <div data-testid="dashboard-suggestion" className={nudge ? 'today-nudge' : ''}>
-                {nudge && (
+                {nudge && !mascot && (
                   <div className="mb-2 px-1 text-center font-sans text-[13px] font-bold leading-snug text-ruby" data-testid="dashboard-nudge">{nudge}</div>
                 )}
-                <Button onClick={() => { appEvents.tap('today-button'); next.go() }}>{next.button}</Button>
+                <Button onClick={() => { appEvents.tap('today-button'); launch(next.go) }}>{next.button}</Button>
               </div>
             ) : (
               <div className="text-center" data-testid="dashboard-today-done">

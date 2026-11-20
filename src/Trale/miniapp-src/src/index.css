@@ -553,10 +553,16 @@ input:focus-visible {
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* Главная кнопка «Сегодня», пока за день ничего не сделано: мягко «дышит», чтобы глаз нашёл её первой. */
-@keyframes today-nudge {
-  0%, 100% { transform: translate(0, 0); box-shadow: 3px 3px 0 #15100A; }
-  50% { transform: translate(-1px, -2px); box-shadow: 4px 5px 0 #15100A; }
+/* Главная кнопка «Сегодня», пока за день ничего не сделано: вокруг расходится ореол — глаз находит её первой.
+   Сама кнопка стоит на месте: двигается только ореол. */
+@keyframes today-halo {
+  0% { transform: scale(1); opacity: .55; }
+  100% { transform: scale(1.08, 1.35); opacity: 0; }
 }
-.today-nudge .jewel-btn { animation: today-nudge 2.4s ease-in-out infinite; font-size: 17px; min-height: 60px; }
-@media (prefers-reduced-motion: reduce) { .today-nudge .jewel-btn { animation: none; } }
+.today-nudge { position: relative; }
+.today-nudge .jewel-btn { font-size: 17px; min-height: 60px; }
+.today-nudge::after {
+  content: ''; position: absolute; inset: 0; border-radius: 14px; border: 3px solid #F5B820; pointer-events: none;
+  animation: today-halo 1.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .today-nudge::after { animation: none; opacity: 0; } }

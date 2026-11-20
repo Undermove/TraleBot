@@ -1,0 +1,53 @@
+/* Главная «Сегодня»: коробка-подарок, фон из букв, пасхалка. */
+
+/* Коробка ждёт: почти всё время стоит, раз в несколько секунд подпрыгивает и покачивается — «во мне что-то есть». */
+@keyframes gb-idle {
+  0%, 62%, 100% { transform: translateY(0) rotate(0) scale(1, 1); }
+  66% { transform: translateY(2px) rotate(0) scale(1.06, 0.92); }
+  71% { transform: translateY(-14px) rotate(-5deg) scale(0.96, 1.06); }
+  76% { transform: translateY(0) rotate(4deg) scale(1.04, 0.95); }
+  80% { transform: translateY(-5px) rotate(-3deg) scale(1, 1); }
+  84% { transform: translateY(0) rotate(1.5deg); }
+  88% { transform: translateY(0) rotate(0); }
+}
+.gb-idle > svg { animation: gb-idle 3.8s cubic-bezier(.3, .7, .4, 1) infinite; transform-origin: 50% 100%; }
+
+/* Искры и буквы из коробки: фонтан вверх, потом падают вниз и тают. */
+.gb-spark {
+  position: fixed; z-index: 70; pointer-events: none; font-family: 'Noto Sans Georgian', sans-serif; font-weight: 800;
+  transform: translate(-50%, -50%);
+  animation: gb-spark var(--dur) cubic-bezier(.15, .7, .35, 1) forwards;
+}
+@keyframes gb-spark {
+  0% { transform: translate(-50%, -50%) scale(.2) rotate(0); opacity: 1; }
+  45% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.15) rotate(calc(var(--rot) * .5)); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx) * 1.2), calc(-50% + var(--dy) + var(--fall))) scale(.8) rotate(var(--rot)); opacity: 0; }
+}
+
+/* Звезда в открытой коробке мерцает. */
+@keyframes gb-star { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.12) rotate(8deg); } }
+.gb-star { animation: gb-star 2.2s ease-in-out infinite; }
+
+/* Буквы на фоне сцены: медленно плывут. */
+@keyframes td-drift { 0%, 100% { transform: translate(0, 0) rotate(var(--r0)); } 50% { transform: translate(var(--mx), var(--my)) rotate(var(--r1)); } }
+.td-letter { position: absolute; font-family: 'Noto Sans Georgian', sans-serif; font-weight: 800; pointer-events: none; animation: td-drift var(--d) ease-in-out infinite; }
+
+/* Пасхалка: дождь букв сверху. */
+.td-rain {
+  position: fixed; top: -40px; z-index: 70; pointer-events: none; font-family: 'Noto Sans Georgian', sans-serif; font-weight: 800;
+  animation: td-rain var(--dur) cubic-bezier(.4, .1, .6, 1) forwards;
+}
+@keyframes td-rain {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(calc(100vh + 60px)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* Огонёк серии подрагивает. */
+@keyframes td-flame { 0%, 100% { transform: scale(1, 1) rotate(-2deg); } 50% { transform: scale(.92, 1.08) rotate(3deg); } }
+.td-flame { animation: td-flame 1.1s ease-in-out infinite; transform-origin: 50% 90%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gb-idle > svg, .gb-star, .td-letter, .td-flame { animation: none; }
+  .gb-spark, .td-rain { display: none; }
+}
