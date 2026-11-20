@@ -175,6 +175,7 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
     : moreBox ? 'Ещё раунд — и вторая коробка твоя'
     : gift === 'claimed' ? doneLine()
     : gift === 'ready' ? 'Готово! Открывай подарок'
+    : g && nudge && !firstTime ? (streak >= 1 ? `${streak} ${plural(streak, 'день', 'дня', 'дней')} подряд! Две минуты — и подарок твой` : 'Две минуты — и подарок твой')
     : nudge ? shortNudge(streak, firstTime, task ? steps.length : 1)
     : doneCount > 0 ? 'Ещё шаг — и подарок твой' : greeting
   const lockedSay = firstTime ? 'Пройди первый урок — и подарок твой'

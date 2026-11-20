@@ -17,35 +17,33 @@ export default function GiftStrip({ gift, burning }: { gift: DailyGiftDto; burni
   const weekly = gift.guaranteedIn === 0
 
   return (
-    <div className="mt-1 flex w-full flex-col items-center gap-1.5" data-testid="gift-strip">
-      <div className="flex w-full items-center justify-between gap-2 px-1 font-sans text-[12px] font-bold text-jewelInk-mid">
-        <span className="min-w-0 truncate">
-          {weekly ? <b className="text-ruby" data-testid="gift-weekly">Недельный: минимум эпический</b> : (
-            <>может выпасть:{' '}
-              <span className="relative inline-block align-bottom" style={{ minWidth: 150 }}>
-                <AnimatePresence mode="wait">
-                  <motion.b key={k} className="inline-block text-jewelInk" data-testid="gift-ticker"
-                    initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} transition={{ duration: 0.18 }}>
-                    {names[k % names.length]}
-                  </motion.b>
-                </AnimatePresence>
-              </span>
-            </>
-          )}
-        </span>
+    <div className="mt-1 flex w-full flex-col items-center gap-1" data-testid="gift-strip">
+      <div className="w-full truncate px-1 text-center font-sans text-[12.500px] font-bold text-jewelInk-mid">
+        {weekly ? <b className="text-ruby" data-testid="gift-weekly">Недельный: минимум эпический</b> : (
+          <>может выпасть:{' '}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.b key={k} className="inline-block text-jewelInk" data-testid="gift-ticker"
+                initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} transition={{ duration: 0.18 }}>
+                {names[k % names.length]}
+              </motion.b>
+            </AnimatePresence>
+          </>
+        )}
+      </div>
+      <div className="flex w-full items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-2.5" data-testid="gift-odds" aria-label="Шансы по редкостям">
+          {RARITY.map((r, i) => (
+            <span key={r.name} title={r.name} className="flex items-center gap-1 font-sans text-[12px] font-extrabold tabular-nums text-jewelInk">
+              <i className="inline-block h-2.5 w-2.5 rounded-full border border-jewelInk" style={{ background: r.color }} />
+              {Math.round(gift.odds[i] * 100)}%
+            </span>
+          ))}
+        </div>
         {burning && (
           <span className="shrink-0 rounded-full bg-ruby px-2 py-0.5 text-[11px] font-extrabold tabular-nums text-cream" data-testid="gift-timer">
             сгорит через {burnsIn(gift.burnsAtUtc, now)}
           </span>
         )}
-      </div>
-      <div className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-1" data-testid="gift-odds" aria-label="Шансы по редкостям">
-        {RARITY.map((r, i) => (
-          <span key={r.name} className="flex items-center gap-1 font-sans text-[11px] font-extrabold tabular-nums text-jewelInk">
-            <i className="inline-block h-2.5 w-2.5 rounded-full border border-jewelInk" style={{ background: r.color }} />
-            {r.name.toLowerCase()} {Math.round(gift.odds[i] * 100)}%
-          </span>
-        ))}
       </div>
     </div>
   )
