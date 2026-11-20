@@ -1,3 +1,4 @@
+import { FURNITURE, ITEMS } from './collection'
 import { ApiError, fetchDailyGift } from '../api'
 
 // Подарок дня: коробка в конце задания (и вторая — за ещё один раунд), внутри приз одной из четырёх
@@ -15,8 +16,11 @@ export interface DailyGiftBox {
   days: number | null
 }
 
-/** friend — позвать друга по своей реферальной ссылке; days — бесплатные дни себе (редко, не чаще раза в месяц). */
-export type Prize = 'churchkhela' | 'freeze' | 'boost' | 'friend' | 'days'
+/**
+ * friend — позвать друга по своей реферальной ссылке; days — бесплатные дни себе (редко, не чаще раза в месяц);
+ * hint — подсказка в упражнениях; word:/card:/furn:/item:<id> — в коллекцию (слово, открытка, мебель, вещь).
+ */
+export type Prize = string
 
 export interface DailyGiftDto {
   day: string
@@ -46,14 +50,21 @@ export function plural(n: number, one: string, few: string, many: string) {
 }
 export const days = (n: number) => `${n} ${plural(n, 'день', 'дня', 'дней')}`
 
-export function prizeText(prize: Prize, gift: DailyGiftDto, box?: DailyGiftBox): { title: string; line: string } {
-  switch (prize) {
+export function prizeText(prize: Prize, gift: DailyGiftDto, box?: DailyGiftBox, treasure?: { ka: string; tr: string; ru: string; story?: string; when?: string } | null): { title: string; line: string } {
+  const [kind, id] = prize.includes(':') ? prize.split(':') : [prize, '']
+  switch (kind) {
+    case 'hint': return { title: 'Подсказка', line: 'В упражнении нажми «Подсказка» — Бомбора покажет верный ответ' }
+    case 'word': return { title: treasure ? `${treasure.ka} — ${treasure.ru}` : 'Слово-сокровище', line: treasure?.story ? `${treasure.tr}. ${treasure.story}` : 'Уже в твоём словаре' }
+    case 'card': return { title: treasure ? treasure.ka : 'Открытка', line: treasure ? `${treasure.tr} — «${treasure.ru}». Отправь другу ${treasure.when ?? ''}`.trim() : 'Отправь другу' }
+    case 'furn': return { title: FURNITURE.find(f => f.id === id)?.name ?? 'Мебель', line: 'В комнату Бомборы — уже стоит на месте' }
+    case 'item': return { title: ITEMS.find(i => i.id === id)?.name ?? 'Вещь для Бомборы', line: 'Бомбора уже примерил — загляни к нему в гардероб' }
     case 'churchkhela': return { title: 'Чурчхела для Бомборы', line: 'Любимое лакомство — Бомбора уже уплетает. В лавке она стоит 100 опыта' }
     case 'freeze': return { title: 'Заморозка серии', line: `Пропустишь день — серия не сгорит. Заморозок у тебя: ${gift.freezes}` }
     case 'boost': return { title: '×2 опыта на завтра', line: 'Завтра задание дня и раунды считаются вдвойне' }
     case 'friend': return { title: 'Позови друга', line: `Ему — ${days(gift.invite.friendDays)} бесплатно, тебе — ${gift.invite.myDays === 7 ? 'неделя' : days(gift.invite.myDays)}, когда он начнёт заниматься` }
     case 'days': return { title: `+${days(box?.days ?? 1)} бесплатно`, line: 'Полный доступ ко всему — уже действует' }
   }
+  return { title: 'Подарок', line: '' }
 }
 
 /** «сгорит через 06:18:36» — до конца дня задания (полночь UTC, как у серии). */

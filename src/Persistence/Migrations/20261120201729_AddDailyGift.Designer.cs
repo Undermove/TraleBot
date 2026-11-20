@@ -12,7 +12,7 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(TraleDbContext))]
-    [Migration("20261120200951_AddDailyGift")]
+    [Migration("20261120201729_AddDailyGift")]
     partial class AddDailyGift
     {
         /// <inheritdoc />
@@ -463,6 +463,9 @@ namespace Persistence.Migrations
 
                     b.Property<DateTime?>("GiftDaysAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GiftStashJson")
+                        .HasColumnType("text");
 
                     b.Property<int>("Hearts")
                         .ValueGeneratedOnAdd()

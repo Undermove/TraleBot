@@ -90,6 +90,9 @@ public class MiniAppUserProgress
     /// </summary>
     public DateTime? GiftDaysAtUtc { get; set; }
 
+    /// <summary>What the gift of the day gave to keep (hints, words, postcards, things, furniture) — JSON, see <c>GiftStash</c>.</summary>
+    public string? GiftStashJson { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
 }

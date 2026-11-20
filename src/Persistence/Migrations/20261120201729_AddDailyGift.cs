@@ -17,6 +17,12 @@ namespace Persistence.Migrations
                 type: "timestamp with time zone",
                 nullable: true);
 
+            migrationBuilder.AddColumn<string>(
+                name: "GiftStashJson",
+                table: "MiniAppUserProgresses",
+                type: "text",
+                nullable: true);
+
             migrationBuilder.AddColumn<int>(
                 name: "StreakFreezes",
                 table: "MiniAppUserProgresses",
@@ -42,6 +48,10 @@ namespace Persistence.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "GiftDaysAtUtc",
+                table: "MiniAppUserProgresses");
+
+            migrationBuilder.DropColumn(
+                name: "GiftStashJson",
                 table: "MiniAppUserProgresses");
 
             migrationBuilder.DropColumn(

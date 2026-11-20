@@ -578,7 +578,22 @@ export function fetchDailyGift() {
 
 /** Открыть коробку: приз разыгрывает сервер один раз, повтор вернёт тот же. 409 — коробка ещё не готова. */
 export function openDailyGift(box: number) {
-  return request<{ gift: import('./today/gift').DailyGiftDto; box: import('./today/gift').DailyGiftBox }>('/api/miniapp/daily-gift/open', { method: 'POST', body: JSON.stringify({ box }) })
+  return request<{ gift: import('./today/gift').DailyGiftDto; box: import('./today/gift').DailyGiftBox; treasure?: import('./today/collection').TreasureWord | import('./today/collection').TreasureCard | null }>('/api/miniapp/daily-gift/open', { method: 'POST', body: JSON.stringify({ box }) })
+}
+
+/** Что собрано из подарков дня: вещи, мебель, слова, открытки, подсказки. */
+export function fetchStash() {
+  return request<import('./today/collection').Collection>('/api/miniapp/bombora/stash')
+}
+
+/** Надеть вещь (или снять — item: null). */
+export function wearItem(slot: string, item: string | null) {
+  return request<{ stash: import('./today/collection').Stash }>('/api/miniapp/bombora/wear', { method: 'POST', body: JSON.stringify({ slot, item }) })
+}
+
+/** Потратить подсказку в упражнении. 409 — подсказок нет. */
+export function useGiftHint() {
+  return request<{ hints: number }>('/api/miniapp/daily-gift/hint', { method: 'POST' })
 }
 
 /** Только на стенде: коробки сегодня снова закрыты. */

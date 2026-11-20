@@ -37,7 +37,7 @@ public record DailyGiftDto(
 /// The draw happens on the server and is kept, so reopening the app cannot reroll it.
 /// Service per ARCHITECTURE.md.
 /// </summary>
-public class DailyGiftService(ITraleDbContext dbContext)
+public class DailyGiftService(ITraleDbContext dbContext, ITreasureCatalog treasures)
 {
     /// <summary>Free days from the very first box — the strong first impression.</summary>
     public const int FirstDays = 3;
@@ -101,9 +101,31 @@ public class DailyGiftService(ITraleDbContext dbContext)
         var rnd = random ?? Random.Shared.NextDouble;
         var today = DateOnly.FromDateTime(now);
         var user = await dbContext.Users.FirstAsync(u => u.Id == userId, ct);
-        var (rarity, prize, days) = Draw(progress, user, view.Streak, now, rnd);
-        switch (prize)
+        var stash = GiftStash.Read(progress.GiftStashJson);
+        var (rarity, prize, days) = Draw(progress, user, stash, view.Streak, now, rnd,
+            treasures.Words.Select(w => w.Id).ToArray(), treasures.Cards.Select(c => c.Id).ToArray());
+        var (kind, id) = prize.Split(':') is [var k, var v] ? (k, v) : (prize, "");
+        switch (kind)
         {
+            case "hint":
+                stash.Hints += 1;
+                break;
+            case "card":
+                stash.Cards.Add(id);
+                break;
+            case "word":
+                stash.Words.Add(id);
+                await AddToDictionaryAsync(userId, treasures.Words.First(w => w.Id == id), now, ct);
+                break;
+            case "furn":
+                stash.Furniture.Add(id);
+                break;
+            case "item":
+                stash.Items.Add(id);
+                // A new thing goes on at once if its slot is free.
+                var slot = GiftCatalog.Items.First(i => i.Id == id).Slot;
+                stash.Wear.TryAdd(slot, id);
+                break;
             case "churchkhela":
                 progress.TotalTreatsGiven += 1;
                 progress.LastFedAtUtc = now;
@@ -123,6 +145,7 @@ public class DailyGiftService(ITraleDbContext dbContext)
                 break;
         }
 
+        progress.GiftStashJson = stash.Write();
         var stored = Read(state.GiftJson, today);
         stored.Boxes.Add(new Opened(box, rarity, prize, days));
         state.GiftJson = JsonSerializer.Serialize(stored, Json);
@@ -132,6 +155,53 @@ public class DailyGiftService(ITraleDbContext dbContext)
 
         view = View(state, progress, now);
         return (view, view.Boxes.First(b => b.Box == box));
+    }
+
+    /// <summary>A treasure word goes into the learner's dictionary — repetition picks it up like any other word.</summary>
+    private async Task AddToDictionaryAsync(Guid userId, TreasureWord word, DateTime now, CancellationToken ct)
+    {
+        var ka = word.Ka.Trim().ToLowerInvariant();
+        if (await dbContext.VocabularyEntries.AnyAsync(e => e.UserId == userId && e.Word == ka, ct)) return;
+        dbContext.VocabularyEntries.Add(new VocabularyEntry
+        {
+            Id = Guid.NewGuid(), Word = ka, Definition = word.Ru.Trim().ToLowerInvariant(), AdditionalInfo = word.Story,
+            Example = "", UserId = userId, DateAddedUtc = now, UpdatedAtUtc = now, Language = Language.Georgian
+        });
+    }
+
+    /// <summary>What the learner has collected.</summary>
+    public async Task<GiftStash> StashAsync(Guid userId, CancellationToken ct)
+    {
+        var progress = await dbContext.MiniAppUserProgresses.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId, ct);
+        return GiftStash.Read(progress?.GiftStashJson);
+    }
+
+    /// <summary>Spends a hint in an exercise. False — none left.</summary>
+    public async Task<(bool Ok, int Left)> UseHintAsync(Guid userId, DateTime now, CancellationToken ct)
+    {
+        var progress = await MiniAppHelpers.LoadOrCreateProgressAsync(dbContext, userId, ct);
+        var stash = GiftStash.Read(progress.GiftStashJson);
+        if (stash.Hints <= 0) return (false, 0);
+        stash.Hints -= 1;
+        progress.GiftStashJson = stash.Write();
+        progress.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync(ct);
+        return (true, stash.Hints);
+    }
+
+    /// <summary>Puts on a thing (or takes the slot off with <paramref name="itemId"/> null). Only owned things.</summary>
+    public async Task<GiftStash?> WearAsync(Guid userId, string slot, string? itemId, DateTime now, CancellationToken ct)
+    {
+        if (!GiftCatalog.Slots.Contains(slot)) return null;
+        var progress = await MiniAppHelpers.LoadOrCreateProgressAsync(dbContext, userId, ct);
+        var stash = GiftStash.Read(progress.GiftStashJson);
+        if (itemId == null) stash.Wear.Remove(slot);
+        else if (stash.Items.Contains(itemId) && GiftCatalog.Items.Any(i => i.Id == itemId && i.Slot == slot)) stash.Wear[slot] = itemId;
+        else return null;
+        progress.GiftStashJson = stash.Write();
+        progress.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync(ct);
+        return stash;
     }
 
     /// <summary>Local stand only: today's boxes are closed again.</summary>
@@ -193,23 +263,55 @@ public class DailyGiftService(ITraleDbContext dbContext)
     }
 
     /// <summary>
-    /// What drops. The very first box ever: the golden one with +3 free days. Later the golden one gives +1 day,
-    /// but only once in <see cref="DaysCooldown"/>; within it, and for Lifetime (nothing to add to), the top roll
-    /// becomes «invite a friend». Epic is half double XP, half «invite a friend».
+    /// What drops. The very first box ever: the golden one with +3 free days. After that each box has a few
+    /// kinds of prize, one picked at random; collections (words, postcards, furniture, things) give what the
+    /// learner does not have yet, and once complete fall back to the box's simple prize:
+    ///  · gift box — churchkhela · a hint · a postcard;
+    ///  · wooden chest — a streak freeze · a treasure word · furniture for Bombora's house;
+    ///  · enamel chest — double XP tomorrow · «invite a friend» · a thing for Bombora;
+    ///  · golden chest — +1 free day (at most once in <see cref="DaysCooldown"/>, never for Lifetime),
+    ///    otherwise a golden thing for Bombora, otherwise «invite a friend».
     /// </summary>
-    public static (int Rarity, string Prize, int? Days) Draw(MiniAppUserProgress progress, User user, int streak, DateTime now, Func<double> rnd)
+    public static (int Rarity, string Prize, int? Days) Draw(
+        MiniAppUserProgress progress, User user, GiftStash stash, int streak, DateTime now, Func<double> rnd,
+        IReadOnlyCollection<string>? words = null, IReadOnlyCollection<string>? cards = null)
     {
         var canGiveDays = !user.IsLifetime;
         if (progress.GiftDaysAtUtc == null && canGiveDays) return (3, "days", FirstDays);
 
         var rarity = Roll(Odds(streak), rnd());
-        if (rarity == 3 && canGiveDays && now - progress.GiftDaysAtUtc >= DaysCooldown) return (3, "days", Days);
-        return rarity switch
+        string? Pick(IEnumerable<string> pool, IEnumerable<string> owned, string prefix)
         {
-            0 => (0, "churchkhela", null),
-            1 => (1, "freeze", null),
-            3 => (3, "friend", null),
-            _ => (2, rnd() < 0.5 ? "boost" : "friend", null)
-        };
+            var left = pool.Except(owned).ToArray();
+            return left.Length == 0 ? null : prefix + left[(int)(rnd() * left.Length) % left.Length];
+        }
+        var kind = (int)(rnd() * 3) % 3;
+        switch (rarity)
+        {
+            case 0:
+                return (0, kind switch
+                {
+                    0 => "churchkhela",
+                    1 => "hint",
+                    _ => Pick(cards ?? [], stash.Cards, "card:") ?? "hint"
+                }, null);
+            case 1:
+                return (1, kind switch
+                {
+                    0 => "freeze",
+                    1 => Pick(words ?? [], stash.Words, "word:") ?? "freeze",
+                    _ => Pick(GiftCatalog.Furniture, stash.Furniture, "furn:") ?? "freeze"
+                }, null);
+            case 2:
+                return (2, kind switch
+                {
+                    0 => "boost",
+                    1 => "friend",
+                    _ => Pick(GiftCatalog.Items.Where(i => !i.Golden).Select(i => i.Id), stash.Items, "item:") ?? "boost"
+                }, null);
+            default:
+                if (canGiveDays && now - progress.GiftDaysAtUtc >= DaysCooldown) return (3, "days", Days);
+                return (3, Pick(GiftCatalog.Items.Where(i => i.Golden).Select(i => i.Id), stash.Items, "item:") ?? "friend", null);
+        }
     }
 }

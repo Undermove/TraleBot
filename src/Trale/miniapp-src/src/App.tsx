@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
+import BomboraHome from './today/BomboraHome'
+import { cachedGift } from './today/gift'
 import { CatalogDto, ProgressState, Screen } from './types'
 import { defaultProgress, onProgressPublished, progressFromDto } from './progress'
 import { onOpenLessonModule } from './verbs/family/nav'
@@ -663,6 +665,8 @@ export default function App() {
             )}
           </>
         )
+      case 'bombora-home':
+        return <BomboraHome key={screen.tab ?? 'wear'} startTab={screen.tab} inviteLink={cachedGift()?.invite.link ?? ''} onExit={() => navigate({ kind: 'dashboard' })} />
       case 'daily':
         return <DailyTask key={screen.extra ? 'extra' : 'daily'} navigate={navigate} startExtra={Boolean(screen.extra)} startNow={Boolean(screen.start)} />
       case 'verbs':

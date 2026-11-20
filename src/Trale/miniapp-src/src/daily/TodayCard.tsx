@@ -214,7 +214,8 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
       {warp && <GiftWarp from={warp.from} onDone={playForGift} />}
       {reveal && g && revealBox != null && (
         <GiftUnbox gift={g} box={revealBox} onCheer={() => setCheer(true)}
-          onClose={() => setReveal(false)} onMore={() => { setReveal(false); playMore() }} />
+          onClose={() => setReveal(false)} onMore={() => { setReveal(false); playMore() }}
+          onHome={tab => { setReveal(false); navigate({ kind: 'bombora-home', tab }) }} />
       )}
       {reveal && (!g || revealBox == null) && (
         <GiftReveal day={day} xp={task?.result ? task.result.xpEarned : null} streak={Math.max(streak, task?.result?.streak ?? 0)}

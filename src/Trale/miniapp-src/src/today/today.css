@@ -50,3 +50,7 @@
   25% { transform: translate(-50%, -50%) rotate(-16deg) scale(1.1); }
   75% { transform: translate(-50%, -50%) rotate(16deg) scale(1.1); }
 }
+
+/* Подсказка: верный ответ светится золотом. */
+.td-hint { animation: td-hint 1.6s ease-out 2; box-shadow: 0 0 0 4px #F5B820, 0 0 24px 6px rgba(245, 184, 32, .7) !important; }
+@keyframes td-hint { 0%, 100% { transform: scale(1); } 20% { transform: scale(1.05); } 40% { transform: scale(1); } }

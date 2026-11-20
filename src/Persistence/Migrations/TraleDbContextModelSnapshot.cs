@@ -461,6 +461,9 @@ namespace Persistence.Migrations
                     b.Property<DateTime?>("GiftDaysAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("GiftStashJson")
+                        .HasColumnType("text");
+
                     b.Property<int>("Hearts")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")

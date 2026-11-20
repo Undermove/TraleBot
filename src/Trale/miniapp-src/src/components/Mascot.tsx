@@ -1,4 +1,5 @@
 import React from 'react'
+import { Glasses, Hat, NeckExtra, ScarfPattern, scarfFill, type Wear } from './BomboraWear'
 
 interface Props {
   mood?: 'happy' | 'cheer' | 'sleep' | 'think' | 'guide' | 'hungry' | 'sated' | 'chewing'
@@ -11,6 +12,8 @@ interface Props {
   satietyTier?: 1 | 2 | 3
   size?: number
   className?: string
+  /** Что надето из подарков дня: шапка, очки, шарф/бабочка. */
+  wear?: Wear
 }
 
 /**
@@ -18,7 +21,7 @@ interface Props {
  * Flat shapes, thick ink outline, warm fur, ruby scarf.
  * Designed as a book illustration: less detail, more character.
  */
-export default function Mascot({ mood = 'happy', satietyTier = 3, size = 200, className = '' }: Props) {
+export default function Mascot({ mood = 'happy', satietyTier = 3, size = 200, className = '', wear }: Props) {
   const INK = '#2A1F18'
   const FUR = '#E6AE78'
   const FUR_DARK = '#C98B4A'
@@ -154,7 +157,7 @@ export default function Mascot({ mood = 'happy', satietyTier = 3, size = 200, cl
       <g>
         <path
           d="M38 138 Q68 162 100 156 Q132 162 162 138 L168 176 Q132 186 100 180 Q68 186 32 176 Z"
-          fill={CORAL}
+          fill={scarfFill(wear?.neck)}
           stroke={INK}
           strokeWidth="3.5"
           strokeLinejoin="round"
@@ -166,9 +169,10 @@ export default function Mascot({ mood = 'happy', satietyTier = 3, size = 200, cl
           fill="none"
           strokeLinecap="round"
         />
+        <ScarfPattern neck={wear?.neck} />
         <path
           d="M50 172 Q44 184 56 192 L72 186 L68 172 Z"
-          fill={CORAL}
+          fill={scarfFill(wear?.neck)}
           stroke={INK}
           strokeWidth="3"
           strokeLinejoin="round"
@@ -201,6 +205,7 @@ export default function Mascot({ mood = 'happy', satietyTier = 3, size = 200, cl
 
       {/* Eyes */}
       {eyes}
+      <Glasses id={wear?.eyes} />
 
       {/* Nose bridge */}
       <path d="M100 118 L100 122" stroke={INK} strokeWidth="2.5" strokeLinecap="round" />
@@ -211,6 +216,8 @@ export default function Mascot({ mood = 'happy', satietyTier = 3, size = 200, cl
 
       {/* Mouth */}
       {mouth}
+      <NeckExtra neck={wear?.neck} />
+      <Hat id={wear?.head} />
 
       {/* Blush cheeks — extra pink when sated */}
       <circle cx="56" cy="132" r={mood === 'sated' ? 6.5 : 5} fill={CORAL} opacity={mood === 'sated' ? 0.5 : 0.35} />

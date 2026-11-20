@@ -1,10 +1,37 @@
 import React from 'react'
 import type { Prize } from './gift'
+import { FurnThumb, ItemThumb } from './CollectionThumbs'
+import { ITEMS } from './collection'
 
 /** Картинка приза в стиле мини-аппа: эмаль, чёрный контур. */
-export default function PrizeIcon({ prize, size = 56, days = 1 }: { prize: Prize; size?: number; days?: number }) {
+export default function PrizeIcon({ prize, size = 56, days = 1, ka }: { prize: Prize; size?: number; days?: number; ka?: string }) {
   const ink = '#15100A'
-  switch (prize) {
+  const [kind, id] = prize.includes(':') ? prize.split(':') : [prize, '']
+  if (kind === 'item') {
+    const item = ITEMS.find(i => i.id === id)
+    return item ? <div style={{ width: size }}><ItemThumb item={item} owned className="h-14 w-full" /></div> : null
+  }
+  if (kind === 'furn') return <div style={{ width: size }}><FurnThumb id={id} className="h-14 w-full" /></div>
+  if (kind === 'word' || kind === 'card') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">
+        {kind === 'card'
+          ? <><rect x="4" y="12" width="52" height="38" rx="5" fill="#FDFAEF" stroke={ink} strokeWidth="3" /><path d="M4 18 L30 36 L56 18" fill="none" stroke="#E01A3C" strokeWidth="3" strokeLinejoin="round" /></>
+          : <><path d="M10 8 H44 L52 16 V54 H10 Z" fill="#FCD76D" stroke={ink} strokeWidth="3" strokeLinejoin="round" /><path d="M44 8 V16 H52" fill="none" stroke={ink} strokeWidth="3" strokeLinejoin="round" /></>}
+        <text x="30" y={kind === 'card' ? 47 : 42} textAnchor="middle" fontSize="20" fontWeight="800" fill="#1B5FB0" fontFamily="Noto Sans Georgian, sans-serif">{(ka ?? 'ბ').slice(0, 1)}</text>
+      </svg>
+    )
+  }
+  if (kind === 'hint') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">
+        <path d="M30 6 a16 16 0 0 1 10 28 v6 H20 v-6 A16 16 0 0 1 30 6 Z" fill="#FCD76D" stroke={ink} strokeWidth="3" strokeLinejoin="round" />
+        <path d="M21 46 H39 M23 52 H37" stroke={ink} strokeWidth="3.500" strokeLinecap="round" />
+        <path d="M30 18 v10" stroke="#E01A3C" strokeWidth="3.500" strokeLinecap="round" />
+      </svg>
+    )
+  }
+  switch (kind) {
     case 'churchkhela':
       return (
         <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">

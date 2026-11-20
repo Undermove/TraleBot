@@ -120,10 +120,13 @@ test('шаги пройдены: подарок светится, распако
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'claimed')
 })
 
-test('Бомбора — нажал, и можно покормить', async ({ page }) => {
+test('Бомбора — нажал, и открывается его дом; покормить — через опыт наверху', async ({ page }) => {
   await setup(page)
   await page.goto('/?playwright=1')
   await page.getByTestId('today-bombora').click()
+  await expect(page.getByTestId('bombora-home')).toBeVisible()
+  await page.getByTestId('bombora-home-close').click()
+  await page.getByTestId('dashboard-feed-button').click()
   await expect(page.getByText(/Покорми|угости|Угости/).first()).toBeVisible()
 })
 

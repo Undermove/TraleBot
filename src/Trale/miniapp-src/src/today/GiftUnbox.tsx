@@ -9,6 +9,9 @@ import { buzz, reducedMotion } from './sensors'
 import { appEvents } from '../analytics/appEvents'
 import { openDailyGift } from '../api'
 import { shareReferral } from '../referralShare'
+import { loadStash } from './stashStore'
+import { playTreasure, shareCard } from './BomboraHome'
+import type { TreasureCard, TreasureWord } from './collection'
 import { DailyGiftBox, DailyGiftDto, RARITY, days, ladder, prizeText, setGift } from './gift'
 
 // Распаковка подарка дня на весь экран. Приз разыгрывает сервер сразу, как окно открылось; человек тапает
@@ -24,14 +27,16 @@ interface Props {
   /** Ещё один раунд — за второй коробкой. */
   onMore: () => void
   onCheer: () => void
+  /** В дом Бомборы — посмотреть новую вещь или мебель. */
+  onHome?: (tab: 'wear' | 'room') => void
 }
 
 const TAPS = 3
 
-export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props) {
+export default function GiftUnbox({ gift, box, onClose, onMore, onCheer, onHome }: Props) {
   const cube = useRef<Gift3DHandle>(null)
   const wrap = useRef<HTMLDivElement>(null)
-  const [result, setResult] = useState<{ gift: DailyGiftDto; box: DailyGiftBox } | null>(null)
+  const [result, setResult] = useState<{ gift: DailyGiftDto; box: DailyGiftBox; treasure?: TreasureWord | TreasureCard | null } | null>(null)
   const [failed, setFailed] = useState(false)
   const [taps, setTaps] = useState(0)
   const [shown, setShown] = useState(0)
@@ -50,7 +55,7 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
   useEffect(() => {
     buzz.soft()
     pending.current = openDailyGift(box)
-      .then(r => { setResult(r); setGift(r.gift) })
+      .then(r => { setResult(r); setGift(r.gift); loadStash() })
       .catch(() => setFailed(true))
   }, [box])
 
@@ -90,7 +95,8 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
 
   const g = result?.gift ?? gift
   const prize = result?.box.prize ?? null
-  const text = prize ? prizeText(prize, g, result?.box) : null
+  const text = prize ? prizeText(prize, g, result?.box, result?.treasure) : null
+  const kind = prize?.split(':')[0]
   const weekPos = (g.streak - 1) % 7 + 1
   const second = g.boxes.find(b => b.box === 1)
   const canMore = box === 0 && second && !second.opened
@@ -148,12 +154,27 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
                   style={{ borderColor: RARITY[final].color, boxShadow: '3px 3px 0 #15100A' }}
                   data-testid="gift-prize" data-prize={prize}
                 >
-                  <PrizeIcon prize={prize} days={result?.box.days ?? 1} />
+                  <PrizeIcon prize={prize} days={result?.box.days ?? 1} ka={result?.treasure?.ka} />
                   <div className="min-w-0 flex-1">
                     <div className="font-sans text-[17px] font-extrabold leading-tight text-jewelInk">{text.title}</div>
                     <div className="mt-0.5 font-sans text-[12.500px] font-semibold leading-snug text-jewelInk-mid">{text.line}</div>
                   </div>
                 </motion.div>
+                {kind === 'word' && result?.treasure && (
+                  <button type="button" onClick={() => { buzz.light(); playTreasure(result.treasure!.id) }} className="jewel-btn bg-cream-tile text-jewelInk w-full" data-testid="gift-listen">
+                    <span className="relative z-[1]">Послушать</span>
+                  </button>
+                )}
+                {kind === 'card' && result?.treasure && (
+                  <button type="button" onClick={() => { appEvents.tap('today-gift-card-share'); buzz.light(); shareCard(result.treasure as TreasureCard, g.invite.link) }} className="jewel-btn bg-ruby text-cream w-full" data-testid="gift-card-share">
+                    <span className="relative z-[1]">Отправить другу</span>
+                  </button>
+                )}
+                {(kind === 'item' || kind === 'furn') && onHome && (
+                  <button type="button" onClick={() => { buzz.light(); onHome(kind === 'item' ? 'wear' : 'room') }} className="jewel-btn bg-cream-tile text-jewelInk w-full" data-testid="gift-see-home">
+                    <span className="relative z-[1]">{kind === 'item' ? 'Посмотреть на Бомборе' : 'Посмотреть в комнате'}</span>
+                  </button>
+                )}
                 {prize === 'friend' && (
                   <button type="button" onClick={share} className="jewel-btn bg-ruby text-cream w-full" data-testid="gift-friend-share">
                     <span className="relative z-[1]">Позвать друга</span>

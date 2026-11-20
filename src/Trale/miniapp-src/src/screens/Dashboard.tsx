@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { cachedStash, loadStash, onStash } from '../today/stashStore'
 import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProBadge from '../components/ProBadge'
@@ -96,6 +97,9 @@ function isSectionUnlocked(
  * product signature is a tiny kilim strip at the top.
  */
 export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, shouldShowReferralExtensionCta = false, onboardingHint = null, onHintSeen, onHintDismiss, onPurchaseSuccess, onProgressUpdate, navigate, view = 'today' }: Props) {
+  // Что надето на Бомборе из подарков дня.
+  const [stash, setStashLocal] = useState(cachedStash)
+  useEffect(() => { loadStash(); return onStash(setStashLocal) }, [])
   const isBeginner = userLevel === 'beginner'
   const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
@@ -289,11 +293,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 playedToday={todayLessons > 0 || progress.lastPlayedDate === localToday()}
                 firstTime={Object.values(progress.completedLessons).every(l => l.length === 0)}
                 hasXp={progress.xp > 0}
-                onFeed={() => setTreatShopOpen(true)}
+                onFeed={() => navigate({ kind: 'bombora-home' })}
                 greeting={isHungry ? 'Я проголодался — покорми' : recentlyFed ? 'Вкусно! Спасибо' : greeting.line1}
                 mascot={(mood) => (
                   <div className="relative" title={statusLine}>
-                    <Mascot mood={mood ?? mascotMood} satietyTier={satietyTier} size={104} />
+                    <Mascot mood={mood ?? mascotMood} satietyTier={satietyTier} size={104} wear={stash.wear} />
                     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1" aria-hidden="true">
                       {[0, 1, 2].map((i) => (
                         <div key={i} className={`w-2.5 h-2.5 rounded-full border-2 ${i < bowlFill ? 'bg-gold border-gold' : 'bg-cream-deep border-jewelInk/30'}`} />

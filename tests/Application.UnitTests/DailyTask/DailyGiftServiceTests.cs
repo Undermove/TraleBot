@@ -33,7 +33,14 @@ public class DailyGiftServiceTests : CommandTestsBase
         return user;
     }
 
-    private DailyGiftService Sut => new(Context);
+    private static readonly FakeTreasures Treasures = new();
+    private DailyGiftService Sut => new(Context, Treasures);
+
+    private sealed class FakeTreasures : ITreasureCatalog
+    {
+        public IReadOnlyList<TreasureWord> Words { get; } = [new("supra", "სუფრა", "супра", "застолье", "История.")];
+        public IReadOnlyList<TreasureCard> Cards { get; } = [new("hi", "გამარჯობა", "гамарджоба", "привет", "просто так")];
+    }
 
     [Test]
     public void Odds_always_add_up_to_one_and_grow_rarer_with_the_streak()
@@ -70,7 +77,8 @@ public class DailyGiftServiceTests : CommandTestsBase
     {
         var user = await Learner();
 
-        var first = await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => 0.7); // редкий: заморозка
+        var rolls = new Queue<double>([0.7, 0.0]); // сундучок, первый из его призов — заморозка
+        var first = await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => rolls.Dequeue());
         var again = await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => 0.0);
 
         first!.Value.Box.Prize.ShouldBe("freeze");
@@ -101,7 +109,7 @@ public class DailyGiftServiceTests : CommandTestsBase
 
         Context.MiniAppUserProgresses.Single(p => p.UserId == user.Id).XpBoostDay.ShouldBe(DateOnly.FromDateTime(Now).AddDays(1));
         var other = await Learner();
-        var rolls2 = new Queue<double>([0.9, 0.8]);
+        var rolls2 = new Queue<double>([0.9, 0.5]);
         (await Sut.OpenAsync(other.Id, 0, Now, CancellationToken.None, () => rolls2.Dequeue()))!.Value.Box.Prize.ShouldBe("friend");
     }
 
@@ -126,7 +134,7 @@ public class DailyGiftServiceTests : CommandTestsBase
         var recent = await Learner(giftDaysAt: Now.AddDays(-10));
         var top = await Sut.OpenAsync(recent.Id, 0, Now, CancellationToken.None, () => 0.999);
         top!.Value.Box.Rarity.ShouldBe(3);
-        top.Value.Box.Prize.ShouldBe("friend");
+        top.Value.Box.Prize.ShouldBe("item:scarf-kilim"); // вместо дней — золотая вещь для Бомборы
 
         var long_ago = await Learner(giftDaysAt: Now.AddDays(-31));
         var days = await Sut.OpenAsync(long_ago.Id, 0, Now, CancellationToken.None, () => 0.999);
@@ -136,13 +144,13 @@ public class DailyGiftServiceTests : CommandTestsBase
     }
 
     [Test]
-    public async Task Lifetime_has_nothing_to_add_to_the_top_box_is_an_invite()
+    public async Task Lifetime_has_nothing_to_add_to_the_top_box_is_a_golden_thing()
     {
         var user = await Learner(firstBox: true);
         user.IsPro = true;
         user.SubscriptionPlan = SubscriptionPlan.Lifetime;
 
-        (await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => 0.999))!.Value.Box.Prize.ShouldBe("friend");
+        (await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => 0.999))!.Value.Box.Prize.ShouldStartWith("item:");
     }
 
     [Test]
@@ -165,5 +173,60 @@ public class DailyGiftServiceTests : CommandTestsBase
         DailyGiftService.StreakOfToday(progress, DateOnly.FromDateTime(Now)).ShouldBe(1);
         progress.StreakFreezes = 1;
         DailyGiftService.StreakOfToday(progress, DateOnly.FromDateTime(Now)).ShouldBe(7);
+    }
+
+    private static readonly User Plain = new() { InitialLanguageSet = true, RegisteredAtUtc = Now.AddDays(-90) };
+    private static MiniAppUserProgress Had() => new() { GiftDaysAtUtc = Now.AddDays(-5), CompletedLessonsJson = "{}" };
+
+    [Test]
+    public void Collections_give_only_what_is_missing_and_fall_back_when_complete()
+    {
+        string[] words = ["a", "b"];
+        var stash = new GiftStash { Words = ["a"] };
+        var rolls = new Queue<double>([0.7, 0.5, 0.0]); // сундучок → слово → из оставшихся
+        DailyGiftService.Draw(Had(), Plain, stash, 3, Now, () => rolls.Dequeue(), words).Prize.ShouldBe("word:b");
+
+        stash.Words.Add("b");
+        rolls = new Queue<double>([0.7, 0.5]);
+        DailyGiftService.Draw(Had(), Plain, stash, 3, Now, () => rolls.Dequeue(), words).Prize.ShouldBe("freeze");
+
+        var golden = new GiftStash { Items = GiftCatalog.Items.Where(i => i.Golden).Select(i => i.Id).ToList() };
+        DailyGiftService.Draw(Had(), Plain, golden, 3, Now, () => 0.999).Prize.ShouldBe("friend");
+    }
+
+    [Test]
+    public async Task A_new_thing_goes_on_bombora_if_the_slot_is_free_and_only_owned_things_can_be_worn()
+    {
+        var user = await Learner();
+        var rolls = new Queue<double>([0.9, 0.9, 0.0]); // эмалевый → вещь → первая из обычных
+        var opened = await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => rolls.Dequeue());
+
+        opened!.Value.Box.Prize.ShouldBe("item:beret");
+        var stash = await Sut.StashAsync(user.Id, CancellationToken.None);
+        stash.Wear["head"].ShouldBe("beret");
+        (await Sut.WearAsync(user.Id, "head", "crown", Now, CancellationToken.None)).ShouldBeNull();
+        (await Sut.WearAsync(user.Id, "head", null, Now, CancellationToken.None))!.Wear.ContainsKey("head").ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task A_hint_is_spent_once()
+    {
+        var user = await Learner();
+        var rolls = new Queue<double>([0.0, 0.5]); // коробка → подсказка
+        (await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => rolls.Dequeue()))!.Value.Box.Prize.ShouldBe("hint");
+
+        (await Sut.UseHintAsync(user.Id, Now, CancellationToken.None)).ShouldBe((true, 0));
+        (await Sut.UseHintAsync(user.Id, Now, CancellationToken.None)).Ok.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task A_treasure_word_lands_in_the_dictionary()
+    {
+        var user = await Learner();
+        var rolls = new Queue<double>([0.7, 0.5, 0.0]); // сундучок → слово
+
+        (await Sut.OpenAsync(user.Id, 0, Now, CancellationToken.None, () => rolls.Dequeue()))!.Value.Box.Prize.ShouldBe("word:supra");
+
+        Context.VocabularyEntries.Single(e => e.UserId == user.Id).Word.ShouldBe("სუფრა");
     }
 }

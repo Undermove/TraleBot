@@ -49,6 +49,7 @@ builder.Services.AddSingleton(sp =>
 });
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IAlphabetLessonWords, Trale.MiniApp.AlphabetLessonWords>();
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IIntroLessonWords, Trale.MiniApp.IntroLessonWords>();
+builder.Services.AddSingleton<Application.DailyTask.ITreasureCatalog, Trale.MiniApp.TreasureCatalog>();
 builder.Services.AddHostedService<CreateWebhook>();
 builder.Services.AddHostedService<SeedVerbCatalog>();
 builder.Services.AddHostedService<LoadVerbStories>();

@@ -1934,6 +1934,7 @@ public class MiniAppController : Controller
     public async Task<IActionResult> OpenDailyGift(
         [FromBody] DailyGiftOpenRequest request,
         [FromServices] DailyGiftService gifts,
+        [FromServices] ITreasureCatalog treasures,
         [FromServices] DailyTaskAudience audience,
         CancellationToken ct)
     {
@@ -1943,7 +1944,61 @@ public class MiniAppController : Controller
 
         var opened = await gifts.OpenAsync(user.Id, Math.Clamp(request?.Box ?? 0, 0, 1), DateTime.UtcNow, ct);
         if (opened is not { } o) return Conflict(new { error = "not_ready" });
-        return Ok(new { gift = GiftResponse(user, o.Gift), box = o.Box });
+        var (kind, id) = o.Box.Prize?.Split(':') is [var k, var v] ? (k, v) : ("", "");
+        object? treasure = kind switch
+        {
+            "word" => treasures.Words.FirstOrDefault(w => w.Id == id),
+            "card" => treasures.Cards.FirstOrDefault(c => c.Id == id),
+            _ => null
+        };
+        return Ok(new { gift = GiftResponse(user, o.Gift), box = o.Box, treasure });
+    }
+
+    /// <summary>A hint from the gift of the day spent in an exercise. 409 — none left.</summary>
+    [HttpPost("daily-gift/hint")]
+    public async Task<IActionResult> UseGiftHint(
+        [FromServices] DailyGiftService gifts, [FromServices] DailyTaskAudience audience, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        var (ok, left) = await gifts.UseHintAsync(user.Id, DateTime.UtcNow, ct);
+        return ok ? Ok(new { hints = left }) : Conflict(new { error = "no_hints", hints = 0 });
+    }
+
+    public class WearRequest
+    {
+        public string Slot { get; set; } = "";
+        public string? Item { get; set; }
+    }
+
+    /// <summary>Bombora puts on a thing from the gift of the day (or takes the slot off).</summary>
+    [HttpPost("bombora/wear")]
+    public async Task<IActionResult> BomboraWear(
+        [FromBody] WearRequest request, [FromServices] DailyGiftService gifts, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null) return Unauthorized(new { error = "not_authenticated" });
+        var stash = await gifts.WearAsync(user.Id, request?.Slot ?? "", request?.Item, DateTime.UtcNow, ct);
+        return stash == null ? BadRequest(new { error = "not_owned" }) : Ok(new { stash });
+    }
+
+    /// <summary>What Bombora has: things, furniture, words, postcards, hints.</summary>
+    [HttpGet("bombora/stash")]
+    public async Task<IActionResult> BomboraStash([FromServices] DailyGiftService gifts, [FromServices] ITreasureCatalog treasures, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null) return Unauthorized(new { error = "not_authenticated" });
+        var stash = await gifts.StashAsync(user.Id, ct);
+        return Ok(new
+        {
+            stash,
+            words = treasures.Words.Where(w => stash.Words.Contains(w.Id)),
+            cards = treasures.Cards.Where(c => stash.Cards.Contains(c.Id)),
+            wordsTotal = treasures.Words.Count,
+            cardsTotal = treasures.Cards.Count
+        });
     }
 
     /// <summary>Local stand only: today's boxes are closed again.</summary>
