@@ -171,7 +171,7 @@ export default function TodayCard({ lesson, navigate, streak = 0, playedToday = 
   const gift: GiftState = !g ? localGift : openBox != null ? 'ready' : box0?.opened ? 'claimed' : 'locked'
   const moreBox = Boolean(g && box0?.opened && box1 && !box1.ready && !box1.opened)
   const doneCount = steps.filter(s => s.done).length
-  const say = g && gift === 'locked' && !firstTime && g.guaranteedIn === 0 ? 'Сегодня недельный подарок — минимум эпический!'
+  const say = g && gift === 'locked' && !firstTime && g.guaranteedIn === 0 ? 'Сегодня недельный — внутри точно сундук!'
     : moreBox ? 'Ещё раунд — и вторая коробка твоя'
     : gift === 'claimed' ? doneLine()
     : gift === 'ready' ? 'Готово! Открывай подарок'

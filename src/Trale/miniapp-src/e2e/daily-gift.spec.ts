@@ -84,15 +84,14 @@ function GIFT({ ready = false, opened = false, ready1 = false, streak = 3, guara
 const DONE = { ...TODAY, done: true, offerTaken: true, result: { errors: 0, xpEarned: 20, streak: 3 }, offer: null }
 const haptics = (page: Page) => page.evaluate(() => (window as any).__haptics as string[])
 
-test('до занятия: коробка закрыта на 2 минуты, таймер сгорания, что может выпасть, шансы; кнопка ведёт в занятие', async ({ page }) => {
+test('до занятия: коробка закрыта на 2 минуты, таймер сгорания, что может выпасть; без процентов; кнопка ведёт в занятие', async ({ page }) => {
   await setup(page)
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'locked')
   await expect(page.getByTestId('gift-hint')).toHaveText('2 минуты занятия')
   await expect(page.getByTestId('gift-timer')).toHaveText(/^сгорит через \d\d:\d\d:\d\d$/)
   await expect(page.getByTestId('gift-ticker')).toBeVisible()
-  await expect(page.getByTestId('gift-odds')).toContainText('29%')
-  await expect(page.getByTestId('gift-odds')).toContainText('3%')
+  await expect(page.getByTestId('gift-odds')).toHaveCount(0)
   await expect(page.getByTestId('dashboard-gift-sub')).toHaveText('сначала 2 минуты занятия')
   const sizes = await page.evaluate(() => ({ h: document.documentElement.scrollHeight, vh: window.innerHeight }))
   expect(sizes.h).toBeLessThanOrEqual(sizes.vh)
@@ -100,29 +99,34 @@ test('до занятия: коробка закрыта на 2 минуты, т
   await expect(page.getByTestId('daily-chat').first()).toBeVisible()
 })
 
-test('недельный день: Бомбора обещает минимум эпический', async ({ page }) => {
+test('недельный день: Бомбора обещает сундук', async ({ page }) => {
   await setup(page, { gift: GIFT({ streak: 7, guaranteedIn: 0 }) })
   await page.goto('/?playwright=1')
-  await expect(page.getByTestId('gift-weekly')).toHaveText('Недельный: минимум эпический')
-  await expect(page.getByTestId('today-say')).toHaveText('Сегодня недельный подарок — минимум эпический!')
+  await expect(page.getByTestId('gift-weekly')).toHaveText('Сегодня недельный сундук')
+  await expect(page.getByTestId('today-say')).toHaveText('Сегодня недельный — внутри точно сундук!')
 })
 
-test('распаковка: три тапа поднимают редкость до выпавшей, приз, потом неделя и вторая коробка за раунд', async ({ page }) => {
+test('распаковка: на тапах подарок превращается в сундук получше (без надписей), приз, потом неделя и вторая коробка за раунд', async ({ page }) => {
   const calls = await setup(page, { task: DONE, gift: GIFT({ ready: true }) })
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'ready')
   await page.getByTestId('dashboard-gift-cta').getByRole('button').click()
   const reveal = page.getByTestId('gift-reveal')
-  await expect(page.getByTestId('gift-rarity')).toHaveText('Обычный')
-  await expect(page.getByTestId('gift-title')).toHaveText('Тапай по коробке!')
+  const level = page.getByTestId('gift-reveal').getByTestId('lootbox')
+  await expect(level).toHaveAttribute('data-level', '0')
+  await expect(page.getByTestId('gift-rarity')).toHaveCount(0)
+  await expect(page.getByTestId('gift-title')).toHaveText('Тапай по подарку!')
   await expect.poll(() => calls.includes('open')).toBe(true)
 
   const box = page.getByTestId('gift-reveal-box')
   await box.click()
-  await expect(page.getByTestId('gift-rarity')).toHaveText('Редкий')
-  await expect(page.getByTestId('gift-title')).toHaveText('Ого, повысился!')
+  await expect(level).toHaveAttribute('data-level', '1')
+  await expect(page.getByTestId('gift-reveal').getByTestId('chest3d')).toHaveAttribute('data-model', 'wood')
+  await expect(page.getByTestId('gift-title')).toHaveText('Ого, сундучок!')
   await box.click()
-  await expect(page.getByTestId('gift-rarity')).toHaveText('Эпический')
+  await expect(level).toHaveAttribute('data-level', '2')
+  await expect(page.getByTestId('gift-reveal').getByTestId('chest3d')).toHaveAttribute('data-model', 'ruby')
+  await expect(page.getByTestId('gift-title')).toHaveText('Ещё лучше!')
   await expect(reveal).toHaveAttribute('data-rarity', '2')
   await box.click()
   await expect(page.getByTestId('gift-prize')).toHaveAttribute('data-prize', 'boost')
@@ -130,7 +134,7 @@ test('распаковка: три тапа поднимают редкость 
   expect(await haptics(page)).toContain('note:success')
 
   await page.getByTestId('gift-reveal-close').click()
-  await expect(page.getByTestId('gift-week-line')).toHaveText('Ещё 4 дня до гарантированного эпического')
+  await expect(page.getByTestId('gift-week-line')).toHaveText('Ещё 4 дня до недельного сундука')
   await expect(page.getByTestId('gift-week').locator('span')).toHaveCount(7)
   await page.getByTestId('gift-more').click()
   await expect.poll(() => calls.includes('extra')).toBe(true)
@@ -147,7 +151,7 @@ test('без подъёма: обычный приз — чурчхела для
   await box.click()
   await box.click()
   await expect(page.getByTestId('gift-prize')).toContainText('Чурчхела для Бомборы')
-  await expect(page.getByTestId('gift-rarity')).toHaveText('Обычный')
+  await expect(page.getByTestId('gift-reveal').getByTestId('lootbox')).toHaveAttribute('data-level', '0')
 })
 
 test('легендарный: подарок другу уходит одноразовой ссылкой через «переслать»', async ({ page }) => {
@@ -166,11 +170,11 @@ test('легендарный: подарок другу уходит однор�
   expect(decodeURIComponent(links[0])).toContain('start=gift_abc234defg')
 })
 
-test('первая коробка открыта: на главной она раскрыта в цвет редкости, кнопка — «ещё раунд → вторая коробка»', async ({ page }) => {
+test('первая коробка открыта: на главной стоит открытым то, что выпало (сундучок), кнопка — «ещё раунд → вторая коробка»', async ({ page }) => {
   await setup(page, { task: DONE, gift: GIFT({ ready: true, opened: true }) })
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'claimed')
-  await expect(page.getByTestId('gift3d').first()).toHaveClass(/g3-r1/)
+  await expect(page.getByTestId('gift-button').getByTestId('chest3d')).toHaveAttribute('data-model', 'wood')
   await expect(page.getByTestId('today-say')).toHaveText('Ещё раунд — и вторая коробка твоя')
   await expect(page.getByTestId('dashboard-gift-more')).toBeVisible()
 })

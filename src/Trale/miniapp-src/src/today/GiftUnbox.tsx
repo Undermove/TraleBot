@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import Gift3D, { Gift3DHandle, sparkFountain } from './Gift3D'
+import { Gift3DHandle, sparkFountain } from './Gift3D'
+import LootBox from './LootBox'
 import PrizeIcon from './PrizeIcon'
 import { buzz, reducedMotion } from './sensors'
 import { appEvents } from '../analytics/appEvents'
@@ -9,8 +10,8 @@ import { shareReferral } from '../referralShare'
 import { DailyGiftBox, DailyGiftDto, RARITY, days, ladder, prizeText, setGift } from './gift'
 
 // Распаковка подарка дня на весь экран. Приз разыгрывает сервер сразу, как окно открылось; человек тапает
-// три раза — и на каждом тапе редкость может «подняться» (коробка перекрашивается, Бомбора кричит «повысился!»)
-// до той, что выпала. Потом — приз и что будет завтра: неделя до гарантированного эпического и вторая коробка
+// три раза — и на каждом тапе подарок может превратиться в сундук получше (сундучок → эмалевый → золотой)
+// до того, что выпал. Никаких надписей про редкость — всё видно по самой коробке. Потом — приз и что будет завтра: неделя до гарантированного эпического и вторая коробка
 // за ещё один раунд.
 
 interface Props {
@@ -55,10 +56,12 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
       const r = result ? ladder(final)[n] : 0
       setUp(r > shown)
       if (r > shown) {
+        // Превратился: новая модель выпрыгивает сама — без подскока.
         setShown(r)
         buzz.success()
-        sparkFountain(wrap.current, 14)
+        sparkFountain(wrap.current, 16)
         onCheer()
+        return
       }
       cube.current?.knock(n)
       return
@@ -72,15 +75,13 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
     setPhase('prize')
   }
 
-  const r = RARITY[shown]
   const title = phase !== 'tap'
     ? (final >= 2 ? 'Вот это да!' : 'Твоё!')
-    : taps === 0 ? 'Тапай по коробке!' : up ? 'Ого, повысился!' : taps === 1 ? 'Ещё!' : 'Ещё разок!'
+    : taps === 0 ? 'Тапай по подарку!' : up ? (shown === 1 ? 'Ого, сундучок!' : 'Ещё лучше!') : taps === 1 ? 'Ещё!' : 'Ещё разок!'
 
   const g = result?.gift ?? gift
   const prize = result?.box.prize ?? null
   const text = prize ? prizeText(prize, g) : null
-  const nextDay = g.streak + 1
   const weekPos = (g.streak - 1) % 7 + 1
   const second = g.boxes.find(b => b.box === 1)
   const canMore = box === 0 && second && !second.opened
@@ -102,11 +103,8 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
     >
       {phase !== 'after' ? (
         <>
-          <div className="rounded-full border-[1.5px] border-jewelInk px-3 py-1 font-sans text-[12px] font-extrabold uppercase tracking-wider transition-colors"
-            style={{ background: r.color, color: r.ink }} data-testid="gift-rarity">
-            {r.name}
-          </div>
-          <div className="mt-2 h-[30px] font-sans text-[22px] font-extrabold text-jewelInk text-center" data-testid="gift-title">{failed ? 'Не получилось открыть' : title}</div>
+          <div className="mn-eyebrow text-ruby">Подарок дня</div>
+          <div className="mt-1 h-[30px] font-sans text-[22px] font-extrabold text-jewelInk text-center" data-testid="gift-title">{failed ? 'Не получилось открыть' : title}</div>
           <div className="mt-2 flex h-3 gap-2" aria-hidden="true" data-testid="gift-taps">
             {phase === 'tap' && Array.from({ length: TAPS }).map((_, i) => (
               <span key={i} className={`h-3 w-3 rounded-full border-[1.5px] border-jewelInk transition-colors ${i < taps ? 'bg-gold' : 'bg-cream-deep'}`} />
@@ -117,14 +115,14 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
             ref={wrap as any}
             type="button"
             onClick={tap}
-            className="relative mt-2"
+            className={`relative ${phase === 'prize' && shown > 0 ? 'mt-12' : 'mt-2'}`}
             aria-label="Тапнуть по подарку"
             initial={reducedMotion() ? false : { y: 300, scale: 0.4, rotate: -30 }}
             animate={{ y: 0, scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200, damping: 14 }}
             data-testid="gift-reveal-box"
           >
-            <Gift3D ref={cube} size={phase === 'prize' ? 110 : 140} idle={phase === 'tap'} rarity={shown} opened={phase === 'prize'} ajar={phase === 'prize'} />
+            <LootBox ref={cube} level={shown} pop size={phase === 'prize' ? 110 : 140} idle={phase === 'tap'} charge={Math.min(taps, 2)} opened={phase === 'prize'} ajar={phase === 'prize'} />
           </motion.button>
 
           <div className="mt-4 w-full max-w-[340px] flex flex-col items-center gap-3">
@@ -157,7 +155,7 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
               </button>
             ) : (
               <div className="h-[56px] flex items-center justify-center font-sans text-[13px] font-bold text-jewelInk-mid" data-testid="gift-reveal-hint">
-                Каждый тап может поднять редкость
+                Тапай — вдруг внутри что-то получше
               </div>
             )}
           </div>
@@ -168,10 +166,10 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
             <div className="relative z-[1]">
               <div className="mn-eyebrow text-ruby">Завтра</div>
               <div className="mt-1 font-sans text-[17px] font-extrabold leading-tight text-jewelInk" data-testid="gift-week-line">
-                {g.guaranteedIn === 1 ? 'Завтра — гарантированный эпический!' : g.guaranteedIn === 0 ? 'Сегодня был недельный!' : `Ещё ${days(g.guaranteedIn)} до гарантированного эпического`}
+                {g.guaranteedIn === 1 ? 'Завтра — недельный сундук!' : g.guaranteedIn === 0 ? 'Сегодня был недельный сундук!' : `Ещё ${days(g.guaranteedIn)} до недельного сундука`}
               </div>
               <div className="mt-1 font-sans text-[12.500px] font-semibold leading-snug text-jewelInk-mid">
-                Завтра серия — {days(nextDay)}, шансы на редкое выше. Пропустишь — шансы сбросятся{g.freezes > 0 ? `, если не спасёт заморозка (у тебя ${g.freezes})` : ''}.
+                Каждый 7-й день подряд — сундук. И чем длиннее серия, тем чаще сундуки в обычные дни. Пропустишь день — начнёшь сначала{g.freezes > 0 ? `, если не спасёт заморозка (у тебя ${g.freezes})` : ''}.
               </div>
               <div className="mt-3 flex justify-between gap-1" data-testid="gift-week">
                 {[1, 2, 3, 4, 5, 6, 7].map(i => (

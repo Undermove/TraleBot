@@ -46,7 +46,7 @@ export const days = (n: number) => `${n} ${plural(n, 'день', 'дня', 'дн
 
 /** Что может выпасть — для бегущей строки на главной. */
 export const TICKER = (friendDays: number) => [
-  `Подарок другу · ${days(friendDays)} доступа`, 'Заморозка серии', '×2 опыта на завтра', 'Чурчхела для Бомборы'
+  'Подарок другу', 'Заморозка серии', '×2 опыта на завтра', 'Чурчхела для Бомборы'
 ]
 
 export function prizeText(prize: Prize, gift: DailyGiftDto): { title: string; line: string } {
