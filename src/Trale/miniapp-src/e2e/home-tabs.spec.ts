@@ -155,3 +155,50 @@ test('пока набирают текст в словаре, панель вк�
   await page.getByRole('textbox').first().focus()
   await expect(page.getByTestId('home-tabs')).toHaveCount(0)
 })
+
+test('профиль — кружок справа вверху, кнопка «Сегодня» видна без прокрутки', async ({ page }) => {
+  await setup(page)
+  await page.goto('/?playwright=1')
+
+  const profile = page.getByTestId('dashboard-profile')
+  await expect(profile).toBeVisible()
+  const box = (await profile.boundingBox())!
+  expect(box.x).toBeGreaterThan(375 / 2)
+  expect(box.y).toBeLessThan(120)
+  await expect(page.getByText('мой профиль')).toHaveCount(0)
+
+  // Главная кнопка целиком над нижней панелью, листать не нужно.
+  const button = page.getByTestId('dashboard-suggestion').getByRole('button')
+  const b = (await button.boundingBox())!
+  const bar = (await page.getByTestId('home-tabs').boundingBox())!
+  expect(b.y + b.height).toBeLessThanOrEqual(bar.y)
+  await shot(page, 'today-top-profile')
+
+  await profile.click()
+  await expect(page.getByTestId('home-tabs')).toHaveCount(0)
+})
+
+test('ещё не занимался сегодня — над кнопкой сказано, что серия прервётся', async ({ page }) => {
+  await setup(page)
+  await page.goto('/?playwright=1')
+  await expect(page.getByTestId('dashboard-nudge')).toHaveText('Серия — 3 дня подряд. Позанимайся сегодня, чтобы она не прервалась')
+})
+
+test('сегодня уже занимался — кнопка не торопит', async ({ page }) => {
+  await setup(page, { ...me, progress: { ...me.progress, lastPlayedAtUtc: new Date().toISOString() } })
+  await page.goto('/?playwright=1')
+  await expect(page.getByTestId('dashboard-suggestion')).toBeVisible()
+  await expect(page.getByTestId('dashboard-nudge')).toHaveCount(0)
+})
+
+test('новичок после знакомства: «Начать первый урок» и вкладки на месте', async ({ page }) => {
+  await setup(page, { ...me, progress: { ...me.progress, xp: 0, streak: 0, completedLessons: {} } })
+  await page.goto('/?playwright=1')
+  // Совсем новый попадает на знакомство с Бомборой, как и раньше.
+  await page.getByText('пропустить знакомство').click()
+  await page.getByText('посмотреть все уроки').click()
+  await expect(page.getByTestId('home-tabs')).toBeVisible()
+  await expect(page.getByTestId('dashboard-suggestion').getByRole('button')).toHaveText('Начать первый урок')
+  await expect(page.getByTestId('dashboard-nudge')).toHaveText('Первый урок — пара минут. Бомбора покажет, что делать')
+  await shot(page, 'today-newcomer')
+})

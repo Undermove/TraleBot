@@ -552,3 +552,11 @@ input:focus-visible {
 /* Горизонтальная лента чипов: прокручивается пальцем, полосы прокрутки не видно. */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Главная кнопка «Сегодня», пока за день ничего не сделано: мягко «дышит», чтобы глаз нашёл её первой. */
+@keyframes today-nudge {
+  0%, 100% { transform: translate(0, 0); box-shadow: 3px 3px 0 #15100A; }
+  50% { transform: translate(-1px, -2px); box-shadow: 4px 5px 0 #15100A; }
+}
+.today-nudge .jewel-btn { animation: today-nudge 2.4s ease-in-out infinite; font-size: 17px; min-height: 60px; }
+@media (prefers-reduced-motion: reduce) { .today-nudge .jewel-btn { animation: none; } }

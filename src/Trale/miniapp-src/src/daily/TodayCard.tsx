@@ -3,7 +3,7 @@ import { appEvents } from '../analytics/appEvents'
 import { devDailyPush, devNextDay, reportDailyOffer } from '../api'
 import Button from '../components/Button'
 import type { Screen } from '../types'
-import { formsAndWords, streakLine } from './logic'
+import { days, formsAndWords, streakLine } from './logic'
 import { cachedDaily, loadDaily, onDaily, setDaily } from './store'
 import type { DailyNew, DailyTaskDto } from './types'
 
@@ -38,7 +38,26 @@ const Check = () => (
  * (то, что задание предложит в конце, или следующий урок курса). Большая кнопка ведёт к первому несделанному
  * шагу. Без задания дня (нет доступа или материала) остаётся один шаг — следующий урок.
  */
-export default function TodayCard({ lesson, navigate }: { lesson: CourseLesson | null; navigate: (s: Screen) => void }) {
+interface Props {
+  lesson: CourseLesson | null
+  navigate: (s: Screen) => void
+  /** Серия дней подряд — чтобы сказать, что сегодня её можно не прервать. */
+  streak?: number
+  /** Сегодня уже занимался — тогда кнопка не торопит. */
+  playedToday?: boolean
+  /** Ни одного пройденного урока: первый заход, кнопка — «первый урок». */
+  firstTime?: boolean
+}
+
+/** Строчка над кнопкой: зачем жать именно сейчас. Мягко, но прямо; после занятия — ничего. */
+export function nudgeLine(streak: number, playedToday: boolean, firstTime: boolean): string | null {
+  if (playedToday) return null
+  if (firstTime) return 'Первый урок — пара минут. Бомбора покажет, что делать'
+  if (streak >= 1) return `Серия — ${days(streak)} подряд. Позанимайся сегодня, чтобы она не прервалась`
+  return 'Пара минут сегодня — и начнётся серия'
+}
+
+export default function TodayCard({ lesson, navigate, streak = 0, playedToday = false, firstTime = false }: Props) {
   const [task, setTask] = useState<DailyTaskDto | null>(cachedDaily)
   const [devNote, setDevNote] = useState<string | null>(null)
 
@@ -79,12 +98,13 @@ export default function TodayCard({ lesson, navigate }: { lesson: CourseLesson |
   } else if (lesson) {
     steps.push({
       id: 'new', label: task ? 'Новое' : 'Следующий урок', title: lesson.title, line: lesson.subtitle,
-      done: false, button: 'Пройти урок', go: () => navigate(lesson.screen)
+      done: false, button: firstTime ? 'Начать первый урок' : 'Пройти урок', go: () => navigate(lesson.screen)
     })
   }
 
   if (steps.length === 0) return null
   const next = steps.find(s => !s.done) ?? null
+  const nudge = next && !steps.some(s => s.done) ? nudgeLine(streak, playedToday, firstTime) : null
 
   async function dev(action: () => Promise<{ task?: DailyTaskDto; ok?: boolean }>, note: string) {
     setDevNote('…')
@@ -149,7 +169,10 @@ export default function TodayCard({ lesson, navigate }: { lesson: CourseLesson |
           </div>
           <div className="mt-3">
             {next ? (
-              <div data-testid="dashboard-suggestion">
+              <div data-testid="dashboard-suggestion" className={nudge ? 'today-nudge' : ''}>
+                {nudge && (
+                  <div className="mb-2 px-1 text-center font-sans text-[13px] font-bold leading-snug text-ruby" data-testid="dashboard-nudge">{nudge}</div>
+                )}
                 <Button onClick={() => { appEvents.tap('today-button'); next.go() }}>{next.button}</Button>
               </div>
             ) : (

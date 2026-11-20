@@ -321,7 +321,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
               </div>
 
               {/* «Сегодня» — единственный призыв главной: повторение и новое, одна кнопка к следующему шагу. */}
-              <TodayCard lesson={suggestion} navigate={navigate} />
+              <TodayCard lesson={suggestion} navigate={navigate} streak={progress.streak} playedToday={todayLessons > 0 || progress.lastPlayedDate === localToday()} firstTime={Object.values(progress.completedLessons).every(l => l.length === 0)} />
             </>
           )
         })()}
@@ -624,37 +624,6 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         )
       })()}
 
-      {/* ══ Profile button — smaller tile ══ */}
-      {view === 'today' && <div className="px-5 pb-6">
-        <button
-          onClick={() => navigate({ kind: 'profile' })}
-          className="jewel-tile jewel-pressable w-full text-left px-5 py-4 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3 relative z-[1]">
-            <div className="w-10 h-10 rounded-lg bg-cream-deep border-[1.5px] border-jewelInk flex items-center justify-center">
-              <span className="font-geo text-[18px] font-extrabold text-navy leading-none">
-                მ
-              </span>
-            </div>
-            <div>
-              <div className="mn-eyebrow">прогресс и настройки</div>
-              <div className="font-sans text-[16px] font-bold text-jewelInk leading-none mt-0.5">
-                мой профиль
-              </div>
-            </div>
-          </div>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-navy relative z-[1]">
-            <path
-              d="M8 5 L16 12 L8 19"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      </div>}
-
       {/* ══ Bottom kilim strip — symmetry with top ══ */}
       <div className="mt-auto">
         <div className="mn-kilim opacity-70" />
@@ -725,6 +694,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       )}
     </div>
   )
+}
+
+/** Сегодняшняя дата YYYY-MM-DD в том же виде, что lastPlayedDate (из lastPlayedAtUtc). */
+function localToday(): string {
+  return new Date().toISOString().slice(0, 10)
 }
 
 type SatietyLevel = 'hungry' | 'snack' | 'fed' | 'full' | 'sleeping'
