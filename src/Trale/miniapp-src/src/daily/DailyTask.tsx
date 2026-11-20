@@ -140,15 +140,14 @@ export default function DailyTask({ navigate, startExtra = false, startNow = fal
       return <Intro task={play} onExit={home} onStart={() => { run.current = emptyRun(); setStage({ kind: 'step', at: 0 }) }} />
 
     case 'step': {
-      const withHint = (el: React.ReactElement) => <>{el}<HintButton /></>
       const box = gift?.boxes.find(b => b.box === (extra ? 1 : 0))
-      const head = { steps: flow.length, at: stage.at + 1, onExit: home, gift: Boolean(box && !box.opened) }
+      const head = { steps: flow.length, at: stage.at + 1, onExit: home, gift: Boolean(box && !box.opened), hint: <HintButton /> }
       const step = flow[stage.at]
       if (step === 'warm') {
-        return withHint(<Warm {...head} rounds={play.warm} onDone={wrong => { run.current = { ...run.current, warmWrong: wrong }; next(stage.at) }} />)
+        return <Warm {...head} rounds={play.warm} onDone={wrong => { run.current = { ...run.current, warmWrong: wrong }; next(stage.at) }} />
       }
       if (step === 'game') {
-        return withHint(
+        return (
           <PairsGame
             {...head} key={extra ? `extra-${task.extras ?? 0}` : 'task'} pairs={play.pairs} seconds={play.seconds}
             onDone={r => {
@@ -159,9 +158,9 @@ export default function DailyTask({ navigate, startExtra = false, startNow = fal
         )
       }
       if (step === 'back') {
-        return withHint(<Back {...head} rounds={play.back ?? []} onDone={wrong => { run.current = { ...run.current, backWrong: wrong }; next(stage.at) }} />)
+        return <Back {...head} rounds={play.back ?? []} onDone={wrong => { run.current = { ...run.current, backWrong: wrong }; next(stage.at) }} />
       }
-      return withHint(<Check {...head} check={play.check} onDone={errors => { run.current = { ...run.current, checkErrors: errors }; next(stage.at) }} />)
+      return <Check {...head} check={play.check} onDone={errors => { run.current = { ...run.current, checkErrors: errors }; next(stage.at) }} />
     }
 
     case 'saving':

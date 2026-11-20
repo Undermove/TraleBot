@@ -9,7 +9,7 @@ import type { DailyBackRound, DailyItem, DailyTaskDto, DailyWarmRound } from './
 
 // Шаги занятия: вступление, разминка, игра «Собери пары», обратный путь и проверка. Каждый шаг — один экран без прокрутки.
 
-interface StepProps { steps: number; at: number; onExit: () => void; gift?: boolean }
+interface StepProps { steps: number; at: number; onExit: () => void; gift?: boolean; /** Кнопка подсказки — справа в строке заголовка. */ hint?: React.ReactNode }
 
 // ── Вступление ───────────────────────────────────────────────────────────────
 
@@ -79,7 +79,7 @@ export function Warm({ rounds, onDone, ...head }: StepProps & { rounds: DailyWar
   return (
     <Page testId="daily-warm">
       <DailyHeader {...head} />
-      <StepTitle eyebrow="Разминка">Выбери перевод</StepTitle>
+      <StepTitle eyebrow="Разминка" right={head.hint}>Выбери перевод</StepTitle>
       <div className="flex-1 px-5 flex flex-col justify-center gap-4 py-3">
         <div key={i} className="jewel-tile j-pop px-4 py-6 text-center" data-testid="daily-warm-word" data-key={round.item.key}>
           <Geo ka={round.item.ka} className={round.item.ka.length > 12 ? 'text-[26px]' : 'text-[34px]'} cyrClassName="mt-1 text-[14px]" />
@@ -141,7 +141,7 @@ export function Back({ rounds, onDone, ...head }: StepProps & { rounds: DailyBac
   return (
     <Page testId="daily-back">
       <DailyHeader {...head} />
-      <StepTitle eyebrow="С русского на грузинский">Как сказать по-грузински</StepTitle>
+      <StepTitle eyebrow="С русского на грузинский" right={head.hint}>Как сказать по-грузински</StepTitle>
       <div className="flex-1 px-5 flex flex-col justify-center gap-4 py-3">
         <div key={i} className="jewel-tile j-pop px-4 py-6 text-center" data-testid="daily-back-word" data-key={round.item.key}>
           <div className={`font-extrabold leading-tight ${round.item.ru.length > 16 ? 'text-[24px]' : 'text-[30px]'}`}>{round.item.ru}</div>
@@ -269,7 +269,7 @@ export function PairsGame({ pairs, seconds, onDone, ...head }: StepProps & { pai
     <Page testId="daily-game">
       <DailyHeader {...head} />
       <StepTitle
-        right={<div className="shrink-0 text-[22px] font-extrabold tabular-nums" data-testid="daily-score">{game.matchedL.length}<span className="text-[13px] font-bold text-jewelInk-hint"> из {count}</span></div>}
+        right={<>{head.hint}<div className="shrink-0 text-[22px] font-extrabold tabular-nums" data-testid="daily-score">{game.matchedL.length}<span className="text-[13px] font-bold text-jewelInk-hint"> из {count}</span></div></>}
       >
         {game.over ? 'Время вышло' : 'Собери пары'}
       </StepTitle>
@@ -323,7 +323,7 @@ export function Check({ check, onDone, ...head }: StepProps & { check: DailyTask
   return (
     <Page testId="daily-check">
       <DailyHeader {...head} />
-      <StepTitle eyebrow="Проверка">{check.prompt}</StepTitle>
+      <StepTitle eyebrow="Проверка" right={head.hint}>{check.prompt}</StepTitle>
       <div className={`px-5 mt-4 grid ${cols} gap-2.5`}>
         {check.picks.map((p, i) => {
           const tone = ok && p.ok ? 'bg-navy-wash' : wrong.includes(i) ? `bg-ruby-wash opacity-60 ${last === i ? 'anim-shake' : ''}` : ok ? 'bg-cream-tile opacity-50' : 'bg-cream-tile'

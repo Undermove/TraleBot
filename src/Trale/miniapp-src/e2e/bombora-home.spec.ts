@@ -153,4 +153,11 @@ test('подсказка в упражнении: кнопка подсвечи�
   await expect(hint).toContainText('1')
   expect(calls).toContain('hint')
   await shot(page, '6-hint')
+  // Дальше — пары и проверка: кнопка в строке заголовка, рядом со счётом, ничего не закрывает.
+  for (const r of TODAY.warm) await page.locator('[data-testid="daily-warm-option"][data-ok="yes"]').first().click()
+  await expect(page.getByTestId('daily-game')).toBeVisible()
+  const hb = (await page.getByTestId('daily-hint').boundingBox())!
+  const score = (await page.getByTestId('daily-score').boundingBox())!
+  expect(hb.x + hb.width).toBeLessThanOrEqual(score.x)
+  await shot(page, '7-hint-pairs')
 })
