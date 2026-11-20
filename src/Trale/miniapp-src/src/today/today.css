@@ -42,3 +42,11 @@
   30% { transform: translate(-50%, -50%) scale(1.25) rotate(-10deg); opacity: 1; }
   100% { transform: translate(-50%, -260%) scale(.6) rotate(40deg); opacity: 0; }
 }
+
+/* В переходе: замок трясётся без остановки. */
+.td-lock-shake { animation: td-lock-shake .32s ease-in-out infinite; }
+@keyframes td-lock-shake {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0); }
+  25% { transform: translate(-50%, -50%) rotate(-16deg) scale(1.1); }
+  75% { transform: translate(-50%, -50%) rotate(16deg) scale(1.1); }
+}

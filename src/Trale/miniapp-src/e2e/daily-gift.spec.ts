@@ -84,27 +84,31 @@ function GIFT({ ready = false, opened = false, ready1 = false, streak = 3, guara
 const DONE = { ...TODAY, done: true, offerTaken: true, result: { errors: 0, xpEarned: 20, streak: 3 }, offer: null }
 const haptics = (page: Page) => page.evaluate(() => (window as any).__haptics as string[])
 
-test('до занятия: коробка закрыта на 2 минуты, таймер сгорания, что может выпасть; без процентов; кнопка — сразу в упражнение', async ({ page }) => {
+test('до занятия: подарок на замке, Бомбора зовёт в задание; ни таймера, ни «недельного»', async ({ page }) => {
   await setup(page)
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'locked')
-  await expect(page.getByTestId('gift-hint')).toHaveText('2 минуты занятия')
-  await expect(page.getByTestId('gift-timer')).toHaveText(/^сгорит через \d\d:\d\d:\d\d$/)
-  await expect(page.getByTestId('gift-ticker')).toBeVisible()
-  await expect(page.getByTestId('gift-odds')).toHaveCount(0)
-  await expect(page.getByTestId('dashboard-gift-sub')).toHaveText('сначала 2 минуты занятия')
+  await expect(page.getByTestId('gift-lock')).toBeVisible()
+  await expect(page.getByTestId('today-say')).toHaveText('Пройди задание дня — и подарок твой!')
+  await expect(page.getByTestId('gift-timer')).toHaveCount(0)
+  await expect(page.getByTestId('gift-strip')).toHaveCount(0)
   const sizes = await page.evaluate(() => ({ h: document.documentElement.scrollHeight, vh: window.innerHeight }))
   expect(sizes.h).toBeLessThanOrEqual(sizes.vh)
-  await page.getByTestId('dashboard-suggestion').getByRole('button').click()
-  await expect(page.getByTestId('daily-steps')).toBeVisible()
-  await expect(page.getByTestId('daily-intro')).toHaveCount(0)
 })
 
-test('недельный день: Бомбора обещает сундук', async ({ page }) => {
-  await setup(page, { gift: GIFT({ streak: 7, guaranteedIn: 0 }) })
+test('тап по подарку: он вылетает в центр, замок трясётся, волна — и экран задания', async ({ page }) => {
+  await setup(page)
   await page.goto('/?playwright=1')
-  await expect(page.getByTestId('gift-weekly')).toHaveText('Сегодня недельный сундук')
-  await expect(page.getByTestId('today-say')).toHaveText('Сегодня недельный — внутри точно сундук!')
+  await page.getByTestId('gift-button').click()
+  const warp = page.getByTestId('gift-warp')
+  await expect(warp).toBeVisible()
+  await expect(warp).toContainText('Ключ — в задании дня!')
+  await expect(page.getByTestId('daily-steps')).toBeVisible()
+  await expect(page.getByTestId('daily-intro')).toHaveCount(0)
+  await expect(page.getByTestId('gift-iris')).toHaveCount(0, { timeout: 2000 })
+  const h = await haptics(page)
+  expect(h).toContain('impact:rigid')
+  expect(h).toContain('impact:heavy')
 })
 
 test('распаковка: на тапах подарок превращается в сундук получше (без надписей), приз, потом неделя и вторая коробка за раунд', async ({ page }) => {
@@ -135,7 +139,7 @@ test('распаковка: на тапах подарок превращает�
   expect(await haptics(page)).toContain('note:success')
 
   await page.getByTestId('gift-reveal-close').click()
-  await expect(page.getByTestId('gift-week-line')).toHaveText('Ещё 4 дня до недельного сундука')
+  await expect(page.getByTestId('gift-week-line')).toHaveText('Ещё 4 дня — и точно сундук')
   await expect(page.getByTestId('gift-week').locator('span')).toHaveCount(7)
   await page.getByTestId('gift-more').click()
   await expect.poll(() => calls.includes('extra')).toBe(true)

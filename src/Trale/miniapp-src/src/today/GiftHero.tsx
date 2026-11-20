@@ -30,11 +30,12 @@ interface Props {
   /** Подпись на закрытой коробке. */
   lockChip?: string
   /** Нажали на закрытый: замок щёлкает — и сразу в занятие (ключ от подарка). Нет — только объяснение. */
-  onLocked?: () => void
+  onLocked?: (from: DOMRect | null) => void
 }
 
 export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombora, rarity = 0, lockChip = 'в конце дня', onLocked }: Props) {
   const [jiggle, setJiggle] = useState(0)
+  const btn = useRef<HTMLButtonElement>(null)
   const box = useRef<Gift3DHandle>(null)
   const still = useMemo(reducedMotion, [])
   const [hint, setHint] = useState<string | null>(null)
@@ -56,8 +57,8 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
     appEvents.tap(`today-gift-${gift}`)
     box.current?.nope()
     setJiggle(j => j + 1)
-    setHint(lockedSay)
-    if (onLocked) setTimeout(onLocked, 750)
+    if (!onLocked) setHint(lockedSay)
+    if (onLocked) onLocked(btn.current?.getBoundingClientRect() ?? null)
   }
 
   const bubble = hint ?? say
@@ -105,6 +106,7 @@ export default function GiftHero({ mascot, say, gift, lockedSay, onOpen, onBombo
       {/* Подарок дня */}
       <div className="absolute -right-4 -bottom-3 z-[1] flex flex-col items-center">
         <button
+          ref={btn}
           type="button"
           onClick={tapGift}
           aria-label={gift === 'ready' ? 'Открыть подарок дня' : gift === 'claimed' ? 'Подарок дня открыт' : 'Подарок дня — откроется в конце'}

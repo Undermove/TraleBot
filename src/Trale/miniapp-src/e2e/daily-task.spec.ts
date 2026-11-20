@@ -386,7 +386,7 @@ test.describe('Подарок дня → занятие → распаковка
     await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'locked')
     await expect(page.getByTestId('gift-lock')).toBeVisible()
     await page.getByTestId('gift-button').click()
-    await expect(page.getByTestId('today-say')).toHaveText('Ключ от подарка — в занятии. Погнали!')
+    await expect(page.getByTestId('gift-warp')).toContainText('Ключ — в задании дня!')
     // Без вступления — сразу разминка, в конце полоски подарок.
     await expect(page.getByTestId('daily-warm-word')).toBeVisible({ timeout: 5000 })
     await expect(page.getByTestId('daily-intro')).toHaveCount(0)

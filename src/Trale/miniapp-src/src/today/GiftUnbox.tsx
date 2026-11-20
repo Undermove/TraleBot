@@ -180,10 +180,10 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer }: Props
             <div className="relative z-[1]">
               <div className="mn-eyebrow text-ruby">Завтра</div>
               <div className="mt-1 font-sans text-[17px] font-extrabold leading-tight text-jewelInk" data-testid="gift-week-line">
-                {g.guaranteedIn === 1 ? 'Завтра — недельный сундук!' : g.guaranteedIn === 0 ? 'Сегодня был недельный сундук!' : `Ещё ${days(g.guaranteedIn)} до недельного сундука`}
+                {g.guaranteedIn === 1 ? 'Завтра — точно сундук!' : g.guaranteedIn === 0 ? 'Следующий сундук — через 7 дней' : `Ещё ${days(g.guaranteedIn)} — и точно сундук`}
               </div>
               <div className="mt-1 font-sans text-[12.500px] font-semibold leading-snug text-jewelInk-mid">
-                Каждый 7-й день подряд — сундук. И чем длиннее серия, тем чаще сундуки в обычные дни. Пропустишь день — начнёшь сначала{g.freezes > 0 ? `, если не спасёт заморозка (у тебя ${g.freezes})` : ''}.
+                Занимайся каждый день: на 7-й день подряд — точно сундук. Пропустишь день — счёт начнётся заново{g.freezes > 0 ? `, если не спасёт заморозка (у тебя ${g.freezes})` : ''}.
               </div>
               <div className="mt-3 flex justify-between gap-1" data-testid="gift-week">
                 {[1, 2, 3, 4, 5, 6, 7].map(i => (
