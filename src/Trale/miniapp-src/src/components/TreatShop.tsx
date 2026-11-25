@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { api } from '../api'
+import TreatIcon from './TreatIcon'
 
 interface Props {
   availableXp: number
@@ -10,7 +11,6 @@ interface Props {
 
 interface Treat {
   index: number
-  emoji: string
   name: string
   geoName: string
   price: number
@@ -18,11 +18,11 @@ interface Treat {
 }
 
 const TREATS: Treat[] = [
-  { index: 0, emoji: '🥐', name: 'Дзвали', geoName: 'ძვალი', price: 10, description: 'Хрустящая косточка' },
-  { index: 1, emoji: '🥩', name: 'Хорци', geoName: 'ხორცი', price: 30, description: 'Кусочек мяса' },
-  { index: 2, emoji: '🍢', name: 'Мцвади', geoName: 'მწვადი', price: 60, description: 'Грузинский шашлык' },
-  { index: 3, emoji: '🍬', name: 'Чурчхела', geoName: 'ჩურჩხელა', price: 100, description: 'Любимое лакомство' },
-  { index: 4, emoji: '🍽️', name: 'Супра', geoName: 'სუფრა', price: 200, description: 'Целое застолье!' },
+  { index: 0, name: 'Дзвали', geoName: 'ძვალი', price: 10, description: 'Хрустящая косточка' },
+  { index: 1, name: 'Хорци', geoName: 'ხორცი', price: 30, description: 'Кусочек мяса' },
+  { index: 2, name: 'Мцвади', geoName: 'მწვადი', price: 60, description: 'Грузинский шашлык' },
+  { index: 3, name: 'Чурчхела', geoName: 'ჩურჩხელა', price: 100, description: 'Любимое лакомство' },
+  { index: 4, name: 'Супра', geoName: 'სუფრა', price: 200, description: 'Целое застолье!' },
 ]
 
 export default function TreatShop({ availableXp, totalTreatsGiven, onFed, onClose }: Props) {
@@ -80,11 +80,11 @@ export default function TreatShop({ availableXp, totalTreatsGiven, onFed, onClos
         <div className="px-5 pb-2 flex items-center gap-3">
           <div className="flex-1 rounded-xl bg-cream-deep border-[1.5px] border-jewelInk px-3 py-2">
             <div className="mn-eyebrow text-jewelInk-mid">XP в кошельке</div>
-            <div className="font-sans text-[18px] font-extrabold text-jewelInk">⭐ {availableXp}</div>
+            <div className="font-sans text-[18px] font-extrabold text-jewelInk">{availableXp}</div>
           </div>
           <div className="flex-1 rounded-xl bg-cream-deep border-[1.5px] border-jewelInk px-3 py-2">
             <div className="mn-eyebrow text-jewelInk-mid">всего съел</div>
-            <div className="font-sans text-[18px] font-extrabold text-jewelInk">🍽 {totalTreatsGiven}</div>
+            <div className="font-sans text-[18px] font-extrabold text-jewelInk">{totalTreatsGiven}</div>
           </div>
         </div>
 
@@ -110,8 +110,8 @@ export default function TreatShop({ availableXp, totalTreatsGiven, onFed, onClos
                 }`}
                 style={affordable ? { boxShadow: '2px 2px 0 #15100A' } : undefined}
               >
-                <div className="w-12 h-12 rounded-xl bg-cream-deep border-[1.5px] border-jewelInk flex items-center justify-center shrink-0 text-[26px]">
-                  {t.emoji}
+                <div className="w-12 h-12 rounded-xl bg-cream-deep border-[1.5px] border-jewelInk flex items-center justify-center shrink-0">
+                  <TreatIcon index={t.index} size={42} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-sans text-[15px] font-extrabold text-jewelInk leading-tight">

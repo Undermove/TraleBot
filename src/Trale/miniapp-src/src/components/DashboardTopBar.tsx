@@ -10,11 +10,13 @@ interface Props {
 function StatPill({
   value,
   label,
-  color
+  color,
+  flame = false
 }: {
   value: number
   label: string
   color: 'ruby' | 'xp'
+  flame?: boolean
 }) {
   const colorClass = color === 'xp' ? 'bg-gold text-jewelInk' : 'bg-ruby text-cream'
   return (
@@ -22,6 +24,11 @@ function StatPill({
       className={`${colorClass} border-[1.5px] border-jewelInk rounded-full px-4 py-2 flex items-baseline gap-1.5 min-h-[44px]`}
       style={{ boxShadow: '2px 2px 0 #15100A' }}
     >
+      {flame && (
+        <svg className="td-flame self-center -ml-1" width="14" height="16" viewBox="0 0 14 16" aria-hidden="true">
+          <path d="M7 1c1 3 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3-1-3 0-6 1-8z" fill="#F5B820" stroke="#15100A" strokeWidth="1.300" strokeLinejoin="round" />
+        </svg>
+      )}
       <span className="font-sans text-[15px] font-extrabold tabular-nums leading-none">
         {value}
       </span>
@@ -42,24 +49,28 @@ export default function DashboardTopBar({ progress, onNavigateProfile, onOpenTre
       <div style={{ paddingTop: 'var(--safe-t)' }}>
         <div className="mn-kilim" />
       </div>
-      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-        <div className="mn-eyebrow">TraleBot</div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onNavigateProfile}
-            className="active:opacity-80 transition-opacity"
-            aria-label="Профиль"
-          >
-            <StatPill value={progress.streak} label="дн" color="ruby" />
+      {/* Счётчики слева, профиль — кружок справа вверху: там его ищут в большинстве приложений. */}
+      <div className="px-5 pt-3 pb-1 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button onClick={onNavigateProfile} className="active:opacity-80 transition-opacity" aria-label="Серия дней">
+            <StatPill value={progress.streak} label="дн" color="ruby" flame={progress.streak > 0} />
           </button>
-          <button
-            onClick={onOpenTreatShop}
-            className="active:opacity-80 transition-opacity"
-            aria-label="Покормить Бомбору"
-          >
+          <button onClick={onOpenTreatShop} className="active:opacity-80 transition-opacity" aria-label="Покормить Бомбору" data-testid="dashboard-feed-button">
             <StatPill value={Math.max(0, progress.xp - progress.xpSpent)} label="опыт" color="xp" />
           </button>
         </div>
+        <button
+          onClick={onNavigateProfile}
+          data-testid="dashboard-profile"
+          aria-label="Профиль"
+          className="w-11 h-11 rounded-full bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:scale-95 transition-transform"
+          style={{ boxShadow: '2px 2px 0 #15100A' }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15100A" strokeWidth={1.9} strokeLinecap="round" aria-hidden="true">
+            <circle cx="12" cy="8.5" r="3.8" fill="#F5B820" />
+            <path d="M4.5 20c1.2-3.800 4.200-5.800 7.500-5.800s6.300 2 7.500 5.800" />
+          </svg>
+        </button>
       </div>
     </div>
   )

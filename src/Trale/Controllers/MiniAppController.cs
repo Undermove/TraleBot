@@ -1796,7 +1796,13 @@ public class MiniAppController : Controller
         public int Errors { get; set; }
         public int CheckErrors { get; set; }
         public int Seconds { get; set; }
+        public List<string> BackWrong { get; set; } = new();
     }
+
+    private static DailyReport? ToReport(DailyResultRequest request) =>
+        request == null || request.WarmWrong.Count > 50 || request.PairWrong.Count > 50 || request.BackWrong.Count > 50
+            ? null
+            : new DailyReport(request.Day, request.WarmWrong, request.PairWrong, Math.Max(0, request.Errors), Math.Max(0, request.CheckErrors), request.BackWrong);
 
     /// <summary>The task is played to the end. Idempotent: a repeated report returns what was saved.</summary>
     [HttpPost("daily-task/result")]
@@ -1810,13 +1816,47 @@ public class MiniAppController : Controller
         var (user, denied) = await ResolveVerbsUserAsync(ct);
         if (denied != null) return denied;
         if (!audience.Includes(user.TelegramId)) return NotFound();
-        if (request == null || request.WarmWrong.Count > 50 || request.PairWrong.Count > 50)
+        if (ToReport(request) is not { } report)
         {
             return BadRequest(new { error = "invalid_result" });
         }
 
-        var report = new DailyReport(request.Day, request.WarmWrong, request.PairWrong, Math.Max(0, request.Errors), Math.Max(0, request.CheckErrors));
         var saved = await daily.SaveResultAsync(user, report, DateTime.UtcNow, IsStand(env), ct);
+        return saved == null
+            ? Conflict(new { error = "stale_day" })
+            : Ok(new { task = saved.Task, xpEarned = saved.XpEarned, progress = saved.Progress });
+    }
+
+    /// <summary>One more round after the task: the one being played or a new one; null — the task is not done or nothing is left.</summary>
+    [HttpPost("daily-task/extra")]
+    public async Task<IActionResult> GetDailyExtra(
+        [FromServices] DailyTaskService daily, [FromServices] DailyTaskAudience audience, [FromServices] IWebHostEnvironment env, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        return Ok(new { extra = await daily.ExtraAsync(user, DateTime.UtcNow, IsStand(env), ct) });
+    }
+
+    /// <summary>The extra round is played out.</summary>
+    [HttpPost("daily-task/extra/result")]
+    public async Task<IActionResult> SaveDailyExtraResult(
+        [FromBody] DailyResultRequest request,
+        [FromServices] DailyTaskService daily,
+        [FromServices] DailyTaskAudience audience,
+        [FromServices] IWebHostEnvironment env,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+        if (ToReport(request) is not { } report)
+        {
+            return BadRequest(new { error = "invalid_result" });
+        }
+
+        var saved = await daily.SaveExtraAsync(user, report, DateTime.UtcNow, IsStand(env), ct);
         return saved == null
             ? Conflict(new { error = "stale_day" })
             : Ok(new { task = saved.Task, xpEarned = saved.XpEarned, progress = saved.Progress });
@@ -1871,6 +1911,129 @@ public class MiniAppController : Controller
         await daily.DevShiftAsync(user.Id, Math.Clamp(request?.Days ?? 1, 1, 60), ct);
         return Ok(new { task = await daily.GetAsync(user, DateTime.UtcNow, true, ct) });
     }
+
+    /// <summary>The gift of the day: odds by the streak, today's boxes, freezes in stock.</summary>
+    [HttpGet("daily-gift")]
+    public async Task<IActionResult> GetDailyGift(
+        [FromServices] DailyGiftService gifts, [FromServices] DailyTaskAudience audience, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        return Ok(GiftResponse(user, await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
+    }
+
+    public class DailyGiftOpenRequest
+    {
+        public int Box { get; set; }
+    }
+
+    /// <summary>Opens a box of today: the prize is drawn once and given; a repeated open returns the same prize.</summary>
+    [HttpPost("daily-gift/open")]
+    public async Task<IActionResult> OpenDailyGift(
+        [FromBody] DailyGiftOpenRequest request,
+        [FromServices] DailyGiftService gifts,
+        [FromServices] ITreasureCatalog treasures,
+        [FromServices] DailyTaskAudience audience,
+        CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        var opened = await gifts.OpenAsync(user.Id, Math.Clamp(request?.Box ?? 0, 0, 1), DateTime.UtcNow, ct);
+        if (opened is not { } o) return Conflict(new { error = "not_ready" });
+        var (kind, id) = o.Box.Prize?.Split(':') is [var k, var v] ? (k, v) : ("", "");
+        object? treasure = kind switch
+        {
+            "word" => treasures.Words.FirstOrDefault(w => w.Id == id),
+            "card" => treasures.Cards.FirstOrDefault(c => c.Id == id),
+            _ => null
+        };
+        return Ok(new { gift = GiftResponse(user, o.Gift), box = o.Box, treasure });
+    }
+
+    /// <summary>A hint from the gift of the day spent in an exercise. 409 — none left.</summary>
+    [HttpPost("daily-gift/hint")]
+    public async Task<IActionResult> UseGiftHint(
+        [FromServices] DailyGiftService gifts, [FromServices] DailyTaskAudience audience, CancellationToken ct)
+    {
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        var (ok, left) = await gifts.UseHintAsync(user.Id, DateTime.UtcNow, ct);
+        return ok ? Ok(new { hints = left }) : Conflict(new { error = "no_hints", hints = 0 });
+    }
+
+    public class WearRequest
+    {
+        public string Slot { get; set; } = "";
+        public string? Item { get; set; }
+    }
+
+    /// <summary>Bombora puts on a thing from the gift of the day (or takes the slot off).</summary>
+    [HttpPost("bombora/wear")]
+    public async Task<IActionResult> BomboraWear(
+        [FromBody] WearRequest request, [FromServices] DailyGiftService gifts, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null) return Unauthorized(new { error = "not_authenticated" });
+        var stash = await gifts.WearAsync(user.Id, request?.Slot ?? "", request?.Item, DateTime.UtcNow, ct);
+        return stash == null ? BadRequest(new { error = "not_owned" }) : Ok(new { stash });
+    }
+
+    /// <summary>What Bombora has: things, furniture, words, postcards, hints.</summary>
+    [HttpGet("bombora/stash")]
+    public async Task<IActionResult> BomboraStash([FromServices] DailyGiftService gifts, [FromServices] ITreasureCatalog treasures, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null) return Unauthorized(new { error = "not_authenticated" });
+        var stash = await gifts.StashAsync(user.Id, ct);
+        return Ok(new
+        {
+            stash,
+            words = treasures.Words.Where(w => stash.Words.Contains(w.Id)),
+            cards = treasures.Cards.Where(c => stash.Cards.Contains(c.Id)),
+            wordsTotal = treasures.Words.Count,
+            cardsTotal = treasures.Cards.Count
+        });
+    }
+
+    /// <summary>Local stand only: today's boxes are closed again.</summary>
+    [HttpPost("daily-gift/dev/reset")]
+    public async Task<IActionResult> ResetDailyGift(
+        [FromServices] DailyGiftService gifts, [FromServices] DailyTaskAudience audience, [FromServices] IWebHostEnvironment env, CancellationToken ct)
+    {
+        if (!IsStand(env)) return NotFound();
+        var (user, denied) = await ResolveVerbsUserAsync(ct);
+        if (denied != null) return denied;
+        if (!audience.Includes(user.TelegramId)) return NotFound();
+
+        await gifts.DevResetAsync(user.Id, ct);
+        return Ok(GiftResponse(user, await gifts.GetAsync(user.Id, DateTime.UtcNow, ct)));
+    }
+
+    /// <summary>
+    /// The gift as the mini-app shows it. «Invite a friend» goes through the usual referral link and its rewards
+    /// (the friend gets a longer trial, the inviter — days once the friend starts learning).
+    /// </summary>
+    private object GiftResponse(User user, DailyGiftDto gift) => new
+    {
+        gift.Day, gift.Streak, gift.Odds, gift.GuaranteedIn, gift.Freezes, gift.BoostToday, gift.BurnsAtUtc,
+        boxes = gift.Boxes,
+        canGetDays = !user.IsLifetime,
+        firstGiftDays = gift.FirstDaysAhead && !user.IsLifetime ? DailyGiftService.FirstDays : 0,
+        invite = new
+        {
+            link = $"https://t.me/{_botConfig.BotName}?start=ref_{user.TelegramId}",
+            friendDays = Domain.Entities.User.TrialDays + Application.MiniApp.Commands.RecordReferralLinkService.RefereeTrialBonusDays,
+            myDays = user.HasActivePro()
+                ? Application.MiniApp.Commands.TryActivateReferralService.ReferrerProBonusDays
+                : Application.MiniApp.Commands.TryActivateReferralService.ReferrerTrialBonusDays
+        }
+    };
 
     /// <summary>Local stand only: today's reminder (the same message the hourly worker sends) — now.</summary>
     [HttpPost("daily-task/dev/push")]

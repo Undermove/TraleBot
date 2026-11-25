@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { cachedStash, loadStash, onStash } from '../today/stashStore'
 import Mascot from '../components/Mascot'
 import KilimProgress from '../components/KilimProgress'
 import ProBadge from '../components/ProBadge'
@@ -11,8 +12,9 @@ import TreatShop from '../components/TreatShop'
 import FeedingAnimation from '../components/FeedingAnimation'
 import { CatalogDto, ModuleDto, ProgressState, Screen, PRO_MODULE_IDS } from '../types'
 import { UserLevel } from './Onboarding'
-import VerbsTile from '../verbs/section/VerbsTile'
-import DailyCard from '../daily/DailyCard'
+import TodayCard from '../daily/TodayCard'
+import Header from '../components/Header'
+import { appEvents } from '../analytics/appEvents'
 
 const XP_THRESHOLDS = Object.keys(XP_MILESTONES).map(Number)
 const STREAK_THRESHOLDS = Object.keys(STREAK_MILESTONES).map(Number)
@@ -35,6 +37,15 @@ interface Props {
   onPurchaseSuccess: () => void
   onProgressUpdate?: (patch: Partial<ProgressState>) => void
   navigate: (s: Screen) => void
+  /** «Сегодня» — Бомбора и план дня; «Курс» — все модули по разделам. */
+  view?: 'today' | 'course'
+}
+
+/** Порядок плиток внутри раздела «Курса»: начатое, потом открытое, потом пройденное, закрытое — в конце. */
+function tileRank(m: ModuleDto, done: number, locked: boolean): number {
+  if (locked) return 3
+  if (m.lessons.length > 0 && done >= m.lessons.length) return 2
+  return done > 0 ? 0 : 1
 }
 
 // Ordered unlock chain for beginners: each section unlocks when the previous is fully done
@@ -85,7 +96,10 @@ function isSectionUnlocked(
  * module icons use meaningful Georgian letters that tie into what's taught,
  * product signature is a tiny kilim strip at the top.
  */
-export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, shouldShowReferralExtensionCta = false, onboardingHint = null, onHintSeen, onHintDismiss, onPurchaseSuccess, onProgressUpdate, navigate }: Props) {
+export default function Dashboard({ catalog, progress, todayLessons, userLevel, isPro, isTrialActive = false, trialDaysLeft = 0, shouldShowReferralExtensionCta = false, onboardingHint = null, onHintSeen, onHintDismiss, onPurchaseSuccess, onProgressUpdate, navigate, view = 'today' }: Props) {
+  // Что надето на Бомборе из подарков дня.
+  const [stash, setStashLocal] = useState(cachedStash)
+  useEffect(() => { loadStash(); return onStash(setStashLocal) }, [])
   const isBeginner = userLevel === 'beginner'
   const hasAccess = isPro || isTrialActive
   const [paywall, setPaywall] = useState<{ trigger: PaywallTrigger } | null>(null)
@@ -125,7 +139,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
     { key: 'grammar', label: 'грамматика', geoLabel: 'გრამატიკა', modules: grammar, accent: 'navy' as const },
     { key: 'vocab', label: 'лексика по темам', geoLabel: 'ლექსიკა', modules: vocab, accent: 'gold' as const },
     { key: 'advanced', label: 'продвинутое', geoLabel: 'გაღრმავება', modules: advanced, accent: 'ruby' as const },
-    { key: 'myvocab', label: 'мой словарь', geoLabel: 'ლექსიკონი', modules: myVocab, accent: 'ruby' as const },
+    // Словарь — своя вкладка внизу, в «Курсе» его нет.
   ]
 
   // Sections currently playing the one-time unlock animation
@@ -210,7 +224,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
   }, [progress.xp, progress.streak])
 
   return (
-    <div className="flex flex-col min-h-full bg-cream">
+    // «Сегодня» — ровно в окно, без прокрутки: всё нужное видно сразу. «Курс» — обычная лента.
+    <div className={view === 'today' ? 'flex flex-col bg-cream overflow-hidden' : 'flex flex-col min-h-full bg-cream'}
+      style={view === 'today' ? { height: '100dvh', paddingBottom: 'var(--safe-b)' } : undefined}>
+      {view === 'course' && <Header progress={progress} eyebrow="კურსი" title="Курс" />}
+      {view === 'today' && (<>
       {/* ══ Kilim + stats bar ══ */}
       <DashboardTopBar
         progress={progress}
@@ -229,7 +247,9 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       )}
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
-      <section className="px-5 pt-3 pb-4">
+      <section className="px-5 pt-1 pb-3 flex-1 min-h-0 flex flex-col overflow-x-hidden overflow-y-auto">
+        {/* my-auto: по центру, когда место есть; когда нет — от верха, а не под счётчики. */}
+        <div className="my-auto">
         {(() => {
           const { greeting, mascotMood: baseMood, satiety, satietyText, suggestion } = computeHero(catalog, progress, todayLessons)
           const availableXp = Math.max(0, progress.xp - progress.xpSpent)
@@ -265,85 +285,33 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
           const bowlFill = Math.min(3, todayLessons)
           return (
             <>
-              {/* Bombora card — tappable → profile */}
-              <button
-                onClick={() => navigate({ kind: 'profile' })}
-                className="w-full flex flex-col items-center gap-2 text-center active:opacity-80 transition-opacity"
-              >
-                <div className="relative">
-                  <Mascot mood={mascotMood} satietyTier={satietyTier} size={120} />
-                  {/* Bowl indicator */}
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className={`w-3 h-3 rounded-full border-2 transition-all ${
-                          i < bowlFill ? 'bg-gold border-gold shadow-sm' : 'bg-cream-deep border-jewelInk/30'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <div className="font-sans font-extrabold text-[20px] leading-[1.1] text-jewelInk tracking-tight">
-                    {greeting.line1}
-                  </div>
-                  <div className={`mt-1 font-sans text-[13px] font-semibold ${statusTone}`}>
-                    {statusLine}
-                  </div>
-                </div>
-              </button>
-
-              {/* ── Feed button ── */}
-              <div className="mt-3 flex justify-center" onClick={(e) => e.stopPropagation()}>
-                <button
-                  data-testid="dashboard-feed-button"
-                  onClick={() => setTreatShopOpen(true)}
-                  className="px-4 py-2 rounded-xl font-sans text-[13px] font-extrabold bg-gold text-jewelInk border-[1.5px] border-jewelInk active:scale-95 transition-transform flex items-center gap-2"
-                  style={{ boxShadow: '2px 2px 0 #15100A' }}
-                >
-                  <span className="text-[16px] leading-none">🍖</span>
-                  <span>Покормить</span>
-                  <span className="text-jewelInk/70 font-bold">· ⭐ {availableXp}</span>
-                </button>
-              </div>
-
-              {/* «Задание дня» — первым: короткое занятие из своего, потом «новое». */}
-              <DailyCard navigate={navigate} />
-              {suggestion && (
-                <button
-                  data-testid="dashboard-suggestion"
-                  onClick={() => navigate(suggestion.screen)}
-                  className="jewel-tile jewel-pressable mt-4 w-full text-left px-5 py-4 flex items-center gap-4"
-                >
-                  <div className="relative z-[1] shrink-0">
-                    <div
-                      className="w-12 h-12 rounded-xl bg-ruby border-[1.5px] border-jewelInk flex items-center justify-center"
-                      style={{ boxShadow: '2px 2px 0 #15100A' }}
-                    >
-                      <span className="font-sans text-[20px] font-extrabold text-cream leading-none">▶</span>
+              {/* Сцена «Сегодня»: Бомбора с репликой и подарок дня; под ними — план и большая кнопка. */}
+              <TodayCard
+                lesson={suggestion}
+                navigate={navigate}
+                streak={progress.streak}
+                playedToday={todayLessons > 0 || progress.lastPlayedDate === localToday()}
+                firstTime={Object.values(progress.completedLessons).every(l => l.length === 0)}
+                hasXp={progress.xp > 0}
+                onFeed={() => navigate({ kind: 'bombora-home' })}
+                greeting={isHungry ? 'Я проголодался — покорми' : recentlyFed ? 'Вкусно! Спасибо' : greeting.line1}
+                mascot={(mood) => (
+                  <div className="relative" title={statusLine}>
+                    <Mascot mood={mood ?? mascotMood} satietyTier={satietyTier} size={104} wear={stash.wear} />
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 flex gap-1" aria-hidden="true">
+                      {[0, 1, 2].map((i) => (
+                        <div key={i} className={`w-2.5 h-2.5 rounded-full border-2 ${i < bowlFill ? 'bg-gold border-gold' : 'bg-cream-deep border-jewelInk/30'}`} />
+                      ))}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0 relative z-[1]">
-                    <div className="mn-eyebrow text-ruby mb-0.5">{suggestion.eyebrow}</div>
-                    <div className="font-sans text-[16px] font-bold text-jewelInk leading-tight truncate">
-                      {suggestion.title}
-                    </div>
-                    <div className="font-sans text-[12px] text-jewelInk-mid mt-0.5 truncate">
-                      {suggestion.subtitle}
-                    </div>
-                  </div>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="shrink-0 text-ruby relative z-[1]">
-                    <path d="M8 5 L16 12 L8 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              )}
-              {/* Раздел «Глаголы» — виден всем с первого дня; без доступа открывается как обзор. */}
-              <VerbsTile navigate={navigate} />
+                )}
+              />
             </>
           )
         })()}
+        </div>
       </section>
+      </>)}
 
       {/* ══ Module sections ══ */}
       {(() => {
@@ -440,7 +408,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
               <ReferralExtensionCta variant="block" />
             </div>
           )}
-          {sections.map((section) => {
+          {view === 'course' && sections.map((section) => {
             if (section.modules.length === 0) return null
 
             // Section-level locking is disabled — users can expand any section.
@@ -516,7 +484,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                 {/* Module tiles — always visible (sections can't be collapsed) */}
                 {!isLocked && (
                   <section className="px-5 flex flex-col gap-3 pb-2">
-                    {section.modules.map((m, tileIdx) => {
+                    {[...section.modules]
+                      .sort((a, b) =>
+                        tileRank(a, (progress.completedLessons[a.id] ?? []).length, !hasAccess && PRO_MODULE_IDS.has(a.id)) -
+                        tileRank(b, (progress.completedLessons[b.id] ?? []).length, !hasAccess && PRO_MODULE_IDS.has(b.id)))
+                      .map((m, tileIdx) => {
                       const currentIdx = globalIdx++
                       const hasLessons = m.lessons.length > 0
                       const done = (progress.completedLessons[m.id] ?? []).length
@@ -547,6 +519,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
                           key={m.id}
                           data-testid={`module-tile-${m.id}`}
                           onClick={() => {
+                            appEvents.tap(`module-${m.id}`.slice(0, 32))
                             if (isProLocked || isVocabLocked) {
                               setPaywall({ trigger: 'module' })
                             } else if (m.id === 'my-vocabulary') {
@@ -636,43 +609,15 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
         )
       })()}
 
-      {/* ══ Profile button — smaller tile ══ */}
-      <div className="px-5 pb-6">
-        <button
-          onClick={() => navigate({ kind: 'profile' })}
-          className="jewel-tile jewel-pressable w-full text-left px-5 py-4 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3 relative z-[1]">
-            <div className="w-10 h-10 rounded-lg bg-cream-deep border-[1.5px] border-jewelInk flex items-center justify-center">
-              <span className="font-geo text-[18px] font-extrabold text-navy leading-none">
-                მ
-              </span>
-            </div>
-            <div>
-              <div className="mn-eyebrow">вкладка</div>
-              <div className="font-sans text-[16px] font-bold text-jewelInk leading-none mt-0.5">
-                мой профиль
-              </div>
-            </div>
-          </div>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-navy relative z-[1]">
-            <path
-              d="M8 5 L16 12 L8 19"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-
       {/* ══ Bottom kilim strip — symmetry with top ══ */}
-      <div className="mt-auto">
-        <div className="mn-kilim opacity-70" />
-      </div>
+      {view !== 'today' && (
+        <div className="mt-auto">
+          <div className="mn-kilim opacity-70" />
+        </div>
+      )}
 
-      <div style={{ height: 'calc(var(--safe-b) + 12px)' }} />
+      {/* Отступ под нижнюю панель — для ленты «Курса»; у «Сегодня» его уже даёт padding корня. */}
+      {view !== 'today' && <div style={{ height: 'calc(var(--safe-b) + 12px)' }} />}
 
       {/* Pro Paywall */}
       {paywall && (
@@ -737,6 +682,11 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       )}
     </div>
   )
+}
+
+/** Сегодняшняя дата YYYY-MM-DD в том же виде, что lastPlayedDate (из lastPlayedAtUtc). */
+function localToday(): string {
+  return new Date().toISOString().slice(0, 10)
 }
 
 type SatietyLevel = 'hungry' | 'snack' | 'fed' | 'full' | 'sleeping'
@@ -835,7 +785,7 @@ function computeHero(
     greeting = { line1: 'Хорошее начало!', line2: 'Продолжим?' }
     mascotMood = 'happy'
   } else if (progress.streak >= 3) {
-    greeting = { line1: `${progress.streak} дней подряд!`, line2: 'Не останавливайся' }
+    greeting = { line1: `${progress.streak} ${pluralDays(progress.streak)} подряд!`, line2: 'Не останавливайся' }
     mascotMood = 'guide'
   } else {
     greeting = { line1: 'Бомбора ждёт!', line2: 'Погнали учиться' }

@@ -32,10 +32,12 @@ export function cardLine(task: DailyTaskDto): string {
   return `${formsAndWords(task.pairs)} · ${task.mode === 'comeback' ? 'одна минута' : 'две минуты'}`
 }
 
-export type DailyStep = 'warm' | 'game' | 'check'
+export type DailyStep = 'warm' | 'game' | 'back' | 'check'
 
-/** Шаги занятия по порядку; разминки может не быть. */
-export const flowOf = (task: DailyTaskDto): DailyStep[] => [...(task.warm.length ? ['warm' as const] : []), 'game', 'check']
+/** Шаги занятия по порядку; разминки и обратного пути может не быть. */
+export const flowOf = (task: DailyTaskDto): DailyStep[] => [
+  ...(task.warm.length ? ['warm' as const] : []), 'game', ...(task.back?.length ? ['back' as const] : []), 'check'
+]
 
 /** Строка с выделением: «<b>важное</b> и обычное» → куски для отрисовки без вставки разметки. */
 export function boldParts(line: string): { text: string; bold: boolean }[] {
@@ -147,6 +149,7 @@ export function pairsHint(s: PairsState, pairs: DailyItem[]): string {
 /** Что накопилось за занятие. */
 export interface DailyRun {
   warmWrong: string[]
+  backWrong: string[]
   pairWrong: string[]
   /** Все неверные попытки в парах, включая несобранные из-за времени, по всем партиям. */
   errors: number
@@ -155,7 +158,7 @@ export interface DailyRun {
   seconds: number
 }
 
-export const emptyRun = (): DailyRun => ({ warmWrong: [], pairWrong: [], errors: 0, checkErrors: 0, seconds: 0 })
+export const emptyRun = (): DailyRun => ({ warmWrong: [], backWrong: [], pairWrong: [], errors: 0, checkErrors: 0, seconds: 0 })
 
 /** Партия закончилась (собрана или вышло время) — её ошибки добавляются к занятию. */
 export function addGame(run: DailyRun, game: PairsState, seconds: number): DailyRun {
@@ -163,11 +166,11 @@ export function addGame(run: DailyRun, game: PairsState, seconds: number): Daily
 }
 
 export const buildReport = (task: DailyTaskDto, run: DailyRun): DailyReportDto => ({
-  day: task.day, warmWrong: run.warmWrong, pairWrong: run.pairWrong, errors: run.errors, checkErrors: run.checkErrors, seconds: run.seconds
+  day: task.day, warmWrong: run.warmWrong, pairWrong: run.pairWrong, errors: run.errors, checkErrors: run.checkErrors, seconds: run.seconds, backWrong: run.backWrong
 })
 
 /** Все ошибки занятия — для строки итога. */
-export const totalErrors = (run: DailyRun) => run.errors + run.checkErrors + run.warmWrong.length
+export const totalErrors = (run: DailyRun) => run.errors + run.checkErrors + run.warmWrong.length + run.backWrong.length
 
 /** «4 пары за 31 секунду, без ошибок». */
 export function statLine(pairs: number, run: DailyRun): string {

@@ -237,6 +237,9 @@ namespace Persistence.Migrations
                     b.Property<DateOnly?>("DoneDay")
                         .HasColumnType("date");
 
+                    b.Property<string>("GiftJson")
+                        .HasColumnType("text");
+
                     b.Property<int>("LastErrors")
                         .HasColumnType("integer");
 
@@ -455,6 +458,15 @@ namespace Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("GiftDaysAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("GiftLessonDay")
+                        .HasColumnType("date");
+
+                    b.Property<string>("GiftStashJson")
+                        .HasColumnType("text");
+
                     b.Property<int>("Hearts")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -494,6 +506,9 @@ namespace Persistence.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
+                    b.Property<int>("StreakFreezes")
+                        .HasColumnType("integer");
+
                     b.Property<int>("TotalTreatsGiven")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -509,6 +524,9 @@ namespace Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
+
+                    b.Property<DateOnly?>("XpBoostDay")
+                        .HasColumnType("date");
 
                     b.Property<int>("XpSpent")
                         .ValueGeneratedOnAdd()

@@ -3,7 +3,10 @@ export type Screen =
   | { kind: 'onboarding' }
   | { kind: 'welcome' }
   | { kind: 'dashboard' }
-  | { kind: 'daily' }
+  /** Вкладка «Курс»: все модули по разделам. */
+  | { kind: 'course' }
+  /** extra — сразу ещё один раунд (за второй коробкой); start — сразу первое упражнение, без вступления (пришли от подарка). */
+  | { kind: 'daily'; extra?: boolean; start?: boolean }
   | { kind: 'module'; moduleId: string }
   | { kind: 'lesson-theory'; moduleId: string; lessonId: number }
   | { kind: 'practice'; moduleId: string; lessonId: number }
@@ -30,6 +33,8 @@ export type Screen =
   /** Раздел «Глаголы». source — метка, с которой пришли (кампания рассылки, ссылка); без неё — плитка на главной. */
   | { kind: 'verbs'; source?: string }
   | { kind: 'profile' }
+  /** Дом Бомборы: гардероб, комната, слова-сокровища, открытки. */
+  | { kind: 'bombora-home'; tab?: 'wear' | 'room' | 'words' | 'cards' }
   /** Форма опроса-рассылки: вопросы по одному на странице. key — имя опроса из ссылки ?screen=survey&s=… */
   | { kind: 'survey'; key: string }
   /** «Написать автору». campaign — имя опроса, из которого пришли кнопкой «Написать подробнее»; from — куда вернуться. */

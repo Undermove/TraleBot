@@ -68,7 +68,7 @@ test('no access: a link to a paid module opens the purchase screen, not the modu
   await expect(purchaseScreen(page).getByRole('button', { name: /Купить за 100/ })).toBeVisible()
   await expect(moduleLessons(page)).toHaveCount(0)
   // Под экраном покупки — обычная главная, а адрес ссылки израсходован: перезагрузка не откроет покупку снова.
-  await expect(page.getByTestId('module-tile-cases')).toBeAttached()
+  await expect(page.getByTestId('dashboard-today')).toBeAttached()
   expect(new URL(page.url()).searchParams.get('moduleId')).toBeNull()
   // Снимок — только по просьбе: GATE_SHOTS=<папка>.
   if (process.env.GATE_SHOTS) {
@@ -82,7 +82,7 @@ test('no access: a push link straight into a paid lesson opens the purchase scre
   await page.goto('/?playwright=1&screen=practice&moduleId=cases&lessonId=1&src=push_return_a')
 
   await expect(purchaseScreen(page)).toBeVisible()
-  await expect(page.getByTestId('module-tile-cases')).toBeAttached()
+  await expect(page.getByTestId('dashboard-today')).toBeAttached()
 })
 
 test('free period: the same link opens the module', async ({ page }) => {
@@ -114,7 +114,7 @@ test('no access: the «next lesson» card on the main screen opens the purchase 
   await setupApi(page, { ...noAccess, progress: { ...noAccess.progress, completedLessons: { 'alphabet-progressive': [1] } } })
   await page.goto('/?playwright=1')
 
-  await expect(page.getByTestId('dashboard-suggestion')).toContainText('Падежи')
+  await expect(page.getByTestId('dashboard-today-new')).toContainText('Падежи')
   await page.getByTestId('dashboard-suggestion').click()
 
   await expect(purchaseScreen(page)).toBeVisible()
@@ -142,6 +142,7 @@ test('closing the purchase screen leaves the person on the main screen with the 
   await expect(purchaseScreen(page)).toBeVisible()
   await page.mouse.click(195, 40) // тап мимо шторки
   await expect(purchaseScreen(page)).toBeHidden()
+  await page.getByTestId('home-tab-course').click()
   await expect(page.getByTestId('module-tile-cases').locator('span[aria-label="Про-доступ"]')).toBeVisible()
 })
 

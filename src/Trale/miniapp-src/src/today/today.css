@@ -1,0 +1,56 @@
+/* Главная «Сегодня»: фон из букв, огонёк серии, подсказки у подарка. */
+
+/* Буквы на фоне сцены: медленно плывут. */
+@keyframes td-drift { 0%, 100% { transform: translate(0, 0) rotate(var(--r0)); } 50% { transform: translate(var(--mx), var(--my)) rotate(var(--r1)); } }
+.td-letter { position: absolute; font-family: 'Noto Sans Georgian', sans-serif; font-weight: 800; pointer-events: none; animation: td-drift var(--d) ease-in-out infinite; }
+
+/* Огонёк серии подрагивает. */
+@keyframes td-flame { 0%, 100% { transform: scale(1, 1) rotate(-2deg); } 50% { transform: scale(.92, 1.08) rotate(3deg); } }
+.td-flame { animation: td-flame 1.1s ease-in-out infinite; transform-origin: 50% 90%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .td-letter, .td-flame { animation: none; }
+}
+
+/* Подсказка под коробкой «нажми — открой»: чуть подпрыгивает. */
+@keyframes td-tap { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, -4px); } }
+.td-tap { transform: translateX(-50%); animation: td-tap 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .td-tap { animation: none; } }
+
+/* Подарок готов: под ним пульсирует золотое свечение. */
+.td-ready::before {
+  content: ''; position: absolute; left: 50%; top: 55%; width: 120px; height: 120px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(252, 215, 109, .85), rgba(252, 215, 109, 0));
+  animation: td-glow 1.6s ease-in-out infinite; transform: translate(-50%, -50%);
+}
+@keyframes td-glow { 0%, 100% { transform: translate(-50%, -50%) scale(.85); opacity: .7; } 50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .td-ready::before { animation: none; } }
+
+/* Замок на подарке: нажали — дёргается («закрыто, ключ — в занятии»). */
+.td-lock-jiggle { animation: td-lock .6s ease-out; }
+@keyframes td-lock {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0); }
+  15% { transform: translate(-50%, -50%) rotate(-18deg) scale(1.15); }
+  35% { transform: translate(-50%, -50%) rotate(14deg) scale(1.15); }
+  55% { transform: translate(-50%, -50%) rotate(-8deg); }
+  75% { transform: translate(-50%, -50%) rotate(4deg); }
+}
+/* В распаковке: замок отщёлкивается и улетает. */
+.td-unlock { animation: td-unlock .7s cubic-bezier(.3, 1.4, .5, 1) forwards; }
+@keyframes td-unlock {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  30% { transform: translate(-50%, -50%) scale(1.25) rotate(-10deg); opacity: 1; }
+  100% { transform: translate(-50%, -260%) scale(.6) rotate(40deg); opacity: 0; }
+}
+
+/* В переходе: замок трясётся без остановки. */
+.td-lock-shake { animation: td-lock-shake .32s ease-in-out infinite; }
+@keyframes td-lock-shake {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0); }
+  25% { transform: translate(-50%, -50%) rotate(-16deg) scale(1.1); }
+  75% { transform: translate(-50%, -50%) rotate(16deg) scale(1.1); }
+}
+
+/* Подсказка: верный ответ светится золотом. */
+.td-hint { animation: td-hint 1.6s ease-out 2; box-shadow: 0 0 0 4px #F5B820, 0 0 24px 6px rgba(245, 184, 32, .7) !important; }
+@keyframes td-hint { 0%, 100% { transform: scale(1); } 20% { transform: scale(1.05); } 40% { transform: scale(1); } }

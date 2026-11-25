@@ -1,0 +1,136 @@
+/* Сундук в «ненастоящем 3D»: короб W×H×D и крышка на петле у заднего ребра.
+   --s — размер (как у подарка), --w/--hh/--d — короб, --lh — высота крышки, --tx/--ty — наклон телефона.
+   Модели: c3-wood — деревянный сундучок, c3-ruby — эмалевый сундук, c3-gold — золотой. */
+
+.c3 { position: relative; display: flex; align-items: center; justify-content: center; perspective: calc(var(--s) * 5); }
+.c3-scene {
+  position: relative; width: var(--w); height: var(--hh); transform-style: preserve-3d; margin-top: var(--lh);
+  transform: rotateX(calc(-20deg + var(--tx))) rotateY(calc(-30deg + var(--ty)));
+  transition: transform .5s cubic-bezier(.2, .8, .3, 1);
+}
+.c3-body { position: absolute; inset: 0; transform-style: preserve-3d; }
+.c3-scene, .c3-scene * { pointer-events: none; }
+
+.c3-f { position: absolute; border: calc(var(--s) / 55 + 1.5px) solid #15100A; border-radius: calc(var(--s) / 30); overflow: hidden; backface-visibility: visible; }
+.c3-front, .c3-back { left: 0; top: 0; width: var(--w); height: var(--hh); background: linear-gradient(170deg, var(--cl), var(--c) 45%, var(--cd)); }
+.c3-front { transform: translateZ(calc(var(--d) / 2)); }
+.c3-back { transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); }
+.c3-side { top: 0; width: var(--d); height: var(--hh); left: calc((var(--w) - var(--d)) / 2); background: linear-gradient(170deg, var(--c), var(--cd)); }
+.c3-right { transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); filter: brightness(.82); }
+.c3-left { transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); }
+.c3-floor {
+  left: 0; width: var(--w); height: var(--d); top: calc((var(--hh) - var(--d)) / 2);
+  background: radial-gradient(circle at 50% 50%, #FFF4C2, #F5B820 75%);
+  transform: rotateX(-90deg) translateZ(calc(var(--hh) / 2 - 3px));
+}
+
+/* Доски у деревянного: горизонтальные щели. */
+.c3-wood .c3-f:not(.c3-floor):not(.c3-under)::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(180deg, transparent 0 calc(25% - 2px), rgba(21, 16, 10, .45) calc(25% - 2px) 25%);
+}
+
+/* Оковка: две полосы через весь сундук. */
+.c3-band { position: absolute; top: 0; bottom: 0; width: 13%; background: var(--band); border-left: 2px solid #15100A; border-right: 2px solid #15100A; }
+.c3-band.a { left: 14%; } .c3-band.b { right: 14%; }
+.c3-band::after { content: ''; position: absolute; left: 50%; top: 30%; width: 34%; aspect-ratio: 1; border-radius: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, .55); box-shadow: 0 calc(var(--s) / 5) 0 rgba(255, 255, 255, .55); }
+.c3-side .c3-band { left: 50%; transform: translateX(-50%); width: 18%; }
+
+/* Килим по коробу эмалевого и золотого. */
+.c3-kilim {
+  position: absolute; left: 0; right: 0; top: 52%; height: 16%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='12'%3E%3Cpath d='M0 6 L4 1 L8 6 L12 1 L16 6 M0 11 L4 6 L8 11 L12 6 L16 11' stroke='%23F5B820' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-size: calc(var(--s) / 9) 100%;
+}
+.c3-gold .c3-kilim { filter: hue-rotate(190deg) saturate(3) brightness(.7); }
+
+/* Замок на коробе, петля — на крышке. */
+.c3-lock {
+  position: absolute; left: 50%; top: -2px; width: 22%; height: 34%; transform: translateX(-50%);
+  background: linear-gradient(#FCD76D, #E8A70D); border: 2px solid #15100A; border-radius: 0 0 6px 6px;
+}
+.c3-lock::after { content: ''; position: absolute; left: 50%; top: 32%; width: 22%; height: 46%; transform: translateX(-50%); background: #15100A; border-radius: 40% 40% 2px 2px; }
+
+/* Крышка: петля у заднего нижнего ребра. Открылась — откидывается назад. */
+.c3-lid {
+  position: absolute; left: 0; width: var(--w); height: var(--lh); top: calc(var(--lh) * -1);
+  transform-style: preserve-3d; transform-origin: 50% 100% calc(var(--d) / -2);
+  transition: transform .55s cubic-bezier(.3, 1.6, .5, 1);
+}
+.c3-lid .c3-front, .c3-lid .c3-back { height: var(--lh); background: linear-gradient(170deg, var(--cl), var(--c)); }
+.c3-lid .c3-side { height: var(--lh); background: linear-gradient(var(--cl), var(--c)); }
+.c3-lid-top {
+  left: 0; width: var(--w); height: var(--d); top: calc((var(--lh) - var(--d)) / 2);
+  background: linear-gradient(135deg, var(--cl), var(--c)); transform: rotateX(90deg) translateZ(calc(var(--lh) / 2));
+}
+.c3-under {
+  left: 0; width: var(--w); height: var(--d); top: calc((var(--lh) - var(--d)) / 2);
+  background: linear-gradient(#FCD76D, #E8A70D); transform: rotateX(-90deg) translateZ(calc(var(--lh) / 2));
+}
+.c3-lid-top .c3-band { top: 0; bottom: 0; }
+.c3-hasp { position: absolute; left: 50%; bottom: -2px; width: 14%; height: 55%; transform: translateX(-50%); background: linear-gradient(#FCD76D, #E8A70D); border: 2px solid #15100A; border-radius: 4px 4px 0 0; }
+.c3-gem { position: absolute; left: 50%; top: 50%; width: 15%; aspect-ratio: 1; transform: translate(-50%, -50%) rotate(45deg); background: radial-gradient(circle at 35% 35%, #FF8FA3, #E01A3C 60%, #A61026); border: 2px solid #15100A; }
+.c3-lid-top .c3-gem { width: 11%; }
+
+.c3-open .c3-lid { transform: rotateX(108deg); }
+
+/* Ждёт: покачивается и подпрыгивает, как подарок. */
+.c3-idle .c3-body { animation: c3-idle 3.2s ease-in-out infinite; }
+@keyframes c3-idle {
+  0%, 70%, 100% { transform: rotateZ(0) translateY(0); }
+  74% { transform: rotateZ(-3deg) translateY(-3%); }
+  78% { transform: rotateZ(3deg) translateY(-3%); }
+  82% { transform: rotateZ(-2deg) translateY(-1%); }
+  86% { transform: rotateZ(1.500deg) translateY(0); }
+  90% { transform: rotateZ(0) translateY(0); }
+}
+.c3-idle .c3-lid { animation: c3-peek 3.2s ease-in-out infinite; }
+@keyframes c3-peek { 0%, 72%, 88%, 100% { transform: rotateX(0); } 78% { transform: rotateX(10deg); } }
+
+.c3-knock { animation: c3-knock .42s cubic-bezier(.3, .7, .4, 1); }
+@keyframes c3-knock {
+  0% { transform: translateY(0) scale(1, 1) rotateZ(0); }
+  18% { transform: translateY(4%) scale(1.1, .86) rotateZ(0); }
+  45% { transform: translateY(-24%) scale(.95, 1.06) rotateZ(-6deg); }
+  70% { transform: translateY(0) scale(1.05, .95) rotateZ(3deg); }
+  100% { transform: translateY(0) scale(1, 1) rotateZ(0); }
+}
+.c3[data-charge="1"] .c3-f { box-shadow: 0 0 calc(var(--s) / 10) calc(var(--s) / 60) rgba(252, 215, 109, .8); }
+.c3[data-charge="2"] .c3-f { box-shadow: 0 0 calc(var(--s) / 6) calc(var(--s) / 30) rgba(252, 215, 109, .95); }
+.c3[data-charge="2"]:not(.c3-open) .c3-lid { transform: rotateX(18deg); }
+
+.c3-shaking .c3-body { animation: c3-shake .11s linear infinite; }
+@keyframes c3-shake { 0%, 100% { transform: rotateZ(0); } 25% { transform: rotateZ(-3deg) translateX(-2%); } 75% { transform: rotateZ(3deg) translateX(2%); } }
+.c3-shaking .c3-lid { transform: rotateX(10deg); }
+
+/* Свет изнутри и тень на полу. */
+.c3-beam {
+  position: absolute; left: 12%; width: 76%; bottom: 40%; height: 280%; transform-origin: 50% 100%;
+  /* Без filter: blur — размытие внутри 3D телефон перерисовывает каждый кадр; мягкость даёт сам градиент. */
+  background: radial-gradient(ellipse 50% 100% at 50% 100%, rgba(255, 244, 194, .95), rgba(252, 215, 109, .4) 55%, rgba(252, 215, 109, 0) 100%);
+  opacity: 0; transform: scaleY(0); transition: transform .7s cubic-bezier(.2, .8, .3, 1) .15s, opacity .4s .15s;
+}
+.c3-open .c3-beam { opacity: 1; transform: scaleY(1); }
+.c3-ajar.c3-open .c3-beam { opacity: .7; transform: scaleY(.6); }
+.c3-shadow {
+  position: absolute; left: -25%; width: 150%; height: calc(var(--d) * 1.5); top: calc((var(--hh) - var(--d) * 1.5) / 2); border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(21, 16, 10, .28), rgba(21, 16, 10, 0));
+  transform: rotateX(-90deg) translateZ(calc(var(--hh) / 2 + 2px));
+}
+
+/* Золотой всегда светится (ореол позади — фильтр на 3D-сцене сплющил бы её). */
+.c3-gold::before {
+  content: ''; position: absolute; left: 50%; top: 52%; width: calc(var(--s) * 1.6); height: calc(var(--s) * 1.3); transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(255, 220, 110, .85), rgba(255, 220, 110, 0)); animation: c3-halo 2.4s ease-in-out infinite;
+}
+@keyframes c3-halo { 0%, 100% { opacity: .65; transform: translate(-50%, -50%) scale(.92); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); } }
+/* На главной открытый сундук — крышка приоткрыта, чтобы влезал. */
+.c3-ajar.c3-open .c3-lid { transform: rotateX(72deg); }
+
+/* Модель сменилась на тапе — выпрыгивает. */
+.lb-pop { animation: lb-pop .5s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes lb-pop { 0% { transform: scale(.35); filter: brightness(2.4); } 100% { transform: scale(1); filter: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .c3-idle .c3-body, .c3-idle .c3-lid, .c3-shaking .c3-body, .c3-knock, .lb-pop { animation: none; }
+}

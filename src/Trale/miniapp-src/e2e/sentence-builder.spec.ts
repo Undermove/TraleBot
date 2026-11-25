@@ -80,6 +80,7 @@ async function setupCasesL10Mocks(page: any, lessonQuestions: object[]) {
 }
 
 async function navigateToCasesL10(page: any) {
+  await page.getByTestId('home-tab-course').click()
   const moduleTile = page.locator('[data-testid="module-tile-cases"]')
   await expect(moduleTile).toBeVisible({ timeout: 15_000 })
   await moduleTile.click()
@@ -395,6 +396,7 @@ async function setupApiMocks(page: any, meResponse: object, lessonQuestions: obj
 
 async function navigateToPractice(page: any, lessonId: number = 1) {
   // Wait for the specific module tile (not the suggestion card which also contains 'Постпозиции')
+  await page.getByTestId('home-tab-course').click()
   const moduleTile = page.locator('[data-testid="module-tile-postpositions"]')
   await expect(moduleTile).toBeVisible({ timeout: 15_000 })
   await moduleTile.click()
@@ -571,6 +573,7 @@ test('Free user — Postpositions L1 shows paywall component; tap-target ≥ 44p
   await page.waitForLoadState('networkidle')
 
   // Click the specific module tile (not the suggestion card which also contains 'Постпозиции')
+  await page.getByTestId('home-tab-course').click()
   const moduleTile = page.locator('[data-testid="module-tile-postpositions"]')
   await expect(moduleTile).toBeVisible({ timeout: 15_000 })
   await moduleTile.click()
@@ -899,6 +902,7 @@ async function setupShoppingL7Mocks(page: any, lessonQuestions: object[]) {
 }
 
 async function navigateToShoppingL7(page: any) {
+  await page.getByTestId('home-tab-course').click()
   const moduleTile = page.locator('[data-testid="module-tile-shopping"]')
   await expect(moduleTile).toBeVisible({ timeout: 15_000 })
   await moduleTile.click()
@@ -1037,6 +1041,7 @@ async function setupPresentTenseL7Mocks(page: any, lessonQuestions: object[]) {
 }
 
 async function navigateToPresentTenseL7(page: any) {
+  await page.getByTestId('home-tab-course').click()
   const moduleTile = page.locator('[data-testid="module-tile-present-tense"]')
   await expect(moduleTile).toBeVisible({ timeout: 15_000 })
   await moduleTile.click()
@@ -1131,6 +1136,7 @@ async function setupCafeL7Mocks(page: any, lessonQuestions: object[]) {
 }
 
 async function navigateToCafeL7(page: any) {
+  await page.getByTestId('home-tab-course').click()
   const moduleTile = page.locator('[data-testid="module-tile-cafe"]')
   await expect(moduleTile).toBeVisible({ timeout: 15_000 })
   await moduleTile.click()
@@ -1317,6 +1323,7 @@ async function setupTaxiL7Mocks(page: any, lessonQuestions: object[]) {
 }
 
 async function navigateToTaxiL7(page: any) {
+  await page.getByTestId('home-tab-course').click()
   const moduleTile = page.locator('[data-testid="module-tile-taxi"]')
   await expect(moduleTile).toBeVisible({ timeout: 15_000 })
   await moduleTile.click()

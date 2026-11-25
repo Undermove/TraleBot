@@ -552,3 +552,29 @@ input:focus-visible {
 /* Горизонтальная лента чипов: прокручивается пальцем, полосы прокрутки не видно. */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Главная кнопка «Сегодня», пока за день ничего не сделано: вокруг расходится ореол — глаз находит её первой.
+   Сама кнопка стоит на месте: двигается только ореол. */
+@keyframes today-halo {
+  0% { transform: scale(1); opacity: .55; }
+  100% { transform: scale(1.08, 1.35); opacity: 0; }
+}
+.today-nudge { position: relative; }
+.today-nudge .jewel-btn { font-size: 17px; min-height: 60px; }
+.today-nudge::after {
+  content: ''; position: absolute; inset: 0; border-radius: 14px; border: 3px solid #F5B820; pointer-events: none;
+  animation: today-halo 1.8s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .today-nudge::after { animation: none; opacity: 0; } }
+
+/* Вкладка въезжает с той стороны, куда листали. */
+/* Сдвиг через left, а не transform: transform сделал бы блок опорой для всего «fixed» внутри (кнопки квиза, шторки). */
+/* Смена вкладки — только проявление (opacity делает видеокарта). Сдвиг через left пересчитывал раскладку
+   на каждом кадре (тормозило на телефоне), а через transform ломал position: fixed у кнопок внутри. */
+@keyframes tab-in-right { from { opacity: .35; } to { opacity: 1; } }
+@keyframes tab-in-left { from { opacity: .35; } to { opacity: 1; } }
+.tab-in-right { animation: tab-in-right .22s ease-out; }
+.tab-in-left { animation: tab-in-left .22s ease-out; }
+@keyframes tab-skel { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.tab-skel { background: #E9DDC3; animation: tab-skel 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .tab-in-right, .tab-in-left, .tab-skel { animation: none; } }

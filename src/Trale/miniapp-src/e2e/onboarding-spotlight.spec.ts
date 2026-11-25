@@ -80,7 +80,7 @@ test('no spotlight is shown when me() returns no hint', async ({ page }) => {
   await setupApi(page, { ...meWithHint, onboardingHint: null as any })
   await page.goto('/?playwright=1')
 
-  await expect(page.getByTestId('module-tile-alphabet-progressive')).toBeVisible()
+  await expect(page.getByTestId('dashboard-today')).toBeVisible()
   await expect(page.getByTestId('onboarding-spotlight-first_lesson')).toHaveCount(0)
 })
 

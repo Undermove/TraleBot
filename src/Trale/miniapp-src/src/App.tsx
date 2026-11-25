@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
+import BomboraHome from './today/BomboraHome'
+import { cachedGift } from './today/gift'
 import { CatalogDto, ProgressState, Screen } from './types'
 import { defaultProgress, onProgressPublished, progressFromDto } from './progress'
 import { onOpenLessonModule } from './verbs/family/nav'
@@ -37,7 +39,9 @@ import AdminUsersScreen from './screens/AdminUsersScreen'
 import AdminPaymentsScreen from './screens/AdminPaymentsScreen'
 import AdminSystemScreen from './screens/AdminSystemScreen'
 import { adminBack, adminLink, enterAdmin, goInnerBack, isAdminScreen, leaveAdmin, parseAdminLink, rememberScroll, scrollOf, tabEpoch } from './admin/adminNav'
-import AdminTabBar from './components/admin/AdminTabBar'
+import AdminTabBar, { useKeyboardOpen } from './components/admin/AdminTabBar'
+import HomeTabBar, { HOME_TAB_BAR_HEIGHT, TABS, homeTabOf } from './components/HomeTabBar'
+import TabSwipe from './components/TabSwipe'
 import AdminMoreScreen from './screens/AdminMoreScreen'
 import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
 import AdminFeedbackScreen from './screens/AdminFeedbackScreen'
@@ -70,6 +74,14 @@ function incrementTodayLessons(): number {
   return next
 }
 
+/** Без подписки и бесплатного периода словарь закрыт — как раньше плитка «Мой словарь» на главной. */
+const VOCAB_LOCKED: ReadonlySet<'vocab'> = new Set(['vocab'])
+
+/** Нижний отступ телефона, который main.tsx кладёт в корень документа (под экранами вкладок он растёт на панель). */
+function rootSafeBottom(): string {
+  return document.documentElement.style.getPropertyValue('--safe-b') || 'env(safe-area-inset-bottom, 0px)'
+}
+
 // Deep-link routing: a push opens the WebApp at e.g.
 // ?screen=practice&moduleId=…&lessonId=… (or ?screen=feed). Resolve that to a
 // concrete screen — validated against the catalog — so the notification lands on
@@ -86,6 +98,7 @@ function parseDeepLink(catalog: CatalogDto): Screen | null {
     if (target === 'vocabulary') return { kind: 'vocabulary-list' }
     // ?screen=daily — кнопка сообщения бота о задании дня.
     if (target === 'daily') return { kind: 'daily' }
+    if (target === 'course') return { kind: 'course' }
     if (moduleId) {
       const mod = catalog.modules.find((m) => m.id === moduleId)
       if (!mod) return null
@@ -251,6 +264,8 @@ export default function App() {
 
   // Карточка глагола, лесенка, игры и комикс открываются слоями поверх экрана: «Назад» сначала закрывает их.
   const overlayOpen = useHasOverlay()
+  // Пока набирают текст (поиск в словаре), панель вкладок прячется, чтобы не висеть над клавиатурой.
+  const keyboardOpen = useKeyboardOpen()
 
   // Telegram BackButton integration
   useEffect(() => {
@@ -260,8 +275,9 @@ export default function App() {
     // hasn't earned any XP, so is the first lesson — no back button on either, so
     // they can't slip past the soft onboarding into the hidden hub.
     const inPreXpFirstLesson = !hasEarnedXp(progress) && screen.kind === 'lesson-theory'
+    // Корни вкладок («Сегодня», «Курс», «Глаголы», «Словарь») — без «Назад»: между ними ходят панелью внизу.
     const canBack =
-      screen.kind !== 'dashboard' &&
+      homeTabOf(screen) === null &&
       screen.kind !== 'loading' &&
       screen.kind !== 'welcome' &&
       !inPreXpFirstLesson
@@ -278,13 +294,9 @@ export default function App() {
         if (!goInnerBack()) navigate(adminBack())
         return
       }
-      if (
-        screen.kind === 'module' ||
-        screen.kind === 'profile' ||
-        screen.kind === 'vocabulary-list' ||
-        screen.kind === 'verbs' ||
-        screen.kind === 'daily'
-      ) {
+      if (screen.kind === 'module') {
+        setScreen({ kind: 'course' })
+      } else if (screen.kind === 'profile' || screen.kind === 'daily') {
         setScreen({ kind: 'dashboard' })
       } else if (screen.kind === 'feedback') {
         setScreen(afterFeedback(screen))
@@ -451,7 +463,7 @@ export default function App() {
     </div>
   )
 
-  const renderScreen = () => {
+  const renderScreenOf = (screen: Screen) => {
     switch (screen.kind) {
       case 'welcome': {
         // После знакомства — первый урок алфавита (ა там уже знакома); если он пройден — урок, который предложил бы хаб.
@@ -515,6 +527,26 @@ export default function App() {
               onboardingHint={onboardingHint}
               onHintSeen={(h) => api.markOnboardingHintSeen(h).catch(() => {})}
               onHintDismiss={() => setOnboardingHint(null)}
+              onPurchaseSuccess={handleProPurchaseSuccess}
+              onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
+              navigate={navigate}
+            />
+          </>
+        )
+      case 'course':
+        return (
+          <>
+            {proSuccessToast}
+            <Dashboard
+              view="course"
+              catalog={catalog}
+              progress={progress}
+              todayLessons={todayLessons}
+              userLevel={userLevel ?? 'beginner'}
+              isPro={isPro}
+              isTrialActive={isTrialActive}
+              trialDaysLeft={trialDaysLeft}
+              shouldShowReferralExtensionCta={shouldShowReferralExtensionCta}
               onPurchaseSuccess={handleProPurchaseSuccess}
               onProgressUpdate={(patch) => setProgress((p) => ({ ...p, ...patch }))}
               navigate={navigate}
@@ -633,8 +665,10 @@ export default function App() {
             )}
           </>
         )
+      case 'bombora-home':
+        return <BomboraHome key={screen.tab ?? 'wear'} startTab={screen.tab} inviteLink={cachedGift()?.invite.link ?? ''} onExit={() => navigate({ kind: 'dashboard' })} />
       case 'daily':
-        return <DailyTask navigate={navigate} />
+        return <DailyTask key={screen.extra ? 'extra' : 'daily'} navigate={navigate} startExtra={Boolean(screen.extra)} startNow={Boolean(screen.start)} />
       case 'verbs':
         return (
           <>
@@ -658,9 +692,24 @@ export default function App() {
     }
   }
 
+  const renderScreen = () => renderScreenOf(screen)
+  const tab = homeTabOf(screen)
   return (
     <>
-      {renderScreen()}
+      {tab ? (
+        // Экран вкладки: нижний отступ «безопасной зоны» растёт на высоту панели — всё, что прижато к низу
+        // (кнопки квиза в словаре, шторки), встаёт над ней, а не под неё.
+        <div className="contents" style={{ ['--safe-b' as any]: `calc(${rootSafeBottom()} + ${HOME_TAB_BAR_HEIGHT}px)` }}>
+          <TabSwipe tab={tab} navigate={navigate} disabled={overlayOpen || keyboardOpen}
+            renderTab={t => renderScreenOf(TABS.find(x => x.id === t)!.screen)}
+            locked={isPro || isTrialActive ? undefined : VOCAB_LOCKED} onLocked={setPaywallFor}>
+            {renderScreen()}
+          </TabSwipe>
+        </div>
+      ) : renderScreen()}
+      {tab && !overlayOpen && !keyboardOpen && (
+        <HomeTabBar active={tab} navigate={navigate} locked={isPro || isTrialActive ? undefined : VOCAB_LOCKED} onLocked={setPaywallFor} />
+      )}
       {paywallFor && (
         <ProPaywall
           trigger="module"

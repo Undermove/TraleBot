@@ -23,7 +23,19 @@ export function Page({ testId, children }: { testId: string; children: React.Rea
 }
 
 /** Шапка: крестик и полоска из шагов занятия (или подпись, когда шагов ещё нет). */
-export function DailyHeader({ steps, at, label, onExit }: { steps?: number; at?: number; label?: string; onExit: () => void }) {
+/** Подарок в конце полоски: «дойдёшь — откроешь». Цвет — обычной коробки. */
+function GiftAtEnd({ near }: { near: boolean }) {
+  return (
+    <svg width="26" height="26" viewBox="0 0 40 40" aria-hidden="true" className={`shrink-0 ${near ? 'animate-bounce' : ''}`} data-testid="daily-steps-gift">
+      <rect x="6" y="16" width="28" height="20" rx="3" fill="#1B5FB0" stroke="#15100A" strokeWidth="2.500" />
+      <rect x="4" y="11" width="32" height="7" rx="2" fill="#3A7FCC" stroke="#15100A" strokeWidth="2.500" />
+      <rect x="17" y="11" width="6" height="25" fill="#E01A3C" stroke="#15100A" strokeWidth="2" />
+      <path d="M20 11 C 14 2, 6 6, 11 11 M20 11 C 26 2, 34 6, 29 11" stroke="#15100A" strokeWidth="2.500" fill="none" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function DailyHeader({ steps, at, label, onExit, gift = false }: { steps?: number; at?: number; label?: string; onExit: () => void; gift?: boolean }) {
   return (
     <div className="px-5 pb-2 flex items-center gap-3" style={{ paddingTop: SAFE_TOP }}>
       <button onClick={onExit} aria-label="Закрыть" data-testid="daily-close" className="w-11 h-11 -ml-2 shrink-0 flex items-center justify-center">
@@ -36,7 +48,7 @@ export function DailyHeader({ steps, at, label, onExit }: { steps?: number; at?:
               <div key={i} className={`h-2.5 rounded-full border border-jewelInk/30 transition-colors duration-300 ${i < (at ?? 0) ? 'bg-navy' : 'bg-cream-deep'}`} />
             ))}
           </div>
-          <div className="shrink-0 text-[12px] font-bold text-jewelInk-hint tabular-nums">{at} из {steps}</div>
+          {gift ? <GiftAtEnd near={(at ?? 0) >= steps} /> : <div className="shrink-0 text-[12px] font-bold text-jewelInk-hint tabular-nums">{at} из {steps}</div>}
         </>
       ) : (
         <div className="flex-1 min-w-0 mn-eyebrow truncate">{label}</div>

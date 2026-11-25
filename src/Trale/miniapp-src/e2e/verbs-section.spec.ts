@@ -5,20 +5,18 @@ test.use({ viewport: { width: 375, height: 812 } })
 
 const TOUR_SEEN = ['ui:verbs_tour_now', 'ui:verbs_tour_card', 'ui:verbs_tour_level', 'ui:verbs_tour_mine']
 
-test('the dashboard has a «Глаголы» tile for everyone and it opens the section', async ({ page }) => {
+test('the «Глаголы» tab is there for everyone and it opens the section', async ({ page }) => {
   const state = await setup(page)
   await page.goto('/?playwright=1')
 
-  const tile = page.getByTestId('dashboard-verbs-tile')
-  await expect(tile).toBeVisible()
-  await expect(tile).toContainText('Глаголы')
-  await expect(tile).toContainText(`${LADDER.length} глаголов`)
-  await expect(page.getByTestId('dashboard-verbs-new')).toBeVisible()
-  await tile.scrollIntoViewIfNeeded()
-  await shot(page, '01-dashboard-tile')
+  const tab = page.getByTestId('home-tab-verbs')
+  await expect(tab).toBeVisible()
+  await expect(tab).toContainText('Глаголы')
+  await shot(page, '01-dashboard-tab')
 
-  await tile.click()
+  await tab.click()
   await expect(page.getByTestId('verbs-section')).toBeVisible()
+  await expect(tab).toHaveAttribute('aria-selected', 'true')
   await expect.poll(() => state.opened).toEqual(['home'])
 })
 
@@ -43,7 +41,7 @@ test('a broadcast link lands on the section: the open is reported first, the gif
 
   // Второй, обычный заход — с главной; подарок и подсказка больше не показываются.
   await page.goto('/?playwright=1')
-  await page.getByTestId('dashboard-verbs-tile').click()
+  await page.getByTestId('home-tab-verbs').click()
   await expect(page.getByTestId('verbs-section')).toBeVisible()
   await expect(page.getByTestId('verbs-gift')).toHaveCount(0)
   await expect(page.getByTestId('verbs-tour-text')).toHaveCount(0)

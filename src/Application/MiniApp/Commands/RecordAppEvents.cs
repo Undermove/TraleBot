@@ -8,7 +8,7 @@ namespace Application.MiniApp.Commands;
 
 /// <summary>
 /// A batch of mini-app events outside lessons (opened, loaded, failed to load, screen shown, paywall opened,
-/// hidden) — to see who left before the app loaded and where people go once it did. Only known events with
+/// a tap on the home screen or the tab bar, hidden) — to see who left before the app loaded and where people go once it did. Only known events with
 /// sane fields are kept, the rest is dropped silently; a field that does not fit (an odd platform, a start
 /// parameter with spaces) is dropped, not the event. At most <see cref="MaxBatch"/> events per request and
 /// <see cref="MaxPerUserPerDay"/> per person per day. Never answers with an error: analytics must not get in the
@@ -21,7 +21,7 @@ public partial class RecordAppEvents : IRequest<int>
 
     public static readonly IReadOnlySet<string> Events = new HashSet<string>
     {
-        "app_open", "app_ready", "app_error", "app_hide", "screen", "paywall"
+        "app_open", "app_ready", "app_error", "app_hide", "screen", "paywall", "tap"
     };
 
     public required Guid UserId { get; init; }

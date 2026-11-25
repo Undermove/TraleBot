@@ -14,6 +14,7 @@ public class DailyTaskStateConfiguration : IEntityTypeConfiguration<DailyTaskSta
         builder.Property(s => s.MissedJson).HasColumnType("text");
         builder.Property(s => s.CourseJson).HasColumnType("text");
         builder.Property(s => s.TaskJson).HasColumnType("text");
+        builder.Property(s => s.GiftJson).HasColumnType("text");
 
         builder.HasOne(s => s.User)
             .WithMany()

@@ -103,6 +103,7 @@ test('expired-Pro user sees Pro module locked and paywall opens on tap', async (
   await setupApi(page, expiredProMeResponse)
   // ?playwright=1 bypasses the Telegram-WebApp check (App.tsx isInsideTelegram).
   await page.goto('/?playwright=1')
+  await page.getByTestId('home-tab-course').click()
 
   // Pro tile must be rendered.
   const proTile = page.getByTestId('module-tile-cases')
@@ -116,16 +117,13 @@ test('expired-Pro user sees Pro module locked and paywall opens on tap', async (
   await expect(page.getByRole('dialog', { name: 'Про-доступ' })).toBeVisible()
 })
 
-test('expired-Pro user sees my-vocabulary locked and paywall opens on tap', async ({ page }) => {
+test('expired-Pro user: the «Словарь» tab opens the paywall', async ({ page }) => {
   await setupApi(page, expiredProMeResponse)
   await page.goto('/?playwright=1')
 
-  const vocabTile = page.getByTestId('module-tile-my-vocabulary')
-  await expect(vocabTile).toBeVisible()
-  await expect(vocabTile.locator('span[aria-label="Про-доступ"]')).toBeVisible()
-
-  await vocabTile.click()
+  await page.getByTestId('home-tab-vocab').click()
   await expect(page.getByRole('dialog', { name: 'Про-доступ' })).toBeVisible()
+  await expect(page.getByTestId('home-tab-today')).toHaveAttribute('aria-selected', 'true')
 })
 
 test('trial user has full access to my-vocabulary', async ({ page }) => {
@@ -133,16 +131,17 @@ test('trial user has full access to my-vocabulary', async ({ page }) => {
   await setupApi(page, trialMe)
   await page.goto('/?playwright=1')
 
-  const vocabTile = page.getByTestId('module-tile-my-vocabulary')
-  await expect(vocabTile).toBeVisible()
-  // No lock badge for trial users.
-  await expect(vocabTile.locator('span[aria-label="Про-доступ"]')).toBeHidden()
+  // The «Словарь» tab opens the dictionary straight away — no paywall.
+  await page.getByTestId('home-tab-vocab').click()
+  await expect(page.getByTestId('home-tab-vocab')).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('dialog', { name: 'Про-доступ' })).toBeHidden()
 })
 
 test('active-Pro user can tap a Pro module without paywall', async ({ page }) => {
   await setupApi(page, proMeResponse)
   // ?playwright=1 bypasses the Telegram-WebApp check (App.tsx isInsideTelegram).
   await page.goto('/?playwright=1')
+  await page.getByTestId('home-tab-course').click()
 
   const proTile = page.getByTestId('module-tile-cases')
   await expect(proTile).toBeVisible()

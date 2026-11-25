@@ -1,0 +1,273 @@
+{
+  "available": true,
+  "day": "2026-11-16",
+  "mode": "mix",
+  "level": 2,
+  "seconds": 45,
+  "done": false,
+  "title": "Ещё раунд",
+  "chat": [
+    "Ещё раунд: 4 формы — то, что давно не повторялось.",
+    "Пары, потом с русского на грузинский. За раунд +10 опыта."
+  ],
+  "button": "Играть",
+  "why": [],
+  "warm": [],
+  "pairs": [
+    {
+      "key": "v:არის:aorist:4",
+      "kind": "verb",
+      "ka": "იყავით",
+      "ru": "вы были",
+      "lemma": "არის",
+      "verbRu": "быть",
+      "tense": "aorist",
+      "person": 4
+    },
+    {
+      "key": "v:არის:present:0",
+      "kind": "verb",
+      "ka": "ვარ",
+      "ru": "я есть",
+      "lemma": "არის",
+      "verbRu": "быть",
+      "tense": "present",
+      "person": 0
+    },
+    {
+      "key": "v:არის:present:3",
+      "kind": "verb",
+      "ka": "ვართ",
+      "ru": "мы есть",
+      "lemma": "არის",
+      "verbRu": "быть",
+      "tense": "present",
+      "person": 3
+    },
+    {
+      "key": "v:არის:aorist:1",
+      "kind": "verb",
+      "ka": "იყავი",
+      "ru": "ты был(а)",
+      "lemma": "არის",
+      "verbRu": "быть",
+      "tense": "aorist",
+      "person": 1
+    }
+  ],
+  "back": [
+    {
+      "item": {
+        "key": "v:არის:present:0",
+        "kind": "verb",
+        "ka": "ვარ",
+        "ru": "я есть",
+        "lemma": "არის",
+        "verbRu": "быть",
+        "tense": "present",
+        "person": 0
+      },
+      "options": [
+        {
+          "item": {
+            "key": "v:არის:aorist:4",
+            "kind": "verb",
+            "ka": "იყავით",
+            "ru": "вы были",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "aorist",
+            "person": 4
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:არის:present:3",
+            "kind": "verb",
+            "ka": "ვართ",
+            "ru": "мы есть",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "present",
+            "person": 3
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:არის:present:0",
+            "kind": "verb",
+            "ka": "ვარ",
+            "ru": "я есть",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "present",
+            "person": 0
+          },
+          "ok": true
+        }
+      ]
+    },
+    {
+      "item": {
+        "key": "v:არის:present:3",
+        "kind": "verb",
+        "ka": "ვართ",
+        "ru": "мы есть",
+        "lemma": "არის",
+        "verbRu": "быть",
+        "tense": "present",
+        "person": 3
+      },
+      "options": [
+        {
+          "item": {
+            "key": "v:არის:present:0",
+            "kind": "verb",
+            "ka": "ვარ",
+            "ru": "я есть",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "present",
+            "person": 0
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:არის:present:3",
+            "kind": "verb",
+            "ka": "ვართ",
+            "ru": "мы есть",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "present",
+            "person": 3
+          },
+          "ok": true
+        },
+        {
+          "item": {
+            "key": "v:არის:aorist:4",
+            "kind": "verb",
+            "ka": "იყავით",
+            "ru": "вы были",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "aorist",
+            "person": 4
+          },
+          "ok": false
+        }
+      ]
+    },
+    {
+      "item": {
+        "key": "v:არის:aorist:1",
+        "kind": "verb",
+        "ka": "იყავი",
+        "ru": "ты был(а)",
+        "lemma": "არის",
+        "verbRu": "быть",
+        "tense": "aorist",
+        "person": 1
+      },
+      "options": [
+        {
+          "item": {
+            "key": "v:არის:aorist:1",
+            "kind": "verb",
+            "ka": "იყავი",
+            "ru": "ты был(а)",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "aorist",
+            "person": 1
+          },
+          "ok": true
+        },
+        {
+          "item": {
+            "key": "v:არის:aorist:4",
+            "kind": "verb",
+            "ka": "იყავით",
+            "ru": "вы были",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "aorist",
+            "person": 4
+          },
+          "ok": false
+        },
+        {
+          "item": {
+            "key": "v:არის:present:0",
+            "kind": "verb",
+            "ka": "ვარ",
+            "ru": "я есть",
+            "lemma": "არის",
+            "verbRu": "быть",
+            "tense": "present",
+            "person": 0
+          },
+          "ok": false
+        }
+      ]
+    }
+  ],
+  "check": {
+    "prompt": "Нажми форму, которая значит «вы были»",
+    "intro": "Последнее задание: одна форма из сегодняшней игры.",
+    "picks": [
+      {
+        "item": {
+          "key": "v:არის:present:0",
+          "kind": "verb",
+          "ka": "ვარ",
+          "ru": "я есть",
+          "lemma": "არის",
+          "verbRu": "быть",
+          "tense": "present",
+          "person": 0
+        },
+        "ok": false,
+        "message": "«ვარ» — это «я есть». Нажми другую форму."
+      },
+      {
+        "item": {
+          "key": "v:არის:present:3",
+          "kind": "verb",
+          "ka": "ვართ",
+          "ru": "мы есть",
+          "lemma": "არის",
+          "verbRu": "быть",
+          "tense": "present",
+          "person": 3
+        },
+        "ok": false,
+        "message": "«ვართ» — это «мы есть». Нажми другую форму."
+      },
+      {
+        "item": {
+          "key": "v:არის:aorist:4",
+          "kind": "verb",
+          "ka": "იყავით",
+          "ru": "вы были",
+          "lemma": "არის",
+          "verbRu": "быть",
+          "tense": "aorist",
+          "person": 4
+        },
+        "ok": true,
+        "message": "Верно: «იყავით» — вы были."
+      }
+    ]
+  },
+  "next": null,
+  "offer": null,
+  "offerTaken": false,
+  "result": null,
+  "extras": 0,
+  "dev": false
+}

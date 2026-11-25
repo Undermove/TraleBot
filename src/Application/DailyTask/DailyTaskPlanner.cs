@@ -16,6 +16,9 @@ public static class DailyTaskPlanner
 {
     public const int XpReward = 20;
 
+    /// <summary>XP for an extra round played after the task.</summary>
+    public const int XpExtra = 10;
+
     /// <summary>The accuracy assumed before the first game: it starts the learner on the middle level.</summary>
     public const int StartAccuracy = 78;
 
@@ -33,13 +36,14 @@ public static class DailyTaskPlanner
 
     private const int Mastered = VerbFormProgress.MasteredStep;
 
-    private record LevelSpec(int Pairs, int Seconds, int Options, int Rounds);
+    /// <param name="Back">Rounds from Russian into Georgian after the pairs.</param>
+    private record LevelSpec(int Pairs, int Seconds, int Options, int Rounds, int Back);
 
     private static LevelSpec Spec(int level) => level switch
     {
-        1 => new LevelSpec(3, 60, 2, 3),
-        2 => new LevelSpec(4, 45, 3, 5),
-        _ => new LevelSpec(5, 35, 3, 5)
+        1 => new LevelSpec(3, 60, 2, 3, 3),
+        2 => new LevelSpec(4, 45, 3, 5, 4),
+        _ => new LevelSpec(5, 35, 3, 5, 5)
     };
 
     /// <summary>Tenses are never called by their textbook names in front of a learner.</summary>
@@ -247,6 +251,7 @@ public static class DailyTaskPlanner
                 break;
         }
 
+        var check = Check(pairs, forms, input.Words, level, spec.Options, random);
         return new DailyTaskDto
         {
             Available = true,
@@ -260,9 +265,231 @@ public static class DailyTaskPlanner
             Seconds = spec.Seconds,
             Warm = rounds,
             Pairs = pairs,
-            Check = Check(pairs, forms, input.Words, level, spec.Options, random),
-            Next = next
+            Back = Back(pairs.Concat(rounds.Select(r => r.Item)).Concat(Tiles(slip)).Concat(Tiles(low)), check, forms, input.Words, level, spec, random),
+            Check = check,
+            Next = next,
+            Push = Push(input, mode, rounds, pairs, forms, staleVerb, Slipped)
         };
+    }
+
+    /// <summary>
+    /// One more round after the task is done: what was practised longest ago, a couple of dictionary words,
+    /// pairs, the way back and the check — no warm-up and nothing new. Null when there is nothing to build it from.
+    /// </summary>
+    public static DailyTaskDto? Extra(DailyInput input, IReadOnlySet<string> skip)
+    {
+        var random = new Random(input.Seed);
+        var forms = input.Forms;
+        var accuracy = input.Accuracy ?? StartAccuracy;
+        var level = accuracy < 73 ? 1 : accuracy < 85 ? 2 : 3;
+        var spec = Spec(level);
+
+        var pairs = new List<DailyItem>();
+        void Take(IEnumerable<DailyItem> candidates, int upTo)
+        {
+            foreach (var item in candidates.Where(i => !skip.Contains(i.Key) && TileOk(i)))
+            {
+                if (pairs.Count >= upTo)
+                {
+                    return;
+                }
+
+                if (pairs.All(p => p.Ka != item.Ka && p.Ru != item.Ru))
+                {
+                    pairs.Add(item);
+                }
+            }
+        }
+
+        var oldForms = forms.OrderBy(f => f.UpdatedAtUtc).ThenBy(f => f.Step).Select(Item).ToList();
+        var oldWords = input.Words.OrderByDescending(w => w.Bad > w.Ok).ThenBy(w => w.UpdatedAtUtc).Select(Item).ToList();
+        var wantWords = Math.Min(level, oldWords.Count);
+        Take(oldForms, spec.Pairs - wantWords);
+        Take(oldWords, spec.Pairs);
+        Take(oldForms, spec.Pairs);
+
+        if (pairs.Count < 2)
+        {
+            return null;
+        }
+
+        var check = Check(pairs, forms, input.Words, level, spec.Options, random);
+        var day = DateOnly.FromDateTime(input.Now.Date).ToString("yyyy-MM-dd");
+        return new DailyTaskDto
+        {
+            Available = true,
+            Day = day,
+            Mode = DailyMode.Mix,
+            Level = level,
+            Title = "Ещё раунд",
+            Chat =
+            [
+                $"Ещё раунд: {What(pairs)} — то, что давно не повторялось.",
+                $"Пары, потом с русского на грузинский. За раунд +{XpExtra} опыта."
+            ],
+            Button = "Играть",
+            Seconds = spec.Seconds,
+            Pairs = pairs,
+            Back = Back(pairs.Concat(oldForms.Where(i => !skip.Contains(i.Key))), check, forms, input.Words, level, spec, random),
+            Check = check
+        };
+
+        static string What(List<DailyItem> items)
+        {
+            var verbs = items.Count(i => i.Kind == "verb");
+            var words = items.Count - verbs;
+            return string.Join(" и ", new[]
+            {
+                verbs > 0 ? Count(verbs, "форма", "формы", "форм") : null,
+                words > 0 ? Count(words, "слово", "слова", "слов") : null
+            }.Where(x => x != null));
+        }
+    }
+
+    /// <summary>
+    /// The way back: the meaning in Russian, the Georgian to pick. Today's pairs first, then the warm-up, then weak forms;
+    /// the form of the last check is left for the check. The higher the level, the more alike the options.
+    /// </summary>
+    private static List<DailyBackRound> Back(
+        IEnumerable<DailyItem> items, DailyCheck check, IReadOnlyList<DailyForm> forms, IReadOnlyList<DailyWord> words,
+        int level, LevelSpec spec, Random random)
+    {
+        var checkKey = check.Picks.FirstOrDefault(p => p.Ok)?.Item.Key;
+        var rounds = new List<DailyBackRound>();
+        foreach (var item in items.Where(i => i.Key != checkKey).DistinctBy(i => i.Key))
+        {
+            if (rounds.Count >= spec.Back)
+            {
+                break;
+            }
+
+            if (rounds.Any(r => r.Item.Ru == item.Ru))
+            {
+                continue;
+            }
+
+            var wrong = Lookalikes(item, forms, words, level, random)
+                .Where(o => o.Ka != item.Ka && o.Ru != item.Ru && o.Ka.Length <= 20)
+                .DistinctBy(o => o.Ka)
+                .Take(spec.Options - 1)
+                .ToList();
+            if (wrong.Count == 0)
+            {
+                continue;
+            }
+
+            var options = Shuffle(wrong.Select(o => new DailyBackOption(o, false)).Append(new DailyBackOption(item, true)), random);
+            rounds.Add(new DailyBackRound(item, options));
+        }
+
+        return rounds;
+    }
+
+    /// <summary>Options that look like the item: forms of the same verb (the same tense first on a high level), else other words.</summary>
+    private static IEnumerable<DailyItem> Lookalikes(
+        DailyItem item, IReadOnlyList<DailyForm> forms, IReadOnlyList<DailyWord> words, int level, Random random)
+    {
+        if (item.Kind == "verb")
+        {
+            var same = forms.Where(f => f.Lemma == item.Lemma && f.Key != item.Key).ToList();
+            var sameTense = Shuffle(same.Where(f => f.Tense == item.Tense), random);
+            var otherTense = Shuffle(same.Where(f => f.Tense != item.Tense), random);
+            var own = level >= 2 ? sameTense.Concat(otherTense) : otherTense.Concat(sameTense);
+            return own.Concat(Shuffle(forms.Where(f => f.Lemma != item.Lemma), random)).Select(Item);
+        }
+
+        return Shuffle(words.Where(w => w.Key != item.Key), random).Select(Item);
+    }
+
+    /// <summary>
+    /// The reminder: one fact about today that is about this learner (the streak, a verb that slips, forms that are
+    /// due, a word of their own), as a short headline for the chat list, and one line under it. The facts take turns
+    /// day by day so the reminder does not read the same every evening.
+    /// </summary>
+    private static DailyPush Push(
+        DailyInput input, string mode, List<DailyWarmRound> rounds, List<DailyItem> pairs, IReadOnlyList<DailyForm> forms,
+        string? staleVerb, Func<DailyForm, bool> slipped)
+    {
+        var dayNumber = DateOnly.FromDateTime(input.Now).DayNumber;
+        const string start = "Начать · 2 минуты";
+        if (mode == DailyMode.Comeback)
+        {
+            return new DailyPush("comeback", "👋 Давно не виделись",
+                "Одна минута и только то, что ты знаешь лучше всего. Начни с лёгкого.", "Вспомнить за минуту");
+        }
+
+        if (mode == DailyMode.Review)
+        {
+            return new DailyPush("review", "💪 Закрепим знакомое",
+                "Сегодня без нового: только формы, где были ошибки. Две минуты — и они встанут на место.", start);
+        }
+
+        var options = new List<DailyPush>();
+        var next = input.Streak + 1;
+        if (input.PlayedYesterday && !input.PlayedToday && input.Streak >= 1)
+        {
+            options.Add(new DailyPush("streak", $"🔥 {Count(next, "день", "дня", "дней")} подряд — продли серию",
+                $"Две минуты сегодня, и серия станет длиннее. {Capital(Content(pairs, rounds))}.", start));
+        }
+
+        var slipItems = forms.Where(slipped).ToList();
+        if (slipItems.Count > 0)
+        {
+            var verb = slipItems.GroupBy(f => f.VerbRu).OrderByDescending(g => g.Count()).First();
+            options.Add(new DailyPush("slip", $"🧠 «{verb.Key}» начал забываться",
+                $"{Count(verb.Count(), "форма стала", "формы стали", "форм стали")} получаться хуже. Две минуты — и они снова твои.", start));
+        }
+
+        var due = rounds.Where(r => r.Due).Select(r => r.Item).ToList();
+        if (due.Count > 0)
+        {
+            var verb = due.GroupBy(i => i.VerbRu).OrderByDescending(g => g.Count()).First();
+            options.Add(new DailyPush("due", $"⏰ {Count(verb.Count(), "форму", "формы", "форм")} «{verb.Key}» пора повторить",
+                "Повтори их сейчас, и они запомнятся надолго. Две минуты.", start));
+        }
+
+        var word = pairs.FirstOrDefault(p => p.Kind == "word" && p.Ka.Length <= 14 && p.Ru.Length <= 20);
+        if (word != null)
+        {
+            var rest = pairs.Count + rounds.Count - 1;
+            options.Add(new DailyPush("word", $"📖 {word.Ka} ({Cyr(word.Ka)}) — {word.Ru}",
+                $"Слово из твоего словаря. Сегодня повторим его и ещё {Count(rest, "форму", "формы", "форм")} — две минуты.", start));
+        }
+
+        if (staleVerb != null)
+        {
+            var verbRu = forms.First(f => f.Lemma == staleVerb).VerbRu;
+            options.Add(new DailyPush("stale", $"🗝 Вернём глагол «{verbRu}»",
+                "Три недели без практики. Две минуты — и он снова под рукой.", start));
+        }
+
+        if (options.Count == 0)
+        {
+            options.Add(new DailyPush("mix", "✨ Задание дня готово",
+                $"{Capital(Content(pairs, rounds))}. Две минуты.", start));
+        }
+
+        return options[dayNumber % options.Count];
+
+        static string Content(List<DailyItem> pairs, List<DailyWarmRound> rounds)
+        {
+            var verbs = pairs.Concat(rounds.Select(r => r.Item)).Where(i => i.VerbRu != null).Select(i => $"«{i.VerbRu}»").Distinct().Take(2).ToList();
+            var words = pairs.Count(p => p.Kind == "word");
+            var parts = new List<string>();
+            if (verbs.Count > 0)
+            {
+                parts.Add((verbs.Count == 1 ? "глагол " : "глаголы ") + string.Join(" и ", verbs));
+            }
+
+            if (words > 0)
+            {
+                parts.Add(Count(words, "слово", "слова", "слов") + " из словаря");
+            }
+
+            return "в задании " + string.Join(" и ", parts);
+        }
+
+        static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
     }
 
     /// <summary>The first sentence of an ordinary day: what exactly brought today's forms here.</summary>

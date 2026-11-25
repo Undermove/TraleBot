@@ -55,6 +55,7 @@ public class ProgressCalculator : IProgressCalculator
                 lessons.Add(lessonId);
                 lessons.Sort();
                 lessonCompleted = true;
+                progress.GiftLessonDay = DateOnly.FromDateTime(DateTime.UtcNow); // opens the second gift of the day
             }
             completed[moduleId] = lessons;
             progress.CompletedLessonsJson = JsonSerializer.Serialize(completed);
@@ -112,7 +113,17 @@ public class ProgressCalculator : IProgressCalculator
             }
             else
             {
-                progress.Streak = 1;
+                // Streak freezes (a prize of the gift of the day) cover the missed days, one each.
+                var missed = (todayUtc - last).Days - 1;
+                if (missed <= progress.StreakFreezes)
+                {
+                    progress.StreakFreezes -= missed;
+                    progress.Streak += 1;
+                }
+                else
+                {
+                    progress.Streak = 1;
+                }
             }
         }
         progress.LastPlayedAtUtc = DateTime.UtcNow;

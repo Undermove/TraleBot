@@ -23,7 +23,7 @@ export default function ModuleMap({
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
+          onBack={() => navigate({ kind: 'course' })}
           title="Раздел"
         />
         <div className="px-5 pt-6 font-sans text-jewelInk-mid">
@@ -119,7 +119,7 @@ export default function ModuleMap({
     <div className="flex flex-col min-h-full bg-cream">
       <Header
         progress={progress}
-        onBack={() => navigate({ kind: 'dashboard' })}
+        onBack={() => navigate({ kind: 'course' })}
         eyebrow={geoLabel}
         title={module.title}
       />

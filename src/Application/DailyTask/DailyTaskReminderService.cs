@@ -85,18 +85,20 @@ public class DailyTaskReminderService(
             return false;
         }
 
+        // A task composed before the push existed is reminded about with its last line.
+        var push = task.Push ?? new DailyPush("mix", "✨ Задание дня готово", task.Chat.LastOrDefault() ?? "", task.Button);
         if (!force)
         {
             var claimed = await db.TryClaimNotificationTriggerAsync(
-                user.TelegramId, Source, task.Mode, nowUtc, nowUtc.Date.AddTicks(-1), ct);
+                user.TelegramId, Source, push.Variant, nowUtc, nowUtc.Date.AddTicks(-1), ct);
             if (!claimed)
             {
                 return false;
             }
         }
 
-        _logger.LogInformation("Daily task reminder to {TelegramId}: {Mode}", user.TelegramId, task.Mode);
-        await notifications.SendDailyTaskReminderAsync(user, string.Join("\n\n", task.Chat), task.Button, ct);
+        _logger.LogInformation("Daily task reminder to {TelegramId}: {Variant}", user.TelegramId, push.Variant);
+        await notifications.SendDailyTaskReminderAsync(user, push, ct);
         return true;
     }
 

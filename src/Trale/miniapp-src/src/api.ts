@@ -550,6 +550,16 @@ export function reportDailyOffer(report: import('./daily/types').DailyOfferRepor
   return request<{ task: import('./daily/types').DailyTaskDto }>('/api/miniapp/daily-task/offer', { method: 'POST', body: JSON.stringify(report) })
 }
 
+/** Ещё раунд после занятия: тот, что начат, или новый; null — занятие не сделано или повторять больше нечего. */
+export function fetchDailyExtra() {
+  return request<{ extra: import('./daily/types').DailyTaskDto | null }>('/api/miniapp/daily-task/extra', { method: 'POST' })
+}
+
+/** Итог ещё одного раунда. */
+export function saveDailyExtra(report: import('./daily/types').DailyReportDto) {
+  return request<import('./daily/types').DailySavedDto>('/api/miniapp/daily-task/extra/result', { method: 'POST', body: JSON.stringify(report) })
+}
+
 /** Только на стенде: перемотать дни вперёд и получить занятие нового дня. */
 export function devNextDay(days: number) {
   return request<{ task: import('./daily/types').DailyTaskDto }>('/api/miniapp/daily-task/dev/next-day', { method: 'POST', body: JSON.stringify({ days }) })
@@ -558,6 +568,37 @@ export function devNextDay(days: number) {
 /** Только на стенде: прислать сообщение бота о задании дня. */
 export function devDailyPush() {
   return request<{ ok: boolean }>('/api/miniapp/daily-task/dev/push', { method: 'POST' })
+}
+
+// ── «Подарок дня» ─────────────────────────────────────────────────────────────
+/** Шансы по серии и коробки сегодня. */
+export function fetchDailyGift() {
+  return request<import('./today/gift').DailyGiftDto>('/api/miniapp/daily-gift')
+}
+
+/** Открыть коробку: приз разыгрывает сервер один раз, повтор вернёт тот же. 409 — коробка ещё не готова. */
+export function openDailyGift(box: number) {
+  return request<{ gift: import('./today/gift').DailyGiftDto; box: import('./today/gift').DailyGiftBox; treasure?: import('./today/collection').TreasureWord | import('./today/collection').TreasureCard | null }>('/api/miniapp/daily-gift/open', { method: 'POST', body: JSON.stringify({ box }) })
+}
+
+/** Что собрано из подарков дня: вещи, мебель, слова, открытки, подсказки. */
+export function fetchStash() {
+  return request<import('./today/collection').Collection>('/api/miniapp/bombora/stash')
+}
+
+/** Надеть вещь (или снять — item: null). */
+export function wearItem(slot: string, item: string | null) {
+  return request<{ stash: import('./today/collection').Stash }>('/api/miniapp/bombora/wear', { method: 'POST', body: JSON.stringify({ slot, item }) })
+}
+
+/** Потратить подсказку в упражнении. 409 — подсказок нет. */
+export function useGiftHint() {
+  return request<{ hints: number }>('/api/miniapp/daily-gift/hint', { method: 'POST' })
+}
+
+/** Только на стенде: коробки сегодня снова закрыты. */
+export function devResetDailyGift() {
+  return request<import('./today/gift').DailyGiftDto>('/api/miniapp/daily-gift/dev/reset', { method: 'POST' })
 }
 
 /** Раздел открыли: плиткой с главной (home), кнопкой рассылки (имя кампании) или по ссылке с меткой. */

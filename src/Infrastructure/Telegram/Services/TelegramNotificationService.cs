@@ -1,3 +1,4 @@
+using System.Net;
 using Application.Common.Interfaces;
 using Application.MiniApp.Commands;
 using Application.Notifications.Holidays;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace Infrastructure.Telegram.Services;
@@ -513,19 +515,42 @@ public class TelegramNotificationService : IUserNotificationService
         await Task.Delay(BulkSendDelay, ct);
     }
 
-    public async Task SendDailyTaskReminderAsync(Domain.Entities.User user, string text, string button, CancellationToken ct)
+    /// <summary>Pictures of Bombora for the «Задание дня» reminder (mini-app public/push/daily/1..N.jpg): a different one each day.</summary>
+    private const int DailyPushPictures = 8;
+
+    public async Task SendDailyTaskReminderAsync(Domain.Entities.User user, Application.DailyTask.DailyPush push, CancellationToken ct)
     {
         if (!_botConfig.MiniAppEnabled || string.IsNullOrEmpty(_botConfig.HostAddress)) return;
 
-        var url = $"{_botConfig.NormalizedHost()}/?screen=daily&src=push_daily_task";
+        var host = _botConfig.NormalizedHost();
         var keyboard = new InlineKeyboardMarkup(new[]
         {
-            new[] { InlineKeyboardButton.WithWebApp(button, new WebAppInfo { Url = url }) }
+            new[] { InlineKeyboardButton.WithWebApp(push.Button, new WebAppInfo { Url = $"{host}/?screen=daily&src=push_daily_task" }) }
         });
+        // The headline is the first line, so the chat list shows it next to the picture.
+        var caption = $"<b>{WebUtility.HtmlEncode(push.Headline)}</b>\n{WebUtility.HtmlEncode(push.Line)}";
+        var picture = $"{host}/push/daily/{Random.Shared.Next(DailyPushPictures) + 1}.jpg";
+
+        async Task Send()
+        {
+            try
+            {
+                await _client.SendPhotoAsync(
+                    chatId: user.TelegramId, photo: InputFile.FromUri(picture), caption: caption,
+                    parseMode: ParseMode.Html, replyMarkup: keyboard, cancellationToken: ct);
+            }
+            catch (ApiRequestException ex) when (ex.ErrorCode == 400)
+            {
+                // Telegram could not fetch the picture — the words matter more than it.
+                _logger.LogWarning("Daily task reminder picture {Picture} failed: {Error}", picture, ex.Message);
+                await _client.SendTextMessageAsync(
+                    chatId: user.TelegramId, text: caption, parseMode: ParseMode.Html, replyMarkup: keyboard, cancellationToken: ct);
+            }
+        }
 
         try
         {
-            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: text, replyMarkup: keyboard, cancellationToken: ct);
+            await Send();
         }
         catch (ApiRequestException ex) when (ex.ErrorCode == 429)
         {
@@ -534,7 +559,7 @@ public class TelegramNotificationService : IUserNotificationService
                 "Daily task reminder for {TelegramId} hit rate limit; retrying after {RetryAfter}s",
                 user.TelegramId, retryAfterSeconds);
             await Task.Delay(TimeSpan.FromSeconds(retryAfterSeconds), ct);
-            await _client.SendTextMessageAsync(chatId: user.TelegramId, text: text, replyMarkup: keyboard, cancellationToken: ct);
+            await Send();
         }
         catch (ApiRequestException ex) when (ex.ErrorCode == 403)
         {

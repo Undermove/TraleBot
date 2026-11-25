@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
-import LoaderLetter from '../components/LoaderLetter'
+import TabSkeleton from '../components/TabSkeleton'
 import Mascot from '../components/Mascot'
 import AlphaIndex, { GEORGIAN_ALPHABET } from '../components/AlphaIndex'
 import WordCard from '../components/WordCard'
@@ -309,16 +309,10 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
-        <div
-          className="flex-1 flex flex-col items-center justify-center"
-          style={{ minHeight: '50vh' }}
-        >
-          <LoaderLetter label="словарь..." size={120} />
-        </div>
+        <TabSkeleton />
       </div>
     )
   }
@@ -328,7 +322,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
@@ -355,7 +348,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
@@ -382,7 +374,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
       <div className="flex flex-col min-h-full bg-cream">
         <Header
           progress={progress}
-          onBack={() => navigate({ kind: 'dashboard' })}
           eyebrow="ლექსიკონი"
           title="Мой словарь"
         />
@@ -418,7 +409,6 @@ export default function VocabularyList({ progress, navigate, initialFilter }: Pr
     <div className="flex flex-col min-h-full bg-cream">
       <Header
         progress={progress}
-        onBack={() => navigate({ kind: 'dashboard' })}
         eyebrow="ლექსიკონი"
         title="Мой словарь"
       />

@@ -139,6 +139,76 @@ public class DailyTaskPlannerTests
     }
 
     [Test]
+    public void After_the_pairs_the_learner_goes_back_from_russian_into_georgian()
+    {
+        var forms = Verb("a", 2).Concat(Verb("b", 3)).ToList();
+
+        var task = DailyTaskPlanner.Compose(new DailyInput { Now = Now, Accuracy = 80, Forms = forms });
+
+        task.Level.ShouldBe(2);
+        task.Back.Count.ShouldBe(4);
+        var checkKey = task.Check.Picks.Single(p => p.Ok).Item.Key;
+        foreach (var round in task.Back)
+        {
+            round.Item.Key.ShouldNotBe(checkKey);
+            round.Options.Count.ShouldBe(3);
+            round.Options.Single(o => o.Ok).Item.Key.ShouldBe(round.Item.Key);
+            round.Options.Select(o => o.Item.Ka).Distinct().Count().ShouldBe(3);
+            // The options are forms of the same verb in the same tense: only the meaning tells them apart.
+            round.Options.ShouldAllBe(o => o.Item.Lemma == round.Item.Lemma);
+        }
+    }
+
+    [Test]
+    public void An_extra_round_takes_what_was_practised_longest_ago_and_skips_todays_task()
+    {
+        var forms = Verb("a", 3, daysAgo: 0).Concat(Verb("b", 3, daysAgo: 10)).ToList();
+        var today = forms.Where(f => f.Lemma == "a").Select(f => f.Key).ToHashSet();
+
+        var extra = DailyTaskPlanner.Extra(new DailyInput { Now = Now, Accuracy = 80, Forms = forms }, today);
+
+        extra.ShouldNotBeNull();
+        extra.Title.ShouldBe("Ещё раунд");
+        extra.Warm.ShouldBeEmpty();
+        extra.Next.ShouldBeNull();
+        extra.Pairs.Count.ShouldBe(4);
+        extra.Pairs.ShouldAllBe(p => p.Lemma == "b");
+        extra.Back.ShouldNotBeEmpty();
+    }
+
+    [Test]
+    public void No_extra_round_when_everything_was_played_today()
+    {
+        var forms = Verb("a", 3);
+
+        DailyTaskPlanner.Extra(new DailyInput { Now = Now, Forms = forms }, forms.Select(f => f.Key).ToHashSet()).ShouldBeNull();
+    }
+
+    [Test]
+    public void The_push_names_one_fact_about_today_and_the_facts_take_turns()
+    {
+        var forms = Verb("a", 2).Append(Form("c", "aorist", 3, 2, best: 5)).Append(Form("b", "present", 0, 6, due: Now.AddHours(-1))).ToList();
+        var input = new DailyInput { Now = Now, Accuracy = 80, Streak = 4, PlayedYesterday = true, Forms = forms };
+
+        var variants = Enumerable.Range(0, 3)
+            .Select(d => DailyTaskPlanner.Compose(input with { Now = Now.AddDays(d) }).Push!)
+            .ToList();
+
+        variants.Select(p => p.Variant).ShouldBe(["slip", "due", "streak"], ignoreOrder: true);
+        variants.Single(p => p.Variant == "streak").Headline.ShouldBe("🔥 5 дней подряд — продли серию");
+        variants.ShouldAllBe(p => p.Headline.Length <= 40 && p.Button == "Начать · 2 минуты");
+    }
+
+    [Test]
+    public void After_a_week_away_the_push_says_hello_and_promises_a_minute()
+    {
+        var push = DailyTaskPlanner.Compose(new DailyInput { Now = Now, Away = 9, Forms = Verb("a", 3) }).Push!;
+
+        push.Variant.ShouldBe("comeback");
+        push.Button.ShouldBe("Вспомнить за минуту");
+    }
+
+    [Test]
     public void Nothing_to_play_means_no_task()
     {
         DailyTaskPlanner.Compose(new DailyInput { Now = Now }).Available.ShouldBeFalse();
