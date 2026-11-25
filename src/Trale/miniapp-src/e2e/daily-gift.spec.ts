@@ -89,7 +89,7 @@ test('до занятия: подарок на замке, Бомбора зов
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'locked')
   await expect(page.getByTestId('gift-lock')).toBeVisible()
-  await expect(page.getByTestId('today-say')).toHaveText('Пройди задание дня — и подарок твой!')
+  await expect(page.getByTestId('today-say')).toHaveText('Пройди задание дня и получи подарок!')
   await expect(page.getByTestId('gift-timer')).toHaveCount(0)
   await expect(page.getByTestId('gift-strip')).toHaveCount(0)
   const sizes = await page.evaluate(() => ({ h: document.documentElement.scrollHeight, vh: window.innerHeight }))
@@ -102,7 +102,7 @@ test('тап по подарку: он вылетает в центр, замо�
   await page.getByTestId('gift-button').click()
   const warp = page.getByTestId('gift-warp')
   await expect(warp).toBeVisible()
-  await expect(warp).toContainText('Ключ — в задании дня!')
+  await expect(warp).toContainText('Ключ лежит в задании дня!')
   await expect(page.getByTestId('daily-steps')).toBeVisible()
   await expect(page.getByTestId('daily-intro')).toHaveCount(0)
   await expect(page.getByTestId('gift-iris')).toHaveCount(0, { timeout: 2000 })
@@ -139,10 +139,13 @@ test('распаковка: на тапах подарок превращает�
   expect(await haptics(page)).toContain('note:success')
 
   await page.getByTestId('gift-reveal-close').click()
-  await expect(page.getByTestId('gift-week-line')).toHaveText('Ещё 4 дня — и точно сундук')
+  await expect(page.getByTestId('gift-week-line')).toHaveText('Ещё 4 дня, и тебе точно выпадет сундук!')
   await expect(page.getByTestId('gift-week').locator('span')).toHaveCount(7)
+  await expect(page.getByTestId('gift-second-title')).toHaveText('Пройди урок и получи второй подарок')
+  await expect(page.getByTestId('gift-more')).toHaveText('Пройти урок')
   await page.getByTestId('gift-more').click()
-  await expect.poll(() => calls.includes('extra')).toBe(true)
+  await expect(page.getByTestId('gift-reveal')).toHaveCount(0)
+  expect(calls).not.toContain('extra')
 })
 
 test('без подъёма: обычный приз — чурчхела для Бомборы', async ({ page }) => {
@@ -152,7 +155,7 @@ test('без подъёма: обычный приз — чурчхела для
   const box = page.getByTestId('gift-reveal-box')
   await page.waitForTimeout(300)
   await box.click()
-  await expect(page.getByTestId('gift-title')).toHaveText('Ещё!')
+  await expect(page.getByTestId('gift-title')).toHaveText('Тапни ещё!')
   await box.click()
   await box.click()
   await expect(page.getByTestId('gift-prize')).toContainText('Чурчхела для Бомборы')
@@ -169,7 +172,7 @@ test('позови друга: обычная реферальная ссылк�
   await page.waitForTimeout(300)
   for (let i = 0; i < 3; i++) await box.click()
   await expect(page.getByTestId('gift-prize')).toContainText('Позови друга')
-  await expect(page.getByTestId('gift-prize')).toContainText('Ему — 60 дней бесплатно, тебе — неделя')
+  await expect(page.getByTestId('gift-prize')).toContainText('Друг получит 60 дней бесплатно, а ты неделю')
   await page.getByTestId('gift-friend-share').click()
   const links = await page.evaluate(() => (window as any).__links as string[])
   expect(decodeURIComponent(links[0])).toContain('start=ref_123456')
@@ -187,20 +190,69 @@ test('первый сундук: золотой, +3 дня бесплатно', 
   await expect(page.getByTestId('gift-prize')).toContainText('+3 дня бесплатно')
 })
 
-test('первая коробка открыта: на главной стоит открытым то, что выпало (сундучок), кнопка — «ещё раунд → вторая коробка»', async ({ page }) => {
+test('первая коробка открыта: на главной стоит открытым то, что выпало (сундучок), кнопка зовёт на урок за вторым подарком', async ({ page }) => {
   await setup(page, { task: DONE, gift: GIFT({ ready: true, opened: true }) })
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'claimed')
   await expect(page.getByTestId('gift-button').getByTestId('chest3d')).toHaveAttribute('data-model', 'wood')
-  await expect(page.getByTestId('today-say')).toHaveText('Ещё раунд — и вторая коробка твоя')
+  await expect(page.getByTestId('today-say')).toHaveText('Пройди урок и получи второй подарок!')
   await expect(page.getByTestId('dashboard-gift-more')).toBeVisible()
 })
 
-test('раунд сыгран: вторая коробка готова к открытию', async ({ page }) => {
+test('урок пройден: второй подарок готов к открытию', async ({ page }) => {
   await setup(page, { task: { ...DONE, extras: 1 }, gift: GIFT({ ready: true, opened: true, ready1: true }) })
   await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'ready')
-  await expect(page.getByTestId('dashboard-gift-cta').getByRole('button')).toHaveText('Открыть вторую коробку')
+  await expect(page.getByTestId('dashboard-gift-cta').getByRole('button')).toHaveText('Открыть второй подарок')
+})
+
+test('кнопка на главной зовёт в задание и говорит, что оно подобрано лично', async ({ page }) => {
+  await setup(page)
+  await page.goto('/?playwright=1')
+  const cta = page.getByTestId('dashboard-suggestion').getByRole('button')
+  await expect(cta).toContainText('Пройди задание дня')
+  await expect(page.getByTestId('dashboard-gift-sub')).toHaveText('Подобрано специально для тебя · 2 мин')
+})
+
+test('новичок без задания дня: урок пройден — подарок открывается, после него на сегодня всё', async ({ page }) => {
+  const g = GIFT({ ready1: true })
+  await setup(page, { task: null as any, gift: g })
+  await page.goto('/?playwright=1')
+  await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'ready')
+  await expect(page.getByTestId('dashboard-gift-cta').getByRole('button')).toHaveText('Открыть подарок')
+  await page.unrouteAll()
+  await setup(page, { task: null as any, gift: { ...g, boxes: [g.boxes[0], { ...g.boxes[1], opened: true, rarity: 1, prize: 'freeze' }] } })
+  await page.goto('/?playwright=1')
+  await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'claimed')
+})
+
+test('что нового: задания под уровень → ценные призы → каждый день; последняя кнопка ведёт в задание', async ({ page }) => {
+  await setup(page, { gift: { ...GIFT(), canGetDays: true, firstGiftDays: 3 } })
+  await page.goto('/?playwright=1&intro=1')
+  const intro = page.getByTestId('today-intro')
+  await expect(intro).toContainText('Теперь задания подбираются под твой уровень')
+  await page.getByTestId('today-intro-next').click()
+  await expect(intro).toContainText('Проходи задания каждый день и получай ценные призы')
+  await expect(intro).toContainText('Бесплатные дни подписки')
+  await expect(intro).toContainText('3 дня подписки бесплатно')
+  await page.getByTestId('today-intro-next').click()
+  await expect(intro).toContainText('На седьмой день подряд тебе точно выпадет сундук')
+  const fits = await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)
+  expect(fits).toBe(true)
+  await page.getByTestId('today-intro-next').click()
+  await expect(page.getByTestId('daily-steps')).toBeVisible()
+  await page.goto('/?playwright=1&intro=1')
+  await expect(page.getByTestId('gift-button')).toBeVisible()
+  await expect(page.getByTestId('today-intro')).toHaveCount(0)
+})
+
+test('что нового: бессрочному доступу не обещаем бесплатные дни', async ({ page }) => {
+  await setup(page, { gift: { ...GIFT(), canGetDays: false, firstGiftDays: 0 } })
+  await page.goto('/?playwright=1&intro=1')
+  await page.getByTestId('today-intro-next').click()
+  const intro = page.getByTestId('today-intro')
+  await expect(intro).toContainText('Подарки для друзей')
+  await expect(intro).not.toContainText('подписки')
 })
 
 test('в занятии коробка ждёт в конце полоски', async ({ page }) => {

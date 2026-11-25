@@ -63,7 +63,7 @@ export default function GiftWarp({ from, onDone }: { from: DOMRect | null; onDon
         style={{ top: cy + SIZE * 1.05 }}
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: phase === 'fly' ? 0 : 1, y: phase === 'fly' ? 12 : 0 }}
       >
-        Ключ — в задании дня!
+        Ключ лежит в задании дня!
       </motion.div>
       {/* Волна из подарка на весь экран: круг, который растёт (transform — его двигает видеокарта, без перерисовки). */}
       <div

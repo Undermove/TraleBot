@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import TreatIcon from './TreatIcon'
 import Mascot from './Mascot'
 
 export interface FeedingTreat {
@@ -108,7 +109,7 @@ export default function FeedingAnimation({ treatIndex, onComplete }: Props) {
           <Mascot mood={mascotMood} satietyTier={satietyTier} size={200} />
         </div>
 
-        {/* Flying treat emoji */}
+        {/* Flying treat */}
         <div
           className="absolute left-1/2 text-[56px] leading-none select-none"
           style={{
@@ -118,7 +119,7 @@ export default function FeedingAnimation({ treatIndex, onComplete }: Props) {
             transition: 'transform 850ms cubic-bezier(0.45, 0.1, 0.3, 1.0), opacity 300ms ease-out',
           }}
         >
-          {treat.emoji}
+          <TreatIcon index={treat.index} size={72} />
         </div>
 
         {/* Particle burst when biting */}

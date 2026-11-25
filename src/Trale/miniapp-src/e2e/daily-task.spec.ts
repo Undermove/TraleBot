@@ -325,7 +325,7 @@ test.describe('Задание дня', () => {
     await openFromCard(page)
     await expect(page.getByTestId('daily-finale')).toBeVisible()
     await shot(page, '8-finale-extra')
-    await page.getByRole('button', { name: 'Ещё раунд · +10 опыта' }).click()
+    await page.getByRole('button', { name: 'Сыграть ещё раунд · +10 опыта' }).click()
 
     await expect(page.getByTestId('daily-chat')).toHaveText(EXTRA.chat)
     await page.getByRole('button', { name: EXTRA.button }).click()
@@ -343,7 +343,7 @@ test.describe('Задание дня', () => {
     await expect(page.getByTestId('daily-stat')).toContainText('ещё 1 раунд')
 
     // Повторять больше нечего — так и говорим, кнопки раунда нет.
-    await page.getByRole('button', { name: 'Ещё раунд · +10 опыта' }).click()
+    await page.getByRole('button', { name: 'Сыграть ещё раунд · +10 опыта' }).click()
     await expect(page.getByTestId('daily-finale-say')).toHaveText('На сегодня повторено всё, что открыто. Завтра будет новое задание.')
     await expect(page.getByTestId('daily-extra')).toHaveCount(0)
   })
@@ -386,7 +386,7 @@ test.describe('Подарок дня → занятие → распаковка
     await expect(page.getByTestId('gift-button')).toHaveAttribute('data-gift', 'locked')
     await expect(page.getByTestId('gift-lock')).toBeVisible()
     await page.getByTestId('gift-button').click()
-    await expect(page.getByTestId('gift-warp')).toContainText('Ключ — в задании дня!')
+    await expect(page.getByTestId('gift-warp')).toContainText('Ключ лежит в задании дня!')
     // Без вступления — сразу разминка, в конце полоски подарок.
     await expect(page.getByTestId('daily-warm-word')).toBeVisible({ timeout: 5000 })
     await expect(page.getByTestId('daily-intro')).toHaveCount(0)
@@ -407,6 +407,17 @@ test.describe('Подарок дня → занятие → распаковка
     await box.click()
     await box.click()
     await expect(page.getByTestId('gift-prize')).toHaveAttribute('data-prize', 'freeze')
+
+    // Подарок закрыли, не пойдя на урок: на итоге задания главная кнопка всё равно зовёт в урок.
+    await page.getByTestId('gift-reveal-close').click()
+    await page.getByTestId('gift-done').click()
+    await expect(page.getByTestId('daily-finale')).toBeVisible()
+    await expect(page.getByTestId('daily-finale-say')).toContainText('пройди урок курса и получи второй подарок')
+    await expect(page.getByTestId('daily-second').getByRole('button')).toHaveText('Пройди урок и получи второй подарок')
+    // «Новое» здесь — формы глагола: оно никуда не делось, просто ссылкой под кнопкой.
+    await expect(page.getByTestId('daily-offer-link')).toBeVisible()
+    await page.getByTestId('daily-second').getByRole('button').click()
+    await expect(page.getByTestId('daily-finale')).toHaveCount(0)
   })
 
   test('кнопка «Забрать подарок» тоже ведёт сразу в упражнение', async ({ page }) => {

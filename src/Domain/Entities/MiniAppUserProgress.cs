@@ -90,6 +90,9 @@ public class MiniAppUserProgress
     /// </summary>
     public DateTime? GiftDaysAtUtc { get; set; }
 
+    /// <summary>The last day (UTC) a new module lesson was passed — that opens the second gift of the day.</summary>
+    public DateOnly? GiftLessonDay { get; set; }
+
     /// <summary>What the gift of the day gave to keep (hints, words, postcards, things, furniture) — JSON, see <c>GiftStash</c>.</summary>
     public string? GiftStashJson { get; set; }
 

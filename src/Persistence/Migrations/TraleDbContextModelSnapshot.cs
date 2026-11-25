@@ -461,6 +461,9 @@ namespace Persistence.Migrations
                     b.Property<DateTime?>("GiftDaysAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateOnly?>("GiftLessonDay")
+                        .HasColumnType("date");
+
                     b.Property<string>("GiftStashJson")
                         .HasColumnType("text");
 

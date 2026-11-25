@@ -2023,6 +2023,8 @@ public class MiniAppController : Controller
     {
         gift.Day, gift.Streak, gift.Odds, gift.GuaranteedIn, gift.Freezes, gift.BoostToday, gift.BurnsAtUtc,
         boxes = gift.Boxes,
+        canGetDays = !user.IsLifetime,
+        firstGiftDays = gift.FirstDaysAhead && !user.IsLifetime ? DailyGiftService.FirstDays : 0,
         invite = new
         {
             link = $"https://t.me/{_botConfig.BotName}?start=ref_{user.TelegramId}",

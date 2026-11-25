@@ -247,7 +247,7 @@ export default function Dashboard({ catalog, progress, todayLessons, userLevel, 
       )}
 
       {/* ══ Hero — Bombora tamagotchi + greeting ══ */}
-      <section className="px-5 pt-1 pb-3 flex-1 min-h-0 flex flex-col overflow-y-auto">
+      <section className="px-5 pt-1 pb-3 flex-1 min-h-0 flex flex-col overflow-x-hidden overflow-y-auto">
         {/* my-auto: по центру, когда место есть; когда нет — от верха, а не под счётчики. */}
         <div className="my-auto">
         {(() => {

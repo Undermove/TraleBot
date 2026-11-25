@@ -40,7 +40,7 @@ import AdminPaymentsScreen from './screens/AdminPaymentsScreen'
 import AdminSystemScreen from './screens/AdminSystemScreen'
 import { adminBack, adminLink, enterAdmin, goInnerBack, isAdminScreen, leaveAdmin, parseAdminLink, rememberScroll, scrollOf, tabEpoch } from './admin/adminNav'
 import AdminTabBar, { useKeyboardOpen } from './components/admin/AdminTabBar'
-import HomeTabBar, { HOME_TAB_BAR_HEIGHT, homeTabOf } from './components/HomeTabBar'
+import HomeTabBar, { HOME_TAB_BAR_HEIGHT, TABS, homeTabOf } from './components/HomeTabBar'
 import TabSwipe from './components/TabSwipe'
 import AdminMoreScreen from './screens/AdminMoreScreen'
 import SurveyBuilderScreen from './screens/SurveyBuilderScreen'
@@ -463,7 +463,7 @@ export default function App() {
     </div>
   )
 
-  const renderScreen = () => {
+  const renderScreenOf = (screen: Screen) => {
     switch (screen.kind) {
       case 'welcome': {
         // После знакомства — первый урок алфавита (ა там уже знакома); если он пройден — урок, который предложил бы хаб.
@@ -692,6 +692,7 @@ export default function App() {
     }
   }
 
+  const renderScreen = () => renderScreenOf(screen)
   const tab = homeTabOf(screen)
   return (
     <>
@@ -700,6 +701,7 @@ export default function App() {
         // (кнопки квиза в словаре, шторки), встаёт над ней, а не под неё.
         <div className="contents" style={{ ['--safe-b' as any]: `calc(${rootSafeBottom()} + ${HOME_TAB_BAR_HEIGHT}px)` }}>
           <TabSwipe tab={tab} navigate={navigate} disabled={overlayOpen || keyboardOpen}
+            renderTab={t => renderScreenOf(TABS.find(x => x.id === t)!.screen)}
             locked={isPro || isTrialActive ? undefined : VOCAB_LOCKED} onLocked={setPaywallFor}>
             {renderScreen()}
           </TabSwipe>

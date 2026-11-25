@@ -2,6 +2,7 @@ import React from 'react'
 import type { Prize } from './gift'
 import { FurnThumb, ItemThumb } from './CollectionThumbs'
 import { ITEMS } from './collection'
+import TreatIcon from '../components/TreatIcon'
 
 /** Картинка приза в стиле мини-аппа: эмаль, чёрный контур. */
 export default function PrizeIcon({ prize, size = 56, days = 1, ka }: { prize: Prize; size?: number; days?: number; ka?: string }) {
@@ -33,14 +34,7 @@ export default function PrizeIcon({ prize, size = 56, days = 1, ka }: { prize: P
   }
   switch (kind) {
     case 'churchkhela':
-      return (
-        <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">
-          <path d="M30 3 V10" stroke="#5B4A3A" strokeWidth="3" strokeLinecap="round" />
-          {[0, 1, 2, 3, 4].map(i => (
-            <ellipse key={i} cx="30" cy={15 + i * 9} rx="9" ry="6" fill={i % 2 ? '#8E4424' : '#A0522D'} stroke={ink} strokeWidth="2.500" />
-          ))}
-        </svg>
-      )
+      return <TreatIcon index={3} size={size} />
     case 'freeze':
       return (
         <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">

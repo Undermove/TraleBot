@@ -13,7 +13,7 @@ public class DailyGiftServiceTests : CommandTestsBase
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>A learner who played today with <paramref name="streak"/> days in a row; <paramref name="done"/> — today's task finished.</summary>
-    private async Task<User> Learner(int streak = 3, bool done = true, int extras = 0, DateTime? giftDaysAt = null, bool firstBox = false)
+    private async Task<User> Learner(int streak = 3, bool done = true, bool lessonToday = false, DateTime? giftDaysAt = null, bool firstBox = false)
     {
         var user = Create.User().Build();
         Context.Users.Add(user);
@@ -21,12 +21,13 @@ public class DailyGiftServiceTests : CommandTestsBase
         {
             Id = Guid.NewGuid(), UserId = user.Id, CompletedLessonsJson = "{}", Streak = streak, LastPlayedAtUtc = Now.AddHours(-1),
             GiftDaysAtUtc = firstBox ? null : giftDaysAt ?? Now.AddDays(-5),
+            GiftLessonDay = lessonToday ? DateOnly.FromDateTime(Now) : DateOnly.FromDateTime(Now).AddDays(-1),
             CreatedAtUtc = Now, UpdatedAtUtc = Now
         });
         Context.DailyTaskStates.Add(new DailyTaskState
         {
             Id = Guid.NewGuid(), UserId = user.Id, Day = DateOnly.FromDateTime(Now),
-            TaskJson = JsonSerializer.Serialize(new DailyTaskDto { Available = true, Day = "2026-11-20", Done = done, Extras = extras }, Json),
+            TaskJson = JsonSerializer.Serialize(new DailyTaskDto { Available = true, Day = "2026-11-20", Done = done, Extras = 3 }, Json),
             CreatedAtUtc = Now, UpdatedAtUtc = Now
         });
         await Context.SaveChangesAsync();
@@ -154,13 +155,32 @@ public class DailyGiftServiceTests : CommandTestsBase
     }
 
     [Test]
-    public async Task The_second_box_opens_after_one_more_round()
+    public async Task The_second_box_opens_for_a_module_lesson_today_not_for_extra_rounds()
     {
-        var user = await Learner(extras: 0);
+        var user = await Learner(lessonToday: false);
         (await Sut.OpenAsync(user.Id, 1, Now, CancellationToken.None)).ShouldBeNull();
 
-        var other = await Learner(extras: 1);
+        var other = await Learner(lessonToday: true);
         (await Sut.OpenAsync(other.Id, 1, Now, CancellationToken.None)).ShouldNotBeNull();
+    }
+
+    [Test]
+    public async Task A_newcomer_without_a_daily_task_gets_the_lesson_box()
+    {
+        var user = Create.User().Build();
+        Context.Users.Add(user);
+        Context.MiniAppUserProgresses.Add(new MiniAppUserProgress
+        {
+            Id = Guid.NewGuid(), UserId = user.Id, CompletedLessonsJson = "{}", Streak = 1, LastPlayedAtUtc = Now,
+            GiftLessonDay = DateOnly.FromDateTime(Now), CreatedAtUtc = Now, UpdatedAtUtc = Now
+        });
+        await Context.SaveChangesAsync();
+
+        var opened = await Sut.OpenAsync(user.Id, 1, Now, CancellationToken.None);
+
+        opened!.Value.Box.Prize.ShouldBe("days");
+        opened.Value.Box.Days.ShouldBe(DailyGiftService.FirstDays);
+        (await Sut.GetAsync(user.Id, Now, CancellationToken.None)).Boxes[1].Opened.ShouldBeTrue();
     }
 
     [Test]

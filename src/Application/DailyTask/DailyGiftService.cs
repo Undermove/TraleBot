@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.DailyTask;
 
 /// <summary>One box of the day as the mini-app sees it. Rarity 0..3: обычный, редкий, эпический, легендарный.</summary>
-/// <param name="Box">0 — for the task of the day, 1 — for one more round after it.</param>
+/// <param name="Box">0 — for the task of the day, 1 — for a new module lesson passed today.</param>
 /// <param name="Ready">It can be opened now (what it is for is done).</param>
 /// <param name="Prize">churchkhela · freeze · boost · friend (invite a friend by the referral link) · days (free days for oneself).</param>
 /// <param name="Days">Free days given — for <c>days</c>.</param>
@@ -23,12 +23,13 @@ public record DailyGiftBox(int Box, bool Ready, bool Opened, int? Rarity, string
 /// <param name="GuaranteedIn">Days until the next guaranteed epic or better (0 — today).</param>
 /// <param name="Freezes">Streak freezes in stock.</param>
 /// <param name="BoostToday">Today the task gives double XP.</param>
+/// <param name="FirstDaysAhead">No box has given free days yet, so the next one gives <see cref="DailyGiftService.FirstDays"/>.</param>
 public record DailyGiftDto(
     string Day, int Streak, IReadOnlyList<double> Odds, int GuaranteedIn,
-    IReadOnlyList<DailyGiftBox> Boxes, int Freezes, bool BoostToday, DateTime BurnsAtUtc);
+    IReadOnlyList<DailyGiftBox> Boxes, int Freezes, bool BoostToday, DateTime BurnsAtUtc, bool FirstDaysAhead);
 
 /// <summary>
-/// The gift of the day: a box at the end of the task (and a second one for one more round) with a prize of
+/// The gift of the day: a box for the task of the day and a second one for a new module lesson passed that day, with a prize of
 /// one of four rarities. Nobody loses — something always drops; a longer streak shifts the odds to the rare
 /// ones and every 7th day of the streak gives epic or better. Prizes: churchkhela for Bombora, a streak freeze,
 /// double XP tomorrow or «invite a friend» (the usual referral — both get days, with its own anti-fraud caps),
@@ -95,8 +96,15 @@ public class DailyGiftService(ITraleDbContext dbContext, ITreasureCatalog treasu
         var progress = await MiniAppHelpers.LoadOrCreateProgressAsync(dbContext, userId, ct);
         var view = View(state, progress, now);
         var current = view.Boxes.FirstOrDefault(b => b.Box == box);
-        if (state == null || current == null || !current.Ready) return null;
+        if (current == null || !current.Ready) return null;
         if (current.Opened) return (view, current);
+
+        // A newcomer without a task of the day yet can already earn the lesson box.
+        if (state == null)
+        {
+            state = new DailyTaskState { Id = Guid.NewGuid(), UserId = userId, CreatedAtUtc = now, UpdatedAtUtc = now };
+            dbContext.DailyTaskStates.Add(state);
+        }
 
         var rnd = random ?? Random.Shared.NextDouble;
         var today = DateOnly.FromDateTime(now);
@@ -221,7 +229,7 @@ public class DailyGiftService(ITraleDbContext dbContext, ITreasureCatalog treasu
             ? JsonSerializer.Deserialize<DailyTaskDto>(state.TaskJson, Json)
             : null;
         var stored = Read(state?.GiftJson, today);
-        var ready = new[] { task?.Done == true, (task?.Extras ?? 0) > 0 };
+        var ready = new[] { task?.Done == true, progress?.GiftLessonDay == today };
         var boxes = ready.Select((r, i) =>
         {
             var o = stored.Boxes.FirstOrDefault(b => b.Box == i);
@@ -231,7 +239,8 @@ public class DailyGiftService(ITraleDbContext dbContext, ITreasureCatalog treasu
         return new DailyGiftDto(
             today.ToString("yyyy-MM-dd"), streak, Odds(streak), (7 - streak % 7) % 7, boxes,
             progress?.StreakFreezes ?? 0, progress?.XpBoostDay == today,
-            today.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+            today.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            progress?.GiftDaysAtUtc == null);
     }
 
     /// <summary>

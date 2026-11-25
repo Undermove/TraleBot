@@ -55,6 +55,7 @@ public class ProgressCalculator : IProgressCalculator
                 lessons.Add(lessonId);
                 lessons.Sort();
                 lessonCompleted = true;
+                progress.GiftLessonDay = DateOnly.FromDateTime(DateTime.UtcNow); // opens the second gift of the day
             }
             completed[moduleId] = lessons;
             progress.CompletedLessonsJson = JsonSerializer.Serialize(completed);

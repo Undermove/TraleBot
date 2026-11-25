@@ -16,16 +16,18 @@ import { DailyGiftBox, DailyGiftDto, RARITY, days, ladder, prizeText, setGift } 
 
 // Распаковка подарка дня на весь экран. Приз разыгрывает сервер сразу, как окно открылось; человек тапает
 // три раза — и на каждом тапе подарок может превратиться в сундук получше (сундучок → эмалевый → золотой)
-// до того, что выпал. Никаких надписей про редкость — всё видно по самой коробке. Потом — приз и что будет завтра: неделя до гарантированного эпического и вторая коробка
-// за ещё один раунд.
+// до того, что выпал. Никаких надписей про редкость — всё видно по самой коробке. Потом — приз и что будет завтра: неделя до гарантированного сундука и второй подарок
+// за новый урок модуля.
 
 interface Props {
   gift: DailyGiftDto
-  /** Какую коробку открываем: 0 — за задание, 1 — за ещё один раунд. */
+  /** Какую коробку открываем: 0 — за задание, 1 — за новый урок модуля. */
   box: number
   onClose: () => void
-  /** Ещё один раунд — за второй коробкой. */
-  onMore: () => void
+  /** Пойти на урок за вторым подарком. Нет — вести некуда (курс пройден). */
+  onMore?: () => void
+  /** Второй подарок уже заработан: открыть его сразу. */
+  onSecond?: () => void
   onCheer: () => void
   /** В дом Бомборы — посмотреть новую вещь или мебель. */
   onHome?: (tab: 'wear' | 'room') => void
@@ -33,7 +35,7 @@ interface Props {
 
 const TAPS = 3
 
-export default function GiftUnbox({ gift, box, onClose, onMore, onCheer, onHome }: Props) {
+export default function GiftUnbox({ gift, box, onClose, onMore, onSecond, onCheer, onHome }: Props) {
   const cube = useRef<Gift3DHandle>(null)
   const wrap = useRef<HTMLDivElement>(null)
   const [result, setResult] = useState<{ gift: DailyGiftDto; box: DailyGiftBox; treasure?: TreasureWord | TreasureCard | null } | null>(null)
@@ -90,8 +92,8 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer, onHome 
   }
 
   const title = phase !== 'tap'
-    ? (final >= 2 ? 'Вот это да!' : 'Твоё!')
-    : taps === 0 ? (unlocked ? 'Тапай по подарку!' : 'Ключ подошёл!') : up ? (shown === 1 ? 'Ого, сундучок!' : 'Ещё лучше!') : taps === 1 ? 'Ещё!' : 'Ещё разок!'
+    ? (final >= 2 ? 'Вот это да!' : 'Это тебе!')
+    : taps === 0 ? (unlocked ? 'Тапай по подарку!' : 'Ключ подошёл!') : up ? (shown === 1 ? 'Ого, сундучок!' : 'Ещё лучше!') : taps === 1 ? 'Тапни ещё!' : 'Тапни ещё разок!'
 
   const g = result?.gift ?? gift
   const prize = result?.box.prize ?? null
@@ -99,7 +101,8 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer, onHome 
   const kind = prize?.split(':')[0]
   const weekPos = (g.streak - 1) % 7 + 1
   const second = g.boxes.find(b => b.box === 1)
-  const canMore = box === 0 && second && !second.opened
+  const secondReady = box === 0 && Boolean(second?.ready && !second.opened && onSecond)
+  const canMore = secondReady || (box === 0 && Boolean(second && !second.ready && !second.opened && onMore))
 
   function share() {
     if (!result) return
@@ -190,7 +193,7 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer, onHome 
               </button>
             ) : (
               <div className="h-[56px] flex items-center justify-center font-sans text-[13px] font-bold text-jewelInk-mid" data-testid="gift-reveal-hint">
-                Тапай — вдруг внутри что-то получше
+                Тапай: вдруг внутри лежит что-то получше
               </div>
             )}
           </div>
@@ -201,10 +204,10 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer, onHome 
             <div className="relative z-[1]">
               <div className="mn-eyebrow text-ruby">Завтра</div>
               <div className="mt-1 font-sans text-[17px] font-extrabold leading-tight text-jewelInk" data-testid="gift-week-line">
-                {g.guaranteedIn === 1 ? 'Завтра — точно сундук!' : g.guaranteedIn === 0 ? 'Следующий сундук — через 7 дней' : `Ещё ${days(g.guaranteedIn)} — и точно сундук`}
+                {g.guaranteedIn === 1 ? 'Завтра тебе точно выпадет сундук!' : g.guaranteedIn === 0 ? 'Следующий сундук точно выпадет через 7 дней' : `Ещё ${days(g.guaranteedIn)}, и тебе точно выпадет сундук!`}
               </div>
               <div className="mt-1 font-sans text-[12.500px] font-semibold leading-snug text-jewelInk-mid">
-                Занимайся каждый день: на 7-й день подряд — точно сундук. Пропустишь день — счёт начнётся заново{g.freezes > 0 ? `, если не спасёт заморозка (у тебя ${g.freezes})` : ''}.
+                Занимайся каждый день, и на седьмой день подряд получишь сундук. Если пропустишь день, счёт начнётся заново.{g.freezes > 0 ? ` Серию спасёт заморозка, их у тебя: ${g.freezes}.` : ''}
               </div>
               <div className="mt-3 flex justify-between gap-1" data-testid="gift-week">
                 {[1, 2, 3, 4, 5, 6, 7].map(i => (
@@ -219,16 +222,16 @@ export default function GiftUnbox({ gift, box, onClose, onMore, onCheer, onHome 
           {canMore && (
             <div className="jewel-tile px-4 py-3">
               <div className="relative z-[1]">
-                <div className="mn-eyebrow text-ruby">Бонус · только сегодня</div>
-                <div className="mt-1 font-sans text-[17px] font-extrabold leading-tight text-jewelInk">Вторая коробка за ещё один раунд</div>
-                <div className="mt-1 font-sans text-[12.500px] font-semibold leading-snug text-jewelInk-mid">Минута повторения — и открываешь ещё одну.</div>
+                <div className="mn-eyebrow text-ruby">Второй подарок</div>
+                <div className="mt-1 font-sans text-[17px] font-extrabold leading-tight text-jewelInk" data-testid="gift-second-title">{secondReady ? 'Второй подарок уже ждёт тебя!' : 'Пройди урок и получи второй подарок'}</div>
+                <div className="mt-1 font-sans text-[12.500px] font-semibold leading-snug text-jewelInk-mid">{secondReady ? 'Урок на сегодня пройден, так что открывай подарок прямо сейчас.' : 'Урок займёт пару минут. Подарок будет ждать тебя до конца дня.'}</div>
               </div>
             </div>
           )}
           <div className="mt-2 flex flex-col gap-2">
             {canMore && (
-              <button type="button" onClick={() => { appEvents.tap('today-gift-more'); buzz.light(); onMore() }} className="jewel-btn bg-ruby text-cream w-full today-nudge" data-testid="gift-more">
-                <span className="relative z-[1]">Ещё раунд → вторая коробка</span>
+              <button type="button" onClick={() => { appEvents.tap(secondReady ? 'today-gift-second' : 'today-gift-more'); buzz.light(); secondReady ? onSecond?.() : onMore?.() }} className="jewel-btn bg-ruby text-cream w-full today-nudge" data-testid="gift-more">
+                <span className="relative z-[1]">{secondReady ? 'Открыть второй подарок' : 'Пройти урок'}</span>
               </button>
             )}
             <button type="button" onClick={() => { buzz.light(); onClose() }} className={`jewel-btn w-full ${canMore ? 'bg-cream-tile text-jewelInk' : 'bg-navy text-cream'}`} data-testid="gift-done">

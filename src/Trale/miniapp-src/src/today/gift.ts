@@ -1,12 +1,12 @@
 import { FURNITURE, ITEMS } from './collection'
 import { ApiError, fetchDailyGift } from '../api'
 
-// Подарок дня: коробка в конце задания (и вторая — за ещё один раунд), внутри приз одной из четырёх
+// Подарок дня: коробка за задание дня и вторая за новый урок модуля, внутри приз одной из четырёх
 // редкостей. Проиграть нельзя — что-то выпадает всегда; серия сдвигает шансы к редким, каждый 7-й день
 // серии — минимум эпический. Разыгрывает сервер (DailyGiftService), здесь — показ.
 
 export interface DailyGiftBox {
-  /** 0 — за задание дня, 1 — за ещё один раунд. */
+  /** 0 — за задание дня, 1 — за новый урок модуля. */
   box: number
   ready: boolean
   opened: boolean
@@ -33,6 +33,10 @@ export interface DailyGiftDto {
   freezes: number
   boostToday: boolean
   burnsAtUtc: string
+  /** Бесплатные дни вообще могут выпасть (у бессрочного доступа — нет). */
+  canGetDays?: boolean
+  /** Сколько бесплатных дней лежит в самом первом подарке; 0 — он уже открыт. */
+  firstGiftDays?: number
   /** Обычная рефералка: ссылка, сколько дней получит друг и сколько — ты, когда он начнёт заниматься. */
   invite: { link: string; friendDays: number; myDays: number }
 }
@@ -53,16 +57,16 @@ export const days = (n: number) => `${n} ${plural(n, 'день', 'дня', 'дн
 export function prizeText(prize: Prize, gift: DailyGiftDto, box?: DailyGiftBox, treasure?: { ka: string; tr: string; ru: string; story?: string; when?: string } | null): { title: string; line: string } {
   const [kind, id] = prize.includes(':') ? prize.split(':') : [prize, '']
   switch (kind) {
-    case 'hint': return { title: 'Подсказка', line: 'В упражнении нажми «Подсказка» — Бомбора покажет верный ответ' }
+    case 'hint': return { title: 'Подсказка', line: 'Нажми «Подсказка» в упражнении, и Бомбора покажет верный ответ' }
     case 'word': return { title: treasure ? `${treasure.ka} — ${treasure.ru}` : 'Слово-сокровище', line: treasure?.story ? `${treasure.tr}. ${treasure.story}` : 'Уже в твоём словаре' }
     case 'card': return { title: treasure ? treasure.ka : 'Открытка', line: treasure ? `${treasure.tr} — «${treasure.ru}». Отправь другу ${treasure.when ?? ''}`.trim() : 'Отправь другу' }
-    case 'furn': return { title: FURNITURE.find(f => f.id === id)?.name ?? 'Мебель', line: 'В комнату Бомборы — уже стоит на месте' }
-    case 'item': return { title: ITEMS.find(i => i.id === id)?.name ?? 'Вещь для Бомборы', line: 'Бомбора уже примерил — загляни к нему в гардероб' }
-    case 'churchkhela': return { title: 'Чурчхела для Бомборы', line: 'Любимое лакомство — Бомбора уже уплетает. В лавке она стоит 100 опыта' }
-    case 'freeze': return { title: 'Заморозка серии', line: `Пропустишь день — серия не сгорит. Заморозок у тебя: ${gift.freezes}` }
+    case 'furn': return { title: FURNITURE.find(f => f.id === id)?.name ?? 'Мебель', line: 'Она уже стоит в комнате Бомборы' }
+    case 'item': return { title: ITEMS.find(i => i.id === id)?.name ?? 'Вещь для Бомборы', line: 'Бомбора уже примерил обновку. Загляни к нему в гардероб' }
+    case 'churchkhela': return { title: 'Чурчхела для Бомборы', line: 'Бомбора уже уплетает любимое лакомство. В лавке оно стоит 100 опыта' }
+    case 'freeze': return { title: 'Заморозка серии', line: `Если пропустишь день, серия не сгорит. Заморозок у тебя: ${gift.freezes}` }
     case 'boost': return { title: '×2 опыта на завтра', line: 'Завтра задание дня и раунды считаются вдвойне' }
-    case 'friend': return { title: 'Позови друга', line: `Ему — ${days(gift.invite.friendDays)} бесплатно, тебе — ${gift.invite.myDays === 7 ? 'неделя' : days(gift.invite.myDays)}, когда он начнёт заниматься` }
-    case 'days': return { title: `+${days(box?.days ?? 1)} бесплатно`, line: 'Полный доступ ко всему — уже действует' }
+    case 'friend': return { title: 'Позови друга', line: `Друг получит ${days(gift.invite.friendDays)} бесплатно, а ты ${gift.invite.myDays === 7 ? 'неделю' : days(gift.invite.myDays)}, когда друг начнёт заниматься` }
+    case 'days': return { title: `+${days(box?.days ?? 1)} бесплатно`, line: 'Полный доступ ко всему уже включён' }
   }
   return { title: 'Подарок', line: '' }
 }
@@ -76,6 +80,11 @@ export function burnsIn(burnsAtUtc: string, now = Date.now()): string {
 
 /** Лесенка редкостей по тапам: каждый тап может поднять — до выпавшей. */
 export const ladder = (final: number) => [0, Math.min(1, final), final]
+
+/** Следующий урок курса (его знает главная) — куда вести за вторым подарком с экрана задания. */
+let nextLesson: unknown = null
+export const setNextLessonScreen = (s: unknown) => { nextLesson = s }
+export const nextLessonScreen = <T,>() => nextLesson as T | null
 
 // Кэш, как у задания дня: главная и распаковка видят одно и то же.
 let cached: DailyGiftDto | null = null

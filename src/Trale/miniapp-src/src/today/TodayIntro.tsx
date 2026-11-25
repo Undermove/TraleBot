@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import Gift3D, { Gift3DHandle } from './Gift3D'
+import LootBox from './LootBox'
+import PrizeIcon from './PrizeIcon'
+import { days } from './gift'
 import { buzz, reducedMotion } from './sensors'
 import { appEvents } from '../analytics/appEvents'
 import './today.css'
 
-// «Что нового» — один раз, тем, кто уже учился до обновления главной. Три коротких экрана: подарок дня,
-// из чего он собран (слова, глаголы, уроки влетают в коробку), сколько это занимает. Без терминов.
+// «Что нового» — один раз, тем, кто уже учился до обновления. Посыл по порядку: теперь задания подбираются под
+// твой уровень → за каждое выпадает ценный приз → приходи каждый день, призы становятся лучше. Без терминов.
 
-const KEY = 'today-intro-v2'
+const KEY = 'today-intro-v3'
 
 /** Показывать ли: человек уже учился (есть опыт), ещё не видел, не тесты (там — только по ?intro=1). */
 // Адрес читаем при загрузке: приложение потом переписывает его (диплинки), и флаг тестов пропал бы.
@@ -45,15 +47,28 @@ const icons = {
 }
 
 interface Props {
-  /** Есть задание дня — тогда рассказываем, из чего оно собрано. */
+  /** Есть задание дня — тогда рассказываем, как оно подбирается. */
   personal: boolean
+  /** Сколько бесплатных дней лежит в первом подарке; 0 — не обещаем. */
+  firstDays: number
+  /** Могут ли вообще выпасть бесплатные дни. */
+  canGetDays: boolean
+  /** Подпись последней кнопки и куда она ведёт. */
+  cta: string
+  onStart: () => void
   onClose: () => void
 }
 
-export default function TodayIntro({ personal, onClose }: Props) {
-  const slides = personal ? ['gift', 'inside', 'go'] : ['gift', 'go']
+const Title = ({ children }: { children: React.ReactNode }) => (
+  <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>{children}</h2>
+)
+const Text = ({ children }: { children: React.ReactNode }) => (
+  <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">{children}</p>
+)
+
+export default function TodayIntro({ personal, firstDays, canGetDays, cta, onStart, onClose }: Props) {
+  const slides = personal ? ['task', 'prizes', 'go'] : ['prizes', 'go']
   const [i, setI] = useState(0)
-  const box = useRef<Gift3DHandle>(null)
   const [squish, setSquish] = useState(0)
   const slide = slides[i]
   const last = i === slides.length - 1
@@ -62,24 +77,26 @@ export default function TodayIntro({ personal, onClose }: Props) {
 
   function next() {
     buzz.light()
-    if (last) { markSeen(); onClose(); return }
+    if (last) { markSeen(); onClose(); onStart(); return }
     setI(i + 1)
   }
 
   const gulp = () => { buzz.soft(); setSquish(n => n + 1) }
-  // Последний экран: подарок раскрывается сам — так видно, что будет в конце дня.
-  useEffect(() => {
-    if (slide !== 'go') return
-    const id = setTimeout(() => box.current?.open(), 500)
-    return () => clearTimeout(id)
-  }, [slide])
+  const prizes: { prize: string; name: string; days?: number; ka?: string }[] = [
+    canGetDays ? { prize: 'days', name: 'Бесплатные дни подписки', days: firstDays || 1 } : { prize: 'friend', name: 'Подарки для друзей' },
+    { prize: 'item:crown', name: 'Одежда для Бомборы' },
+    { prize: 'furn:lamp', name: 'Мебель в его дом' },
+    { prize: 'word', name: 'Редкие слова с озвучкой', ka: 'ს' },
+    { prize: 'freeze', name: 'Заморозка серии' },
+    { prize: 'boost', name: 'Двойной опыт' }
+  ]
 
   return (
     <motion.div
       className="fixed inset-0 z-[80] flex flex-col bg-cream"
       style={{ paddingTop: 'var(--safe-t)', paddingBottom: 'var(--safe-b)' }}
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      data-testid="today-intro"
+      data-testid="today-intro" data-slide={slide}
     >
       <div className="mn-kilim" />
       <div className="flex justify-end px-4 pt-2">
@@ -88,61 +105,71 @@ export default function TodayIntro({ personal, onClose }: Props) {
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6">
-        <div className="relative flex items-end justify-center" style={{ width: 240, height: 240 }}>
-          {slide === 'inside' ? (
-            <>
-              <motion.div key={squish} className="jewel-tile w-full px-4 py-3 text-left"
-                initial={squish ? { scaleY: 0.9, scaleX: 1.05 } : { opacity: 0, y: 20 }} animate={{ scaleY: 1, scaleX: 1, opacity: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 12 }}>
-                <div className="relative z-[1] flex items-center gap-3">
-                  <div className="w-8 h-8 shrink-0 rounded-full border-[1.5px] border-jewelInk bg-gold flex items-center justify-center font-sans text-[14px] font-extrabold">1</div>
-                  <div>
-                    <div className="font-sans text-[11px] font-bold uppercase tracking-wider text-jewelInk-mid">Повторение</div>
-                    <div className="font-sans text-[15px] font-bold text-jewelInk">Собрано под тебя</div>
-                  </div>
-                </div>
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6">
+        {slide === 'prizes' ? (
+          <div className="grid w-full max-w-[340px] grid-cols-3 gap-2" data-testid="today-intro-prizes">
+            {prizes.map((p, k) => (
+              <motion.div key={p.prize} className="flex flex-col items-center rounded-xl border-[1.5px] border-jewelInk bg-cream-tile px-1 py-1.5"
+                initial={reducedMotion() ? false : { scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 16, delay: k * 0.07 }}>
+                <div className="flex h-14 w-14 items-center justify-center"><PrizeIcon prize={p.prize} size={50} days={p.days} ka={p.ka} /></div>
+                <div className="mt-0.5 flex min-h-[28px] items-center text-center font-sans text-[11px] font-bold leading-[1.2] text-jewelInk">{p.name}</div>
               </motion.div>
-              <Token label="твои слова" icon={icons.words} delay={0.2} onLand={gulp} />
-              <Token label="твои глаголы" icon={icons.verbs} delay={0.9} onLand={gulp} />
-              <Token label="пройденные уроки" icon={icons.lessons} delay={1.6} onLand={gulp} />
-            </>
-          ) : (
-            <motion.div
-              key={slide}
-              initial={reducedMotion() ? false : { y: -320, rotate: -20 }}
-              animate={{ y: 0, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 240, damping: 13, mass: 1.1 }}
-              onAnimationComplete={() => buzz.heavy()}
-            >
-              <Gift3D ref={box} size={130} idle={slide === 'gift'}>
-                <div className="rounded-2xl border-[2px] border-jewelInk bg-cream-tile px-4 py-2 text-center font-sans text-[20px] font-extrabold text-jewelInk whitespace-nowrap" style={{ boxShadow: '3px 3px 0 #15100A' }}>+20 <span className="text-[13px]">опыта</span></div>
-              </Gift3D>
-            </motion.div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="relative flex items-end justify-center" style={{ width: 240, height: 200 }}>
+            {slide === 'task' ? (
+              <>
+                <motion.div key={squish} className="jewel-tile w-full px-4 py-3 text-left"
+                  initial={squish ? { scaleY: 0.9, scaleX: 1.05 } : { opacity: 0, y: 20 }} animate={{ scaleY: 1, scaleX: 1, opacity: 1, y: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 12 }}>
+                  <div className="relative z-[1] flex items-center gap-3">
+                    <div className="w-8 h-8 shrink-0 rounded-full border-[1.5px] border-jewelInk bg-gold flex items-center justify-center font-sans text-[14px] font-extrabold">1</div>
+                    <div>
+                      <div className="font-sans text-[11px] font-bold uppercase tracking-wider text-jewelInk-mid">Задание дня</div>
+                      <div className="font-sans text-[15px] font-bold text-jewelInk">Подобрано под тебя</div>
+                    </div>
+                  </div>
+                </motion.div>
+                <Token label="твои слова" icon={icons.words} delay={0.2} onLand={gulp} />
+                <Token label="твои глаголы" icon={icons.verbs} delay={0.9} onLand={gulp} />
+                <Token label="пройденные уроки" icon={icons.lessons} delay={1.6} onLand={gulp} />
+              </>
+            ) : (
+              <motion.div
+                initial={reducedMotion() ? false : { y: -320, rotate: -20 }}
+                animate={{ y: 0, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 240, damping: 13, mass: 1.1 }}
+                onAnimationComplete={() => buzz.heavy()}
+              >
+                <LootBox level={3} size={130} idle />
+              </motion.div>
+            )}
+          </div>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
             key={slide}
-            className="mt-6 max-w-[330px] text-center"
+            className="mt-5 max-w-[330px] text-center"
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.28 }}
           >
-            {slide === 'gift' && (<>
-              <div className="mn-eyebrow text-ruby">Новая главная</div>
-              <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Каждый день — подарок от Бомборы</h2>
-              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">{personal ? 'Он ждёт в конце дня: пройди два коротких шага — повторение и новое — и открывай.' : 'Он ждёт в конце дня: пройди урок — и открывай.'}</p>
+            {slide === 'task' && (<>
+              <div className="mn-eyebrow text-ruby">Новое в TraleBot</div>
+              <Title>Теперь задания подбираются под твой уровень</Title>
+              <Text>Каждый день Бомбора собирает задание на пару минут из твоих слов, глаголов и уроков. Забытое повторишь, знакомое закрепишь, а новое появится вовремя.</Text>
             </>)}
-            {slide === 'inside' && (<>
-              <div className="mn-eyebrow text-ruby">Собран под тебя</div>
-              <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Повторение — из того, что ты уже учил</h2>
-              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">Слова из твоего словаря, глаголы и пройденные уроки. Что начал забывать — повторим, что знаешь — закрепим. Второй шаг — новое: Бомбора подскажет, что пройти дальше.</p>
+            {slide === 'prizes' && (<>
+              <div className="mn-eyebrow text-ruby">{personal ? 'Приз за каждое задание' : 'Приз за урок'}</div>
+              <Title>{personal ? 'Проходи задания каждый день и получай ценные призы' : 'Проходи уроки каждый день и получай ценные призы'}</Title>
+              {firstDays > 0 && <Text>В первом подарке тебя ждут <b className="text-jewelInk">{days(firstDays)} подписки бесплатно</b>.</Text>}
             </>)}
             {slide === 'go' && (<>
-              <div className="mn-eyebrow text-ruby">Пара минут в день</div>
-              <h2 className="mt-2 font-sans text-[24px] font-extrabold leading-tight text-jewelInk" style={{ textWrap: 'balance' as any }}>Открыл подарок — серия растёт</h2>
-              <p className="mt-3 font-sans text-[15px] leading-snug text-jewelInk-mid">Увлёкся — бери ещё раунд. Курс, глаголы и словарь — во вкладках внизу, между ними можно листать свайпом.</p>
+              <div className="mn-eyebrow text-ruby">Чем дольше, тем ценнее</div>
+              <Title>На седьмой день подряд тебе точно выпадет сундук</Title>
+              <Text>Чем дольше занимаешься без пропусков, тем чаще выпадают редкие призы. А за новый урок в тот же день получишь второй подарок.</Text>
             </>)}
           </motion.div>
         </AnimatePresence>
@@ -155,7 +182,7 @@ export default function TodayIntro({ personal, onClose }: Props) {
           ))}
         </div>
         <button type="button" onClick={next} className="jewel-btn bg-navy text-cream w-full" data-testid="today-intro-next">
-          <span className="relative z-[1]">{last ? 'К подарку' : 'Дальше'}</span>
+          <span className="relative z-[1]">{last ? cta : 'Дальше'}</span>
         </button>
       </div>
     </motion.div>

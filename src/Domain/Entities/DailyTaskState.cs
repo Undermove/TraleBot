@@ -40,7 +40,7 @@ public class DailyTaskState
 
     /// <summary>
     /// The gifts of the day opened on <see cref="Day"/>: JSON <c>{"day":"…","boxes":[{"box":0,"rarity":1,"prize":"freeze","code":null}]}</c>.
-    /// Box 0 is for the task, box 1 for one more round after it. See <c>DailyGiftService</c>.
+    /// Box 0 is for the task, box 1 for a new module lesson passed that day. See <c>DailyGiftService</c>.
     /// </summary>
     public string? GiftJson { get; set; }
 

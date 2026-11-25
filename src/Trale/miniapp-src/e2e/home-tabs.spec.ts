@@ -181,7 +181,7 @@ test('профиль — кружок справа вверху, кнопка «
 test('ещё не занимался сегодня — Бомбора говорит, что серия прервётся', async ({ page }) => {
   await setup(page)
   await page.goto('/?playwright=1')
-  await expect(page.getByTestId('today-say')).toHaveText('3 дня подряд! Один урок — и подарок твой')
+  await expect(page.getByTestId('today-say')).toHaveText('3 дня подряд! Пройди урок и получи подарок')
 })
 
 test('сегодня уже занимался — подарок дня готов', async ({ page }) => {
@@ -200,6 +200,6 @@ test('новичок после знакомства: «Начать первы�
   await page.getByText('посмотреть все уроки').click()
   await expect(page.getByTestId('home-tabs')).toBeVisible()
   await expect(page.getByTestId('dashboard-suggestion').getByRole('button')).toHaveText('Начать первый урок')
-  await expect(page.getByTestId('today-say')).toHaveText('Привет! Пройди первый урок — там подарок')
+  await expect(page.getByTestId('today-say')).toHaveText('Привет! Пройди первый урок и получи подарок')
   await shot(page, 'today-newcomer')
 })

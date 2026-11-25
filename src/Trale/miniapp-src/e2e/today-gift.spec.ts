@@ -70,10 +70,10 @@ test('шаги не пройдены: подарок закрыт, нажал �
   const gift = page.getByTestId('gift-button')
   await expect(gift).toHaveAttribute('data-gift', 'locked')
   await expect(page.getByTestId('gift-hint')).toHaveText('в конце дня')
-  await expect(page.getByTestId('today-say')).toHaveText('2 дня подряд! Два шага — и подарок твой')
+  await expect(page.getByTestId('today-say')).toHaveText('2 дня подряд! Пройди два шага и получи подарок')
 
   await gift.click()
-  await expect(page.getByTestId('today-say')).toHaveText('Пройди оба шага — и подарок твой')
+  await expect(page.getByTestId('today-say')).toHaveText('Пройди оба шага и получи подарок')
   expect(await haptics(page)).toContain('impact:rigid')
 
   await page.getByTestId('dashboard-suggestion').getByRole('button').click()
@@ -111,7 +111,7 @@ test('шаги пройдены: подарок светится, распако
   await page.getByTestId('gift-reveal-close').click()
   await expect(reveal).toHaveCount(0)
   await expect(gift).toHaveAttribute('data-gift', 'claimed')
-  await expect(page.getByTestId('today-say')).toContainText('Новый подарок через')
+  await expect(page.getByTestId('today-say')).toContainText('Новый подарок появится через')
   // Дальше — по желанию: следующий урок курса.
   await expect(page.getByTestId('dashboard-suggestion')).toContainText('Пройти урок')
 
@@ -167,36 +167,34 @@ test('вкладки листаются свайпом: влево — «Кур�
   await expect(page.getByTestId('home-tab-course')).toHaveAttribute('aria-selected', 'true')
 })
 
-test('что нового: подарок в конце дня, повторение под тебя, подарок раскрывается; второй раз не показывается', async ({ page }) => {
+test('свайп настоящим пальцем: экран едет за ним, сосед виден рядом; короткий жест возвращает назад, длинный листает', async ({ page, context }) => {
   await setup(page)
-  await page.goto('/?playwright=1&intro=1')
-  const intro = page.getByTestId('today-intro')
-  await expect(intro).toContainText('Каждый день — подарок от Бомборы')
-  await expect(intro).toContainText('повторение и новое')
-  await page.getByTestId('today-intro-next').click()
-  await expect(intro).toContainText('Повторение — из того, что ты уже учил')
-  await expect(intro).toContainText('твои слова')
-  await page.getByTestId('today-intro-next').click()
-  await expect(intro).toContainText('Открыл подарок — серия растёт')
-  await expect(intro.getByTestId('gift3d')).toHaveAttribute('data-state', 'open')
-  await expect(page.getByTestId('today-intro-next')).toHaveText('К подарку')
-  await page.getByTestId('today-intro-next').click()
-  await expect(intro).toHaveCount(0)
-
-  await page.reload()
+  await page.goto('/?playwright=1')
   await expect(page.getByTestId('gift-button')).toBeVisible()
-  await expect(page.getByTestId('today-intro')).toHaveCount(0)
-})
+  const cdp = await context.newCDPSession(page)
+  const y = 330
+  const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x?: number) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: x == null ? [] : [{ x, y }] })
+  await touch('touchStart', 300)
+  for (let x = 285; x >= 240; x -= 15) { await touch('touchMove', x); await page.waitForTimeout(40) }
+  await expect(page.getByTestId('tab-swipe-next')).toBeVisible()
+  await page.waitForTimeout(150)
+  await touch('touchMove', 240)
+  await page.waitForTimeout(120)
+  await touch('touchEnd')
+  await expect(page.getByTestId('tab-swipe-next')).toHaveCount(0)
+  await expect(page.getByTestId('home-tab-today')).toHaveAttribute('aria-selected', 'true')
 
-test('без задания дня: подарок за урок, «что нового» — два экрана', async ({ page }) => {
-  await setup(page, { task: null })
-  await page.goto('/?playwright=1&intro=1')
-  const intro = page.getByTestId('today-intro')
-  await expect(intro).toContainText('пройди урок — и открывай')
-  await page.getByTestId('today-intro-next').click()
-  await expect(intro).toContainText('Открыл подарок — серия растёт')
-  await page.getByTestId('today-intro-next').click()
-  await expect(page.getByTestId('today-say')).toHaveText('2 дня подряд! Один урок — и подарок твой')
+  await touch('touchStart', 320)
+  for (let x = 300; x >= 90; x -= 30) { await touch('touchMove', x); await page.waitForTimeout(16) }
+  const box = await page.getByTestId('tab-swipe-next').boundingBox()
+  expect(box!.x).toBeGreaterThan(100)
+  expect(box!.x).toBeLessThan(200)
+  await touch('touchEnd')
+  await expect(page.getByTestId('home-tab-course')).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByTestId('tab-swipe-next')).toHaveCount(0)
+  const left = await page.evaluate(() => getComputedStyle(document.querySelector('[data-testid="tab-swipe"] > div')!).transform)
+  expect(left).toBe('none')
 })
 
 // Демо-ролик для просмотра глазами (TODAY_VIDEO=1 TODAY_DEMO=1).
@@ -206,9 +204,6 @@ test('демо: что нового → главная → закрытый по
   await setup(page, { task: DONE })
   await page.goto('/?playwright=1&intro=1')
   await page.waitForTimeout(2600)
-  await page.getByTestId('today-intro-next').click(); await page.waitForTimeout(3600)
-  await page.getByTestId('today-intro-next').click(); await page.waitForTimeout(3200)
-  await page.getByTestId('today-intro-next').click(); await page.waitForTimeout(3000)
   await swipe(page, 300, 120); await page.waitForTimeout(1300)
   await swipe(page, 100, 300); await page.waitForTimeout(1500)
   await page.getByTestId('gift-button').click(); await page.waitForTimeout(1800)
