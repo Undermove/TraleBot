@@ -4,8 +4,8 @@ using System.Linq;
 namespace Application.DailyTask;
 
 /// <summary>
-/// Who gets «Задание дня» — the card, the endpoints and the daily reminder. While it is being tried out:
-/// in production only the listed people (the owner), on the local stand everyone.
+/// Who gets «Задание дня». <see cref="Everyone"/> opens the card and the endpoints to all; the daily reminder
+/// goes only to <see cref="TelegramIds"/> (the owner) so opening the task does not start a mass push.
 /// </summary>
 public class DailyTaskAudience(bool everyone, IEnumerable<long> telegramIds)
 {

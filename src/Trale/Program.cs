@@ -39,13 +39,13 @@ builder.Services.AddSingleton<Trale.MiniApp.ITraleMiniAppContentProvider>(sp => 
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IMiniAppContentProvider>(sp => sp.GetRequiredService<Trale.MiniApp.MiniAppContentProvider>());
 builder.Services.AddScoped<Application.Common.Interfaces.MiniApp.IProgressCalculator, Trale.MiniApp.ProgressCalculator>();
 builder.Services.AddSingleton<Application.DailyTask.ICourseCatalog, Trale.MiniApp.MiniAppCourseCatalog>();
-// «Задание дня» is tried out by the owner first: in production only the owner gets it, on the local stand everyone.
+// «Задание дня» with the gift of the day is open to everyone (25.11.2026). Its daily reminder still goes only to the listed
+// people (the owner): DailyTaskReminderService reads TelegramIds, not Everyone.
 builder.Services.AddSingleton(sp =>
 {
-    var env = sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
     var bot = sp.GetRequiredService<Infrastructure.Telegram.BotConfiguration>();
     var owner = bot.OwnerTelegramId != 0 ? bot.OwnerTelegramId : Trale.MiniApp.MiniAppCourseCatalog.DefaultOwnerTelegramId;
-    return new Application.DailyTask.DailyTaskAudience(Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsEnvironment(env, "local") || Microsoft.Extensions.Hosting.HostEnvironmentEnvExtensions.IsDevelopment(env), [owner]);
+    return new Application.DailyTask.DailyTaskAudience(everyone: true, [owner]);
 });
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IAlphabetLessonWords, Trale.MiniApp.AlphabetLessonWords>();
 builder.Services.AddSingleton<Application.Common.Interfaces.MiniApp.IIntroLessonWords, Trale.MiniApp.IntroLessonWords>();
