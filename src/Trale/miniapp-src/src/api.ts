@@ -1,5 +1,5 @@
 import type { VerbCardDto, VerbDto, VerbFormHitDto } from './verbs/types'
-function getInitData(): string {
+export function getInitData(): string {
   const tg = (window as any).Telegram?.WebApp
   return tg?.initData ?? ''
 }

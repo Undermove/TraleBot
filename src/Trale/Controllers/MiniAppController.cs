@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
@@ -142,6 +143,51 @@ public class MiniAppController : Controller
         }
 
         return NotFound(new { error = "Unknown module" });
+    }
+
+    /// <summary>
+    /// The learner's Telegram profile photo for the avatar, when the mini-app did not get <c>photo_url</c> from Telegram.
+    /// Fetched through the Bot API and served from here: the Telegram file link carries the bot token. Cached for a few
+    /// hours per person; 404 — no photo, or the person's privacy settings hide it from bots.
+    /// </summary>
+    [HttpGet("me/photo")]
+    public async Task<IActionResult> GetMyPhoto([FromServices] IMemoryCache cache, CancellationToken ct)
+    {
+        var user = await ResolveUserAsync(ct);
+        if (user == null) return Unauthorized(new { error = "not_authenticated" });
+
+        var key = $"tg-photo:{user.TelegramId}";
+        if (!cache.TryGetValue(key, out byte[]? bytes))
+        {
+            bytes = null;
+            try
+            {
+                var photos = await _telegramBotClient.GetUserProfilePhotosAsync(user.TelegramId, limit: 1, cancellationToken: ct);
+                // The smallest size that still looks sharp in a 44 px circle on a retina screen.
+                var size = photos.Photos.FirstOrDefault()?.OrderBy(p => p.Width).FirstOrDefault(p => p.Width >= 150)
+                           ?? photos.Photos.FirstOrDefault()?.MaxBy(p => p.Width);
+                if (size != null)
+                {
+                    var file = await _telegramBotClient.GetFileAsync(size.FileId, ct);
+                    if (file.FilePath != null)
+                    {
+                        using var ms = new System.IO.MemoryStream();
+                        await _telegramBotClient.DownloadFileAsync(file.FilePath, ms, ct);
+                        bytes = ms.ToArray();
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogInformation(ex, "Profile photo of {TelegramId} was not fetched", user.TelegramId);
+            }
+
+            cache.Set(key, bytes, TimeSpan.FromHours(bytes == null ? 1 : 6));
+        }
+
+        if (bytes == null) return NotFound();
+        Response.Headers.CacheControl = "private, max-age=21600";
+        return File(bytes, "image/jpeg");
     }
 
     [HttpGet("me")]

@@ -1,4 +1,5 @@
 import React from 'react'
+import TgAvatar from './TgAvatar'
 import { ProgressState } from '../types'
 
 interface Props {
@@ -63,13 +64,10 @@ export default function DashboardTopBar({ progress, onNavigateProfile, onOpenTre
           onClick={onNavigateProfile}
           data-testid="dashboard-profile"
           aria-label="Профиль"
-          className="w-11 h-11 rounded-full bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:scale-95 transition-transform"
+          className="w-11 h-11 overflow-hidden rounded-full bg-cream-tile border-[1.5px] border-jewelInk flex items-center justify-center active:scale-95 transition-transform"
           style={{ boxShadow: '2px 2px 0 #15100A' }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15100A" strokeWidth={1.9} strokeLinecap="round" aria-hidden="true">
-            <circle cx="12" cy="8.5" r="3.8" fill="#F5B820" />
-            <path d="M4.5 20c1.2-3.800 4.200-5.800 7.500-5.800s6.300 2 7.500 5.800" />
-          </svg>
+          <TgAvatar size={44} />
         </button>
       </div>
     </div>
