@@ -196,7 +196,7 @@ test('sitemap lists every indexable page exactly once, with lastmod', () => {
 test('internal links: none is broken; every page is one click from its hub and links to 3+ other pages; hubs are on every page', () => {
   const paths = new Set(result.pages.map((p) => p.path))
   const hubs = result.pages.filter((p) => p.hub)
-  assert.deepEqual(hubs.map((h) => h.path).sort(), ['/grammar/', '/phrases/', '/verbs/', '/words/'])
+  assert.deepEqual(hubs.map((h) => h.path).sort(), ['/grammar/', '/kak-skazat/', '/phrases/', '/verbs/', '/words/'])
   const hubLinks = new Map(hubs.map((hub) => [hub.section, new Set([...mainOf(html(hub.path)).matchAll(/href="(\/[^"#]*)"/g)].map((m) => m[1]))]))
   for (const p of result.pages) {
     const h = html(p.path)
@@ -258,4 +258,19 @@ test('size budget (reported)', () => {
   console.log(`site size: ${result.pages.length} pages ${JSON.stringify(bySection)}, ${(total / 1024 / 1024).toFixed(2)} MB of HTML, average ${(total / sizes.length / 1024).toFixed(1)} KB, largest ${sizes[0][0]} ${(sizes[0][1] / 1024).toFixed(1)} KB`)
   assert.ok(sizes[0][1] < 150 * 1024, `largest page ${sizes[0][0]} is ${sizes[0][1]} bytes`)
   assert.ok(total < 15 * 1024 * 1024)
+})
+
+test('«как сказать» pages: the phrase, its reading and letters come from the lessons', () => {
+  const pages = result.pages.filter((p) => p.section === 'kak-skazat' && !p.hub)
+  assert.ok(pages.length >= 12, `${pages.length} phrase pages`)
+  for (const p of pages) {
+    const h = mainOf(html(p.path))
+    const heroes = [...h.matchAll(/<p class="say-ka"><span lang="ka" class="f">([^<]+)<\/span><\/p><p class="say-tr">([^<]+)<\/p>/g)]
+    assert.ok(heroes.length >= 1, `${p.path}: no phrase`)
+    for (const [, ka, tr] of heroes) assert.equal(tr, cyr(ka).replace(/&/g, '&amp;'), `${p.path}: reading of ${ka}`)
+    const letters = [...h.matchAll(/<li><span lang="ka">(.)<\/span> <span class="tr">([^<]+)<\/span><\/li>/g)]
+    assert.ok(letters.length >= 2, `${p.path}: letters`)
+    for (const [, c, tr] of letters) assert.equal(tr, cyr(c).replace(/&/g, '&amp;'))
+    assert.ok(p.title.includes(heroes[0][1]), `${p.path}: the title names the Georgian phrase`)
+  }
 })

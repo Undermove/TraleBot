@@ -32,6 +32,21 @@ import { grammarPages } from './lib/pages/grammar.mjs'
 import { makeSelectors, referencePage } from './lib/pages/reference.mjs'
 import { SECTIONS, referenceDefs } from './data/reference.mjs'
 import { learnPages } from './lib/pages/learn.mjs'
+import { sayPage } from './lib/pages/say.mjs'
+import { SAY_SECTION, SAY } from './data/say.mjs'
+
+/** Every Georgian–Russian pair of the lessons, in source order: theory lists, theory examples, lexicons. */
+function phrasePool(theory, lexicons) {
+  const pool = []
+  for (const m of Object.values(theory))
+    for (const l of m.lessons)
+      for (const b of l.blocks) {
+        if (b.type === 'list') for (const i of b.items) { if (i.ka) pool.push({ kind: 'list', ka: i.ka.replace(/\s*\([^)Ⴀ-ჿ]*[A-Za-z][^)Ⴀ-ჿ]*\)/g, '').trim(), ru: i.ru }) }
+        else if (b.type === 'example') pool.push({ kind: 'example', ka: b.ka.replace(/^—\s*/, ''), ru: b.ru.replace(/^—\s*/, '') })
+      }
+  for (const items of lexicons.values()) for (const i of items) pool.push({ kind: 'lexicon', ka: i.ka, ru: i.ru })
+  return pool
+}
 
 const here = dirname(fileURLToPath(import.meta.url))
 export const SLUG_LOCK = join(here, 'data', 'verb-slugs.json')
@@ -175,7 +190,7 @@ ${teaser}
 </article>
 <section class="related"><h2>Темы</h2>${renderCards(pages.sort(byOrder).map(card))}</section>`,
     crumbs: [{ title: 'Главная', path: '/' }, { title: section.label || section.title, path: section.path }],
-    ctaTag: `seo_${section.name}_index`,
+    ctaTag: section.ctaTag || `seo_${section.name}_index`,
     cta: section.cta || { heading: 'Учить грузинский в Telegram', text: 'TraleBot: алфавит, грамматика, тематический словарь и квизы в одном мини-аппе.' },
     updated: section.updated,
     ld: [],
@@ -290,6 +305,19 @@ function generatedPages(config, repoRoot, grammarSection) {
     hubPage({ name, path: `/${name}/`, updated, ...s }, refPages.filter((p) => p.section === name))
   )
 
+  // «Как сказать …»: one phrase per page, found in the same lesson data by its Russian.
+  const pool = phrasePool(theory, lexicons)
+  const sayPath = (slug) => `/${SAY_SECTION.name}/${slug}/`
+  const bySlug = new Map(SAY.map((d) => [d.slug, { path: sayPath(d.slug), phrase: d.phrase }]))
+  const sayPages = SAY.map((d) => {
+    const topic = refPages.find((p) => p.path === d.topic)
+    if (!topic) throw new Error(`say: ${d.slug} points to ${d.topic}, which is not a phrasebook page`)
+    return sayPage({ ...d, topicTitle: topic.card }, { pool, section: SAY_SECTION, bySlug, updated })
+  })
+  const sayHub = hubPage({ ...SAY_SECTION, path: `/${SAY_SECTION.name}/`, updated }, sayPages)
+  refPages.push(...sayPages)
+  refHubs.push(sayHub)
+
   return { verbs, grammar, verbPages, verbsHub, refPages, refHubs }
 }
 
@@ -340,8 +368,8 @@ export function build({
   }
 
   // Header and footer link to every section; the order is the order of importance.
-  const NAV_ORDER = ['verbs', 'phrases', 'words', 'grammar']
-  const NAV_LABEL = { verbs: 'Глаголы', grammar: 'Грамматика' }
+  const NAV_ORDER = ['verbs', 'phrases', 'kak-skazat', 'words', 'grammar']
+  const NAV_LABEL = { verbs: 'Глаголы', grammar: 'Грамматика', 'kak-skazat': 'Как сказать' }
   const navHubs = [...hubs].sort((a, b) => (NAV_ORDER.indexOf(a.section) + 99) % 99 - (NAV_ORDER.indexOf(b.section) + 99) % 99)
   const layoutConfig = { ...config, nav: navHubs.map((h) => ({ path: h.path, label: NAV_LABEL[h.section] || h.crumbs.at(-1).title })) }
   const hubCards = navHubs.map((h) => ({ path: h.path, title: h.h1, description: h.description }))
