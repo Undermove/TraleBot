@@ -478,6 +478,9 @@ export default function LandingScreen({ botUsername }: Props) {
           <a href="/phrases/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
             Разговорник
           </a>
+          <a href="/kak-skazat/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
+            Как сказать по-грузински
+          </a>
           <a href="/words/" className="underline underline-offset-4 decoration-jewelInk/30 hover:text-jewelInk">
             Слова по темам
           </a>

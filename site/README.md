@@ -9,6 +9,7 @@
 | `/grammar/` | `content/grammar/*.md` (тексты) + пять таблиц из каталога глаголов (`lib/pages/grammar.mjs`) | 8 + 1 |
 | `/phrases/` | теория уроков (`MiniAppContentProvider.cs`) и словари уроков (`Lessons/**/questions*.json`) | 7 + 1 |
 | `/words/` | то же | 5 + 1 |
+| `/kak-skazat/`, `/kak-skazat/<slug>/` | `data/say.mjs` — фраза по-русски; грузинское находится в теории и словарях уроков (`lib/pages/say.mjs`). Нет фразы в уроках — нет страницы | 16 + 1 |
 | `/learn/`, `/learn/<язык>/` | `data/learn.mjs` — английские страницы с формой вейт-листа (`lib/pages/learn.mjs`, свой каркас без русской навигации); форма уходит обычным POST на `/waitlist` | 5 + 1 + «спасибо» |
 
 ## Как это устроено

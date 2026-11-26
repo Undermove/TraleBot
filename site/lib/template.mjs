@@ -107,6 +107,14 @@ details .tenses{margin-top:4px}
 .ex .r{margin-top:4px}
 .ex .src{font-size:12px;color:var(--ink-hint);margin-top:4px}
 .ex .src a{color:var(--ink-hint)}
+.say-hero{margin:8px 0 20px;padding:18px 20px;background:var(--tile);border:1.5px solid var(--ink);border-radius:16px;box-shadow:3px 3px 0 var(--ink)}
+.say-hero p{margin:0}
+.say-ru{font-size:14px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.06em}
+.say-ka{font-size:32px;font-weight:800;line-height:1.25;margin-top:6px!important}
+.say-tr{font-size:19px;color:var(--ink-soft);margin-top:4px!important}
+.letters{list-style:none;padding:0;margin:0 0 8px;display:flex;flex-wrap:wrap;gap:8px}
+.letters li{padding:6px 10px;border:1.5px solid var(--edge);border-radius:12px;background:var(--tile);font-size:15px}
+.letters li span[lang]{font-size:20px;font-weight:700}
 .sources{font-size:13px;color:var(--ink-hint);margin-top:28px}
 .sources a{color:var(--ink-mid)}
 .vlist{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:6px 8px}
