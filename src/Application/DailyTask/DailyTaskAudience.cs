@@ -4,14 +4,17 @@ using System.Linq;
 namespace Application.DailyTask;
 
 /// <summary>
-/// Who gets «Задание дня». <see cref="Everyone"/> opens the card and the endpoints to all; the daily reminder
-/// goes only to <see cref="TelegramIds"/> (the owner) so opening the task does not start a mass push.
+/// Who gets «Задание дня». <see cref="Everyone"/> opens the card and the endpoints to all.
+/// The daily reminder goes to <see cref="TelegramIds"/> (the owner) and, with <see cref="PushEveryone"/> (prod),
+/// to everyone who studied lately; the stand keeps it to the listed people — its database holds real Telegram ids.
 /// </summary>
-public class DailyTaskAudience(bool everyone, IEnumerable<long> telegramIds)
+public class DailyTaskAudience(bool everyone, IEnumerable<long> telegramIds, bool pushEveryone = false)
 {
     private readonly HashSet<long> _telegramIds = telegramIds.ToHashSet();
 
     public bool Everyone => everyone;
+
+    public bool PushEveryone => pushEveryone;
 
     public IReadOnlyCollection<long> TelegramIds => _telegramIds;
 

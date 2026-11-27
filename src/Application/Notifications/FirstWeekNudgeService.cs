@@ -84,6 +84,9 @@ public class FirstWeekNudgeService(
                 var nudge = Build(day, x.Progress.CompletedLessonsJson);
                 if (nudge == null) continue; // every lesson already taken — nothing to point at
 
+                // Got today's «Задание дня» reminder already — one message a day is enough.
+                if (await DailyTask.DailyTaskReminderService.GotTodaysTaskAsync(db, x.User.TelegramId, nowUtc, ct)) continue;
+
                 if (!await db.TryClaimNotificationTriggerAsync(x.User.TelegramId, source, null, nowUtc, Never, ct))
                 {
                     _logger.LogInformation("User {TelegramId} skipped — {Source} already claimed", x.User.TelegramId, source);
