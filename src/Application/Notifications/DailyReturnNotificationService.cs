@@ -64,6 +64,10 @@ public class DailyReturnNotificationService(
             if (dailyTask?.TelegramIds.Contains(user.TelegramId) == true)
                 continue;
 
+            // Got today's «Задание дня» reminder already — one message a day is enough.
+            if (await DailyTask.DailyTaskReminderService.GotTodaysTaskAsync(db, user.TelegramId, now, ct))
+                continue;
+
             var completedLessons = ParseCompletedLessons(progress.CompletedLessonsJson);
             var validModules = completedLessons
                 .Where(kv => kv.Value.Count > 0)

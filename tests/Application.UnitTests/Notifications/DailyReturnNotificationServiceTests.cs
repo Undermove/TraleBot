@@ -184,4 +184,20 @@ public class DailyReturnNotificationServiceTests : CommandTestsBase
 
         VerifyPushSent(Times.Once());
     }
+
+    [Test]
+    public async Task DispatchAsync_GotTodaysTaskReminder_StaysQuiet()
+    {
+        await SeedEligibleUser();
+        Context.NotificationTriggers.Add(new NotificationTrigger
+        {
+            Id = Guid.NewGuid(), UserId = TestTelegramId, Source = Application.DailyTask.DailyTaskReminderService.Source,
+            LastSentAt = DateTime.UtcNow
+        });
+        await Context.SaveChangesAsync();
+
+        await _sut.DispatchAsync(CancellationToken.None);
+
+        VerifyPushSent(Times.Never());
+    }
 }

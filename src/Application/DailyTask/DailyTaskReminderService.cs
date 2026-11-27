@@ -14,8 +14,10 @@ namespace Application.DailyTask;
 /// The daily message about «Задание дня»: what today's task is (the same words Bombora says on its
 /// first screen) and one button straight into it, tagged <c>src=push_daily_task</c>.
 ///
-/// Who: the people listed in <see cref="DailyTaskAudience"/> (the owner for now; on the stand too), active, notifications on,
-/// the task has material and is not done today.
+/// Who: active, notifications on, the task has material and is not done today, and either listed in
+/// <see cref="DailyTaskAudience"/> (the owner) or — on prod — studied in the mini-app within <see cref="RecentlyStudied"/>.
+/// Someone who stopped longer ago is left to the weekly return push.
+/// At most one reminder a day: not when the bot already reminded the person of something else today.
 /// When: once a UTC day, from the hour the person last studied (their habit), kept within
 /// 10:00–21:00 Tbilisi; without a habit yet — at 19:00 Tbilisi. A tick missed by the worker is made up
 /// later the same day, never after 22:00 Tbilisi.
@@ -39,6 +41,9 @@ public class DailyTaskReminderService(
     private const int DefaultHourUtc = 15;   // 19:00 Tbilisi
     private const int LastChanceHourUtc = 18; // after 22:00 Tbilisi — silence until tomorrow
 
+    /// <summary>Who studied this recently is reminded every day; three reminders after the last lesson, then quiet.</summary>
+    public static readonly TimeSpan RecentlyStudied = TimeSpan.FromDays(3);
+
     public Task DispatchAsync(CancellationToken ct) => DispatchAsync(DateTime.UtcNow, ct);
 
     public async Task DispatchAsync(DateTime nowUtc, CancellationToken ct)
@@ -48,11 +53,15 @@ public class DailyTaskReminderService(
             return;
         }
 
-        // Only the listed people, even where the task is open to everyone (the local stand): the stand's
-        // database holds other people's Telegram ids, and they must not hear from the test bot.
+        // The listed people always; everyone else who studied lately only on prod — the stand's database
+        // holds other people's Telegram ids, and they must not hear from the test bot.
         var ids = audience.TelegramIds.ToList();
+        var everyone = audience.PushEveryone;
+        var studiedAfter = nowUtc - RecentlyStudied;
         var users = await db.Users
-            .Where(u => u.IsActive && u.NotificationsEnabled && ids.Contains(u.TelegramId))
+            .Where(u => u.IsActive && u.NotificationsEnabled
+                        && (ids.Contains(u.TelegramId)
+                            || (everyone && db.MiniAppUserProgresses.Any(p => p.UserId == u.Id && p.LastPlayedAtUtc >= studiedAfter))))
             .ToListAsync(ct);
 
         foreach (var user in users)
@@ -62,6 +71,12 @@ public class DailyTaskReminderService(
                 .Select(p => p.LastPlayedAtUtc)
                 .FirstOrDefaultAsync(ct);
             if (nowUtc.Hour < SendHourUtc(lastPlayed))
+            {
+                continue;
+            }
+
+            // One reminder a day: the return push, a first-week nudge and the like already spoke today.
+            if (await RemindedTodayAsync(db, user.TelegramId, nowUtc, except: Source, ct))
             {
                 continue;
             }
@@ -100,6 +115,22 @@ public class DailyTaskReminderService(
         _logger.LogInformation("Daily task reminder to {TelegramId}: {Variant}", user.TelegramId, push.Variant);
         await notifications.SendDailyTaskReminderAsync(user, push, ct);
         return true;
+    }
+
+    /// <summary>Whether the bot already sent this person a reminder (other than <paramref name="except"/>) this UTC day.</summary>
+    public static Task<bool> RemindedTodayAsync(ITraleDbContext db, long telegramId, DateTime nowUtc, string? except, CancellationToken ct)
+    {
+        var dayStart = nowUtc.Date;
+        return db.NotificationTriggers.AnyAsync(
+            t => t.UserId == telegramId && t.Source != except && t.LastSentAt >= dayStart, ct);
+    }
+
+    /// <summary>Whether this person got today's «Задание дня» reminder — other pushes stay quiet then.</summary>
+    public static Task<bool> GotTodaysTaskAsync(ITraleDbContext db, long telegramId, DateTime nowUtc, CancellationToken ct)
+    {
+        var dayStart = nowUtc.Date;
+        return db.NotificationTriggers.AnyAsync(
+            t => t.UserId == telegramId && t.Source == Source && t.LastSentAt >= dayStart, ct);
     }
 
     /// <summary>The hour (UTC) the person last studied, within the day window; 19:00 Tbilisi when unknown.</summary>

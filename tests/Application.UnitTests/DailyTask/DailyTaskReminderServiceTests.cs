@@ -22,12 +22,12 @@ public class DailyTaskReminderServiceTests : CommandTestsBase
     [SetUp]
     public void SetUp() => _sender = new Mock<IUserNotificationService>();
 
-    private DailyTaskReminderService Sut(bool everyone = false)
+    private DailyTaskReminderService Sut(bool everyone = false, bool pushEveryone = false)
     {
         var catalog = new Mock<ICourseCatalog>();
         catalog.Setup(c => c.Modules()).Returns([]);
         var daily = new DailyTaskService(Context, new VerbProgressService(Context), Mock.Of<IProgressCalculator>(), catalog.Object);
-        return new DailyTaskReminderService(Context, daily, new DailyTaskAudience(everyone, [Owner]), _sender.Object, NullLoggerFactory.Instance);
+        return new DailyTaskReminderService(Context, daily, new DailyTaskAudience(everyone, [Owner], pushEveryone), _sender.Object, NullLoggerFactory.Instance);
     }
 
     /// <summary>Someone with three Georgian words in the dictionary — enough for a task.</summary>
@@ -105,6 +105,38 @@ public class DailyTaskReminderServiceTests : CommandTestsBase
 
         Reminded(someone, Times.Never());
         Reminded(owner, Times.Once());
+    }
+
+    [Test]
+    public async Task On_prod_everyone_who_studied_in_the_last_three_days_gets_it()
+    {
+        var studied2DaysAgo = await Learner(lastPlayed: Evening.AddDays(-2));
+        var studied5DaysAgo = await Learner(lastPlayed: Evening.AddDays(-5));
+        var neverStudied = await Learner();
+
+        await Sut(everyone: true, pushEveryone: true).DispatchAsync(Evening, CancellationToken.None);
+
+        Reminded(studied2DaysAgo, Times.Once());
+        Reminded(studied5DaysAgo, Times.Never());
+        Reminded(neverStudied, Times.Never());
+    }
+
+    [Test]
+    public async Task Not_when_the_bot_already_reminded_of_something_else_today()
+    {
+        var learner = await Learner(lastPlayed: Evening.AddDays(-2));
+        Context.NotificationTriggers.Add(new NotificationTrigger
+        {
+            Id = Guid.NewGuid(), UserId = learner.TelegramId, Source = "daily_return", LastSentAt = Evening.Date.AddHours(10)
+        });
+        await Context.SaveChangesAsync();
+
+        await Sut(everyone: true, pushEveryone: true).DispatchAsync(Evening, CancellationToken.None);
+        Reminded(learner, Times.Never());
+
+        // The next day the other reminder is yesterday's — the task reminder comes.
+        await Sut(everyone: true, pushEveryone: true).DispatchAsync(Evening.AddDays(1), CancellationToken.None);
+        Reminded(learner, Times.Once());
     }
 
     [Test]
